@@ -546,7 +546,7 @@ IS
    EXCEPTION
       WHEN e_no_table
       THEN
-         raise_application_error( -20001, 'The external table in COMMON.FILE_CTL does not exist.' );
+      raise_application_error( -20001, 'The external table in EXT_TAB_NAME does not exist.' );
       WHEN OTHERS
       THEN
          job.log_err;
@@ -723,7 +723,7 @@ IS
                                   created_dt,
                                   modified_user,
                                   modified_dt
-                             FROM common.file_ctl
+                             FROM file_ctl
                             WHERE jobname = p_jobname
                               AND REGEXP_LIKE( filename,
                                                DECODE( p_filename,
@@ -870,7 +870,7 @@ IS
                                           ext_filename,
                                           filename,
                                           filenumber
-                                    FROM common.file_dtl
+                                    FROM file_dtl
                                    WHERE jobnumber = c_file_ctl.jobnumber
                                      AND ext_tab_ind = 'Y'
                                      AND session_id = SYS_CONTEXT( 'USERENV', 'SESSIONID' ))
