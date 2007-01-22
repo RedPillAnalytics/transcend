@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE BODY common.owb_utils
+CREATE OR REPLACE PACKAGE BODY efw.owb_utils
 AS
    g_app   app_info;
 
