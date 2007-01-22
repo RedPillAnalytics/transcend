@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE common.owb_utils
+CREATE OR REPLACE PACKAGE efw.owb_utils
 AS
    PROCEDURE start_map_control(
       p_jobname        VARCHAR2,
