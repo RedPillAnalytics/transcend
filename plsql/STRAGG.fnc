@@ -1,0 +1,5 @@
+CREATE OR REPLACE FUNCTION common.stragg (
+   input   VARCHAR2)
+   RETURN VARCHAR2 PARALLEL_ENABLE AGGREGATE
+   USING string_agg_type;
+/
