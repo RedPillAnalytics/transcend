@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE BODY common.util
+CREATE OR REPLACE PACKAGE BODY efw.util
 AS
    -- procedure executes the run_cmd function and raises an exception with the return code
    PROCEDURE run_cmd (
