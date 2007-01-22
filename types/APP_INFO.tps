@@ -1,4 +1,4 @@
-CREATE OR REPLACE TYPE common.app_info AS OBJECT(
+CREATE OR REPLACE TYPE efw.app_info AS OBJECT(
    prev_client_info   VARCHAR2( 64 ),
    prev_module        VARCHAR2( 48 ),
    prev_action        VARCHAR2( 32 ),
