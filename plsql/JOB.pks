@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE common.job
+CREATE OR REPLACE PACKAGE efw.job
 AS
    PROCEDURE log_msg(
       p_msg   VARCHAR2 );
