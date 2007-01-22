@@ -1,7 +1,7 @@
-DROP TABLE common.dir_list purge
+DROP TABLE efw.dir_list purge
 /
 
-CREATE global TEMPORARY TABLE common.dir_list
+CREATE global TEMPORARY TABLE efw.dir_list
 ( filename VARCHAR2(255),
   file_dt date,
   file_size NUMBER
