@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE common.utility
+CREATE OR REPLACE PACKAGE efw.utility
 AS
    FUNCTION get_package_name
       RETURN VARCHAR2;
