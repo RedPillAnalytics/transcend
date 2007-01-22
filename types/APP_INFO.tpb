@@ -1,5 +1,5 @@
 -- object for holding previous values of DBMS_APPLICATION_INFO attributes to set them back later 
-CREATE OR REPLACE TYPE BODY common.app_info
+CREATE OR REPLACE TYPE BODY efw.app_info
 AS
    CONSTRUCTOR FUNCTION app_info(
       p_action        VARCHAR2 DEFAULT 'Begin Procedure/Function',
