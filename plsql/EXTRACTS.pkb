@@ -178,35 +178,35 @@ AS
    END extract_regexp;
 
    -- extract data to a text file, and then peform other functions as defined in the configuration table
-   PROCEDURE gen_extract (
-      p_extract      gen_extract_conf.EXTRACT%TYPE,
+   PROCEDURE process_extract (
+      p_extract      extract_conf.EXTRACT%TYPE,
       -- The name of the report to generate. This is the PK for the table.
-      p_object       gen_extract_conf.OBJECT%TYPE DEFAULT NULL,
+      p_object       extract_conf.OBJECT%TYPE DEFAULT NULL,
       -- The name of the object to extract: a table or view typically.
-      p_owner        gen_extract_conf.owner%TYPE DEFAULT NULL,           -- The owner of the object.
-      p_filebase     gen_extract_conf.filebase%TYPE DEFAULT NULL,
+      p_owner        extract_conf.owner%TYPE DEFAULT NULL,           -- The owner of the object.
+      p_filebase     extract_conf.filebase%TYPE DEFAULT NULL,
       -- Basename of the extract file... minus the datastamp and file extension.
-      p_filext       gen_extract_conf.filext%TYPE DEFAULT NULL,
+      p_filext       extract_conf.filext%TYPE DEFAULT NULL,
       -- Extension to place at the end of a file
-      p_datestamp    gen_extract_conf.datestamp%TYPE DEFAULT NULL,
+      p_datestamp    extract_conf.datestamp%TYPE DEFAULT NULL,
       -- NLS_DATE_FORMAT for the file datestamp
-      p_dateformat   gen_extract_conf.DATEFORMAT%TYPE DEFAULT NULL,
+      p_dateformat   extract_conf.DATEFORMAT%TYPE DEFAULT NULL,
       -- NLS_DATE_FORMAT for any date columns in the file
-      p_dirname      gen_extract_conf.dirname%TYPE DEFAULT NULL,
+      p_dirname      extract_conf.dirname%TYPE DEFAULT NULL,
       -- Name of the Oracle directory object to stage the file in initially
-      p_stgdirname   gen_extract_conf.stgdirname%TYPE DEFAULT NULL,
+      p_stgdirname   extract_conf.stgdirname%TYPE DEFAULT NULL,
       -- Name of the Oracle directory object to extract to.
-      p_delimiter    gen_extract_conf.delimiter%TYPE DEFAULT NULL,
+      p_delimiter    extract_conf.delimiter%TYPE DEFAULT NULL,
       -- Column delimiter in the extract file.
-      p_quotechar    gen_extract_conf.quotechar%TYPE DEFAULT NULL,
+      p_quotechar    extract_conf.quotechar%TYPE DEFAULT NULL,
       -- Character (if any) to use to quote columns.
-      p_recipients   gen_extract_conf.recipients%TYPE DEFAULT NULL,
+      p_recipients   extract_conf.recipients%TYPE DEFAULT NULL,
       -- comma separated list of recipients
-      p_baseurl      gen_extract_conf.baseurl%TYPE DEFAULT NULL,
+      p_baseurl      extract_conf.baseurl%TYPE DEFAULT NULL,
       -- URL (minus filename) of the link to the file
       p_headers      BOOLEAN DEFAULT NULL,                 -- whether to include headers in the file
       p_sendmail     BOOLEAN DEFAULT NULL,           -- whether to send an email announcing the link
-      p_arcdirname   gen_extract_conf.arcdirname%TYPE DEFAULT NULL,
+      p_arcdirname   extract_conf.arcdirname%TYPE DEFAULT NULL,
       p_debug        BOOLEAN DEFAULT FALSE)                                            -- debug mode
    AS
       l_object       all_objects.object_name%TYPE;
@@ -220,14 +220,14 @@ AS
       l_subject      VARCHAR2 (55);
       l_headers      BOOLEAN;
       l_sendmail     BOOLEAN;
-      l_dirname      gen_extract_conf.dirname%TYPE;
-      l_arcdirname   gen_extract_conf.arcdirname%TYPE;
-      l_stgdirname   gen_extract_conf.stgdirname%TYPE;
-      l_app          app_info  := app_info (p_module      => 'EXTRACTS.GEN_EXTRACT',
+      l_dirname      extract_conf.dirname%TYPE;
+      l_arcdirname   extract_conf.arcdirname%TYPE;
+      l_stgdirname   extract_conf.stgdirname%TYPE;
+      l_app          app_info  := app_info (p_module      => 'EXTRACTS.PROCESS_EXTRACT',
                                             p_debug       => p_debug);
    BEGIN
       FOR c_configs IN (SELECT *
-                          FROM gen_extract_conf
+                          FROM extract_conf
                          WHERE EXTRACT = p_extract)
       LOOP
          l_rows := TRUE;
@@ -403,50 +403,50 @@ AS
       THEN
          job.log_err;
          RAISE;
-   END gen_extract;
+   END process_extract;
 
    -- configure an extract
    PROCEDURE register_extract (
-      p_extract      gen_extract_conf.EXTRACT%TYPE,
+      p_extract      extract_conf.EXTRACT%TYPE,
       -- The name of the report to generate. This is the PK for the table.
-      p_object       gen_extract_conf.OBJECT%TYPE DEFAULT NULL,
+      p_object       extract_conf.OBJECT%TYPE DEFAULT NULL,
       -- The name of the object to extract: a table or view typically.
-      p_owner        gen_extract_conf.owner%TYPE DEFAULT NULL,           -- The owner of the object.
-      p_filebase     gen_extract_conf.filebase%TYPE DEFAULT NULL,
+      p_owner        extract_conf.owner%TYPE DEFAULT NULL,           -- The owner of the object.
+      p_filebase     extract_conf.filebase%TYPE DEFAULT NULL,
       -- Basename of the extract file... minus the datastamp and file extension.
-      p_filext       gen_extract_conf.filext%TYPE DEFAULT NULL,
+      p_filext       extract_conf.filext%TYPE DEFAULT NULL,
       -- Extension to place at the end of a file
-      p_datestamp    gen_extract_conf.datestamp%TYPE DEFAULT NULL,
+      p_datestamp    extract_conf.datestamp%TYPE DEFAULT NULL,
       -- NLS_DATE_FORMAT for the file datestamp
-      p_dateformat   gen_extract_conf.DATEFORMAT%TYPE DEFAULT NULL,
+      p_dateformat   extract_conf.DATEFORMAT%TYPE DEFAULT NULL,
       -- NLS_DATE_FORMAT for any date columns in the file
-      p_dirname      gen_extract_conf.dirname%TYPE DEFAULT NULL,
+      p_dirname      extract_conf.dirname%TYPE DEFAULT NULL,
       -- Name of the Oracle directory object to stage the file in initially
-      p_stgdirname   gen_extract_conf.stgdirname%TYPE DEFAULT NULL,
+      p_stgdirname   extract_conf.stgdirname%TYPE DEFAULT NULL,
       -- Name of the Oracle directory object to extract to.
-      p_delimiter    gen_extract_conf.delimiter%TYPE DEFAULT NULL,
+      p_delimiter    extract_conf.delimiter%TYPE DEFAULT NULL,
       -- Column delimiter in the extract file.
-      p_quotechar    gen_extract_conf.quotechar%TYPE DEFAULT NULL,
+      p_quotechar    extract_conf.quotechar%TYPE DEFAULT NULL,
       -- Character (if any) to use to quote columns.
-      p_sender       gen_extract_conf.sender%TYPE DEFAULT NULL,
+      p_sender       extract_conf.sender%TYPE DEFAULT NULL,
       -- Character (if any) to use to quote columns.
-      p_recipients   gen_extract_conf.recipients%TYPE DEFAULT NULL,
+      p_recipients   extract_conf.recipients%TYPE DEFAULT NULL,
       -- comma separated list of recipients
-      p_baseurl      gen_extract_conf.baseurl%TYPE DEFAULT NULL,
+      p_baseurl      extract_conf.baseurl%TYPE DEFAULT NULL,
       -- URL (minus filename) of the link to the file
-      p_headers      gen_extract_conf.headers%TYPE DEFAULT NULL,
+      p_headers      extract_conf.headers%TYPE DEFAULT NULL,
       -- whether to include headers in the file
-      p_sendmail     gen_extract_conf.sendmail%TYPE DEFAULT NULL,
+      p_sendmail     extract_conf.sendmail%TYPE DEFAULT NULL,
       -- whether to send an email announcing the link
-      p_arcdirname   gen_extract_conf.arcdirname%TYPE DEFAULT NULL,
+      p_arcdirname   extract_conf.arcdirname%TYPE DEFAULT NULL,
       p_debug        BOOLEAN DEFAULT FALSE)
    IS
       e_dup_file   EXCEPTION;
       PRAGMA EXCEPTION_INIT (e_dup_file, -1);
       e_null_val   EXCEPTION;
       PRAGMA EXCEPTION_INIT (e_null_val, -1400);
-      l_headers    gen_extract_conf.headers%TYPE;
-      l_sendmail   gen_extract_conf.sendmail%TYPE;
+      l_headers    extract_conf.headers%TYPE;
+      l_sendmail   extract_conf.sendmail%TYPE;
       l_path       all_directories.directory_path%TYPE;
       l_app        app_info
                           := app_info (p_module      => 'EXTRACTS.REGISTER_EXTRACT',
@@ -465,7 +465,7 @@ AS
       END IF;
 
       -- INSERT the record into the table
-      INSERT INTO gen_extract_conf
+      INSERT INTO extract_conf
                   (EXTRACT,
                    OBJECT,
                    owner,
@@ -512,7 +512,7 @@ AS
       -- IF the record already exists, then update it
       WHEN e_dup_file
       THEN
-         UPDATE gen_extract_conf
+         UPDATE extract_conf
             SET OBJECT = DECODE (p_object, NULL, OBJECT, UPPER (p_object)),
                 owner = DECODE (p_owner, NULL, owner, UPPER (p_owner)),
                 filebase = DECODE (p_filebase, NULL, filebase, p_filebase),
