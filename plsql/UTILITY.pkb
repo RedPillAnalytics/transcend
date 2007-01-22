@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE BODY common.utility
+CREATE OR REPLACE PACKAGE BODY efw.utility
 AS
 -- used to pull out of the dictionary the calling block of a particular block
 -- used to format the LOG_TABLE
