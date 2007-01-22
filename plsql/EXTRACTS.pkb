@@ -24,29 +24,21 @@ AS
       l_mode          VARCHAR2 (1)       DEFAULT 'w';
       e_no_var        EXCEPTION;
       PRAGMA EXCEPTION_INIT (e_no_var, -1007);
-      l_app           app_info           := app_info (p_module      => 'EXTRACTS.EXTRACT_QUERY');
+      l_app           app_info           := app_info (p_module => 'EXTRACTS.EXTRACT_QUERY');
    BEGIN
       IF p_append
       THEN
          l_mode := 'a';
       END IF;
 
-      l_output := UTL_FILE.fopen (p_dirname,
-                                  p_filename,
-                                  l_mode,
-                                  32767);
-      DBMS_SQL.parse (l_thecursor,
-                      p_query,
-                      DBMS_SQL.native);
+      l_output := UTL_FILE.fopen (p_dirname, p_filename, l_mode, 32767);
+      DBMS_SQL.parse (l_thecursor, p_query, DBMS_SQL.native);
       l_app.set_action ('Open Cursor to define columns');
 
       FOR i IN 1 .. 255
       LOOP
          BEGIN
-            DBMS_SQL.define_column (l_thecursor,
-                                    i,
-                                    l_columnvalue,
-                                    2000);
+            DBMS_SQL.define_column (l_thecursor, i, l_columnvalue, 2000);
             l_colcnt := i;
          EXCEPTION
             WHEN e_no_var
@@ -55,10 +47,7 @@ AS
          END;
       END LOOP;
 
-      DBMS_SQL.define_column (l_thecursor,
-                              1,
-                              l_columnvalue,
-                              2000);
+      DBMS_SQL.define_column (l_thecursor, 1, l_columnvalue, 2000);
       l_status := DBMS_SQL.EXECUTE (l_thecursor);
       job.log_msg ('Extracting data to ' || p_filename || ' in directory ' || p_dirname);
       l_app.set_action ('Open Cursor to pull back records');
@@ -69,9 +58,7 @@ AS
 
          FOR i IN 1 .. l_colcnt
          LOOP
-            DBMS_SQL.COLUMN_VALUE (l_thecursor,
-                                   i,
-                                   l_columnvalue);
+            DBMS_SQL.COLUMN_VALUE (l_thecursor, i, l_columnvalue);
             UTL_FILE.put (l_output, l_delimiter || p_quotechar || l_columnvalue || p_quotechar);
             l_delimiter := p_delimiter;
          END LOOP;
@@ -136,7 +123,7 @@ AS
    FUNCTION get_numlines
       RETURN NUMBER
    AS
-      l_app   app_info := app_info (p_module      => 'EXTRACTS.GET_NUMLINES');
+      l_app   app_info := app_info (p_module => 'EXTRACTS.GET_NUMLINES');
    BEGIN
       RETURN g_numlines;
    END get_numlines;
@@ -155,18 +142,15 @@ AS
    AS
       l_rows   BOOLEAN         := FALSE;
       l_sql    VARCHAR2 (2000);
-      l_app    app_info        := app_info (p_module      => 'EXTRACTS.EXTRACT_REGEXP');
+      l_app    app_info        := app_info (p_module => 'EXTRACTS.EXTRACT_REGEXP');
    BEGIN
-      job.log_msg (   'Extracting data for the '
-                   || p_owner
+      job.log_msg ('Extracting data for the ' || p_owner
                    || ' schema matching the regular expression');
 
       FOR c_objects IN (SELECT owner,
                                object_name
                           FROM all_objects
-                         WHERE REGEXP_LIKE (object_name,
-                                            p_regexp,
-                                            'i')
+                         WHERE REGEXP_LIKE (object_name, p_regexp, 'i')
                            AND owner = p_owner
                            AND object_type IN ('TABLE', 'VIEW', 'SYNONYM'))
       LOOP
@@ -199,7 +183,7 @@ AS
       -- The name of the report to generate. This is the PK for the table.
       p_object       gen_extract_conf.OBJECT%TYPE DEFAULT NULL,
       -- The name of the object to extract: a table or view typically.
-      p_owner        gen_extract_conf.owner%TYPE DEFAULT NULL,      -- The owner of the object.
+      p_owner        gen_extract_conf.owner%TYPE DEFAULT NULL,           -- The owner of the object.
       p_filebase     gen_extract_conf.filebase%TYPE DEFAULT NULL,
       -- Basename of the extract file... minus the datastamp and file extension.
       p_filext       gen_extract_conf.filext%TYPE DEFAULT NULL,
@@ -220,10 +204,10 @@ AS
       -- comma separated list of recipients
       p_baseurl      gen_extract_conf.baseurl%TYPE DEFAULT NULL,
       -- URL (minus filename) of the link to the file
-      p_headers      BOOLEAN DEFAULT NULL,            -- whether to include headers in the file
-      p_sendmail     BOOLEAN DEFAULT NULL,      -- whether to send an email announcing the link
+      p_headers      BOOLEAN DEFAULT NULL,                 -- whether to include headers in the file
+      p_sendmail     BOOLEAN DEFAULT NULL,           -- whether to send an email announcing the link
       p_arcdirname   gen_extract_conf.arcdirname%TYPE DEFAULT NULL,
-      p_debug        BOOLEAN DEFAULT FALSE)                                       -- debug mode
+      p_debug        BOOLEAN DEFAULT FALSE)                                            -- debug mode
    AS
       l_object       all_objects.object_name%TYPE;
       l_file         VARCHAR2 (50);
@@ -239,9 +223,8 @@ AS
       l_dirname      gen_extract_conf.dirname%TYPE;
       l_arcdirname   gen_extract_conf.arcdirname%TYPE;
       l_stgdirname   gen_extract_conf.stgdirname%TYPE;
-      l_app          app_info
-                          := app_info (p_module      => 'EXTRACTS.GEN_EXTRACT',
-                                       p_debug       => p_debug);
+      l_app          app_info  := app_info (p_module      => 'EXTRACTS.GEN_EXTRACT',
+                                            p_debug       => p_debug);
    BEGIN
       FOR c_configs IN (SELECT *
                           FROM gen_extract_conf
@@ -261,8 +244,7 @@ AS
 
          l_sendmail :=
             CASE
-               WHEN p_sendmail IS NULL
-               AND c_configs.sendmail = 'Y'
+               WHEN p_sendmail IS NULL AND c_configs.sendmail = 'Y'
                   THEN TRUE
                WHEN p_sendmail
                   THEN TRUE
@@ -275,8 +257,7 @@ AS
             || NVL (p_filext, c_configs.filext);
          l_url := utility.format_url (NVL (p_baseurl, c_configs.baseurl) || l_file);
          l_ddl :=
-               'alter session set nls_date_format='''
-            || NVL (p_dateformat, c_configs.DATEFORMAT)
+            'alter session set nls_date_format=''' || NVL (p_dateformat, c_configs.DATEFORMAT)
             || '''';
          l_app.set_action ('Setting NLS_DATE_FORMAT');
 
@@ -290,13 +271,11 @@ AS
          l_app.set_action ('Extract data');
 
          CASE
-            WHEN p_debug
-            AND l_stgdirname IS NOT NULL
+            WHEN p_debug AND l_stgdirname IS NOT NULL
             THEN
                job.log_msg ('Data would be extracted to ' || l_stgdirname);
                job.log_msg ('Stage file would be moved to ' || l_dirname);
-            WHEN NOT p_debug
-            AND l_stgdirname IS NOT NULL
+            WHEN NOT p_debug AND l_stgdirname IS NOT NULL
             THEN
                extract_object (p_owner          => NVL (p_owner, c_configs.owner),
                                p_object         => NVL (p_object, c_configs.OBJECT),
@@ -306,13 +285,8 @@ AS
                                p_quotechar      => NVL (p_quotechar, c_configs.quotechar),
                                p_headers        => NVL (p_headers, l_headers));
                job.log_msg ('Moving stage file to ' || l_dirname);
-               UTL_FILE.frename (l_stgdirname,
-                                 l_file,
-                                 l_dirname,
-                                 l_file,
-                                 TRUE);
-            WHEN NOT p_debug
-            AND c_configs.stgdirname IS NULL
+               UTL_FILE.frename (l_stgdirname, l_file, l_dirname, l_file, TRUE);
+            WHEN NOT p_debug AND c_configs.stgdirname IS NULL
             THEN
                extract_object (p_owner          => NVL (p_owner, c_configs.owner),
                                p_object         => NVL (p_object, c_configs.OBJECT),
@@ -321,8 +295,7 @@ AS
                                p_delimiter      => NVL (p_delimiter, c_configs.delimiter),
                                p_quotechar      => NVL (p_quotechar, c_configs.quotechar),
                                p_headers        => NVL (p_headers, l_headers));
-            WHEN p_debug
-            AND c_configs.stgdirname IS NULL
+            WHEN p_debug AND c_configs.stgdirname IS NULL
             THEN
                job.log_msg ('Data would be extracted to ' || l_dirname);
                extract_object (p_owner          => NVL (p_owner, c_configs.owner),
@@ -381,8 +354,7 @@ AS
          l_subject := c_configs.EXTRACT || ' Report URL' || CHR (13);
 
          CASE
-            WHEN l_sendmail
-            AND NOT p_debug
+            WHEN l_sendmail AND NOT p_debug
             THEN
                job.log_msg (   'Sending email to '
                             || NVL (p_recipients, c_configs.recipients)
@@ -394,13 +366,11 @@ AS
                --                               message         => l_msg,
                --                               mime_type       => 'text/html');
                utility.send_email (p_sender          => c_configs.sender,
-                                   p_recipients      => NVL (p_recipients,
-                                                             c_configs.recipients),
+                                   p_recipients      => NVL (p_recipients, c_configs.recipients),
                                    p_subject         => l_subject,
                                    p_message         => l_msg);
                l_app.set_action ('Formatting email message');
-            WHEN p_debug
-            AND l_sendmail
+            WHEN p_debug AND l_sendmail
             THEN
                DBMS_OUTPUT.put_line ('Email Subject: ' || l_subject);
                DBMS_OUTPUT.put_line ('Email MSG: ' || l_msg);
@@ -410,15 +380,10 @@ AS
          END CASE;
 
          CASE
-            WHEN l_arcdirname IS NOT NULL
-            AND NOT p_debug
+            WHEN l_arcdirname IS NOT NULL AND NOT p_debug
             THEN
-               UTL_FILE.fcopy (l_dirname,
-                               l_file,
-                               l_arcdirname,
-                               l_file);
-            WHEN l_arcdirname IS NOT NULL
-            AND p_debug
+               UTL_FILE.fcopy (l_dirname, l_file, l_arcdirname, l_file);
+            WHEN l_arcdirname IS NOT NULL AND p_debug
             THEN
                job.log_msg (l_file || ' would be copied to ' || l_arcdirname);
             ELSE
@@ -428,9 +393,8 @@ AS
 
       IF NOT l_rows
       THEN
-         raise_application_error
-                                (-20001,
-                                 'Combination of parameters yields no object to extract from.');
+         raise_application_error (-20001,
+                                  'Combination of parameters yields no object to extract from.');
       END IF;
 
       l_app.clear_app_info;
@@ -447,7 +411,7 @@ AS
       -- The name of the report to generate. This is the PK for the table.
       p_object       gen_extract_conf.OBJECT%TYPE DEFAULT NULL,
       -- The name of the object to extract: a table or view typically.
-      p_owner        gen_extract_conf.owner%TYPE DEFAULT NULL,      -- The owner of the object.
+      p_owner        gen_extract_conf.owner%TYPE DEFAULT NULL,           -- The owner of the object.
       p_filebase     gen_extract_conf.filebase%TYPE DEFAULT NULL,
       -- Basename of the extract file... minus the datastamp and file extension.
       p_filext       gen_extract_conf.filext%TYPE DEFAULT NULL,
@@ -485,8 +449,8 @@ AS
       l_sendmail   gen_extract_conf.sendmail%TYPE;
       l_path       all_directories.directory_path%TYPE;
       l_app        app_info
-                     := app_info (p_module      => 'EXTRACTS.REGISTER_EXTRACT',
-                                  p_debug       => p_debug);
+                          := app_info (p_module      => 'EXTRACTS.REGISTER_EXTRACT',
+                                       p_debug       => p_debug);
    BEGIN
       -- make sure the directory names are legitimate
       -- the function raises and error if they aren't
@@ -549,54 +513,22 @@ AS
       WHEN e_dup_file
       THEN
          UPDATE gen_extract_conf
-            SET OBJECT = DECODE (p_object,
-                                 NULL, OBJECT,
-                                 UPPER (p_object)),
-                owner = DECODE (p_owner,
-                                NULL, owner,
-                                UPPER (p_owner)),
-                filebase = DECODE (p_filebase,
-                                   NULL, filebase,
-                                   p_filebase),
-                filext = DECODE (p_filext,
-                                 NULL, filext,
-                                 p_filext),
-                datestamp = DECODE (p_datestamp,
-                                    NULL, datestamp,
-                                    p_datestamp),
-                DATEFORMAT = DECODE (p_dateformat,
-                                     NULL, DATEFORMAT,
-                                     p_dateformat),
-                dirname = DECODE (p_dirname,
-                                  NULL, dirname,
-                                  UPPER (p_dirname)),
-                stgdirname = DECODE (p_stgdirname,
-                                     NULL, stgdirname,
-                                     UPPER (p_stgdirname)),
-                delimiter = DECODE (p_delimiter,
-                                    NULL, delimiter,
-                                    p_delimiter),
-                quotechar = DECODE (p_quotechar,
-                                    NULL, quotechar,
-                                    p_quotechar),
-                sender = DECODE (p_sender,
-                                 NULL, sender,
-                                 p_sender),
-                recipients = DECODE (p_recipients,
-                                     NULL, recipients,
-                                     p_recipients),
-                baseurl = DECODE (p_baseurl,
-                                  NULL, baseurl,
-                                  p_baseurl),
-                headers = DECODE (p_headers,
-                                  NULL, headers,
-                                  p_headers),
-                sendmail = DECODE (p_sendmail,
-                                   NULL, sendmail,
-                                   p_sendmail),
-                arcdirname = DECODE (p_arcdirname,
-                                     NULL, arcdirname,
-                                     UPPER (p_arcdirname)),
+            SET OBJECT = DECODE (p_object, NULL, OBJECT, UPPER (p_object)),
+                owner = DECODE (p_owner, NULL, owner, UPPER (p_owner)),
+                filebase = DECODE (p_filebase, NULL, filebase, p_filebase),
+                filext = DECODE (p_filext, NULL, filext, p_filext),
+                datestamp = DECODE (p_datestamp, NULL, datestamp, p_datestamp),
+                DATEFORMAT = DECODE (p_dateformat, NULL, DATEFORMAT, p_dateformat),
+                dirname = DECODE (p_dirname, NULL, dirname, UPPER (p_dirname)),
+                stgdirname = DECODE (p_stgdirname, NULL, stgdirname, UPPER (p_stgdirname)),
+                delimiter = DECODE (p_delimiter, NULL, delimiter, p_delimiter),
+                quotechar = DECODE (p_quotechar, NULL, quotechar, p_quotechar),
+                sender = DECODE (p_sender, NULL, sender, p_sender),
+                recipients = DECODE (p_recipients, NULL, recipients, p_recipients),
+                baseurl = DECODE (p_baseurl, NULL, baseurl, p_baseurl),
+                headers = DECODE (p_headers, NULL, headers, p_headers),
+                sendmail = DECODE (p_sendmail, NULL, sendmail, p_sendmail),
+                arcdirname = DECODE (p_arcdirname, NULL, arcdirname, UPPER (p_arcdirname)),
                 modified_user = SYS_CONTEXT ('USERENV', 'SESSION_USER'),
                 modified_dt = SYSDATE
           WHERE EXTRACT = p_extract;
