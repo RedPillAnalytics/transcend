@@ -17,7 +17,7 @@ CREATE TABLE efw.log_table
 /
 ALTER TABLE efw.log_table ADD CONSTRAINT log_msg_pk PRIMARY KEY (instance_name,session_id, entry_ts)
       USING INDEX 
-      TABLESPACE efw  ENABLE
+      TABLESPACE efw ENABLE
 /
 
 GRANT SELECT ON efw.log_table TO efw_job
