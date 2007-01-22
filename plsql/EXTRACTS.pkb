@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE BODY common.extracts
+CREATE OR REPLACE PACKAGE BODY efw.extracts
 AS
    g_numlines   NUMBER;
 
