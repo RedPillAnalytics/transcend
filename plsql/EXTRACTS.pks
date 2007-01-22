@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE common.extracts
+CREATE OR REPLACE PACKAGE efw.extracts
 AS
    PROCEDURE register_extract (
       p_extract      gen_extract_conf.EXTRACT%TYPE,
