@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE common.util
+CREATE OR REPLACE PACKAGE efw.util
 AS
    PROCEDURE get_dir_list (p_directory IN VARCHAR2)
    AS
