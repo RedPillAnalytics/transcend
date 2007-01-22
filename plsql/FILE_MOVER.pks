@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE common.file_mover
+CREATE OR REPLACE PACKAGE efw.file_mover
 IS
    PROCEDURE register_job_file (
       p_jobnumber       NUMBER DEFAULT NULL,
