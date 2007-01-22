@@ -36,3 +36,6 @@ COMMENT on COLUMN EFW.FILE_DTL.session_id is 'SESSION_ID of the processing sessi
 
 GRANT SELECT ON EFW.FILE_DTL TO FILE_MOVER
 /
+
+CREATE SEQUENCE efw.file_dtl_seq
+/
