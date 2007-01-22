@@ -1,7 +1,7 @@
-DROP TABLE common.count_table purge
+DROP TABLE efw.count_table purge
 /
 
-CREATE TABLE common.count_table
+CREATE TABLE efw.count_table
 (
   entry_ts       TIMESTAMP,
   session_id     NUMBER,
@@ -11,13 +11,13 @@ CREATE TABLE common.count_table
   action         VARCHAR2(32),
   row_cnt        NUMBER
 )
-TABLESPACE common_data
+TABLESPACE efw
 /
 
-ALTER TABLE common.count_table ADD CONSTRAINT count_tbl_pk PRIMARY KEY (session_id, instance_name, entry_ts)
+ALTER TABLE efw.count_table ADD CONSTRAINT count_tbl_pk PRIMARY KEY (session_id, instance_name, entry_ts)
     USING INDEX
-    TABLESPACE common_index
+    TABLESPACE efw
 /
 
-GRANT SELECT ON common.count_table TO job
+GRANT SELECT ON efw.count_table TO efw_job
 /
