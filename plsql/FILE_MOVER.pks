@@ -1,6 +1,6 @@
 CREATE OR REPLACE PACKAGE efw.file_mover
 IS
-   PROCEDURE register_job_file (
+   PROCEDURE register_file(
       p_jobnumber       NUMBER DEFAULT NULL,
       p_jobname         VARCHAR2 DEFAULT NULL,
       p_filename        VARCHAR2 DEFAULT NULL,
@@ -10,14 +10,14 @@ IS
       p_min_bytes       NUMBER DEFAULT NULL,
       p_max_bytes       NUMBER DEFAULT NULL,
       p_arch_dir        VARCHAR2 DEFAULT NULL,
-      p_add_arch_ts     VARCHAR2 DEFAULT NULL,
+      p_add_arch_ts_ind     VARCHAR2 DEFAULT NULL,
       p_wrk_dir         VARCHAR2 DEFAULT NULL,
       p_ext_dir         VARCHAR2 DEFAULT NULL,
       p_ext_filename    VARCHAR2 DEFAULT NULL,
       p_ext_table       VARCHAR2 DEFAULT NULL,
       p_ext_tab_owner   VARCHAR2 DEFAULT NULL,
-      p_mul_fil_act     VARCHAR2 DEFAULT NULL,
-      p_files_req_ind   VARCHAR2 DEFAULT NULL);
+      p_multi_files_action     VARCHAR2 DEFAULT NULL,
+      p_files_required_ind   VARCHAR2 DEFAULT NULL );
 
    FUNCTION calc_rej_ind (
       p_jobnumber   NUMBER,
