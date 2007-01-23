@@ -1,27 +1,25 @@
 CREATE OR REPLACE PACKAGE efw.file_mover
 IS
-   PROCEDURE register_file(
-      p_jobnumber       NUMBER DEFAULT NULL,
-      p_jobname         VARCHAR2 DEFAULT NULL,
-      p_filename        VARCHAR2 DEFAULT NULL,
-      p_source_regexp   VARCHAR2 DEFAULT NULL,
-      p_regexp_ci_ind   VARCHAR2 DEFAULT NULL,
-      p_source_dir      VARCHAR2 DEFAULT NULL,
-      p_min_bytes       NUMBER DEFAULT NULL,
-      p_max_bytes       NUMBER DEFAULT NULL,
-      p_arch_dir        VARCHAR2 DEFAULT NULL,
-      p_add_arch_ts_ind     VARCHAR2 DEFAULT NULL,
-      p_wrk_dir         VARCHAR2 DEFAULT NULL,
-      p_ext_dir         VARCHAR2 DEFAULT NULL,
-      p_ext_filename    VARCHAR2 DEFAULT NULL,
-      p_ext_table       VARCHAR2 DEFAULT NULL,
-      p_ext_tab_owner   VARCHAR2 DEFAULT NULL,
-      p_multi_files_action     VARCHAR2 DEFAULT NULL,
-      p_files_required_ind   VARCHAR2 DEFAULT NULL );
+   PROCEDURE register_file (
+      p_jobnumber            NUMBER DEFAULT NULL,
+      p_jobname              VARCHAR2 DEFAULT NULL,
+      p_filename             VARCHAR2 DEFAULT NULL,
+      p_source_regexp        VARCHAR2 DEFAULT NULL,
+      p_regexp_ci_ind        VARCHAR2 DEFAULT NULL,
+      p_source_dir           VARCHAR2 DEFAULT NULL,
+      p_min_bytes            NUMBER DEFAULT NULL,
+      p_max_bytes            NUMBER DEFAULT NULL,
+      p_arch_dir             VARCHAR2 DEFAULT NULL,
+      p_add_arch_ts_ind      VARCHAR2 DEFAULT NULL,
+      p_wrk_dir              VARCHAR2 DEFAULT NULL,
+      p_ext_dir              VARCHAR2 DEFAULT NULL,
+      p_ext_filename         VARCHAR2 DEFAULT NULL,
+      p_ext_table            VARCHAR2 DEFAULT NULL,
+      p_ext_tab_owner        VARCHAR2 DEFAULT NULL,
+      p_multi_files_action   VARCHAR2 DEFAULT NULL,
+      p_files_required_ind   VARCHAR2 DEFAULT NULL);
 
-   FUNCTION calc_rej_ind (
-      p_jobnumber   NUMBER,
-      p_rej_limit   NUMBER DEFAULT 20)
+   FUNCTION calc_rej_ind (p_jobnumber NUMBER, p_rej_limit NUMBER DEFAULT 20)
       RETURN VARCHAR2;
 
    PROCEDURE process_job (
