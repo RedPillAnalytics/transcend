@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE efw.extracts
+CREATE OR REPLACE PACKAGE efw.file_extract
 AS
    PROCEDURE register_extract (
       p_extract      extract_conf.EXTRACT%TYPE,
@@ -94,5 +94,5 @@ AS
       p_sendmail     BOOLEAN DEFAULT NULL,          -- whether to send an email announcing the link
       p_arcdirname   extract_conf.arcdirname%TYPE DEFAULT NULL,
       p_debug        BOOLEAN DEFAULT FALSE);
-END extracts;
+END file_extract;
 /
