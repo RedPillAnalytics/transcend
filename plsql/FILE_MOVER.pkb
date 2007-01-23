@@ -161,9 +161,9 @@ IS
                       filename,
                       source_regexp,
                       regexp_ci_ind,
-                       source_dir,
-		       min_bytes,
-		       max_bytes,
+                      source_dir,
+                      min_bytes,
+                      max_bytes,
                       arch_dir,
                       add_arch_ts_ind,
                       wrk_dir,
@@ -180,9 +180,9 @@ IS
                       p_filename,
                       p_source_regexp,
                       p_regexp_ci_ind,
-                       p_source_dir,
-		       p_min_bytes,
-		       p_max_bytes,
+                      p_source_dir,
+                      p_min_bytes,
+                      p_max_bytes,
                       p_arch_dir,
                       p_add_arch_ts_ind,
                       p_wrk_dir,
@@ -663,7 +663,7 @@ IS
 
             -- copy file to the work location if it's configured
             -- START using the archfile location as the source
-            IF upper(c_file_ctl.wrk_dir) <> 'NA' AND c_dir_list.archfile <> c_dir_list.wrkfile
+            IF UPPER (c_file_ctl.wrk_dir) <> 'NA' AND c_dir_list.archfile <> c_dir_list.wrkfile
             THEN
                l_cmd := 'cp -p ' || c_dir_list.archfile || ' ' || c_dir_list.wrkfile;
 
@@ -758,7 +758,7 @@ IS
                   -- WRITE to the external table directory if defined
                   l_app.set_action ('Copy external table files');
 
-                  IF upper(c_file_ctl.ext_filename) <> 'NA' AND c_file_dtl.ext_filename IS NOT NULL
+                  IF UPPER (c_file_ctl.ext_filename) <> 'NA' AND c_file_dtl.ext_filename IS NOT NULL
                   THEN
                      l_cmd := 'cp -p ' || c_file_dtl.archfilename || ' ' || c_file_dtl.ext_file;
 
