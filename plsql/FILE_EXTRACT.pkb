@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE BODY efw.extracts
+CREATE OR REPLACE PACKAGE BODY efw.file_extract
 AS
    g_numlines   NUMBER;
 
@@ -539,5 +539,5 @@ AS
          job.log_err;
          RAISE;
    END register_extract;
-END extracts;
+END file_extract;
 /
