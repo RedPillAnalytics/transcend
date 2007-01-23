@@ -21,7 +21,7 @@ grant UPDATE ANY TABLE to efw;
 CREATE ROLE efw_utility;
 
 CREATE ROLE efw_util;
-
+n
 CREATE ROLE efw_filemover;
 CREATE ROLE efw_filemover_read;
 
@@ -62,7 +62,7 @@ PROMPT 'create packages'
 @./plsql/UTIL.pkb
 @./plsql/ETL.pks
 @./plsql/ETL.pkb
-@./plsql/EXTRACTS.pks
-@./plsql/EXTRACTS.pkb
+@./plsql/FILE_EXTRACT.pks
+@./plsql/FILE_EXTRACT.pkb
 @./plsql/FILE_MOVER.pks
 @./plsql/FILE_MOVER.pkb
