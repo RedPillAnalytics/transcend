@@ -193,7 +193,8 @@ IS
                       p_multi_files_action,
                       p_files_required_ind,
                       SYS_CONTEXT ('USERENV', 'SESSION_USER'),
-                      SYSDATE);
+                       SYSDATE);
+      l_app.clear_app_info;
       WHEN OTHERS
       THEN
          job.log_err;
