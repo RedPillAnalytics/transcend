@@ -1,45 +1,47 @@
-DROP TABLE EFW.EXTRACT_CONF CASCADE CONSTRAINTS
+DROP TABLE efw.extract_conf CASCADE CONSTRAINTS purge
 /
-
-CREATE TABLE EFW.EXTRACT_CONF
+DROP SEQUENCE efw.extract_conf_seq
+/
+CREATE TABLE efw.extract_conf
 (
   EXTRACT        VARCHAR2(1024)            NOT NULL,
+  extract_number NUMBER NOT NULL,
   OBJECT         VARCHAR2(30)              NOT NULL,
-  OWNER          VARCHAR2(30)              NOT NULL,
-  FILEBASE       VARCHAR2(30)              NOT NULL,
-  FILEXT         VARCHAR2(6)               DEFAULT '.csv',
-  DATESTAMP      VARCHAR2(30)              DEFAULT 'MMDDYYYY',
-  DATEFORMAT     VARCHAR2(30)              DEFAULT 'MM/DD/YYYY',
-  DIRNAME        VARCHAR2(30)              NOT NULL,
-  STGDIRNAME     VARCHAR2(30),
-  DELIMITER      VARCHAR2(5)               DEFAULT ',',
-  QUOTECHAR      VARCHAR2(1),
-  SENDER         VARCHAR2(1024),
-  RECIPIENTS     VARCHAR2(2000),
-  BASEURL        VARCHAR2(255),
-  HEADERS        VARCHAR2(1),
-  SENDMAIL       VARCHAR2(1),
-  ARCDIRNAME     VARCHAR2(30),
-  CREATED_USER   VARCHAR2(30),
-  CREATED_DT     DATE,
-  MODIFIED_USER  VARCHAR2(30),
-  MODIFIED_DT    DATE
+  owner          VARCHAR2(30)              NOT NULL,
+  filebase       VARCHAR2(30)              NOT NULL,
+  filext         VARCHAR2(6)               NOT NULL,
+  datestamp      VARCHAR2(30)              NOT NULL,
+  DATEFORMAT     VARCHAR2(30)              NOT NULL,
+  dirname        VARCHAR2(30)              NOT NULL,
+  stgdirname     VARCHAR2(30) NOT NULL,
+  delimiter      VARCHAR2(5)               NOT NULL,
+  quotechar      VARCHAR2(1) NOT NULL,
+  sender         VARCHAR2(1024) NOT NULL,
+  recipients     VARCHAR2(2000) NOT NULL,
+  baseurl        VARCHAR2(255) NOT NULL,
+  headers        VARCHAR2(1) NOT NULL,
+  sendmail       VARCHAR2(1) NOT NULL,
+  arcdirname     VARCHAR2(30) NOT NULL,
+  created_user   VARCHAR2(30) NOT NULL,
+  created_dt     DATE NOT NULL,
+  modified_user  VARCHAR2(30),
+  modified_dt    DATE
 )
-TABLESPACE COMMON_DATA
+TABLESPACE efw
 /
 
-
-CREATE UNIQUE INDEX EFW.EXTRACT_CONF_PK ON EFW.GEN_EXTRACT_CONF
+CREATE UNIQUE INDEX efw.extract_conf_pk ON efw.extract_conf
 (EXTRACT)
 LOGGING
 TABLESPACE efw
 NOPARALLEL
 /
-
-ALTER TABLE EFW.EXTRACT_CONF ADD (
-  CONSTRAINT EXTRACT_CONF_PK
+ALTER TABLE efw.extract_conf ADD (
+  CONSTRAINT extract_conf_pk
  PRIMARY KEY
  (EXTRACT)
-    USING INDEX 
+    USING INDEX
     TABLESPACE efw)
+/
+CREATE SEQUENCE efw.extract_conf_seq
 /
