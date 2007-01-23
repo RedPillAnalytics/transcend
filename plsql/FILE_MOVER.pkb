@@ -71,23 +71,23 @@ IS
    --  configure a file to be moved for a particular job
    -- there can be multiple files per job
    PROCEDURE register_file (
-      p_jobnumber            NUMBER DEFAULT NULL,
-      p_jobname              VARCHAR2 DEFAULT NULL,
-      p_filename             VARCHAR2 DEFAULT NULL,
-      p_source_regexp        VARCHAR2 DEFAULT NULL,
-      p_regexp_ci_ind        VARCHAR2 DEFAULT NULL,
-      p_source_dir           VARCHAR2 DEFAULT NULL,
-      p_min_bytes            NUMBER DEFAULT NULL,
-      p_max_bytes            NUMBER DEFAULT NULL,
-      p_arch_dir             VARCHAR2 DEFAULT NULL,
-      p_add_arch_ts_ind      VARCHAR2 DEFAULT NULL,
-      p_wrk_dir              VARCHAR2 DEFAULT NULL,
-      p_ext_dir              VARCHAR2 DEFAULT NULL,
-      p_ext_filename         VARCHAR2 DEFAULT NULL,
-      p_ext_table            VARCHAR2 DEFAULT NULL,
-      p_ext_tab_owner        VARCHAR2 DEFAULT NULL,
-      p_multi_files_action   VARCHAR2 DEFAULT NULL,
-      p_files_required_ind   VARCHAR2 DEFAULT NULL)
+      p_jobnumber            file_ctl.jobnumber%type DEFAULT NULL,
+      p_jobname              file_ctl.jobname%type DEFAULT NULL,
+      p_filename             file_ctl.filename%type DEFAULT NULL,
+      p_source_regexp        file_ctl.source_regexp%type DEFAULT NULL,
+      p_regexp_ci_ind        file_ctl.regexp_ci_ind%type DEFAULT NULL,
+      p_source_dir           file_ctl.source_dir%type DEFAULT NULL,
+      p_min_bytes            file_ctl.min_bytes%type DEFAULT NULL,
+      p_max_bytes            file_ctl.max_bytes%type DEFAULT NULL,
+      p_arch_dir             file_ctl.arch_dir%type DEFAULT NULL,
+      p_add_arch_ts_ind      file_ctl.add_arch_ts_ind%type DEFAULT NULL,
+      p_wrk_dir              file_ctl.wrk_dir%type DEFAULT NULL,
+      p_ext_dir              file_ctl.ext_dir%type DEFAULT NULL,
+      p_ext_filename         file_ctl.ext_filename%type DEFAULT NULL,
+      p_ext_table            file_ctl.ext_table%type DEFAULT NULL,
+      p_ext_tab_owner        file_ctl.ext_tab_owner%type DEFAULT NULL,
+      p_multi_files_action   file_ctl.multi_files_action%type DEFAULT NULL,
+      p_files_required_ind   file_ctl.files_required_ind%type DEFAULT NULL)
    IS
       r_file_ctl   file_ctl%ROWTYPE;
       l_app        app_info           := app_info (p_module => 'FILE_MOVER.REGISTER_JOB_FILE');
