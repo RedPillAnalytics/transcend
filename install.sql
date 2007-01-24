@@ -21,7 +21,7 @@ grant UPDATE ANY TABLE to efw;
 CREATE ROLE efw_utility;
 
 CREATE ROLE efw_util;
-n
+
 CREATE ROLE efw_filemover;
 CREATE ROLE efw_filemover_read;
 
