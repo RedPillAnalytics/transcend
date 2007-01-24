@@ -47,5 +47,10 @@ ALTER TABLE efw.file_process_conf ADD (
     TABLESPACE efw)
 /
 
+ALTER TABLE efw.file_process_conf
+      ADD CONSTRAINT file_process_conf_uk1 UNIQUE (file_process_name,jobname)
+      USING INDEX TABLESPACE efw
+/
+
 CREATE SEQUENCE efw.file_process_conf_seq
 /
