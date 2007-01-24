@@ -36,8 +36,8 @@ PROMPT 'First create the efw tables'
 @./ddl/COUNT_TABLE_tbl
 @./ddl/LOG_TABLE_tbl
 @./ddl/DIR_LIST_tbl
+@./ddl/FILE_PROCESS_CONF_tbl
 @./ddl/EXT_TAB_DTL_tbl
-@./ddl/FILE_CTL_tbl
 @./ddl/FILE_DTL_tbl
 @./ddl/EXTRACT_CONF_tbl
 
