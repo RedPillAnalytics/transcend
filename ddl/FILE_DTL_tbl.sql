@@ -15,7 +15,7 @@ CREATE TABLE efw.file_dtl
 	 ext_filename VARCHAR2(50),
 	 alt_ext_tab_ind VARCHAR2(1),
 	 session_id number)
-       TABLESPACE common_data
+       TABLESPACE efw
 /
 
 COMMENT ON TABLE efw.file_dtl IS 'Detail information about each file that is processed by File Mover.'
