@@ -32,9 +32,9 @@ COMMENT on COLUMN EFW.FILE_DTL.PROCESSED_TS is 'Time the file was processed by F
 COMMENT on COLUMN EFW.FILE_DTL.EXT_TAB_IND is 'Whether or not the file was copied to an external table directory.';
 COMMENT on COLUMN EFW.FILE_DTL.EXT_FILENAME is 'Name file was copied to for use in external table.';
 COMMENT on COLUMN EFW.FILE_DTL.ALT_EXT_TAB_IND is 'Whether or not the external table needs to be processed.';
-COMMENT on COLUMN EFW.FILE_DTL.session_id is 'SESSION_ID of the processing session.';
+COMMENT on COLUMN EFW.FILE_DTL.SESSION_ID is 'SESSION_ID of the processing session.';
 
-GRANT SELECT ON EFW.FILE_DTL TO FILE_MOVER
+GRANT SELECT ON EFW.FILE_DTL TO efw_filemover;
 /
 
 CREATE SEQUENCE efw.file_dtl_seq
