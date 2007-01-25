@@ -7,12 +7,12 @@ CREATE TABLE efw.file_process_conf
        ( file_process_id	NUMBER		NOT NULL,
 	 file_process_name	VARCHAR2(100) 	NOT NULL,
 	 jobname		VARCHAR2(64) 	NOT NULL,
-	 file_process_type	VARCHAR2(1) 	NOT NULL,
-	 filename		VARCHAR2(30) 	NOT NULL,
+	 file_process_type	VARCHAR2(7) 	NOT NULL,
+	 trg_filename		VARCHAR2(30) 	NOT NULL,
 	 object_owner		VARCHAR2(30)    NOT NULL,
 	 object_name		VARCHAR2(30)    NOT NULL,
 	 dirname        	VARCHAR2(30)    NOT NULL,
-	 arcdirname     	VARCHAR2(30) 	NOT NULL,
+	 arch_dirname     	VARCHAR2(30) 	NOT NULL,
 	 min_bytes		NUMBER NOT null,
 	 max_bytes              NUMBER NOT null,
 	 add_arch_ts_ind	VARCHAR2(30)	NOT NULL,
@@ -29,7 +29,7 @@ COMMENT ON TABLE efw.file_process_conf IS 'table holding configuration informati
 
 COMMENT ON COLUMN efw.file_process_conf.file_process_id IS 'sequence generated primary key of the table';
 COMMENT ON COLUMN efw.file_process_conf.file_process_name IS 'unique name for each distinct process';
-COMMENT ON COLUMN efw.file_process_conf.file_process_type IS 'type of file_process, (F)eed or (E)xtract';
+COMMENT ON COLUMN efw.file_process_conf.file_process_type IS 'type of file_process, "feed" or "extract"';
 COMMENT ON COLUMN efw.file_process_conf.jobname IS 'defines which job (called by whatever scheduling process) owns this process';
 COMMENT ON COLUMN efw.file_process_conf.filename IS 'expected filename for the target of the process';
 COMMENT ON COLUMN efw.file_process_conf.object_owner IS 'owner of the schema object associated with the file';
