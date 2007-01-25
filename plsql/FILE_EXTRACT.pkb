@@ -2,10 +2,10 @@ CREATE OR REPLACE PACKAGE BODY efw.file_extract
 AS
    g_numlines   NUMBER;
 
--- modified FROM tom kyte's "dump_csv":
--- 1. rewrote AS a PROCEDURE
--- 2. allow a quote CHARACTER
--- 3. allow FOR a FILE TO be appended TO
+   -- modified FROM tom kyte's "dump_csv":
+   -- 1. rewrote AS a PROCEDURE
+   -- 2. allow a quote CHARACTER
+   -- 3. allow FOR a FILE TO be appended TO
    PROCEDURE extract_query(
       p_query       VARCHAR2,
       p_dirname     VARCHAR2,
@@ -194,8 +194,8 @@ AS
 
    -- extract data to a text file, and then peform other functions as defined in the configuration table
    PROCEDURE process_extract(
-      p_extract      extract_conf.EXTRACT%TYPE,
-      -- The name of the report to generate. This is the PK for the table.
+			      p_extract      extract_conf.EXTRACT%TYPE DEFAULT NULL,
+			      -- The name of the report to generate. This is the PK for the table.
       p_object       extract_conf.OBJECT%TYPE DEFAULT NULL,
       -- The name of the object to extract: a table or view typically.
       p_owner        extract_conf.owner%TYPE DEFAULT NULL,               -- The owner of the object.
@@ -219,11 +219,12 @@ AS
       -- comma separated list of recipients
       p_baseurl      extract_conf.baseurl%TYPE DEFAULT NULL,
       -- URL (minus filename) of the link to the file
-      p_headers      BOOLEAN DEFAULT NULL,                 -- whether to include headers in the file
-      p_sendmail     BOOLEAN DEFAULT NULL,           -- whether to send an email announcing the link
+			      p_headers      extract_conf.headers DEFAULT NULL,                 -- whether to include headers in the file
+			      p_sendmail     extract_conf.sendmail DEFAULT NULL,           -- whether to send an email announcing the link
       p_arcdirname   extract_conf.arcdirname%TYPE DEFAULT NULL,
       p_debug        BOOLEAN DEFAULT FALSE )                                           -- debug mode
    AS
+      r_extract_conf%rowtype;
       l_object       all_objects.object_name%TYPE;
       l_file         VARCHAR2( 50 );
       l_numlines     NUMBER;
@@ -242,10 +243,32 @@ AS
                           := app_info( p_module =>      'EXTRACTS.PROCESS_EXTRACT',
                                        p_debug =>       p_debug );
    BEGIN
-      FOR c_configs IN ( SELECT *
-                          FROM extract_conf
-                         WHERE EXTRACT = p_extract )
-      LOOP
+      SELECT NVL( p_extract, EXTRACT ),
+	     extract_number,
+	     NVL( p_object, OBJECT ),
+             NVL( p_owner, owner ),
+             NVL( p_filebase, filebase ),
+             NVL( p_filext, filext ),
+             NVL( p_datestamp, datestamp ),
+             NVL( p_dateformat, DATEFORMAT ),
+             NVL( p_dirname, dirname ),
+             NVL( p_stgdirname, stgdirname ),
+             NVL( p_delimiter, delimiter ),
+             NVL( p_quotechar, quotechar ),
+             NVL( p_sender, sender ),
+             NVL( p_recipients, recipients ),
+             NVL( p_baseurl, baseurl ),
+             NVL( p_headers, headers ),
+             NVL( p_sendmail, sendmail ),
+             NVL( p_arcdirname, arcdirname ),
+             created_user,
+             created_dt,
+             modified_user,
+             modified_dt
+        INTO r_extract_conf
+        FROM extract_conf
+       WHERE (    EXTRACT = p_extract );
+
          l_rows := TRUE;
          l_stgdirname := NVL( p_stgdirname, c_configs.stgdirname );
          l_arcdirname := NVL( p_arcdirname, c_configs.arcdirname );
@@ -422,8 +445,7 @@ AS
             ELSE
                NULL;
          END CASE;
-      END LOOP;
-
+      
       IF NOT l_rows
       THEN
          raise_application_error( -20001,
@@ -440,8 +462,7 @@ AS
 
    -- configure an extract
    PROCEDURE register_extract(
-      p_extract_number   extract_conf.extract_number%TYPE DEFAULT NULL,
-      p_extract          extract_conf.EXTRACT%TYPE,
+      p_extract_name     extract_conf.EXTRACT_name%TYPE,
       -- The name of the report to generate. This is the PK for the table.
       p_object           extract_conf.OBJECT%TYPE DEFAULT NULL,
       -- The name of the object to extract: a table or view typically.
@@ -481,7 +502,7 @@ AS
                          := app_info( p_module =>      'EXTRACTS.REGISTER_EXTRACT',
                                       p_debug =>       p_debug );
    BEGIN
-      SELECT NVL( p_extract, EXTRACT ),
+      SELECT NVL( p_extract_name, EXTRACT_name ),
 	     extract_number,
              NVL( p_object, OBJECT ),
              NVL( p_owner, owner ),
@@ -505,8 +526,7 @@ AS
              SYSDATE
         INTO r_extract_conf
         FROM extract_conf
-       WHERE (    EXTRACT = p_extract
-               OR extract_number = p_extract_number );
+       WHERE EXTRACT = p_extract;
 
       -- make sure the directory names are legitimate
       -- the function raises and error if they aren't
@@ -560,6 +580,7 @@ AS
                        DATEFORMAT,
                        dirname,
                        delimiter,
+               OR extract_number = p_extract_number 
                        quotechar,
                        sender,
                        recipients,
