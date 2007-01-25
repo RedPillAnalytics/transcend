@@ -1,45 +1,43 @@
-CREATE TABLESPACE efw
-DATAFILE SIZE 1M
-AUTOEXTEND ON NEXT 1M MAXSIZE 20M
-EXTENT MANAGEMENT LOCAL AUTOALLOCATE SEGMENT SPACE MANAGEMENT AUTO;
+-- CREATE TABLESPACE efw
+-- DATAFILE SIZE 1M
+-- AUTOEXTEND ON NEXT 1M MAXSIZE 20M
+-- EXTENT MANAGEMENT LOCAL AUTOALLOCATE SEGMENT SPACE MANAGEMENT AUTO;
 
-DROP USER efw CASCADE
-/
+-- DROP USER efw CASCADE
+-- /
 
-CREATE USER efw IDENTIFIED BY et10n1y DEFAULT TABLESPACE efw;
-grant CONNECT to efw;
-grant RESOURCE to efw;
-grant ALTER ANY TABLE to efw;
-grant ALTER SESSION to efw;
-grant EXECUTE ANY PROCEDURE to efw;
-grant GLOBAL QUERY REWRITE to efw;
-grant INSERT ANY TABLE to efw;
-grant SELECT ANY DICTIONARY to efw;
-grant SELECT ANY TABLE to efw;
-grant UPDATE ANY TABLE to efw;
+-- CREATE USER efw IDENTIFIED BY et10n1y DEFAULT TABLESPACE efw;
+-- grant CONNECT to efw;
+-- grant RESOURCE to efw;
+-- grant ALTER ANY TABLE to efw;
+-- grant ALTER SESSION to efw;
+-- grant EXECUTE ANY PROCEDURE to efw;
+-- grant GLOBAL QUERY REWRITE to efw;
+-- grant INSERT ANY TABLE to efw;
+-- grant SELECT ANY DICTIONARY to efw;
+-- grant SELECT ANY TABLE to efw;
+-- grant UPDATE ANY TABLE to efw;
 
-CREATE ROLE efw_utility;
+-- CREATE ROLE efw_utility;
 
-CREATE ROLE efw_util;
+-- CREATE ROLE efw_util;
 
-CREATE ROLE efw_filemover;
-CREATE ROLE efw_filemover_read;
+-- CREATE ROLE efw_file;
+-- CREATE ROLE efw_file;
 
-CREATE ROLE efw_extracts;
-CREATE ROLE efw_extracts_read;
+-- CREATE ROLE efw_etl;
 
-CREATE ROLE efw_etl;
-
-CREATE ROLE efw_job;
+-- CREATE ROLE efw_job;
 
 PROMPT 'First create the efw tables'
 @./ddl/COUNT_TABLE_tbl
 @./ddl/LOG_TABLE_tbl
 @./ddl/DIR_LIST_tbl
 @./ddl/FILE_PROCESS_CONF_tbl
+@./ddl/FILE_FEED_CONF_tbl
+@./ddl/FILE_EXTRACT_CONF_tbl
+@./ddl/FILE_PROCESS_DTL_tbl
 @./ddl/EXT_TAB_DTL_tbl
-@./ddl/FILE_DTL_tbl
-@./ddl/EXTRACT_CONF_tbl
 
 PROMPT 'create java stored procedures'
 @./java/UTIL.jvs
