@@ -6,11 +6,9 @@ CREATE TABLE efw.file_feed_conf
 	 source_regexp   	VARCHAR2(100) NOT NULL,
 	 regexp_ci_ind		VARCHAR2(1) NOT NULL,
 	 source_dir	 	VARCHAR2(30) NOT NULL,
-	 min_bytes		NUMBER NOT null,
-	 max_bytes              NUMBER NOT null,
 	 secondary_dir	 	VARCHAR2(50) NOT null,
 	 multi_files_action	VARCHAR2(10) NOT null,
-	 files_required_ind	VARCHAR2(1) NOT NULL,	 
+	 files_required_ind	VARCHAR2(1) NOT NULL, 
 	 created_user    	VARCHAR2(30) NOT null,
 	 created_dt      	DATE NOT null,
 	 modified_user   	VARCHAR2(30),
@@ -26,10 +24,7 @@ COMMENT ON COLUMN efw.file_feed_conf.file_process_id IS 'the same value as the F
 COMMENT ON COLUMN efw.file_feed_conf.source_regexp IS 'regular expression used to find files in SOURCE_DIR.';
 COMMENT ON COLUMN efw.file_feed_conf.regexp_ci_ind IS 'indicates whether the REGEXP should be case-insensitive.';
 COMMENT ON COLUMN efw.file_feed_conf.source_dir IS 'name of the directory object where the files are pulled from.';
-COMMENT ON COLUMN efw.file_feed_conf.min_bytes IS 'minimum size threshhold for the source file. A value of 0 ignores this requirement';
-COMMENT ON COLUMN efw.file_feed_conf.max_bytes IS 'maximum size threshhold for the source file. A value of 0 ignores this requirement';
 COMMENT ON COLUMN efw.file_feed_conf.secondary_dir IS 'A directory to write an exact copy of each file to, in case that functionality is needed';
-COMMENT ON COLUMN efw.file_feed_conf.ext_filename IS 'The name of the file the external table is expecting.';
 COMMENT ON COLUMN efw.file_feed_conf.multi_files_action IS 'Action to take is multiple files match SOURCE_REGEXP.';
 COMMENT ON COLUMN efw.file_feed_conf.files_required_ind IS 'A value of "Y" means the job will fail if no files are found.';
 COMMENT ON COLUMN efw.file_feed_conf.created_user IS 'for auditing';
