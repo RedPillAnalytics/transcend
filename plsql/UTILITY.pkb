@@ -1,69 +1,32 @@
 CREATE OR REPLACE PACKAGE BODY efw.utility
 AS
--- used to pull out of the dictionary the calling block of a particular block
--- used to format the LOG_TABLE
-   FUNCTION whence
-      RETURN VARCHAR2
+-- log a message to the log_table
+-- the preferred method for using the logging framework is to instantiate a APPLOG object and use that
+-- this is provided in situations where invoking an object is difficult--such as testing in SQLPLUS
+-- real development pieces should use APPLOG
+   PROCEDURE log_msg(
+      p_msg   log_table.msg%TYPE )
    AS
-      l_call_stack    VARCHAR2( 4096 ) DEFAULT DBMS_UTILITY.format_call_stack || CHR( 10 );
-      l_num           NUMBER;
-      l_found_stack   BOOLEAN          DEFAULT FALSE;
-      l_line          VARCHAR2( 255 );
-      l_cnt           NUMBER           := 0;
+      o_app   applog := applog( p_action=>sys_context('USERENV','ACTION'),
+				p_register =>      FALSE );
    BEGIN
-      LOOP
-         l_num := INSTR( l_call_stack, CHR( 10 ));
-         EXIT WHEN(    l_cnt = 4
-                    OR l_num IS NULL
-                    OR l_num = 0 );
-         l_line := SUBSTR( l_call_stack,
-                           1,
-                           l_num - 1 );
-         l_call_stack := SUBSTR( l_call_stack, l_num + 1 );
-
-         IF ( NOT l_found_stack )
-         THEN
-            IF ( l_line LIKE '%handle%number%name%' )
-            THEN
-               l_found_stack := TRUE;
-            END IF;
-         ELSE
-            l_cnt := l_cnt + 1;
-         END IF;
-      END LOOP;
-
-      RETURN l_line;
-   END whence;
-
--- used to pull out of the dictionary the calling block of a particular block
--- used to format the LOG_TABLE
-   FUNCTION get_package_name
-      RETURN VARCHAR2
-   AS
-      l_package_name   log_table.call_stack%TYPE;
-   BEGIN
-      l_package_name := REGEXP_SUBSTR( whence,
-                                       '\\S+$',
-                                       1,
-                                       1,
-                                       'i' );
-      RETURN l_package_name;
-   END get_package_name;
-
+      o_app.log_msg( p_msg );
+   END log_msg;
+   
    -- used to get the path associated with a directory location
    FUNCTION get_dir_path(
       p_dirname   VARCHAR2 )
       RETURN VARCHAR2
    AS
       l_path   all_directories.directory_path%TYPE;
-      l_app    app_info                           := app_info( p_module =>      'UTILITY.GET_DIR_PATH' );
+      o_app    app_info                           := app_info( p_module =>      'UTILITY.GET_DIR_PATH' );
    BEGIN
       SELECT directory_path
         INTO l_path
         FROM all_directories
        WHERE directory_name = UPPER( p_dirname );
 
-      l_app.clear_app_info;
+      o_app.clear_app_info;
       RETURN l_path;
    EXCEPTION
       WHEN NO_DATA_FOUND
@@ -71,7 +34,7 @@ AS
          raise_application_error( -20010, 'Directory object does not exist' );
       WHEN OTHERS
       THEN
-         job.log_err;
+         o_app.log_err;
          RAISE;
    END get_dir_path;
 
@@ -83,14 +46,14 @@ AS
       RETURN VARCHAR2
    AS
       l_dirname   all_directories.directory_name%TYPE;
-      l_app       app_info                        := app_info( p_module =>      'UTILITY.GET_DIR_NAME' );
+      o_app       app_info                        := app_info( p_module =>      'UTILITY.GET_DIR_NAME' );
    BEGIN
       SELECT directory_name
         INTO l_dirname
         FROM all_directories
        WHERE directory_path = p_dir_path;
 
-      l_app.clear_app_info;
+      o_app.clear_app_info;
       RETURN l_dirname;
    EXCEPTION
       WHEN NO_DATA_FOUND
@@ -102,7 +65,7 @@ AS
                                   'More than one directory object defined for the specified path' );
       WHEN OTHERS
       THEN
-         job.log_err;
+         o_app.log_err;
          RAISE;
    END get_dir_name;
 
@@ -115,7 +78,7 @@ AS
       l_fh     UTL_FILE.file_type;
       l_line   VARCHAR2( 2000 );
       l_cnt    NUMBER             := 0;
-      l_app    app_info           := app_info( p_module =>      'UTILITY.GET_NUMLINES' );
+      o_app    app_info           := app_info( p_module =>      'UTILITY.GET_NUMLINES' );
    BEGIN
       l_fh := UTL_FILE.fopen( p_dirname,
                               p_filename,
@@ -127,7 +90,7 @@ AS
          l_cnt := l_cnt + 1;
       END LOOP;
 
-      l_app.clear_app_info;
+      o_app.clear_app_info;
    EXCEPTION
       WHEN NO_DATA_FOUND
       THEN
@@ -155,7 +118,7 @@ AS
       l_html         VARCHAR2( 2000 )    := p_message;
       l_to           VARCHAR2( 100 );
       l_recipients   VARCHAR2( 2000 )    := p_recipients;
-      l_app          app_info            := app_info( p_module =>      'UTILITY.SEND_EMAIL' );
+      o_app          app_info            := app_info( p_module =>      'UTILITY.SEND_EMAIL' );
    BEGIN
       IF p_pre_html
       THEN
@@ -265,11 +228,11 @@ AS
       UTL_SMTP.close_data( l_connection );
       UTL_SMTP.quit( l_connection );
       DBMS_LOB.freetemporary( l_body_html );
-      l_app.clear_app_info;
+      o_app.clear_app_info;
    EXCEPTION
       WHEN OTHERS
       THEN
-         job.log_err;
+         o_app.log_err;
          RAISE;
    END send_email;
 
@@ -280,15 +243,15 @@ AS
       RETURN VARCHAR2
    AS
       l_url   VARCHAR2( 256 );
-      l_app   app_info        := app_info( p_module =>      'UTILITY.FORMAT_URL' );
+      o_app   app_info        := app_info( p_module =>      'UTILITY.FORMAT_URL' );
    BEGIN
       l_url := '<p><a href="' || p_url || '">' || p_url || '</a></p>';
-      l_app.clear_app_info;
+      o_app.clear_app_info;
       RETURN l_url;
    EXCEPTION
       WHEN OTHERS
       THEN
-         job.log_err;
+         o_app.log_err;
          RAISE;
    END format_url;
 
@@ -311,7 +274,7 @@ AS
       l_file_exists    BOOLEAN;
       l_file_size      NUMBER;
       l_blocksize      NUMBER;
-      l_app            app_info := app_info( p_module =>      'UTILITY.UNZIP_FILE',
+      o_app            app_info := app_info( p_module =>      'UTILITY.UNZIP_FILE',
                                              p_debug =>       p_debug );
    BEGIN
       l_filebase := REGEXP_REPLACE( p_filename,
@@ -382,7 +345,7 @@ AS
       THEN
          job.log_msg( 'File returned by UNZIP_FILE: ' || l_return );
       ELSE
-         l_app.set_action( 'Check for extracted file' );
+         o_app.set_action( 'Check for extracted file' );
          -- check and make sure the unzip process worked
          -- do this by checking to see if the expected file exists
          UTL_FILE.fgetattr( utility.get_dir_name( p_dirpath ),
@@ -397,12 +360,12 @@ AS
          END IF;
       END IF;
 
-      l_app.clear_app_info;
+      o_app.clear_app_info;
       RETURN l_return;
    EXCEPTION
       WHEN OTHERS
       THEN
-         job.log_err;
+         o_app.log_err;
          RAISE;
    END unzip_file;
 
@@ -426,7 +389,7 @@ AS
       l_file_exists    BOOLEAN;
       l_file_size      NUMBER;
       l_blocksize      NUMBER;
-      l_app            app_info
+      o_app            app_info
                               := app_info( p_module =>      'UTILITY.DECRYPT_FILE',
                                            p_debug =>       p_debug );
    BEGIN
@@ -468,7 +431,7 @@ AS
       THEN
          job.log_msg( 'File returned by DECRYPT_FILE: ' || l_return );
       ELSE
-         l_app.set_action( 'Check for decrypted file' );
+         o_app.set_action( 'Check for decrypted file' );
          -- check and make sure the unzip process worked
          -- do this by checking to see if the expected file exists
          UTL_FILE.fgetattr( utility.get_dir_name( p_dirpath ),
@@ -483,12 +446,12 @@ AS
          END IF;
       END IF;
 
-      l_app.clear_app_info;
+      o_app.clear_app_info;
       RETURN l_return;
    EXCEPTION
       WHEN OTHERS
       THEN
-         job.log_err;
+         o_app.log_err;
          RAISE;
    END decrypt_file;
 END utility;
