@@ -15,6 +15,7 @@ AS
       IF p_register
       THEN
 	 -- read previous app_info settings
+	 -- if not registering with oracle, then this is not necessary
 	 DBMS_APPLICATION_INFO.read_client_info( prev_client_info );
 	 DBMS_APPLICATION_INFO.read_module( prev_module, prev_action );
       END IF;
@@ -42,7 +43,8 @@ AS
       machine :=
               SYS_CONTEXT( 'USERENV', 'HOST' ) || '[' || SYS_CONTEXT( 'USERENV', 'IP_ADDRESS' )
               || ']';
-
+	 
+	 -- register the application with oracle
       IF p_register
       THEN
          DBMS_APPLICATION_INFO.set_client_info( client_info );
