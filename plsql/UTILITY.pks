@@ -1,10 +1,10 @@
 CREATE OR REPLACE PACKAGE efw.utility
 AS
-   FUNCTION get_package_name
-      RETURN VARCHAR2;
+   PROCEDURE log_msg(
+      p_msg   log_table.msg%TYPE );
 
-   FUNCTION whence
-      RETURN VARCHAR2;
+   PROCEDURE set_action(
+      p_action   v$session.action%TYPE );
 
    FUNCTION get_dir_path(
       p_dirname   VARCHAR2 )
