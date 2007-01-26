@@ -15,8 +15,7 @@ CREATE TABLE efw.file_process_conf
 	 arch_dirname     	VARCHAR2(30) 	NOT NULL,
 	 min_bytes		NUMBER NOT null,
 	 max_bytes              NUMBER NOT null,
-	 add_arch_ts_ind	VARCHAR2(30)	NOT NULL,
-	 datestamp 		VARCHAR2(30) 	NOT NULL,
+	 file_timestamp		VARCHAR2(30) 	NOT NULL,
 	 created_user   	VARCHAR2(30) 	NOT NULL,
 	 created_dt     	DATE 		NOT NULL,
 	 modified_user  	VARCHAR2(30),
@@ -31,15 +30,14 @@ COMMENT ON COLUMN efw.file_process_conf.file_process_id IS 'sequence generated p
 COMMENT ON COLUMN efw.file_process_conf.file_process_name IS 'unique name for each distinct process';
 COMMENT ON COLUMN efw.file_process_conf.file_process_type IS 'type of file_process, "feed" or "extract"';
 COMMENT ON COLUMN efw.file_process_conf.jobname IS 'defines which job (called by whatever scheduling process) owns this process';
-COMMENT ON COLUMN efw.file_process_conf.filename IS 'expected filename for the target of the process';
+COMMENT ON COLUMN efw.file_process_conf.trg_filename IS 'expected filename for the target of the process';
 COMMENT ON COLUMN efw.file_process_conf.object_owner IS 'owner of the schema object associated with the file';
 COMMENT ON COLUMN efw.file_process_conf.object_name IS 'name of the schema object associated with the file';
 COMMENT ON COLUMN efw.file_process_conf.dirname IS 'name of the oracle directory object for the file';
-COMMENT ON COLUMN efw.file_process_conf.arcdirname IS 'name of the oracle directory object for an archive of the file';
+COMMENT ON COLUMN efw.file_process_conf.arch_dirname IS 'name of the oracle directory object for an archive of the file';
 COMMENT ON COLUMN efw.file_process_conf.min_bytes IS 'minimum size threshhold for the source file. A value of 0 ignores this requirement';
 COMMENT ON COLUMN efw.file_process_conf.max_bytes IS 'maximum size threshhold for the source file. A value of 0 ignores this requirement';
-COMMENT ON COLUMN efw.file_process_conf.add_arch_ts_ind IS 'whether or not to attach a timestamp to archived files.';
-COMMENT ON COLUMN efw.file_process_conf.datestamp IS 'NLS_DATE_FORMAT to use for datestamp'; 
+COMMENT ON COLUMN efw.file_process_conf.file_timestamp IS 'NLS_TIMESTAMP_FORMAT to use for the timestamp written on the file. A value of NA means that no timestamp will be written on the file.'; 
 COMMENT ON COLUMN efw.file_process_conf.created_user IS 'for auditing';
 COMMENT ON COLUMN efw.file_process_conf.created_dt IS 'for auditing';
 COMMENT ON COLUMN efw.file_process_conf.modified_user IS 'for auditing';
