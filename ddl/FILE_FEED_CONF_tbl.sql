@@ -25,7 +25,7 @@ COMMENT ON COLUMN efw.file_feed_conf.source_regexp IS 'regular expression used t
 COMMENT ON COLUMN efw.file_feed_conf.regexp_ci_ind IS 'indicates whether the REGEXP should be case-insensitive.';
 COMMENT ON COLUMN efw.file_feed_conf.source_dir IS 'name of the directory object where the files are pulled from.';
 COMMENT ON COLUMN efw.file_feed_conf.secondary_dir IS 'A directory to write an exact copy of each file to, in case that functionality is needed';
-COMMENT ON COLUMN efw.file_feed_conf.multi_files_action IS 'Action to take is multiple files match SOURCE_REGEXP.';
+COMMENT ON COLUMN efw.file_feed_conf.multi_files_action IS 'Action to take is multiple files match SOURCE_REGEXP. Current options are "newest","oldest","all","fail" or "proceed"';
 COMMENT ON COLUMN efw.file_feed_conf.files_required_ind IS 'A value of "Y" means the job will fail if no files are found.';
 COMMENT ON COLUMN efw.file_feed_conf.created_user IS 'for auditing';
 COMMENT ON COLUMN efw.file_feed_conf.created_dt IS 'for auditing';
