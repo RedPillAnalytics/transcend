@@ -25,7 +25,7 @@ IS
       l_blocksize NUMBER;
       e_no_var        EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_var, -1007 );
-      l_app           app_info           := app_info( p_module =>      'EXTRACTS.EXTRACT_QUERY' );
+      o_app           applog           := applog( p_module =>      'EXTRACTS.EXTRACT_QUERY' );
    BEGIN
       IF p_append
       THEN
@@ -39,7 +39,7 @@ IS
       DBMS_SQL.parse( l_thecursor,
                       p_query,
                       DBMS_SQL.native );
-      l_app.set_action( 'Open Cursor to define columns' );
+      o_app.set_action( 'Open Cursor to define columns' );
 
       FOR i IN 1 .. 255
       LOOP
@@ -62,14 +62,14 @@ IS
                               2000 );
       l_status := DBMS_SQL.EXECUTE( l_thecursor );
       job.log_msg( 'Extracting data to ' || p_filename || ' in directory ' || p_dirname );
-      l_app.set_action( 'Open Cursor to pull back records' );
+      o_app.set_action( 'Open Cursor to pull back records' );
 
       LOOP
          EXIT WHEN( DBMS_SQL.fetch_rows( l_thecursor ) <= 0 );
          l_delimiter := '';
 
          FOR i IN 1 .. l_colcnt
-n         LOOP
+         LOOP
             DBMS_SQL.COLUMN_VALUE( l_thecursor,
                                    i,
                                    l_columnvalue );
@@ -82,13 +82,61 @@ n         LOOP
       END LOOP;
             
       job.log_msg( l_cnt || ' rows extracted to ' || p_filename );
-      l_app.set_action( 'Close DBMS_SQL cursor and filehandles.' );
+      o_app.set_action( 'Close DBMS_SQL cursor and filehandles.' );
       DBMS_SQL.close_cursor( l_thecursor );
       UTL_FILE.fclose( l_output );      
 
-      l_app.clear_app_info;
+      o_app.clear_app_info;
       RETURN l_cnt;
    END extract_query;
+   
+   -- uses EXTRACT_QUERY to extract the contents of an object to a file
+   -- the object can be a view or a table
+   PROCEDURE extract_object(
+      p_owner       VARCHAR2,
+      p_object      VARCHAR2,
+      p_dirname     VARCHAR2,
+      p_filename    VARCHAR2,
+      p_delimiter   VARCHAR2 DEFAULT ',',
+      p_quotechar   VARCHAR2 DEFAULT '',
+      p_append      BOOLEAN DEFAULT FALSE,
+      p_headers     BOOLEAN DEFAULT FALSE )
+   IS
+      o_app   applog
+         := applog( p_module =>      'EXTRACTS.EXTRACT_OBJECT',
+                      p_action =>      'Extract headers using EXTRACT_QUERY' );
+   BEGIN
+      IF p_headers
+      THEN
+         extract_query(    'select regexp_replace(stragg(column_name),'','','''
+                        || p_delimiter
+                        || ''') from '
+                        || '(select '
+			|| p_quotechar
+			|| '||column_name||'
+			|| p_quotechar
+			|| ' from all_tab_cols '
+                        || 'where table_name='''
+                        || UPPER( p_object )
+                        || ''' and owner='''
+                        || UPPER( p_owner )
+                        || ''' order by column_id)',
+                        p_dirname,
+                        p_filename,
+                        p_delimiter,
+                        NULL,
+                        p_append );
+      END IF;
+
+      o_app.set_action( 'Extract data using EXTRACT_QUERY' );
+      extract_query( 'select * from ' || p_owner || '.' || p_object,
+                     p_dirname,
+                     p_filename,
+                     p_delimiter,
+                     p_quotechar,
+                     TRUE );
+      o_app.clear_app_info;
+   END extract_object;
 
    -- audits information about feeds and extracts to the FILEHUB_DTL table
    PROCEDURE audit_file 
@@ -98,26 +146,21 @@ n         LOOP
 	p_arch_filename filehub_dtl.arch_filename%type,
 	p_num_bytes filehub_dtl.num_bytes%type,
 	p_file_dt filehub_dtl.file_dt%type,
-	p_process_type filehub_dtl.filehub_type%type,
+	p_filehub_type filehub_dtl.filehub_type%type,
 	p_debug BOOLEAN DEFAULT FALSE )
    AS
-      CURSOR c_proc_extract IS
-	     SELECT *
-	       FROM filehub_conf
-	       JOIN fh_extract_conf USING (file_process_id)
-	      WHERE file_process_id = p_file_proc_id;
-      r_proc_extract   c_proc_extract%ROWTYPE;
-      l_app        app_info   := app_info (p_module      => 'FILE_MOVER.AUDIT_FILE',
+      r_fh_conf   filehub_conf%ROWTYPE;
+      o_app        applog   := applog (p_module      => 'FILE_MOVER.AUDIT_FILE',
                                            p_debug       => p_debug);
    BEGIN
       OPEN c_proc_extract;
       FETCH c_proc_extract INTO r_proc_extract;
 
-      l_app.set_action ('Insert FILE_DTL');
+      o_app.set_action ('Insert FILE_DTL');
 
       -- INSERT into the FILE_DTL table to record the movement
-      INSERT INTO filehub_dtl
-             ( filehub_dtl_id, 
+      INSERT INTO filehub_detail
+             ( filehub_detail_id, 
                src_filename, 
                trg_filename, 
                arch_filename, 
@@ -144,14 +187,14 @@ n         LOOP
                       p_jobnumber,
                       'N',
 		      CASE 
-		      WHEN REGEXP_SUBSTR (r_proc_extract.multi_files_action, '^All$', 1, 1, 'i') IS NOT NULL THEN 'Y'
+		      WHEN REGEXP_SUBSTR (r_fh_conf.multi_files_action, '^All$', 1, 1, 'i') IS NOT NULL THEN 'Y'
 			     ELSE
 			     'N'
 			     END);
 
       -- IF the size threshholds are not met, then fail the job
       -- ALL the copies occur successfully, but nothing else happens
-      l_app.set_action ('Check file details');
+      o_app.set_action ('Check file details');
 
       IF p_num_bytes >= r_proc_extract.max_bytes AND r_proc_extract.max_bytes <> 0
       THEN
@@ -161,7 +204,7 @@ n         LOOP
          raise_application_error (-20001, 'File size smaller than MIN_BYTES');
       END IF;
 
-      l_app.clear_app_info;
+      o_app.clear_app_info;
    EXCEPTION
       WHEN OTHERS
       THEN
