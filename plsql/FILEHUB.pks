@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE efw.file_adm
+CREATE OR REPLACE PACKAGE efw.filehub
 IS
 PROCEDURE audit_file 
       ( p_file_proc_id file_process_dtl.file_process_id%type,
@@ -8,5 +8,5 @@ PROCEDURE audit_file
 	p_file_dt file_process_dtl.file_dt%type,
 	p_process_type file_process_dtl.file_process_type%type,
 	p_debug BOOLEAN DEFAULT FALSE );
-END file_adm;
+END filehub;
 /

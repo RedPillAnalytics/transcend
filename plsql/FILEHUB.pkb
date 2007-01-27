@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE BODY efw.file_adm
+CREATE OR REPLACE PACKAGE BODY efw.filehub
 IS
    -- modified FROM tom kyte's "dump_csv":
    -- 1. allow a quote CHARACTER
@@ -69,7 +69,7 @@ IS
          l_delimiter := '';
 
          FOR i IN 1 .. l_colcnt
-         LOOP
+n         LOOP
             DBMS_SQL.COLUMN_VALUE( l_thecursor,
                                    i,
                                    l_columnvalue );
@@ -90,22 +90,21 @@ IS
       RETURN l_cnt;
    END extract_query;
 
-   -- writes information in the FILE_DTL table about files found in SOURCE_DIR
-   -- SOURCE_DIR is configured in the FILE_CTL table
+   -- audits information about feeds and extracts to the FILEHUB_DTL table
    PROCEDURE audit_file 
-      ( p_file_proc_id file_process_dtl.file_process_id%type,
-	p_src_filename file_process_dtl.src_filename%type,
-	p_trg_filename file_process_dtl.trg_filename%type,
-	p_arch_filename file_process_dtl.arch_filename%type,
-	p_num_bytes file_process_dtl.num_bytes%type,
-	p_file_dt file_process_dtl.file_dt%type,
-	p_process_type file_process_dtl.process_type%type,
+      ( p_filehub_id filehub_dtl.filehub_id%type,
+	p_src_filename filehub_dtl.src_filename%type,
+	p_trg_filename filehub_dtl.trg_filename%type,
+	p_arch_filename filehub_dtl.arch_filename%type,
+	p_num_bytes filehub_dtl.num_bytes%type,
+	p_file_dt filehub_dtl.file_dt%type,
+	p_process_type filehub_dtl.filehub_type%type,
 	p_debug BOOLEAN DEFAULT FALSE )
    AS
       CURSOR c_proc_extract IS
 	     SELECT *
-	       FROM file_process_conf
-	       JOIN file_extract_conf USING (file_process_id)
+	       FROM filehub_conf
+	       JOIN fh_extract_conf USING (file_process_id)
 	      WHERE file_process_id = p_file_proc_id;
       r_proc_extract   c_proc_extract%ROWTYPE;
       l_app        app_info   := app_info (p_module      => 'FILE_MOVER.AUDIT_FILE',
@@ -117,24 +116,27 @@ IS
       l_app.set_action ('Insert FILE_DTL');
 
       -- INSERT into the FILE_DTL table to record the movement
-      INSERT INTO file_process_dtl
-             ( file_dtl_id,
-	       src_filename,
-               trg_filename,
-               arch_filename,
-	       src_filename,
-               jobname,
-               num_bytes,
-               file_dt,
+      INSERT INTO filehub_dtl
+             ( filehub_dtl_id, 
+               src_filename, 
+               trg_filename, 
+               arch_filename, 
+               filehub_type, 
+               jobname, 
+               filehub_id, 
+               num_bytes, 
+               num_lines, 
+               file_dt, 
                processed_ts,
-               session_id,
-               jobnumber,
-               ext_tab_ind,
-               alt_ext_tab_ind)
-             VALUES ( file_process_dtl_seq.nextval,
-		      p_filename,
-                      p_archfilename,
+	       ext_tab_process, 
+               session_id)
+             VALUES ( filehub_dtl_seq.nextval,
+		      p_src_filename,
+		      p_trg_filename,
+                      p_arch_filename,
+		      p_filehub_type,
                       r_proc_extract.jobname,
+		      r_proc_extract.file_process_id
                       p_num_bytes,
                       p_file_dt,
                       CURRENT_TIMESTAMP,
@@ -166,6 +168,5 @@ IS
          job.log_err;
          RAISE;
    END audit_file;
-
-END file_adm;
+END filehub;
 /

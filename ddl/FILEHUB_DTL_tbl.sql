@@ -8,16 +8,15 @@ CREATE TABLE efw.filehub_dtl
        ( filehub_dtl_id NUMBER NOT NULL,
 	 src_filename VARCHAR2(200),
 	 trg_filename VARCHAR2(200),
-	 filehub_type VARCHAR2(7) NOT null,
 	 arch_filename VARCHAR2(100) NOT NULL,
+	 filehub_type VARCHAR2(7) NOT null,
 	 jobname VARCHAR2(50) NOT NULL,
 	 filehub_id NUMBER NOT NULL,
 	 num_bytes NUMBER NOT null,
 	 num_lines NUMBER,
 	 file_dt DATE NOT null,
 	 processed_ts TIMESTAMP NOT NULL,
-	 ext_tab_ind VARCHAR2(1),
-	 alt_ext_tab_ind VARCHAR2(1),
+	 ext_tab_process VARCHAR2(1),
 	 session_id NUMBER NOT null)
        TABLESPACE efw
 /
