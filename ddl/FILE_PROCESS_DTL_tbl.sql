@@ -13,7 +13,7 @@ CREATE TABLE efw.file_process_dtl
 	 jobname VARCHAR2(50) NOT NULL,
 	 file_process_id NUMBER NOT NULL,
 	 num_bytes NUMBER NOT null,
-	 num_lines NUMBER NOT null,
+	 num_lines NUMBER,
 	 file_dt DATE NOT null,
 	 processed_ts TIMESTAMP NOT NULL,
 	 ext_tab_ind VARCHAR2(1),
