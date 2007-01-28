@@ -17,7 +17,7 @@ CREATE TABLE tdinc.filehub_detail
 	 num_lines NUMBER,
 	 file_dt DATE NOT null,
 	 processed_ts TIMESTAMP DEFAULT systimestamp NOT NULL,
-	 ext_tab_process VARCHAR2(5),
+	 resolution VARCHAR2(10),
 	 session_id NUMBER DEFAULT sys_context('USERENV','SESSIONID') NOT null)
        TABLESPACE tdinc
 /
@@ -37,7 +37,7 @@ COMMENT ON COLUMN tdinc.filehub_detail.num_bytes IS 'size in bytes of the file';
 COMMENT ON COLUMN tdinc.filehub_detail.num_lines IS 'number of lines in the file';
 COMMENT ON COLUMN tdinc.filehub_detail.file_dt IS 'last modified date on the file';
 COMMENT ON COLUMN tdinc.filehub_detail.processed_ts IS 'date the file was processed by File Package';
-COMMENT ON COLUMN tdinc.filehub_detail.resolution IS 'Holds logging information for further processing. means that this file will be part of an external table; "alter" means the same, but, the table will be altered to include the files for this run, or "none" meaning there is no external table associated.';
+COMMENT ON COLUMN tdinc.filehub_detail.resolution IS 'Holds logging information for further processing. Can be null, "external" or "external alter" to specify what level of external table processing was done.';
 COMMENT ON COLUMN tdinc.filehub_detail.session_id IS 'AUDSID number of the oracle session';
 
 GRANT SELECT ON TDINC.FILEHUB_DETAIL TO tdinc_filehub;
