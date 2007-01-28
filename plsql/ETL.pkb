@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE BODY efw.etl
+CREATE OR REPLACE PACKAGE BODY tdinc.etl
 AS
 -- truncates a table based upon the input table name and owner
 -- operates in an autonomous transaction

@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE efw.job
+CREATE OR REPLACE PACKAGE tdinc.job
 AS
    PROCEDURE log_msg(
       p_msg   VARCHAR2 );

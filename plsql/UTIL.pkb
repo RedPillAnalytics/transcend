@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE BODY efw.util
+CREATE OR REPLACE PACKAGE BODY tdinc.util
 AS
    -- procedure executes the run_cmd function and raises an exception with the return code
    PROCEDURE run_cmd (

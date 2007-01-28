@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE BODY efw.file_mover
+CREATE OR REPLACE PACKAGE BODY tdinc.file_mover
 IS
 -- writes information in the FILE_DTL table about files found in SOURCE_DIR
 -- SOURCE_DIR is configured in the FILE_CTL table

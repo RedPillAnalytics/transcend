@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE efw.util
+CREATE OR REPLACE PACKAGE tdinc.util
 AS
    PROCEDURE get_dir_list (p_directory IN VARCHAR2)
    AS

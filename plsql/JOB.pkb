@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE BODY efw.job
+CREATE OR REPLACE PACKAGE BODY tdinc.job
 AS
    -- used to write a standard message to the LOG_TABLE
    PROCEDURE log_msg(
