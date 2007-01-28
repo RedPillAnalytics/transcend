@@ -50,7 +50,7 @@ IS
 
       DBMS_SQL.define_column (l_thecursor, 1, l_columnvalue, 2000);
       l_status := DBMS_SQL.EXECUTE (l_thecursor);
-      job.log_msg ('Extracting data to ' || p_filename || ' in directory ' || p_dirname);
+      o_app.log_msg ('Extracting data to ' || p_filename || ' in directory ' || p_dirname);
       o_app.set_action ('Open Cursor to pull back records');
 
       LOOP
@@ -68,7 +68,7 @@ IS
          l_cnt := l_cnt + 1;
       END LOOP;
 
-      job.log_msg (l_cnt || ' rows extracted to ' || p_filename);
+      o_app.log_msg (l_cnt || ' rows extracted to ' || p_filename);
       o_app.set_action ('Close DBMS_SQL cursor and filehandles.');
       DBMS_SQL.close_cursor (l_thecursor);
       UTL_FILE.fclose (l_output);
@@ -85,51 +85,65 @@ IS
       p_filename    VARCHAR2,
       p_delimiter   VARCHAR2 DEFAULT ',',
       p_quotechar   VARCHAR2 DEFAULT '',
+      p_headers     VARCHAR2 DEFAULT 'none',
       p_append      BOOLEAN DEFAULT FALSE,
-      p_headers     BOOLEAN DEFAULT FALSE)
+      p_debug       BOOLEAN DEFAULT FALSE)
       RETURN NUMBER
    IS
-      l_cnt   NUMBER := 0;
-      o_app   applog
-         := applog (p_module      => 'EXTRACTS.EXTRACT_OBJECT',
-                    p_action      => 'Extract headers using EXTRACT_QUERY');
+      l_cnt           NUMBER          := 0;
+      l_head_sql      VARCHAR (1000);
+      l_extract_sql   VARCHAR2 (1000);
+      o_app           applog  := applog (p_module      => 'EXTRACTS.EXTRACT_OBJECT',
+                                         p_debug       => p_debug);
    BEGIN
-      IF p_headers
+      l_head_sql :=
+            'select regexp_replace(stragg(column_name),'','','''
+         || p_delimiter
+         || ''') from '
+         || '(select '
+         || p_quotechar
+         || '||column_name||'
+         || p_quotechar
+         || ' from all_tab_cols '
+         || 'where table_name='''
+         || UPPER (p_object)
+         || ''' and owner='''
+         || UPPER (p_owner)
+         || ''' order by column_id)';
+      l_extract_sql := 'select * from ' || p_owner || '.' || p_object;
+
+      IF p_debug
       THEN
+         o_app.log_msg ('Headers query: ' || l_head_sql);
+         o_app.log_msg ('Extract query: ' || l_extract_sql);
+      ELSE
+         IF p_headers = 'include'
+         THEN
+            o_app.set_action ('Extract headers to file');
+            l_cnt :=
+               extract_query (p_query          => l_head_sql,
+                              p_dirname        => p_dirname,
+                              p_filename       => p_filename,
+                              p_delimiter      => p_delimiter,
+                              p_quotechar      => NULL,
+                              p_append         => p_append);
+         END IF;
+
+         o_app.set_action ('Extract date to file');
          l_cnt :=
-            extract_query (p_query          =>    'select regexp_replace(stragg(column_name),'','','''
-                                               || p_delimiter
-                                               || ''') from '
-                                               || '(select '
-                                               || p_quotechar
-                                               || '||column_name||'
-                                               || p_quotechar
-                                               || ' from all_tab_cols '
-                                               || 'where table_name='''
-                                               || UPPER (p_object)
-                                               || ''' and owner='''
-                                               || UPPER (p_owner)
-                                               || ''' order by column_id)',
-                           p_dirname        => p_dirname,
-                           p_filename       => p_filename,
-                           p_delimiter      => p_delimiter,
-                           p_quotechar      => NULL,
-                           p_append         => p_append);
+              l_cnt
+            + extract_query (p_query          => l_extract_sql,
+                             p_dirname        => p_dirname,
+                             p_filename       => p_filename,
+                             p_delimiter      => p_delimiter,
+                             p_quotechar      => p_quotechar,
+                             p_append         => CASE
+                                WHEN p_headers = 'include'
+                                   THEN TRUE
+                                ELSE p_append
+                             END);
       END IF;
 
-      o_app.set_action ('Extract data using EXTRACT_QUERY');
-      l_cnt :=
-           l_cnt
-         + extract_query (p_query          => 'select * from ' || p_owner || '.' || p_object,
-                          p_dirname        => p_dirname,
-                          p_filename       => p_filename,
-                          p_delimiter      => p_delimiter,
-                          p_quotechar      => p_quotechar,
-                          p_append         => CASE
-                             WHEN p_headers
-                                THEN TRUE
-                             ELSE p_append
-                          END);
       o_app.clear_app_info;
       RETURN l_cnt;
    END extract_object;
@@ -196,8 +210,145 @@ IS
    EXCEPTION
       WHEN OTHERS
       THEN
-         job.log_err;
+         o_app.log_err;
          RAISE;
    END audit_file;
+
+   -- extract data to a text file, and then peform other functions as defined in the configuration table
+   PROCEDURE process_extract (
+      p_filehub_id        filehub_conf.filehub_id%TYPE DEFAULT NULL,
+      p_object_owner      filehub_conf.object_owner%TYPE DEFAULT NULL,   -- The owner of the object.
+      p_object_name       filehub_conf.object_name%TYPE DEFAULT NULL,
+      -- The name of the object to extract: a table or view typically.
+      p_directory         filehub_conf.dirname%TYPE DEFAULT NULL,
+      -- Name of the directory object to write the file to
+      p_filename          filehub_conf.filename%TYPE DEFAULT NULL,
+      -- filename for extraction... minus the timestamp
+      p_arch_directory    filehub_conf.arch_directory%TYPE DEFAULT NULL,
+      -- directory object to archive a file to
+      p_min_bytes         filehub_conf.min_bytes%TYPE DEFAULT NULL,
+      -- minimum file size for success
+      p_max_bytes         filehub_conf.max_bytes%TYPE DEFAULT NULL,
+      -- maximum file size for success
+      p_file_datestamp    filehub_conf.file_datestamp%TYPE DEFAULT NULL,
+      -- NLS_TIMESTAMP_FORMAT for the timestamp on the file
+      p_dateformat        filehub_conf.DATEFORMAT%TYPE DEFAULT NULL,
+      -- NLS_DATE_FORMAT for any date columns in the file
+      p_timestampformat   filehub_conf.timestampformat%TYPE DEFAULT NULL,
+      -- NLS_TIMESTAMP_FORMAT for any timestamp columns in the file
+      p_notification      filehub_conf.notification DEFAULT NULL,
+      -- notification specifics
+      p_delimiter         filehub_conf.delimiter%TYPE DEFAULT NULL,
+      -- Column delimiter in the extract file.
+      p_quotechar         filehub_conf.quotechar%TYPE DEFAULT NULL,
+      -- Character (if any) to use to quote columns.
+      p_headers           filehub_conf.headers DEFAULT NULL,
+      -- whether to include headers in the file
+      p_debug             BOOLEAN DEFAULT FALSE)
+   -- debug mode
+   AS
+      CURSOR c_fh_conf
+      IS
+         SELECT arch_directory,
+                arch_filename,
+                filename,
+                DIRECTORY,
+                core_utils.get_dir_path (DIRECTORY) || '/' || filename filepath,
+                core_utils.get_dir_path (arch_directory) || '/' || arch_filename arch_filepath,
+                source_owner,
+                source_object,
+                min_bytes,
+                max_bytes,
+                notification,
+                'alter session set nls_date_format=''' || DATEFORMAT || '''' dateformat_ddl,
+                'alter session set nls_date_format=''' || timestampformat || ''''
+                                                                                timestampformat_ddl,
+                delimiter,
+                quotechar,
+                headers
+           FROM (SELECT NVL (p_filehub_id, filehub_id) filehub_id,
+                        filehub_name filehub_name,
+                        filehub_group filehub_group,
+                        filehub_type,
+                        UPPER (NVL (p_object_owner, object_owner)) source_owner,
+                        UPPER (NVL (p_object_name, object_name)) source_object,
+                        NVL (p_directory, DIRECTORY) DIRECTORY,
+                        CASE NVL (p_file_datestamp, file_datestamp)
+                           WHEN 'NA'
+                              THEN NVL (p_filename, filename)
+                           ELSE REGEXP_REPLACE (NVL (p_filename, filename),
+                                                '\.',
+                                                '_' || TO_CHAR (SYSDATE, p_file_datestamp))
+                        END filename,
+                        CASE NVL (p_file_datestamp, file_datestamp)
+                           WHEN 'NA'
+                              THEN    NVL (p_filename, filename)
+                                   || '.'
+                                   || TO_CHAR (SYSDATE, p_file_datestamp)
+                           ELSE REGEXP_REPLACE (NVL (p_filename, filename),
+                                                '\.',
+                                                '_' || TO_CHAR (SYSDATE, p_file_datestamp))
+                        END arch_filename,
+                        NVL (p_arch_directory, arch_directory) arch_directory,
+                        NVL (p_min_bytes, min_bytes) min_bytes,
+                        NVL (p_max_bytes, max_bytes) max_bytes,
+                        NVL (p_notificaton, notification) notification,
+                        NVL (p_dateformat, DATEFORMAT) DATEFORMAT,
+                        NVL (p_timestampformat, timestampformat) timestampformat,
+                        NVL (p_delimiter, delimiter) delimiter,
+                        NVL (p_quotechar, quotechar) quotechar,
+                        NVL (p_headers, headers) headers
+                   FROM filehub_conf
+                  WHERE filehub_id = filehub_id AND REGEXP_LIKE (filehub_type, '^extract$', 'i'));
+
+      r_fh_conf     c_fh_conf%ROWTYPE;
+      l_num_bytes   NUMBER;
+      l_numlines    NUMBER;
+      l_blocksize   NUMBER;
+      l_exists      BOOLEAN             DEFAULT FALSE;
+      o_app         applog    := applog (p_module      => 'EXTRACTS.PROCESS_EXTRACT',
+                                         p_debug       => p_debug);
+   BEGIN
+      OPEN c_fh_conf;
+
+      FETCH c_fh_conf
+       INTO r_fh_conf;
+
+      -- set date and timestamp NLS formats
+      core_utils.ddl_exec (r_fh_conf.dateformat_ddl, 'nls_date_format DDL: ', p_debug);
+      core_utils.ddl_exec (r_fh_conf.timestampformat_ddl, 'nls_timestamp_format DDL: ', p_debug);
+      o_app.set_action ('Extract data');
+      -- extract data to arch location first
+      l_numlines :=
+         extract_object (p_owner          => r_fh_conf.source_owner,
+                         p_object         => r_fh_conf.source_object,
+                         p_dirname        => r_fh_conf.arch_directory,
+                         p_filename       => r_fh_conf.arch_filename,
+                         p_delimiter      => r_fh_conf.delimiter,
+                         p_quotechar      => r_fh_conf.quotechar,
+                         p_headers        => r_fh_conf.headers,
+                         p_debug          => p_debug);
+      -- copy the file to the target location
+      util.run_cmd ('cp -p arch_filepath filepath');
+      -- get file attributes
+      UTL_FILE.fgetattr (r_fh_conf.DIRECTORY, r_fh_conf.filename, l_exists, l_num_bytes,
+                         l_blocksize);
+      -- audit the file just extracted
+      -- don't yet know how I'll get file_dt
+      o_app.set_action ('Audit extract file');
+      audit_file (p_filehub_id         => p_filehub_id,
+                  p_trg_filename       => r_fh_conf.filepath,
+                  p_arch_filename      => r_fh_conf.arch_filepath,
+                  p_num_bytes          => l_num_bytes,
+                  p_num_lines          => l_numlines,
+                  p_file_dt            => NULL,
+                  p_debug              => p_debug);
+      o_app.clear_app_info;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         o_app.log_err;
+         RAISE;
+   END process_extract;
 END filehub;
 /
