@@ -293,7 +293,7 @@ AS
 
    -- extract data to a text file, and then peform other functions as defined in the configuration table
    PROCEDURE notify (
-      p_notification_id   notification.email_notify_id%TYPE,
+      p_notification_id   notification.notification_id%TYPE,
       p_module            notification.module%TYPE,
       p_module_id         notification.module_id%TYPE,
       p_debug             BOOLEAN DEFAULT FALSE)
