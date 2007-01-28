@@ -15,17 +15,18 @@ CREATE TABLE tdinc.filehub_conf
 	 arch_directory     	VARCHAR2(30) 	NOT NULL,
 	 min_bytes		NUMBER 		DEFAULT 0 NOT NULL,
 	 max_bytes              NUMBER 		DEFAULT 0 NOT NULL,
-	 file_timestamp		VARCHAR2(30) 	DEFAULT 'yyyymmddhhmissxff' NOT NULL,
-	 file_notification	VARCHAR2(6) 	DEFAULT 'none' NOT NULL,
+	 file_datestamp		VARCHAR2(30) 	DEFAULT 'yyyymmddhhmiss' NOT NULL,
+	 notification   	VARCHAR2(6) 	DEFAULT 'none' NOT NULL,
 	 source_directory 	VARCHAR2(50) 	NOT NULL,
 	 source_regexp   	VARCHAR2(100) 	NOT NULL,
 	 regexp_options		VARCHAR2(10)    DEFAULT 'i' NOT NULL,
 	 multi_files_action	VARCHAR2(10) 	DEFAULT 'newest' NOT null,
 	 file_requirement	VARCHAR2(8) 	DEFAULT 'required' NOT null,
 	 dateformat		VARCHAR2(30)   	DEFAULT 'mm/dd/yyyy hh:mi:ss am' NOT NULL,
+	 timestampformat	VARCHAR2(30)   	DEFAULT 'mm/dd/yyyy hh:mi:ss:x:ff am' NOT NULL,
 	 delimiter		VARCHAR2(1)    	DEFAULT ',' NOT NULL,
 	 quotechar		VARCHAR2(1) 	DEFAULT '"' NOT NULL,
-	 include_headers	VARCHAR2(7) 	DEFAULT 'headers' NOT NULL,
+	 headers		VARCHAR2(7) 	DEFAULT 'none' NOT NULL,
 	 created_user   	VARCHAR2(30) 	DEFAULT sys_context('USERENV','SESSION_USER') NOT NULL,
 	 created_dt     	DATE 		DEFAULT sysdate,
 	 modified_user  	VARCHAR2(30)	DEFAULT sys_context('USERENV','SESSION_USER'),
@@ -46,7 +47,7 @@ COMMENT ON COLUMN tdinc.filehub_conf.filename IS 'filename for the target of the
 COMMENT ON COLUMN tdinc.filehub_conf.arch_directory IS 'name of the oracle directory object for an archive of the file';
 COMMENT ON COLUMN tdinc.filehub_conf.min_bytes IS 'minimum size threshhold for the source file. A value of 0 ignores this requirement';
 COMMENT ON COLUMN tdinc.filehub_conf.max_bytes IS 'maximum size threshhold for the source file. A value of 0 ignores this requirement';
-COMMENT ON COLUMN tdinc.filehub_conf.file_timestamp IS 'NLS_TIMESTAMP_FORMAT to use for the timestamp written on the file. A value of NA means that no timestamp will be written on the file.'; 
+COMMENT ON COLUMN tdinc.filehub_conf.file_datestamp IS 'NLS_DATE_FORMAT to use for the datestamp written on the file. A value of NA means that no timestamp will be written on the file.'; 
 COMMENT ON COLUMN tdinc.filehub_conf.created_user IS 'for auditing';
 COMMENT ON COLUMN tdinc.filehub_conf.created_dt IS 'for auditing';
 COMMENT ON COLUMN tdinc.filehub_conf.modified_user IS 'for auditing';
