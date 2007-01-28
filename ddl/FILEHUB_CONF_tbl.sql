@@ -11,7 +11,7 @@ CREATE TABLE efw.filehub_conf
 	 object_owner		VARCHAR2(30)    NOT NULL,
 	 object_name		VARCHAR2(30)    NOT NULL,
 	 trg_filename		VARCHAR2(30) 	NOT NULL,
-	 dirname        	VARCHAR2(30)    NOT NULL,
+	 trg_dirname        	VARCHAR2(30)    NOT NULL,
 	 arch_dirname     	VARCHAR2(30) 	NOT NULL,
 	 secondary_dir	 	VARCHAR2(50)	DEFAULT 'NA' NOT NULL,
 	 min_bytes		NUMBER 		DEFAULT 0 NOT NULL,
@@ -79,4 +79,7 @@ ALTER TABLE efw.filehub_conf
 /
 
 CREATE SEQUENCE efw.filehub_conf_seq
+/
+
+GRANT SELECT ON efw.filehub_conf TO efw_filehub
 /
