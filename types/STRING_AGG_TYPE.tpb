@@ -1,4 +1,4 @@
-CREATE OR REPLACE TYPE BODY efw.string_agg_type
+CREATE OR REPLACE TYPE BODY tdinc.string_agg_type
 IS
    STATIC FUNCTION odciaggregateinitialize (
       sctx   IN OUT   string_agg_type)

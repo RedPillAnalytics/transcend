@@ -1,4 +1,4 @@
-CREATE OR REPLACE TYPE efw.applog AS OBJECT(
+CREATE OR REPLACE TYPE tdinc.applog AS OBJECT(
    instance_name      VARCHAR2( 30 ),
    session_id         NUMBER,
    machine            VARCHAR2( 50 ),
