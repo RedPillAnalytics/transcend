@@ -16,6 +16,12 @@ AS
    FUNCTION get_numlines (p_dirname IN VARCHAR2, p_filename IN VARCHAR2)
       RETURN NUMBER;
 
+   PROCEDURE notify (
+      p_notification_id   notification.notification_id%TYPE,
+      p_module            notification.module%TYPE,
+      p_module_id         notification.module_id%TYPE,
+      p_debug             BOOLEAN DEFAULT FALSE);
+
    FUNCTION unzip_file (p_dirpath VARCHAR2, p_filename VARCHAR2, p_debug BOOLEAN DEFAULT FALSE)
       RETURN VARCHAR2;
 
