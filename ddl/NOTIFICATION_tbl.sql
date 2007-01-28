@@ -1,11 +1,11 @@
-DROP TABLE tdinc.email_notification CASCADE CONSTRAINTS purge
+DROP TABLE tdinc.notification CASCADE CONSTRAINTS purge
 /
 
-DROP SEQUENCE tdinc.email_notification_seq
+DROP SEQUENCE tdinc.notification_seq
 /
 
-CREATE TABLE tdinc.email_notification
-       ( email_notification_id NUMBER NOT NULL,
+CREATE TABLE tdinc.notification
+       ( notification_id NUMBER NOT NULL,
 	 module VARCHAR2(48) NOT NULL,
 	 module_id NUMBER NOT NULL,
 	 notification_type VARCHAR2(30) NOT NULL,
@@ -20,13 +20,13 @@ CREATE TABLE tdinc.email_notification
 TABLESPACE tdinc
 /
 
-ALTER TABLE tdinc.email_notification ADD (
-  CONSTRAINT email_notification_pk
+ALTER TABLE tdinc.notification ADD (
+  CONSTRAINT notification_pk
  PRIMARY KEY
- (email_notification_id)
+ (notification_id)
     USING INDEX
     TABLESPACE tdinc)
 /
 
-CREATE SEQUENCE tdinc.email_notification_seq
+CREATE SEQUENCE tdinc.notification_seq
 /

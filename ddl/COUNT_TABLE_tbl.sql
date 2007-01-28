@@ -1,7 +1,7 @@
-DROP TABLE efw.count_table purge
+DROP TABLE tdinc.count_table purge
 /
 
-CREATE TABLE efw.count_table
+CREATE TABLE tdinc.count_table
 (
   entry_ts       TIMESTAMP,
   client_info    VARCHAR2(64),
@@ -10,13 +10,13 @@ CREATE TABLE efw.count_table
   session_id     NUMBER,
   row_cnt        NUMBER
 )
-TABLESPACE efw
+TABLESPACE tdinc
 /
 
-ALTER TABLE efw.count_table ADD CONSTRAINT count_tbl_pk PRIMARY KEY (session_id, entry_ts)
+ALTER TABLE tdinc.count_table ADD CONSTRAINT count_tbl_pk PRIMARY KEY (session_id, entry_ts)
     USING INDEX
-    TABLESPACE efw
+    TABLESPACE tdinc
 /
 
-GRANT SELECT ON efw.count_table TO efw_job
+GRANT SELECT ON tdinc.count_table TO tdinc_job
 /

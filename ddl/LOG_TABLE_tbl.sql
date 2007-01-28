@@ -1,7 +1,7 @@
-DROP TABLE efw.log_table
+DROP TABLE tdinc.log_table
 /
 
-CREATE TABLE efw.log_table
+CREATE TABLE tdinc.log_table
        ( entry_ts TIMESTAMP (6) NOT NULL,
 	 msg VARCHAR2(2000) NOT NULL,
 	 client_info VARCHAR2(64) NOT NULL,
@@ -16,12 +16,12 @@ CREATE TABLE efw.log_table
 	 code NUMBER NOT NULL,
 	 call_stack VARCHAR2(1024),
 	 back_trace VARCHAR2(1024)
-       ) TABLESPACE efw
+       ) TABLESPACE tdinc
 /
-ALTER TABLE efw.log_table ADD CONSTRAINT log_msg_pk PRIMARY KEY (session_id,entry_ts)
+ALTER TABLE tdinc.log_table ADD CONSTRAINT log_msg_pk PRIMARY KEY (session_id,entry_ts)
       USING INDEX 
-      TABLESPACE efw ENABLE
+      TABLESPACE tdinc ENABLE
 /
 
-GRANT SELECT ON efw.log_table TO efw_job
+GRANT SELECT ON tdinc.log_table TO tdinc_job
 /

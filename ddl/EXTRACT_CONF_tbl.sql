@@ -1,8 +1,8 @@
-DROP TABLE efw.extract_conf CASCADE CONSTRAINTS purge
+DROP TABLE tdinc.extract_conf CASCADE CONSTRAINTS purge
 /
-DROP SEQUENCE efw.extract_conf_seq
+DROP SEQUENCE tdinc.extract_conf_seq
 /
-CREATE TABLE efw.extract_conf
+CREATE TABLE tdinc.extract_conf
 (
   EXTRACT        VARCHAR2(1024)            NOT NULL,
   extract_number NUMBER NOT NULL,
@@ -27,21 +27,21 @@ CREATE TABLE efw.extract_conf
   modified_user  VARCHAR2(30),
   modified_dt    DATE
 )
-TABLESPACE efw
+TABLESPACE tdinc
 /
 
-CREATE UNIQUE INDEX efw.extract_conf_pk ON efw.extract_conf
+CREATE UNIQUE INDEX tdinc.extract_conf_pk ON tdinc.extract_conf
 (EXTRACT)
 LOGGING
-TABLESPACE efw
+TABLESPACE tdinc
 NOPARALLEL
 /
-ALTER TABLE efw.extract_conf ADD (
+ALTER TABLE tdinc.extract_conf ADD (
   CONSTRAINT extract_conf_pk
  PRIMARY KEY
  (EXTRACT)
     USING INDEX
-    TABLESPACE efw)
+    TABLESPACE tdinc)
 /
-CREATE SEQUENCE efw.extract_conf_seq
+CREATE SEQUENCE tdinc.extract_conf_seq
 /
