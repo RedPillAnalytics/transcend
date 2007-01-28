@@ -1,6 +1,72 @@
 CREATE OR REPLACE PACKAGE BODY tdinc.filehub
 IS
-   -- modified FROM tom kyte's "dump_csv":
+   -- audits information about feeds and extracts to the FILEHUB_DTL table
+   PROCEDURE audit_file (
+      p_filehub_id      filehub_detail.filehub_id%TYPE,
+      p_src_filename    filehub_detail.src_filename%TYPE DEFAULT NULL,
+      p_trg_filename    filehub_detail.trg_filename%TYPE DEFAULT NULL,
+      p_arch_filename   filehub_detail.arch_filename%TYPE,
+      p_num_bytes       filehub_detail.num_bytes%TYPE,
+      p_num_lines       filehub_detail.num_lines%TYPE DEFAULT NULL,
+      p_file_dt         filehub_detail.file_dt%TYPE,
+      p_debug           BOOLEAN DEFAULT FALSE)
+   AS
+      r_fh_conf   filehub_conf%ROWTYPE;
+      o_app       applog        := applog (p_module      => 'FILE_MOVER.AUDIT_FILE',
+                                           p_debug       => p_debug);
+   BEGIN
+      SELECT *
+        INTO r_fh_conf
+        FROM filehub_conf
+       WHERE filehub_id = p_filehub_id;
+
+      o_app.set_action ('Insert FILE_DTL');
+
+      -- INSERT into the FILE_DTL table to record the movement
+      INSERT INTO filehub_detail
+                  (fh_detail_id,
+                   filehub_id,
+                   filehub_name,
+                   filehub_group,
+                   filehub_type,
+                   src_filename,
+                   trg_filename,
+                   arch_filename,
+                   num_bytes,
+                   num_lines,
+                   file_dt)
+           VALUES (filehub_detail_seq.NEXTVAL,
+                   p_filehub_id,
+                   r_fh_conf.filehub_name,
+                   r_fh_conf.filehub_group,
+                   r_fh_conf.filehub_type,
+                   p_src_filename,
+                   p_trg_filename,
+                   p_arch_filename,
+                   p_num_bytes,
+                   p_num_lines,
+                   p_file_dt);
+
+      -- the job fails when size threshholds are not met
+      o_app.set_action ('Check file details');
+
+      IF p_num_bytes >= r_fh_conf.max_bytes AND r_fh_conf.max_bytes <> 0
+      THEN
+         raise_application_error (-20015, 'File size larger than MAX_BYTES paramter');
+      ELSIF p_num_bytes < r_fh_conf.min_bytes
+      THEN
+         raise_application_error (-20016, 'File size smaller than MIN_BYTES parameter');
+      END IF;
+
+      o_app.clear_app_info;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         o_app.log_err;
+         RAISE;
+   END audit_file;
+
+-- modified FROM tom kyte's "dump_csv":
    -- 1. allow a quote CHARACTER
    -- 2. allow FOR a FILE TO be appended TO
    FUNCTION extract_query (
@@ -148,104 +214,24 @@ IS
       RETURN l_cnt;
    END extract_object;
 
-   -- audits information about feeds and extracts to the FILEHUB_DTL table
-   PROCEDURE audit_file (
-      p_filehub_id      filehub_detail.filehub_id%TYPE,
-      p_src_filename    filehub_detail.src_filename%TYPE DEFAULT NULL,
-      p_trg_filename    filehub_detail.trg_filename%TYPE DEFAULT NULL,
-      p_arch_filename   filehub_detail.arch_filename%TYPE,
-      p_num_bytes       filehub_detail.num_bytes%TYPE,
-      p_num_lines       filehub_detail.num_lines%TYPE DEFAULT NULL,
-      p_file_dt         filehub_detail.file_dt%TYPE,
-      p_debug           BOOLEAN DEFAULT FALSE)
-   AS
-      r_fh_conf   filehub_conf%ROWTYPE;
-      o_app       applog        := applog (p_module      => 'FILE_MOVER.AUDIT_FILE',
-                                           p_debug       => p_debug);
-   BEGIN
-      SELECT *
-        INTO r_fh_conf
-        FROM filehub_conf
-       WHERE filehub_id = p_filehub_id;
-
-      o_app.set_action ('Insert FILE_DTL');
-
-      -- INSERT into the FILE_DTL table to record the movement
-      INSERT INTO filehub_detail
-                  (fh_detail_id,
-                   filehub_id,
-                   filehub_name,
-                   filehub_group,
-                   filehub_type,
-                   src_filename,
-                   trg_filename,
-                   arch_filename,
-                   num_bytes,
-                   num_lines,
-                   file_dt)
-           VALUES (filehub_detail_seq.NEXTVAL,
-                   p_filehub_id,
-                   r_fh_conf.filehub_name,
-                   r_fh_conf.filehub_group,
-                   r_fh_conf.filehub_type,
-                   p_src_filename,
-                   p_trg_filename,
-                   p_arch_filename,
-                   p_num_bytes,
-                   p_num_lines,
-                   p_file_dt);
-
-      -- the job fails when size threshholds are not met
-      o_app.set_action ('Check file details');
-
-      IF p_num_bytes >= r_fh_conf.max_bytes AND r_fh_conf.max_bytes <> 0
-      THEN
-         raise_application_error (-20015, 'File size larger than MAX_BYTES paramter');
-      ELSIF p_num_bytes < r_fh_conf.min_bytes
-      THEN
-         raise_application_error (-20016, 'File size smaller than MIN_BYTES parameter');
-      END IF;
-
-      o_app.clear_app_info;
-   EXCEPTION
-      WHEN OTHERS
-      THEN
-         o_app.log_err;
-         RAISE;
-   END audit_file;
-
    -- extract data to a text file, and then peform other functions as defined in the configuration table
    PROCEDURE process_extract (
       p_filehub_id        filehub_conf.filehub_id%TYPE DEFAULT NULL,
-      p_object_owner      filehub_conf.object_owner%TYPE DEFAULT NULL,   -- The owner of the object.
+      p_object_owner      filehub_conf.object_owner%TYPE DEFAULT NULL,
       p_object_name       filehub_conf.object_name%TYPE DEFAULT NULL,
-      -- The name of the object to extract: a table or view typically.
-      p_directory         filehub_conf.dirname%TYPE DEFAULT NULL,
-      -- Name of the directory object to write the file to
+      p_directory         filehub_conf.DIRECTORY%TYPE DEFAULT NULL,
       p_filename          filehub_conf.filename%TYPE DEFAULT NULL,
-      -- filename for extraction... minus the timestamp
       p_arch_directory    filehub_conf.arch_directory%TYPE DEFAULT NULL,
-      -- directory object to archive a file to
       p_min_bytes         filehub_conf.min_bytes%TYPE DEFAULT NULL,
-      -- minimum file size for success
       p_max_bytes         filehub_conf.max_bytes%TYPE DEFAULT NULL,
-      -- maximum file size for success
       p_file_datestamp    filehub_conf.file_datestamp%TYPE DEFAULT NULL,
-      -- NLS_TIMESTAMP_FORMAT for the timestamp on the file
       p_dateformat        filehub_conf.DATEFORMAT%TYPE DEFAULT NULL,
-      -- NLS_DATE_FORMAT for any date columns in the file
       p_timestampformat   filehub_conf.timestampformat%TYPE DEFAULT NULL,
-      -- NLS_TIMESTAMP_FORMAT for any timestamp columns in the file
-      p_notification      filehub_conf.notification DEFAULT NULL,
-      -- notification specifics
+      p_notification      filehub_conf.notification%TYPE DEFAULT NULL,
       p_delimiter         filehub_conf.delimiter%TYPE DEFAULT NULL,
-      -- Column delimiter in the extract file.
       p_quotechar         filehub_conf.quotechar%TYPE DEFAULT NULL,
-      -- Character (if any) to use to quote columns.
-      p_headers           filehub_conf.headers DEFAULT NULL,
-      -- whether to include headers in the file
+      p_headers           filehub_conf.headers%TYPE DEFAULT NULL,
       p_debug             BOOLEAN DEFAULT FALSE)
-   -- debug mode
    AS
       CURSOR c_fh_conf
       IS
