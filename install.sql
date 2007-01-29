@@ -26,6 +26,7 @@ grant SELECT ANY DICTIONARY to tdinc;
 grant SELECT ANY TABLE to tdinc;
 grant UPDATE ANY TABLE to tdinc;
 GRANT ALTER ANY INDEX TO tdinc;
+GRANT CREATE ANY directory TO tdinc;
 
 CREATE ROLE tdinc_coreutils;
 
