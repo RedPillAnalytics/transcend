@@ -66,7 +66,7 @@ IS
          RAISE;
    END audit_file;
 
--- modified FROM tom kyte's "dump_csv":
+   -- modified FROM tom kyte's "dump_csv":
    -- 1. allow a quote CHARACTER
    -- 2. allow FOR a FILE TO be appended TO
    FUNCTION extract_query (
@@ -233,72 +233,85 @@ IS
       p_headers           filehub_conf.headers%TYPE DEFAULT NULL,
       p_debug             BOOLEAN DEFAULT FALSE)
    AS
-      CURSOR c_fh_conf
-      IS
-         SELECT arch_directory,
-                arch_filename,
-                filename,
-                DIRECTORY,
-                core_utils.get_dir_path (DIRECTORY) || '/' || filename filepath,
-                core_utils.get_dir_path (arch_directory) || '/' || arch_filename arch_filepath,
-                source_owner,
-                source_object,
-                min_bytes,
-                max_bytes,
-                notification,
-                'alter session set nls_date_format=''' || DATEFORMAT || '''' dateformat_ddl,
-                'alter session set nls_date_format=''' || timestampformat || ''''
-                                                                                timestampformat_ddl,
-                delimiter,
-                quotechar,
-                headers
-           FROM (SELECT NVL (p_filehub_id, filehub_id) filehub_id,
-                        filehub_name filehub_name,
-                        filehub_group filehub_group,
-                        filehub_type,
-                        UPPER (NVL (p_object_owner, object_owner)) source_owner,
-                        UPPER (NVL (p_object_name, object_name)) source_object,
-                        NVL (p_directory, DIRECTORY) DIRECTORY,
-                        CASE NVL (p_file_datestamp, file_datestamp)
-                           WHEN 'NA'
-                              THEN NVL (p_filename, filename)
-                           ELSE REGEXP_REPLACE (NVL (p_filename, filename),
-                                                '\.',
-                                                '_' || TO_CHAR (SYSDATE, p_file_datestamp))
-                        END filename,
-                        CASE NVL (p_file_datestamp, file_datestamp)
-                           WHEN 'NA'
-                              THEN    NVL (p_filename, filename)
-                                   || '.'
-                                   || TO_CHAR (SYSDATE, p_file_datestamp)
-                           ELSE REGEXP_REPLACE (NVL (p_filename, filename),
-                                                '\.',
-                                                '_' || TO_CHAR (SYSDATE, p_file_datestamp))
-                        END arch_filename,
-                        NVL (p_arch_directory, arch_directory) arch_directory,
-                        NVL (p_min_bytes, min_bytes) min_bytes,
-                        NVL (p_max_bytes, max_bytes) max_bytes,
-                        NVL (p_notificaton, notification) notification,
-                        NVL (p_dateformat, DATEFORMAT) DATEFORMAT,
-                        NVL (p_timestampformat, timestampformat) timestampformat,
-                        NVL (p_delimiter, delimiter) delimiter,
-                        NVL (p_quotechar, quotechar) quotechar,
-                        NVL (p_headers, headers) headers
-                   FROM filehub_conf
-                  WHERE filehub_id = filehub_id AND REGEXP_LIKE (filehub_type, '^extract$', 'i'));
+      TYPE t_fh_conf IS RECORD (
+         arch_directory        filehub_conf.DIRECTORY%TYPE,
+         arch_filename         filehub_conf.filename%TYPE,
+         filename              filehub_conf.filename%TYPE,
+         DIRECTORY             filehub_conf.DIRECTORY%TYPE,
+         filepath              VARCHAR2 (100),
+         arch_filepath         VARCHAR2 (100),
+         source_owner          filehub_conf.object_owner%TYPE,
+         source_object         filehub_conf.object_name%TYPE,
+         min_bytes             filehub_conf.min_bytes%TYPE,
+         max_bytes             filehub_conf.max_bytes%TYPE,
+         notification          filehub_conf.notification%TYPE,
+         dateformat_ddl        VARCHAR2 (200),
+         timestampformat_ddl   VARCHAR2 (200),
+         delimiter             filehub_conf.delimiter%TYPE,
+         quotechar             filehub_conf.quotechar%TYPE,
+         headers               filehub_conf.headers%TYPE
+      );
 
-      r_fh_conf     c_fh_conf%ROWTYPE;
+      r_fh_conf     t_fh_conf;
       l_num_bytes   NUMBER;
       l_numlines    NUMBER;
       l_blocksize   NUMBER;
-      l_exists      BOOLEAN             DEFAULT FALSE;
+      l_exists      BOOLEAN   DEFAULT FALSE;
+      l_file_dt     DATE;
       o_app         applog    := applog (p_module      => 'EXTRACTS.PROCESS_EXTRACT',
                                          p_debug       => p_debug);
    BEGIN
-      OPEN c_fh_conf;
-
-      FETCH c_fh_conf
-       INTO r_fh_conf;
+      SELECT arch_directory,
+             arch_filename,
+             filename,
+             DIRECTORY,
+             core_utils.get_dir_path (DIRECTORY) || '/' || filename filepath,
+             core_utils.get_dir_path (arch_directory) || '/' || arch_filename arch_filepath,
+             source_owner,
+             source_object,
+             min_bytes,
+             max_bytes,
+             notification,
+             'alter session set nls_date_format=''' || DATEFORMAT || '''' dateformat_ddl,
+             'alter session set nls_date_format=''' || timestampformat || '''' timestampformat_ddl,
+             delimiter,
+             quotechar,
+             headers
+        INTO r_fh_conf
+        FROM (SELECT NVL (p_filehub_id, filehub_id) filehub_id,
+                     filehub_name filehub_name,
+                     filehub_group filehub_group,
+                     filehub_type,
+                     UPPER (NVL (p_object_owner, object_owner)) source_owner,
+                     UPPER (NVL (p_object_name, object_name)) source_object,
+                     NVL (p_directory, DIRECTORY) DIRECTORY,
+                     CASE NVL (p_file_datestamp, file_datestamp)
+                        WHEN 'NA'
+                           THEN NVL (p_filename, filename)
+                        ELSE REGEXP_REPLACE (NVL (p_filename, filename),
+                                             '\.',
+                                             '_' || TO_CHAR (SYSDATE, p_file_datestamp))
+                     END filename,
+                     CASE NVL (p_file_datestamp, file_datestamp)
+                        WHEN 'NA'
+                           THEN    NVL (p_filename, filename)
+                                || '.'
+                                || TO_CHAR (SYSDATE, p_file_datestamp)
+                        ELSE REGEXP_REPLACE (NVL (p_filename, filename),
+                                             '\.',
+                                             '_' || TO_CHAR (SYSDATE, p_file_datestamp))
+                     END arch_filename,
+                     NVL (p_arch_directory, arch_directory) arch_directory,
+                     NVL (p_min_bytes, min_bytes) min_bytes,
+                     NVL (p_max_bytes, max_bytes) max_bytes,
+                     NVL (p_notification, notification) notification,
+                     NVL (p_dateformat, DATEFORMAT) DATEFORMAT,
+                     NVL (p_timestampformat, timestampformat) timestampformat,
+                     NVL (p_delimiter, delimiter) delimiter,
+                     NVL (p_quotechar, quotechar) quotechar,
+                     NVL (p_headers, headers) headers
+                FROM filehub_conf
+               WHERE filehub_id = filehub_id AND REGEXP_LIKE (filehub_type, '^extract$', 'i'));
 
       -- set date and timestamp NLS formats
       core_utils.ddl_exec (r_fh_conf.dateformat_ddl, 'nls_date_format DDL: ', p_debug);
@@ -314,8 +327,9 @@ IS
                          p_quotechar      => r_fh_conf.quotechar,
                          p_headers        => r_fh_conf.headers,
                          p_debug          => p_debug);
+      l_file_dt := SYSDATE;
       -- copy the file to the target location
-      util.run_cmd ('cp -p arch_filepath filepath');
+      core_utils.host_cmd ('cp -p arch_filepath filepath', p_debug => p_debug);
       -- get file attributes
       UTL_FILE.fgetattr (r_fh_conf.DIRECTORY, r_fh_conf.filename, l_exists, l_num_bytes,
                          l_blocksize);
