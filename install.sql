@@ -1,3 +1,7 @@
+--WHENEVER sqlerror exit failure rollback
+SET serveroutput on size unlimited
+SET echo on
+
 DROP TABLESPACE tdinc
      INCLUDING contents
 /
@@ -40,7 +44,7 @@ PROMPT 'First create the efw tables'
 @./ddl/NOTIFICATION_tbl
 
 PROMPT 'create java stored procedures'
-@./java/UTIL.jvs
+@./java/CoreUtils.jvs
 
 PROMPT 'create types'
 @./types/STRING_AGG_TYPE.tps
@@ -58,3 +62,9 @@ PROMPT 'create packages'
 @./plsql/DBFLEX.pkb
 @./plsql/FILEHUB.pks
 @./plsql/FILEHUB.pkb
+
+PROMPT 'java permissions'
+EXEC dbms_java.set_output(1000000);
+EXEC dbms_java.grant_permission( 'TDINC', 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'execute' );
+EXEC dbms_java.grant_permission( 'TDINC', 'SYS:java.lang.RuntimePermission', 'writeFileDescriptor', '' );
+EXEC dbms_java.grant_permission( 'TDINC', 'SYS:java.lang.RuntimePermission', 'readFileDescriptor','' );
