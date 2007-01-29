@@ -1,5 +1,35 @@
 CREATE OR REPLACE PACKAGE BODY tdinc.core_utils
 AS
+   -- procedure executes the host_cmd function and raises an exception with the return code
+   PROCEDURE host_cmd (p_cmd VARCHAR2, p_stdin VARCHAR2 DEFAULT ' ', p_debug BOOLEAN DEFAULT FALSE)
+   AS
+      l_retval   NUMBER;
+      o_app      applog := applog (p_module => 'CORE_UTILS.HOST_CMD');
+   BEGIN
+      DBMS_JAVA.set_output (1000000);
+
+      IF p_debug
+      THEN
+         o_app.log_msg ('Host command: ' || p_cmd);
+      ELSE
+         l_retval := host_cmd (p_cmd, p_stdin);
+
+         IF l_retval <> 0
+         THEN
+            raise_application_error
+                             (-20020,
+                              'Java Error: method CoreUtils.hostCmd made unsuccessful system calls');
+         END IF;
+      END IF;
+
+      o_app.clear_app_info;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         job.log_err;
+         RAISE;
+   END host_cmd;
+
 -- log a message to the log_table
 -- the preferred method for using the logging framework is to instantiate a APPLOG object and use that
 -- this is provided in situations where invoking an object is difficult--such as testing in SQLPLUS
@@ -133,44 +163,16 @@ AS
       CASE l_filesuf
          WHEN 'gz'
          THEN
-            l_cmd := 'gzip -df ' || l_filepath;
-
-            IF p_debug
-            THEN
-               o_app.log_msg ('Run_cmd: ' || l_cmd);
-            ELSE
-               util.run_cmd (l_cmd);
-            END IF;
+            host_cmd ('gzip -df ' || l_filepath, p_debug => p_debug);
          WHEN 'Z'
          THEN
-            l_cmd := 'uncompress ' || l_filepath;
-
-            IF p_debug
-            THEN
-               o_app.log_msg ('Run_cmd: ' || l_cmd);
-            ELSE
-               util.run_cmd (l_cmd);
-            END IF;
+            host_cmd ('uncompress ' || l_filepath, p_debug => p_debug);
          WHEN 'bz2'
          THEN
-            l_cmd := 'bunzip2 ' || l_filepath;
-
-            IF p_debug
-            THEN
-               o_app.log_msg ('Run_cmd: ' || l_cmd);
-            ELSE
-               util.run_cmd (l_cmd);
-            END IF;
+            host_cmd ('bunzip2 ' || l_filepath, p_debug => p_debug);
          WHEN 'zip'
          THEN
-            l_cmd := 'unzip ' || l_filepath;
-
-            IF p_debug
-            THEN
-               o_app.log_msg ('Run_cmd: ' || l_cmd);
-            ELSE
-               util.run_cmd (l_cmd);
-            END IF;
+            host_cmd ('unzip ' || l_filepath, p_debug => p_debug);
          ELSE
             -- this is the only case where the file wasn't compressed
             l_compressed := FALSE;
