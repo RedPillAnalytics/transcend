@@ -261,58 +261,72 @@ IS
       o_app         applog    := applog (p_module      => 'EXTRACTS.PROCESS_EXTRACT',
                                          p_debug       => p_debug);
    BEGIN
-      SELECT arch_directory,
-             arch_filename,
-             filename,
-             DIRECTORY,
-             core_utils.get_dir_path (DIRECTORY) || '/' || filename filepath,
-             core_utils.get_dir_path (arch_directory) || '/' || arch_filename arch_filepath,
-             source_owner,
-             source_object,
-             min_bytes,
-             max_bytes,
-             notification,
-             'alter session set nls_date_format=''' || DATEFORMAT || '''' dateformat_ddl,
-             'alter session set nls_date_format=''' || timestampformat || '''' timestampformat_ddl,
-             delimiter,
-             quotechar,
-             headers
-        INTO r_fh_conf
-        FROM (SELECT NVL (p_filehub_id, filehub_id) filehub_id,
-                     filehub_name filehub_name,
-                     filehub_group filehub_group,
-                     filehub_type,
-                     UPPER (NVL (p_object_owner, object_owner)) source_owner,
-                     UPPER (NVL (p_object_name, object_name)) source_object,
-                     NVL (p_directory, DIRECTORY) DIRECTORY,
-                     CASE NVL (p_file_datestamp, file_datestamp)
-                        WHEN 'NA'
-                           THEN NVL (p_filename, filename)
-                        ELSE REGEXP_REPLACE (NVL (p_filename, filename),
-                                             '\.',
-                                             '_' || TO_CHAR (SYSDATE, p_file_datestamp))
-                     END filename,
-                     CASE NVL (p_file_datestamp, file_datestamp)
-                        WHEN 'NA'
-                           THEN    NVL (p_filename, filename)
-                                || '.'
-                                || TO_CHAR (SYSDATE, p_file_datestamp)
-                        ELSE REGEXP_REPLACE (NVL (p_filename, filename),
-                                             '\.',
-                                             '_' || TO_CHAR (SYSDATE, p_file_datestamp))
-                     END arch_filename,
-                     NVL (p_arch_directory, arch_directory) arch_directory,
-                     NVL (p_min_bytes, min_bytes) min_bytes,
-                     NVL (p_max_bytes, max_bytes) max_bytes,
-                     NVL (p_notification, notification) notification,
-                     NVL (p_dateformat, DATEFORMAT) DATEFORMAT,
-                     NVL (p_timestampformat, timestampformat) timestampformat,
-                     NVL (p_delimiter, delimiter) delimiter,
-                     NVL (p_quotechar, quotechar) quotechar,
-                     NVL (p_headers, headers) headers
-                FROM filehub_conf
-               WHERE filehub_id = filehub_id AND REGEXP_LIKE (filehub_type, '^extract$', 'i'));
+      BEGIN
+         SELECT arch_directory,
+                arch_filename,
+                filename,
+                DIRECTORY,
+                core_utils.get_dir_path (DIRECTORY) || '/' || filename filepath,
+                core_utils.get_dir_path (arch_directory) || '/' || arch_filename arch_filepath,
+                source_owner,
+                source_object,
+                min_bytes,
+                max_bytes,
+                notification,
+                'alter session set nls_date_format=''' || DATEFORMAT || '''' dateformat_ddl,
+                'alter session set nls_date_format=''' || timestampformat || ''''
+                                                                                timestampformat_ddl,
+                delimiter,
+                quotechar,
+                headers
+           INTO r_fh_conf
+           FROM (SELECT NVL (p_filehub_id, filehub_id) filehub_id,
+                        filehub_name filehub_name,
+                        filehub_group filehub_group,
+                        filehub_type,
+                        UPPER (NVL (p_object_owner, object_owner)) source_owner,
+                        UPPER (NVL (p_object_name, object_name)) source_object,
+                        NVL (p_directory, DIRECTORY) DIRECTORY,
+                        CASE NVL (p_file_datestamp, file_datestamp)
+                           WHEN 'NA'
+                              THEN NVL (p_filename, filename)
+                           ELSE REGEXP_REPLACE (NVL (p_filename, filename),
+                                                '\.',
+                                                   '_'
+                                                || TO_CHAR (SYSDATE,
+                                                            NVL (p_file_datestamp, file_datestamp))
+                                                || '.')
+                        END filename,
+                        CASE NVL (p_file_datestamp, file_datestamp)
+                           WHEN 'NA'
+                              THEN    NVL (p_filename, filename)
+                                   || '.'
+                                   || TO_CHAR (SYSDATE, 'yyyymmddhhmiss')
+                           ELSE REGEXP_REPLACE (NVL (p_filename, filename),
+                                                '\.',
+                                                   '_'
+                                                || TO_CHAR (SYSDATE,
+                                                            NVL (p_file_datestamp, file_datestamp))
+                                                || '.')
+                        END arch_filename,
+                        NVL (p_arch_directory, arch_directory) arch_directory,
+                        NVL (p_min_bytes, min_bytes) min_bytes,
+                        NVL (p_max_bytes, max_bytes) max_bytes,
+                        NVL (p_notification, notification) notification,
+                        NVL (p_dateformat, DATEFORMAT) DATEFORMAT,
+                        NVL (p_timestampformat, timestampformat) timestampformat,
+                        NVL (p_delimiter, delimiter) delimiter,
+                        NVL (p_quotechar, quotechar) quotechar,
+                        NVL (p_headers, headers) headers
+                   FROM filehub_conf
+                  WHERE filehub_id = filehub_id AND REGEXP_LIKE (filehub_type, '^extract$', 'i'));
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            raise_application_error (-20001, '');
+      END;
 
+      o_app.set_action ('Configure NLS formats');
       -- set date and timestamp NLS formats
       core_utils.ddl_exec (r_fh_conf.dateformat_ddl, 'nls_date_format DDL: ', p_debug);
       core_utils.ddl_exec (r_fh_conf.timestampformat_ddl, 'nls_timestamp_format DDL: ', p_debug);
@@ -329,10 +343,22 @@ IS
                          p_debug          => p_debug);
       l_file_dt := SYSDATE;
       -- copy the file to the target location
-      core_utils.host_cmd ('cp -p arch_filepath filepath', p_debug => p_debug);
+      core_utils.host_cmd ('cp -p ' || r_fh_conf.arch_filepath || ' ' || r_fh_conf.filepath,
+                           p_debug      => p_debug);
+
       -- get file attributes
-      UTL_FILE.fgetattr (r_fh_conf.DIRECTORY, r_fh_conf.filename, l_exists, l_num_bytes,
-                         l_blocksize);
+      IF p_debug
+      THEN
+         l_num_bytes := 0;
+         o_app.log_msg ('Reporting 0 size file in debug mode');
+      ELSE
+         UTL_FILE.fgetattr (r_fh_conf.DIRECTORY,
+                            r_fh_conf.filename,
+                            l_exists,
+                            l_num_bytes,
+                            l_blocksize);
+      END IF;
+
       -- audit the file just extracted
       -- don't yet know how I'll get file_dt
       o_app.set_action ('Audit extract file');
@@ -341,8 +367,9 @@ IS
                   p_arch_filename      => r_fh_conf.arch_filepath,
                   p_num_bytes          => l_num_bytes,
                   p_num_lines          => l_numlines,
-                  p_file_dt            => NULL,
+                  p_file_dt            => l_file_dt,
                   p_debug              => p_debug);
+
       o_app.clear_app_info;
    EXCEPTION
       WHEN OTHERS
