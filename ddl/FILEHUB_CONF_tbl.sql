@@ -11,22 +11,22 @@ CREATE TABLE tdinc.filehub_conf
 	 object_owner		VARCHAR2(30)    NOT NULL,
 	 object_name		VARCHAR2(30)    NOT NULL,
 	 directory		VARCHAR2(30)	NOT NULL,
-	 filename		VARCHAR2(30)    NOT NULL,		
+	 filename		VARCHAR2(50)    NOT NULL,		
 	 arch_directory     	VARCHAR2(30) 	NOT NULL,
 	 min_bytes		NUMBER 		DEFAULT 0 NOT NULL,
 	 max_bytes              NUMBER 		DEFAULT 0 NOT NULL,
 	 file_datestamp		VARCHAR2(30) 	DEFAULT 'yyyymmddhhmiss' NOT NULL,
 	 notification   	VARCHAR2(6) 	DEFAULT 'none' NOT NULL,
-	 source_directory 	VARCHAR2(50) 	NOT NULL,
-	 source_regexp   	VARCHAR2(100) 	NOT NULL,
-	 regexp_options		VARCHAR2(10)    DEFAULT 'i' NOT NULL,
-	 multi_files_action	VARCHAR2(10) 	DEFAULT 'newest' NOT null,
-	 file_requirement	VARCHAR2(8) 	DEFAULT 'required' NOT null,
+	 source_directory 	VARCHAR2(50),
+	 source_regexp   	VARCHAR2(100),
+	 regexp_options		VARCHAR2(10)    DEFAULT 'i',
+	 multi_files_action	VARCHAR2(10) 	DEFAULT 'newest',
+	 file_requirement	VARCHAR2(8) 	DEFAULT 'required',
 	 dateformat		VARCHAR2(30)   	DEFAULT 'mm/dd/yyyy hh:mi:ss am' NOT NULL,
 	 timestampformat	VARCHAR2(30)   	DEFAULT 'mm/dd/yyyy hh:mi:ss:x:ff am' NOT NULL,
 	 delimiter		VARCHAR2(1)    	DEFAULT ',' NOT NULL,
 	 quotechar		VARCHAR2(1) 	DEFAULT '"' NOT NULL,
-	 headers		VARCHAR2(7) 	DEFAULT 'none' NOT NULL,
+	 headers		VARCHAR2(7) 	DEFAULT 'exclude' NOT NULL,
 	 created_user   	VARCHAR2(30) 	DEFAULT sys_context('USERENV','SESSION_USER') NOT NULL,
 	 created_dt     	DATE 		DEFAULT sysdate,
 	 modified_user  	VARCHAR2(30)	DEFAULT sys_context('USERENV','SESSION_USER'),
@@ -60,7 +60,7 @@ COMMENT ON COLUMN tdinc.filehub_conf.file_requirement IS '"required" or "none": 
 COMMENT ON COLUMN tdinc.filehub_conf.dateformat IS 'NLS_DATE_FORMAT of date columns in the extract';
 COMMENT ON COLUMN tdinc.filehub_conf.delimiter IS 'delimiter used to separate columns';
 COMMENT ON COLUMN tdinc.filehub_conf.quotechar IS 'quotechar used to support columns. An NA specifies that no quotechar is used';
-COMMENT ON COLUMN tdinc.filehub_conf.include_headers IS 'a indicator of whether headers should be included as the first row in the file: "headers" or "none"';
+COMMENT ON COLUMN tdinc.filehub_conf.headers IS 'a indicator of whether headers should be included as the first row in the file: "include" or "exclude"';
 
 ALTER TABLE tdinc.filehub_conf ADD (
   CONSTRAINT filehub_conf_pk
