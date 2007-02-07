@@ -2,38 +2,39 @@
 SET serveroutput on size unlimited
 SET echo on
 
-DROP TABLESPACE tdinc
-     INCLUDING contents
-/
+-- DROP TABLESPACE tdinc
+--      INCLUDING CONTENTS AND datafiles
+-- /
 
-CREATE TABLESPACE tdinc
-DATAFILE SIZE 1M
-AUTOEXTEND ON NEXT 1M MAXSIZE 20M
-EXTENT MANAGEMENT LOCAL AUTOALLOCATE SEGMENT SPACE MANAGEMENT AUTO;
+-- CREATE TABLESPACE tdinc
+-- DATAFILE '/u00/oradata/dtdinc/tdinc_01.dbf'
+-- SIZE 1M
+-- AUTOEXTEND ON NEXT 1M MAXSIZE 20M
+-- EXTENT MANAGEMENT LOCAL AUTOALLOCATE SEGMENT SPACE MANAGEMENT AUTO;
 
-DROP USER tdinc CASCADE
-/
+-- DROP USER tdinc CASCADE
+-- /
 
-CREATE USER tdinc IDENTIFIED BY td1nc0n1y DEFAULT TABLESPACE tdinc;
-grant CONNECT to tdinc;
-grant RESOURCE to tdinc;
-grant ALTER ANY TABLE to tdinc;
-grant ALTER SESSION to tdinc;
-grant EXECUTE ANY PROCEDURE to tdinc;
-grant GLOBAL QUERY REWRITE to tdinc;
-grant INSERT ANY TABLE to tdinc;
-grant SELECT ANY DICTIONARY to tdinc;
-grant SELECT ANY TABLE to tdinc;
-grant UPDATE ANY TABLE to tdinc;
-GRANT ALTER ANY INDEX TO tdinc;
-GRANT CREATE ANY directory TO tdinc;
+-- CREATE USER tdinc IDENTIFIED BY td1nc0n1y DEFAULT TABLESPACE tdinc;
+-- grant CONNECT to tdinc;
+-- grant RESOURCE to tdinc;
+-- grant ALTER ANY TABLE to tdinc;
+-- grant ALTER SESSION to tdinc;
+-- grant EXECUTE ANY PROCEDURE to tdinc;
+-- grant GLOBAL QUERY REWRITE to tdinc;
+-- grant INSERT ANY TABLE to tdinc;
+-- grant SELECT ANY DICTIONARY to tdinc;
+-- grant SELECT ANY TABLE to tdinc;
+-- grant UPDATE ANY TABLE to tdinc;
+-- GRANT ALTER ANY INDEX TO tdinc;
+-- GRANT CREATE ANY directory TO tdinc;
 
-CREATE ROLE tdinc_coreutils;
+-- CREATE ROLE tdinc_coreutils;
 
-CREATE ROLE tdinc_filehub;
-CREATE ROLE tdinc_filehub;
+-- CREATE ROLE tdinc_filehub;
+-- CREATE ROLE tdinc_filehub;
 
-CREATE ROLE tdinc_dbflex;
+-- CREATE ROLE tdinc_dbflex;
 
 PROMPT 'First create the efw tables'
 @./ddl/COUNT_TABLE_tbl
