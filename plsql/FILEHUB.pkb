@@ -266,8 +266,8 @@ IS
                 arch_filename,
                 filename,
                 DIRECTORY,
-                core_utils.get_dir_path (DIRECTORY) || '/' || filename filepath,
-                core_utils.get_dir_path (arch_directory) || '/' || arch_filename arch_filepath,
+                coreutils.get_dir_path (DIRECTORY) || '/' || filename filepath,
+                coreutils.get_dir_path (arch_directory) || '/' || arch_filename arch_filepath,
                 source_owner,
                 source_object,
                 min_bytes,
@@ -328,8 +328,8 @@ IS
 
       o_app.set_action ('Configure NLS formats');
       -- set date and timestamp NLS formats
-      core_utils.ddl_exec (r_fh_conf.dateformat_ddl, 'nls_date_format DDL: ', p_debug);
-      core_utils.ddl_exec (r_fh_conf.timestampformat_ddl, 'nls_timestamp_format DDL: ', p_debug);
+      coreutils.ddl_exec (r_fh_conf.dateformat_ddl, 'nls_date_format DDL: ', p_debug);
+      coreutils.ddl_exec (r_fh_conf.timestampformat_ddl, 'nls_timestamp_format DDL: ', p_debug);
       o_app.set_action ('Extract data');
       -- extract data to arch location first
       l_numlines :=
@@ -343,7 +343,7 @@ IS
                          p_debug          => p_debug);
       l_file_dt := SYSDATE;
       -- copy the file to the target location
-      core_utils.host_cmd ('cp -p ' || r_fh_conf.arch_filepath || ' ' || r_fh_conf.filepath,
+      coreutils.host_cmd ('cp -p ' || r_fh_conf.arch_filepath || ' ' || r_fh_conf.filepath,
                            p_debug      => p_debug);
 
       -- get file attributes
