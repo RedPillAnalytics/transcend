@@ -1,10 +1,10 @@
-CREATE OR REPLACE PACKAGE BODY tdinc.core_utils
+CREATE OR REPLACE PACKAGE BODY tdinc.coreutils
 AS
    -- procedure executes the host_cmd function and raises an exception with the return code
    PROCEDURE host_cmd (p_cmd VARCHAR2, p_stdin VARCHAR2 DEFAULT ' ', p_debug BOOLEAN DEFAULT FALSE)
    AS
       l_retval   NUMBER;
-      o_app      applog := applog (p_module => 'CORE_UTILS.HOST_CMD');
+      o_app      applog := applog (p_module => 'COREUTILS.HOST_CMD');
    BEGIN
       DBMS_JAVA.set_output (1000000);
 
@@ -26,7 +26,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         job.log_err;
+         o_app.log_err;
          RAISE;
    END host_cmd;
 
@@ -47,7 +47,7 @@ AS
       p_debug_msg   VARCHAR2 DEFAULT 'DDL statememt: ',
       p_debug       BOOLEAN DEFAULT FALSE)
    AS
-      o_app   applog := applog (p_module => 'CORE_UTILS.DDL_EXEC', p_debug => p_debug);
+      o_app   applog := applog (p_module => 'COREUTILS.DDL_EXEC', p_debug => p_debug);
    BEGIN
       IF p_debug
       THEN
@@ -62,7 +62,7 @@ AS
       RETURN VARCHAR2
    AS
       l_path   all_directories.directory_path%TYPE;
-      o_app    applog                             := applog (p_module      => 'CORE_UTILS.GET_DIR_PATH');
+      o_app    applog                              := applog (p_module      => 'COREUTILS.GET_DIR_PATH');
    BEGIN
       SELECT directory_path
         INTO l_path
@@ -88,7 +88,7 @@ AS
       RETURN VARCHAR2
    AS
       l_dirname   all_directories.directory_name%TYPE;
-      o_app       applog                          := applog (p_module      => 'CORE_UTILS.GET_DIR_NAME');
+      o_app       applog                           := applog (p_module      => 'COREUTILS.GET_DIR_NAME');
    BEGIN
       SELECT directory_name
         INTO l_dirname
@@ -120,7 +120,7 @@ AS
       l_fh     UTL_FILE.file_type;
       l_line   VARCHAR2 (2000);
       l_cnt    NUMBER             := 0;
-      o_app    applog             := applog (p_module => 'CORE_UTILS.GET_NUMLINES');
+      o_app    applog             := applog (p_module => 'COREUTILS.GET_NUMLINES');
    BEGIN
       l_fh := UTL_FILE.fopen (p_dirname, p_filename, 'R', 32767);
 
@@ -153,8 +153,8 @@ AS
       l_file_exists    BOOLEAN;
       l_file_size      NUMBER;
       l_blocksize      NUMBER;
-      o_app            applog   := applog (p_module      => 'CORE_UTILS.UNZIP_FILE',
-                                           p_debug       => p_debug);
+      o_app            applog    := applog (p_module      => 'COREUTILS.UNZIP_FILE',
+                                            p_debug       => p_debug);
    BEGIN
       l_filebase := REGEXP_REPLACE (p_filename, '\.[^\.]+$', NULL, 1, 1, 'i');
       l_filesuf := REGEXP_SUBSTR (p_filename, '[^\.]+$');
@@ -194,7 +194,7 @@ AS
          o_app.set_action ('Check for extracted file');
          -- check and make sure the unzip process worked
          -- do this by checking to see if the expected file exists
-         UTL_FILE.fgetattr (core_utils.get_dir_name (p_dirpath),
+         UTL_FILE.fgetattr (coreutils.get_dir_name (p_dirpath),
                             l_return,
                             l_file_exists,
                             l_file_size,
@@ -235,8 +235,8 @@ AS
       l_file_exists    BOOLEAN;
       l_file_size      NUMBER;
       l_blocksize      NUMBER;
-      o_app            applog := applog (p_module      => 'CORE_UTILS.DECRYPT_FILE',
-                                         p_debug       => p_debug);
+      o_app            applog  := applog (p_module      => 'COREUTILS.DECRYPT_FILE',
+                                          p_debug       => p_debug);
    BEGIN
       l_filebase := REGEXP_REPLACE (p_filename, '\.[^\.]+$', NULL, 1, 1, 'i');
       l_filesuf := REGEXP_SUBSTR (p_filename, '[^\.]+$');
@@ -245,12 +245,12 @@ AS
       CASE l_filesuf
          WHEN 'gpg'
          THEN
-            IF p_debug
-            THEN
-               o_app.log_msg ('File to decrypt: ' || l_filepath);
-            ELSE
-               util.gpg_decrypt_file (l_filepath, l_filebasepath, p_passphrase);
-            END IF;
+            host_cmd (   'gpg --no-tty --passphrase-fd 0 --batch --decrypt --output '
+                      || l_filepath
+                      || ' '
+                      || l_filebasepath,
+                      p_passphrase,
+                      p_debug      => p_debug);
          ELSE
             -- this is the only case where the extension wasn't recognized
             l_encrypted := FALSE;
@@ -272,7 +272,7 @@ AS
          o_app.set_action ('Check for decrypted file');
          -- check and make sure the unzip process worked
          -- do this by checking to see if the expected file exists
-         UTL_FILE.fgetattr (core_utils.get_dir_name (p_dirpath),
+         UTL_FILE.fgetattr (coreutils.get_dir_name (p_dirpath),
                             l_return,
                             l_file_exists,
                             l_file_size,
@@ -295,12 +295,12 @@ AS
 
    -- extract data to a text file, and then peform other functions as defined in the configuration table
    PROCEDURE notify (
-      p_notification_id   notification.notification_id%TYPE,
-      p_module            notification.module%TYPE,
-      p_module_id         notification.module_id%TYPE,
-      p_debug             BOOLEAN DEFAULT FALSE)
+      p_notification_type   notification.notification_type%TYPE,
+      p_component           notification.component%TYPE,
+      p_component_id        notification.component_id%TYPE,
+      p_debug               BOOLEAN DEFAULT FALSE)
    AS
-      o_app   applog := applog (p_module => 'EXTRACTS.NOTIFY', p_debug => p_debug);
+      o_app   applog := applog (p_module => 'COREUTILS.NOTIFY', p_debug => p_debug);
    BEGIN
       NULL;
    EXCEPTION
@@ -309,5 +309,5 @@ AS
          o_app.log_err;
          RAISE;
    END notify;
-END core_utils;
+END coreutils;
 /
