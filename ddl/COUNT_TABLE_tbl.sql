@@ -18,5 +18,5 @@ ALTER TABLE tdinc.count_table ADD CONSTRAINT count_tbl_pk PRIMARY KEY (session_i
     TABLESPACE tdinc
 /
 
-GRANT SELECT ON tdinc.count_table TO tdinc_job
+GRANT SELECT ON tdinc.count_table TO tdinc_applog
 /
