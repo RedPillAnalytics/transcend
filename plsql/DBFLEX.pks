@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE tdinc.etl AUTHID CURRENT_USER
+CREATE OR REPLACE PACKAGE tdinc.dbflex AUTHID CURRENT_USER
 AS
    PROCEDURE trunc_tab(
       p_owner   IN   VARCHAR2,
@@ -78,5 +78,5 @@ AS
       p_owner   VARCHAR2,
       p_table   VARCHAR2,
       p_debug   BOOLEAN DEFAULT FALSE );
-END etl;
+END dbflex;
 /
