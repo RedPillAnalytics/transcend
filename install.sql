@@ -30,13 +30,12 @@ SET echo on
 -- GRANT CREATE ANY directory TO tdinc;
 
 -- CREATE ROLE tdinc_coreutils;
-
 -- CREATE ROLE tdinc_filehub;
--- CREATE ROLE tdinc_filehub;
-
 -- CREATE ROLE tdinc_dbflex;
+-- CREATE ROLE tdinc_applog;
 
-PROMPT 'First create the efw tables'
+
+PROMPT 'First create the tdinc tables'
 @./ddl/COUNT_TABLE_tbl
 @./ddl/LOG_TABLE_tbl
 @./ddl/DIR_LIST_tbl
@@ -58,8 +57,8 @@ PROMPT 'create custom aggregate function'
 @./plsql/STRAGG.fnc
 
 PROMPT 'create packages'
-@./plsql/CORE_UTILS.pks
-@./plsql/CORE_UTILS.pkb
+@./plsql/COREUTILS.pks
+@./plsql/COREUTILS.pkb
 @./plsql/DBFLEX.pks
 @./plsql/DBFLEX.pkb
 @./plsql/FILEHUB.pks
