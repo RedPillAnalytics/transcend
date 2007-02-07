@@ -300,10 +300,18 @@ AS
       p_component_id        notification.component_id%TYPE,
       p_debug               BOOLEAN DEFAULT FALSE)
    AS
+      r_notification notification%rowtype;
       o_app   applog := applog (p_module => 'COREUTILS.NOTIFY', p_debug => p_debug);
    BEGIN
-      NULL;
+      SELECT *
+	INTO r_notification
+       WHERE notification_type=p_notification_type
+	 AND component = p_component
+	 AND component_id = p_component_id;
    EXCEPTION
+      WHEN no_data_found
+      THEN
+      raise_application_error(-20001,'Invalid combination of parameters');
       WHEN OTHERS
       THEN
          o_app.log_err;
