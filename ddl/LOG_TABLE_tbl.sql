@@ -23,5 +23,5 @@ ALTER TABLE tdinc.log_table ADD CONSTRAINT log_msg_pk PRIMARY KEY (session_id,en
       TABLESPACE tdinc ENABLE
 /
 
-GRANT SELECT ON tdinc.log_table TO tdinc_job
+GRANT SELECT ON tdinc.log_table TO tdinc_applog
 /
