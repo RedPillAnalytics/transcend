@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE tdinc.core_utils
+CREATE OR REPLACE PACKAGE tdinc.coreutils
 AS
    PROCEDURE get_dir_list (p_directory IN VARCHAR2)
    AS
@@ -32,12 +32,12 @@ AS
       RETURN NUMBER;
 
    PROCEDURE notify (
-      p_notification_id   notification.notification_id%TYPE,
-      p_module            notification.module%TYPE,
-      p_module_id         notification.module_id%TYPE,
-      p_debug             BOOLEAN DEFAULT FALSE);
+      p_notification_type   notification.notification_type%TYPE,
+      p_component           notification.component%TYPE,
+      p_component_id        notification.component_id%TYPE,
+      p_debug               BOOLEAN DEFAULT FALSE);
 
    FUNCTION unzip_file (p_dirpath VARCHAR2, p_filename VARCHAR2, p_debug BOOLEAN DEFAULT FALSE)
       RETURN VARCHAR2;
-END core_utils;
+END coreutils;
 /
