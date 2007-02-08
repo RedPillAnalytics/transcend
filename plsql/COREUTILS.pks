@@ -35,6 +35,9 @@ AS
       p_notification_type   notification.notification_type%TYPE,
       p_component           notification.component%TYPE,
       p_component_id        notification.component_id%TYPE,
+      p_sender              notification.sender%TYPE DEFAULT NULL,
+      p_recipients          notification.recipients%TYPE DEFAULT NULL,
+      p_baseurl             notification.baseurl%TYPE DEFAULT NULL,
       p_debug               BOOLEAN DEFAULT FALSE);
 
    FUNCTION unzip_file (p_dirpath VARCHAR2, p_filename VARCHAR2, p_debug BOOLEAN DEFAULT FALSE)
