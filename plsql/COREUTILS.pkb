@@ -298,20 +298,42 @@ AS
       p_notification_type   notification.notification_type%TYPE,
       p_component           notification.component%TYPE,
       p_component_id        notification.component_id%TYPE,
+      p_sender              notification.sender%TYPE DEFAULT NULL,
+      p_recipients          notification.recipients%TYPE DEFAULT NULL,
+      p_baseurl             notification.baseurl%TYPE DEFAULT NULL,
       p_debug               BOOLEAN DEFAULT FALSE)
    AS
-      r_notification notification%rowtype;
-      o_app   applog := applog (p_module => 'COREUTILS.NOTIFY', p_debug => p_debug);
+      r_notification   notification%ROWTYPE;
+      o_app            applog        := applog (p_module      => 'COREUTILS.NOTIFY',
+                                                p_debug       => p_debug);
    BEGIN
-      SELECT *
-	INTO r_notification
-       WHERE notification_type=p_notification_type
-	 AND component = p_component
-	 AND component_id = p_component_id;
+      SELECT p_notification_type,
+             p_component,
+             p_component_id,
+             NVL (p_sender, sender),
+             NVL (p_recipients, recipients),
+             NVL (p_baseurl, baseurl),
+             created_user,
+             created_dt,
+             modified_user,
+             modified_dt
+        INTO r_notification
+        FROM notification
+       WHERE notification_type = p_notification_type
+         AND component = p_component
+         AND component_id = p_component_id;
+
+      CASE notification_type
+         WHEN 'extract_alert'
+         THEN
+            NULL;
+         ELSE
+            NULL;
+      END CASE;
    EXCEPTION
-      WHEN no_data_found
+      WHEN NO_DATA_FOUND
       THEN
-      raise_application_error(-20001,'Invalid combination of parameters');
+         o_app.log_msg ('Notification not configured');
       WHEN OTHERS
       THEN
          o_app.log_err;
