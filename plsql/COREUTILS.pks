@@ -32,11 +32,12 @@ AS
       RETURN NUMBER;
 
    PROCEDURE notify (
+      p_notification_id     notification.notification_id%TYPE,
       p_notification_type   notification.notification_type%TYPE,
-      p_component           notification.component%TYPE,
-      p_component_id        notification.component_id%TYPE,
       p_sender              notification.sender%TYPE DEFAULT NULL,
       p_recipients          notification.recipients%TYPE DEFAULT NULL,
+      p_subject             notification.subject%TYPE DEFAULT NULL,
+      p_message             notification.MESSAGE%TYPE DEFAULT NULL,
       p_baseurl             notification.baseurl%TYPE DEFAULT NULL,
       p_debug               BOOLEAN DEFAULT FALSE);
 
