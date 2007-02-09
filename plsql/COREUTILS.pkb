@@ -295,11 +295,12 @@ AS
 
    -- extract data to a text file, and then peform other functions as defined in the configuration table
    PROCEDURE notify (
+      p_notification_id     notification.notification_id%TYPE,
       p_notification_type   notification.notification_type%TYPE,
-      p_component           notification.component%TYPE,
-      p_component_id        notification.component_id%TYPE,
       p_sender              notification.sender%TYPE DEFAULT NULL,
       p_recipients          notification.recipients%TYPE DEFAULT NULL,
+      p_subject             notification.subject%TYPE DEFAULT NULL,
+      p_message             notification.MESSAGE%TYPE DEFAULT NULL,
       p_baseurl             notification.baseurl%TYPE DEFAULT NULL,
       p_debug               BOOLEAN DEFAULT FALSE)
    AS
@@ -307,11 +308,11 @@ AS
       o_app            applog        := applog (p_module      => 'COREUTILS.NOTIFY',
                                                 p_debug       => p_debug);
    BEGIN
-      SELECT p_notification_type,
-             p_component,
-             p_component_id,
+      SELECT NVL (p_notification_type, notification_type),
              NVL (p_sender, sender),
              NVL (p_recipients, recipients),
+             NVL (p_subject, subject),
+             NVL (p_message, MESSAGE),
              NVL (p_baseurl, baseurl),
              created_user,
              created_dt,
