@@ -18,6 +18,8 @@ CREATE TABLE tdinc.filehub_detail
 	 file_dt DATE NOT null,
 	 processed_ts TIMESTAMP DEFAULT systimestamp NOT NULL,
 	 object_completion VARCHAR2(10),
+	 notification VARCHAR2(20),
+	 notification_id number,
 	 session_id NUMBER DEFAULT sys_context('USERENV','SESSIONID') NOT null)
        TABLESPACE tdinc
 /
@@ -38,6 +40,8 @@ COMMENT ON COLUMN tdinc.filehub_detail.num_lines IS 'number of lines in the file
 COMMENT ON COLUMN tdinc.filehub_detail.file_dt IS 'last modified date on the file';
 COMMENT ON COLUMN tdinc.filehub_detail.processed_ts IS 'date the file was processed by File Package';
 COMMENT ON COLUMN tdinc.filehub_detail.object_completion IS 'Holds logging information for further processing. Can be null, "external" or "external alter" to specify what level of external table processing was done.';
+COMMENT ON COLUMN tdinc.filehub_detail.notification IS 'Logging messages concerning the notification piece';
+COMMENT ON COLUMN tdinc.filehub_detail.notification_id IS 'identifier from the NOTIFICATION table';
 COMMENT ON COLUMN tdinc.filehub_detail.session_id IS 'AUDSID number of the oracle session';
 
 GRANT SELECT ON TDINC.FILEHUB_DETAIL TO tdinc_filehub;
