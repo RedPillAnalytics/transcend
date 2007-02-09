@@ -6,8 +6,6 @@ DROP SEQUENCE tdinc.notification_seq
 
 CREATE TABLE tdinc.notification
        ( notification_id NUMBER NOT NULL,
-	 component VARCHAR2(48) NOT NULL,
-	 component_id NUMBER NOT NULL,
 	 notification_type VARCHAR2(30) NOT NULL,
 	 sender         VARCHAR2(1024) NOT NULL,
 	 recipients     VARCHAR2(2000) NOT NULL,
