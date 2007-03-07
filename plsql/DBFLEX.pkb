@@ -5,7 +5,7 @@ AS
    PROCEDURE trunc_tab (p_owner IN VARCHAR2, p_table IN VARCHAR2)
    AS
       PRAGMA AUTONOMOUS_TRANSACTION;
-      l_app   app_info := app_info (p_module => 'DBFLEX.TRUNC_TAB');
+      o_app   applog := applog (p_module => 'DBFLEX.TRUNC_TAB');
    BEGIN
       EXECUTE IMMEDIATE 'truncate table ' || p_owner || '.' || p_table;
 
@@ -24,7 +24,7 @@ AS
       l_ind_count   NUMBER                     := 1;
       l_username    user_users.username%TYPE;
       l_rows        BOOLEAN                    := FALSE;                  -- to catch empty cursors
-      l_app         app_info   := app_info (p_module      => 'DBFLEX.CLONE_INDEXES',
+      o_app         applog   := applog (p_module      => 'DBFLEX.CLONE_INDEXES',
                                             p_debug       => p_debug);
    BEGIN
       IF p_debug
@@ -177,7 +177,7 @@ AS
       l_ind_ddl   VARCHAR2 (2000);
       l_rows      BOOLEAN         := FALSE;
       l_sql       VARCHAR2 (2000);
-      l_app       app_info      := app_info (p_module      => 'DBFLEX.DROP_INDEXES',
+      o_app       applog      := applog (p_module      => 'DBFLEX.DROP_INDEXES',
                                              p_debug       => p_debug);
    BEGIN
       -- drop constraints
@@ -245,7 +245,7 @@ AS
       l_sqlstmt   VARCHAR2 (2000);
       l_object    all_objects.object_name%TYPE;
       l_table     all_tables.table_name%TYPE;
-      l_app       app_info                       := app_info (p_module => 'DBFLEX.LOAD_TAB');
+      o_app       applog                       := applog (p_module => 'DBFLEX.LOAD_TAB');
    BEGIN
       IF p_trunc
       THEN
@@ -303,8 +303,8 @@ AS
       l_values       VARCHAR2 (32000);
       e_unique_key   EXCEPTION;
       PRAGMA EXCEPTION_INIT (e_unique_key, -936);
-      l_app          app_info
-                     := app_info (p_module      => 'DBFLEX.MERGE_TAB',
+      o_app          applog
+                     := applog (p_module      => 'DBFLEX.MERGE_TAB',
                                   p_action      => 'Generate ON clause');
    BEGIN
       -- construct the "ON" clause for the MERGE statement
@@ -432,8 +432,8 @@ AS
       l_rows             BOOLEAN                 := FALSE;
       e_data_cartridge   EXCEPTION;
       PRAGMA EXCEPTION_INIT (e_data_cartridge, -29913);
-      l_app              app_info
-                                 := app_info (p_module      => 'DBFLEX.LOAD_REGEXP',
+      o_app              applog
+                                 := applog (p_module      => 'DBFLEX.LOAD_REGEXP',
                                               p_debug       => p_debug);
    BEGIN
       IF NOT p_debug
@@ -635,8 +635,8 @@ AS
       l_cachehit       NUMBER;
       e_no_stats       EXCEPTION;
       PRAGMA EXCEPTION_INIT (e_no_stats, -20000);
-      l_app            app_info
-                              := app_info (p_module      => 'DBFLEX.EXCHANGE_TABLE',
+      o_app            applog
+                              := applog (p_module      => 'DBFLEX.EXCHANGE_TABLE',
                                            p_debug       => p_debug);
    BEGIN
       IF NOT p_debug
@@ -804,8 +804,8 @@ AS
       l_rows           BOOLEAN                                  := FALSE;
       l_partname       all_tab_partitions.partition_name%TYPE;
       l_sql            VARCHAR2 (2000);
-      l_app            app_info
-                             := app_info (p_module      => 'DBFLEX.EXCHANGE_REGEXP',
+      o_app            applog
+                             := applog (p_module      => 'DBFLEX.EXCHANGE_REGEXP',
                                           p_debug       => p_debug);
    BEGIN
       IF NOT p_debug
@@ -890,8 +890,8 @@ AS
       l_ddl           VARCHAR2 (2000);
       l_cnt           NUMBER                         := 0;
       l_partitioned   all_indexes.partitioned%TYPE;
-      l_app           app_info
-                            := app_info (p_module      => 'DBFLEX.UNUSABLE_INDEXES',
+      o_app           applog
+                            := applog (p_module      => 'DBFLEX.UNUSABLE_INDEXES',
                                          p_debug       => p_debug);
    BEGIN
       o_app.set_action ('Test to see if the table is partitioned');
@@ -1041,8 +1041,8 @@ AS
          INDEX BY BINARY_INTEGER;
 
       tt_parts      parts_ttyp;
-      l_app         app_info
-                            := app_info (p_module      => 'DBFLEX.UNUSABLE_IDX_SRC',
+      o_app         applog
+                            := applog (p_module      => 'DBFLEX.UNUSABLE_IDX_SRC',
                                          p_debug       => p_debug);
    BEGIN
       IF p_src_col IS NULL
@@ -1124,8 +1124,8 @@ AS
       l_ddl    VARCHAR2 (2000);
       l_rows   BOOLEAN         := FALSE;                                  -- to catch empty cursors
       l_cnt    NUMBER          := 0;
-      l_app    app_info
-         := app_info (p_module      => 'DBFLEX.USABLE_INDEXES',
+      o_app    applog
+         := applog (p_module      => 'DBFLEX.USABLE_INDEXES',
                       p_action      => 'Rebuild indexes',
                       p_debug       => p_debug);
    BEGIN
