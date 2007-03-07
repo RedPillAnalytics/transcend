@@ -4,6 +4,18 @@ AS
    AS
       LANGUAGE JAVA
       NAME 'CoreUtils.getDirList( java.lang.String )';
+      
+   -- procedure to copy a file from one place to another
+   PROCEDURE copy_file (p_srcfile VARCHAR2, p_dstfile varchar2)
+   AS
+      LANGUAGE JAVA
+      NAME 'CoreUtils.copyFile( java.lang.String, java.lang.String )';
+
+   -- procedure to copy a file from one place to another
+   PROCEDURE delete_file (p_srcfile VARCHAR2)
+   AS
+      LANGUAGE JAVA
+      NAME 'CoreUtils.deleteFile( java.lang.String )';      
 
    -- procedure calls Utils.runCmd java method
    FUNCTION host_cmd (p_cmd IN VARCHAR2, p_stdin IN VARCHAR2)
@@ -33,7 +45,9 @@ AS
 
    PROCEDURE notify (
       p_notification_id     notification.notification_id%TYPE,
-      p_notification_type   notification.notification_type%TYPE,
+      p_component_id        NUMBER,
+      p_detail_id           NUMBER,
+      p_notification_type   notification.notification_type%TYPE DEFAULT NULL,
       p_sender              notification.sender%TYPE DEFAULT NULL,
       p_recipients          notification.recipients%TYPE DEFAULT NULL,
       p_subject             notification.subject%TYPE DEFAULT NULL,
