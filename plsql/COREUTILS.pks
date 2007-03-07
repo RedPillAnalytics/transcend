@@ -12,10 +12,11 @@ AS
       NAME 'CoreUtils.copyFile( java.lang.String, java.lang.String )';
 
    -- procedure to copy a file from one place to another
-   PROCEDURE delete_file (p_srcfile VARCHAR2)
+   FUNCTION delete_file (p_srcfile VARCHAR2)
+      RETURN NUMBER
    AS
       LANGUAGE JAVA
-      NAME 'CoreUtils.deleteFile( java.lang.String )';      
+      NAME 'CoreUtils.deleteFile( java.lang.String ) return integer';      
 
    -- procedure calls Utils.runCmd java method
    FUNCTION host_cmd (p_cmd IN VARCHAR2, p_stdin IN VARCHAR2)
@@ -23,6 +24,9 @@ AS
    AS
       LANGUAGE JAVA
       NAME 'CoreUtils.hostCmd(java.lang.String, java.lang.String) return integer';
+      
+   -- procedure executes the delete_file function and translates the return code to an exception      
+   PROCEDURE delete_file (p_srcfile VARCHAR2, p_debug BOOLEAN DEFAULT FALSE);
 
    -- procedure executes the run_cmd function and raises an exception with the return code
    PROCEDURE host_cmd (p_cmd VARCHAR2, p_stdin VARCHAR2 DEFAULT ' ', p_debug BOOLEAN DEFAULT FALSE);
