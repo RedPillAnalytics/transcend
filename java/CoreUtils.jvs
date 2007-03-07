@@ -29,14 +29,18 @@ public class CoreUtils extends Object {
 	}  
     }
 
-    public static void deleteFile(String srcfile)
-	throws IOException {
+    public static int deleteFile(String srcfile) {
 	boolean deleted;
+	int rc;
 	File srcFile = new File( srcfile );
 	deleted = srcFile.delete();
-	if (!deleted) {
-	    System.err.println("Could not delete file " + srcfile);
+	if (deleted) {
+	    rc = 0;
+	} 
+	else {
+	    rc = 1;
 	}
+	return rc;
     }
 
     public static int hostCmd(String cmd, String stdIn) {
