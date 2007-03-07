@@ -29,6 +29,37 @@ AS
          o_app.log_err;
          RAISE;
    END host_cmd;
+   
+   -- procedure executes the host_cmd function and raises an exception with the return code
+   PROCEDURE delete_file (p_srcfile VARCHAR2, p_debug BOOLEAN DEFAULT FALSE)
+   AS
+      l_retval   NUMBER;
+      o_app      applog := applog (p_module => 'COREUTILS.DELETE_FILE');
+   BEGIN
+      DBMS_JAVA.set_output (1000000);
+
+      IF p_debug
+      THEN
+         o_app.log_msg ('File to delete: ' || p_srcfile);
+      ELSE
+         l_retval := delete_file (p_srcfile);
+
+         IF l_retval <> 0
+         THEN
+            raise_application_error
+                             (-20020,
+                               'Java Error: method CoreUtils.deleteFile was unable to delete the file '||p_srcfile);
+         END IF;
+      END IF;
+
+      o_app.clear_app_info;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         o_app.log_err;
+         RAISE;
+   END delete_file;
+   
 
 -- log a message to the log_table
 -- the preferred method for using the logging framework is to instantiate a APPLOG object and use that
@@ -296,7 +327,9 @@ AS
    -- extract data to a text file, and then peform other functions as defined in the configuration table
    PROCEDURE notify (
       p_notification_id     notification.notification_id%TYPE,
-      p_notification_type   notification.notification_type%TYPE,
+      p_component_id        NUMBER,
+      p_detail_id           NUMBER,
+      p_notification_type   notification.notification_type%TYPE DEFAULT NULL,
       p_sender              notification.sender%TYPE DEFAULT NULL,
       p_recipients          notification.recipients%TYPE DEFAULT NULL,
       p_subject             notification.subject%TYPE DEFAULT NULL,
@@ -305,10 +338,14 @@ AS
       p_debug               BOOLEAN DEFAULT FALSE)
    AS
       r_notification   notification%ROWTYPE;
+      r_filehub        filehub_conf%ROWTYPE;
+      r_fh_detail      filehub_detail%ROWTYPE;
+      l_msg            VARCHAR2 (32000);
       o_app            applog        := applog (p_module      => 'COREUTILS.NOTIFY',
                                                 p_debug       => p_debug);
    BEGIN
-      SELECT NVL (p_notification_type, notification_type),
+      SELECT notification_id,
+             NVL (p_notification_type, notification_type),
              NVL (p_sender, sender),
              NVL (p_recipients, recipients),
              NVL (p_subject, subject),
@@ -320,14 +357,39 @@ AS
              modified_dt
         INTO r_notification
         FROM notification
-       WHERE notification_type = p_notification_type
-         AND component = p_component
-         AND component_id = p_component_id;
+       WHERE notification_id = p_notification_id;
 
-      CASE notification_type
-         WHEN 'extract_alert'
+      CASE r_notification.notification_type
+         WHEN 'extract_complete'
          THEN
-            NULL;
+            SELECT *
+              INTO r_filehub
+              FROM filehub_conf
+             WHERE filehub_id = p_component_id;
+
+            SELECT *
+              INTO r_fh_detail
+              FROM filehub_detail
+             WHERE filehub_id = p_component_id AND fh_detail_id = p_detail_id;
+
+            UTL_MAIL.send
+               (sender          => r_notification.sender,
+                recipients      => r_notification.sender,
+                subject         => r_notification.subject,
+                MESSAGE         => CASE
+                   WHEN r_notification.baseurl = 'NA'
+                      THEN r_notification.MESSAGE
+                   WHEN r_notification.baseurl <> 'NA' AND r_fh_detail.num_lines > 65536
+                      THEN    r_notification.MESSAGE
+                           || CHR (13)
+                           || CHR (13)
+                           || 'The file is too large for some desktop applications, such as Microsoft Excel, to open.'
+                           || CHR (13)
+                           || r_notification.baseurl
+                           || '/'
+                           || r_fh_detail.trg_filename
+                END,
+                mime_type       => 'text/html');
          ELSE
             NULL;
       END CASE;
