@@ -7,7 +7,7 @@ SET echo on
 -- /
 
 -- CREATE TABLESPACE tdinc
--- DATAFILE '/u00/oradata/dtdinc/tdinc_01.dbf'
+-- DATAFILE 'C:/oracle/product/10.2.0/oradata/wtdinctdinc_01.dbf'
 -- SIZE 1M
 -- AUTOEXTEND ON NEXT 1M MAXSIZE 20M
 -- EXTENT MANAGEMENT LOCAL AUTOALLOCATE SEGMENT SPACE MANAGEMENT AUTO;
@@ -64,8 +64,19 @@ PROMPT 'create packages'
 @./plsql/FILEHUB.pks
 @./plsql/FILEHUB.pkb
 
+PROMPT 'public synonyms'
+CREATE PUBLIC SYNONYM coreutils FOR tdinc.coreutils;
+CREATE PUBLIC SYNONYM filehub FOR tdinc.filehub;
+CREATE PUBLIC SYNONYM log_table FOR tdinc.log_table;
+CREATE PUBLIC SYNONYM count_table FOR tdinc.count_table;
+CREATE PUBLIC SYNONYM stragg FOR tdinc.stragg;
+
+
 PROMPT 'java permissions'
 EXEC dbms_java.set_output(1000000);
 EXEC dbms_java.grant_permission( 'TDINC', 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'execute' );
+EXEC dbms_java.grant_permission( 'TDINC', 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'read' );
+EXEC dbms_java.grant_permission( 'TDINC', 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'write' );
+EXEC dbms_java.grant_permission( 'TDINC', 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'delete' );
 EXEC dbms_java.grant_permission( 'TDINC', 'SYS:java.lang.RuntimePermission', 'writeFileDescriptor', '' );
 EXEC dbms_java.grant_permission( 'TDINC', 'SYS:java.lang.RuntimePermission', 'readFileDescriptor','' );
