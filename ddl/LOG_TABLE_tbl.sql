@@ -2,7 +2,7 @@ DROP TABLE tdinc.log_table
 /
 
 CREATE TABLE tdinc.log_table
-       ( entry_ts TIMESTAMP (6) NOT NULL,
+       ( entry_ts TIMESTAMP (6) DEFAULT systimestamp NOT NULL,
 	 msg VARCHAR2(2000) NOT NULL,
 	 client_info VARCHAR2(64) NOT NULL,
 	 module VARCHAR2(48) NOT NULL,
@@ -17,10 +17,6 @@ CREATE TABLE tdinc.log_table
 	 call_stack VARCHAR2(1024),
 	 back_trace VARCHAR2(1024)
        ) TABLESPACE tdinc
-/
-ALTER TABLE tdinc.log_table ADD CONSTRAINT log_msg_pk PRIMARY KEY (session_id,entry_ts)
-      USING INDEX 
-      TABLESPACE tdinc ENABLE
 /
 
 GRANT SELECT ON tdinc.log_table TO tdinc_applog
