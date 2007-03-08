@@ -9,8 +9,10 @@ import java.nio.channels.*;
   
 public class CoreUtils extends Object {
     
-    public static void copyFile(String srcfile, String dstfile) {
+    public static int copyFile(String srcfile, String dstfile) {
 	
+	int rc = 0;
+
 	try {
 	    // Create channel on the source
 	    FileChannel srcChannel = new FileInputStream(srcfile).getChannel();
@@ -26,8 +28,13 @@ public class CoreUtils extends Object {
 	    dstChannel.close();
 	} catch (IOException e) {
 	    e.printStackTrace();
-	}  
+	    rc = 1;
+	}
+	finally {
+	    return rc;
+	}
     }
+
 
     public static int deleteFile(String srcfile) {
 	boolean deleted;
