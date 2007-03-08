@@ -134,8 +134,7 @@ AS
 
       -- write the record to the log table
       INSERT INTO log_table
-                  (entry_ts,
-                   msg,
+                  (msg,
                    client_info,
                    module,
                    action,
@@ -148,8 +147,7 @@ AS
                    code,
                    call_stack,
                    back_trace)
-           VALUES (SYSTIMESTAMP,
-                   l_msg,
+           VALUES (l_msg,
                    NVL (SELF.client_info, 'Not Set'),
                    NVL (SELF.module, 'Not Set'),
                    NVL (SELF.action, 'Not Set'),
@@ -210,14 +208,12 @@ AS
 
       -- store in COUNT_TABLE numbers of records affected by particular actions in modules
       INSERT INTO count_table
-                  (entry_ts,
-                   client_info,
+                  (client_info,
                    module,
                    action,
                    session_id,
                    row_cnt)
-           VALUES (SYSTIMESTAMP,
-                   SELF.client_info,
+           VALUES (SELF.client_info,
                    SELF.module,
                    SELF.action,
                    SELF.session_id,
