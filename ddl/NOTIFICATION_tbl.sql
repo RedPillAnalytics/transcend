@@ -9,6 +9,8 @@ CREATE TABLE tdinc.notification
 	 notification_type VARCHAR2(30) NOT NULL,
 	 sender         VARCHAR2(1024) NOT NULL,
 	 recipients     VARCHAR2(2000) NOT NULL,
+	 subject VARCHAR2(100) NOT NULL,
+	 message VARCHAR2(2000) NOT NULL,
 	 baseurl        VARCHAR2(255) NOT NULL,
 	 created_user   VARCHAR2(30) NOT NULL,
 	 created_dt     DATE NOT NULL,
