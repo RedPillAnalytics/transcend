@@ -1,6 +1,6 @@
 CREATE OR REPLACE PACKAGE tdinc.filehub
 IS
-   PROCEDURE audit_file (
+   FUNCTION audit_file (
       p_filehub_id      filehub_detail.filehub_id%TYPE,
       p_src_filename    filehub_detail.src_filename%TYPE DEFAULT NULL,
       p_trg_filename    filehub_detail.trg_filename%TYPE DEFAULT NULL,
@@ -8,7 +8,8 @@ IS
       p_num_bytes       filehub_detail.num_bytes%TYPE,
       p_num_lines       filehub_detail.num_lines%TYPE DEFAULT NULL,
       p_file_dt         filehub_detail.file_dt%TYPE,
-      p_debug           BOOLEAN DEFAULT FALSE);
+      p_debug           BOOLEAN DEFAULT FALSE)
+      RETURN NUMBER;
 
    FUNCTION extract_query (
       p_query       VARCHAR2,
@@ -44,6 +45,7 @@ IS
       p_dateformat        filehub_conf.DATEFORMAT%TYPE DEFAULT NULL,
       p_timestampformat   filehub_conf.timestampformat%TYPE DEFAULT NULL,
       p_notification      filehub_conf.notification%TYPE DEFAULT NULL,
+      p_notification_id   filehub_conf.notification_id%TYPE DEFAULT NULL,
       p_delimiter         filehub_conf.delimiter%TYPE DEFAULT NULL,
       p_quotechar         filehub_conf.quotechar%TYPE DEFAULT NULL,
       p_headers           filehub_conf.headers%TYPE DEFAULT NULL,
