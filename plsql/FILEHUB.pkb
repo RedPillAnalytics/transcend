@@ -1,7 +1,7 @@
 CREATE OR REPLACE PACKAGE BODY tdinc.filehub
 IS
    -- audits information about feeds and extracts to the FILEHUB_DTL table
-   PROCEDURE audit_file (
+   FUNCTION audit_file (
       p_filehub_id      filehub_detail.filehub_id%TYPE,
       p_src_filename    filehub_detail.src_filename%TYPE DEFAULT NULL,
       p_trg_filename    filehub_detail.trg_filename%TYPE DEFAULT NULL,
@@ -10,9 +10,11 @@ IS
       p_num_lines       filehub_detail.num_lines%TYPE DEFAULT NULL,
       p_file_dt         filehub_detail.file_dt%TYPE,
       p_debug           BOOLEAN DEFAULT FALSE)
+      RETURN NUMBER
    AS
-      r_fh_conf   filehub_conf%ROWTYPE;
-      o_app       applog        := applog (p_module      => 'FILE_MOVER.AUDIT_FILE',
+      r_fh_conf     filehub_conf%ROWTYPE;
+      l_detail_id   NUMBER;
+      o_app         applog      := applog (p_module      => 'FILE_MOVER.AUDIT_FILE',
                                            p_debug       => p_debug);
    BEGIN
       SELECT *
@@ -45,20 +47,26 @@ IS
                    p_arch_filename,
                    p_num_bytes,
                    p_num_lines,
-                   p_file_dt);
+                   p_file_dt)
+        RETURNING fh_detail_id
+             INTO l_detail_id;
 
       -- the job fails when size threshholds are not met
       o_app.set_action ('Check file details');
 
-      IF p_num_bytes >= r_fh_conf.max_bytes AND r_fh_conf.max_bytes <> 0
+      IF NOT p_debug
       THEN
-         raise_application_error (-20015, 'File size larger than MAX_BYTES paramter');
-      ELSIF p_num_bytes < r_fh_conf.min_bytes
-      THEN
-         raise_application_error (-20016, 'File size smaller than MIN_BYTES parameter');
+         IF p_num_bytes >= r_fh_conf.max_bytes AND r_fh_conf.max_bytes <> 0
+         THEN
+            raise_application_error (-20015, 'File size larger than MAX_BYTES paramter');
+         ELSIF p_num_bytes < r_fh_conf.min_bytes
+         THEN
+            raise_application_error (-20016, 'File size smaller than MIN_BYTES parameter');
+         END IF;
       END IF;
 
       o_app.clear_app_info;
+      RETURN l_detail_id;
    EXCEPTION
       WHEN OTHERS
       THEN
@@ -166,10 +174,11 @@ IS
             'select regexp_replace(stragg(column_name),'','','''
          || p_delimiter
          || ''') from '
-         || '(select '
+         || '(select '''
          || p_quotechar
-         || '||column_name||'
+         || '''||column_name||'''
          || p_quotechar
+         || ''' as column_name'
          || ' from all_tab_cols '
          || 'where table_name='''
          || UPPER (p_object)
@@ -228,6 +237,7 @@ IS
       p_dateformat        filehub_conf.DATEFORMAT%TYPE DEFAULT NULL,
       p_timestampformat   filehub_conf.timestampformat%TYPE DEFAULT NULL,
       p_notification      filehub_conf.notification%TYPE DEFAULT NULL,
+      p_notification_id   filehub_conf.notification_id%TYPE DEFAULT NULL,
       p_delimiter         filehub_conf.delimiter%TYPE DEFAULT NULL,
       p_quotechar         filehub_conf.quotechar%TYPE DEFAULT NULL,
       p_headers           filehub_conf.headers%TYPE DEFAULT NULL,
@@ -245,6 +255,7 @@ IS
          min_bytes             filehub_conf.min_bytes%TYPE,
          max_bytes             filehub_conf.max_bytes%TYPE,
          notification          filehub_conf.notification%TYPE,
+         notification_id       filehub_conf.notification_id%TYPE,
          dateformat_ddl        VARCHAR2 (200),
          timestampformat_ddl   VARCHAR2 (200),
          delimiter             filehub_conf.delimiter%TYPE,
@@ -258,6 +269,7 @@ IS
       l_blocksize   NUMBER;
       l_exists      BOOLEAN   DEFAULT FALSE;
       l_file_dt     DATE;
+      l_detail_id   NUMBER;
       o_app         applog    := applog (p_module      => 'EXTRACTS.PROCESS_EXTRACT',
                                          p_debug       => p_debug);
    BEGIN
@@ -273,6 +285,7 @@ IS
                 min_bytes,
                 max_bytes,
                 notification,
+                notification_id,
                 'alter session set nls_date_format=''' || DATEFORMAT || '''' dateformat_ddl,
                 'alter session set nls_date_format=''' || timestampformat || ''''
                                                                                 timestampformat_ddl,
@@ -313,10 +326,19 @@ IS
                         NVL (p_min_bytes, min_bytes) min_bytes,
                         NVL (p_max_bytes, max_bytes) max_bytes,
                         NVL (p_notification, notification) notification,
+                        NVL (p_notification_id, notification_id) notification_id,
                         NVL (p_dateformat, DATEFORMAT) DATEFORMAT,
                         NVL (p_timestampformat, timestampformat) timestampformat,
                         NVL (p_delimiter, delimiter) delimiter,
-                        NVL (p_quotechar, quotechar) quotechar,
+                        CASE
+                           WHEN p_quotechar = 'none'
+                              THEN NULL
+                           WHEN p_quotechar IS NULL AND quotechar = 'none'
+                              THEN NULL
+                           WHEN p_quotechar IS NOT NULL
+                              THEN p_quotechar
+                           ELSE quotechar
+                        END quotechar,
                         NVL (p_headers, headers) headers
                    FROM filehub_conf
                   WHERE filehub_id = filehub_id AND REGEXP_LIKE (filehub_type, '^extract$', 'i'));
@@ -343,8 +365,7 @@ IS
                          p_debug          => p_debug);
       l_file_dt := SYSDATE;
       -- copy the file to the target location
-      coreutils.host_cmd ('cp -p ' || r_fh_conf.arch_filepath || ' ' || r_fh_conf.filepath,
-                           p_debug      => p_debug);
+      coreutils.copy_file (r_fh_conf.arch_filepath, r_fh_conf.filepath, p_debug);
 
       -- get file attributes
       IF p_debug
@@ -359,16 +380,25 @@ IS
                             l_blocksize);
       END IF;
 
-      -- audit the file just extracted
-      -- don't yet know how I'll get file_dt
+      -- audit the file
       o_app.set_action ('Audit extract file');
-      audit_file (p_filehub_id         => p_filehub_id,
-                  p_trg_filename       => r_fh_conf.filepath,
-                  p_arch_filename      => r_fh_conf.arch_filepath,
-                  p_num_bytes          => l_num_bytes,
-                  p_num_lines          => l_numlines,
-                  p_file_dt            => l_file_dt,
-                  p_debug              => p_debug);
+      l_detail_id :=
+         audit_file (p_filehub_id         => p_filehub_id,
+                     p_trg_filename       => r_fh_conf.filepath,
+                     p_arch_filename      => r_fh_conf.arch_filepath,
+                     p_num_bytes          => l_num_bytes,
+                     p_num_lines          => l_numlines,
+                     p_file_dt            => l_file_dt,
+                     p_debug              => p_debug);
+      -- send the notification if configured
+      o_app.set_action ('Send a notification');
+
+      IF r_fh_conf.notification <> 'none'
+      THEN
+         coreutils.notify (p_notification_id      => r_fh_conf.notification_id,
+                           p_component_id         => p_filehub_id,
+                           p_detail_id            => l_detail_id);
+      END IF;
 
       o_app.clear_app_info;
    EXCEPTION
