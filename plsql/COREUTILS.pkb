@@ -29,8 +29,38 @@ AS
          o_app.log_err;
          RAISE;
    END host_cmd;
+
+   -- procedure executes the copy_file function and raises an exception with the return code
+   PROCEDURE copy_file (p_srcfile VARCHAR2, p_dstfile VARCHAR2, p_debug BOOLEAN DEFAULT FALSE)
+   AS
+      l_retval   NUMBER;
+      o_app      applog := applog (p_module => 'COREUTILS.COPY_FILE');
+   BEGIN
+      DBMS_JAVA.set_output (1000000);
+
+      IF p_debug
+      THEN
+         o_app.log_msg ('File '||p_srcfile||' would be copied to ' || p_dstfile);
+      ELSE
+         l_retval := copy_file (p_srcfile,p_dstfile);
+
+         IF l_retval <> 0
+         THEN
+            raise_application_error
+                             (-20020,
+                               'Java Error: method CoreUtils.copyFile was unable to copy '||p_srcfile||' to '||p_srcfile);
+         END IF;
+      END IF;
+
+      o_app.clear_app_info;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         o_app.log_err;
+         RAISE;
+   END copy_file;
    
-   -- procedure executes the host_cmd function and raises an exception with the return code
+   -- procedure executes the delete_file function and raises an exception with the return code
    PROCEDURE delete_file (p_srcfile VARCHAR2, p_debug BOOLEAN DEFAULT FALSE)
    AS
       l_retval   NUMBER;
