@@ -17,6 +17,7 @@ CREATE TABLE tdinc.filehub_conf
 	 max_bytes              NUMBER 		DEFAULT 0 NOT NULL,
 	 file_datestamp		VARCHAR2(30) 	DEFAULT 'yyyymmddhhmiss' NOT NULL,
 	 notification   	VARCHAR2(6) 	DEFAULT 'none' NOT NULL,
+	 notification_id   	number,
 	 source_directory 	VARCHAR2(50),
 	 source_regexp   	VARCHAR2(100),
 	 regexp_options		VARCHAR2(10)    DEFAULT 'i',
@@ -25,7 +26,7 @@ CREATE TABLE tdinc.filehub_conf
 	 dateformat		VARCHAR2(30)   	DEFAULT 'mm/dd/yyyy hh:mi:ss am' NOT NULL,
 	 timestampformat	VARCHAR2(30)   	DEFAULT 'mm/dd/yyyy hh:mi:ss:x:ff am' NOT NULL,
 	 delimiter		VARCHAR2(1)    	DEFAULT ',' NOT NULL,
-	 quotechar		VARCHAR2(1) 	DEFAULT '"' NOT NULL,
+	 quotechar		VARCHAR2(4) 	DEFAULT 'none' NOT NULL,
 	 headers		VARCHAR2(7) 	DEFAULT 'exclude' NOT NULL,
 	 created_user   	VARCHAR2(30) 	DEFAULT sys_context('USERENV','SESSION_USER') NOT NULL,
 	 created_dt     	DATE 		DEFAULT sysdate,
@@ -59,7 +60,7 @@ COMMENT ON COLUMN tdinc.filehub_conf.multi_files_action IS 'Action to take is mu
 COMMENT ON COLUMN tdinc.filehub_conf.file_requirement IS '"required" or "none": determines whether the job fails or not when files are not found.';
 COMMENT ON COLUMN tdinc.filehub_conf.dateformat IS 'NLS_DATE_FORMAT of date columns in the extract';
 COMMENT ON COLUMN tdinc.filehub_conf.delimiter IS 'delimiter used to separate columns';
-COMMENT ON COLUMN tdinc.filehub_conf.quotechar IS 'quotechar used to support columns. An NA specifies that no quotechar is used';
+COMMENT ON COLUMN tdinc.filehub_conf.quotechar IS 'quotechar used to support columns. A "none" specifies that no quotechar is used';
 COMMENT ON COLUMN tdinc.filehub_conf.headers IS 'a indicator of whether headers should be included as the first row in the file: "include" or "exclude"';
 
 ALTER TABLE tdinc.filehub_conf ADD (
