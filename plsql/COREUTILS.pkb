@@ -108,6 +108,7 @@ AS
       p_debug_msg   VARCHAR2 DEFAULT 'DDL statememt: ',
       p_debug       BOOLEAN DEFAULT FALSE)
    AS
+      PRAGMA autonomous_transaction;
       o_app   applog := applog (p_module => 'COREUTILS.DDL_EXEC', p_debug => p_debug);
    BEGIN
       IF p_debug
@@ -117,7 +118,7 @@ AS
          EXECUTE IMMEDIATE p_ddl;
       END IF;
    END ddl_exec;
-
+   
    -- used to get the path associated with a directory location
    FUNCTION get_dir_path (p_dirname VARCHAR2)
       RETURN VARCHAR2
