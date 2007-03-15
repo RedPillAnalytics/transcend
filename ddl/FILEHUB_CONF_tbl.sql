@@ -17,7 +17,8 @@ CREATE TABLE tdinc.filehub_conf
 	 max_bytes              NUMBER 		DEFAULT 0 NOT NULL,
 	 file_datestamp		VARCHAR2(30) 	DEFAULT 'yyyymmddhhmiss' NOT NULL,
 	 notification   	VARCHAR2(6) 	DEFAULT 'none' NOT NULL,
-	 notification_id   	number,
+	 notification_id   	NUMBER,
+	 baseurl                VARCHAR2(500),
 	 source_directory 	VARCHAR2(50),
 	 source_regexp   	VARCHAR2(100),
 	 regexp_options		VARCHAR2(10)    DEFAULT 'i',
@@ -49,10 +50,6 @@ COMMENT ON COLUMN tdinc.filehub_conf.arch_directory IS 'name of the oracle direc
 COMMENT ON COLUMN tdinc.filehub_conf.min_bytes IS 'minimum size threshhold for the source file. A value of 0 ignores this requirement';
 COMMENT ON COLUMN tdinc.filehub_conf.max_bytes IS 'maximum size threshhold for the source file. A value of 0 ignores this requirement';
 COMMENT ON COLUMN tdinc.filehub_conf.file_datestamp IS 'NLS_DATE_FORMAT to use for the datestamp written on the file. A value of NA means that no timestamp will be written on the file.'; 
-COMMENT ON COLUMN tdinc.filehub_conf.created_user IS 'for auditing';
-COMMENT ON COLUMN tdinc.filehub_conf.created_dt IS 'for auditing';
-COMMENT ON COLUMN tdinc.filehub_conf.modified_user IS 'for auditing';
-COMMENT ON COLUMN tdinc.filehub_conf.modified_dt IS 'for auditing';
 COMMENT ON COLUMN tdinc.filehub_conf.source_regexp IS 'regular expression used to find files in SOURCE_DIR.';
 COMMENT ON COLUMN tdinc.filehub_conf.regexp_options IS 'additional match options that can specified in the regular expression';
 COMMENT ON COLUMN tdinc.filehub_conf.source_directory IS 'name of the directory object where the files are pulled from.';
@@ -62,6 +59,13 @@ COMMENT ON COLUMN tdinc.filehub_conf.dateformat IS 'NLS_DATE_FORMAT of date colu
 COMMENT ON COLUMN tdinc.filehub_conf.delimiter IS 'delimiter used to separate columns';
 COMMENT ON COLUMN tdinc.filehub_conf.quotechar IS 'quotechar used to support columns. A "none" specifies that no quotechar is used';
 COMMENT ON COLUMN tdinc.filehub_conf.headers IS 'a indicator of whether headers should be included as the first row in the file: "include" or "exclude"';
+COMMENT ON COLUMN tdinc.filehub_conf.notification IS 'currently, can be "none" (do not notify) or "email" (send an email), but RSS is the next choice';
+COMMENT ON COLUMN tdinc.filehub_conf.notification_id IS 'id from a notification table... which table is dictated by the NOTIFICATION column';
+COMMENT ON COLUMN tdinc.filehub_conf.baseurl IS 'the baseurl that the file is located at, which can be included in and notifications';
+COMMENT ON COLUMN tdinc.filehub_conf.created_user IS 'for auditing';
+COMMENT ON COLUMN tdinc.filehub_conf.created_dt IS 'for auditing';
+COMMENT ON COLUMN tdinc.filehub_conf.modified_user IS 'for auditing';
+COMMENT ON COLUMN tdinc.filehub_conf.modified_dt IS 'for auditing';
 
 ALTER TABLE tdinc.filehub_conf ADD (
   CONSTRAINT filehub_conf_pk
