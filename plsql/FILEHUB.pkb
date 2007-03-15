@@ -238,6 +238,8 @@ IS
       p_timestampformat   filehub_conf.timestampformat%TYPE DEFAULT NULL,
       p_notification      filehub_conf.notification%TYPE DEFAULT NULL,
       p_notification_id   filehub_conf.notification_id%TYPE DEFAULT NULL,
+      p_baseurl           filehub_conf.baseurl%TYPE DEFAULT NULL,
+      p_message           filehub_conf.MESSAGE%TYPE DEFAULT NULL,
       p_delimiter         filehub_conf.delimiter%TYPE DEFAULT NULL,
       p_quotechar         filehub_conf.quotechar%TYPE DEFAULT NULL,
       p_headers           filehub_conf.headers%TYPE DEFAULT NULL,
@@ -256,6 +258,8 @@ IS
          max_bytes             filehub_conf.max_bytes%TYPE,
          notification          filehub_conf.notification%TYPE,
          notification_id       filehub_conf.notification_id%TYPE,
+         baseurl               filehub_conf.baseurl%TYPE,
+         MESSAGE               filehub_conf.MESSAGE%TYPE,
          dateformat_ddl        VARCHAR2 (200),
          timestampformat_ddl   VARCHAR2 (200),
          delimiter             filehub_conf.delimiter%TYPE,
@@ -286,6 +290,8 @@ IS
                 max_bytes,
                 notification,
                 notification_id,
+                baseurl,
+                MESSAGE,
                 'alter session set nls_date_format=''' || DATEFORMAT || '''' dateformat_ddl,
                 'alter session set nls_date_format=''' || timestampformat || ''''
                                                                                 timestampformat_ddl,
@@ -327,6 +333,8 @@ IS
                         NVL (p_max_bytes, max_bytes) max_bytes,
                         NVL (p_notification, notification) notification,
                         NVL (p_notification_id, notification_id) notification_id,
+                        NVL (p_baseurl, baseurl) baseurl,
+                        NVL (p_message, MESSAGE) MESSAGE,
                         NVL (p_dateformat, DATEFORMAT) DATEFORMAT,
                         NVL (p_timestampformat, timestampformat) timestampformat,
                         NVL (p_delimiter, delimiter) delimiter,
@@ -395,9 +403,22 @@ IS
 
       IF r_fh_conf.notification <> 'none'
       THEN
-         coreutils.notify (p_notification_id      => r_fh_conf.notification_id,
-                           p_component_id         => p_filehub_id,
-                           p_detail_id            => l_detail_id);
+         notification.notify
+            (p_notification_id      => r_fh_conf.notification_id,
+             p_notification         => p_notification_id,
+             p_message              => CASE
+                WHEN r_fh_conf.baseurl = 'NA'
+                   THEN r_fh_conf.MESSAGE
+                WHEN r_fh_conf.baseurl <> 'NA' AND l_numlines > 65536
+                   THEN    r_fh_conf.MESSAGE
+                        || CHR (13)
+                        || CHR (13)
+                        || 'The file is too large for some desktop applications, such as Microsoft Excel, to open.'
+                        || CHR (13)
+                        || r_fh_conf.baseurl
+                        || '/'
+                        || r_fh_conf.filename
+             END);
       END IF;
 
       o_app.clear_app_info;
