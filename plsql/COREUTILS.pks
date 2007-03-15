@@ -51,18 +51,6 @@ AS
    FUNCTION get_numlines (p_dirname IN VARCHAR2, p_filename IN VARCHAR2)
       RETURN NUMBER;
 
-   PROCEDURE notify (
-      p_notification_id     notification.notification_id%TYPE,
-      p_component_id        NUMBER,
-      p_detail_id           NUMBER,
-      p_notification_type   notification.notification_type%TYPE DEFAULT NULL,
-      p_sender              notification.sender%TYPE DEFAULT NULL,
-      p_recipients          notification.recipients%TYPE DEFAULT NULL,
-      p_subject             notification.subject%TYPE DEFAULT NULL,
-      p_message             notification.MESSAGE%TYPE DEFAULT NULL,
-      p_baseurl             notification.baseurl%TYPE DEFAULT NULL,
-      p_debug               BOOLEAN DEFAULT FALSE);
-
    FUNCTION unzip_file (p_dirpath VARCHAR2, p_filename VARCHAR2, p_debug BOOLEAN DEFAULT FALSE)
       RETURN VARCHAR2;
 END coreutils;
