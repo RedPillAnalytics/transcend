@@ -19,6 +19,8 @@ CREATE TABLE tdinc.filehub_conf
 	 notification   	VARCHAR2(6) 	DEFAULT 'none' NOT NULL,
 	 notification_id   	NUMBER,
 	 baseurl                VARCHAR2(500),
+	 message                VARCHAR2(2000),
+	 subject                VARCHAR2(100),
 	 source_directory 	VARCHAR2(50),
 	 source_regexp   	VARCHAR2(100),
 	 regexp_options		VARCHAR2(10)    DEFAULT 'i',
