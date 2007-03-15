@@ -9,8 +9,7 @@ CREATE TABLE tdinc.email_notify
 	 sender         VARCHAR2(1024) NOT NULL,
 	 recipients     VARCHAR2(2000) NOT NULL,
 	 subject VARCHAR2(100) NOT NULL,
-	 message VARCHAR2(2000) NOT NULL,
-	 created_user   VARCHAR2(30) NOT NULL,
+	 created_user   VARCHAR2(30),
 	 created_dt     DATE NOT NULL,
 	 modified_user  VARCHAR2(30),
 	 modified_dt    DATE
