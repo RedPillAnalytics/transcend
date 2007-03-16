@@ -16,11 +16,8 @@ CREATE TABLE tdinc.filehub_conf
 	 min_bytes		NUMBER 		DEFAULT 0 NOT NULL,
 	 max_bytes              NUMBER 		DEFAULT 0 NOT NULL,
 	 file_datestamp		VARCHAR2(30) 	DEFAULT 'yyyymmddhhmiss' NOT NULL,
-	 notification   	VARCHAR2(6) 	DEFAULT 'none' NOT NULL,
-	 notification_id   	NUMBER,
+	 notify_id   	NUMBER,
 	 baseurl                VARCHAR2(500),
-	 message                VARCHAR2(2000),
-	 subject                VARCHAR2(100),
 	 source_directory 	VARCHAR2(50),
 	 source_regexp   	VARCHAR2(100),
 	 regexp_options		VARCHAR2(10)    DEFAULT 'i',
@@ -31,10 +28,10 @@ CREATE TABLE tdinc.filehub_conf
 	 delimiter		VARCHAR2(1)    	DEFAULT ',' NOT NULL,
 	 quotechar		VARCHAR2(4) 	DEFAULT 'none' NOT NULL,
 	 headers		VARCHAR2(7) 	DEFAULT 'exclude' NOT NULL,
-	 created_user   	VARCHAR2(30) 	DEFAULT sys_context('USERENV','SESSION_USER') NOT NULL,
-	 created_dt     	DATE 		DEFAULT sysdate,
-	 modified_user  	VARCHAR2(30)	DEFAULT sys_context('USERENV','SESSION_USER'),
-	 modified_dt    	DATE		DEFAULT sysdate
+	 created_user   	VARCHAR2(30),
+	 created_dt     	DATE,
+	 modified_user  	VARCHAR2(30),
+	 modified_dt    	DATE
        )
        TABLESPACE tdinc
 /
@@ -61,9 +58,8 @@ COMMENT ON COLUMN tdinc.filehub_conf.dateformat IS 'NLS_DATE_FORMAT of date colu
 COMMENT ON COLUMN tdinc.filehub_conf.delimiter IS 'delimiter used to separate columns';
 COMMENT ON COLUMN tdinc.filehub_conf.quotechar IS 'quotechar used to support columns. A "none" specifies that no quotechar is used';
 COMMENT ON COLUMN tdinc.filehub_conf.headers IS 'a indicator of whether headers should be included as the first row in the file: "include" or "exclude"';
-COMMENT ON COLUMN tdinc.filehub_conf.notification IS 'currently, can be "none" (do not notify) or "email" (send an email), but RSS is the next choice';
-COMMENT ON COLUMN tdinc.filehub_conf.notification_id IS 'id from a notification table... which table is dictated by the NOTIFICATION column';
-COMMENT ON COLUMN tdinc.filehub_conf.baseurl IS 'the baseurl that the file is located at, which can be included in and notifications';
+COMMENT ON COLUMN tdinc.filehub_conf.notify_id IS 'if from the NOTIFY_CONF table. A null value here indicates there is no notification configured.';
+COMMENT ON COLUMN tdinc.filehub_conf.baseurl IS 'the baseurl that the file is located at, which can be included in notifications';
 COMMENT ON COLUMN tdinc.filehub_conf.created_user IS 'for auditing';
 COMMENT ON COLUMN tdinc.filehub_conf.created_dt IS 'for auditing';
 COMMENT ON COLUMN tdinc.filehub_conf.modified_user IS 'for auditing';
