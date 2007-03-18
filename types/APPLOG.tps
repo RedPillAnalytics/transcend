@@ -26,6 +26,10 @@ CREATE OR REPLACE TYPE tdinc.applog AS OBJECT (
    MEMBER PROCEDURE log_msg (p_msg VARCHAR2),
    MEMBER PROCEDURE log_err,
    MEMBER PROCEDURE log_cnt (p_count NUMBER),
-   MEMBER PROCEDURE log_cnt_msg (p_count NUMBER, p_msg VARCHAR2 DEFAULT NULL)
+   MEMBER PROCEDURE log_cnt_msg (p_count NUMBER, p_msg VARCHAR2 DEFAULT NULL),
+   MEMBER FUNCTION get_err_cd (p_name VARCHAR2)
+      RETURN NUMBER,
+   MEMBER FUNCTION get_err_msg (p_name VARCHAR2)
+      RETURN VARCHAR2
 );
 /
