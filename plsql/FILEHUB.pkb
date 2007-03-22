@@ -236,10 +236,8 @@ IS
       p_file_datestamp    filehub_conf.file_datestamp%TYPE DEFAULT NULL,
       p_dateformat        filehub_conf.DATEFORMAT%TYPE DEFAULT NULL,
       p_timestampformat   filehub_conf.timestampformat%TYPE DEFAULT NULL,
-      p_notification      filehub_conf.notification%TYPE DEFAULT NULL,
-      p_notification_id   filehub_conf.notification_id%TYPE DEFAULT NULL,
+      p_notify            filehub_conf.notify%TYPE DEFAULT NULL,
       p_baseurl           filehub_conf.baseurl%TYPE DEFAULT NULL,
-      p_message           filehub_conf.MESSAGE%TYPE DEFAULT NULL,
       p_delimiter         filehub_conf.delimiter%TYPE DEFAULT NULL,
       p_quotechar         filehub_conf.quotechar%TYPE DEFAULT NULL,
       p_headers           filehub_conf.headers%TYPE DEFAULT NULL,
@@ -256,10 +254,9 @@ IS
          source_object         filehub_conf.object_name%TYPE,
          min_bytes             filehub_conf.min_bytes%TYPE,
          max_bytes             filehub_conf.max_bytes%TYPE,
-         notification          filehub_conf.notification%TYPE,
-         notification_id       filehub_conf.notification_id%TYPE,
+         notify_id             filehub_conf.notify_id%TYPE,
+         notify                filehub_conf.notify%TYPE,
          baseurl               filehub_conf.baseurl%TYPE,
-         MESSAGE               filehub_conf.MESSAGE%TYPE,
          dateformat_ddl        VARCHAR2 (200),
          timestampformat_ddl   VARCHAR2 (200),
          delimiter             filehub_conf.delimiter%TYPE,
@@ -288,10 +285,9 @@ IS
                 source_object,
                 min_bytes,
                 max_bytes,
-                notification,
-                notification_id,
+                notify_id,
+                notify,
                 baseurl,
-                MESSAGE,
                 'alter session set nls_date_format=''' || DATEFORMAT || '''' dateformat_ddl,
                 'alter session set nls_date_format=''' || timestampformat || ''''
                                                                                 timestampformat_ddl,
@@ -331,10 +327,9 @@ IS
                         NVL (p_arch_directory, arch_directory) arch_directory,
                         NVL (p_min_bytes, min_bytes) min_bytes,
                         NVL (p_max_bytes, max_bytes) max_bytes,
-                        NVL (p_notification, notification) notification,
-                        NVL (p_notification_id, notification_id) notification_id,
+                        NVL (p_notify, notify) notify,
+                        notifiy_id,
                         NVL (p_baseurl, baseurl) baseurl,
-                        NVL (p_message, MESSAGE) MESSAGE,
                         NVL (p_dateformat, DATEFORMAT) DATEFORMAT,
                         NVL (p_timestampformat, timestampformat) timestampformat,
                         NVL (p_delimiter, delimiter) delimiter,
@@ -401,12 +396,11 @@ IS
       -- send the notification if configured
       o_app.set_action ('Send a notification');
 
-      IF r_fh_conf.notification <> 'none'
+      IF r_fh_conf.notify = 'Y'
       THEN
          notification.notify
-            (p_notification_id      => r_fh_conf.notification_id,
-             p_notification         => p_notification_id,
-             p_message              => CASE
+            (p_notify_id      => r_fh_conf.notify_id,
+             p_message        => CASE
                 WHEN r_fh_conf.baseurl = 'NA'
                    THEN r_fh_conf.MESSAGE
                 WHEN r_fh_conf.baseurl <> 'NA' AND l_numlines > 65536
