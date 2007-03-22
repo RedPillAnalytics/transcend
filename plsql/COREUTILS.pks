@@ -4,20 +4,20 @@ AS
    AS
       LANGUAGE JAVA
       NAME 'CoreUtils.getDirList( java.lang.String )';
-      
+
    -- procedure to copy a file from one place to another
-      FUNCTION copy_file (p_srcfile VARCHAR2, p_dstfile varchar2)
-	 RETURN NUMBER
+   FUNCTION copy_file (p_srcfile VARCHAR2, p_dstfile VARCHAR2)
+      RETURN NUMBER
    AS
       LANGUAGE JAVA
-	 NAME 'CoreUtils.copyFile( java.lang.String, java.lang.String ) return integer';
+      NAME 'CoreUtils.copyFile( java.lang.String, java.lang.String ) return integer';
 
    -- procedure to copy a file from one place to another
    FUNCTION delete_file (p_srcfile VARCHAR2)
       RETURN NUMBER
    AS
       LANGUAGE JAVA
-      NAME 'CoreUtils.deleteFile( java.lang.String ) return integer';      
+      NAME 'CoreUtils.deleteFile( java.lang.String ) return integer';
 
    -- procedure calls Utils.runCmd java method
    FUNCTION host_cmd (p_cmd IN VARCHAR2, p_stdin IN VARCHAR2)
@@ -26,10 +26,10 @@ AS
       LANGUAGE JAVA
       NAME 'CoreUtils.hostCmd(java.lang.String, java.lang.String) return integer';
 
-   -- procedure executes the copy_file function and translates the return code to an exception      
-      PROCEDURE copy_file (p_srcfile VARCHAR2, p_dstfile varchar2, p_debug BOOLEAN DEFAULT FALSE);
-      
-   -- procedure executes the delete_file function and translates the return code to an exception      
+   -- procedure executes the copy_file function and translates the return code to an exception
+   PROCEDURE copy_file (p_srcfile VARCHAR2, p_dstfile VARCHAR2, p_debug BOOLEAN DEFAULT FALSE);
+
+   -- procedure executes the delete_file function and translates the return code to an exception
    PROCEDURE delete_file (p_srcfile VARCHAR2, p_debug BOOLEAN DEFAULT FALSE);
 
    -- procedure executes the run_cmd function and raises an exception with the return code
@@ -50,6 +50,13 @@ AS
 
    FUNCTION get_numlines (p_dirname IN VARCHAR2, p_filename IN VARCHAR2)
       RETURN NUMBER;
+
+   FUNCTION decrypt_file (
+      p_dirpath      VARCHAR2,
+      p_filename     VARCHAR2,
+      p_passphrase   VARCHAR2,
+      p_debug        BOOLEAN DEFAULT FALSE)
+      RETURN VARCHAR2;
 
    FUNCTION unzip_file (p_dirpath VARCHAR2, p_filename VARCHAR2, p_debug BOOLEAN DEFAULT FALSE)
       RETURN VARCHAR2;
