@@ -1,0 +1,13 @@
+CREATE OR REPLACE TYPE tdinc.notify AS OBJECT (
+   notify_type      VARCHAR2 (10),
+   notify_type_id   NUMBER,
+   MESSAGE          VARCHAR2 (2000),
+   subject          VARCHAR2 (100),
+   DEBUG            VARCHAR2 (1),
+   MEMBER FUNCTION DEBUG_MODE
+      RETURN BOOLEAN,
+   MEMBER PROCEDURE DEBUG_MODE (p_debug BOOLEAN DEFAULT FALSE),
+   MEMBER PROCEDURE send
+)
+NOT FINAL;
+/

@@ -65,11 +65,12 @@ PROMPT 'create packages'
 @./plsql/FILEHUB.pkb
 
 PROMPT 'public synonyms'
-CREATE PUBLIC SYNONYM coreutils FOR tdinc.coreutils;
-CREATE PUBLIC SYNONYM filehub FOR tdinc.filehub;
-CREATE PUBLIC SYNONYM log_table FOR tdinc.log_table;
-CREATE PUBLIC SYNONYM count_table FOR tdinc.count_table;
-CREATE PUBLIC SYNONYM stragg FOR tdinc.stragg;
+CREATE OR REPLACE PUBLIC SYNONYM coreutils FOR tdinc.coreutils;
+CREATE OR REPLACE PUBLIC SYNONYM filehub FOR tdinc.filehub;
+CREATE OR REPLACE PUBLIC SYNONYM log_table FOR tdinc.log_table;
+CREATE OR REPLACE PUBLIC SYNONYM count_table FOR tdinc.count_table;
+CREATE OR REPLACE PUBLIC SYNONYM stragg FOR tdinc.stragg;
+CREATE OR REPLACE PUBLIC SYNONYM notify for tdinc.notify;
 
 
 PROMPT 'java permissions'
