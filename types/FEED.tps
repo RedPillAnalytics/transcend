@@ -6,7 +6,8 @@ CREATE OR REPLACE TYPE tdinc.feed UNDER tdinc.fhconf (
    file_required       VARCHAR2 (8),
    MEMBER FUNCTION calc_rej_ind (p_rej_limit NUMBER DEFAULT 20)
       RETURN VARCHAR2,
-   MEMBER PROCEDURE process_feed (p_keep_source BOOLEAN DEFAULT FALSE)
+   MEMBER PROCEDURE process_feed (p_keep_source BOOLEAN DEFAULT FALSE),
+   MEMBER PROCEDURE audit_object
 )
 ;
 /
