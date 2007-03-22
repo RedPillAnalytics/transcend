@@ -49,6 +49,20 @@ public class CoreUtils extends Object {
 	}
 	return rc;
     }
+	   
+    public static int createFile(String srcfile) {
+	boolean created;
+	int rc;
+	File srcFile = new File( srcfile );
+	created = srcFile.createNewFile();
+	if (created) {
+	    rc = 0;
+	} 
+	else {
+	    rc = 1;
+	}
+	return rc;
+    }
 
     public static int hostCmd(String cmd, String stdIn) {
 	
