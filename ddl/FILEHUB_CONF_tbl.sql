@@ -16,18 +16,19 @@ CREATE TABLE tdinc.filehub_conf
 	 min_bytes		NUMBER 		DEFAULT 0 NOT NULL,
 	 max_bytes              NUMBER 		DEFAULT 0 NOT NULL,
 	 file_datestamp		VARCHAR2(30) 	DEFAULT 'yyyymmddhhmiss' NOT NULL,
-	 notify_id   	NUMBER,
+	 notify_id   	        NUMBER,
+	 notify			VARCHAR2(1)     DEFAULT 'N',
 	 baseurl                VARCHAR2(500),
 	 source_directory 	VARCHAR2(50),
 	 source_regexp   	VARCHAR2(100),
 	 regexp_options		VARCHAR2(10)    DEFAULT 'i',
-	 multi_files_action	VARCHAR2(10) 	DEFAULT 'newest',
-	 file_requirement	VARCHAR2(8) 	DEFAULT 'required',
-	 dateformat		VARCHAR2(30)   	DEFAULT 'mm/dd/yyyy hh:mi:ss am' NOT NULL,
-	 timestampformat	VARCHAR2(30)   	DEFAULT 'mm/dd/yyyy hh:mi:ss:x:ff am' NOT NULL,
-	 delimiter		VARCHAR2(1)    	DEFAULT ',' NOT NULL,
-	 quotechar		VARCHAR2(4) 	DEFAULT 'none' NOT NULL,
-	 headers		VARCHAR2(7) 	DEFAULT 'exclude' NOT NULL,
+	 multi_file_action	VARCHAR2(10) 	DEFAULT 'newest',
+	 file_required  	VARCHAR2(1) 	DEFAULT 'Y',
+	 dateformat		VARCHAR2(30)   	DEFAULT 'mm/dd/yyyy hh:mi:ss am',
+	 timestampformat	VARCHAR2(30)   	DEFAULT 'mm/dd/yyyy hh:mi:ss:x:ff am',
+	 delimiter		VARCHAR2(1)    	DEFAULT ',',
+	 quotechar		VARCHAR2(2) 	DEFAULT 'NA',
+	 headers		VARCHAR2(1) 	DEFAULT 'N',
 	 created_user   	VARCHAR2(30),
 	 created_dt     	DATE,
 	 modified_user  	VARCHAR2(30),
@@ -52,13 +53,14 @@ COMMENT ON COLUMN tdinc.filehub_conf.file_datestamp IS 'NLS_DATE_FORMAT to use f
 COMMENT ON COLUMN tdinc.filehub_conf.source_regexp IS 'regular expression used to find files in SOURCE_DIR.';
 COMMENT ON COLUMN tdinc.filehub_conf.regexp_options IS 'additional match options that can specified in the regular expression';
 COMMENT ON COLUMN tdinc.filehub_conf.source_directory IS 'name of the directory object where the files are pulled from.';
-COMMENT ON COLUMN tdinc.filehub_conf.multi_files_action IS 'Action to take is multiple files match SOURCE_REGEXP. Current options are "newest","oldest","all","fail" or "proceed"';
-COMMENT ON COLUMN tdinc.filehub_conf.file_requirement IS '"required" or "none": determines whether the job fails or not when files are not found.';
+COMMENT ON COLUMN tdinc.filehub_conf.multi_file_action IS 'Action to take is multiple files match SOURCE_REGEXP. Current options are "newest","oldest","all","fail" or "proceed"';
+COMMENT ON COLUMN tdinc.filehub_conf.file_required IS 'Y/N column; determines whether the job fails or not when files are not found.';
 COMMENT ON COLUMN tdinc.filehub_conf.dateformat IS 'NLS_DATE_FORMAT of date columns in the extract';
 COMMENT ON COLUMN tdinc.filehub_conf.delimiter IS 'delimiter used to separate columns';
 COMMENT ON COLUMN tdinc.filehub_conf.quotechar IS 'quotechar used to support columns. A "none" specifies that no quotechar is used';
 COMMENT ON COLUMN tdinc.filehub_conf.headers IS 'a indicator of whether headers should be included as the first row in the file: "include" or "exclude"';
-COMMENT ON COLUMN tdinc.filehub_conf.notify_id IS 'if from the NOTIFY_CONF table. A null value here indicates there is no notification configured.';
+COMMENT ON COLUMN tdinc.filehub_conf.notify_id IS 'if from the NOTIFY_CONF table.';
+COMMENT ON COLUMN tdinc.filehub_conf.notify IS 'Y or N... whether to notify or not.';
 COMMENT ON COLUMN tdinc.filehub_conf.baseurl IS 'the baseurl that the file is located at, which can be included in notifications';
 COMMENT ON COLUMN tdinc.filehub_conf.created_user IS 'for auditing';
 COMMENT ON COLUMN tdinc.filehub_conf.created_dt IS 'for auditing';
@@ -71,6 +73,12 @@ ALTER TABLE tdinc.filehub_conf ADD (
  (filehub_id)
     USING INDEX
     TABLESPACE tdinc)
+/
+
+ALTER TABLE tdinc.filehub_conf ADD CONSTRAINT
+      notify_id_fk FOREIGN KEY (notify_id)
+      REFERENCES tdinc.notify_conf(notify_id)
+      ON DELETE CASCADE
 /
 
 ALTER TABLE tdinc.filehub_conf
