@@ -14,13 +14,12 @@ CREATE OR REPLACE TYPE tdinc.fhconf UNDER tdinc.notify (
    min_bytes        NUMBER,
    max_bytes        NUMBER,
    file_url         VARCHAR2 (2000),
-   CONSTRUCTOR FUNCTION fhconf (p_debug BOOLEAN DEFAULT FALSE)
-      RETURN SELF AS RESULT,
    MEMBER PROCEDURE audit_file (
-      p_src_filename    VARCHAR2 DEFAULT NULL,
-      p_num_bytes       NUMBER,
-      p_num_lines       NUMBER,
-      p_file_dt         DATE)
+      p_src_filename   VARCHAR2 DEFAULT NULL,
+      p_num_bytes      NUMBER,
+      p_num_lines      NUMBER,
+      p_file_dt        DATE
+   )
 )
 NOT FINAL;
 /
