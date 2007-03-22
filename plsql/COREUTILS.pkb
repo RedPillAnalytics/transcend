@@ -92,6 +92,37 @@ AS
          o_app.log_err;
          RAISE;
    END delete_file;
+   
+   -- procedure executes the create_file function and raises an exception with the return code
+   PROCEDURE create_file (p_srcfile VARCHAR2, p_debug BOOLEAN DEFAULT FALSE)
+   AS
+      l_retval   NUMBER;
+      o_app      applog := applog (p_module => 'coreutils.create_file');
+   BEGIN
+      DBMS_JAVA.set_output (1000000);
+
+      IF p_debug
+      THEN
+         o_app.log_msg ('File to create: ' || p_srcfile);
+      ELSE
+         l_retval := create_file (p_srcfile);
+
+         IF l_retval <> 0
+         THEN
+            raise_application_error
+                       (-20020,
+                           'Java Error: method CoreUtils.createFile was unable to create the file '
+                        || p_srcfile);
+         END IF;
+      END IF;
+
+      o_app.clear_app_info;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         o_app.log_err;
+         RAISE;
+   END create_file;   
 
 -- log a message to the log_table
 -- the preferred method for using the logging framework is to instantiate a APPLOG object and use that
