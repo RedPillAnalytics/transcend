@@ -40,15 +40,17 @@ AS
 
       IF p_debug
       THEN
-         o_app.log_msg ('File '||p_srcfile||' would be copied to ' || p_dstfile);
+         o_app.log_msg ('File ' || p_srcfile || ' would be copied to ' || p_dstfile);
       ELSE
-         l_retval := copy_file (p_srcfile,p_dstfile);
+         l_retval := copy_file (p_srcfile, p_dstfile);
 
          IF l_retval <> 0
          THEN
-            raise_application_error
-                             (-20020,
-                               'Java Error: method CoreUtils.copyFile was unable to copy '||p_srcfile||' to '||p_srcfile);
+            raise_application_error (-20020,
+                                        'Java Error: method CoreUtils.copyFile was unable to copy '
+                                     || p_srcfile
+                                     || ' to '
+                                     || p_srcfile);
          END IF;
       END IF;
 
@@ -59,7 +61,7 @@ AS
          o_app.log_err;
          RAISE;
    END copy_file;
-   
+
    -- procedure executes the delete_file function and raises an exception with the return code
    PROCEDURE delete_file (p_srcfile VARCHAR2, p_debug BOOLEAN DEFAULT FALSE)
    AS
@@ -77,8 +79,9 @@ AS
          IF l_retval <> 0
          THEN
             raise_application_error
-                             (-20020,
-                               'Java Error: method CoreUtils.deleteFile was unable to delete the file '||p_srcfile);
+                       (-20020,
+                           'Java Error: method CoreUtils.deleteFile was unable to delete the file '
+                        || p_srcfile);
          END IF;
       END IF;
 
@@ -89,7 +92,6 @@ AS
          o_app.log_err;
          RAISE;
    END delete_file;
-   
 
 -- log a message to the log_table
 -- the preferred method for using the logging framework is to instantiate a APPLOG object and use that
@@ -108,7 +110,7 @@ AS
       p_debug_msg   VARCHAR2 DEFAULT 'DDL statememt: ',
       p_debug       BOOLEAN DEFAULT FALSE)
    AS
-      PRAGMA autonomous_transaction;
+      PRAGMA AUTONOMOUS_TRANSACTION;
       o_app   applog := applog (p_module => 'COREUTILS.DDL_EXEC', p_debug => p_debug);
    BEGIN
       IF p_debug
@@ -118,7 +120,7 @@ AS
          EXECUTE IMMEDIATE p_ddl;
       END IF;
    END ddl_exec;
-   
+
    -- used to get the path associated with a directory location
    FUNCTION get_dir_path (p_dirname VARCHAR2)
       RETURN VARCHAR2
