@@ -196,9 +196,7 @@ AS
 
       -- audit the file
       o_app.set_action ('Audit extract file');
-      SELF.audit_file (p_trg_filename       => filepath,
-                       p_arch_filename      => arch_filepath,
-                       p_num_bytes          => l_num_bytes,
+      SELF.audit_file (p_num_bytes          => l_num_bytes,
                        p_num_lines          => l_numlines,
                        p_file_dt            => l_file_dt);
       -- send the notification if configured
