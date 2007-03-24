@@ -49,19 +49,27 @@ public class CoreUtils extends Object {
 	}
 	return rc;
     }
-	   
+  
     public static int createFile(String srcfile) {
 	boolean created;
-	int rc;
+	int rc = 0;
 	File srcFile = new File( srcfile );
-	created = srcFile.createNewFile();
-	if (created) {
-	    rc = 0;
-	} 
-	else {
+	
+	try {
+	    created = srcFile.createNewFile();
+	    if (created) {
+		rc = 0;
+	    } else {
+		rc = 1;
+	    }
+	    return rc;
+
+	} catch (IOException e) {
+	    e.printStackTrace();
 	    rc = 1;
+	} finally {
+	    return rc;
 	}
-	return rc;
     }
 
     public static int hostCmd(String cmd, String stdIn) {
@@ -72,7 +80,7 @@ public class CoreUtils extends Object {
 	    Process p = Runtime.getRuntime().exec(cmd);
 	    BufferedWriter stdOut = new BufferedWriter(new OutputStreamWriter(p.getOutputStream()));
 	    stdOut.write(stdIn);
- 	    stdOut.close();
+	    stdOut.close();
   
 	    int bufSize = 4096;
 	    BufferedInputStream bis =
