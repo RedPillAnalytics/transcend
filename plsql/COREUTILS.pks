@@ -18,13 +18,13 @@ AS
    AS
       LANGUAGE JAVA
       NAME 'CoreUtils.deleteFile( java.lang.String ) return integer';
-      
-      -- procedure to create a new empty file
+
+   -- procedure to create a new empty file
    FUNCTION create_file (p_srcfile VARCHAR2)
       RETURN NUMBER
    AS
       LANGUAGE JAVA
-      NAME 'CoreUtils.createFile( java.lang.String ) return integer';      
+      NAME 'CoreUtils.createFile( java.lang.String ) return integer';
 
    -- procedure calls Utils.runCmd java method
    FUNCTION host_cmd (p_cmd IN VARCHAR2, p_stdin IN VARCHAR2)
@@ -38,9 +38,9 @@ AS
 
    -- procedure executes the delete_file function and translates the return code to an exception
    PROCEDURE delete_file (p_srcfile VARCHAR2, p_debug BOOLEAN DEFAULT FALSE);
-      
+
    -- procedure executes the create_file function and translates the return code to an exception
-   PROCEDURE create_file (p_srcfile VARCHAR2, p_debug BOOLEAN DEFAULT FALSE);      
+   PROCEDURE create_file (p_srcfile VARCHAR2, p_debug BOOLEAN DEFAULT FALSE);
 
    -- procedure executes the run_cmd function and raises an exception with the return code
    PROCEDURE host_cmd (p_cmd VARCHAR2, p_stdin VARCHAR2 DEFAULT ' ', p_debug BOOLEAN DEFAULT FALSE);
@@ -58,7 +58,10 @@ AS
    FUNCTION get_dir_name (p_dir_path VARCHAR2)
       RETURN VARCHAR2;
 
-   FUNCTION get_numlines (p_dirname IN VARCHAR2, p_filename IN VARCHAR2)
+   FUNCTION get_numlines (
+      p_dirname    IN   VARCHAR2,
+      p_filename   IN   VARCHAR2,
+      p_debug           BOOLEAN DEFAULT FALSE)
       RETURN NUMBER;
 
    FUNCTION decrypt_file (
