@@ -19,11 +19,12 @@ CREATE TABLE tdinc.filehub_conf
 	 notify_id   	        NUMBER,
 	 notify			VARCHAR2(1)     DEFAULT 'N',
 	 baseurl                VARCHAR2(500),
+	 passphrase             VARCHAR2(100),
 	 source_directory 	VARCHAR2(50),
 	 source_regexp   	VARCHAR2(100),
 	 regexp_options		VARCHAR2(10)    DEFAULT 'i',
-	 multi_file_action	VARCHAR2(10) 	DEFAULT 'newest',
-	 file_required  	VARCHAR2(1) 	DEFAULT 'Y',
+	 source_policy	        VARCHAR2(10) 	DEFAULT 'newest',
+	 required       	VARCHAR2(1) 	DEFAULT 'Y',
 	 dateformat		VARCHAR2(30)   	DEFAULT 'mm/dd/yyyy hh:mi:ss am',
 	 timestampformat	VARCHAR2(30)   	DEFAULT 'mm/dd/yyyy hh:mi:ss:x:ff am',
 	 delimiter		VARCHAR2(1)    	DEFAULT ',',
@@ -53,8 +54,8 @@ COMMENT ON COLUMN tdinc.filehub_conf.file_datestamp IS 'NLS_DATE_FORMAT to use f
 COMMENT ON COLUMN tdinc.filehub_conf.source_regexp IS 'regular expression used to find files in SOURCE_DIR.';
 COMMENT ON COLUMN tdinc.filehub_conf.regexp_options IS 'additional match options that can specified in the regular expression';
 COMMENT ON COLUMN tdinc.filehub_conf.source_directory IS 'name of the directory object where the files are pulled from.';
-COMMENT ON COLUMN tdinc.filehub_conf.multi_file_action IS 'Action to take is multiple files match SOURCE_REGEXP. Current options are "newest","oldest","all","fail" or "proceed"';
-COMMENT ON COLUMN tdinc.filehub_conf.file_required IS 'Y/N column; determines whether the job fails or not when files are not found.';
+COMMENT ON COLUMN tdinc.filehub_conf.source_policy IS 'Action to take is multiple files match SOURCE_REGEXP. Current options are "newest","oldest","all","fail" or "proceed"';
+COMMENT ON COLUMN tdinc.filehub_conf.required IS 'Y/N column; determines whether the job fails or not when files are not found.';
 COMMENT ON COLUMN tdinc.filehub_conf.dateformat IS 'NLS_DATE_FORMAT of date columns in the extract';
 COMMENT ON COLUMN tdinc.filehub_conf.delimiter IS 'delimiter used to separate columns';
 COMMENT ON COLUMN tdinc.filehub_conf.quotechar IS 'quotechar used to support columns. A "none" specifies that no quotechar is used';
