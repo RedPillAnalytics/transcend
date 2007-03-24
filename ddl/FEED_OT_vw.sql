@@ -14,11 +14,13 @@ SELECT notify_type,
        object_owner,
        object_name,
        directory,
+       dirpath,
        filename,
-       coreutils.get_dir_path (directory) || '/' || filename filepath,
+       dirpath || '/' || filename filepath,
        arch_directory,
-       arch_filename,
-       coreutils.get_dir_path (arch_directory) || '/' || arch_filename arch_filepath,
+       arch_dirpath,
+       NULL arch_filename,
+       null arch_filepath,
        min_bytes,
        max_bytes,
        CASE baseurl
@@ -27,11 +29,13 @@ SELECT notify_type,
        ELSE 
        baseurl||'/'||filename 
        END file_url,
+       passphrase,
        source_directory,
+       source_dirpath,
        source_regexp,
        regexp_options,
-       multi_file_action,
-       file_required
+       source_policy,
+       required
   FROM (SELECT notify_type,
 	       notify_type_id,
 	       filehub_id,
@@ -41,30 +45,22 @@ SELECT notify_type,
                object_owner,
                object_name,
                directory,
+	       coreutils.get_dir_path (directory) dirpath,
                filename,
-               CASE file_datestamp
-               WHEN 'NA'
-               THEN  filename
-               || '.'
-               || to_char (SYSDATE, 'yyyymmddhhmiss')
-               ELSE regexp_replace (filename,
-                                     '\.',
-                                     '_'
-                                     || to_char (SYSDATE,
-                                                  file_datestamp)
-                                     || '.')
-               END arch_filename,
-               arch_directory,
+	       arch_directory,
+	       coreutils.get_dir_path (arch_directory) arch_dirpath,
                min_bytes,
                max_bytes,
                baseurl,
+	       passphrase,
 	       message,
 	       subject,
 	       source_directory,
+	       coreutils.get_dir_path (source_directory) source_dirpath,
 	       source_regexp,
 	       regexp_options,
-	       multi_file_action,
-	       file_required
+	       source_policy,
+	       required
           FROM tdinc.filehub_conf left JOIN tdinc.notify_conf
 	       USING (notify_id)
 	 WHERE REGEXP_LIKE (filehub_type, '^feed$', 'i'));
