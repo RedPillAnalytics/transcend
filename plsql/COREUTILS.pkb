@@ -92,7 +92,7 @@ AS
          o_app.log_err;
          RAISE;
    END delete_file;
-   
+
    -- procedure executes the create_file function and raises an exception with the return code
    PROCEDURE create_file (p_srcfile VARCHAR2, p_debug BOOLEAN DEFAULT FALSE)
    AS
@@ -122,7 +122,7 @@ AS
       THEN
          o_app.log_err;
          RAISE;
-   END create_file;   
+   END create_file;
 
 -- log a message to the log_table
 -- the preferred method for using the logging framework is to instantiate a APPLOG object and use that
@@ -209,27 +209,40 @@ AS
    -- get the number of lines in a file
    FUNCTION get_numlines (
       p_dirname    IN   VARCHAR2,                                 -- this is a directory object name
-      p_filename   IN   VARCHAR2)                                            -- the name of the file
+      p_filename   IN   VARCHAR2,                                            -- the name of the file
+      p_debug           BOOLEAN DEFAULT FALSE)                                         -- debug mode
       RETURN NUMBER                                                               -- number of lines
    AS
       l_fh     UTL_FILE.file_type;
       l_line   VARCHAR2 (2000);
       l_cnt    NUMBER             := 0;
-      o_app    applog             := applog (p_module => 'COREUTILS.GET_NUMLINES');
+      o_app    applog             := applog (p_module => 'coreutils.get_numlines');
    BEGIN
-      l_fh := UTL_FILE.fopen (p_dirname, p_filename, 'R', 32767);
-
-      LOOP
-         UTL_FILE.get_line (l_fh, l_line);
-         l_cnt := l_cnt + 1;
-      END LOOP;
-
-      o_app.clear_app_info;
-   EXCEPTION
-      WHEN NO_DATA_FOUND
+      IF p_debug
       THEN
-         UTL_FILE.fclose (l_fh);
-         RETURN l_cnt;
+         o_app.log_msg (o_app.module || ' returning 0 because of DEBUG mode');
+         RETURN 0;
+      ELSE
+         BEGIN
+            l_fh := UTL_FILE.fopen (p_dirname, p_filename, 'R', 32767);
+
+            LOOP
+               UTL_FILE.get_line (l_fh, l_line);
+               l_cnt := l_cnt + 1;
+            END LOOP;
+         EXCEPTION
+            WHEN NO_DATA_FOUND
+            THEN
+               UTL_FILE.fclose (l_fh);
+               o_app.clear_app_info;
+               RETURN l_cnt;
+         END;
+      END IF;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         o_app.log_err;
+         RAISE;
    END get_numlines;
 
    -- a function used to unzip a file regardless of which library was used to zip it
