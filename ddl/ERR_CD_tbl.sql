@@ -27,7 +27,7 @@ ALTER TABLE tdinc.err_cd ADD (
     TABLESPACE tdinc)
 /
 
-INSERT INTO tdinc.err_cd (code,name,message) VALUES (20010, 'file_too_big','File size larger than MAX_BYTES paramter');
-INSERT INTO tdinc.err_cd (code,name,message) VALUES (20011, 'file_too_small','File size smaller than MAX_BYTES paramter');
-INSERT INTO tdinc.err_cd (code,name,message) VALUES (20012, 'notify_not_configured','No notification method is configured for this object');
-INSERT INTO tdinc.err_cd (code,name,message) VALUES (20013, 'no_files_found','No files found for this configuration');
+INSERT INTO tdinc.err_cd (code,name,message) VALUES (-20010, 'file_too_big','File size larger than MAX_BYTES paramter');
+INSERT INTO tdinc.err_cd (code,name,message) VALUES (-20011, 'file_too_small','File size smaller than MAX_BYTES paramter');
+INSERT INTO tdinc.err_cd (code,name,message) VALUES (-20012, 'notify_not_configured','No notification method is configured for this object');
+INSERT INTO tdinc.err_cd (code,name,message) VALUES (-20013, 'no_files_found','No files found for this configuration');
