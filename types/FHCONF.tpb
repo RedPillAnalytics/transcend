@@ -7,7 +7,8 @@ AS
       p_arch_filepath     VARCHAR2,
       p_num_bytes         NUMBER,
       p_num_lines         NUMBER,
-      p_file_dt           DATE)
+      p_file_dt           DATE,
+      p_validate          BOOLEAN DEFAULT TRUE)
    AS
       o_app   applog := applog (p_module => 'fhconf.audit_file', p_debug => SELF.DEBUG_MODE);
    BEGIN
@@ -41,7 +42,7 @@ AS
       -- the job fails when size threshholds are not met
       o_app.set_action ('Check file details');
 
-      IF NOT SELF.DEBUG_MODE
+      IF NOT SELF.DEBUG_MODE AND p_validate
       THEN
          IF p_num_bytes >= max_bytes AND max_bytes <> 0
          THEN
@@ -61,7 +62,11 @@ AS
          o_app.log_err;
          RAISE;
    END audit_file;
-   MEMBER PROCEDURE audit_file (p_num_bytes NUMBER, p_num_lines NUMBER, p_file_dt DATE)
+   MEMBER PROCEDURE audit_file (
+      p_num_bytes   NUMBER,
+      p_num_lines   NUMBER,
+      p_file_dt     DATE,
+      p_validate    BOOLEAN DEFAULT TRUE)
    AS
       o_app   applog := applog (p_module => 'FILE_MOVER.AUDIT_FILE', p_debug => SELF.DEBUG_MODE);
    BEGIN
