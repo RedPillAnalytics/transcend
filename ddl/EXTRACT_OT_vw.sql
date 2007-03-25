@@ -14,19 +14,24 @@ SELECT notify_type,
        object_owner,
        object_name,
        directory,
+       dirpath,
        filename,
        coreutils.get_dir_path (directory) || '/' || filename filepath,
        arch_directory,
+       arch_dirpath,
        arch_filename,
        coreutils.get_dir_path (arch_directory) || '/' || arch_filename arch_filepath,
+       file_datestamp,
        min_bytes,
        max_bytes,
+       baseurl,
        CASE baseurl
-       WHEN 'NA'
-       THEN 'NA'
+       WHEN null
+       THEN null
        ELSE 
        baseurl||'/'||filename 
        END file_url,
+       passphrase,
        'alter session set nls_date_format=''' || dateformat || '''' dateformat_ddl,
        'alter session set nls_timestamp_format=''' || timestampformat || '''' tsformat_ddl,
        delimiter,
@@ -41,6 +46,7 @@ SELECT notify_type,
                object_owner,
                object_name,
                directory,
+	       coreutils.get_dir_path (directory) dirpath,
                CASE file_datestamp
                WHEN 'NA'
                THEN filename
@@ -64,9 +70,12 @@ SELECT notify_type,
                                      || '.')
                END arch_filename,
                arch_directory,
+	       coreutils.get_dir_path (arch_directory) arch_dirpath,
+	       file_datestamp,
                min_bytes,
                max_bytes,
                baseurl,
+	       passphrase,
 	       message,
 	       subject,
                dateformat,
