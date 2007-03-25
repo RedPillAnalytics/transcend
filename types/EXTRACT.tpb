@@ -196,34 +196,28 @@ AS
 
       -- audit the file
       o_app.set_action ('Audit extract file');
-      SELF.audit_file (p_num_bytes          => l_num_bytes,
-                       p_num_lines          => l_numlines,
-                       p_file_dt            => l_file_dt);
+      SELF.audit_file (p_num_bytes      => l_num_bytes, p_num_lines => l_numlines,
+                       p_file_dt        => l_file_dt);
       -- send the notification if configured
       o_app.set_action ('Send a notification');
+      MESSAGE :=
+            MESSAGE
+         || CHR (10)
+         || CHR (10)
+         || 'The file can be downloaded at the following link:'
+         || CHR (10)
+         || file_url;
 
-      IF notify_type <> 'none'
+      IF l_numlines > 65536
       THEN
          MESSAGE :=
                MESSAGE
             || CHR (10)
             || CHR (10)
-            || 'The file can be downloaded at the following link:'
-            || CHR (10)
-            || file_url;
-
-         IF l_numlines > 65536
-         THEN
-            MESSAGE :=
-                  MESSAGE
-               || CHR (10)
-               || CHR (10)
-               || 'The file is too large for some desktop applications, such as Microsoft Excel, to open.';
-         END IF;
-
-         SELF.send;
+            || 'The file is too large for some desktop applications, such as Microsoft Excel, to open.';
       END IF;
 
+      SELF.send;
       o_app.clear_app_info;
    EXCEPTION
       WHEN OTHERS
