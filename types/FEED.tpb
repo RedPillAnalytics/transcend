@@ -213,24 +213,6 @@ AS
                           p_num_bytes            => c_dir_list.file_size,
                           p_num_lines            => l_numlines,
                           p_file_dt              => c_dir_list.file_dt);
-         -- alter the external table to contain all the files
-         o_app.set_action ('Alter external table');
-
-         IF l_ext_file_cnt > 1
-         THEN
-            BEGIN
-               coreutils.ddl_exec (l_ext_tab_ddl, 'Count SQL: ', SELF.DEBUG_MODE);
-            EXCEPTION
-               WHEN e_no_files
-               THEN
-                  raise_application_error (o_app.get_err_cd ('no_ext_files'),
-                                           o_app.get_err_msg ('no_ext_files'));
-            END;
-         END IF;
-
-         -- audit the external table
-         o_app.set_action ('Audit external table');
-         SELF.audit_ext_tab (p_num_lines => l_sum_numlines);
          -- IF we get this far, then we need to delete the source files
          -- this step is ignored if p_keep_source = TRUE
          o_app.set_action ('Delete source files');
@@ -258,7 +240,24 @@ AS
             coreutils.create_file (SELF.filepath);
          ELSE
             -- matching files found, so ignore
-            NULL;
+                     -- alter the external table to contain all the files
+            o_app.set_action ('Alter external table');
+
+            IF l_ext_file_cnt > 1
+            THEN
+               BEGIN
+                  coreutils.ddl_exec (l_ext_tab_ddl, p_debug => SELF.DEBUG_MODE);
+               EXCEPTION
+                  WHEN e_no_files
+                  THEN
+                     raise_application_error (o_app.get_err_cd ('no_ext_files'),
+                                              o_app.get_err_msg ('no_ext_files'));
+               END;
+            END IF;
+
+            -- audit the external table
+            o_app.set_action ('Audit external table');
+            SELF.audit_ext_tab (p_num_lines => l_sum_numlines);
       END CASE;
 
       o_app.clear_app_info;
