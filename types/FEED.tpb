@@ -76,6 +76,7 @@ AS
       l_sum_numlines   NUMBER          := 0;
       l_ext_file_cnt   NUMBER;
       l_ext_tab_ddl    VARCHAR2 (2000);
+      l_files_url      VARCHAR2 (1000);
       e_no_files       EXCEPTION;
       PRAGMA EXCEPTION_INIT (e_no_files, -1756);
       o_app            applog
@@ -85,6 +86,32 @@ AS
       o_app.set_action ('Evaluate SOURCE_DIRECTORY contents');
       -- use java stored procedure to populate global temp table DIR_LIST with all the files in the directory
       coreutils.get_dir_list (source_dirpath);
+
+      -- look at the contents of the DIR_LIST table
+      -- this first cursor is just to move all matching files to the archive directory
+      FOR c_dir_list IN (SELECT filename source_filename,
+                                SELF.filepath,
+                                SELF.source_dirpath || '/' || filename source_filepath,
+                                CASE file_datestamp
+                                   WHEN NULL
+                                      THEN SELF.arch_dirpath || '/' || filename
+                                   ELSE    SELF.arch_dirpath
+                                        || '/'
+                                        || filename
+                                        || '.'
+                                        || TO_CHAR (SYSDATE, file_datestamp)
+                                END arch_filepath,
+                                file_dt,
+                                file_size
+                           FROM dir_list
+                          WHERE REGEXP_LIKE (filename, SELF.source_regexp, SELF.regexp_options))
+      LOOP
+         -- copy file to the archive location
+         o_app.set_action ('Copy archivefile');
+         coreutils.copy_file (c_dir_list.source_filepath, c_dir_list.arch_filepath,
+                              SELF.DEBUG_MODE);
+         o_app.log_msg ('Archive file ' || c_dir_list.arch_filepath || ' created');
+      END LOOP;
 
       -- look at the contents of the DIR_LIST table for
       FOR c_dir_list IN
@@ -115,10 +142,35 @@ AS
                    || '.'
                    || SELF.object_name
                    || ' location ('
-                   || REGEXP_REPLACE (MAX (SELF.DIRECTORY || ':''' || filename) OVER (PARTITION BY ext_tab_ind),
-                                      ',',
-                                      ''',')
-                   || ''')' alt_ddl
+                   || REGEXP_REPLACE
+                         (stragg (   SELF.DIRECTORY
+                               || ':'''
+                               || CASE
+                                     WHEN ext_tab_ind = 'Y' AND ext_tab_type_cnt > 1
+                                        THEN REGEXP_REPLACE (SELF.filename,
+                                                             '\.',
+                                                             '_' || file_number || '.')
+                                     WHEN ext_tab_ind = 'N'
+                                        THEN NULL
+                                     ELSE SELF.filename
+                                  END) OVER (PARTITION BY ext_tab_ind),
+                          ',',
+                          ''',')
+                   || ''')' alt_ddl,
+                   REGEXP_REPLACE
+                      (stragg (   SELF.baseurl
+                            || '/'
+                            || CASE
+                                  WHEN ext_tab_ind = 'Y' AND ext_tab_type_cnt > 1
+                                     THEN REGEXP_REPLACE (SELF.filename,
+                                                          '\.',
+                                                          '_' || file_number || '.')
+                                  WHEN ext_tab_ind = 'N'
+                                     THEN NULL
+                                  ELSE SELF.filename
+                               END) OVER (PARTITION BY ext_tab_ind),
+                       ',',
+                       CHR (10)) files_url
               FROM (SELECT source_filename,
                            source_filepath,
                            filepath,
@@ -131,10 +183,19 @@ AS
                             source_filename) file_number,
                            COUNT (*) OVER (PARTITION BY ext_tab_ind) ext_tab_type_cnt
                       FROM (SELECT filename source_filename,
+                                   baseurl,
                                    SELF.filepath,
                                    SELF.source_dirpath || '/' || filename source_filepath,
                                    SELF.dirpath || '/' || filename pre_mv_filepath,
-                                   SELF.arch_dirpath || '/' || filename arch_filepath,
+                                   CASE file_datestamp
+                                      WHEN NULL
+                                         THEN SELF.arch_dirpath || '/' || filename
+                                      ELSE    SELF.arch_dirpath
+                                           || '/'
+                                           || filename
+                                           || '.'
+                                           || TO_CHAR (SYSDATE, file_datestamp)
+                                   END arch_filepath,
                                    file_dt,
                                    file_size,
                                    CASE
@@ -150,17 +211,12 @@ AS
                                    END ext_tab_ind
                               FROM dir_list
                              WHERE REGEXP_LIKE (filename, SELF.source_regexp, SELF.regexp_options)))
-          ORDER BY ext_tab_ind DESC)
+          ORDER BY ext_tab_ind ASC)
       LOOP
          -- catch empty cursor sets
          l_rows := TRUE;
          -- reset variables used in the cursor
          l_numlines := NULL;
-         -- copy file to the archive location
-         o_app.set_action ('Copy archivefile');
-         coreutils.copy_file (c_dir_list.source_filepath, c_dir_list.arch_filepath,
-                              SELF.DEBUG_MODE);
-         o_app.log_msg ('Archive file ' || c_dir_list.arch_filepath || ' created');
          -- copy the file to the external table
          o_app.set_action ('Copy external table files');
 
@@ -172,6 +228,8 @@ AS
             l_ext_tab_ddl := c_dir_list.alt_ddl;
             -- record the number of external table files
             l_ext_file_cnt := c_dir_list.ext_tab_type_cnt;
+            -- record the files url
+            l_files_url := c_dir_list.files_url;
             -- first move the file to the target destination without changing the name
             -- because the file might be zipped or encrypted
             coreutils.copy_file (c_dir_list.arch_filepath,
@@ -212,7 +270,12 @@ AS
                           p_filepath             => c_dir_list.filepath,
                           p_num_bytes            => c_dir_list.file_size,
                           p_num_lines            => l_numlines,
-                          p_file_dt              => c_dir_list.file_dt);
+                          p_file_dt              => c_dir_list.file_dt,
+                          p_validate             => CASE c_dir_list.ext_tab_ind
+                             WHEN 'Y'
+                                THEN TRUE
+                             ELSE FALSE
+                          END);
          -- IF we get this far, then we need to delete the source files
          -- this step is ignored if p_keep_source = TRUE
          o_app.set_action ('Delete source files');
@@ -243,23 +306,46 @@ AS
                      -- alter the external table to contain all the files
             o_app.set_action ('Alter external table');
 
-            IF l_ext_file_cnt > 1
-            THEN
-               BEGIN
-                  coreutils.ddl_exec (l_ext_tab_ddl, p_debug => SELF.DEBUG_MODE);
-               EXCEPTION
-                  WHEN e_no_files
-                  THEN
-                     raise_application_error (o_app.get_err_cd ('no_ext_files'),
-                                              o_app.get_err_msg ('no_ext_files'));
-               END;
-            END IF;
+            BEGIN
+               coreutils.ddl_exec (l_ext_tab_ddl, p_debug => SELF.DEBUG_MODE);
+            EXCEPTION
+               WHEN e_no_files
+               THEN
+                  raise_application_error (o_app.get_err_cd ('no_ext_files'),
+                                           o_app.get_err_msg ('no_ext_files'));
+            END;
 
             -- audit the external table
             o_app.set_action ('Audit external table');
             SELF.audit_ext_tab (p_num_lines => l_sum_numlines);
       END CASE;
 
+      -- send the notification if configured
+      o_app.set_action ('Send a notification');
+      MESSAGE :=
+            MESSAGE
+         || CHR (10)
+         || CHR (10)
+         || 'The file'
+         || CASE
+               WHEN l_ext_file_cnt > 1
+                  THEN 's'
+               ELSE NULL
+            END
+         || ' can be downloaded at the following link:'
+         || CHR (10)
+         || l_files_url;
+
+      IF l_numlines > 65536
+      THEN
+         MESSAGE :=
+               MESSAGE
+            || CHR (10)
+            || CHR (10)
+            || 'The file is too large for some desktop applications, such as Microsoft Excel, to open.';
+      END IF;
+
+      SELF.send;
       o_app.clear_app_info;
    EXCEPTION
       WHEN OTHERS
