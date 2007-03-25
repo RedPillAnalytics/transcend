@@ -29,5 +29,7 @@ ALTER TABLE tdinc.err_cd ADD (
 
 INSERT INTO tdinc.err_cd (code,name,message) VALUES (-20010, 'file_too_big','File size larger than MAX_BYTES paramter');
 INSERT INTO tdinc.err_cd (code,name,message) VALUES (-20011, 'file_too_small','File size smaller than MAX_BYTES paramter');
-INSERT INTO tdinc.err_cd (code,name,message) VALUES (-20012, 'notify_not_configured','No notification method is configured for this object');
+INSERT INTO tdinc.err_cd (code,name,message) VALUES (-20012, 'notify_method_invalid','The notification method is not valid');
 INSERT INTO tdinc.err_cd (code,name,message) VALUES (-20013, 'no_files_found','No files found for this configuration');
+INSERT INTO tdinc.err_cd (code,name,message) VALUES (-20014, 'no_ext_tab','External table in this configuration is non-existent');
+INSERT INTO tdinc.err_cd (code,name,message) VALUES (-20014, 'no_ext_files','There are no files found for this external table.');
