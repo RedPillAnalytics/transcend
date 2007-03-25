@@ -8,13 +8,15 @@ AS
       l_sql        VARCHAR2 (100);
       e_no_table   EXCEPTION;
       PRAGMA EXCEPTION_INIT (e_no_table, -942);
+      e_no_files   EXCEPTION;
+      PRAGMA EXCEPTION_INIT (e_no_files, -1756);
       o_app        applog  := applog (p_module      => 'feed.audit_ext_tab',
                                       p_debug       => SELF.DEBUG_MODE);
    BEGIN
       o_app.set_action ('Get count from table');
       l_sql := 'SELECT count(*) FROM ' || SELF.object_owner || '.' || SELF.object_name;
 
-      IF self.debug_mode
+      IF SELF.DEBUG_MODE
       THEN
          o_app.log_msg ('Count SQL: ' || l_sql);
       ELSE
@@ -72,7 +74,10 @@ AS
       l_filepath       VARCHAR2 (200);
       l_numfiles       NUMBER;
       l_sum_numlines   NUMBER          := 0;
+      l_ext_file_cnt   NUMBER;
       l_ext_tab_ddl    VARCHAR2 (2000);
+      e_no_files       EXCEPTION;
+      PRAGMA EXCEPTION_INIT (e_no_files, -1756);
       o_app            applog
                             := applog (p_module      => 'feed.process_feed',
                                        p_debug       => SELF.DEBUG_MODE);
@@ -104,6 +109,7 @@ AS
                    file_dt,
                    file_size,
                    ext_tab_ind,
+                   ext_tab_type_cnt,
                       'alter table '
                    || SELF.object_owner
                    || '.'
@@ -164,8 +170,8 @@ AS
             -- this statement will be the same no matter which of the rows we pull it from.
             -- might as well use the last
             l_ext_tab_ddl := c_dir_list.alt_ddl;
-            -- get a total count of all the lines in all the files making up the external table
-            l_sum_numlines := l_sum_numlines + l_numlines;
+            -- record the number of external table files
+            l_ext_file_cnt := c_dir_list.ext_tab_type_cnt;
             -- first move the file to the target destination without changing the name
             -- because the file might be zipped or encrypted
             coreutils.copy_file (c_dir_list.arch_filepath,
@@ -195,16 +201,36 @@ AS
             -- get the number of lines in the file now that it is decrypted and uncompressed
             l_numlines :=
                        coreutils.get_numlines (SELF.DIRECTORY, c_dir_list.filename, SELF.DEBUG_MODE);
+            -- get a total count of all the lines in all the files making up the external table
+            l_sum_numlines := l_sum_numlines + l_numlines;
          END IF;
 
          -- WRITE an audit record for the file that was just archived
-         o_app.set_action ('Audit external tables');
+         o_app.set_action ('Audit feed');
          SELF.audit_file (p_source_filepath      => c_dir_list.source_filepath,
                           p_arch_filepath        => c_dir_list.arch_filepath,
                           p_filepath             => c_dir_list.filepath,
                           p_num_bytes            => c_dir_list.file_size,
                           p_num_lines            => l_numlines,
                           p_file_dt              => c_dir_list.file_dt);
+         -- alter the external table to contain all the files
+         o_app.set_action ('Alter external table');
+
+         IF l_ext_file_cnt > 1
+         THEN
+            BEGIN
+               coreutils.ddl_exec (l_ext_tab_ddl, 'Count SQL: ', SELF.DEBUG_MODE);
+            EXCEPTION
+               WHEN e_no_files
+               THEN
+                  raise_application_error (o_app.get_err_cd ('no_ext_files'),
+                                           o_app.get_err_msg ('no_ext_files'));
+            END;
+         END IF;
+
+         -- audit the external table
+         o_app.set_action ('Audit external table');
+         SELF.audit_ext_tab (p_num_lines => l_sum_numlines);
          -- IF we get this far, then we need to delete the source files
          -- this step is ignored if p_keep_source = TRUE
          o_app.set_action ('Delete source files');
