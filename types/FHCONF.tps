@@ -13,8 +13,10 @@ CREATE OR REPLACE TYPE tdinc.fhconf UNDER tdinc.notify (
    arch_dirpath     VARCHAR (200),
    arch_filename    VARCHAR2 (50),
    arch_filepath    VARCHAR2 (100),
+   file_datestamp   VARCHAR2 (30),
    min_bytes        NUMBER,
    max_bytes        NUMBER,
+   baseurl          VARCHAR2 (2000),
    file_url         VARCHAR2 (2000),
    passphrase       VARCHAR2 (100),
    MEMBER PROCEDURE audit_file (
@@ -23,8 +25,13 @@ CREATE OR REPLACE TYPE tdinc.fhconf UNDER tdinc.notify (
       p_arch_filepath     VARCHAR2,
       p_num_bytes         NUMBER,
       p_num_lines         NUMBER,
-      p_file_dt           DATE),
-   MEMBER PROCEDURE audit_file (p_num_bytes NUMBER, p_num_lines NUMBER, p_file_dt DATE)
+      p_file_dt           DATE,
+      p_validate          BOOLEAN DEFAULT TRUE),
+   MEMBER PROCEDURE audit_file (
+      p_num_bytes   NUMBER,
+      p_num_lines   NUMBER,
+      p_file_dt     DATE,
+      p_validate    BOOLEAN DEFAULT TRUE)
 )
 NOT FINAL;
 /
