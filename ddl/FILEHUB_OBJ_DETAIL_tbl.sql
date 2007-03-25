@@ -5,9 +5,10 @@ CREATE TABLE tdinc.filehub_obj_detail
        ( fh_obj_id NUMBER NOT NULL,
 	 filehub_id NUMBER NOT NULL,
 	 filehub_type VARCHAR2(7) NOT NULL,
+	 filehub_name VARCHAR2(30) NOT NULL,
 	 filehub_group VARCHAR2(50) NOT NULL,
-	 object_name VARCHAR2(30) NOT NULL,
-	 object_owner VARCHAR2(100) NOT NULL,
+	 object_owner VARCHAR2(30) NOT NULL,
+	 object_name  VARCHAR2(30) NOT NULL,
 	 processed_ts TIMESTAMP DEFAULT systimestamp NOT NULL,
 	 num_rows NUMBER,
 	 num_lines NUMBER,
@@ -32,4 +33,7 @@ COMMENT ON COLUMN tdinc.filehub_obj_detail.percent_diff IS 'Percentage differenc
 COMMENT ON COLUMN tdinc.filehub_obj_detail.session_id IS 'SESSION_ID of the processing session.';
 
 GRANT SELECT ON tdinc.filehub_obj_detail TO tdinc_filehub
+/
+
+CREATE SEQUENCE tdinc.filehub_obj_detail_seq
 /
