@@ -25,7 +25,7 @@ AS
    AS
       l_recipients   VARCHAR2 (2000);
       l_sender       VARCHAR2 (50);
-      o_app          applog      := applog (p_module      => 'NOTIFY.EMAIL',
+      o_app          applog      := applog (p_module      => 'notify.email',
                                             p_debug       => SELF.DEBUG_MODE);
    BEGIN
       CASE notify_type
@@ -61,10 +61,12 @@ AS
                               mime_type       => 'text/html');
                o_app.log_msg ('Email sent to: ' || l_recipients);
             END IF;
-         WHEN 'none'
+         WHEN NULL
          THEN
-            raise_application_error (o_app.get_err_cd ('notify_not_configured'),
-                                     o_app.get_err_msg ('notify_not_configured'));
+            o_app.log_msg ('Notification not configured');
+         ELSE
+            raise_application_error (o_app.get_err_cd ('notify_method_invalid'),
+                                     o_app.get_err_msg ('notify_method_invalid'));
       END CASE;
    EXCEPTION
       WHEN OTHERS
