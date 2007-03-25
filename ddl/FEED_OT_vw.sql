@@ -21,14 +21,11 @@ SELECT notify_type,
        arch_dirpath,
        NULL arch_filename,
        null arch_filepath,
+       file_datestamp,
        min_bytes,
        max_bytes,
-       CASE baseurl
-       WHEN 'NA'
-       THEN 'NA'
-       ELSE 
-       baseurl||'/'||filename 
-       END file_url,
+       baseurl,
+       NULL file_url,
        passphrase,
        source_directory,
        source_dirpath,
@@ -49,6 +46,7 @@ SELECT notify_type,
                filename,
 	       arch_directory,
 	       coreutils.get_dir_path (arch_directory) arch_dirpath,
+	       file_datestamp,
                min_bytes,
                max_bytes,
                baseurl,
