@@ -17,7 +17,6 @@ CREATE TABLE tdinc.filehub_conf
 	 max_bytes              NUMBER 		DEFAULT 0 NOT NULL,
 	 file_datestamp		VARCHAR2(30) 	DEFAULT 'yyyymmddhhmiss' NOT NULL,
 	 notify_id   	        NUMBER,
-	 notify			VARCHAR2(1)     DEFAULT 'N',
 	 baseurl                VARCHAR2(500),
 	 passphrase             VARCHAR2(100),
 	 source_directory 	VARCHAR2(50),
@@ -61,7 +60,6 @@ COMMENT ON COLUMN tdinc.filehub_conf.delimiter IS 'delimiter used to separate co
 COMMENT ON COLUMN tdinc.filehub_conf.quotechar IS 'quotechar used to support columns. A "none" specifies that no quotechar is used';
 COMMENT ON COLUMN tdinc.filehub_conf.headers IS 'a indicator of whether headers should be included as the first row in the file: "include" or "exclude"';
 COMMENT ON COLUMN tdinc.filehub_conf.notify_id IS 'if from the NOTIFY_CONF table.';
-COMMENT ON COLUMN tdinc.filehub_conf.notify IS 'Y or N... whether to notify or not.';
 COMMENT ON COLUMN tdinc.filehub_conf.baseurl IS 'the baseurl that the file is located at, which can be included in notifications';
 COMMENT ON COLUMN tdinc.filehub_conf.created_user IS 'for auditing';
 COMMENT ON COLUMN tdinc.filehub_conf.created_dt IS 'for auditing';
