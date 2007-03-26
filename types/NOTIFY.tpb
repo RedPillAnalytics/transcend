@@ -28,7 +28,7 @@ AS
       o_app          applog      := applog (p_module      => 'notify.email',
                                             p_debug       => SELF.DEBUG_MODE);
    BEGIN
-      CASE notify_type
+      CASE NVL (notify_type, 'NA')
          WHEN 'email'
          THEN
             SELECT recipients,
@@ -61,7 +61,7 @@ AS
                               mime_type       => 'text/html');
                o_app.log_msg ('Email sent to: ' || l_recipients);
             END IF;
-         WHEN NULL
+         WHEN 'NA'
          THEN
             o_app.log_msg ('Notification not configured');
          ELSE
