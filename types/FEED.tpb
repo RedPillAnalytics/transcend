@@ -104,8 +104,8 @@ AS
                        coreutils.get_dir_path (SELF.DIRECTORY) || '/' || LOCATION cef_filepath
                   FROM dba_external_tables JOIN dba_external_locations USING (owner, table_name)
                        )
-          SELECT   object_name,
-                   object_owner,
+           SELECT   object_name,			-- external table owner
+                  object_owner,-- external table name
                    source_filename,                                     -- name of each source files
                    source_filepath,                               -- name converted to absolute path
                    CASE
@@ -126,7 +126,7 @@ AS
                    END filename,
                    pre_mv_filepath,
                    arch_filepath,
-                   cef_filepath,
+                 nvl(cef_filepath, 'NA') cef_filepath,
                    file_dt,
                    file_size,
                    ext_tab_ind,
@@ -153,8 +153,9 @@ AS
                           ',',
                           ''',')
                    || ''')' alt_ddl,
-                   --construct a file_url if SELF.BASEURL is configurated
-                   -- otherwise it's null
+                  -- construct a file_url if BASEURL attribute is configured
+		  -- this constructs a STRAGGED list of URL's if multiple files exist
+                  -- otherwise it's null
                    REGEXP_REPLACE
                       (stragg (   SELF.baseurl
                             || '/'
@@ -179,17 +180,33 @@ AS
                            file_dt,
                            file_size,
                            ext_tab_ind,
-                           -- this gives us a number to use to auto increment the files
+                           -- rank gives us a number to use to auto increment files in case SOURCE_POLICY attribute is 'all'
                            RANK () OVER (PARTITION BY 1 ORDER BY ext_tab_ind DESC,
                             source_filename) file_number,
                            -- this gives us a count of how many files will be copied into the external table
                            -- have this for each line
+			   -- use the EXT_TAB_IND derived in the select below
                            COUNT (*) OVER (PARTITION BY ext_tab_ind) ext_tab_type_cnt
-                      FROM (SELECT filename source_filename,
+                      FROM (SELECT -- the dir_list table has a filename column
+				   -- we also have a filename attribute
+				   -- rename the filename from the table as SOURCE_FILENAME
+				   filename source_filename,
+				   -- URL location if the target location is web enabled
+				   -- this is for notification purposes to send links for received files
                                    SELF.baseurl baseurl,
+				   -- translate directory objects and filenames to absolute paths
+				   -- because Java actually does most the heavy lifting
+				   -- and java doesn't know anything about a directory object
+				   -- path of the target object (if there's only one)
                                    SELF.filepath filepath,
+				   -- path to the source file
                                    SELF.source_dirpath || '/' || filename source_filepath,
+				   -- path to an intermediate file location just prior to being placed in the external table
+				   -- this is so the file can be decompressed and decrypted AFTER the move
                                    SELF.dirpath || '/' || filename pre_mv_filepath,
+				   -- use the attribute FILE_DATESTAMP to determin if the archived file needs a date added
+				   -- some files will come in dated already, and two datestamps are silly
+				   -- when we have a whole catalog to track the files
                                    CASE file_datestamp
                                       WHEN NULL
                                          THEN SELF.arch_dirpath || '/' || filename
@@ -201,6 +218,10 @@ AS
                                    END arch_filepath,
                                    file_dt,
                                    file_size,
+				   -- case statement determines an EXT_TAB_IND
+				   -- this picks out the files that will go to the external table
+				   -- uses the SOURCE_POLICY column to determine which ones to get
+				   -- that is translated to a Y/N indicator based on the date of the file
                                    CASE
                                       WHEN LOWER (SELF.source_policy) = 'newest'
                                       AND file_dt = MIN (file_dt) OVER (PARTITION BY 1)
@@ -215,8 +236,11 @@ AS
                                    UPPER (SELF.object_name) object_name,
                                    UPPER (SELF.object_owner) object_owner
                               FROM dir_list
+				   -- matching regexp and regexp_options to find matching source files
                              WHERE REGEXP_LIKE (filename, SELF.source_regexp, SELF.regexp_options))) dl
-                   LEFT JOIN
+                  LEFT JOIN
+		  -- joining the subquery factoring clause
+		  -- this compares proposed files to the existing files
                    current_ext_files cef
                    ON dl.object_owner = cef.owner
                  AND dl.object_name = cef.table_name
