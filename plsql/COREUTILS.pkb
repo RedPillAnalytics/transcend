@@ -50,7 +50,7 @@ AS
                                         'Java Error: method CoreUtils.copyFile was unable to copy '
                                      || p_srcfile
                                      || ' to '
-                                     || p_srcfile);
+                                     || p_dstfile);
          END IF;
       END IF;
 
