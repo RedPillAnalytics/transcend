@@ -1,6 +1,6 @@
 CREATE OR REPLACE TYPE BODY tdinc.feed
 AS
-   -- audits information about external tables after the file(s) have been put in place
+-- audits information about external tables after the file(s) have been put in place
    MEMBER PROCEDURE audit_ext_tab (p_num_lines NUMBER)
    IS
       l_num_rows   NUMBER         := 0;
@@ -13,9 +13,12 @@ AS
       o_app        applog  := applog (p_module      => 'feed.audit_ext_tab',
                                       p_debug       => SELF.DEBUG_MODE);
    BEGIN
+      -- type object which handles logging and application registration for instrumentation purposes
+      -- defaults to registering with DBMS_APPLICATION_INFO
       o_app.set_action ('Get count from table');
       l_sql := 'SELECT count(*) FROM ' || SELF.object_owner || '.' || SELF.object_name;
 
+      -- translates the Y/N attribute into a boolean
       IF SELF.DEBUG_MODE
       THEN
          o_app.log_msg ('Count SQL: ' || l_sql);
@@ -87,38 +90,28 @@ AS
       -- use java stored procedure to populate global temp table DIR_LIST with all the files in the directory
       coreutils.get_dir_list (source_dirpath);
 
-      -- look at the contents of the DIR_LIST table
-      -- this first cursor is just to move all matching files to the archive directory
-      FOR c_dir_list IN (SELECT filename source_filename,
-                                SELF.filepath,
-                                SELF.source_dirpath || '/' || filename source_filepath,
-                                CASE file_datestamp
-                                   WHEN NULL
-                                      THEN SELF.arch_dirpath || '/' || filename
-                                   ELSE    SELF.arch_dirpath
-                                        || '/'
-                                        || filename
-                                        || '.'
-                                        || TO_CHAR (SYSDATE, file_datestamp)
-                                END arch_filepath,
-                                file_dt,
-                                file_size
-                           FROM dir_list
-                          WHERE REGEXP_LIKE (filename, SELF.source_regexp, SELF.regexp_options))
-      LOOP
-         -- copy file to the archive location
-         o_app.set_action ('Copy archivefile');
-         coreutils.copy_file (c_dir_list.source_filepath, c_dir_list.arch_filepath,
-                              SELF.DEBUG_MODE);
-         o_app.log_msg ('Archive file ' || c_dir_list.arch_filepath || ' created');
-      END LOOP;
-
       -- look at the contents of the DIR_LIST table for
       FOR c_dir_list IN
-         (SELECT   source_filename,
-                   source_filepath,
+         
+         -- subquery factoring clause gives us external table, owner and current files
+         -- these will be joined in with proposed files to be moved into location
+         -- this tells us whether we will need to delete some files after the file movement
+         -- also tells us whether we will need to alter the external table after completion
+         (WITH current_ext_files AS
+               (SELECT owner,
+                       table_name,
+                       -- this is the absolute path of all files currently in the external table
+                       coreutils.get_dir_path (SELF.DIRECTORY) || '/' || LOCATION cef_filepath
+                  FROM dba_external_tables JOIN dba_external_locations USING (owner, table_name)
+                       )
+          SELECT   object_name,
+                   object_owner,
+                   source_filename,                                     -- name of each source files
+                   source_filepath,                               -- name converted to absolute path
                    CASE
-                      WHEN ext_tab_ind = 'Y' AND ext_tab_type_cnt > 1
+                      -- use analytics to determine how many files are going into place
+                      -- that tells us whether to increment the filenames
+                   WHEN ext_tab_ind = 'Y' AND ext_tab_type_cnt > 1
                          THEN REGEXP_REPLACE (filepath, '\.', '_' || file_number || '.')
                       WHEN ext_tab_ind = 'N'
                          THEN NULL
@@ -133,10 +126,13 @@ AS
                    END filename,
                    pre_mv_filepath,
                    arch_filepath,
+                   cef_filepath,
                    file_dt,
                    file_size,
                    ext_tab_ind,
                    ext_tab_type_cnt,
+                      
+                      -- use analytics (stragg function) to construct the alter table command (if needed)
                       'alter table '
                    || SELF.object_owner
                    || '.'
@@ -157,6 +153,8 @@ AS
                           ',',
                           ''',')
                    || ''')' alt_ddl,
+                   --construct a file_url if SELF.BASEURL is configurated
+                   -- otherwise it's null
                    REGEXP_REPLACE
                       (stragg (   SELF.baseurl
                             || '/'
@@ -171,7 +169,9 @@ AS
                                END) OVER (PARTITION BY ext_tab_ind),
                        ',',
                        CHR (10)) files_url
-              FROM (SELECT source_filename,
+              FROM (SELECT object_name,
+                           object_owner,
+                           source_filename,
                            source_filepath,
                            filepath,
                            pre_mv_filepath,
@@ -179,12 +179,15 @@ AS
                            file_dt,
                            file_size,
                            ext_tab_ind,
+                           -- this gives us a number to use to auto increment the files
                            RANK () OVER (PARTITION BY 1 ORDER BY ext_tab_ind DESC,
                             source_filename) file_number,
+                           -- this gives us a count of how many files will be copied into the external table
+                           -- have this for each line
                            COUNT (*) OVER (PARTITION BY ext_tab_ind) ext_tab_type_cnt
                       FROM (SELECT filename source_filename,
-                                   baseurl,
-                                   SELF.filepath,
+                                   SELF.baseurl baseurl,
+                                   SELF.filepath filepath,
                                    SELF.source_dirpath || '/' || filename source_filepath,
                                    SELF.dirpath || '/' || filename pre_mv_filepath,
                                    CASE file_datestamp
@@ -208,21 +211,33 @@ AS
                                       WHEN LOWER (SELF.source_policy) = 'all'
                                          THEN 'Y'
                                       ELSE 'N'
-                                   END ext_tab_ind
+                                   END ext_tab_ind,
+                                   UPPER (SELF.object_name) object_name,
+                                   UPPER (SELF.object_owner) object_owner
                               FROM dir_list
-                             WHERE REGEXP_LIKE (filename, SELF.source_regexp, SELF.regexp_options)))
+                             WHERE REGEXP_LIKE (filename, SELF.source_regexp, SELF.regexp_options))) dl
+                   LEFT JOIN
+                   current_ext_files cef
+                   ON dl.object_owner = cef.owner
+                 AND dl.object_name = cef.table_name
+                 AND dl.filepath = cef_filepath
           ORDER BY ext_tab_ind ASC)
       LOOP
          -- catch empty cursor sets
          l_rows := TRUE;
          -- reset variables used in the cursor
          l_numlines := NULL;
+         -- copy file to the archive location
+         o_app.set_action ('Copy archivefile');
+         coreutils.copy_file (c_dir_list.source_filepath, c_dir_list.arch_filepath,
+                              SELF.DEBUG_MODE);
+         o_app.log_msg ('Archive file ' || c_dir_list.arch_filepath || ' created');
          -- copy the file to the external table
          o_app.set_action ('Copy external table files');
 
          IF c_dir_list.ext_tab_ind = 'Y'
          THEN
-            -- get the DDL to alter the external table after the loop is complete
+	    -- get the DDL to alter the external table after the loop is complete
             -- this statement will be the same no matter which of the rows we pull it from.
             -- might as well use the last
             l_ext_tab_ddl := c_dir_list.alt_ddl;
@@ -253,9 +268,10 @@ AS
                  -- now move the file to the expected name
             -- do this with a copy/delete
             coreutils.copy_file (l_filepath, c_dir_list.filepath, SELF.DEBUG_MODE);
-            o_app.log_msg ('File ' || c_dir_list.arch_filepath || ' copied to '
+            coreutils.delete_file (DIRECTORY, c_dir_list.source_filename, SELF.DEBUG_MODE);
+            o_app.log_msg ('File ' || c_dir_list.source_filepath || ' moved to '
                            || c_dir_list.filepath);
-            coreutils.delete_file (c_dir_list.pre_mv_filepath, SELF.DEBUG_MODE);
+--            coreutils.delete_file (c_dir_list.pre_mv_filepath, SELF.DEBUG_MODE);
             -- get the number of lines in the file now that it is decrypted and uncompressed
             l_numlines :=
                        coreutils.get_numlines (SELF.DIRECTORY, c_dir_list.filename, SELF.DEBUG_MODE);
@@ -282,7 +298,7 @@ AS
 
          IF NOT p_keep_source
          THEN
-            coreutils.delete_file (c_dir_list.source_filepath, SELF.DEBUG_MODE);
+            coreutils.delete_file (source_directory, c_dir_list.source_filename, SELF.DEBUG_MODE);
          END IF;
       END LOOP;
 
@@ -294,13 +310,6 @@ AS
          THEN
             raise_application_error (o_app.get_err_cd ('no_files_found'),
                                      o_app.get_err_msg ('no_files_found'));
-         WHEN NOT l_rows AND required = 'N'
-         THEN
-            o_app.log_msg ('No files found... but FILE_REQUIRED is "N"');
-            -- empty out the contents of the file
-            o_app.set_action ('Empty previous files');
-            coreutils.delete_file (SELF.filepath);
-            coreutils.create_file (SELF.filepath);
          ELSE
             -- matching files found, so ignore
                      -- alter the external table to contain all the files
