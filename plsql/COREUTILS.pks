@@ -12,20 +12,6 @@ AS
       LANGUAGE JAVA
       NAME 'CoreUtils.copyFile( java.lang.String, java.lang.String ) return integer';
 
-   -- procedure to delete a file
-   FUNCTION delete_file (p_srcfile VARCHAR2)
-      RETURN NUMBER
-   AS
-      LANGUAGE JAVA
-      NAME 'CoreUtils.deleteFile( java.lang.String ) return integer';
-
-   -- procedure to create a new empty file
-   FUNCTION create_file (p_srcfile VARCHAR2)
-      RETURN NUMBER
-   AS
-      LANGUAGE JAVA
-      NAME 'CoreUtils.createFile( java.lang.String ) return integer';
-
    -- procedure calls Utils.runCmd java method
    FUNCTION host_cmd (p_cmd IN VARCHAR2, p_stdin IN VARCHAR2)
       RETURN NUMBER
@@ -37,10 +23,10 @@ AS
    PROCEDURE copy_file (p_srcfile VARCHAR2, p_dstfile VARCHAR2, p_debug BOOLEAN DEFAULT FALSE);
 
    -- procedure executes the delete_file function and translates the return code to an exception
-   PROCEDURE delete_file (p_srcfile VARCHAR2, p_debug BOOLEAN DEFAULT FALSE);
+   PROCEDURE delete_file (p_directory VARCHAR2, p_filename VARCHAR2, p_debug BOOLEAN DEFAULT FALSE);
 
    -- procedure executes the create_file function and translates the return code to an exception
-   PROCEDURE create_file (p_srcfile VARCHAR2, p_debug BOOLEAN DEFAULT FALSE);
+   PROCEDURE create_file (p_directory VARCHAR2, p_filename VARCHAR2, p_debug BOOLEAN DEFAULT FALSE);
 
    -- procedure executes the run_cmd function and raises an exception with the return code
    PROCEDURE host_cmd (p_cmd VARCHAR2, p_stdin VARCHAR2 DEFAULT ' ', p_debug BOOLEAN DEFAULT FALSE);
