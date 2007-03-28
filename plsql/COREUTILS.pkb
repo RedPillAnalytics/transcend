@@ -63,26 +63,17 @@ AS
    END copy_file;
 
    -- procedure executes the delete_file function and raises an exception with the return code
-   PROCEDURE delete_file (p_srcfile VARCHAR2, p_debug BOOLEAN DEFAULT FALSE)
+   PROCEDURE delete_file (p_directory VARCHAR2, p_filename VARCHAR2, p_debug BOOLEAN DEFAULT FALSE)
    AS
       l_retval   NUMBER;
       o_app      applog := applog (p_module => 'COREUTILS.DELETE_FILE');
    BEGIN
-      DBMS_JAVA.set_output (1000000);
-
       IF p_debug
       THEN
-         o_app.log_msg ('File to delete: ' || p_srcfile);
+         o_app.log_msg ('File to delete: ' || coreutils.get_dir_path (p_directory) || '/'
+                        || p_filename);
       ELSE
-         l_retval := delete_file (p_srcfile);
-
-         IF l_retval <> 0
-         THEN
-            raise_application_error
-                       (-20020,
-                           'Java Error: method CoreUtils.deleteFile was unable to delete the file '
-                        || p_srcfile);
-         END IF;
+         UTL_FILE.fremove (p_directory, p_filename);
       END IF;
 
       o_app.clear_app_info;
@@ -94,26 +85,19 @@ AS
    END delete_file;
 
    -- procedure executes the create_file function and raises an exception with the return code
-   PROCEDURE create_file (p_srcfile VARCHAR2, p_debug BOOLEAN DEFAULT FALSE)
+   PROCEDURE create_file (p_directory VARCHAR2, p_filename VARCHAR2, p_debug BOOLEAN DEFAULT FALSE)
    AS
-      l_retval   NUMBER;
-      o_app      applog := applog (p_module => 'coreutils.create_file');
+      l_fh        UTL_FILE.file_type;
+      l_dirpath   VARCHAR2 (100);
+      o_app       applog             := applog (p_module => 'coreutils.create_file');
    BEGIN
-      DBMS_JAVA.set_output (1000000);
+      l_dirpath := get_dir_path (p_directory) || '/' || p_filename;
 
       IF p_debug
       THEN
-         o_app.log_msg ('File to create: ' || p_srcfile);
+         o_app.log_msg ('File to create: ' || l_dirpath);
       ELSE
-         l_retval := create_file (p_srcfile);
-
-         IF l_retval <> 0
-         THEN
-            raise_application_error
-                       (-20020,
-                           'Java Error: method CoreUtils.createFile was unable to create the file '
-                        || p_srcfile);
-         END IF;
+         l_fh := UTL_FILE.fopen (p_directory, p_filename, 'W');
       END IF;
 
       o_app.clear_app_info;
