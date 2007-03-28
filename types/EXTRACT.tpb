@@ -146,7 +146,7 @@ AS
       RETURN l_cnt;
    END extract_object;
    -- extract data to a text file, and then peform other functions as defined in the configuration table
-   MEMBER PROCEDURE process_extract
+   MEMBER PROCEDURE process
    AS
       l_num_bytes   NUMBER;
       l_numlines    NUMBER;
@@ -224,6 +224,6 @@ AS
       THEN
          o_app.log_err;
          RAISE;
-   END process_extract;
+   END process;
 END;
 /
