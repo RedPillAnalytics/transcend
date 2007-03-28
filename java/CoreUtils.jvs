@@ -35,43 +35,6 @@ public class CoreUtils extends Object {
 	}
     }
 
-
-    public static int deleteFile(String srcfile) {
-	boolean deleted;
-	int rc;
-	File srcFile = new File( srcfile );
-	deleted = srcFile.delete();
-	if (deleted) {
-	    rc = 0;
-	} 
-	else {
-	    rc = 1;
-	}
-	return rc;
-    }
-  
-    public static int createFile(String srcfile) {
-	boolean created;
-	int rc = 0;
-	File srcFile = new File( srcfile );
-	
-	try {
-	    created = srcFile.createNewFile();
-	    if (created) {
-		rc = 0;
-	    } else {
-		rc = 1;
-	    }
-	    return rc;
-
-	} catch (IOException e) {
-	    e.printStackTrace();
-	    rc = 1;
-	} finally {
-	    return rc;
-	}
-    }
-
     public static int hostCmd(String cmd, String stdIn) {
 	
 	int        rc = -1;
