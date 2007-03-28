@@ -63,7 +63,7 @@ IS
                 WHERE t.filehub_id = c_fh_conf.filehub_id;
 
                o_extract.DEBUG_MODE (p_debug);
-               o_extract.process_extract;
+               o_extract.process;
             WHEN 'feed'
             THEN
                SELECT VALUE (t)
@@ -72,7 +72,7 @@ IS
                 WHERE t.filehub_id = c_fh_conf.filehub_id;
 
                o_feed.DEBUG_MODE (p_debug);
-               o_feed.process_feed (p_keep_source);
+               o_feed.process (p_keep_source);
             ELSE
                NULL;
          END CASE;
