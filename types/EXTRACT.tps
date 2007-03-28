@@ -22,7 +22,7 @@ CREATE OR REPLACE TYPE tdinc.EXTRACT UNDER tdinc.fhconf (
       p_headers     VARCHAR2 DEFAULT 'N',
       p_append      BOOLEAN DEFAULT FALSE)
       RETURN NUMBER,
-   MEMBER PROCEDURE process_extract
+   MEMBER PROCEDURE process
 )
 ;
 /
