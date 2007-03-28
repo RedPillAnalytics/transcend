@@ -69,7 +69,7 @@ AS
          o_app.log_err;
          RAISE;
    END audit_ext_tab;
-   MEMBER PROCEDURE process_feed (p_keep_source BOOLEAN DEFAULT FALSE)
+   MEMBER PROCEDURE process (p_keep_source BOOLEAN DEFAULT FALSE)
    IS
       l_rows           BOOLEAN         := FALSE;                          -- TO catch empty cursors
       l_numlines       NUMBER;
@@ -87,25 +87,28 @@ AS
                                        p_debug       => SELF.DEBUG_MODE);
    BEGIN
       o_app.set_action ('Evaluate SOURCE_DIRECTORY contents');
+
+      -- first we remove all current files in the external table
+      -- we don't want the possiblity of data for a previous run getting loaded in
+      -- later, if no new files are found, and the REQUIRED attribute is 'N' (meaning this file is not required)
+      -- then we will create an empty file
+      FOR c_location IN (SELECT DIRECTORY,
+                                LOCATION
+                           FROM dba_external_locations
+                          WHERE owner = UPPER (object_owner) AND table_name = UPPER (object_name))
+      LOOP
+         coreutils.delete_file (c_location.DIRECTORY, c_location.LOCATION, SELF.DEBUG_MODE);
+      END LOOP;
+
+      -- now we need to see all the source files in the source directory that match the regular expression
       -- use java stored procedure to populate global temp table DIR_LIST with all the files in the directory
       coreutils.get_dir_list (source_dirpath);
 
       -- look at the contents of the DIR_LIST table to evaluate source files
+      -- pull out only the ones matching the regular expression
+      -- also work in a lot of the attributes to generate all the information needed for the object
       FOR c_dir_list IN
-         
-         -- subquery factoring clause gives us external table, owner and current files
-         -- these will be joined in with proposed files to be moved into location
-         -- this tells us whether we will need to delete some files after the file movement
-         -- also tells us whether we will need to alter the external table after completion
-         (WITH current_ext_files AS
-               (SELECT owner,
-                       table_name,
-                       -- this is the absolute path of all files currently in the external table
-                       coreutils.get_dir_path (SELF.DIRECTORY) || '/' || LOCATION cef_filepath
---                       LOCATION cef_filename
-                  FROM dba_external_tables JOIN dba_external_locations USING (owner, table_name)
-                       )
-          SELECT   object_name,                                              -- external table owner
+         (SELECT   object_name,                                              -- external table owner
                    object_owner,                                              -- external table name
                    source_filename,                                     -- name of each source files
                    source_filepath,                               -- name converted to absolute path
@@ -127,8 +130,6 @@ AS
                    END filename,
                    pre_mv_filepath,
                    arch_filepath,
-                   cef_filepath,
---                   cef_filename
                    file_dt,
                    file_size,
                    ext_tab_ind,
@@ -239,111 +240,86 @@ AS
                                    UPPER (SELF.object_owner) object_owner
                               FROM dir_list
                              -- matching regexp and regexp_options to find matching source files
-                            WHERE  REGEXP_LIKE (filename, SELF.source_regexp, SELF.regexp_options))) dl
-                 left JOIN
-                   -- joining the subquery factoring clause
-                   -- this compares proposed files to the existing files
-                   current_ext_files cef
-                   ON dl.object_owner = cef.owner
-                 AND dl.object_name = cef.table_name
-                 AND dl.filepath = cef_filepath
+                            WHERE  REGEXP_LIKE (filename, SELF.source_regexp, SELF.regexp_options)))
           ORDER BY ext_tab_ind ASC)
       LOOP
-         BEGIN
-            -- catch empty cursor sets
-            l_rows := TRUE;
-       -- use a full outer join between proposed external table files and current ones
-       -- I'll get rows back where most the columns are empty
-       -- these would have come from the subquery factoring clause
-       -- this means there are location files for the external table that don't match incoming files
-       -- these need to be deleted, so it's the first thing I do, and then RETURN from the block
-       -- IF c_dir_list.source_filename IS NULL
---             THEN
---                coreutils.delete_file (DIRECTORY, c_dir_list.cef_filename, SELF.DEBUG_MODE);
---           -- this will take be out of this block to the next item in the loop
---           RETURN;
---             END IF;
+         -- catch empty cursor sets
+         l_rows := TRUE;
+         -- reset variables used in the cursor
+         l_numlines := 0;
+         -- copy file to the archive location
+         o_app.set_action ('Copy archivefile');
+         coreutils.copy_file (c_dir_list.source_filepath, c_dir_list.arch_filepath,
+                              SELF.DEBUG_MODE);
+         o_app.log_msg ('Archive file ' || c_dir_list.arch_filepath || ' created');
+         -- copy the file to the external table
+         o_app.set_action ('Copy external table files');
 
-            -- reset variables used in the cursor
-            l_numlines := 0;
-            -- copy file to the archive location
-            o_app.set_action ('Copy archivefile');
-            coreutils.copy_file (c_dir_list.source_filepath,
-                                 c_dir_list.arch_filepath,
+         IF c_dir_list.ext_tab_ind = 'Y'
+         THEN
+            -- get the DDL to alter the external table after the loop is complete
+                 -- this statement will be the same no matter which of the rows we pull it from.
+                 -- might as well use the last
+            l_ext_tab_ddl := c_dir_list.alt_ddl;
+            -- record the number of external table files
+            l_ext_file_cnt := c_dir_list.ext_tab_type_cnt;
+            -- record the files url
+            l_files_url := c_dir_list.files_url;
+            -- first move the file to the target destination without changing the name
+            -- because the file might be zipped or encrypted
+            coreutils.copy_file (c_dir_list.arch_filepath,
+                                 c_dir_list.pre_mv_filepath,
                                  SELF.DEBUG_MODE);
-            o_app.log_msg ('Archive file ' || c_dir_list.arch_filepath || ' created');
-            -- copy the file to the external table
-            o_app.set_action ('Copy external table files');
-
-            IF c_dir_list.ext_tab_ind = 'Y'
-            THEN
-               -- get the DDL to alter the external table after the loop is complete
-                    -- this statement will be the same no matter which of the rows we pull it from.
-                    -- might as well use the last
-               l_ext_tab_ddl := c_dir_list.alt_ddl;
-               -- record the number of external table files
-               l_ext_file_cnt := c_dir_list.ext_tab_type_cnt;
-               -- record the files url
-               l_files_url := c_dir_list.files_url;
-               -- first move the file to the target destination without changing the name
-               -- because the file might be zipped or encrypted
-               coreutils.copy_file (c_dir_list.arch_filepath,
-                                    c_dir_list.pre_mv_filepath,
-                                    SELF.DEBUG_MODE);
-               -- decrypt the file if it's encrypted
-               -- currently only supports gpg
-               -- decrypt_file will return the decrypted filename
-               -- IF the file isn't a recognized encrypted file type, it just returns the name passed
-               l_filepath :=
-                  coreutils.decrypt_file (dirpath,
-                                          c_dir_list.source_filename,
-                                          SELF.passphrase,
-                                          SELF.DEBUG_MODE);
-               -- unzip the file if it's zipped
-               -- currently will unzip, or gunzip, or bunzip2 or uncompress
-               -- unzip_file will return the unzipped filename
-               -- IF the file isn't a recognized zip archive file, it just returns the name passed
-               l_filepath :=
+            -- decrypt the file if it's encrypted
+            -- currently only supports gpg
+            -- decrypt_file will return the decrypted filename
+            -- IF the file isn't a recognized encrypted file type, it just returns the name passed
+            l_filepath :=
+               coreutils.decrypt_file (dirpath,
+                                       c_dir_list.source_filename,
+                                       SELF.passphrase,
+                                       SELF.DEBUG_MODE);
+            -- unzip the file if it's zipped
+            -- currently will unzip, or gunzip, or bunzip2 or uncompress
+            -- unzip_file will return the unzipped filename
+            -- IF the file isn't a recognized zip archive file, it just returns the name passed
+            l_filepath :=
                          coreutils.unzip_file (dirpath, c_dir_list.source_filename, SELF.DEBUG_MODE);
-                    -- now move the file to the expected name
-               -- do this with a copy/delete
-               coreutils.copy_file (l_filepath, c_dir_list.filepath, SELF.DEBUG_MODE);
-               coreutils.delete_file (DIRECTORY, c_dir_list.source_filename, SELF.DEBUG_MODE);
-               o_app.log_msg (   'File '
-                              || c_dir_list.source_filepath
-                              || ' moved to '
-                              || c_dir_list.filepath);
+                 -- now move the file to the expected name
+            -- do this with a copy/delete
+            coreutils.copy_file (l_filepath, c_dir_list.filepath, SELF.DEBUG_MODE);
+            coreutils.delete_file (DIRECTORY, c_dir_list.source_filename, SELF.DEBUG_MODE);
+            o_app.log_msg ('File ' || c_dir_list.source_filepath || ' moved to '
+                           || c_dir_list.filepath);
 --            coreutils.delete_file (c_dir_list.pre_mv_filepath, SELF.DEBUG_MODE);
             -- get the number of lines in the file now that it is decrypted and uncompressed
-               l_numlines :=
+            l_numlines :=
                        coreutils.get_numlines (SELF.DIRECTORY, c_dir_list.filename, SELF.DEBUG_MODE);
-               -- get a total count of all the lines in all the files making up the external table
-               l_sum_numlines := l_sum_numlines + l_numlines;
-            END IF;
+            -- get a total count of all the lines in all the files making up the external table
+            l_sum_numlines := l_sum_numlines + l_numlines;
+         END IF;
 
-            -- WRITE an audit record for the file that was just archived
-            o_app.set_action ('Audit feed');
-            SELF.audit_file (p_source_filepath      => c_dir_list.source_filepath,
-                             p_arch_filepath        => c_dir_list.arch_filepath,
-                             p_filepath             => c_dir_list.filepath,
-                             p_num_bytes            => c_dir_list.file_size,
-                             p_num_lines            => l_numlines,
-                             p_file_dt              => c_dir_list.file_dt,
-                             p_validate             => CASE c_dir_list.ext_tab_ind
-                                WHEN 'Y'
-                                   THEN TRUE
-                                ELSE FALSE
-                             END);
-            -- IF we get this far, then we need to delete the source files
-            -- this step is ignored if p_keep_source = TRUE
-            o_app.set_action ('Delete source files');
+         -- WRITE an audit record for the file that was just archived
+         o_app.set_action ('Audit feed');
+         SELF.audit_file (p_source_filepath      => c_dir_list.source_filepath,
+                          p_arch_filepath        => c_dir_list.arch_filepath,
+                          p_filepath             => c_dir_list.filepath,
+                          p_num_bytes            => c_dir_list.file_size,
+                          p_num_lines            => l_numlines,
+                          p_file_dt              => c_dir_list.file_dt,
+                          p_validate             => CASE c_dir_list.ext_tab_ind
+                             WHEN 'Y'
+                                THEN TRUE
+                             ELSE FALSE
+                          END);
+         -- IF we get this far, then we need to delete the source files
+         -- this step is ignored if p_keep_source = TRUE
+         o_app.set_action ('Delete source files');
 
-            IF NOT p_keep_source
-            THEN
-               coreutils.delete_file (source_directory, c_dir_list.source_filename,
-                                      SELF.DEBUG_MODE);
-            END IF;
-         END;
+         IF NOT p_keep_source
+         THEN
+            coreutils.delete_file (source_directory, c_dir_list.source_filename, SELF.DEBUG_MODE);
+         END IF;
       END LOOP;
 
       -- check to see if the cursor was empty
@@ -373,9 +349,10 @@ AS
             LOOP
                coreutils.create_file (c_location.DIRECTORY, c_location.LOCATION, SELF.DEBUG_MODE);
             END LOOP;
-         ELSE
-            -- matching files found, so ignore
-                     -- alter the external table to contain all the files
+         WHEN l_rows AND LOWER (source_policy) = 'all'
+         -- matching files found, so ignore
+                  -- alter the external table to contain all the files
+      THEN
             o_app.set_action ('Alter external table');
 
             BEGIN
@@ -424,6 +401,6 @@ AS
       THEN
          o_app.log_err;
          RAISE;
-   END process_feed;
+   END process;
 END;
 /
