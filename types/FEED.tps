@@ -4,7 +4,8 @@ CREATE OR REPLACE TYPE tdinc.feed UNDER tdinc.fhconf (
    source_regexp      VARCHAR2 (100),
    regexp_options     VARCHAR2 (10),
    source_policy      VARCHAR2 (10),
-   required           VARCHAR2 (8),
+						       required           VARCHAR2 (8),
+						       reject_limit NUMBER,
    MEMBER PROCEDURE audit_ext_tab (p_num_lines NUMBER),
    MEMBER PROCEDURE process (p_keep_source BOOLEAN DEFAULT FALSE)
 )
