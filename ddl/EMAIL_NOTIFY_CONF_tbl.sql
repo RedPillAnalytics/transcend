@@ -6,6 +6,7 @@ DROP SEQUENCE tdinc.email_notify_conf_seq
 
 CREATE TABLE tdinc.email_notify_conf
        ( email_notify_id NUMBER NOT NULL,
+	 notify_id	 NUMBER,
 	 sender         VARCHAR2(1024) NOT NULL,
 	 recipients     VARCHAR2(2000) NOT NULL,
 	 created_user   VARCHAR2(30),
