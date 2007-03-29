@@ -7,6 +7,8 @@ CREATE OR REPLACE TYPE tdinc.applog AS OBJECT (
    client_info        VARCHAR2 (64),
    module             VARCHAR2 (48),
    action             VARCHAR2 (32),
+   run_mode           VARCHAR2 (10),
+   REGISTER           VARCHAR2 (1),
    prev_client_info   VARCHAR2 (64),
    prev_module        VARCHAR2 (48),
    prev_action        VARCHAR2 (32),
@@ -30,6 +32,9 @@ CREATE OR REPLACE TYPE tdinc.applog AS OBJECT (
    MEMBER FUNCTION get_err_cd (p_name VARCHAR2)
       RETURN NUMBER,
    MEMBER FUNCTION get_err_msg (p_name VARCHAR2)
-      RETURN VARCHAR2
+      RETURN VARCHAR2,
+   MEMBER FUNCTION register_mode
+      RETURN BOOLEAN,
+   MEMBER PROCEDURE register_mode (p_register BOOLEAN DEFAULT TRUE)
 );
 /
