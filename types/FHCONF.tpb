@@ -68,7 +68,7 @@ AS
       p_file_dt     DATE,
       p_validate    BOOLEAN DEFAULT TRUE)
    AS
-      o_app   applog := applog (p_module => 'FILE_MOVER.AUDIT_FILE', p_debug => SELF.DEBUG_MODE);
+      o_app   applog := applog (p_module => 'fhconf.audit_file', p_debug => SELF.DEBUG_MODE);
    BEGIN
       o_app.set_action ('Insert FILE_DTL');
       audit_file (p_filepath             => SELF.filepath,
@@ -77,6 +77,49 @@ AS
                   p_num_bytes            => p_num_bytes,
                   p_num_lines            => p_num_lines,
                   p_file_dt              => p_file_dt);
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         o_app.log_err;
+         RAISE;
    END audit_file;
+   MEMBER PROCEDURE send (p_action VARCHAR2, p_module VARCHAR2, p_message VARCHAR2 DEFAULT NULL)
+   AS
+      o_notify   notify;
+      o_app      applog := applog (p_module => 'fhconf.send', p_debug => SELF.DEBUG_MODE);
+   BEGIN
+
+      IF self.debug_mode
+      THEN
+	 o_app.log_msg('The notification action is: '||p_action);
+	 o_app.log_msg('The notification module is: '||p_module);
+      END IF;
+
+      SELECT VALUE (t)
+        INTO o_notify
+        FROM notify_ot t
+       WHERE t.module_id = SELF.filehub_id
+         AND LOWER (t.action) = LOWER (p_action)
+         AND LOWER (t.module) = LOWER (p_module);
+
+      o_notify.DEBUG_MODE (SELF.DEBUG_MODE);
+      o_notify.MESSAGE :=
+         CASE p_message
+            WHEN NULL
+               THEN o_notify.MESSAGE
+            ELSE o_notify.MESSAGE || CHR (10) || CHR (10) || p_message
+         END;
+      o_notify.module := p_module;
+      o_notify.action := p_action;
+      o_notify.send;
+   EXCEPTION
+      WHEN NO_DATA_FOUND
+      THEN
+         o_app.log_msg ('Notification not configured for this action');
+      WHEN OTHERS
+      THEN
+         o_app.log_err;
+         RAISE;
+   END send;
 END;
 /
