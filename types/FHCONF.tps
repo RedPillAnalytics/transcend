@@ -1,4 +1,4 @@
-CREATE OR REPLACE TYPE tdinc.fhconf UNDER tdinc.notify (
+CREATE OR REPLACE TYPE tdinc.fhconf UNDER tdinc.basetype (
    filehub_id       NUMBER,
    filehub_name     VARCHAR2 (100),
    filehub_group    VARCHAR2 (64),
@@ -31,7 +31,8 @@ CREATE OR REPLACE TYPE tdinc.fhconf UNDER tdinc.notify (
       p_num_bytes   NUMBER,
       p_num_lines   NUMBER,
       p_file_dt     DATE,
-      p_validate    BOOLEAN DEFAULT TRUE)
+      p_validate    BOOLEAN DEFAULT TRUE),
+   MEMBER PROCEDURE send (p_action VARCHAR2, p_module VARCHAR2, p_message VARCHAR2 DEFAULT NULL)
 )
 NOT FINAL;
 /
