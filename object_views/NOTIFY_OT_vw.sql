@@ -1,0 +1,13 @@
+CREATE OR REPLACE VIEW tdinc.notify_ot 
+OF tdinc.notify
+WITH object identifier (notify_id)
+as
+SELECT cast('N' AS VARCHAR2(1)) debug,
+       notify_id,
+       notify_method,
+       action,
+       module,
+       module_id,
+       message,
+       subject
+  FROM tdinc.notify_conf;
