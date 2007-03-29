@@ -7,6 +7,7 @@ CREATE TABLE tdinc.log_table
 	 client_info VARCHAR2(64) NOT NULL,
 	 module VARCHAR2(48) NOT NULL,
 	 action VARCHAR2(32) NOT NULL,
+	 run_mode VARCHAR2(10) NOT NULL,
 	 session_id NUMBER NOT NULL,
 	 current_scn NUMBER NOT NULL,
 	 instance_name VARCHAR2(30) NOT NULL,
