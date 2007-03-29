@@ -14,6 +14,7 @@ AS
 
       IF p_register
       THEN
+         register_mode;
          -- read previous app_info settings
          -- if not registering with oracle, then this is not necessary
          DBMS_APPLICATION_INFO.read_client_info (prev_client_info);
@@ -22,17 +23,17 @@ AS
 
       -- populate attributes with new app_info settings
       client_info := NVL (p_client_info, prev_client_info);
-      module :=
-         CASE
-            WHEN p_debug AND p_module IS NOT NULL
-               THEN p_module || ' (DEBUG)'
-            WHEN NOT p_debug AND p_module IS NOT NULL
-               THEN p_module
-            WHEN p_debug AND p_module IS NULL
-               THEN get_package_name || ' (DEBUG)'
-            ELSE get_package_name
-         END;
+      module := CASE
+                  WHEN p_module IS NOT NULL
+                     THEN p_module
+                  ELSE get_package_name
+               END;
       action := p_action;
+      run_mode := CASE p_debug
+                    WHEN TRUE
+                       THEN 'debug'
+                    ELSE 'runtime'
+                 END;
       -- set other attributes
       instance_name := SYS_CONTEXT ('USERENV', 'INSTANCE_NAME');
       dbuser := SYS_CONTEXT ('USERENV', 'SESSION_USER');
@@ -42,7 +43,7 @@ AS
                 || ']';
 
       -- register the application with oracle
-      IF p_register
+      IF register_mode
       THEN
          DBMS_APPLICATION_INFO.set_client_info (client_info);
          DBMS_APPLICATION_INFO.set_module (module, action);
@@ -92,13 +93,21 @@ AS
    MEMBER PROCEDURE set_action (p_action VARCHAR2)
    AS
    BEGIN
-      DBMS_APPLICATION_INFO.set_action (p_action);
+      action := p_action;
+
+      IF register_mode
+      THEN
+         DBMS_APPLICATION_INFO.set_action (p_action);
+      END IF;
    END set_action;
    MEMBER PROCEDURE clear_app_info
    AS
    BEGIN
-      DBMS_APPLICATION_INFO.set_client_info (prev_client_info);
-      DBMS_APPLICATION_INFO.set_module (prev_module, prev_action);
+      IF register_mode
+      THEN
+         DBMS_APPLICATION_INFO.set_client_info (prev_client_info);
+         DBMS_APPLICATION_INFO.set_module (prev_module, prev_action);
+      END IF;
    EXCEPTION
       WHEN OTHERS
       THEN
@@ -138,6 +147,7 @@ AS
                    client_info,
                    module,
                    action,
+                   run_mode,
                    session_id,
                    current_scn,
                    instance_name,
@@ -151,6 +161,7 @@ AS
                    NVL (SELF.client_info, 'Not Set'),
                    NVL (SELF.module, 'Not Set'),
                    NVL (SELF.action, 'Not Set'),
+                   SELF.run_mode,
                    SELF.session_id,
                    l_scn,
                    SELF.instance_name,
@@ -249,5 +260,26 @@ AS
 
       RETURN l_msg;
    END get_err_msg;
+   -- GET method for DEBUG mode
+   MEMBER FUNCTION register_mode
+      RETURN BOOLEAN
+   AS
+   BEGIN
+      RETURN CASE REGISTER
+         WHEN 'Y'
+            THEN TRUE
+         ELSE FALSE
+      END;
+   END register_mode;
+   -- SET method for DEBUG mode
+   MEMBER PROCEDURE register_mode (p_register BOOLEAN DEFAULT TRUE)
+   AS
+   BEGIN
+      REGISTER := CASE p_register
+                    WHEN TRUE
+                       THEN 'Y'
+                    ELSE 'F'
+                 END;
+   END register_mode;
 END;
 /
