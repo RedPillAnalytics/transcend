@@ -54,7 +54,7 @@ IS
                                               DECODE (p_filehub_name, NULL, '?', p_filehub_name))
                         ORDER BY filehub_id)
       LOOP
-         CASE c_fh_conf.filehub_type
+         CASE lower(c_fh_conf.filehub_type)
             WHEN 'extract'
             THEN
                SELECT VALUE (t)
