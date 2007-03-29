@@ -9,7 +9,7 @@ AS
       e_no_table   EXCEPTION;
       PRAGMA EXCEPTION_INIT (e_no_table, -942);
       e_no_files   EXCEPTION;
-      PRAGMA EXCEPTION_INIT (e_no_files, -1756);
+PRAGMA EXCEPTION_INIT (e_no_files, -1756);
       o_app        applog  := applog (p_module      => 'feed.audit_ext_tab',
                                       p_debug       => SELF.DEBUG_MODE);
    BEGIN
@@ -29,6 +29,14 @@ AS
          BEGIN
             -- calculate the percentage difference
             l_pct_miss := 100 - ((l_num_rows / p_num_lines) * 100);
+	    IF l_pct_miss > reject_limit
+	    THEN
+	       o_app.set_action('reject limit exceeded');
+	       self.send(p_module=>o_app.module,p_action=>o_app.action);
+	       raise_application_error (o_app.get_err_cd ('reject_limit_exceeded'),
+                                  o_app.get_err_msg ('reject_limit_exceeded'));
+
+	    END IF;
          EXCEPTION
             WHEN ZERO_DIVIDE
             THEN
@@ -71,31 +79,32 @@ AS
    END audit_ext_tab;
    MEMBER PROCEDURE process (p_keep_source BOOLEAN DEFAULT FALSE)
    IS
-      l_rows           BOOLEAN         := FALSE;                          -- TO catch empty cursors
+      l_rows           BOOLEAN                    := FALSE;               -- TO catch empty cursors
       l_numlines       NUMBER;
       l_cmd            VARCHAR2 (500);
       l_filepath       VARCHAR2 (200);
       l_numfiles       NUMBER;
-      l_sum_numlines   NUMBER          := 0;
+      l_sum_numlines   NUMBER                     := 0;
       l_ext_file_cnt   NUMBER;
       l_ext_tab_ddl    VARCHAR2 (2000);
       l_files_url      VARCHAR2 (1000);
+      l_message        notify_conf.MESSAGE%TYPE;
       e_no_files       EXCEPTION;
       PRAGMA EXCEPTION_INIT (e_no_files, -1756);
-      o_app            applog
-                            := applog (p_module      => 'feed.process_feed',
-                                       p_debug       => SELF.DEBUG_MODE);
+      o_app            applog    := applog (p_module      => 'feed.process',
+                                            p_debug       => SELF.DEBUG_MODE);
    BEGIN
-      o_app.set_action ('Evaluate SOURCE_DIRECTORY contents');
+      o_app.set_action ('Evaluate source directory');
 
       -- first we remove all current files in the external table
       -- we don't want the possiblity of data for a previous run getting loaded in
       -- later, if no new files are found, and the REQUIRED attribute is 'N' (meaning this file is not required)
       -- then we will create an empty file
-      FOR c_location IN (SELECT DIRECTORY,
-                                LOCATION
-                           FROM dba_external_locations
-                          WHERE owner = UPPER (object_owner) AND table_name = UPPER (object_name))
+      FOR c_location IN (SELECT   DIRECTORY,
+                                  LOCATION
+                             FROM dba_external_locations
+                            WHERE owner = UPPER (object_owner) AND table_name = UPPER (object_name)
+                         ORDER BY LOCATION)
       LOOP
          coreutils.delete_file (c_location.DIRECTORY, c_location.LOCATION, SELF.DEBUG_MODE);
       END LOOP;
@@ -300,6 +309,8 @@ AS
          END IF;
 
          -- WRITE an audit record for the file that was just archived
+	 IF NOT self.debug_mode
+	 THEN
          o_app.set_action ('Audit feed');
          SELF.audit_file (p_source_filepath      => c_dir_list.source_filepath,
                           p_arch_filepath        => c_dir_list.arch_filepath,
@@ -311,7 +322,8 @@ AS
                              WHEN 'Y'
                                 THEN TRUE
                              ELSE FALSE
-                          END);
+                           END);
+	 END IF;
          -- IF we get this far, then we need to delete the source files
          -- this step is ignored if p_keep_source = TRUE
          o_app.set_action ('Delete source files');
@@ -369,32 +381,35 @@ AS
             SELF.audit_ext_tab (p_num_lines => l_sum_numlines);
       END CASE;
 
-      -- send the notification if configured
-      o_app.set_action ('Send a notification');
-      MESSAGE :=
-            MESSAGE
-         || CHR (10)
-         || CHR (10)
-         || 'The file'
+      -- notify about successful arrival of feed
+      o_app.set_action ('Notify success');
+      l_message :=
+            'The file'
          || CASE
                WHEN l_ext_file_cnt > 1
                   THEN 's'
                ELSE NULL
             END
-         || ' can be downloaded at the following link:'
+         || ' can be downloaded at the following link'
+         || CASE
+               WHEN l_ext_file_cnt > 1
+                  THEN 's'
+               ELSE NULL
+            END
+         || ':'
          || CHR (10)
          || l_files_url;
 
       IF l_numlines > 65536
       THEN
-         MESSAGE :=
-               MESSAGE
+         l_message :=
+               l_message
             || CHR (10)
             || CHR (10)
             || 'The file is too large for some desktop applications, such as Microsoft Excel, to open.';
       END IF;
 
-      SELF.send;
+      SELF.send (o_app.action, o_app.module, p_message => l_message);
       o_app.clear_app_info;
    EXCEPTION
       WHEN OTHERS
