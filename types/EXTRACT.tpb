@@ -67,7 +67,7 @@ AS
          l_cnt := l_cnt + 1;
       END LOOP;
 
-      o_app.set_action ('Close DBMS_SQL cursor and filehandles.');
+      o_app.set_action ('Close cursor and handles');
       DBMS_SQL.close_cursor (l_thecursor);
       UTL_FILE.fclose (l_output);
       o_app.clear_app_info;
@@ -151,11 +151,12 @@ AS
       l_num_bytes   NUMBER;
       l_numlines    NUMBER;
       l_blocksize   NUMBER;
-      l_exists      BOOLEAN DEFAULT FALSE;
+      l_exists      BOOLEAN                    DEFAULT FALSE;
       l_file_dt     DATE;
       l_detail_id   NUMBER;
+      l_message     notify_conf.MESSAGE%TYPE;
       o_app         applog
-                     := applog (p_module      => 'EXTRACTS.PROCESS_EXTRACT',
+                     := applog (p_module      => 'extract.process',
                                 p_debug       => SELF.DEBUG_MODE);
    BEGIN
       o_app.set_action ('Configure NLS formats');
@@ -199,25 +200,19 @@ AS
       SELF.audit_file (p_num_bytes      => l_num_bytes, p_num_lines => l_numlines,
                        p_file_dt        => l_file_dt);
       -- send the notification if configured
-      o_app.set_action ('Send a notification');
-      MESSAGE :=
-            MESSAGE
-         || CHR (10)
-         || CHR (10)
-         || 'The file can be downloaded at the following link:'
-         || CHR (10)
-         || file_url;
+      o_app.set_action ('Notify success');
+      l_message := 'The file can be downloaded at the following link:' || CHR (10) || file_url;
 
       IF l_numlines > 65536
       THEN
-         MESSAGE :=
-               MESSAGE
+         l_message :=
+               l_message
             || CHR (10)
             || CHR (10)
             || 'The file is too large for some desktop applications, such as Microsoft Excel, to open.';
       END IF;
 
-      SELF.send;
+      SELF.send (p_action=>o_app.action, p_module=>o_app.module, p_message => l_message);
       o_app.clear_app_info;
    EXCEPTION
       WHEN OTHERS
