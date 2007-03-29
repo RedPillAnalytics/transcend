@@ -34,7 +34,7 @@ AS
    PROCEDURE copy_file (p_srcfile VARCHAR2, p_dstfile VARCHAR2, p_debug BOOLEAN DEFAULT FALSE)
    AS
       l_retval   NUMBER;
-      o_app      applog := applog (p_module => 'COREUTILS.COPY_FILE');
+      o_app      applog := applog (p_module => 'COREUTILS.COPY_FILE', p_debug => p_debug);
    BEGIN
       DBMS_JAVA.set_output (1000000);
 
@@ -65,19 +65,25 @@ AS
    -- procedure executes the delete_file function and raises an exception with the return code
    PROCEDURE delete_file (p_directory VARCHAR2, p_filename VARCHAR2, p_debug BOOLEAN DEFAULT FALSE)
    AS
-      l_retval   NUMBER;
-      o_app      applog := applog (p_module => 'COREUTILS.DELETE_FILE');
+      l_retval     NUMBER;
+      l_filepath   VARCHAR2 (100);
+      o_app        applog       := applog (p_module      => 'COREUTILS.DELETE_FILE',
+                                           p_debug       => p_debug);
    BEGIN
+      l_filepath := coreutils.get_dir_path (p_directory) || '/' || p_filename;
+
       IF p_debug
       THEN
-         o_app.log_msg ('File to delete: ' || coreutils.get_dir_path (p_directory) || '/'
-                        || p_filename);
+         o_app.log_msg ('File to delete: ' || l_filepath);
       ELSE
          UTL_FILE.fremove (p_directory, p_filename);
       END IF;
 
       o_app.clear_app_info;
    EXCEPTION
+      WHEN UTL_FILE.invalid_operation
+      THEN
+         o_app.log_msg (l_filepath || ' could not be deleted. It probably does not exist');
       WHEN OTHERS
       THEN
          o_app.log_err;
@@ -200,7 +206,8 @@ AS
       l_fh     UTL_FILE.file_type;
       l_line   VARCHAR2 (2000);
       l_cnt    NUMBER             := 0;
-      o_app    applog             := applog (p_module => 'coreutils.get_numlines');
+      o_app    applog          := applog (p_module      => 'coreutils.get_numlines',
+                                          p_debug       => p_debug);
    BEGIN
       IF p_debug
       THEN
