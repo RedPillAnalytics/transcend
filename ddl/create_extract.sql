@@ -41,8 +41,8 @@ INSERT INTO tdinc.filehub_conf
 	 source_directory, 
 	 source_regexp, 
 	 regexp_options, 
-	 multi_files_action, 
-	 file_requirement, 
+	 source_policy, 
+	 required, 
 	 dateformat, 
 	 timestampformat, 
 	 delimiter, 
@@ -50,7 +50,7 @@ INSERT INTO tdinc.filehub_conf
 	 headers)
        VALUES
        ( tdinc.filehub_conf_seq.nextval,
-	 'Test File',
+	 'Test Extract',
 	 'Test Group',
 	 'extract',
 	 'tdinc',
