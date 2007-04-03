@@ -27,18 +27,17 @@ AS
       p_global         BOOLEAN DEFAULT TRUE,
       p_debug          BOOLEAN DEFAULT FALSE)
    IS
-      l_ddl          VARCHAR2 (2000);
-      l_global       VARCHAR2 (5)                    := CASE p_global
+      l_ddl         VARCHAR2 (2000);
+      l_global      VARCHAR2 (5)                  := CASE p_global
          WHEN TRUE
             THEN 'TRUE'
          ELSE 'FALSE'
       END;
-      l_targ_part    dba_tables.partitioned%TYPE;
-      l_tablespace   dba_indexes.tablespace_name%TYPE;
-      l_ind_count    NUMBER                             := 1;
-      l_username     user_users.username%TYPE;
-      l_rows         BOOLEAN                            := FALSE;         -- to catch empty cursors
-      o_app          applog      := applog (p_module      => 'dbflex.clone_indexes',
+      l_targ_part   dba_tables.partitioned%TYPE;
+      l_ind_count   NUMBER                        := 1;
+      l_username    user_users.username%TYPE;
+      l_rows        BOOLEAN                       := FALSE;               -- to catch empty cursors
+      o_app         applog       := applog (p_module      => 'dbflex.clone_indexes',
                                             p_debug       => p_debug);
    BEGIN
       -- execute immediate doesn't like ";" on the end
@@ -65,37 +64,48 @@ AS
       -- create a cursor containing the DDL from the target indexes
       -- this regular expression does two things: strips out the double-quotes AND
       -- removes the partitioning clause, though initially it keeps the LOCAL keyword
-      FOR c_indexes IN (SELECT REGEXP_REPLACE (DBMS_METADATA.get_ddl ('INDEX', index_name, owner),
-                                                  '(\(\s*partition.+\))|"'
-                                               || CASE l_targ_part
-                                                     WHEN 'NO'
-                                                        THEN '|local'
-                                                     ELSE NULL
-                                                  END,
-                                               NULL,
-                                               1,
-                                               0,
-                                               'in') index_ddl,
-                               table_name,
-                               owner
-                          FROM (SELECT index_name,
-                                       owner,
-                                       table_name
-                                  FROM all_indexes
-                                 WHERE REGEXP_LIKE (partitioned,
-                                                    CASE l_global
-                                                       WHEN 'TRUE'
-                                                          THEN '.'
-                                                       ELSE 'YES'
-                                                    END,
-                                                    'i')
-                                MINUS
-                                SELECT constraint_name index_name,
-                                       owner,
-                                       table_name
-                                  FROM all_constraints
-                                 WHERE constraint_type IN ('P', 'U'))
-                         WHERE table_name = p_source_table AND owner = p_source_owner)
+      FOR c_indexes IN
+         (SELECT    REGEXP_REPLACE (REGEXP_REPLACE (DBMS_METADATA.get_ddl ('INDEX',
+                                                                           index_name,
+                                                                           owner),
+                                                       '"|(\(\s*partition.+\))'
+                                                    || CASE l_targ_part
+                                                          WHEN 'NO'
+                                                             THEN '|local'
+                                                          ELSE NULL
+                                                       END,
+                                                    NULL,
+                                                    1,
+                                                    0,
+                                                    'in'),
+                                    '\s*' || CHR (10) || '+\s*$',
+                                    NULL,
+                                    1,
+                                    0,
+                                    'in')
+                 || CASE
+                       WHEN p_tablespace IS NOT NULL
+                          THEN ' TABLESPACE ' || p_tablespace
+                       ELSE NULL
+                    END index_ddl,
+                 table_name,
+                 owner
+            FROM (SELECT index_name,
+                         owner,
+                         table_name
+                    FROM all_indexes
+                   WHERE REGEXP_LIKE (partitioned, CASE l_global
+                                         WHEN 'TRUE'
+                                            THEN '.'
+                                         ELSE 'YES'
+                                      END, 'i')
+                  MINUS
+                  SELECT constraint_name index_name,
+                         owner,
+                         table_name
+                    FROM all_constraints
+                   WHERE constraint_type IN ('P', 'U'))
+           WHERE table_name = p_source_table AND owner = p_source_owner)
       LOOP
          -- replace the source owner with the target owner
          -- replace the source table with the target table
@@ -744,7 +754,11 @@ AS
       END IF;
 
       -- build the indexes on the stage table just like the target table
-      clone_indexes (p_target_owner, p_target_table, p_source_owner, p_source_table, p_debug);
+      clone_indexes (p_target_owner      => p_target_owner,
+                     p_target_table      => p_target_table,
+                     p_source_owner      => p_source_owner,
+                     p_source_table      => p_source_table,
+                     p_debug             => p_debug);
       o_app.set_action ('Exchange table');
       l_sql :=
             'alter table '
