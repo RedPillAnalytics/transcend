@@ -27,7 +27,7 @@ AS
       p_global         BOOLEAN DEFAULT TRUE,
       p_debug          BOOLEAN DEFAULT FALSE)
    IS
-      l_ddl         VARCHAR2 (2000);
+      l_ddl         LONG;
       l_global      VARCHAR2 (5)                  := CASE p_global
          WHEN TRUE
             THEN 'TRUE'
@@ -65,24 +65,25 @@ AS
       -- this regular expression does two things: strips out the double-quotes AND
       -- removes the partitioning clause, though initially it keeps the LOCAL keyword
       FOR c_indexes IN
-         (SELECT    REGEXP_REPLACE (REGEXP_REPLACE (DBMS_METADATA.get_ddl ('INDEX',
-                                                                           index_name,
-                                                                           owner),
-                                                       '"|(\(\s*partition.+\))'
-                                                    || CASE l_targ_part
-                                                          WHEN 'NO'
-                                                             THEN '|local'
-                                                          ELSE NULL
-                                                       END,
-                                                    NULL,
-                                                    1,
-                                                    0,
-                                                    'in'),
-                                    '\s*' || CHR (10) || '+\s*$',
-                                    NULL,
-                                    1,
-                                    0,
-                                    'in')
+         (SELECT    REGEXP_REPLACE
+                       (REGEXP_REPLACE (DBMS_METADATA.get_ddl ('INDEX', index_name, owner),
+                                           '"'
+                                        || CASE
+                                              WHEN l_targ_part = 'NO'
+                                                 THEN '|(\(\s*partition.+\))|local'
+                                              WHEN l_targ_part = 'YES' AND p_tablespace IS NOT NULL
+                                                 THEN '|(\(\s*partition.+\))'
+                                              ELSE NULL
+                                           END,
+                                        NULL,
+                                        1,
+                                        0,
+                                        'in'),
+                        '\s*' || CHR (10) || '+\s*$',
+                        NULL,
+                        1,
+                        0,
+                        'in')
                  || CASE
                        WHEN p_tablespace IS NOT NULL
                           THEN ' TABLESPACE ' || p_tablespace
