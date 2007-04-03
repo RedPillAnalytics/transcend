@@ -17,7 +17,6 @@ CREATE TABLE tdinc.notify_conf
 	 modified_user  VARCHAR2(30),
 	 modified_dt    DATE
 )
-TABLESPACE tdinc
 /
 
 COMMENT ON TABLE tdinc.notify_conf IS 'table to hold generic notification information regardless of the notification method';
@@ -30,8 +29,7 @@ ALTER TABLE tdinc.notify_conf ADD (
   CONSTRAINT notify_conf_pk
  PRIMARY KEY
  (notify_id)
-    USING INDEX
-    TABLESPACE tdinc)
+    USING INDEX)
 /
 
 CREATE SEQUENCE tdinc.notify_conf_seq
