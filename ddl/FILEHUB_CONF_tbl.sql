@@ -34,7 +34,6 @@ CREATE TABLE tdinc.filehub_conf
 	 modified_user  	VARCHAR2(30),
 	 modified_dt    	DATE
        )
-       TABLESPACE tdinc
 /
 
 COMMENT ON TABLE tdinc.filehub_conf IS 'table holding configuration information for PROCESSES in the FILE package';
@@ -69,8 +68,7 @@ ALTER TABLE tdinc.filehub_conf ADD (
   CONSTRAINT filehub_conf_pk
  PRIMARY KEY
  (filehub_id)
-    USING INDEX
-    TABLESPACE tdinc)
+    USING INDEX)
 /
 
 ALTER TABLE tdinc.filehub_conf ADD CONSTRAINT
@@ -81,7 +79,7 @@ ALTER TABLE tdinc.filehub_conf ADD CONSTRAINT
 
 ALTER TABLE tdinc.filehub_conf
       ADD CONSTRAINT filehub_conf_uk1 UNIQUE (filehub_name,filehub_group)
-      USING INDEX TABLESPACE tdinc
+      USING INDEX
 /
 
 CREATE SEQUENCE tdinc.filehub_conf_seq
