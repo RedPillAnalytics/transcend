@@ -14,15 +14,13 @@ CREATE TABLE tdinc.email_notify_conf
 	 modified_user  VARCHAR2(30),
 	 modified_dt    DATE
 )
-TABLESPACE tdinc
 /
 
 ALTER TABLE tdinc.email_notify_conf ADD (
   CONSTRAINT email_notify_conf_pk
  PRIMARY KEY
  (email_notify_id)
-    USING INDEX
-    TABLESPACE tdinc)
+    USING INDEX)
 /
 
 CREATE SEQUENCE tdinc.email_notify_conf_seq
