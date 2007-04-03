@@ -2,12 +2,17 @@ CREATE OR REPLACE PACKAGE BODY tdinc.dbflex
 AS
 -- truncates a table based upon the input table name and owner
 -- operates in an autonomous transaction
-   PROCEDURE trunc_tab (p_owner IN VARCHAR2, p_table IN VARCHAR2)
+   PROCEDURE trunc_tab (p_owner IN VARCHAR2, p_table IN VARCHAR2, p_debug BOOLEAN DEFAULT FALSE)
    AS
       PRAGMA AUTONOMOUS_TRANSACTION;
-      o_app   applog := applog (p_module => 'DBFLEX.TRUNC_TAB');
+      o_app   applog := applog (p_debug => p_debug, p_module => 'dbflex.trunc_tab');
    BEGIN
-      EXECUTE IMMEDIATE 'truncate table ' || p_owner || '.' || p_table;
+      IF p_debug
+      THEN
+         o_app.log_msg ('Table ' || p_owner || '.' || p_table || ' would be truncated');
+      ELSE
+         EXECUTE IMMEDIATE 'truncate table ' || p_owner || '.' || p_table;
+      END IF;
 
       o_app.clear_app_info;
    END trunc_tab;
@@ -18,15 +23,30 @@ AS
       p_source_table   VARCHAR2,
       p_target_owner   VARCHAR2,
       p_target_table   VARCHAR2,
+      p_global         BOOLEAN DEFAULT TRUE,
+      p_exchange       BOOLEAN DEFAULT FALSE,
       p_debug          BOOLEAN DEFAULT FALSE)
    IS
       l_ddl         VARCHAR2 (2000);
+      l_global      VARCHAR2 (5)               := CASE p_global
+         WHEN TRUE
+            THEN 'TRUE'
+         ELSE 'FALSE'
+      END;
+      l_exchange    VARCHAR2 (5)               := CASE p_exchange
+         WHEN TRUE
+            THEN 'TRUE'
+         ELSE 'FALSE'
+      END;
       l_ind_count   NUMBER                     := 1;
       l_username    user_users.username%TYPE;
       l_rows        BOOLEAN                    := FALSE;                  -- to catch empty cursors
-      o_app         applog   := applog (p_module      => 'DBFLEX.CLONE_INDEXES',
+      o_app         applog       := applog (p_module      => 'dbflex.clone_indexes',
                                             p_debug       => p_debug);
    BEGIN
+      -- execute immediate doesn't like ";" on the end
+      DBMS_METADATA.set_transform_param (DBMS_METADATA.session_transform, 'SQLTERMINATOR', FALSE);
+
       IF p_debug
       THEN
          SELECT username
@@ -34,51 +54,58 @@ AS
            FROM user_users;
 
          o_app.log_msg ('Executing user: ' || l_username);
-      ELSE
-         o_app.log_msg ('Building indexes on ' || p_target_table);
-         -- this is required for dbms_metadata to work correctly.
-         DBMS_METADATA.set_transform_param (DBMS_METADATA.session_transform, 'SQLTERMINATOR', TRUE);
       END IF;
 
+      o_app.log_msg ('Building indexes on ' || p_target_table);
+
       -- create a cursor containing the DDL from the target indexes
-      FOR c_indexes IN (SELECT DBMS_METADATA.get_ddl ('INDEX', index_name, owner) index_ddl
-                          FROM (SELECT DISTINCT ai.index_name,
-                                                ai.owner
-                                           FROM all_indexes ai JOIN all_ind_partitions ap
-                                                ON (    ai.owner = ap.index_owner
-                                                    AND ai.index_name = ap.index_name)
-                                          WHERE table_name = p_source_table
-                                            AND owner = p_source_owner
+      -- this regular expression does two things: strips out the double-quotes AND
+      -- removes the partitioning clause, though initially it keeps the LOCAL keyword
+      FOR c_indexes IN (SELECT REGEXP_REPLACE (DBMS_METADATA.get_ddl ('INDEX', index_name, owner),
+                                                  '(\(\s*partition.+\))|"'
+                                               || CASE l_exchange
+                                                     WHEN 'TRUE'
+                                                        THEN '|local'
+                                                     ELSE NULL
+                                                  END,
+                                               NULL,
+                                               1,
+                                               0,
+                                               'in') index_ddl,
+                               table_name,
+                               owner
+                          FROM (SELECT index_name,
+                                       owner,
+                                       table_name
+                                  FROM all_indexes
+                                 WHERE REGEXP_LIKE (partitioned,
+                                                    CASE l_global
+                                                       WHEN 'TRUE'
+                                                          THEN '.'
+                                                       ELSE 'YES'
+                                                    END,
+                                                    'i')
                                 MINUS
                                 SELECT constraint_name index_name,
-                                       owner
+                                       owner,
+                                       table_name
                                   FROM all_constraints
-                                 WHERE table_name = p_source_table
-                                   AND owner = p_source_owner
-                                   AND constraint_type IN ('P', 'U')))
+                                 WHERE constraint_type IN ('P', 'U'))
+                         WHERE table_name = p_source_table AND owner = p_source_owner)
       LOOP
-         -- remove double quotes, as it's easier to work without them
-         -- remove the local index information, as this is for exchanges
          -- replace the source owner with the target owner
          -- replace the source table with the target table
          o_app.set_action ('Format index DDL');
          l_ddl :=
-            REGEXP_REPLACE (REGEXP_REPLACE (REGEXP_REPLACE (c_indexes.index_ddl, '"', NULL),
-                                            '(local.+)?(;)',
-                                            NULL,
-                                            1,
-                                            0,
-                                            'in'),
-                            '\.' || p_source_table,
-                            '.' || p_target_table);
+                REGEXP_REPLACE (c_indexes.index_ddl, '\.' || p_source_table, '.' || p_target_table);
 
-         -- if the table_name is in a different schema, then everything is fine
+         -- if the table_name is in a different schema,
          -- if it's in the same schema, the indexes need to be renamed
          IF p_source_owner = p_target_owner
          THEN
             l_ddl :=
                REGEXP_REPLACE (l_ddl,
-                               '\\..+ ON',
+                               '\..+ ON',
                                '.' || p_target_table || '_ik' || l_ind_count || ' ON');
             l_ind_count := l_ind_count + 1;
          ELSE
@@ -86,28 +113,18 @@ AS
          END IF;
 
          o_app.set_action ('Execute index DDL');
-
-         IF p_debug
-         THEN
-            o_app.log_msg ('Index DDL: ' || l_ddl);
-         ELSE
-            EXECUTE IMMEDIATE l_ddl;
-         END IF;
+         coreutils.ddl_exec (l_ddl, p_debug => p_debug);
       END LOOP;
 
       -- now clone constraints
       o_app.set_action ('Open cursor for all constraints');
-
-      IF NOT p_debug
-      THEN
-         o_app.log_msg ('Building constraints on ' || p_target_table);
-      END IF;
+      o_app.log_msg ('Building constraints on ' || p_target_table);
 
       FOR c_constraints IN (SELECT DBMS_METADATA.get_ddl ('CONSTRAINT', constraint_name, owner)
                                                                                      constraint_ddl,
                                    owner,
                                    constraint_name
-                              FROM all_constraints
+                              FROM dba_constraints
                              WHERE table_name = p_source_table
                                AND owner = p_source_owner
                                AND constraint_type IN ('P', 'U')
@@ -116,7 +133,7 @@ AS
                                                                                      constraint_ddl,
                                    owner,
                                    constraint_name
-                              FROM all_constraints
+                              FROM dba_constraints
                              WHERE table_name = p_source_table
                                AND owner = p_source_owner
                                AND constraint_type = 'R')
@@ -150,17 +167,8 @@ AS
             l_ddl := REGEXP_REPLACE (l_ddl, p_source_owner || '\.', p_target_owner || '.');
          END IF;
 
-         -- debug ddl after length checks
-         COMMIT;
-
-         IF p_debug
-         THEN
-            o_app.log_msg ('Index DDL: ' || l_ddl);
-         ELSE
-            o_app.set_action ('Execute constraint DDL');
-
-            EXECUTE IMMEDIATE l_ddl;
-         END IF;
+         o_app.set_action ('Execute constraint DDL');
+         coreutils.ddl_exec (l_ddl, p_debug => p_debug);
       END LOOP;
 
       o_app.clear_app_info;
@@ -177,7 +185,7 @@ AS
       l_ind_ddl   VARCHAR2 (2000);
       l_rows      BOOLEAN         := FALSE;
       l_sql       VARCHAR2 (2000);
-      o_app       applog      := applog (p_module      => 'DBFLEX.DROP_INDEXES',
+      o_app       applog          := applog (p_module      => 'DBFLEX.DROP_INDEXES',
                                              p_debug       => p_debug);
    BEGIN
       -- drop constraints
@@ -245,7 +253,7 @@ AS
       l_sqlstmt   VARCHAR2 (2000);
       l_object    all_objects.object_name%TYPE;
       l_table     all_tables.table_name%TYPE;
-      o_app       applog                       := applog (p_module => 'DBFLEX.LOAD_TAB');
+      o_app       applog                         := applog (p_module => 'DBFLEX.LOAD_TAB');
    BEGIN
       IF p_trunc
       THEN
@@ -304,7 +312,7 @@ AS
       e_unique_key   EXCEPTION;
       PRAGMA EXCEPTION_INIT (e_unique_key, -936);
       o_app          applog
-                     := applog (p_module      => 'DBFLEX.MERGE_TAB',
+                       := applog (p_module      => 'DBFLEX.MERGE_TAB',
                                   p_action      => 'Generate ON clause');
    BEGIN
       -- construct the "ON" clause for the MERGE statement
@@ -416,7 +424,7 @@ AS
    END merge_tab;
 
    -- queries the dictionary based on regular expressions and loads tables using either the load_tab method or the merge_tab method
-   PROCEDURE load_regexp (
+   PROCEDURE regexp_load (
       p_source_owner   VARCHAR2,
       p_regexp         VARCHAR2,
       p_target_owner   VARCHAR2 DEFAULT NULL,
@@ -432,8 +440,7 @@ AS
       l_rows             BOOLEAN                 := FALSE;
       e_data_cartridge   EXCEPTION;
       PRAGMA EXCEPTION_INIT (e_data_cartridge, -29913);
-      o_app              applog
-                                 := applog (p_module      => 'DBFLEX.LOAD_REGEXP',
+      o_app              applog    := applog (p_module      => 'DBFLEX.LOAD_REGEXP',
                                               p_debug       => p_debug);
    BEGIN
       IF NOT p_debug
@@ -608,10 +615,10 @@ AS
       THEN
          o_app.log_err;
          RAISE;
-   END load_regexp;
+   END regexp_load;
 
    -- procedure to exchange a partitioned table with a non-partitioned table
-   PROCEDURE exchange_table (
+   PROCEDURE table_exchange (
       p_source_owner   VARCHAR2,
       p_source_table   VARCHAR2,
       p_target_owner   VARCHAR2,
@@ -635,8 +642,7 @@ AS
       l_cachehit       NUMBER;
       e_no_stats       EXCEPTION;
       PRAGMA EXCEPTION_INIT (e_no_stats, -20000);
-      o_app            applog
-                              := applog (p_module      => 'DBFLEX.EXCHANGE_TABLE',
+      o_app            applog   := applog (p_module      => 'DBFLEX.EXCHANGE_TABLE',
                                            p_debug       => p_debug);
    BEGIN
       IF NOT p_debug
@@ -783,11 +789,11 @@ AS
       THEN
          o_app.log_err;
          RAISE;
-   END exchange_table;
+   END table_exchange;
 
    -- queries the dictionary using a regexp looking for single-partitioned tables
    -- those tables matching will be exchanged with non-partitioned tables matching a similar regexp
-   PROCEDURE exchange_regexp (
+   PROCEDURE regexp_exchange (
       p_source_owner   VARCHAR2,
       p_regexp         VARCHAR2,
       p_target_owner   VARCHAR2 DEFAULT NULL,
@@ -804,8 +810,7 @@ AS
       l_rows           BOOLEAN                                  := FALSE;
       l_partname       all_tab_partitions.partition_name%TYPE;
       l_sql            VARCHAR2 (2000);
-      o_app            applog
-                             := applog (p_module      => 'DBFLEX.EXCHANGE_REGEXP',
+      o_app            applog  := applog (p_module      => 'DBFLEX.EXCHANGE_REGEXP',
                                           p_debug       => p_debug);
    BEGIN
       IF NOT p_debug
@@ -847,7 +852,7 @@ AS
          -- as I'm using dynamic cursors, I need to catch empty cursor sets
          l_rows := TRUE;
          o_app.set_action ('Exchange tables');
-         exchange_table (c_objects.src_owner,
+         table_exchange (c_objects.src_owner,
                          c_objects.src,
                          c_objects.targ_owner,
                          c_objects.targ,
@@ -874,7 +879,7 @@ AS
       THEN
          o_app.log_err;
          RAISE;
-   END exchange_regexp;
+   END regexp_exchange;
 
    -- sets particular indexes on a table as unusable depending on provided parameters
    PROCEDURE unusable_indexes (
@@ -890,8 +895,7 @@ AS
       l_ddl           VARCHAR2 (2000);
       l_cnt           NUMBER                         := 0;
       l_partitioned   all_indexes.partitioned%TYPE;
-      o_app           applog
-                            := applog (p_module      => 'DBFLEX.UNUSABLE_INDEXES',
+      o_app           applog  := applog (p_module      => 'DBFLEX.UNUSABLE_INDEXES',
                                          p_debug       => p_debug);
    BEGIN
       o_app.set_action ('Test to see if the table is partitioned');
@@ -1041,8 +1045,7 @@ AS
          INDEX BY BINARY_INTEGER;
 
       tt_parts      parts_ttyp;
-      o_app         applog
-                            := applog (p_module      => 'DBFLEX.UNUSABLE_IDX_SRC',
+      o_app         applog    := applog (p_module      => 'DBFLEX.UNUSABLE_IDX_SRC',
                                          p_debug       => p_debug);
    BEGIN
       IF p_src_col IS NULL
@@ -1126,8 +1129,8 @@ AS
       l_cnt    NUMBER          := 0;
       o_app    applog
          := applog (p_module      => 'DBFLEX.USABLE_INDEXES',
-                      p_action      => 'Rebuild indexes',
-                      p_debug       => p_debug);
+                    p_action      => 'Rebuild indexes',
+                    p_debug       => p_debug);
    BEGIN
       IF NOT p_debug
       THEN
