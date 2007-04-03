@@ -79,7 +79,8 @@ PRAGMA EXCEPTION_INIT (e_no_files, -1756);
    END audit_ext_tab;
    MEMBER PROCEDURE process (p_keep_source BOOLEAN DEFAULT FALSE)
    IS
-      l_rows           BOOLEAN                    := FALSE;               -- TO catch empty cursors
+   l_rows_dirlist           BOOLEAN                    := FALSE;               -- TO catch empty cursors
+   l_rows_delete BOOLEAN := FALSE;
       l_numlines       NUMBER;
       l_cmd            VARCHAR2 (500);
       l_filepath       VARCHAR2 (200);
@@ -106,9 +107,13 @@ PRAGMA EXCEPTION_INIT (e_no_files, -1756);
                             WHERE owner = UPPER (object_owner) AND table_name = UPPER (object_name)
                          ORDER BY LOCATION)
       LOOP
+	 l_rows_delete := TRUE;
          coreutils.delete_file (c_location.DIRECTORY, c_location.LOCATION, SELF.DEBUG_MODE);
       END LOOP;
-
+      IF l_rows_delete
+      THEN
+	 o_app.log_msg('Previous external table location files removed');
+      END IF;
       -- now we need to see all the source files in the source directory that match the regular expression
       -- use java stored procedure to populate global temp table DIR_LIST with all the files in the directory
       coreutils.get_dir_list (source_dirpath);
@@ -253,7 +258,7 @@ PRAGMA EXCEPTION_INIT (e_no_files, -1756);
           ORDER BY ext_tab_ind ASC)
       LOOP
          -- catch empty cursor sets
-         l_rows := TRUE;
+         l_rows_dirlist := TRUE;
          -- reset variables used in the cursor
          l_numlines := 0;
          -- copy file to the archive location
@@ -338,7 +343,7 @@ PRAGMA EXCEPTION_INIT (e_no_files, -1756);
       o_app.set_action ('Check for matching files');
 
       CASE
-         WHEN NOT l_rows AND required = 'Y'
+         WHEN NOT l_rows_dirlist AND required = 'Y'
          THEN
             raise_application_error (o_app.get_err_cd ('no_files_found'),
                                      o_app.get_err_msg ('no_files_found'));
@@ -348,7 +353,7 @@ PRAGMA EXCEPTION_INIT (e_no_files, -1756);
          -- but need a "business logic" way of saying "no rows for today"
          -- so I empty the file out
          -- an external table with a zero-byte file gives "no rows returned"
-      WHEN NOT l_rows AND required = 'N'
+      WHEN NOT l_rows_dirlist AND required = 'N'
          THEN
             o_app.log_msg ('No files found... but none are required');
             o_app.set_action ('Empty previous files');
@@ -361,7 +366,7 @@ PRAGMA EXCEPTION_INIT (e_no_files, -1756);
             LOOP
                coreutils.create_file (c_location.DIRECTORY, c_location.LOCATION, SELF.DEBUG_MODE);
             END LOOP;
-         WHEN l_rows AND LOWER (source_policy) = 'all'
+         WHEN l_rows_dirlist AND LOWER (source_policy) = 'all'
          -- matching files found, so ignore
                   -- alter the external table to contain all the files
       THEN
@@ -369,6 +374,7 @@ PRAGMA EXCEPTION_INIT (e_no_files, -1756);
 
             BEGIN
                coreutils.ddl_exec (l_ext_tab_ddl, p_debug => SELF.DEBUG_MODE);
+	       o_app.log_msg('External table '||object_owner||'.'||object_name||' altered');
             EXCEPTION
                WHEN e_no_files
                THEN
