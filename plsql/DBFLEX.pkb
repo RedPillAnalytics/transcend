@@ -23,25 +23,22 @@ AS
       p_source_table   VARCHAR2,
       p_target_owner   VARCHAR2,
       p_target_table   VARCHAR2,
+      p_tablespace     VARCHAR2 DEFAULT NULL,
       p_global         BOOLEAN DEFAULT TRUE,
-      p_exchange       BOOLEAN DEFAULT FALSE,
       p_debug          BOOLEAN DEFAULT FALSE)
    IS
-      l_ddl         VARCHAR2 (2000);
-      l_global      VARCHAR2 (5)               := CASE p_global
+      l_ddl          VARCHAR2 (2000);
+      l_global       VARCHAR2 (5)                    := CASE p_global
          WHEN TRUE
             THEN 'TRUE'
          ELSE 'FALSE'
       END;
-      l_exchange    VARCHAR2 (5)               := CASE p_exchange
-         WHEN TRUE
-            THEN 'TRUE'
-         ELSE 'FALSE'
-      END;
-      l_ind_count   NUMBER                     := 1;
-      l_username    user_users.username%TYPE;
-      l_rows        BOOLEAN                    := FALSE;                  -- to catch empty cursors
-      o_app         applog       := applog (p_module      => 'dbflex.clone_indexes',
+      l_targ_part    dba_tables.partitioned%TYPE;
+      l_tablespace   dba_indexes.tablespace_name%TYPE;
+      l_ind_count    NUMBER                             := 1;
+      l_username     user_users.username%TYPE;
+      l_rows         BOOLEAN                            := FALSE;         -- to catch empty cursors
+      o_app          applog      := applog (p_module      => 'dbflex.clone_indexes',
                                             p_debug       => p_debug);
    BEGIN
       -- execute immediate doesn't like ";" on the end
@@ -56,6 +53,13 @@ AS
          o_app.log_msg ('Executing user: ' || l_username);
       END IF;
 
+      o_app.set_action ('Build indexes');
+
+      SELECT partitioned
+        INTO l_targ_part
+        FROM dba_tables
+       WHERE table_name = UPPER (p_target_table) AND owner = UPPER (p_target_owner);
+
       o_app.log_msg ('Building indexes on ' || p_target_table);
 
       -- create a cursor containing the DDL from the target indexes
@@ -63,8 +67,8 @@ AS
       -- removes the partitioning clause, though initially it keeps the LOCAL keyword
       FOR c_indexes IN (SELECT REGEXP_REPLACE (DBMS_METADATA.get_ddl ('INDEX', index_name, owner),
                                                   '(\(\s*partition.+\))|"'
-                                               || CASE l_exchange
-                                                     WHEN 'TRUE'
+                                               || CASE l_targ_part
+                                                     WHEN 'NO'
                                                         THEN '|local'
                                                      ELSE NULL
                                                   END,
