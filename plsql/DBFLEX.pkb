@@ -1,57 +1,44 @@
 CREATE OR REPLACE PACKAGE BODY tdinc.dbflex
 AS
--- truncates a table based upon the input table name and owner
--- operates in an autonomous transaction
+-- this is not an autonomous transaction because COREUTILS.DDL_EXEC is
    PROCEDURE trunc_tab (p_owner IN VARCHAR2, p_table IN VARCHAR2, p_debug BOOLEAN DEFAULT FALSE)
    AS
-      PRAGMA AUTONOMOUS_TRANSACTION;
       o_app   applog := applog (p_debug => p_debug, p_module => 'dbflex.trunc_tab');
    BEGIN
-      IF p_debug
-      THEN
-         o_app.log_msg ('Table ' || p_owner || '.' || p_table || ' would be truncated');
-      ELSE
-         EXECUTE IMMEDIATE 'truncate table ' || p_owner || '.' || p_table;
-      END IF;
-
+      coreutils.ddl_exec ('truncate table ' || p_owner || '.' || p_table, p_debug => p_debug);
       o_app.clear_app_info;
    END trunc_tab;
 
-   -- creates all the local indexes and constraints on one table to be exactly like those of another table
+   -- builds the indexes from one table on another
+   -- if both the source and target are partitioned tables, then the index DDL is left alone
+   -- if the source is partitioned and the target is not, then all local indexes are created as non-local
+   -- if P_TABLESPACE is provided, then that tablespace_name is used, regardless of the DDL that is pulled
    PROCEDURE clone_indexes (
       p_source_owner   VARCHAR2,
       p_source_table   VARCHAR2,
       p_target_owner   VARCHAR2,
       p_target_table   VARCHAR2,
+      p_index_name     VARCHAR2 DEFAULT NULL,
       p_tablespace     VARCHAR2 DEFAULT NULL,
       p_global         BOOLEAN DEFAULT TRUE,
       p_debug          BOOLEAN DEFAULT FALSE)
    IS
-      l_ddl         LONG;
-      l_global      VARCHAR2 (5)                  := CASE p_global
+      l_ddl            LONG;
+      l_global         VARCHAR2 (5)                  := CASE p_global
          WHEN TRUE
             THEN 'TRUE'
          ELSE 'FALSE'
       END;
-      l_targ_part   dba_tables.partitioned%TYPE;
-      l_ind_count   NUMBER                        := 1;
-      l_username    user_users.username%TYPE;
-      l_rows        BOOLEAN                       := FALSE;               -- to catch empty cursors
-      o_app         applog       := applog (p_module      => 'dbflex.clone_indexes',
+      l_targ_part      dba_tables.partitioned%TYPE;
+      l_username       user_users.username%TYPE;
+      l_rows           BOOLEAN                       := FALSE;
+      e_dup_idx_name   EXCEPTION;
+      PRAGMA EXCEPTION_INIT (e_dup_idx_name, -955);
+      o_app            applog    := applog (p_module      => 'dbflex.clone_indexes',
                                             p_debug       => p_debug);
    BEGIN
       -- execute immediate doesn't like ";" on the end
       DBMS_METADATA.set_transform_param (DBMS_METADATA.session_transform, 'SQLTERMINATOR', FALSE);
-
-      IF p_debug
-      THEN
-         SELECT username
-           INTO l_username
-           FROM user_users;
-
-         o_app.log_msg ('Executing user: ' || l_username);
-      END IF;
-
       o_app.set_action ('Build indexes');
 
       SELECT partitioned
@@ -66,19 +53,121 @@ AS
       -- removes the partitioning clause, though initially it keeps the LOCAL keyword
       FOR c_indexes IN
          (SELECT    REGEXP_REPLACE
-                       (REGEXP_REPLACE (DBMS_METADATA.get_ddl ('INDEX', index_name, owner),
-                                           '"'
-                                        || CASE
-                                              WHEN l_targ_part = 'NO'
-                                                 THEN '|(\(\s*partition.+\))|local'
-                                              WHEN l_targ_part = 'YES' AND p_tablespace IS NOT NULL
-                                                 THEN '|(\(\s*partition.+\))'
-                                              ELSE NULL
-                                           END,
-                                        NULL,
-                                        1,
-                                        0,
-                                        'in'),
+                       (REGEXP_REPLACE
+                           (DBMS_METADATA.get_ddl ('INDEX', index_name, owner),
+                               '"'
+                            || CASE
+                                  WHEN l_targ_part = 'NO' AND p_tablespace IS NULL
+                                     THEN '|(\(\s*partition.+\))|local'
+                                  WHEN l_targ_part = 'NO' AND p_tablespace IS NOT NULL
+                                     THEN '|(\(\s*partition.+\))|local|(tablespace)\s*[^ ]+'
+                                  WHEN l_targ_part = 'YES' AND p_tablespace IS NOT NULL
+                                     THEN '|(\(\s*partition.+\))|(tablespace)\s*[^ ]+'
+                                  ELSE NULL
+                               END,
+                            NULL,
+                            1,
+                            0,
+                            'in'),
+                        '\s*' || CHR (10) || '+\s*$',
+                        NULL,
+                        1,
+                        0,
+                        'in')
+                 || CASE
+                       WHEN p_tablespace IS NOT NULL
+                          THEN ' TABLESPACE ' || p_tablespace
+                       ELSE NULL
+                    END index_ddl,
+                 table_name,
+                 owner,
+                 partitioned,
+                 ROWNUM
+            FROM all_indexes
+           WHERE REGEXP_LIKE (partitioned, CASE l_global
+                                 WHEN 'TRUE'
+                                    THEN '.'
+                                 ELSE 'YES'
+                              END, 'i')
+             AND table_name = UPPER (p_source_table)
+             AND owner = UPPER (p_source_owner)
+             AND REGEXP_LIKE (index_name, NVL (p_index_name, '.'), 'i'))
+      LOOP
+         o_app.set_action ('Format index DDL');
+         -- replace the source table name with the target table name
+         l_ddl :=
+                REGEXP_REPLACE (c_indexes.index_ddl, '\.' || p_source_table, '.' || p_target_table);
+         -- recreate the index name to make sure there are no existing indexs with that name (such as the source)
+         l_ddl :=
+            REGEXP_REPLACE (l_ddl,
+                            '\..+ ON',
+                            '.' || p_target_table || '_ik' || c_indexes.ROWNUM || ' ON');
+         -- replace the source owner with the target owner
+         l_ddl := REGEXP_REPLACE (l_ddl, p_source_owner || '\.', p_target_owner || '.');
+         o_app.set_action ('Execute index DDL');
+         coreutils.ddl_exec (l_ddl, p_debug => p_debug);
+      END LOOP;
+
+      o_app.clear_app_info;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         o_app.log_err;
+         RAISE;
+   END clone_indexes;
+
+   -- builds the constraints from one table on another
+   PROCEDURE clone_constraints (
+      p_source_owner   VARCHAR2,
+      p_source_table   VARCHAR2,
+      p_target_owner   VARCHAR2,
+      p_target_table   VARCHAR2,
+      p_constraint_name     VARCHAR2 DEFAULT NULL,
+      p_debug          BOOLEAN DEFAULT FALSE)
+   IS
+      l_ddl         LONG;
+      l_global      VARCHAR2 (5)                  := CASE p_global
+         WHEN TRUE
+            THEN 'TRUE'
+         ELSE 'FALSE'
+      END;
+      l_targ_part   dba_tables.partitioned%TYPE;
+      l_ind_cnt     NUMBER                        := 1;
+      l_username    user_users.username%TYPE;
+      l_rows        BOOLEAN                       := FALSE;
+      o_app         applog       := applog (p_module      => 'dbflex.clone_indexes',
+                                            p_debug       => p_debug);
+   BEGIN
+      -- execute immediate doesn't like ";" on the end
+      DBMS_METADATA.set_transform_param (DBMS_METADATA.session_transform, 'SQLTERMINATOR', FALSE);
+      o_app.set_action ('Build indexes');
+
+      SELECT partitioned
+        INTO l_targ_part
+        FROM dba_tables
+       WHERE table_name = UPPER (p_target_table) AND owner = UPPER (p_target_owner);
+
+      o_app.log_msg ('Building indexes on ' || p_target_table);
+
+      -- create a cursor containing the DDL from the target indexes
+      -- this regular expression does two things: strips out the double-quotes AND
+      -- removes the partitioning clause, though initially it keeps the LOCAL keyword
+      FOR c_indexes IN
+         (SELECT    REGEXP_REPLACE
+                       (REGEXP_REPLACE
+                           (DBMS_METADATA.get_ddl ('INDEX', index_name, owner),
+                               '"'
+                            || CASE
+                                  WHEN l_targ_part = 'NO'
+                                     THEN '|(\(\s*partition.+\))|local'
+                                  WHEN l_targ_part = 'YES' AND p_tablespace IS NOT NULL
+                                     THEN '|(\(\s*partition.+\))|(tablespace)\s*[^ ]+'
+                                  ELSE NULL
+                               END,
+                            NULL,
+                            1,
+                            0,
+                            'in'),
                         '\s*' || CHR (10) || '+\s*$',
                         NULL,
                         1,
@@ -106,10 +195,13 @@ AS
                          table_name
                     FROM all_constraints
                    WHERE constraint_type IN ('P', 'U'))
-           WHERE table_name = p_source_table AND owner = p_source_owner)
+           WHERE table_name = p_source_table
+             AND owner = p_source_owner
+             AND REGEXP_LIKE (index_name, NVL (p_index_name, '.'), 'i'))
       LOOP
-         -- replace the source owner with the target owner
-         -- replace the source table with the target table
+         -- if a tablespace is specified
+              -- replace the source owner with the target owner
+              -- replace the source table with the target table
          o_app.set_action ('Format index DDL');
          l_ddl :=
                 REGEXP_REPLACE (c_indexes.index_ddl, '\.' || p_source_table, '.' || p_target_table);
@@ -121,8 +213,8 @@ AS
             l_ddl :=
                REGEXP_REPLACE (l_ddl,
                                '\..+ ON',
-                               '.' || p_target_table || '_ik' || l_ind_count || ' ON');
-            l_ind_count := l_ind_count + 1;
+                               '.' || p_target_table || '_ik' || l_ind_cnt || ' ON');
+            l_ind_cnt := l_ind_cnt + 1;
          ELSE
             l_ddl := REGEXP_REPLACE (l_ddl, p_source_owner || '\.', p_target_owner || '.');
          END IF;
@@ -176,8 +268,8 @@ AS
             l_ddl :=
                REGEXP_REPLACE (l_ddl,
                                '\..+ ON',
-                               '\.' || p_target_table || '_ik' || l_ind_count || ' ON');
-            l_ind_count := l_ind_count + 1;
+                               '\.' || p_target_table || '_ik' || l_ind_cnt || ' ON');
+            l_ind_cnt := l_ind_cnt + 1;
          ELSE
             l_ddl := REGEXP_REPLACE (l_ddl, p_source_owner || '\.', p_target_owner || '.');
          END IF;
@@ -192,7 +284,7 @@ AS
       THEN
          o_app.log_err;
          RAISE;
-   END clone_indexes;
+   END clone_constraints;
 
    -- drop indexes and constraints from a table
    PROCEDURE drop_indexes (p_owner VARCHAR2, p_table VARCHAR2, p_debug BOOLEAN DEFAULT FALSE)
