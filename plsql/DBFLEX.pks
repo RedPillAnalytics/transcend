@@ -1,17 +1,20 @@
 CREATE OR REPLACE PACKAGE tdinc.dbflex AUTHID CURRENT_USER
 AS
-   PROCEDURE trunc_tab (p_owner IN VARCHAR2, p_table IN VARCHAR2);
+   PROCEDURE trunc_tab (p_owner IN VARCHAR2, p_table IN VARCHAR2, p_debug BOOLEAN DEFAULT FALSE);
 
    PROCEDURE clone_indexes (
       p_source_owner   VARCHAR2,
       p_source_table   VARCHAR2,
       p_target_owner   VARCHAR2,
       p_target_table   VARCHAR2,
+      p_index_name     VARCHAR2 DEFAULT NULL,
+      p_tablespace     VARCHAR2 DEFAULT NULL,
+      p_global         BOOLEAN DEFAULT TRUE,
       p_debug          BOOLEAN DEFAULT FALSE);
 
    PROCEDURE drop_indexes (p_owner VARCHAR2, p_table VARCHAR2, p_debug BOOLEAN DEFAULT FALSE);
 
-   PROCEDURE load_regexp (
+   PROCEDURE regexp_load (
       p_source_owner   VARCHAR2,
       p_regexp         VARCHAR2,
       p_target_owner   VARCHAR2 DEFAULT NULL,
@@ -23,7 +26,7 @@ AS
       p_commit         BOOLEAN DEFAULT TRUE,
       p_debug          BOOLEAN DEFAULT FALSE);
 
-   PROCEDURE exchange_table (
+   PROCEDURE table_exchange (
       p_source_owner   VARCHAR2,
       p_source_table   VARCHAR2,
       p_target_owner   VARCHAR2,
@@ -36,7 +39,7 @@ AS
       p_statmo         VARCHAR2 DEFAULT 'FOR ALL COLUMNS SIZE AUTO',
       p_debug          BOOLEAN DEFAULT FALSE);
 
-   PROCEDURE exchange_regexp (
+   PROCEDURE regexp_exchange (
       p_source_owner   VARCHAR2,
       p_regexp         VARCHAR2,
       p_target_owner   VARCHAR2 DEFAULT NULL,
