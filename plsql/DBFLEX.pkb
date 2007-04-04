@@ -18,7 +18,7 @@ AS
       p_source_table   VARCHAR2,
       p_target_owner   VARCHAR2,
       p_target_table   VARCHAR2,
-      p_index_name     VARCHAR2 DEFAULT NULL,
+      p_index_regexp   VARCHAR2 DEFAULT NULL,
       p_tablespace     VARCHAR2 DEFAULT NULL,
       p_global         BOOLEAN DEFAULT TRUE,
       p_debug          BOOLEAN DEFAULT FALSE)
@@ -39,10 +39,10 @@ AS
                                             p_debug       => p_debug);
    BEGIN
       -- execute immediate doesn't like ";" on the end
+      DBMS_METADATA.set_transform_param (DBMS_METADATA.session_transform, 'SQLTERMINATOR', FALSE);
       DBMS_METADATA.set_transform_param (DBMS_METADATA.session_transform,
                                          'SEGMENT_ATTRIBUTES',
                                          TRUE);
-      DBMS_METADATA.set_transform_param (DBMS_METADATA.session_transform, 'SQLTERMINATOR', FALSE);
       DBMS_METADATA.set_transform_param (DBMS_METADATA.session_transform, 'STORAGE', FALSE);
       o_app.set_action ('Build indexes');
 
@@ -82,7 +82,7 @@ AS
                           THEN ' TABLESPACE ' || p_tablespace
                        ELSE NULL
                     END index_ddl,
-                 table_name,
+                 table_owner table_name,
                  owner,
                  index_name,
                  partitioned,
@@ -97,21 +97,23 @@ AS
                                  ELSE 'YES'
                               END, 'i')
              AND table_name = UPPER (p_source_table)
-             AND owner = UPPER (p_source_owner)
+             AND table_owner = UPPER (p_source_owner)
              -- use an NVL'd regular expression to determine whether a single index is worked on
-             AND REGEXP_LIKE (index_name, NVL (p_index_name, '.'), 'i'))
+             AND REGEXP_LIKE (index_name, NVL (p_index_regexp, '.'), 'i'))
       LOOP
          l_rows := TRUE;
          o_app.set_action ('Format index DDL');
-         -- replace the source table name with the target table name
+              -- replace the source table name with the target table name
+         -- if a " is found, then use it... otherwise don't
          l_ddl :=
             REGEXP_REPLACE (c_indexes.index_ddl,
                             '(\."?)(' || p_source_table || ')(")?',
                             '\1' || p_target_table || '\3');
-         -- replace the source owner with the target owner
+              -- replace the index owner with the target owner
+         -- if a " is found, then use it... otherwise don't
          l_ddl :=
             REGEXP_REPLACE (l_ddl,
-                            '(")?(' || p_source_owner || ')("?\.)',
+                            '(")?(' || c_indexes.owner || ')("?\.)',
                             '\1' || p_target_owner || '\3',
                             1,
                             0,
@@ -157,7 +159,10 @@ AS
 
       IF NOT l_rows
       THEN
-         o_app.log_msg ('No indexes exist on ' || p_source_owner || '.' || p_source_table);
+         o_app.log_msg (   'No indexe matching parameters exists on '
+                        || p_source_owner
+                        || '.'
+                        || p_source_table);
       END IF;
 
       o_app.clear_app_info;
@@ -170,46 +175,83 @@ AS
 
    -- builds the constraints from one table on another
    PROCEDURE clone_constraints (
-      p_source_owner      VARCHAR2,
-      p_source_table      VARCHAR2,
-      p_target_owner      VARCHAR2,
-      p_target_table      VARCHAR2,
-      p_constraint_name   VARCHAR2 DEFAULT NULL,
-      p_index_name        VARCHAR2 DEFAULT NULL,
-      p_debug             BOOLEAN DEFAULT FALSE)
+      p_source_owner        VARCHAR2,
+      p_source_table        VARCHAR2,
+      p_target_owner        VARCHAR2,
+      p_target_table        VARCHAR2,
+      p_constraint_regexp   VARCHAR2 DEFAULT NULL,
+      p_seg_attributes      BOOLEAN DEFAULT FALSE,
+      p_tablespace          VARCHAR2 DEFAULT NULL,
+      p_debug               BOOLEAN DEFAULT FALSE)
    IS
-      l_ddl    LONG;
-      l_rows   BOOLEAN := FALSE;
-      o_app    applog  := applog (p_module => 'dbflex.clone_constraints', p_debug => p_debug);
+      l_targ_part   dba_tables.partitioned%TYPE;
+      l_ddl         LONG;
+      l_rows        BOOLEAN                       := FALSE;
+      o_app         applog   := applog (p_module      => 'dbflex.clone_constraints',
+                                        p_debug       => p_debug);
    BEGIN
       -- execute immediate doesn't like ";" on the end
       DBMS_METADATA.set_transform_param (DBMS_METADATA.session_transform, 'SQLTERMINATOR', FALSE);
       -- indexes are already built, so just need to enable constraints
       DBMS_METADATA.set_transform_param (DBMS_METADATA.session_transform,
                                          'SEGMENT_ATTRIBUTES',
-                                         FALSE);
+                                         CASE
+                                            WHEN p_seg_attributes
+                                               THEN TRUE
+                                            ELSE FALSE
+                                         END);
+
+      SELECT partitioned
+        INTO l_targ_part
+        FROM dba_tables
+       WHERE table_name = UPPER (p_target_table) AND owner = UPPER (p_target_owner);
+
       o_app.set_action ('Build constraints');
       o_app.log_msg ('Adding constraints on ' || p_target_owner || '.' || p_target_table);
 
       FOR c_constraints IN
-         (SELECT DBMS_METADATA.get_ddl (CASE constraint_type
-                                           WHEN 'R'
-                                              THEN 'REF_CONSTRAINT'
-                                           ELSE 'CONSTRAINT'
-                                        END,
-                                        constraint_name,
-                                        owner) constraint_ddl,
+         (SELECT    REGEXP_REPLACE
+                       (DBMS_METADATA.get_ddl (CASE constraint_type
+                                                  WHEN 'R'
+                                                     THEN 'REF_CONSTRAINT'
+                                                  ELSE 'CONSTRAINT'
+                                               END,
+                                               constraint_name,
+                                               owner),
+                        CASE
+                           -- target is not partitioned and no tablespace provided
+                        WHEN l_targ_part = 'NO' AND p_tablespace IS NULL
+                              -- remove all partitioning and the local keyword
+                        THEN '(\(\s*partition.+\))|local'
+                           -- target is not partitioned but tablespace is provided
+                        WHEN l_targ_part = 'NO' AND p_tablespace IS NOT NULL
+                              -- strip out partitioned, local keyword and tablespace clause
+                        THEN '(\(\s*partition.+\))|local|(tablespace)\s*[^ ]+'
+                           -- target is partitioned and tablespace is provided
+                        WHEN l_targ_part = 'YES' AND p_tablespace IS NOT NULL
+                              -- strip out partitioning, keep local keyword and remove tablespace clause
+                        THEN '(\(\s*partition.+\))|(tablespace)\s*[^ ]+'
+                           ELSE NULL
+                        END,
+                        NULL,
+                        1,
+                        0,
+                        'in')
+                 || CASE
+                       -- if tablespace is provided, tack it on the end
+                    WHEN p_tablespace IS NOT NULL
+                          THEN ' TABLESPACE ' || p_tablespace
+                       ELSE NULL
+                    END constraint_ddl,
                  owner,
                  constraint_name,
                  constraint_type,
                  index_owner,
                  index_name
             FROM dba_constraints
-           WHERE table_name = p_source_table
-             AND owner = p_source_owner
-             AND constraint_type IN ('P', 'U', 'R')
-             AND REGEXP_LIKE (constraint_name, NVL (p_constraint_name, '.'), 'i')
-             AND REGEXP_LIKE (index_name, NVL (p_index_name, '.'), 'i'))
+           WHERE table_name = UPPER (p_source_table)
+             AND owner = UPPER (p_source_owner)
+             AND REGEXP_LIKE (constraint_name, NVL (p_constraint_regexp, '.'), 'i'))
       LOOP
          -- catch empty cursor sets
          l_rows := TRUE;
@@ -222,11 +264,13 @@ AS
                             0,
                             'i');
          -- replace the source table name with the target table name
+         -- if a " is found, then use it... otherwise don't
          l_ddl :=
             REGEXP_REPLACE (c_constraints.constraint_ddl,
                             '(\."?)(' || p_source_table || ')(")?',
                             '\1' || p_target_table || '\3');
          -- replace the source owner with the target owner
+         -- if a " is found, then use it... otherwise don't
          l_ddl :=
             REGEXP_REPLACE (l_ddl,
                             '(")?(' || p_source_owner || ')("?\.)',
@@ -234,9 +278,21 @@ AS
                             1,
                             0,
                             'i');
+         -- though it's not necessary for EXECUTE IMMEDIATE, remove blank lines for looks
+         l_ddl := REGEXP_REPLACE (l_ddl, CHR (10) || '[[:space:]]+' || CHR (10), NULL);
+         -- and for looks, remove the last carriage return
+         l_ddl := REGEXP_REPLACE (l_ddl, '[[:space:]]*$', NULL);
          o_app.set_action ('Execute constraint DDL');
          coreutils.ddl_exec (l_ddl, p_debug => p_debug);
       END LOOP;
+
+      IF NOT l_rows
+      THEN
+         o_app.log_msg (   'No constraint matching parameters exists on '
+                        || p_source_owner
+                        || '.'
+                        || p_source_table);
+      END IF;
 
       o_app.clear_app_info;
    EXCEPTION
