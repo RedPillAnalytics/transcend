@@ -132,8 +132,9 @@ AS
             THEN
                BEGIN
                   coreutils.ddl_exec (REGEXP_REPLACE (l_ddl,
-                                                      '(\."?)(\w+)(")?( on)',
+                                                      '(\."?)(\w)+(")?( on)',
                                                          '\1'
+                                                      || p_target_table
                                                       || '_'
                                                       || CASE
                                                             -- decide what to name the new index based on info about it
@@ -144,7 +145,10 @@ AS
                                                             ELSE 'IK'
                                                          END
                                                       || c_indexes.ROWNUM
-                                                      || '\3 \4'));
+                                                      || '\3 \4',
+                                                      1,
+                                                      0,
+                                                      'i'));
                EXCEPTION
                   -- now the name is different, but check to see if the columns are already indexed
                   WHEN e_dup_col_list
