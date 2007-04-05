@@ -1,4 +1,4 @@
-CREATE OR REPLACE TYPE tdinc.applog AS OBJECT (
+CREATE OR REPLACE TYPE tdinc.applog UNDER tdinc.basetype (
    instance_name      VARCHAR2 (30),
    session_id         NUMBER,
    machine            VARCHAR2 (50),
@@ -36,5 +36,6 @@ CREATE OR REPLACE TYPE tdinc.applog AS OBJECT (
    MEMBER FUNCTION register_mode
       RETURN BOOLEAN,
    MEMBER PROCEDURE register_mode (p_register BOOLEAN DEFAULT TRUE)
-);
+)
+;
 /
