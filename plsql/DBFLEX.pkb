@@ -18,6 +18,7 @@ AS
       p_source_table   VARCHAR2,
       p_owner          VARCHAR2,
       p_table          VARCHAR2,
+      p_index_type     VARCHAR2 DEFAULT NULL,
       p_index_regexp   VARCHAR2 DEFAULT NULL,
       p_tablespace     VARCHAR2 DEFAULT NULL,
       p_global         BOOLEAN DEFAULT TRUE,
@@ -120,7 +121,8 @@ AS
              AND table_name = UPPER (p_source_table)
              AND table_owner = UPPER (p_source_owner)
              -- use an NVL'd regular expression to determine whether a single index is worked on
-             AND REGEXP_LIKE (index_name, NVL (p_index_regexp, '.'), 'i'))
+             AND REGEXP_LIKE (index_name, NVL (p_index_regexp, '.'), 'i')
+             AND REGEXP_LIKE (index_type, '^' || NVL (p_index_type, '.'), 'i'))
       LOOP
          IF p_debug
          THEN
@@ -200,6 +202,7 @@ AS
       p_source_table        VARCHAR2,
       p_owner               VARCHAR2,
       p_table               VARCHAR2,
+      p_constraint_type     VARCHAR2 DEFAULT NULL,
       p_constraint_regexp   VARCHAR2 DEFAULT NULL,
       p_seg_attributes      BOOLEAN DEFAULT FALSE,
       p_tablespace          VARCHAR2 DEFAULT NULL,
@@ -313,7 +316,8 @@ AS
             FROM dba_constraints
            WHERE table_name = UPPER (p_source_table)
              AND owner = UPPER (p_source_owner)
-             AND REGEXP_LIKE (constraint_name, NVL (p_constraint_regexp, '.'), 'i'))
+             AND REGEXP_LIKE (constraint_name, NVL (p_constraint_regexp, '.'), 'i')
+             AND REGEXP_LIKE (constraint_type, NVL (p_constraint_type, '.'), 'i'))
       LOOP
          -- catch empty cursor sets
          l_rows := TRUE;
