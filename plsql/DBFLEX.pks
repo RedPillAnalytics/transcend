@@ -7,10 +7,20 @@ AS
       p_source_table   VARCHAR2,
       p_target_owner   VARCHAR2,
       p_target_table   VARCHAR2,
-      p_index_name     VARCHAR2 DEFAULT NULL,
+      p_index_regexp   VARCHAR2 DEFAULT NULL,
       p_tablespace     VARCHAR2 DEFAULT NULL,
       p_global         BOOLEAN DEFAULT TRUE,
       p_debug          BOOLEAN DEFAULT FALSE);
+
+   PROCEDURE clone_constraints (
+      p_source_owner        VARCHAR2,
+      p_source_table        VARCHAR2,
+      p_target_owner        VARCHAR2,
+      p_target_table        VARCHAR2,
+      p_constraint_regexp   VARCHAR2 DEFAULT NULL,
+      p_seg_attributes      BOOLEAN DEFAULT FALSE,
+      p_tablespace          VARCHAR2 DEFAULT NULL,
+      p_debug               BOOLEAN DEFAULT FALSE);
 
    PROCEDURE drop_indexes (p_owner VARCHAR2, p_table VARCHAR2, p_debug BOOLEAN DEFAULT FALSE);
 
