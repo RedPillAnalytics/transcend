@@ -44,12 +44,15 @@ AS
    BEGIN
       -- execute immediate doesn't like ";" on the end
       DBMS_METADATA.set_transform_param (DBMS_METADATA.session_transform, 'SQLTERMINATOR', FALSE);
+      -- we need the segment attributes so things go where we want them to
       DBMS_METADATA.set_transform_param (DBMS_METADATA.session_transform,
                                          'SEGMENT_ATTRIBUTES',
                                          TRUE);
+      -- don't want all the other storage aspects though
       DBMS_METADATA.set_transform_param (DBMS_METADATA.session_transform, 'STORAGE', FALSE);
       o_app.set_action ('Build indexes');
 
+      -- find out if the target table is partitioned so we know how to formulate the index ddl
       SELECT partitioned
         INTO l_targ_part
         FROM dba_tables
@@ -59,70 +62,88 @@ AS
 
       -- create a cursor containing the DDL from the target indexes
       FOR c_indexes IN
-         (SELECT    REGEXP_REPLACE
-                       (DBMS_METADATA.get_ddl ('INDEX', index_name, owner),
-                        CASE
-                           -- target is not partitioned and no tablespace provided
-                        WHEN l_targ_part = 'NO' AND p_tablespace IS NULL
-                              -- remove all partitioning and the local keyword
-                        THEN '(\(\s*partition.+\))|local'
-                           -- target is not partitioned but tablespace is provided
-                        WHEN l_targ_part = 'NO' AND p_tablespace IS NOT NULL
-                              -- strip out partitioned, local keyword and tablespace clause
-                        THEN '(\(\s*partition.+\))|local|(tablespace)\s*[^ ]+'
-                           -- target is partitioned and tablespace is provided
-                        WHEN l_targ_part = 'YES' AND p_tablespace IS NOT NULL
-                              -- strip out partitioning, keep local keyword and remove tablespace clause
-                        THEN '(\(\s*partition.+\))|(tablespace)\s*[^ ]+'
-                           ELSE NULL
-                        END,
-                        NULL,
-                        1,
-                        0,
-                        'in')
-                 || CASE
-                       -- if tablespace is provided, tack it on the end
-                    WHEN p_tablespace IS NOT NULL
-                          THEN ' TABLESPACE ' || p_tablespace
-                       ELSE NULL
-                    END index_ddl,
-                 table_owner,
-                 table_name,
-                 owner,
-                 index_name,
-                 -- this is the index name that will be used in the first attempt
-                 -- this index name is shown in debug mode
-                 REGEXP_REPLACE (index_name, p_source_table, p_table, 1, 0, 'i') idx_rename,
-                    -- if idx_rename already exists, then we will try to rename the index to something generic
+         (SELECT
+                    -- if idx_rename already exists (constructed below), then we will try to rename the index to something generic
                     -- this name will only be used when an exception is raised
                     -- this index is shown in debug mode
                     p_table
                  || '_'
-                 || CASE
-                       -- decide what to name the new index based on info about it
-                    WHEN index_type = 'BITMAP'
-                          THEN 'BMI'
-                       WHEN uniqueness = 'UNIQUE'
-                          THEN 'UK'
-                       ELSE 'IK'
-                    END
-                 || ROWNUM idx_e_rename,
+                 || idx_e_ext
+                 -- rank function gives us the index number by specific index extension (formulated below)
+                 || RANK () OVER (PARTITION BY idx_e_ext ORDER BY index_name) idx_e_rename,
+                 index_ddl,
+                 table_owner,
+                 table_name,
+                 owner,
+                 index_name,
+                 idx_rename,
                  partitioned,
                  uniqueness,
-                 index_type,
-                 ROWNUM
-            FROM all_indexes
-           -- use a CASE'd regular expression to determine whether to include global indexes
-          WHERE  REGEXP_LIKE (partitioned, CASE l_global
-                                 WHEN 'TRUE'
-                                    THEN '.'
-                                 ELSE 'YES'
-                              END, 'i')
-             AND table_name = UPPER (p_source_table)
-             AND table_owner = UPPER (p_source_owner)
-             -- use an NVL'd regular expression to determine whether a single index is worked on
-             AND REGEXP_LIKE (index_name, NVL (p_index_regexp, '.'), 'i')
-             AND REGEXP_LIKE (index_type, '^' || NVL (p_index_type, '.'), 'i'))
+                 index_type
+            FROM (SELECT    REGEXP_REPLACE
+                               
+                               -- dbms_metadata pulls the metadata for the source object out of the dictionary
+                            (   DBMS_METADATA.get_ddl ('INDEX', index_name, owner),
+                                CASE
+                                   -- target is not partitioned and no tablespace provided
+                                WHEN l_targ_part = 'NO' AND p_tablespace IS NULL
+                                      -- remove all partitioning and the local keyword
+                                THEN '(\(\s*partition.+\))|local'
+                                   -- target is not partitioned but tablespace is provided
+                                WHEN l_targ_part = 'NO' AND p_tablespace IS NOT NULL
+                                      -- strip out partitioned info and local keyword and tablespace clause
+                                THEN '(\(\s*partition.+\))|local|(tablespace)\s*[^ ]+'
+                                   -- target is partitioned and tablespace is provided
+                                WHEN l_targ_part = 'YES' AND p_tablespace IS NOT NULL
+                                      -- strip out partitioned info keeping local keyword and remove tablespace clause
+                                THEN '(\(\s*partition.+\))|(tablespace)\s*[^ ]+'
+                                   ELSE NULL
+                                END,
+                                NULL,
+                                1,
+                                0,
+                                'in')
+                         || CASE
+                               -- if tablespace is provided, tack it on the end
+                            WHEN p_tablespace IS NOT NULL
+                                  THEN ' TABLESPACE ' || p_tablespace
+                               ELSE NULL
+                            END index_ddl,
+                         table_owner,
+                         table_name,
+                         owner,
+                         index_name,
+                         -- this is the index name that will be used in the first attempt
+                         -- this index name is shown in debug mode
+                         REGEXP_REPLACE (index_name, p_source_table, p_table, 1, 0, 'i') idx_rename,
+                            p_table
+                         || '_'
+                         || CASE
+                               -- devise generic index extensions for the different types
+                            WHEN index_type = 'BITMAP'
+                                  THEN 'BMI'
+                               WHEN REGEXP_LIKE (index_type, '^function', 'i')
+                                  THEN 'FNC'
+                               WHEN uniqueness = 'UNIQUE'
+                                  THEN 'UK'
+                               ELSE 'IK'
+                            END idx_e_ext,
+                         partitioned,
+                         uniqueness,
+                         index_type
+                    FROM all_indexes
+                   -- use a CASE'd regular expression to determine whether to include global indexes
+                  WHERE  REGEXP_LIKE (partitioned, CASE l_global
+                                         WHEN 'TRUE'
+                                            THEN '.'
+                                         ELSE 'YES'
+                                      END, 'i')
+                     AND table_name = UPPER (p_source_table)
+                     AND table_owner = UPPER (p_source_owner)
+                     -- use an NVL'd regular expression to determine specific indexes to work on
+                     AND REGEXP_LIKE (index_name, NVL (p_index_regexp, '.'), 'i')
+                     -- use an NVL'd regular expression to determine the index types to worked on
+                     AND REGEXP_LIKE (index_type, '^' || NVL (p_index_type, '.'), 'i')))
       LOOP
          IF p_debug
          THEN
@@ -132,7 +153,7 @@ AS
 
          l_rows := TRUE;
          o_app.set_action ('Format index DDL');
-              -- replace the source table name with the target table name
+         -- replace the source table name with the target table name
          -- if a " is found, then use it... otherwise don't
          l_ddl :=
             REGEXP_REPLACE (c_indexes.index_ddl,
@@ -185,7 +206,15 @@ AS
       THEN
          o_app.log_msg ('No matching indexes found on ' || l_src_name);
       ELSE
-         o_app.log_msg (l_idx_cnt || ' index'||CASE WHEN l_idx_cnt>1 THEN 'es' ELSE null END||' built on ' || l_tab_name);
+         o_app.log_msg (   l_idx_cnt
+                        || ' index'
+                        || CASE
+                              WHEN l_idx_cnt > 1
+                                 THEN 'es'
+                              ELSE NULL
+                           END
+                        || ' built on '
+                        || l_tab_name);
       END IF;
 
       o_app.clear_app_info;
@@ -231,7 +260,9 @@ AS
    BEGIN
       -- execute immediate doesn't like ";" on the end
       DBMS_METADATA.set_transform_param (DBMS_METADATA.session_transform, 'SQLTERMINATOR', FALSE);
-      -- indexes are already built, so just need to enable constraints
+      -- determine whether information about segments is included
+      -- for unique and primary key constraints, these are linked to an index
+      -- with segment_attributes true, the USING INDEX and other information will be included
       DBMS_METADATA.set_transform_param (DBMS_METADATA.session_transform,
                                          'SEGMENT_ATTRIBUTES',
                                          CASE
@@ -240,6 +271,7 @@ AS
                                             ELSE FALSE
                                          END);
 
+      -- need this to determine how to build constraints associated with indexes on target table
       SELECT partitioned
         INTO l_targ_part
         FROM dba_tables
@@ -249,75 +281,87 @@ AS
       o_app.log_msg ('Adding constraints on ' || l_tab_name);
 
       FOR c_constraints IN
-         (SELECT REGEXP_REPLACE
-                    (REGEXP_REPLACE
-                        (DBMS_METADATA.get_ddl (CASE constraint_type
-                                                   WHEN 'R'
-                                                      THEN 'REF_CONSTRAINT'
-                                                   ELSE 'CONSTRAINT'
-                                                END,
-                                                constraint_name,
-                                                owner),
-                         CASE
-                            -- target is not partitioned and no tablespace provided
-                         WHEN l_targ_part = 'NO' AND p_tablespace IS NULL
-                               -- remove all partitioning and the local keyword
-                         THEN '(\(\s*partition.+\))|local'
-                            -- target is not partitioned but tablespace is provided
-                         WHEN l_targ_part = 'NO' AND p_tablespace IS NOT NULL
-                               -- strip out partitioned, local keyword and tablespace clause
-                         THEN '(\(\s*partition.+\))|local|(tablespace)\s*[^ ]+'
-                            -- target is partitioned and tablespace is provided
-                         WHEN l_targ_part = 'YES' AND p_tablespace IS NOT NULL
-                               -- strip out partitioning, keep local keyword and remove tablespace clause
-                         THEN '(\(\s*partition.+\))|(tablespace)\s*[^ ]+'
-                            ELSE NULL
-                         END,
-                         NULL,
-                         1,
-                         0,
-                         'in'),
-                     
-                     -- TABLESPACE clause cannot come after the ENABLE|DISABLE keyword, so I need to place it before
-                     '(\s+)(enable|disable)(\s*)$',
-                     CASE
-                        -- if tablespace is provided, tack it on the end
-                     WHEN l_seg_attributes = 'TRUE'
-                     AND p_tablespace IS NOT NULL
-                     AND constraint_type IN ('P', 'U')
-                           THEN '\1TABLESPACE ' || p_tablespace || '\1\2'
-                        ELSE '\1\2\3'
-                     END,
-                     1,
-                     0,
-                     'i') constraint_ddl,
-                 owner,
-                 constraint_name,
-                 constraint_type,
-                 index_owner,
-                 index_name,
-                 -- this is the constraint name used with the first attempt
-                 -- this can be seen in debug mode
-                 REGEXP_REPLACE (constraint_name, p_source_table, p_table, 1, 0, 'i') con_rename,
-                    -- this is the constraint name used if CON_RENAME already exists
+         (SELECT
+                    -- this is the constraint name used if CON_RENAME (formulated below) already exists
                     -- this is only used in the case of an exception
                     -- this can be seen in debug mode
                     p_table
                  || '_'
-                 || CASE constraint_type
-                       -- decide what to name the new constraint based on info about it
-                    WHEN 'R'
-                          THEN 'F'
-                       ELSE constraint_type
-                    END
-                 || 'K'
-                 || ROWNUM con_e_rename,
-                 ROWNUM
-            FROM dba_constraints
-           WHERE table_name = UPPER (p_source_table)
-             AND owner = UPPER (p_source_owner)
-             AND REGEXP_LIKE (constraint_name, NVL (p_constraint_regexp, '.'), 'i')
-             AND REGEXP_LIKE (constraint_type, NVL (p_constraint_type, '.'), 'i'))
+                 || con_e_ext
+                 -- the rank function gives us a unique number to use for each index with a specific extension
+                 -- gives us something like UK1 or UK2
+                 || RANK () OVER (PARTITION BY con_e_ext ORDER BY constraint_name) con_e_rename,
+                 constraint_ddl,
+                 owner,
+                 constraint_name,
+                 con_rename,
+                 constraint_type,
+                 index_owner,
+                 index_name
+            FROM (SELECT REGEXP_REPLACE
+                            (REGEXP_REPLACE
+                                
+                                -- different DBMS_METADATA function is used for referential integrity constraints
+                             (   DBMS_METADATA.get_ddl (CASE constraint_type
+                                                           WHEN 'R'
+                                                              THEN 'REF_CONSTRAINT'
+                                                           ELSE 'CONSTRAINT'
+                                                        END,
+                                                        constraint_name,
+                                                        owner),
+                                 CASE
+                                    -- target is not partitioned and no tablespace provided
+                                 WHEN l_targ_part = 'NO' AND p_tablespace IS NULL
+                                       -- remove all partitioning and the local keyword
+                                 THEN '(\(\s*partition.+\))|local'
+                                    -- target is not partitioned but tablespace is provided
+                                 WHEN l_targ_part = 'NO' AND p_tablespace IS NOT NULL
+                                       -- strip out partitioned, local keyword and tablespace clause
+                                 THEN '(\(\s*partition.+\))|local|(tablespace)\s*[^ ]+'
+                                    -- target is partitioned and tablespace is provided
+                                 WHEN l_targ_part = 'YES' AND p_tablespace IS NOT NULL
+                                       -- strip out partitioning, keep local keyword and remove tablespace clause
+                                 THEN '(\(\s*partition.+\))|(tablespace)\s*[^ ]+'
+                                    ELSE NULL
+                                 END,
+                                 NULL,
+                                 1,
+                                 0,
+                                 'in'),
+                             
+                             -- TABLESPACE clause cannot come after the ENABLE|DISABLE keyword, so I need to place it before
+                             '(\s+)(enable|disable)(\s*)$',
+                             CASE
+                                -- if tablespace is provided, tack it on the end
+                             WHEN l_seg_attributes = 'TRUE'
+                             AND p_tablespace IS NOT NULL
+                             AND constraint_type IN ('P', 'U')
+                                   THEN '\1TABLESPACE ' || p_tablespace || '\1\2'
+                                ELSE '\1\2\3'
+                             END,
+                             1,
+                             0,
+                             'i') constraint_ddl,
+                         owner,
+                         constraint_name,
+                         constraint_type,
+                         index_owner,
+                         index_name,
+                         -- this is the constraint name used with the first attempt
+                         -- this can be seen in debug mode
+                         REGEXP_REPLACE (constraint_name, p_source_table, p_table, 1, 0, 'i')
+                                                                                         con_rename,
+                         CASE constraint_type
+                            -- devise a specific constraint extention based on information about it
+                         WHEN 'R'
+                               THEN 'F'
+                            ELSE constraint_type || 'K'
+                         END con_e_ext
+                    FROM dba_constraints
+                   WHERE table_name = UPPER (p_source_table)
+                     AND owner = UPPER (p_source_owner)
+                     AND REGEXP_LIKE (constraint_name, NVL (p_constraint_regexp, '.'), 'i')
+                     AND REGEXP_LIKE (constraint_type, NVL (p_constraint_type, '.'), 'i')))
       LOOP
          -- catch empty cursor sets
          l_rows := TRUE;
@@ -390,7 +434,15 @@ AS
       THEN
          o_app.log_msg ('No matching constraints found on ' || l_src_name);
       ELSE
-         o_app.log_msg (l_con_cnt || ' constraint'||CASE WHEN l_con_cnt>1 THEN 's' ELSE null END||' built on ' || l_tab_name);
+         o_app.log_msg (   l_con_cnt
+                        || ' constraint'
+                        || CASE
+                              WHEN l_con_cnt > 1
+                                 THEN 's'
+                              ELSE NULL
+                           END
+                        || ' built on '
+                        || l_tab_name);
       END IF;
 
       o_app.clear_app_info;
@@ -417,28 +469,34 @@ AS
       FOR c_indexes IN (SELECT 'drop index ' || owner || '.' || index_name index_ddl,
                                index_name,
                                table_name,
-			       owner,
-			       owner||'.'||index_name full_index_name
+                               owner,
+                               owner || '.' || index_name full_index_name
                           FROM dba_indexes
                          WHERE table_name = UPPER (p_table)
                            AND table_owner = UPPER (p_owner)
                            AND REGEXP_LIKE (index_name, NVL (p_index_regexp, '.'), 'i')
                            AND REGEXP_LIKE (index_type, '^' || NVL (p_index_type, '.'), 'i'))
       LOOP
-         -- try to catch empty cursor sets
          l_rows := TRUE;
          coreutils.ddl_exec (c_indexes.index_ddl);
          l_idx_cnt := l_idx_cnt + 1;
-	 o_app.log_msg('Index '||c_indexes.index_name||' dropped');
+         o_app.log_msg ('Index ' || c_indexes.index_name || ' dropped');
       END LOOP;
-      
+
       IF NOT l_rows
       THEN
          o_app.log_msg ('No matching indexes found on ' || l_tab_name);
       ELSE
-	 o_app.log_msg (l_idx_cnt || ' index'||CASE WHEN l_idx_cnt>1 THEN 'es' ELSE null END||' dropped on ' || l_tab_name);
+         o_app.log_msg (   l_idx_cnt
+                        || ' index'
+                        || CASE
+                              WHEN l_idx_cnt > 1
+                                 THEN 'es'
+                              ELSE NULL
+                           END
+                        || ' dropped on '
+                        || l_tab_name);
       END IF;
-
 
       o_app.clear_app_info;
    END drop_indexes;
@@ -451,10 +509,10 @@ AS
       p_constraint_regexp   VARCHAR2 DEFAULT NULL,
       p_debug               BOOLEAN DEFAULT FALSE)
    IS
-      l_con_cnt   NUMBER := 0;
-      l_tab_name       VARCHAR2 (61)                 := p_owner || '.' || p_table;
-      l_rows      BOOLEAN         := FALSE;
-      o_app       applog      := applog (p_module      => 'dbflex.drop_constraints',
+      l_con_cnt    NUMBER        := 0;
+      l_tab_name   VARCHAR2 (61) := p_owner || '.' || p_table;
+      l_rows       BOOLEAN       := FALSE;
+      o_app        applog     := applog (p_module      => 'dbflex.drop_constraints',
                                          p_debug       => p_debug);
    BEGIN
       -- drop constraints
@@ -476,18 +534,24 @@ AS
          -- catch empty cursor sets
          l_rows := TRUE;
          coreutils.ddl_exec (c_constraints.constraint_ddl);
-	 l_con_cnt := l_con_cnt+1;
-	 o_app.log_msg('Constraint '||c_constraints.constraint_name||' dropped');
-
+         l_con_cnt := l_con_cnt + 1;
+         o_app.log_msg ('Constraint ' || c_constraints.constraint_name || ' dropped');
       END LOOP;
-      
+
       IF NOT l_rows
       THEN
          o_app.log_msg ('No matching constraints found on ' || l_tab_name);
       ELSE
-         o_app.log_msg (l_con_cnt || ' constraint'||CASE WHEN l_con_cnt>1 THEN 's' ELSE null END||' dropped on ' || l_tab_name);
+         o_app.log_msg (   l_con_cnt
+                        || ' constraint'
+                        || CASE
+                              WHEN l_con_cnt > 1
+                                 THEN 's'
+                              ELSE NULL
+                           END
+                        || ' dropped on '
+                        || l_tab_name);
       END IF;
-
 
       o_app.clear_app_info;
    END drop_constraints;
