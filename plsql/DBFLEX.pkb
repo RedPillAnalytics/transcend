@@ -185,7 +185,7 @@ AS
       THEN
          o_app.log_msg ('No matching indexes found on ' || l_src_name);
       ELSE
-         o_app.log_msg (l_idx_cnt || ' indexes built on ' || l_tab_name);
+         o_app.log_msg (l_idx_cnt || ' index'||CASE WHEN l_idx_cnt>1 THEN 'es' ELSE null END||' built on ' || l_tab_name);
       END IF;
 
       o_app.clear_app_info;
@@ -390,7 +390,7 @@ AS
       THEN
          o_app.log_msg ('No matching constraints found on ' || l_src_name);
       ELSE
-         o_app.log_msg (l_con_cnt || ' constraints built on ' || l_tab_name);
+         o_app.log_msg (l_con_cnt || ' constraint'||CASE WHEN l_con_cnt>1 THEN 's' ELSE null END||' built on ' || l_tab_name);
       END IF;
 
       o_app.clear_app_info;
@@ -405,32 +405,40 @@ AS
    PROCEDURE drop_indexes (
       p_owner          VARCHAR2,
       p_table          VARCHAR2,
+      p_index_type     VARCHAR2 DEFAULT NULL,
       p_index_regexp   VARCHAR2 DEFAULT NULL,
       p_debug          BOOLEAN DEFAULT FALSE)
    IS
-      l_ind_ddl   VARCHAR2 (2000);
-      l_rows      BOOLEAN         := FALSE;
-      l_sql       VARCHAR2 (2000);
-      o_app       applog          := applog (p_module      => 'dbflex.drop_indexes',
-                                             p_debug       => p_debug);
+      l_rows       BOOLEAN       := FALSE;
+      l_tab_name   VARCHAR2 (61) := p_owner || '.' || p_table;
+      l_idx_cnt    NUMBER        := 0;
+      o_app        applog        := applog (p_module => 'dbflex.drop_indexes', p_debug => p_debug);
    BEGIN
       FOR c_indexes IN (SELECT 'drop index ' || owner || '.' || index_name index_ddl,
                                index_name,
-                               table_name
+                               table_name,
+			       owner,
+			       owner||'.'||index_name full_index_name
                           FROM dba_indexes
                          WHERE table_name = UPPER (p_table)
-                           AND owner = UPPER (p_owner)
-                           AND REGEXP_LIKE (index_name, NVL (p_index_regexp, '.'), 'i'))
+                           AND table_owner = UPPER (p_owner)
+                           AND REGEXP_LIKE (index_name, NVL (p_index_regexp, '.'), 'i')
+                           AND REGEXP_LIKE (index_type, '^' || NVL (p_index_type, '.'), 'i'))
       LOOP
          -- try to catch empty cursor sets
          l_rows := TRUE;
          coreutils.ddl_exec (c_indexes.index_ddl);
+         l_idx_cnt := l_idx_cnt + 1;
+	 o_app.log_msg('Index '||c_indexes.index_name||' dropped');
       END LOOP;
-
+      
       IF NOT l_rows
       THEN
-         o_app.log_msg ('No matching indexes found on ' || p_owner || '.' || p_table);
+         o_app.log_msg ('No matching indexes found on ' || l_tab_name);
+      ELSE
+	 o_app.log_msg (l_idx_cnt || ' index'||CASE WHEN l_idx_cnt>1 THEN 'es' ELSE null END||' dropped on ' || l_tab_name);
       END IF;
+
 
       o_app.clear_app_info;
    END drop_indexes;
@@ -439,12 +447,13 @@ AS
    PROCEDURE drop_constraints (
       p_owner               VARCHAR2,
       p_table               VARCHAR2,
+      p_constraint_type     VARCHAR2 DEFAULT NULL,
       p_constraint_regexp   VARCHAR2 DEFAULT NULL,
       p_debug               BOOLEAN DEFAULT FALSE)
    IS
-      l_ind_ddl   VARCHAR2 (2000);
+      l_con_cnt   NUMBER := 0;
+      l_tab_name       VARCHAR2 (61)                 := p_owner || '.' || p_table;
       l_rows      BOOLEAN         := FALSE;
-      l_sql       VARCHAR2 (2000);
       o_app       applog      := applog (p_module      => 'dbflex.drop_constraints',
                                          p_debug       => p_debug);
    BEGIN
@@ -461,17 +470,24 @@ AS
                              WHERE table_name = UPPER (p_table)
                                AND owner = UPPER (p_owner)
                                AND REGEXP_LIKE (constraint_name, NVL (p_constraint_regexp, '.'),
-                                                'i'))
+                                                'i')
+                               AND REGEXP_LIKE (constraint_type, NVL (p_constraint_type, '.'), 'i'))
       LOOP
          -- catch empty cursor sets
          l_rows := TRUE;
          coreutils.ddl_exec (c_constraints.constraint_ddl);
-      END LOOP;
+	 l_con_cnt := l_con_cnt+1;
+	 o_app.log_msg('Constraint '||c_constraints.constraint_name||' dropped');
 
+      END LOOP;
+      
       IF NOT l_rows
       THEN
-         o_app.log_msg ('No matching constraints found on ' || p_owner || '.' || p_table);
+         o_app.log_msg ('No matching constraints found on ' || l_tab_name);
+      ELSE
+         o_app.log_msg (l_con_cnt || ' constraint'||CASE WHEN l_con_cnt>1 THEN 's' ELSE null END||' dropped on ' || l_tab_name);
       END IF;
+
 
       o_app.clear_app_info;
    END drop_constraints;
