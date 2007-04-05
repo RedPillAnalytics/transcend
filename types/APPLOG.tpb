@@ -9,6 +9,7 @@ AS
       RETURN SELF AS RESULT
    AS
    BEGIN
+      SELF.DEBUG_MODE (p_debug);
       -- get the session id
       session_id := SYS_CONTEXT ('USERENV', 'SESSIONID');
 
@@ -29,7 +30,7 @@ AS
                   ELSE get_package_name
                END;
       action := p_action;
-      run_mode := CASE p_debug
+      run_mode := CASE SELF.DEBUG_MODE
                     WHEN TRUE
                        THEN 'debug'
                     ELSE 'runtime'
