@@ -27,12 +27,14 @@ AS
    PROCEDURE drop_indexes (
       p_owner          VARCHAR2,
       p_table          VARCHAR2,
+      p_index_type     VARCHAR2 DEFAULT NULL,
       p_index_regexp   VARCHAR2 DEFAULT NULL,
       p_debug          BOOLEAN DEFAULT FALSE);
 
    PROCEDURE drop_constraints (
       p_owner               VARCHAR2,
       p_table               VARCHAR2,
+      p_constraint_type     VARCHAR2 DEFAULT NULL,
       p_constraint_regexp   VARCHAR2 DEFAULT NULL,
       p_debug               BOOLEAN DEFAULT FALSE);
 
