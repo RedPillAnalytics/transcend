@@ -13,17 +13,20 @@ AS
    -- if both the source and target are partitioned tables, then the index DDL is left alone
    -- if the source is partitioned and the target is not, then all local indexes are created as non-local
    -- if P_TABLESPACE is provided, then that tablespace name is used, regardless of the DDL that is pulled
-   PROCEDURE clone_indexes (
+   PROCEDURE build_indexes (
       p_source_owner   VARCHAR2,
       p_source_table   VARCHAR2,
-      p_target_owner   VARCHAR2,
-      p_target_table   VARCHAR2,
+      p_owner          VARCHAR2,
+      p_table          VARCHAR2,
       p_index_regexp   VARCHAR2 DEFAULT NULL,
       p_tablespace     VARCHAR2 DEFAULT NULL,
       p_global         BOOLEAN DEFAULT TRUE,
       p_debug          BOOLEAN DEFAULT FALSE)
    IS
       l_ddl            LONG;
+      l_idx_cnt        NUMBER                        := 0;
+      l_tab_name       VARCHAR2 (61)                 := p_owner || '.' || p_table;
+      l_src_name       VARCHAR2 (61)                 := p_source_owner || '.' || p_source_table;
       l_global         VARCHAR2 (5)                  := CASE p_global
          WHEN TRUE
             THEN 'TRUE'
@@ -35,7 +38,7 @@ AS
       PRAGMA EXCEPTION_INIT (e_dup_idx_name, -955);
       e_dup_col_list   EXCEPTION;
       PRAGMA EXCEPTION_INIT (e_dup_col_list, -1408);
-      o_app            applog    := applog (p_module      => 'dbflex.clone_indexes',
+      o_app            applog    := applog (p_module      => 'dbflex.build_indexes',
                                             p_debug       => p_debug);
    BEGIN
       -- execute immediate doesn't like ";" on the end
@@ -49,9 +52,9 @@ AS
       SELECT partitioned
         INTO l_targ_part
         FROM dba_tables
-       WHERE table_name = UPPER (p_target_table) AND owner = UPPER (p_target_owner);
+       WHERE table_name = UPPER (p_table) AND owner = UPPER (p_owner);
 
-      o_app.log_msg ('Building indexes on ' || p_target_owner || '.' || p_target_table);
+      o_app.log_msg ('Building indexes on ' || l_tab_name);
 
       -- create a cursor containing the DDL from the target indexes
       FOR c_indexes IN
@@ -82,9 +85,27 @@ AS
                           THEN ' TABLESPACE ' || p_tablespace
                        ELSE NULL
                     END index_ddl,
-                 table_owner table_name,
+                 table_owner,
+                 table_name,
                  owner,
                  index_name,
+                 -- this is the index name that will be used in the first attempt
+                 -- this index name is shown in debug mode
+                 REGEXP_REPLACE (index_name, p_source_table, p_table, 1, 0, 'i') idx_rename,
+                    -- if idx_rename already exists, then we will try to rename the index to something generic
+                    -- this name will only be used when an exception is raised
+                    -- this index is shown in debug mode
+                    p_table
+                 || '_'
+                 || CASE
+                       -- decide what to name the new index based on info about it
+                    WHEN index_type = 'BITMAP'
+                          THEN 'BMI'
+                       WHEN uniqueness = 'UNIQUE'
+                          THEN 'UK'
+                       ELSE 'IK'
+                    END
+                 || ROWNUM idx_e_rename,
                  partitioned,
                  uniqueness,
                  index_type,
@@ -101,6 +122,12 @@ AS
              -- use an NVL'd regular expression to determine whether a single index is worked on
              AND REGEXP_LIKE (index_name, NVL (p_index_regexp, '.'), 'i'))
       LOOP
+         IF p_debug
+         THEN
+            o_app.log_msg ('Renamed index: ' || c_indexes.idx_rename);
+            o_app.log_msg ('Exception renamed index: ' || c_indexes.idx_e_rename);
+         END IF;
+
          l_rows := TRUE;
          o_app.set_action ('Format index DDL');
               -- replace the source table name with the target table name
@@ -108,13 +135,13 @@ AS
          l_ddl :=
             REGEXP_REPLACE (c_indexes.index_ddl,
                             '(\."?)(' || p_source_table || ')(")?',
-                            '\1' || p_target_table || '\3');
+                            '\1' || p_table || '\3');
               -- replace the index owner with the target owner
          -- if a " is found, then use it... otherwise don't
          l_ddl :=
             REGEXP_REPLACE (l_ddl,
                             '(")?(' || c_indexes.owner || ')("?\.)',
-                            '\1' || p_target_owner || '\3',
+                            '\1' || p_owner || '\3',
                             1,
                             0,
                             'i');
@@ -126,6 +153,8 @@ AS
 
          BEGIN
             coreutils.ddl_exec (l_ddl, p_debug => p_debug);
+            o_app.log_msg ('Index ' || c_indexes.idx_rename || ' built');
+            l_idx_cnt := l_idx_cnt + 1;
          EXCEPTION
             -- if this index_name already exists, try to rename it to something else
             WHEN e_dup_idx_name
@@ -133,22 +162,12 @@ AS
                BEGIN
                   coreutils.ddl_exec (REGEXP_REPLACE (l_ddl,
                                                       '(\."?)(\w)+(")?( on)',
-                                                         '\1'
-                                                      || p_target_table
-                                                      || '_'
-                                                      || CASE
-                                                            -- decide what to name the new index based on info about it
-                                                         WHEN c_indexes.index_type = 'BITMAP'
-                                                               THEN 'BMI'
-                                                            WHEN c_indexes.uniqueness = 'UNIQUE'
-                                                               THEN 'UK'
-                                                            ELSE 'IK'
-                                                         END
-                                                      || c_indexes.ROWNUM
-                                                      || '\3 \4',
+                                                      '\1' || c_indexes.idx_e_rename || '\3 \4',
                                                       1,
                                                       0,
                                                       'i'));
+                  o_app.log_msg ('Index ' || c_indexes.idx_e_rename || ' built');
+                  l_idx_cnt := l_idx_cnt + 1;
                EXCEPTION
                   -- now the name is different, but check to see if the columns are already indexed
                   WHEN e_dup_col_list
@@ -162,10 +181,9 @@ AS
 
       IF NOT l_rows
       THEN
-         o_app.log_msg (   'No indexe matching parameters exists on '
-                        || p_source_owner
-                        || '.'
-                        || p_source_table);
+         o_app.log_msg ('No matching indexes found on ' || l_src_name);
+      ELSE
+         o_app.log_msg (l_idx_cnt || ' indexes built on ' || l_tab_name);
       END IF;
 
       o_app.clear_app_info;
@@ -174,14 +192,14 @@ AS
       THEN
          o_app.log_err;
          RAISE;
-   END clone_indexes;
+   END build_indexes;
 
    -- builds the constraints from one table on another
-   PROCEDURE clone_constraints (
+   PROCEDURE build_constraints (
       p_source_owner        VARCHAR2,
       p_source_table        VARCHAR2,
-      p_target_owner        VARCHAR2,
-      p_target_table        VARCHAR2,
+      p_owner               VARCHAR2,
+      p_table               VARCHAR2,
       p_constraint_regexp   VARCHAR2 DEFAULT NULL,
       p_seg_attributes      BOOLEAN DEFAULT FALSE,
       p_tablespace          VARCHAR2 DEFAULT NULL,
@@ -189,6 +207,9 @@ AS
    IS
       l_targ_part        dba_tables.partitioned%TYPE;
       l_ddl              LONG;
+      l_con_cnt          NUMBER                        := 0;
+      l_tab_name         VARCHAR2 (61)                 := p_owner || '.' || p_table;
+      l_src_name         VARCHAR2 (61)                 := p_source_owner || '.' || p_source_table;
       l_seg_attributes   VARCHAR2 (5)        := CASE p_seg_attributes
          WHEN TRUE
             THEN 'TRUE'
@@ -202,7 +223,7 @@ AS
       e_dup_pk           EXCEPTION;
       PRAGMA EXCEPTION_INIT (e_dup_pk, -2260);
       o_app              applog
-                             := applog (p_module      => 'dbflex.clone_constraints',
+                             := applog (p_module      => 'dbflex.build_constraints',
                                         p_debug       => p_debug);
    BEGIN
       -- execute immediate doesn't like ";" on the end
@@ -219,10 +240,10 @@ AS
       SELECT partitioned
         INTO l_targ_part
         FROM dba_tables
-       WHERE table_name = UPPER (p_target_table) AND owner = UPPER (p_target_owner);
+       WHERE table_name = UPPER (p_table) AND owner = UPPER (p_owner);
 
       o_app.set_action ('Build constraints');
-      o_app.log_msg ('Adding constraints on ' || p_target_owner || '.' || p_target_table);
+      o_app.log_msg ('Adding constraints on ' || l_tab_name);
 
       FOR c_constraints IN
          (SELECT REGEXP_REPLACE
@@ -272,6 +293,22 @@ AS
                  constraint_type,
                  index_owner,
                  index_name,
+                 -- this is the constraint name used with the first attempt
+                 -- this can be seen in debug mode
+                 REGEXP_REPLACE (constraint_name, p_source_table, p_table, 1, 0, 'i') con_rename,
+                    -- this is the constraint name used if CON_RENAME already exists
+                    -- this is only used in the case of an exception
+                    -- this can be seen in debug mode
+                    p_table
+                 || '_'
+                 || CASE constraint_type
+                       -- decide what to name the new constraint based on info about it
+                    WHEN 'R'
+                          THEN 'F'
+                       ELSE constraint_type
+                    END
+                 || 'K'
+                 || ROWNUM con_e_rename,
                  ROWNUM
             FROM dba_constraints
            WHERE table_name = UPPER (p_source_table)
@@ -280,11 +317,18 @@ AS
       LOOP
          -- catch empty cursor sets
          l_rows := TRUE;
+
+         IF p_debug
+         THEN
+            o_app.log_msg ('Renamed constraint: ' || c_constraints.con_rename);
+            o_app.log_msg ('Exception renamed constraint: ' || c_constraints.con_e_rename);
+         END IF;
+
          o_app.set_action ('Format constraint DDL');
          l_ddl :=
             REGEXP_REPLACE (c_constraints.constraint_ddl,
                             '\.' || p_source_table,
-                            '.' || p_target_table,
+                            '.' || p_table,
                             1,
                             0,
                             'i');
@@ -294,7 +338,7 @@ AS
          l_ddl :=
             REGEXP_REPLACE (c_constraints.constraint_ddl,
                             '(\."?|constraint "?)(' || p_source_table || ')(")?',
-                            '\1' || p_target_table || '\3',
+                            '\1' || p_table || '\3',
                             1,
                             0,
                             'i');
@@ -303,7 +347,7 @@ AS
          l_ddl :=
             REGEXP_REPLACE (l_ddl,
                             '(")?(' || p_source_owner || ')("?\.)',
-                            '\1' || p_target_owner || '\3',
+                            '\1' || p_owner || '\3',
                             1,
                             0,
                             'i');
@@ -315,51 +359,34 @@ AS
 
          BEGIN
             coreutils.ddl_exec (l_ddl, p_debug => p_debug);
+            o_app.log_msg ('Constraint ' || c_constraints.con_rename || ' built');
+            l_con_cnt := l_con_cnt + 1;
          EXCEPTION
             WHEN e_dup_pk
             THEN
-               o_app.log_msg (   'Primary key constraint '
-                              || c_constraints.constraint_name
-                              || ' already exists on table '
-                              || p_target_owner
-                              || '.'
-                              || p_target_table);
+               o_app.log_msg ('Primary key constraint already exists on table ' || l_tab_name);
             WHEN e_dup_not_null
             THEN
-               o_app.log_msg (   'Not null constraint '
-                              || c_constraints.constraint_name
-                              || ' already exists on table '
-                              || p_target_owner
-                              || '.'
-                              || p_target_table);
+               o_app.log_msg ('Referenced not null constraint already exists on table '
+                              || l_tab_name);
             WHEN e_dup_con_name
             THEN
                coreutils.ddl_exec (REGEXP_REPLACE (l_ddl,
                                                    '(constraint "?)(\w+)("?)',
-                                                      '\1'
-                                                   || p_target_table
-                                                   || '_'
-                                                   || CASE c_constraints.constraint_type
-                                                         -- decide what to name the new constraint based on info about it
-                                                      WHEN 'R'
-                                                            THEN 'F'
-                                                         ELSE c_constraints.constraint_type
-                                                      END
-                                                   || 'K'
-                                                   || c_constraints.ROWNUM
-                                                   || '\3 \4',
+                                                   '\1' || c_constraints.con_e_rename || '\3 \4',
                                                    1,
                                                    0,
                                                    'i'));
+               o_app.log_msg ('Constraint ' || c_constraints.con_e_rename || ' built');
+               l_con_cnt := l_con_cnt + 1;
          END;
       END LOOP;
 
       IF NOT l_rows
       THEN
-         o_app.log_msg (   'No constraint matching parameters exists on '
-                        || p_source_owner
-                        || '.'
-                        || p_source_table);
+         o_app.log_msg ('No matching constraints found on ' || l_src_name);
+      ELSE
+         o_app.log_msg (l_con_cnt || ' constraints built on ' || l_tab_name);
       END IF;
 
       o_app.clear_app_info;
@@ -368,88 +395,101 @@ AS
       THEN
          o_app.log_err;
          RAISE;
-   END clone_constraints;
+   END build_constraints;
 
    -- drop indexes and constraints from a table
-   PROCEDURE drop_indexes (p_owner VARCHAR2, p_table VARCHAR2, p_debug BOOLEAN DEFAULT FALSE)
+   PROCEDURE drop_indexes (
+      p_owner          VARCHAR2,
+      p_table          VARCHAR2,
+      p_index_regexp   VARCHAR2 DEFAULT NULL,
+      p_debug          BOOLEAN DEFAULT FALSE)
    IS
       l_ind_ddl   VARCHAR2 (2000);
       l_rows      BOOLEAN         := FALSE;
       l_sql       VARCHAR2 (2000);
-      o_app       applog          := applog (p_module      => 'DBFLEX.DROP_INDEXES',
+      o_app       applog          := applog (p_module      => 'dbflex.drop_indexes',
                                              p_debug       => p_debug);
    BEGIN
-      -- drop constraints
-      FOR l_constraints IN (SELECT constraint_name,
-                                   table_name
-                              FROM all_constraints
-                             WHERE table_name = p_table AND owner = p_owner
-                                   AND constraint_type <> 'C')
-      LOOP
-         -- catch empty cursor sets
-         l_rows := TRUE;
-         l_sql :=
-               'alter table '
-            || p_owner
-            || '.'
-            || l_constraints.table_name
-            || ' drop constraint '
-            || l_constraints.constraint_name;
-
-         IF p_debug
-         THEN
-            o_app.log_msg ('SQL: ' || l_sql);
-         ELSE
-            o_app.set_action ('Execute constraint DDL');
-
-            EXECUTE IMMEDIATE l_sql;
-         END IF;
-      END LOOP;
-
-      o_app.set_action ('Open cursor for indexes');
-      o_app.log_msg ('Dropping indexes on ' || p_table);
-
-      -- drop indexes
-      FOR l_indexes IN (SELECT index_name,
+      FOR c_indexes IN (SELECT 'drop index ' || owner || '.' || index_name index_ddl,
+                               index_name,
                                table_name
-                          FROM all_indexes
-                         WHERE table_name = p_table AND owner = p_owner)
+                          FROM dba_indexes
+                         WHERE table_name = UPPER (p_table)
+                           AND owner = UPPER (p_owner)
+                           AND REGEXP_LIKE (index_name, NVL (p_index_regexp, '.'), 'i'))
       LOOP
          -- try to catch empty cursor sets
          l_rows := TRUE;
-         l_sql := 'drop index ' || p_owner || '.' || l_indexes.index_name;
-
-         IF p_debug
-         THEN
-            o_app.log_msg ('SQL: ' || l_sql);
-         ELSE
-            o_app.set_action ('Execute index DDL');
-
-            EXECUTE IMMEDIATE l_sql;
-         END IF;
+         coreutils.ddl_exec (c_indexes.index_ddl);
       END LOOP;
+
+      IF NOT l_rows
+      THEN
+         o_app.log_msg ('No matching indexes found on ' || p_owner || '.' || p_table);
+      END IF;
 
       o_app.clear_app_info;
    END drop_indexes;
+
+   -- drop indexes and constraints from a table
+   PROCEDURE drop_constraints (
+      p_owner               VARCHAR2,
+      p_table               VARCHAR2,
+      p_constraint_regexp   VARCHAR2 DEFAULT NULL,
+      p_debug               BOOLEAN DEFAULT FALSE)
+   IS
+      l_ind_ddl   VARCHAR2 (2000);
+      l_rows      BOOLEAN         := FALSE;
+      l_sql       VARCHAR2 (2000);
+      o_app       applog      := applog (p_module      => 'dbflex.drop_constraints',
+                                         p_debug       => p_debug);
+   BEGIN
+      -- drop constraints
+      FOR c_constraints IN (SELECT    'alter table '
+                                   || owner
+                                   || '.'
+                                   || table_name
+                                   || ' drop constraint '
+                                   || constraint_name constraint_ddl,
+                                   constraint_name,
+                                   table_name
+                              FROM dba_constraints
+                             WHERE table_name = UPPER (p_table)
+                               AND owner = UPPER (p_owner)
+                               AND REGEXP_LIKE (constraint_name, NVL (p_constraint_regexp, '.'),
+                                                'i'))
+      LOOP
+         -- catch empty cursor sets
+         l_rows := TRUE;
+         coreutils.ddl_exec (c_constraints.constraint_ddl);
+      END LOOP;
+
+      IF NOT l_rows
+      THEN
+         o_app.log_msg ('No matching constraints found on ' || p_owner || '.' || p_table);
+      END IF;
+
+      o_app.clear_app_info;
+   END drop_constraints;
 
    -- structures an insert or insert append statement from the source to the target provided
    PROCEDURE load_tab (
       p_source_owner    VARCHAR2,
       p_source_object   VARCHAR2,
-      p_target_owner    VARCHAR2,
-      p_target_table    VARCHAR2,
+      p_owner           VARCHAR2,
+      p_table           VARCHAR2,
       p_trunc           BOOLEAN DEFAULT FALSE,
       p_direct          BOOLEAN DEFAULT TRUE)
    IS
       l_sqlstmt   VARCHAR2 (2000);
       l_object    all_objects.object_name%TYPE;
       l_table     all_tables.table_name%TYPE;
-      o_app       applog                         := applog (p_module => 'DBFLEX.LOAD_TAB');
+      o_app       applog                         := applog (p_module => 'dbflex.load_tab');
    BEGIN
       IF p_trunc
       THEN
          -- truncate the target table
-         trunc_tab (p_target_owner, p_target_table);
+         trunc_tab (p_owner, p_table);
       END IF;
 
       -- change the action back after calling trunc_tab
@@ -459,14 +499,14 @@ AS
                      || '.'
                      || p_source_object
                      || ' into '
-                     || p_target_owner
+                     || p_owner
                      || '.'
-                     || p_target_table);
+                     || p_table);
       l_sqlstmt :=
             'insert /*+ APPEND */ into '
-         || p_target_owner
+         || p_owner
          || '.'
-         || p_target_table
+         || p_table
          || ' select * from '
          || p_source_owner
          || '.'
@@ -491,8 +531,8 @@ AS
    PROCEDURE merge_tab (
       p_source_owner   VARCHAR2,
       p_source_table   VARCHAR2,
-      p_target_owner   VARCHAR2,
-      p_target_table   VARCHAR2,
+      p_owner          VARCHAR2,
+      p_table          VARCHAR2,
       p_direct         BOOLEAN DEFAULT TRUE)
    IS
       l_sqlstmt      VARCHAR2 (32000);
@@ -503,7 +543,7 @@ AS
       e_unique_key   EXCEPTION;
       PRAGMA EXCEPTION_INIT (e_unique_key, -936);
       o_app          applog
-                       := applog (p_module      => 'DBFLEX.MERGE_TAB',
+                       := applog (p_module      => 'dbflex.merge_tab',
                                   p_action      => 'Generate ON clause');
    BEGIN
       -- construct the "ON" clause for the MERGE statement
@@ -518,8 +558,8 @@ AS
                      MIN (dc.constraint_type) con_type
                 FROM all_cons_columns dcc JOIN all_constraints dc USING (constraint_name,
                                                                          table_name)
-               WHERE table_name = UPPER (p_target_table)
-                 AND dcc.owner = UPPER (p_target_owner)
+               WHERE table_name = UPPER (p_table)
+                 AND dcc.owner = UPPER (p_owner)
                  AND dc.constraint_type IN ('P', 'U'));
 
       o_app.set_action ('Generate UPDATE clause');
@@ -531,15 +571,15 @@ AS
         INTO l_update
         FROM (SELECT column_name
                 FROM all_tab_columns
-               WHERE table_name = UPPER (p_target_table) AND owner = UPPER (p_target_owner)
+               WHERE table_name = UPPER (p_table) AND owner = UPPER (p_owner)
               MINUS
               SELECT column_name
                 FROM (SELECT   column_name,
                                MIN (dc.constraint_type) con_type
                           FROM all_cons_columns dcc JOIN all_constraints dc
                                USING (constraint_name, table_name)
-                         WHERE table_name = UPPER (p_target_table)
-                           AND dcc.owner = UPPER (p_target_owner)
+                         WHERE table_name = UPPER (p_table)
+                           AND dcc.owner = UPPER (p_owner)
                            AND dc.constraint_type IN ('P', 'U')
                       GROUP BY column_name));
 
@@ -550,7 +590,7 @@ AS
                                ',' || CHR (10)) LIST
           INTO l_insert
           FROM all_tab_columns
-         WHERE table_name = UPPER (p_target_table) AND owner = UPPER (p_target_owner)
+         WHERE table_name = UPPER (p_table) AND owner = UPPER (p_owner)
       ORDER BY column_name;
 
       o_app.set_action ('Generate VALUES clause');
@@ -559,9 +599,9 @@ AS
       -- put the entire statement together
       l_sqlstmt :=
             'MERGE INTO '
-         || p_target_owner
+         || p_owner
          || '.'
-         || p_target_table
+         || p_table
          || ' target using '
          || CHR (10)
          || '(select * from '
@@ -588,9 +628,9 @@ AS
                      || '.'
                      || p_source_table
                      || ' into '
-                     || p_target_owner
+                     || p_owner
                      || '.'
-                     || p_target_table);
+                     || p_table);
 
       -- if the insert won't be direct, then modify the ddl statement
       IF NOT p_direct
@@ -618,7 +658,7 @@ AS
    PROCEDURE regexp_load (
       p_source_owner   VARCHAR2,
       p_regexp         VARCHAR2,
-      p_target_owner   VARCHAR2 DEFAULT NULL,
+      p_owner          VARCHAR2 DEFAULT NULL,
       p_suf_re_rep     VARCHAR2 DEFAULT '?',
       p_merge          BOOLEAN DEFAULT FALSE,
       p_part_tabs      BOOLEAN DEFAULT TRUE,
@@ -631,7 +671,7 @@ AS
       l_rows             BOOLEAN                 := FALSE;
       e_data_cartridge   EXCEPTION;
       PRAGMA EXCEPTION_INIT (e_data_cartridge, -29913);
-      o_app              applog    := applog (p_module      => 'DBFLEX.LOAD_REGEXP',
+      o_app              applog    := applog (p_module      => 'dbflex.load_regexp',
                                               p_debug       => p_debug);
    BEGIN
       IF NOT p_debug
@@ -650,9 +690,9 @@ AS
                      || ' schema.'
                      || CHR (10));
 
-      IF p_target_owner IS NOT NULL
+      IF p_owner IS NOT NULL
       THEN
-         l_target_owner := p_target_owner;
+         l_target_owner := p_owner;
       END IF;
 
        -- determine whether partitioned tables will be allowed
@@ -812,8 +852,8 @@ AS
    PROCEDURE table_exchange (
       p_source_owner   VARCHAR2,
       p_source_table   VARCHAR2,
-      p_target_owner   VARCHAR2,
-      p_target_table   VARCHAR2,
+      p_owner          VARCHAR2,
+      p_table          VARCHAR2,
       p_partname       VARCHAR2 DEFAULT NULL,
       p_index_drop     BOOLEAN DEFAULT TRUE,
       p_stats          VARCHAR2 DEFAULT 'KEEP',
@@ -833,7 +873,7 @@ AS
       l_cachehit       NUMBER;
       e_no_stats       EXCEPTION;
       PRAGMA EXCEPTION_INIT (e_no_stats, -20000);
-      o_app            applog   := applog (p_module      => 'DBFLEX.EXCHANGE_TABLE',
+      o_app            applog   := applog (p_module      => 'dbflex.exchange_table',
                                            p_debug       => p_debug);
    BEGIN
       IF NOT p_debug
@@ -843,9 +883,9 @@ AS
                         || '.'
                         || p_source_table
                         || ' for '
-                        || p_target_owner
+                        || p_owner
                         || '.'
-                        || p_target_table
+                        || p_table
                         || CHR (10));
       END IF;
 
@@ -860,13 +900,11 @@ AS
             SELECT partition_name
               INTO l_partname
               FROM all_tab_partitions
-             WHERE table_name = p_target_table
-               AND table_owner = p_target_owner
-               AND partition_position IN (
-                                  SELECT MAX (partition_position)
-                                    FROM all_tab_partitions
-                                   WHERE table_name = p_target_table
-                                         AND table_owner = p_target_owner);
+             WHERE table_name = p_table
+               AND table_owner = p_owner
+               AND partition_position IN (SELECT MAX (partition_position)
+                                            FROM all_tab_partitions
+                                           WHERE table_name = p_table AND table_owner = p_owner);
          EXCEPTION
             WHEN NO_DATA_FOUND
             THEN
@@ -886,8 +924,8 @@ AS
                   -- just use the table level statistics for the new partition now
                   -- the automatic stats collection will gather new stats later
                   o_app.set_action ('Transfer table stats to new partition');
-                  DBMS_STATS.get_table_stats (p_target_owner,
-                                              p_target_table,
+                  DBMS_STATS.get_table_stats (p_owner,
+                                              p_table,
                                               l_partname,
                                               numrows        => l_numrows,
                                               numblks        => l_numblks,
@@ -918,9 +956,9 @@ AS
             THEN
                -- if no stats existed on the target table, then generate new stats
                o_app.log_msg (   'No stats existed on '
-                              || p_target_owner
+                              || p_owner
                               || '.'
-                              || p_target_table
+                              || p_table
                               || '... gathered new stats');
                DBMS_STATS.gather_table_stats (p_source_owner,
                                               p_source_table,
@@ -931,17 +969,17 @@ AS
       END IF;
 
       -- build the indexes on the stage table just like the target table
-      clone_indexes (p_target_owner      => p_target_owner,
-                     p_target_table      => p_target_table,
+      build_indexes (p_owner             => p_owner,
+                     p_table             => p_table,
                      p_source_owner      => p_source_owner,
                      p_source_table      => p_source_table,
                      p_debug             => p_debug);
       o_app.set_action ('Exchange table');
       l_sql :=
             'alter table '
-         || p_target_owner
+         || p_owner
          || '.'
-         || p_target_table
+         || p_table
          || ' exchange partition '
          || l_partname
          || ' with table '
@@ -958,7 +996,7 @@ AS
             -- exchange in the partitions
             EXECUTE IMMEDIATE l_sql;
 
-            o_app.log_msg (p_source_table || ' exchanged for ' || p_target_table);
+            o_app.log_msg (p_source_table || ' exchanged for ' || p_table);
          END IF;
       -- need to drop indexes on the temp partitions if an exception occurs in this block
       -- this is for restartability
@@ -967,7 +1005,8 @@ AS
          THEN
             o_app.log_err;
             o_app.log_msg ('Dropping indexes because of exception');
-            drop_indexes (p_source_owner, p_source_table, p_debug);
+            drop_indexes (p_owner      => p_source_owner, p_table => p_source_table,
+                          p_debug      => p_debug);
             -- re-raise the originial exception
             RAISE;
       END;
@@ -975,7 +1014,7 @@ AS
       -- drop the indexes on the stage table
       IF p_index_drop
       THEN
-         drop_indexes (p_source_owner, p_source_table, p_debug);
+         drop_indexes (p_owner => p_source_owner, p_table => p_source_table, p_debug => p_debug);
       END IF;
 
       o_app.clear_app_info;
@@ -991,7 +1030,7 @@ AS
    PROCEDURE regexp_exchange (
       p_source_owner   VARCHAR2,
       p_regexp         VARCHAR2,
-      p_target_owner   VARCHAR2 DEFAULT NULL,
+      p_owner          VARCHAR2 DEFAULT NULL,
       p_suf_re_rep     VARCHAR2 DEFAULT '?',
       p_partname       VARCHAR2 DEFAULT NULL,
       p_index_drop     BOOLEAN DEFAULT TRUE,
@@ -1005,7 +1044,7 @@ AS
       l_rows           BOOLEAN                                  := FALSE;
       l_partname       all_tab_partitions.partition_name%TYPE;
       l_sql            VARCHAR2 (2000);
-      o_app            applog  := applog (p_module      => 'DBFLEX.EXCHANGE_REGEXP',
+      o_app            applog  := applog (p_module      => 'dbflex.exchange_regexp',
                                           p_debug       => p_debug);
    BEGIN
       IF NOT p_debug
@@ -1016,9 +1055,9 @@ AS
                         || CHR (10));
       END IF;
 
-      IF p_target_owner IS NOT NULL
+      IF p_owner IS NOT NULL
       THEN
-         l_target_owner := p_target_owner;
+         l_target_owner := p_owner;
       END IF;
 
       o_app.set_action ('Open cursor of tables');
@@ -1090,7 +1129,7 @@ AS
       l_ddl           VARCHAR2 (2000);
       l_cnt           NUMBER                         := 0;
       l_partitioned   all_indexes.partitioned%TYPE;
-      o_app           applog  := applog (p_module      => 'DBFLEX.UNUSABLE_INDEXES',
+      o_app           applog  := applog (p_module      => 'dbflex.unusable_indexes',
                                          p_debug       => p_debug);
    BEGIN
       o_app.set_action ('Test to see if the table is partitioned');
@@ -1211,25 +1250,25 @@ AS
    -- The simpliest way to find which magic numbers make this function work is to
    -- do a partition exchange on the target table and trace that statement.
    PROCEDURE unusable_idx_src (
-      p_owner        VARCHAR2,                          -- owner of table for the indexes to work on
-      p_table        VARCHAR2,                                    -- table to operate on indexes for
-      p_src_owner    VARCHAR2 DEFAULT NULL,
+      p_owner           VARCHAR2,                       -- owner of table for the indexes to work on
+      p_table           VARCHAR2,                                 -- table to operate on indexes for
+      p_source_owner    VARCHAR2 DEFAULT NULL,
       -- owner of the object to use to evaluate indexes to make unusable
-      p_src_obj      VARCHAR2 DEFAULT NULL,
+      p_source_object   VARCHAR2 DEFAULT NULL,
       -- object to use to look for partitions to make unusable
-      p_src_col      VARCHAR2 DEFAULT NULL,
+      p_source_column   VARCHAR2 DEFAULT NULL,
       -- column to use to base comparision... defaults to partitioned column
-      p_index_type   VARCHAR2 DEFAULT NULL,
-      p_global       BOOLEAN DEFAULT FALSE,
-      p_d_num        NUMBER DEFAULT 0,          -- first "magic" number in the undocumented function
-      p_p_num        NUMBER DEFAULT 65535,     -- second "magic" number in the undocumented function
-      p_debug        BOOLEAN DEFAULT FALSE)
+      p_index_type      VARCHAR2 DEFAULT NULL,
+      p_global          BOOLEAN DEFAULT FALSE,
+      p_d_num           NUMBER DEFAULT 0,       -- first "magic" number in the undocumented function
+      p_p_num           NUMBER DEFAULT 65535,  -- second "magic" number in the undocumented function
+      p_debug           BOOLEAN DEFAULT FALSE)
    IS
       l_ddl         VARCHAR2 (2000);
       l_dyn_ddl     VARCHAR2 (2000);
       l_src_owner   all_tables.owner%TYPE
-                                       := NVL (p_src_owner, REGEXP_REPLACE (p_owner, 'DW$', 'STG'));
-      l_src_obj     all_objects.object_name%TYPE            := NVL (p_src_obj, p_table || '_STG');
+                                    := NVL (p_source_owner, REGEXP_REPLACE (p_owner, 'DW$', 'STG'));
+      l_src_obj     all_objects.object_name%TYPE        := NVL (p_source_object, p_table || '_STG');
       -- to catch empty cursors
       l_rows        BOOLEAN                                 := FALSE;
       l_src_col     all_part_key_columns.column_name%TYPE;
@@ -1240,17 +1279,17 @@ AS
          INDEX BY BINARY_INTEGER;
 
       tt_parts      parts_ttyp;
-      o_app         applog    := applog (p_module      => 'DBFLEX.UNUSABLE_IDX_SRC',
+      o_app         applog    := applog (p_module      => 'dbflex.unusable_idx_src',
                                          p_debug       => p_debug);
    BEGIN
-      IF p_src_col IS NULL
+      IF p_source_column IS NULL
       THEN
          SELECT column_name
            INTO l_src_col
            FROM all_part_key_columns
           WHERE NAME = UPPER (p_table) AND owner = UPPER (p_owner);
       ELSE
-         l_src_col := p_src_col;
+         l_src_col := p_source_column;
       END IF;
 
       o_app.log_msg (   'Evaluating '
@@ -1323,7 +1362,7 @@ AS
       l_rows   BOOLEAN         := FALSE;                                  -- to catch empty cursors
       l_cnt    NUMBER          := 0;
       o_app    applog
-         := applog (p_module      => 'DBFLEX.USABLE_INDEXES',
+         := applog (p_module      => 'dbflex.usable_indexes',
                     p_action      => 'Rebuild indexes',
                     p_debug       => p_debug);
    BEGIN
