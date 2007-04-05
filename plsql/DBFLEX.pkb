@@ -132,9 +132,8 @@ AS
             THEN
                BEGIN
                   coreutils.ddl_exec (REGEXP_REPLACE (l_ddl,
-                                                      '\..+ ON',
-                                                         '.'
-                                                      || p_target_table
+                                                      '(\."?)(\w+)(")?( on)',
+                                                         '\1'
                                                       || '_'
                                                       || CASE
                                                             -- decide what to name the new index based on info about it
@@ -145,7 +144,7 @@ AS
                                                             ELSE 'IK'
                                                          END
                                                       || c_indexes.ROWNUM
-                                                      || ' ON'));
+                                                      || '\3 \4'));
                EXCEPTION
                   -- now the name is different, but check to see if the columns are already indexed
                   WHEN e_dup_col_list
@@ -184,10 +183,22 @@ AS
       p_tablespace          VARCHAR2 DEFAULT NULL,
       p_debug               BOOLEAN DEFAULT FALSE)
    IS
-      l_targ_part   dba_tables.partitioned%TYPE;
-      l_ddl         LONG;
-      l_rows        BOOLEAN                       := FALSE;
-      o_app         applog   := applog (p_module      => 'dbflex.clone_constraints',
+      l_targ_part        dba_tables.partitioned%TYPE;
+      l_ddl              LONG;
+      l_seg_attributes   VARCHAR2 (5)        := CASE p_seg_attributes
+         WHEN TRUE
+            THEN 'TRUE'
+         ELSE 'FALSE'
+      END;
+      l_rows             BOOLEAN                       := FALSE;
+      e_dup_con_name     EXCEPTION;
+      PRAGMA EXCEPTION_INIT (e_dup_con_name, -2264);
+      e_dup_not_null     EXCEPTION;
+      PRAGMA EXCEPTION_INIT (e_dup_not_null, -1442);
+      e_dup_pk           EXCEPTION;
+      PRAGMA EXCEPTION_INIT (e_dup_pk, -2260);
+      o_app              applog
+                             := applog (p_module      => 'dbflex.clone_constraints',
                                         p_debug       => p_debug);
    BEGIN
       -- execute immediate doesn't like ";" on the end
@@ -210,44 +221,54 @@ AS
       o_app.log_msg ('Adding constraints on ' || p_target_owner || '.' || p_target_table);
 
       FOR c_constraints IN
-         (SELECT    REGEXP_REPLACE
-                       (DBMS_METADATA.get_ddl (CASE constraint_type
-                                                  WHEN 'R'
-                                                     THEN 'REF_CONSTRAINT'
-                                                  ELSE 'CONSTRAINT'
-                                               END,
-                                               constraint_name,
-                                               owner),
-                        CASE
-                           -- target is not partitioned and no tablespace provided
-                        WHEN l_targ_part = 'NO' AND p_tablespace IS NULL
-                              -- remove all partitioning and the local keyword
-                        THEN '(\(\s*partition.+\))|local'
-                           -- target is not partitioned but tablespace is provided
-                        WHEN l_targ_part = 'NO' AND p_tablespace IS NOT NULL
-                              -- strip out partitioned, local keyword and tablespace clause
-                        THEN '(\(\s*partition.+\))|local|(tablespace)\s*[^ ]+'
-                           -- target is partitioned and tablespace is provided
-                        WHEN l_targ_part = 'YES' AND p_tablespace IS NOT NULL
-                              -- strip out partitioning, keep local keyword and remove tablespace clause
-                        THEN '(\(\s*partition.+\))|(tablespace)\s*[^ ]+'
-                           ELSE NULL
-                        END,
-                        NULL,
-                        1,
-                        0,
-                        'in')
-                 || CASE
-                       -- if tablespace is provided, tack it on the end
-                    WHEN p_tablespace IS NOT NULL
-                          THEN ' TABLESPACE ' || p_tablespace
-                       ELSE NULL
-                    END constraint_ddl,
+         (SELECT REGEXP_REPLACE
+                    (REGEXP_REPLACE
+                        (DBMS_METADATA.get_ddl (CASE constraint_type
+                                                   WHEN 'R'
+                                                      THEN 'REF_CONSTRAINT'
+                                                   ELSE 'CONSTRAINT'
+                                                END,
+                                                constraint_name,
+                                                owner),
+                         CASE
+                            -- target is not partitioned and no tablespace provided
+                         WHEN l_targ_part = 'NO' AND p_tablespace IS NULL
+                               -- remove all partitioning and the local keyword
+                         THEN '(\(\s*partition.+\))|local'
+                            -- target is not partitioned but tablespace is provided
+                         WHEN l_targ_part = 'NO' AND p_tablespace IS NOT NULL
+                               -- strip out partitioned, local keyword and tablespace clause
+                         THEN '(\(\s*partition.+\))|local|(tablespace)\s*[^ ]+'
+                            -- target is partitioned and tablespace is provided
+                         WHEN l_targ_part = 'YES' AND p_tablespace IS NOT NULL
+                               -- strip out partitioning, keep local keyword and remove tablespace clause
+                         THEN '(\(\s*partition.+\))|(tablespace)\s*[^ ]+'
+                            ELSE NULL
+                         END,
+                         NULL,
+                         1,
+                         0,
+                         'in'),
+                     
+                     -- TABLESPACE clause cannot come after the ENABLE|DISABLE keyword, so I need to place it before
+                     '(\s+)(enable|disable)(\s*)$',
+                     CASE
+                        -- if tablespace is provided, tack it on the end
+                     WHEN l_seg_attributes = 'TRUE'
+                     AND p_tablespace IS NOT NULL
+                     AND constraint_type IN ('P', 'U')
+                           THEN '\1TABLESPACE ' || p_tablespace || '\1\2'
+                        ELSE '\1\2\3'
+                     END,
+                     1,
+                     0,
+                     'i') constraint_ddl,
                  owner,
                  constraint_name,
                  constraint_type,
                  index_owner,
-                 index_name
+                 index_name,
+                 ROWNUM
             FROM dba_constraints
            WHERE table_name = UPPER (p_source_table)
              AND owner = UPPER (p_source_owner)
@@ -263,12 +284,16 @@ AS
                             1,
                             0,
                             'i');
-         -- replace the source table name with the target table name
-         -- if a " is found, then use it... otherwise don't
+              -- replace the source table name with the target table name
+              -- if a " is found, then use it... otherwise don't
+         -- replace table name inside the constraint name as well
          l_ddl :=
             REGEXP_REPLACE (c_constraints.constraint_ddl,
-                            '(\."?)(' || p_source_table || ')(")?',
-                            '\1' || p_target_table || '\3');
+                            '(\."?|constraint "?)(' || p_source_table || ')(")?',
+                            '\1' || p_target_table || '\3',
+                            1,
+                            0,
+                            'i');
          -- replace the source owner with the target owner
          -- if a " is found, then use it... otherwise don't
          l_ddl :=
@@ -283,7 +308,46 @@ AS
          -- and for looks, remove the last carriage return
          l_ddl := REGEXP_REPLACE (l_ddl, '[[:space:]]*$', NULL);
          o_app.set_action ('Execute constraint DDL');
-         coreutils.ddl_exec (l_ddl, p_debug => p_debug);
+
+         BEGIN
+            coreutils.ddl_exec (l_ddl, p_debug => p_debug);
+         EXCEPTION
+            WHEN e_dup_pk
+            THEN
+               o_app.log_msg (   'Primary key constraint '
+                              || c_constraints.constraint_name
+                              || ' already exists on table '
+                              || p_target_owner
+                              || '.'
+                              || p_target_table);
+            WHEN e_dup_not_null
+            THEN
+               o_app.log_msg (   'Not null constraint '
+                              || c_constraints.constraint_name
+                              || ' already exists on table '
+                              || p_target_owner
+                              || '.'
+                              || p_target_table);
+            WHEN e_dup_con_name
+            THEN
+               coreutils.ddl_exec (REGEXP_REPLACE (l_ddl,
+                                                   '(constraint "?)(\w+)("?)',
+                                                      '\1'
+                                                   || p_target_table
+                                                   || '_'
+                                                   || CASE c_constraints.constraint_type
+                                                         -- decide what to name the new constraint based on info about it
+                                                      WHEN 'R'
+                                                            THEN 'F'
+                                                         ELSE c_constraints.constraint_type
+                                                      END
+                                                   || 'K'
+                                                   || c_constraints.ROWNUM
+                                                   || '\3 \4',
+                                                   1,
+                                                   0,
+                                                   'i'));
+         END;
       END LOOP;
 
       IF NOT l_rows
