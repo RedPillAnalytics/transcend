@@ -4,18 +4,36 @@ AS
       p_action        VARCHAR2 DEFAULT 'Begin module',
       p_module        VARCHAR2 DEFAULT NULL,
       p_client_info   VARCHAR2 DEFAULT NULL,
-      p_register      BOOLEAN DEFAULT TRUE,
-      p_debug         BOOLEAN DEFAULT FALSE)
+      p_runmode       VARCHAR2 DEFAULT NULL)
       RETURN SELF AS RESULT
    AS
    BEGIN
-      SELF.DEBUG_MODE (p_debug);
       -- get the session id
       session_id := SYS_CONTEXT ('USERENV', 'SESSIONID');
+      -- first we need to populate the module attribute, because it helps us determine parameter values
+      module := CASE
+                  WHEN p_module IS NOT NULL
+                     THEN p_module
+                  ELSE get_package_name
+               END;
+      -- we also set the action, which may be used one day to fine tune parameters
+      action := p_action;
+      -- now we can use the MODULE attribute to get parameters
+      -- if this is null (unprovided), then the module or system parameter is pulled (in that order)
+      -- the get_value_vchr function handles the hierarchy
+      runmode := NVL (p_runmode, get_value_vchr ('runmode'));
+      -- get the registration value for this module
+      registration := get_value_vchr ('registration');
+      -- get the logging level
+      logging_level := CASE self.is_debugmode
+                         WHEN TRUE
+                            THEN 5
+                         ELSE get_value_num ('logging_level')
+                      END;
 
-      IF p_register
+      -- if we are registering, then we need to save the old values
+      IF SELF.is_registered
       THEN
-         register_mode;
          -- read previous app_info settings
          -- if not registering with oracle, then this is not necessary
          DBMS_APPLICATION_INFO.read_client_info (prev_client_info);
@@ -24,17 +42,6 @@ AS
 
       -- populate attributes with new app_info settings
       client_info := NVL (p_client_info, prev_client_info);
-      module := CASE
-                  WHEN p_module IS NOT NULL
-                     THEN p_module
-                  ELSE get_package_name
-               END;
-      action := p_action;
-      run_mode := CASE SELF.DEBUG_MODE
-                    WHEN TRUE
-                       THEN 'debug'
-                    ELSE 'runtime'
-                 END;
       -- set other attributes
       instance_name := SYS_CONTEXT ('USERENV', 'INSTANCE_NAME');
       dbuser := SYS_CONTEXT ('USERENV', 'SESSION_USER');
@@ -43,9 +50,9 @@ AS
                 SYS_CONTEXT ('USERENV', 'HOST') || '[' || SYS_CONTEXT ('USERENV', 'IP_ADDRESS')
                 || ']';
 
-      -- register the application with oracle
-      IF register_mode
+      IF SELF.is_registered
       THEN
+         -- now set the new values
          DBMS_APPLICATION_INFO.set_client_info (client_info);
          DBMS_APPLICATION_INFO.set_module (module, action);
       END IF;
@@ -96,7 +103,7 @@ AS
    BEGIN
       action := p_action;
 
-      IF register_mode
+      IF is_registered
       THEN
          DBMS_APPLICATION_INFO.set_action (p_action);
       END IF;
@@ -104,7 +111,7 @@ AS
    MEMBER PROCEDURE clear_app_info
    AS
    BEGIN
-      IF register_mode
+      IF is_registered
       THEN
          DBMS_APPLICATION_INFO.set_client_info (prev_client_info);
          DBMS_APPLICATION_INFO.set_module (prev_module, prev_action);
@@ -116,7 +123,7 @@ AS
          RAISE;
    END clear_app_info;
    -- used to write a standard message to the LOG_TABLE
-   MEMBER PROCEDURE log_msg (p_msg VARCHAR2)
+   MEMBER PROCEDURE log_msg (p_msg VARCHAR2, p_level NUMBER DEFAULT 2)
    -- P_MSG is simply the text that will be written to the LOG_TABLE
    AS
       PRAGMA AUTONOMOUS_TRANSACTION;
@@ -141,51 +148,55 @@ AS
       SELECT current_scn
         INTO l_scn
         FROM v$database;
+      
+      IF logging_level >= p_level
+      THEN
 
-      -- write the record to the log table
-      INSERT INTO log_table
-                  (msg,
-                   client_info,
-                   module,
-                   action,
-                   run_mode,
-                   session_id,
-                   current_scn,
-                   instance_name,
-                   machine,
-                   dbuser,
-                   osuser,
-                   code,
-                   call_stack,
-                   back_trace)
-           VALUES (l_msg,
-                   NVL (SELF.client_info, 'Not Set'),
-                   NVL (SELF.module, 'Not Set'),
-                   NVL (SELF.action, 'Not Set'),
-                   SELF.run_mode,
-                   SELF.session_id,
-                   l_scn,
-                   SELF.instance_name,
-                   SELF.machine,
-                   SELF.dbuser,
-                   SELF.osuser,
-                   l_code,
-                   l_whence,
-                   REGEXP_REPLACE (SUBSTR (DBMS_UTILITY.format_error_backtrace, 1, 4000),
-                                   '[[:cntrl:]]',
-                                   '; '));
+	 -- write the record to the log table
+	 INSERT INTO log_table
+                (msg,
+                  client_info,
+                  module,
+                  action,
+                  runmode,
+                  session_id,
+                  current_scn,
+                  instance_name,
+                  machine,
+                  dbuser,
+                  osuser,
+                  code,
+                  call_stack,
+                  back_trace)
+		VALUES (l_msg,
+			 NVL (SELF.client_info, 'Not Set'),
+			 NVL (SELF.module, 'Not Set'),
+			 NVL (SELF.action, 'Not Set'),
+			 SELF.runmode,
+			 SELF.session_id,
+			 l_scn,
+			 SELF.instance_name,
+			 SELF.machine,
+			 SELF.dbuser,
+			 SELF.osuser,
+			 l_code,
+			 l_whence,
+			 REGEXP_REPLACE (SUBSTR (DBMS_UTILITY.format_error_backtrace, 1, 4000),
+					  '[[:cntrl:]]',
+					  '; '));
 
-      COMMIT;
-      -- also output the message to the screen
-      -- the client can control whether or not they want to see this
-      -- in sqlplus, just SET SERVEROUTPUT ON or OFF
-      DBMS_OUTPUT.put_line (p_msg);
+	 COMMIT;
+	 -- also output the message to the screen
+	 -- the client can control whether or not they want to see this
+	 -- in sqlplus, just SET SERVEROUTPUT ON or OFF
+	 DBMS_OUTPUT.put_line (p_msg);
+      END IF;
    END log_msg;
    MEMBER PROCEDURE log_err
    AS
       l_msg   VARCHAR2 (1020) DEFAULT SQLERRM;
    BEGIN
-      log_msg (l_msg);
+      log_msg (l_msg, 1);
    EXCEPTION
       WHEN OTHERS
       THEN
@@ -237,6 +248,18 @@ AS
       THEN
          log_err;
    END log_cnt;
+   -- method for returning boolean if the application is registered
+   MEMBER FUNCTION is_registered
+      RETURN BOOLEAN
+   AS
+   BEGIN
+      RETURN CASE registration
+         WHEN 'register'
+            THEN TRUE
+         ELSE FALSE
+      END;
+   END is_registered;
+   -- GET method for pulling an error code out of the ERR_CD table
    MEMBER FUNCTION get_err_cd (p_name VARCHAR2)
       RETURN NUMBER
    AS
@@ -249,6 +272,7 @@ AS
 
       RETURN l_code;
    END get_err_cd;
+   -- GET method for pulling error text out of the ERR_CD table
    MEMBER FUNCTION get_err_msg (p_name VARCHAR2)
       RETURN VARCHAR2
    AS
@@ -261,26 +285,47 @@ AS
 
       RETURN l_msg;
    END get_err_msg;
-   -- GET method for DEBUG mode
-   MEMBER FUNCTION register_mode
-      RETURN BOOLEAN
+   MEMBER FUNCTION get_value_vchr (p_name VARCHAR2)
+      RETURN VARCHAR2
    AS
+      l_value   parameter_conf.VALUE%TYPE;
    BEGIN
-      RETURN CASE REGISTER
-         WHEN 'Y'
-            THEN TRUE
-         ELSE FALSE
-      END;
-   END register_mode;
-   -- SET method for DEBUG mode
-   MEMBER PROCEDURE register_mode (p_register BOOLEAN DEFAULT TRUE)
+      SELECT VALUE
+        INTO l_value
+        FROM parameter_conf
+       WHERE NAME = p_name AND module = SELF.module;
+
+      RETURN l_value;
+   EXCEPTION
+      WHEN NO_DATA_FOUND
+      THEN
+         SELECT VALUE
+           INTO l_value
+           FROM parameter_conf
+          WHERE NAME = p_name AND module = 'system';
+
+         RETURN l_value;
+   END get_value_vchr;
+   MEMBER FUNCTION get_value_num (p_name VARCHAR2)
+      RETURN NUMBER
    AS
+      l_value   parameter_conf.VALUE%TYPE;
    BEGIN
-      REGISTER := CASE p_register
-                    WHEN TRUE
-                       THEN 'Y'
-                    ELSE 'F'
-                 END;
-   END register_mode;
+      SELECT VALUE
+        INTO l_value
+        FROM parameter_conf
+       WHERE NAME = p_name AND module = SELF.module;
+
+      RETURN TO_NUMBER (l_value);
+   EXCEPTION
+      WHEN NO_DATA_FOUND
+      THEN
+         SELECT VALUE
+           INTO l_value
+           FROM parameter_conf
+          WHERE NAME = p_name AND module = 'system';
+
+         RETURN TO_NUMBER (l_value);
+   END get_value_num;
 END;
 /
