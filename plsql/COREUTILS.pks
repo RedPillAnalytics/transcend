@@ -52,7 +52,16 @@ AS
    FUNCTION get_dir_name (p_dir_path VARCHAR2)
       RETURN VARCHAR2;
 
+   FUNCTION get_err_cd (p_name VARCHAR2)
+      RETURN NUMBER;
+
+   FUNCTION get_err_msg (p_name VARCHAR2)
+      RETURN VARCHAR2;
+
    FUNCTION table_exists (p_owner VARCHAR2, p_table VARCHAR2)
+      RETURN BOOLEAN;
+
+   FUNCTION is_part_table (p_owner VARCHAR2, p_table VARCHAR2)
       RETURN BOOLEAN;
 
    FUNCTION object_exists (p_owner VARCHAR2, p_object VARCHAR2)
@@ -60,6 +69,9 @@ AS
 
    FUNCTION is_true (p_parm VARCHAR2)
       RETURN BOOLEAN;
+
+   FUNCTION get_yn_ind (p_parm VARCHAR2)
+      RETURN VARCHAR2;
 
    FUNCTION get_numlines (
       p_dirname    IN   VARCHAR2,
