@@ -77,6 +77,7 @@ AS
                  idx_rename,
                  partitioned,
                  uniqueness,
+                 idx_e_ext,
                  index_type
             FROM (SELECT    REGEXP_REPLACE
                                
@@ -114,18 +115,16 @@ AS
                          -- this is the index name that will be used in the first attempt
                          -- this index name is shown in debug mode
                          REGEXP_REPLACE (index_name, p_source_table, p_table, 1, 0, 'i') idx_rename,
-                            p_table
-                         || '_'
-                         || CASE
-                               -- devise generic index extensions for the different types
-                            WHEN index_type = 'BITMAP'
-                                  THEN 'BMI'
-                               WHEN REGEXP_LIKE (index_type, '^function', 'i')
-                                  THEN 'FNC'
-                               WHEN uniqueness = 'UNIQUE'
-                                  THEN 'UK'
-                               ELSE 'IK'
-                            END idx_e_ext,
+                         CASE
+                            -- devise generic index extensions for the different types
+                         WHEN index_type = 'BITMAP'
+                               THEN 'BMI'
+                            WHEN REGEXP_LIKE (index_type, '^function', 'i')
+                               THEN 'FNC'
+                            WHEN uniqueness = 'UNIQUE'
+                               THEN 'UK'
+                            ELSE 'IK'
+                         END idx_e_ext,
                          partitioned,
                          uniqueness,
                          index_type
@@ -147,6 +146,7 @@ AS
                      -- use an NVL'd regular expression to determine the index types to worked on
                      AND REGEXP_LIKE (index_type, '^' || NVL (p_index_type, '.'), 'i')))
       LOOP
+         o_app.log_msg ('Source index: ' || c_indexes.index_name, 4);
          o_app.log_msg ('Renamed index: ' || c_indexes.idx_rename, 4);
          o_app.log_msg ('Exception renamed index: ' || c_indexes.idx_e_rename, 4);
          l_rows := TRUE;
@@ -458,6 +458,8 @@ AS
       o_app        applog     := applog (p_module       => 'dbflex.drop_indexes',
                                          p_runmode      => p_runmode);
    BEGIN
+      o_app.log_msg ('Dropping indexes on ' || l_tab_name);
+
       FOR c_indexes IN (SELECT 'drop index ' || owner || '.' || index_name index_ddl,
                                index_name,
                                table_name,
@@ -991,17 +993,18 @@ AS
 
    -- procedure to exchange a partitioned table with a non-partitioned table
    PROCEDURE exchange_partition (
-      p_source_owner   VARCHAR2,
-      p_source_table   VARCHAR2,
-      p_owner          VARCHAR2,
-      p_table          VARCHAR2,
-      p_partname       VARCHAR2 DEFAULT NULL,
-      p_index_drop     VARCHAR2 DEFAULT 'yes',
-      p_gather_stats   VARCHAR2 DEFAULT 'yes',
-      p_statpercent    NUMBER DEFAULT DBMS_STATS.auto_sample_size,
-      p_statdegree     NUMBER DEFAULT DBMS_STATS.auto_degree,
-      p_statmethod     VARCHAR2 DEFAULT DBMS_STATS.get_param ('method_opt'),
-      p_runmode        VARCHAR2 DEFAULT NULL)
+      p_source_owner     VARCHAR2,
+      p_source_table     VARCHAR2,
+      p_owner            VARCHAR2,
+      p_table            VARCHAR2,
+      p_partname         VARCHAR2 DEFAULT NULL,
+      p_idx_tablespace   VARCHAR2 DEFAULT NULL,
+      p_index_drop       VARCHAR2 DEFAULT 'yes',
+      p_gather_stats     VARCHAR2 DEFAULT 'yes',
+      p_statpercent      NUMBER DEFAULT DBMS_STATS.auto_sample_size,
+      p_statdegree       NUMBER DEFAULT DBMS_STATS.auto_degree,
+      p_statmethod       VARCHAR2 DEFAULT DBMS_STATS.get_param ('method_opt'),
+      p_runmode          VARCHAR2 DEFAULT NULL)
    IS
       l_src_name       VARCHAR2 (61)                     := p_source_owner || '.' || p_source_table;
       l_tab_name       VARCHAR2 (61)                            := p_owner || '.' || p_table;
@@ -1016,103 +1019,135 @@ AS
       l_cachehit       NUMBER;
       e_no_stats       EXCEPTION;
       PRAGMA EXCEPTION_INIT (e_no_stats, -20000);
+      e_compress       EXCEPTION;
+      PRAGMA EXCEPTION_INIT (e_compress, -14646);
       o_app            applog
                         := applog (p_module       => 'dbflex.exchange_partition',
                                    p_runmode      => p_runmode);
    BEGIN
       o_app.set_action ('Determine partition to use');
 
-      BEGIN
-         -- get the max partition and the partition position
-         SELECT partition_name
-           INTO l_partname
-           FROM all_tab_partitions
-          WHERE table_name = p_table
-            AND table_owner = p_owner
-            AND partition_position IN (SELECT MAX (partition_position)
-                                         FROM all_tab_partitions
-                                        WHERE table_name = p_table AND table_owner = p_owner);
-      EXCEPTION
-         WHEN NO_DATA_FOUND
-         THEN
-            raise_application_error (coreutils.get_err_cd ('no_max_part'),
-                                     coreutils.get_err_msg ('no_max_part'));
-      END;
+      -- error if the target table is not partitioned
+      IF NOT coreutils.is_part_table (p_owner, p_table)
+      THEN
+         raise_application_error (coreutils.get_err_cd ('not_partitioned'),
+                                  coreutils.get_err_msg ('not_partitioned' || ': ' || p_table));
+      END IF;
 
+      -- use either the value for P_PARTNAME or the max partition
+      SELECT NVL (UPPER (p_partname), partition_name)
+        INTO l_partname
+        FROM all_tab_partitions
+       WHERE table_name = UPPER (p_table)
+         AND table_owner = UPPER (p_owner)
+         AND partition_position IN (
+                                 SELECT MAX (partition_position)
+                                   FROM all_tab_partitions
+                                  WHERE table_name = UPPER (p_table)
+                                    AND table_owner = UPPER (p_owner));
+
+      -- either gather stats on the table prior to exchanging
+      -- or get the stats from the current partition and import it in for the table
       CASE
-         WHEN coreutils.is_true (p_gather_stats) AND NOT o_app.is_debugmode
+         WHEN coreutils.is_true (p_gather_stats)
          THEN
             o_app.set_action ('Gather stats on new partition');
-            DBMS_STATS.gather_table_stats (p_source_owner,
-                                           p_source_table,
-                                           estimate_percent      => p_statpercent,
-                                           DEGREE                => p_statdegree,
-                                           method_opt            => p_statmethod);
-            o_app.log_msg ('Statistics gathered on table ' || l_tab_name, 3);
-         WHEN NOT coreutils.is_true (p_gather_stats) AND NOT o_app.is_debugmode
+
+            IF NOT o_app.is_debugmode
+            THEN
+               DBMS_STATS.gather_table_stats (UPPER (p_source_owner),
+                                              UPPER (p_source_table),
+                                              estimate_percent      => p_statpercent,
+                                              DEGREE                => p_statdegree,
+                                              method_opt            => p_statmethod);
+            END IF;
+
+            o_app.log_msg ('Statistics gathered on table ' || l_src_name, 3);
+         WHEN NOT coreutils.is_true (p_gather_stats)
          THEN
-            BEGIN
-               -- if partition stats are not going to be gathered on the new schema,
-               -- keep the current stats of the partition
-               o_app.set_action ('Transfer stats');
-               DBMS_STATS.get_table_stats (p_owner,
-                                           p_table,
-                                           l_partname,
-                                           numrows        => l_numrows,
-                                           numblks        => l_numblks,
-                                           avgrlen        => l_avgrlen,
-                                           cachedblk      => l_cachedblk,
-                                           cachehit       => l_cachehit);
-               o_app.log_msg (   'Statistics exported from partition '
-                              || p_partname
-                              || ' of table '
-                              || l_src_name,
-                              3);
-               DBMS_STATS.set_table_stats (p_source_owner,
-                                           p_source_table,
-                                           numrows        => l_numrows,
-                                           numblks        => l_numblks,
-                                           avgrlen        => l_avgrlen,
-                                           cachedblk      => l_cachedblk,
-                                           cachehit       => l_cachehit);
-               o_app.log_msg ('Statistics imported into table ' || l_src_name, 3);
-            EXCEPTION
-               WHEN e_no_stats
-               THEN
-                  -- no stats existed on the target table
-                  -- just leave them blank
-                  o_app.log_msg ('No stats existed for partition ' || p_partname, 3);
-            END;
+            IF NOT o_app.is_debugmode
+            THEN
+               BEGIN
+                  -- if partition stats are not going to be gathered on the new schema,
+                  -- keep the current stats of the partition
+                  o_app.set_action ('Transfer stats');
+                  DBMS_STATS.get_table_stats (UPPER (p_owner),
+                                              UPPER (p_table),
+                                              l_partname,
+                                              numrows        => l_numrows,
+                                              numblks        => l_numblks,
+                                              avgrlen        => l_avgrlen,
+                                              cachedblk      => l_cachedblk,
+                                              cachehit       => l_cachehit);
+                  DBMS_STATS.set_table_stats (UPPER (p_source_owner),
+                                              UPPER (p_source_table),
+                                              numrows        => l_numrows,
+                                              numblks        => l_numblks,
+                                              avgrlen        => l_avgrlen,
+                                              cachedblk      => l_cachedblk,
+                                              cachehit       => l_cachehit);
+               EXCEPTION
+                  WHEN e_no_stats
+                  THEN
+                     -- no stats existed on the target table
+                     -- just leave them blank
+                     o_app.log_msg ('No stats existed for partition ' || p_partname, 3);
+               END;
+            END IF;
+
+            o_app.log_msg (   'Statistics transferred from partition '
+                           || l_partname
+                           || ' of table '
+                           || l_tab_name
+                           || ' to table '
+                           || l_src_name,
+                           3);
       END CASE;
 
       -- build the indexes on the stage table just like the target table
-      build_indexes (p_owner             => p_owner,
-                     p_table             => p_table,
-                     p_source_owner      => p_source_owner,
-                     p_source_table      => p_source_table,
+      build_indexes (p_owner             => p_source_owner,
+                     p_table             => p_source_table,
+                     p_source_owner      => p_owner,
+                     p_source_table      => p_table,
+                     p_part_type         => 'local',
+                     p_tablespace        => p_idx_tablespace,
                      p_runmode           => p_runmode);
       o_app.set_action ('Exchange table');
-      o_app.log_msg (   'Exchanging table '
-                     || l_src_name
-                     || ' for '
-                     || ' partition '
-                     || p_partname
-                     || ' of table '
-                     || l_tab_name,
-                     3);
-      coreutils.exec_auto (   'alter table '
-                           || p_owner
-                           || '.'
-                           || p_table
-                           || ' exchange partition '
+
+      BEGIN
+         coreutils.exec_auto (   'alter table '
+                              || l_tab_name
+                              || ' exchange partition '
+                              || l_partname
+                              || ' with table '
+                              || l_src_name
+                              || ' including indexes update global indexes',
+                              p_runmode);
+         o_app.log_msg (   l_src_name
+                        || ' exchanged for partition '
+                        || l_partname
+                        || ' of table '
+                        || l_tab_name);
+      EXCEPTION
+         WHEN e_compress
+         THEN
+            -- need to compress the staging table
+            coreutils.exec_auto ('alter table ' || l_src_name || ' move compress', p_runmode);
+            -- now, rerun the exchange
+            coreutils.exec_auto (   'alter table '
+                                 || l_tab_name
+                                 || ' exchange partition '
+                                 || l_partname
+                                 || ' with table '
+                                 || l_src_name
+                                 || ' including indexes update global indexes',
+                                 p_runmode);
+            o_app.log_msg (   l_src_name
+                           || ' exchanged for partition '
                            || l_partname
-                           || ' with table '
-                           || p_source_owner
-                           || '.'
-                           || p_source_table
-                           || ' including indexes update global indexes',
-                           p_runmode);
-      o_app.log_msg (p_source_table || ' exchanged for ' || p_table);
+                           || ' of table '
+                           || l_tab_name);
+      END;
 
       -- drop the indexes on the stage table
       IF coreutils.is_true (p_index_drop)
@@ -1120,6 +1155,7 @@ AS
          drop_indexes (p_owner        => p_source_owner, p_table => p_source_table,
                        p_runmode      => p_runmode);
       END IF;
+
       o_app.clear_app_info;
    EXCEPTION
       WHEN OTHERS
