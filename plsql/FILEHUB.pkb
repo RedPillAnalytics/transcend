@@ -36,15 +36,15 @@ IS
    PROCEDURE process (
       p_filehub_group   VARCHAR2,
       p_filehub_name    VARCHAR2 DEFAULT NULL,
-      p_keep_source     BOOLEAN DEFAULT FALSE,
-      p_debug           BOOLEAN DEFAULT FALSE)
+      p_keep_source     varchar2 DEFAULT 'no',
+      p_runmode         varchar2 DEFAULT null)
    IS
       l_rows           BOOLEAN                          := FALSE;         -- TO catch empty cursors
       l_filehub_type   filehub_conf.filehub_type%TYPE;
       o_extract        EXTRACT;
       o_feed           feed;
       o_app            applog     := applog (p_module      => 'FILEHUB.PROCESS_JOB',
-                                             p_debug       => p_debug);
+                                             p_runmode     => p_runmode);
    BEGIN
       FOR c_fh_conf IN (SELECT   filehub_id,
                                  filehub_type
@@ -62,7 +62,7 @@ IS
                  FROM extract_ot t
                 WHERE t.filehub_id = c_fh_conf.filehub_id;
 
-               o_extract.DEBUG_MODE (p_debug);
+         o_extract.runmode := p_runmode;
                o_extract.process;
             WHEN 'feed'
             THEN
@@ -71,7 +71,7 @@ IS
                  FROM feed_ot t
                 WHERE t.filehub_id = c_fh_conf.filehub_id;
 
-               o_feed.DEBUG_MODE (p_debug);
+         o_feed.runmode := p_runmode;
                o_feed.process (p_keep_source);
             ELSE
                NULL;

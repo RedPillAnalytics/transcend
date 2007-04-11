@@ -20,7 +20,7 @@ AS
       p_table               VARCHAR2,
       p_constraint_type     VARCHAR2 DEFAULT NULL,
       p_constraint_regexp   VARCHAR2 DEFAULT NULL,
-      p_seg_attributes      varchar2 DEFAULT 'no',
+      p_seg_attributes      VARCHAR2 DEFAULT 'no',
       p_tablespace          VARCHAR2 DEFAULT NULL,
       p_runmode             VARCHAR2 DEFAULT NULL);
 
@@ -38,42 +38,51 @@ AS
       p_constraint_regexp   VARCHAR2 DEFAULT NULL,
       p_runmode             VARCHAR2 DEFAULT NULL);
 
-   PROCEDURE load_tables (
-      p_source_owner   VARCHAR2,
-      p_regexp         VARCHAR2,
-      p_owner          VARCHAR2 DEFAULT NULL,
-      p_suf_re_rep     VARCHAR2 DEFAULT '?',
-      p_merge          BOOLEAN DEFAULT FALSE,
-      p_part_tabs      BOOLEAN DEFAULT TRUE,
-      p_trunc          BOOLEAN DEFAULT FALSE,
-      p_direct         BOOLEAN DEFAULT TRUE,
-      p_commit         BOOLEAN DEFAULT TRUE,
-      p_runmode        VARCHAR2 DEFAULT NULL);
+   PROCEDURE insert_table (
+      p_source_owner    VARCHAR2,
+      p_source_object   VARCHAR2,
+      p_owner           VARCHAR2,
+      p_table           VARCHAR2,
+      p_trunc           VARCHAR2 DEFAULT 'no',
+      p_direct          VARCHAR2 DEFAULT 'yes',
+      p_log_table       VARCHAR2 DEFAULT NULL,
+      p_reject_limit    VARCHAR2 DEFAULT 'unlimited',
+      p_runmode         VARCHAR2 DEFAULT NULL);
 
-   PROCEDURE table_exchange (
+   PROCEDURE merge_table (
+      p_source_owner    VARCHAR2,
+      p_source_object   VARCHAR2,
+      p_owner           VARCHAR2,
+      p_table           VARCHAR2,
+      p_columns         VARCHAR2 DEFAULT NULL,
+      p_direct          VARCHAR2 DEFAULT 'yes',
+      p_log_table       VARCHAR2 DEFAULT NULL,
+      p_reject_limit    VARCHAR2 DEFAULT 'unlimited',
+      p_runmode         VARCHAR2 DEFAULT 'no');
+
+   PROCEDURE load_tables (
+      p_source_owner    VARCHAR2,
+      p_source_regexp   VARCHAR2,
+      p_owner           VARCHAR2 DEFAULT NULL,
+      p_suffix          VARCHAR2 DEFAULT NULL,
+      p_merge           VARCHAR2 DEFAULT 'no',
+      p_part_tabs       VARCHAR2 DEFAULT 'yes',
+      p_trunc           VARCHAR2 DEFAULT 'no',
+      p_direct          VARCHAR2 DEFAULT 'yes',
+      p_commit          VARCHAR2 DEFAULT 'yes',
+      p_runmode         VARCHAR2 DEFAULT NULL);
+
+   PROCEDURE exchange_partition (
       p_source_owner   VARCHAR2,
       p_source_table   VARCHAR2,
       p_owner          VARCHAR2,
       p_table          VARCHAR2,
       p_partname       VARCHAR2 DEFAULT NULL,
-      p_index_drop     BOOLEAN DEFAULT TRUE,
-      p_stats          VARCHAR2 DEFAULT 'KEEP',
+      p_index_drop     VARCHAR2 DEFAULT 'yes',
+      p_gather_stats   VARCHAR2 DEFAULT 'yes',
       p_statpercent    NUMBER DEFAULT DBMS_STATS.auto_sample_size,
-      p_statdegree     NUMBER DEFAULT DBMS_STATS.default_degree,
-      p_statmo         VARCHAR2 DEFAULT 'FOR ALL COLUMNS SIZE AUTO',
-      p_runmode        VARCHAR2 DEFAULT NULL);
-
-   PROCEDURE regexp_exchange (
-      p_source_owner   VARCHAR2,
-      p_regexp         VARCHAR2,
-      p_owner          VARCHAR2 DEFAULT NULL,
-      p_suf_re_rep     VARCHAR2 DEFAULT '?',
-      p_partname       VARCHAR2 DEFAULT NULL,
-      p_index_drop     BOOLEAN DEFAULT TRUE,
-      p_stats          VARCHAR2 DEFAULT 'KEEP',
-      p_statpercent    NUMBER DEFAULT DBMS_STATS.auto_sample_size,
-      p_statdegree     NUMBER DEFAULT DBMS_STATS.default_degree,
-      p_statmo         VARCHAR2 DEFAULT 'FOR ALL COLUMNS SIZE AUTO',
+      p_statdegree     NUMBER DEFAULT DBMS_STATS.auto_degree,
+      p_statmethod     VARCHAR2 DEFAULT DBMS_STATS.get_param ('method_opt'),
       p_runmode        VARCHAR2 DEFAULT NULL);
 
    PROCEDURE unusable_indexes (

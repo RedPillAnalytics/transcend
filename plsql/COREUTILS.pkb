@@ -1,17 +1,17 @@
 CREATE OR REPLACE PACKAGE BODY tdinc.coreutils
 AS
    -- procedure executes the host_cmd function and raises an exception with the return code
-   PROCEDURE host_cmd (p_cmd VARCHAR2, p_stdin VARCHAR2 DEFAULT ' ', p_debug BOOLEAN DEFAULT FALSE)
+   PROCEDURE host_cmd (p_cmd VARCHAR2, p_stdin VARCHAR2 DEFAULT ' ', p_runmode VARCHAR2
+            DEFAULT NULL)
    AS
       l_retval   NUMBER;
-      o_app      applog := applog (p_module => 'COREUTILS.HOST_CMD');
+      o_app      applog := applog (p_module => 'coreutils.host_cmd');
    BEGIN
       DBMS_JAVA.set_output (1000000);
+      o_app.log_msg ('Host command: ' || p_cmd, 3);
 
-      IF p_debug
+      IF NOT o_app.is_debugmode
       THEN
-         o_app.log_msg ('Host command: ' || p_cmd);
-      ELSE
          l_retval := host_cmd (p_cmd, p_stdin);
 
          IF l_retval <> 0
@@ -31,17 +31,16 @@ AS
    END host_cmd;
 
    -- procedure executes the copy_file function and raises an exception with the return code
-   PROCEDURE copy_file (p_srcfile VARCHAR2, p_dstfile VARCHAR2, p_debug BOOLEAN DEFAULT FALSE)
+   PROCEDURE copy_file (p_srcfile VARCHAR2, p_dstfile VARCHAR2, p_runmode VARCHAR2 DEFAULT NULL)
    AS
       l_retval   NUMBER;
-      o_app      applog := applog (p_module => 'COREUTILS.COPY_FILE', p_debug => p_debug);
+      o_app      applog := applog (p_module => 'coreutils.copy_file', p_runmode => p_runmode);
    BEGIN
       DBMS_JAVA.set_output (1000000);
+      o_app.log_msg ('File ' || p_srcfile || ' would be copied to ' || p_dstfile, 3);
 
-      IF p_debug
+      IF NOT o_app.is_debugmode
       THEN
-         o_app.log_msg ('File ' || p_srcfile || ' would be copied to ' || p_dstfile);
-      ELSE
          l_retval := copy_file (p_srcfile, p_dstfile);
 
          IF l_retval <> 0
@@ -63,19 +62,18 @@ AS
    END copy_file;
 
    -- procedure executes the delete_file function and raises an exception with the return code
-   PROCEDURE delete_file (p_directory VARCHAR2, p_filename VARCHAR2, p_debug BOOLEAN DEFAULT FALSE)
+   PROCEDURE delete_file (p_directory VARCHAR2, p_filename VARCHAR2, p_runmode VARCHAR2 DEFAULT NULL)
    AS
       l_retval     NUMBER;
       l_filepath   VARCHAR2 (100);
-      o_app        applog       := applog (p_module      => 'COREUTILS.DELETE_FILE',
-                                           p_debug       => p_debug);
+      o_app        applog   := applog (p_module       => 'coreutils.delete_file',
+                                       p_runmode      => p_runmode);
    BEGIN
       l_filepath := coreutils.get_dir_path (p_directory) || '/' || p_filename;
+      o_app.log_msg ('File to delete: ' || l_filepath, 3);
 
-      IF p_debug
+      IF NOT o_app.is_debugmode
       THEN
-         o_app.log_msg ('File to delete: ' || l_filepath);
-      ELSE
          UTL_FILE.fremove (p_directory, p_filename);
       END IF;
 
@@ -91,7 +89,7 @@ AS
    END delete_file;
 
    -- procedure executes the create_file function and raises an exception with the return code
-   PROCEDURE create_file (p_directory VARCHAR2, p_filename VARCHAR2, p_debug BOOLEAN DEFAULT FALSE)
+   PROCEDURE create_file (p_directory VARCHAR2, p_filename VARCHAR2, p_runmode VARCHAR2 DEFAULT NULL)
    AS
       l_fh        UTL_FILE.file_type;
       l_dirpath   VARCHAR2 (100);
@@ -99,7 +97,7 @@ AS
    BEGIN
       l_dirpath := get_dir_path (p_directory) || '/' || p_filename;
 
-      IF p_debug
+      IF o_app.is_debugmode
       THEN
          o_app.log_msg ('File to create: ' || l_dirpath);
       ELSE
@@ -120,34 +118,50 @@ AS
 -- real development pieces should use APPLOG
    PROCEDURE log_msg (p_msg log_table.msg%TYPE)
    AS
-      o_app   applog := applog (p_action        => SYS_CONTEXT ('USERENV', 'ACTION'),
-                                p_register      => FALSE);
+      o_app   applog := applog (p_action => SYS_CONTEXT ('USERENV', 'ACTION'));
    BEGIN
       o_app.log_msg (p_msg);
    END log_msg;
 
-   PROCEDURE ddl_exec (
-      p_ddl         VARCHAR2,
-      p_debug_msg   VARCHAR2 DEFAULT 'DDL statememt: ',
-      p_debug       BOOLEAN DEFAULT FALSE)
+   PROCEDURE exec_auto (
+      p_ddl           VARCHAR2,
+      p_runmode       VARCHAR2 DEFAULT NULL,
+      p_runmode_msg   VARCHAR2 DEFAULT 'DDL: ')
    AS
       PRAGMA AUTONOMOUS_TRANSACTION;
-      o_app   applog := applog (p_module => 'COREUTILS.DDL_EXEC', p_debug => p_debug);
+      o_app   applog := applog (p_module => 'coreutils.exec_auto', p_runmode => p_runmode);
    BEGIN
-      IF p_debug
+      o_app.log_msg (p_runmode_msg || p_ddl, 3);
+
+      IF NOT o_app.is_debugmode
       THEN
-         o_app.log_msg (p_debug_msg || p_ddl);
-      ELSE
          EXECUTE IMMEDIATE p_ddl;
       END IF;
-   END ddl_exec;
+
+      COMMIT;
+   END exec_auto;
+
+   PROCEDURE exec_sql (
+      p_dml           VARCHAR2,
+      p_runmode       VARCHAR2 DEFAULT NULL,
+      p_runmode_msg   VARCHAR2 DEFAULT 'DML: ')
+   AS
+      o_app   applog := applog (p_module => 'coreutils.exec_sql', p_runmode => p_runmode);
+   BEGIN
+      o_app.log_msg (p_runmode_msg || p_dml, 3);
+
+      IF NOT o_app.is_debugmode
+      THEN
+         EXECUTE IMMEDIATE p_dml;
+      END IF;
+   END exec_sql;
 
    -- used to get the path associated with a directory location
    FUNCTION get_dir_path (p_dirname VARCHAR2)
       RETURN VARCHAR2
    AS
       l_path   all_directories.directory_path%TYPE;
-      o_app    applog                              := applog (p_module      => 'COREUTILS.GET_DIR_PATH');
+      o_app    applog                              := applog (p_module      => 'coreutils.get_dir_path');
    BEGIN
       SELECT directory_path
         INTO l_path
@@ -173,7 +187,7 @@ AS
       RETURN VARCHAR2
    AS
       l_dirname   all_directories.directory_name%TYPE;
-      o_app       applog                           := applog (p_module      => 'COREUTILS.GET_DIR_NAME');
+      o_app       applog                           := applog (p_module      => 'coreutils.get_dir_name');
    BEGIN
       SELECT directory_name
         INTO l_dirname
@@ -196,20 +210,111 @@ AS
          RAISE;
    END get_dir_name;
 
+   -- returns a boolean
+   -- does a check to see if a table exists
+   -- raises an error if it doesn't
+   FUNCTION table_exists (p_owner VARCHAR2, p_table VARCHAR2)
+      RETURN BOOLEAN
+   AS
+      l_table   dba_tables.table_name%TYPE;
+      o_app     applog                       := applog (p_module => 'coreutils.table_exists');
+   BEGIN
+      SELECT table_name
+        INTO l_table
+        FROM dba_tables
+       WHERE owner = UPPER (p_owner) AND table_name = UPPER (p_table);
+
+      o_app.clear_app_info;
+      RETURN TRUE;
+   EXCEPTION
+      WHEN NO_DATA_FOUND
+      THEN
+         o_app.clear_app_info;
+         RETURN FALSE;
+      WHEN OTHERS
+      THEN
+         o_app.log_err;
+         RAISE;
+   END table_exists;
+
+   -- returns a boolean
+   -- does a check to see if a object exists
+   -- raises an error if it doesn't
+   FUNCTION object_exists (p_owner VARCHAR2, p_object VARCHAR2)
+      RETURN BOOLEAN
+   AS
+      l_object   dba_objects.object_name%TYPE;
+      o_app      applog                         := applog (p_module => 'coreutils.object_exists');
+   BEGIN
+      SELECT DISTINCT object_name
+                 INTO l_object
+                 FROM dba_objects
+                WHERE owner = UPPER (p_owner) AND object_name = UPPER (p_object);
+
+      o_app.clear_app_info;
+      RETURN TRUE;
+   EXCEPTION
+      WHEN NO_DATA_FOUND
+      THEN
+         o_app.clear_app_info;
+         RETURN FALSE;
+      WHEN OTHERS
+      THEN
+         o_app.log_err;
+         RAISE;
+   END object_exists;
+
+   -- returns a boolean
+   -- accepts a varchar2 and determines if regexp matches 'yes' or 'no'
+   -- raises an error if it doesn't
+   FUNCTION is_true (p_parm VARCHAR2)
+      RETURN BOOLEAN
+   AS
+      l_object   dba_objects.object_name%TYPE;
+      o_app      applog                         := applog (p_module => 'coreutils.is_true');
+   BEGIN
+      -- use the load_tab or merge_tab procedure depending on P_MERGE
+      CASE
+         WHEN REGEXP_LIKE ('yes', p_parm, 'i')
+         THEN
+            o_app.clear_app_info;
+            RETURN TRUE;
+         WHEN REGEXP_LIKE ('no', p_parm, 'i')
+         THEN
+            o_app.clear_app_info;
+            RETURN FALSE;
+         ELSE
+            raise_application_error (o_app.get_err_cd ('unrecognized_parm'),
+                                     o_app.get_err_msg ('unrecognized_parm') || ' : ' || p_parm);
+      END CASE;
+
+      o_app.clear_app_info;
+      RETURN TRUE;
+   EXCEPTION
+      WHEN NO_DATA_FOUND
+      THEN
+         o_app.clear_app_info;
+         RETURN FALSE;
+      WHEN OTHERS
+      THEN
+         o_app.log_err;
+         RAISE;
+   END is_true;
+
    -- get the number of lines in a file
    FUNCTION get_numlines (
       p_dirname    IN   VARCHAR2,                                 -- this is a directory object name
       p_filename   IN   VARCHAR2,                                            -- the name of the file
-      p_debug           BOOLEAN DEFAULT FALSE)                                         -- debug mode
+      p_runmode         VARCHAR2 DEFAULT NULL)                                         -- debug mode
       RETURN NUMBER                                                               -- number of lines
    AS
       l_fh     UTL_FILE.file_type;
       l_line   VARCHAR2 (2000);
       l_cnt    NUMBER             := 0;
-      o_app    applog          := applog (p_module      => 'coreutils.get_numlines',
-                                          p_debug       => p_debug);
+      o_app    applog      := applog (p_module       => 'coreutils.get_numlines',
+                                      p_runmode      => p_runmode);
    BEGIN
-      IF p_debug
+      IF o_app.is_debugmode
       THEN
          o_app.log_msg (o_app.module || ' returning 0 because of DEBUG mode');
          RETURN 0;
@@ -239,7 +344,7 @@ AS
    -- a function used to unzip a file regardless of which library was used to zip it
    -- currently contains functionality for the following libraries: gzip, zip, compress, and bzip2
    -- function returns what the name should be after the unzip process
-   FUNCTION unzip_file (p_dirpath VARCHAR2, p_filename VARCHAR2, p_debug BOOLEAN DEFAULT FALSE)
+   FUNCTION unzip_file (p_dirpath VARCHAR2, p_filename VARCHAR2, p_runmode VARCHAR2 DEFAULT NULL)
       RETURN VARCHAR2
    AS
       l_compressed     BOOLEAN        := TRUE;
@@ -252,8 +357,9 @@ AS
       l_file_exists    BOOLEAN;
       l_file_size      NUMBER;
       l_blocksize      NUMBER;
-      o_app            applog    := applog (p_module      => 'COREUTILS.UNZIP_FILE',
-                                            p_debug       => p_debug);
+      o_app            applog
+                             := applog (p_module       => 'coreutils.unzip_file',
+                                        p_runmode      => p_runmode);
    BEGIN
       l_filebase := REGEXP_REPLACE (p_filename, '\.[^\.]+$', NULL, 1, 1, 'i');
       l_filesuf := REGEXP_SUBSTR (p_filename, '[^\.]+$');
@@ -262,16 +368,16 @@ AS
       CASE l_filesuf
          WHEN 'gz'
          THEN
-            host_cmd ('gzip -df ' || l_filepath, p_debug => p_debug);
+            host_cmd ('gzip -df ' || l_filepath, p_runmode => p_runmode);
          WHEN 'Z'
          THEN
-            host_cmd ('uncompress ' || l_filepath, p_debug => p_debug);
+            host_cmd ('uncompress ' || l_filepath, p_runmode => p_runmode);
          WHEN 'bz2'
          THEN
-            host_cmd ('bunzip2 ' || l_filepath, p_debug => p_debug);
+            host_cmd ('bunzip2 ' || l_filepath, p_runmode => p_runmode);
          WHEN 'zip'
          THEN
-            host_cmd ('unzip ' || l_filepath, p_debug => p_debug);
+            host_cmd ('unzip ' || l_filepath, p_runmode => p_runmode);
          ELSE
             -- this is the only case where the file wasn't compressed
             l_compressed := FALSE;
@@ -286,7 +392,7 @@ AS
          l_return := l_filepath;
       END IF;
 
-      IF p_debug
+      IF o_app.is_debugmode
       THEN
          o_app.log_msg ('File returned by UNZIP_FILE: ' || l_return);
       ELSE
@@ -321,7 +427,7 @@ AS
       p_dirpath      VARCHAR2,
       p_filename     VARCHAR2,
       p_passphrase   VARCHAR2,
-      p_debug        BOOLEAN DEFAULT FALSE)
+      p_runmode      VARCHAR2 DEFAULT NULL)
       RETURN VARCHAR2
    AS
       l_encrypted      BOOLEAN        := TRUE;
@@ -334,8 +440,9 @@ AS
       l_file_exists    BOOLEAN;
       l_file_size      NUMBER;
       l_blocksize      NUMBER;
-      o_app            applog  := applog (p_module      => 'COREUTILS.DECRYPT_FILE',
-                                          p_debug       => p_debug);
+      o_app            applog
+                           := applog (p_module       => 'coreutils.decrypt_file',
+                                      p_runmode      => p_runmode);
    BEGIN
       l_filebase := REGEXP_REPLACE (p_filename, '\.[^\.]+$', NULL, 1, 1, 'i');
       l_filesuf := REGEXP_SUBSTR (p_filename, '[^\.]+$');
@@ -349,7 +456,7 @@ AS
                       || ' '
                       || l_filebasepath,
                       p_passphrase,
-                      p_debug      => p_debug);
+                      p_runmode      => p_runmode);
          ELSE
             -- this is the only case where the extension wasn't recognized
             l_encrypted := FALSE;
@@ -364,7 +471,7 @@ AS
          l_return := l_filepath;
       END IF;
 
-      IF p_debug
+      IF o_app.is_debugmode
       THEN
          o_app.log_msg ('File returned by DECRYPT_FILE: ' || l_return);
       ELSE

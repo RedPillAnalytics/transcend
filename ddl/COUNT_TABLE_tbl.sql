@@ -7,6 +7,7 @@ CREATE TABLE tdinc.count_table
   client_info    VARCHAR2(64) NOT null,
   module         VARCHAR2(48) NOT null,
   action         VARCHAR2(32) NOT null,
+  runmode VARCHAR2(10) NOT NULL,
   session_id     NUMBER NOT null,
   row_cnt        NUMBER NOT null
 )

@@ -1,11 +1,11 @@
 CREATE OR REPLACE PACKAGE BODY tdinc.dbflex
 AS
--- this is not an autonomous transaction because COREUTILS.DDL_EXEC is
-   PROCEDURE trunc_tab (p_owner IN VARCHAR2, p_table IN VARCHAR2, p_debug BOOLEAN DEFAULT FALSE)
+-- this is not an autonomous transaction because COREUTILS.exec_auto is
+   PROCEDURE trunc_tab (p_owner IN VARCHAR2, p_table IN VARCHAR2, p_runmode VARCHAR2 DEFAULT NULL)
    AS
-      o_app   applog := applog (p_debug => p_debug, p_module => 'dbflex.trunc_tab');
+      o_app   applog := applog (p_runmode => p_runmode, p_module => 'dbflex.trunc_tab');
    BEGIN
-      coreutils.ddl_exec ('truncate table ' || p_owner || '.' || p_table, p_debug => p_debug);
+      coreutils.exec_auto ('truncate table ' || p_owner || '.' || p_table, p_runmode => p_runmode);
       o_app.clear_app_info;
    END trunc_tab;
 
@@ -18,29 +18,27 @@ AS
       p_source_table   VARCHAR2,
       p_owner          VARCHAR2,
       p_table          VARCHAR2,
-      p_index_type     VARCHAR2 DEFAULT NULL,
       p_index_regexp   VARCHAR2 DEFAULT NULL,
+      p_index_type     VARCHAR2 DEFAULT NULL,
+      p_part_type      VARCHAR2 DEFAULT NULL,
       p_tablespace     VARCHAR2 DEFAULT NULL,
-      p_global         BOOLEAN DEFAULT TRUE,
-      p_debug          BOOLEAN DEFAULT FALSE)
+      p_runmode        VARCHAR2 DEFAULT NULL)
    IS
       l_ddl            LONG;
+      l_e_ddl          LONG;
       l_idx_cnt        NUMBER                        := 0;
       l_tab_name       VARCHAR2 (61)                 := p_owner || '.' || p_table;
       l_src_name       VARCHAR2 (61)                 := p_source_owner || '.' || p_source_table;
-      l_global         VARCHAR2 (5)                  := CASE p_global
-         WHEN TRUE
-            THEN 'TRUE'
-         ELSE 'FALSE'
-      END;
+      l_part_type      VARCHAR2 (6);
       l_targ_part      dba_tables.partitioned%TYPE;
       l_rows           BOOLEAN                       := FALSE;
       e_dup_idx_name   EXCEPTION;
       PRAGMA EXCEPTION_INIT (e_dup_idx_name, -955);
       e_dup_col_list   EXCEPTION;
       PRAGMA EXCEPTION_INIT (e_dup_col_list, -1408);
-      o_app            applog    := applog (p_module      => 'dbflex.build_indexes',
-                                            p_debug       => p_debug);
+      o_app            applog
+                             := applog (p_module       => 'dbflex.build_indexes',
+                                        p_runmode      => p_runmode);
    BEGIN
       -- execute immediate doesn't like ";" on the end
       DBMS_METADATA.set_transform_param (DBMS_METADATA.session_transform, 'SQLTERMINATOR', FALSE);
@@ -133,11 +131,15 @@ AS
                          index_type
                     FROM all_indexes
                    -- use a CASE'd regular expression to determine whether to include global indexes
-                  WHERE  REGEXP_LIKE (partitioned, CASE l_global
-                                         WHEN 'TRUE'
-                                            THEN '.'
-                                         ELSE 'YES'
-                                      END, 'i')
+                  WHERE  REGEXP_LIKE (partitioned,
+                                      CASE
+                                         WHEN REGEXP_LIKE ('global', p_part_type, 'i')
+                                            THEN 'NO'
+                                         WHEN REGEXP_LIKE ('local', p_part_type, 'i')
+                                            THEN 'YES'
+                                         ELSE '.'
+                                      END,
+                                      'i')
                      AND table_name = UPPER (p_source_table)
                      AND table_owner = UPPER (p_source_owner)
                      -- use an NVL'd regular expression to determine specific indexes to work on
@@ -145,12 +147,8 @@ AS
                      -- use an NVL'd regular expression to determine the index types to worked on
                      AND REGEXP_LIKE (index_type, '^' || NVL (p_index_type, '.'), 'i')))
       LOOP
-         IF p_debug
-         THEN
-            o_app.log_msg ('Renamed index: ' || c_indexes.idx_rename);
-            o_app.log_msg ('Exception renamed index: ' || c_indexes.idx_e_rename);
-         END IF;
-
+         o_app.log_msg ('Renamed index: ' || c_indexes.idx_rename, 4);
+         o_app.log_msg ('Exception renamed index: ' || c_indexes.idx_e_rename, 4);
          l_rows := TRUE;
          o_app.set_action ('Format index DDL');
          -- replace the source table name with the target table name
@@ -173,9 +171,17 @@ AS
          -- and for looks, remove the last carriage return
          l_ddl := REGEXP_REPLACE (l_ddl, '[[:space:]]*$', NULL);
          o_app.set_action ('Execute index DDL');
+         l_e_ddl :=
+            REGEXP_REPLACE (l_ddl,
+                            '(\."?)(\w)+(")?( on)',
+                            '\1' || c_indexes.idx_e_rename || '\3 \4',
+                            1,
+                            0,
+                            'i');
+         o_app.log_msg ('Renamed DDL for exceptions: ' || l_e_ddl, 3);
 
          BEGIN
-            coreutils.ddl_exec (l_ddl, p_debug => p_debug);
+            coreutils.exec_auto (l_ddl, p_runmode => p_runmode);
             o_app.log_msg ('Index ' || c_indexes.idx_rename || ' built');
             l_idx_cnt := l_idx_cnt + 1;
          EXCEPTION
@@ -183,12 +189,7 @@ AS
             WHEN e_dup_idx_name
             THEN
                BEGIN
-                  coreutils.ddl_exec (REGEXP_REPLACE (l_ddl,
-                                                      '(\."?)(\w)+(")?( on)',
-                                                      '\1' || c_indexes.idx_e_rename || '\3 \4',
-                                                      1,
-                                                      0,
-                                                      'i'));
+                  coreutils.exec_auto (l_e_ddl);
                   o_app.log_msg ('Index ' || c_indexes.idx_e_rename || ' built');
                   l_idx_cnt := l_idx_cnt + 1;
                EXCEPTION
@@ -209,9 +210,9 @@ AS
          o_app.log_msg (   l_idx_cnt
                         || ' index'
                         || CASE
-                              WHEN l_idx_cnt > 1
-                                 THEN 'es'
-                              ELSE NULL
+                              WHEN l_idx_cnt = 1
+                                 THEN NULL
+                              ELSE 'es'
                            END
                         || ' built on '
                         || l_tab_name);
@@ -233,30 +234,25 @@ AS
       p_table               VARCHAR2,
       p_constraint_type     VARCHAR2 DEFAULT NULL,
       p_constraint_regexp   VARCHAR2 DEFAULT NULL,
-      p_seg_attributes      BOOLEAN DEFAULT FALSE,
+      p_seg_attributes      VARCHAR2 DEFAULT 'no',
       p_tablespace          VARCHAR2 DEFAULT NULL,
-      p_debug               BOOLEAN DEFAULT FALSE)
+      p_runmode             VARCHAR2 DEFAULT NULL)
    IS
-      l_targ_part        dba_tables.partitioned%TYPE;
-      l_ddl              LONG;
-      l_con_cnt          NUMBER                        := 0;
-      l_tab_name         VARCHAR2 (61)                 := p_owner || '.' || p_table;
-      l_src_name         VARCHAR2 (61)                 := p_source_owner || '.' || p_source_table;
-      l_seg_attributes   VARCHAR2 (5)        := CASE p_seg_attributes
-         WHEN TRUE
-            THEN 'TRUE'
-         ELSE 'FALSE'
-      END;
-      l_rows             BOOLEAN                       := FALSE;
-      e_dup_con_name     EXCEPTION;
+      l_targ_part      dba_tables.partitioned%TYPE;
+      l_ddl            LONG;
+      l_con_cnt        NUMBER                        := 0;
+      l_tab_name       VARCHAR2 (61)                 := p_owner || '.' || p_table;
+      l_src_name       VARCHAR2 (61)                 := p_source_owner || '.' || p_source_table;
+      l_rows           BOOLEAN                       := FALSE;
+      e_dup_con_name   EXCEPTION;
       PRAGMA EXCEPTION_INIT (e_dup_con_name, -2264);
-      e_dup_not_null     EXCEPTION;
+      e_dup_not_null   EXCEPTION;
       PRAGMA EXCEPTION_INIT (e_dup_not_null, -1442);
-      e_dup_pk           EXCEPTION;
+      e_dup_pk         EXCEPTION;
       PRAGMA EXCEPTION_INIT (e_dup_pk, -2260);
-      o_app              applog
-                             := applog (p_module      => 'dbflex.build_constraints',
-                                        p_debug       => p_debug);
+      o_app            applog
+                         := applog (p_module       => 'dbflex.build_constraints',
+                                    p_runmode      => p_runmode);
    BEGIN
       -- execute immediate doesn't like ";" on the end
       DBMS_METADATA.set_transform_param (DBMS_METADATA.session_transform, 'SQLTERMINATOR', FALSE);
@@ -265,8 +261,8 @@ AS
       -- with segment_attributes true, the USING INDEX and other information will be included
       DBMS_METADATA.set_transform_param (DBMS_METADATA.session_transform,
                                          'SEGMENT_ATTRIBUTES',
-                                         CASE
-                                            WHEN p_seg_attributes
+                                         CASE LOWER (p_seg_attributes)
+                                            WHEN 'yes'
                                                THEN TRUE
                                             ELSE FALSE
                                          END);
@@ -333,7 +329,7 @@ AS
                              '(\s+)(enable|disable)(\s*)$',
                              CASE
                                 -- if tablespace is provided, tack it on the end
-                             WHEN l_seg_attributes = 'TRUE'
+                             WHEN coreutils.get_yn_ind (p_seg_attributes) = 'yes'
                              AND p_tablespace IS NOT NULL
                              AND constraint_type IN ('P', 'U')
                                    THEN '\1TABLESPACE ' || p_tablespace || '\1\2'
@@ -365,13 +361,8 @@ AS
       LOOP
          -- catch empty cursor sets
          l_rows := TRUE;
-
-         IF p_debug
-         THEN
-            o_app.log_msg ('Renamed constraint: ' || c_constraints.con_rename);
-            o_app.log_msg ('Exception renamed constraint: ' || c_constraints.con_e_rename);
-         END IF;
-
+         o_app.log_msg ('Renamed constraint: ' || c_constraints.con_rename, 4);
+         o_app.log_msg ('Exception renamed constraint: ' || c_constraints.con_e_rename, 4);
          o_app.set_action ('Format constraint DDL');
          l_ddl :=
             REGEXP_REPLACE (c_constraints.constraint_ddl,
@@ -406,7 +397,7 @@ AS
          o_app.set_action ('Execute constraint DDL');
 
          BEGIN
-            coreutils.ddl_exec (l_ddl, p_debug => p_debug);
+            coreutils.exec_auto (l_ddl, p_runmode => p_runmode);
             o_app.log_msg ('Constraint ' || c_constraints.con_rename || ' built');
             l_con_cnt := l_con_cnt + 1;
          EXCEPTION
@@ -419,12 +410,12 @@ AS
                               || l_tab_name);
             WHEN e_dup_con_name
             THEN
-               coreutils.ddl_exec (REGEXP_REPLACE (l_ddl,
-                                                   '(constraint "?)(\w+)("?)',
-                                                   '\1' || c_constraints.con_e_rename || '\3 \4',
-                                                   1,
-                                                   0,
-                                                   'i'));
+               coreutils.exec_auto (REGEXP_REPLACE (l_ddl,
+                                                    '(constraint "?)(\w+)("?)',
+                                                    '\1' || c_constraints.con_e_rename || '\3 \4',
+                                                    1,
+                                                    0,
+                                                    'i'));
                o_app.log_msg ('Constraint ' || c_constraints.con_e_rename || ' built');
                l_con_cnt := l_con_cnt + 1;
          END;
@@ -437,9 +428,9 @@ AS
          o_app.log_msg (   l_con_cnt
                         || ' constraint'
                         || CASE
-                              WHEN l_con_cnt > 1
-                                 THEN 's'
-                              ELSE NULL
+                              WHEN l_con_cnt = 1
+                                 THEN NULL
+                              ELSE 's'
                            END
                         || ' built on '
                         || l_tab_name);
@@ -453,18 +444,19 @@ AS
          RAISE;
    END build_constraints;
 
-   -- drop indexes and constraints from a table
+   -- drop particular indexes from a table
    PROCEDURE drop_indexes (
       p_owner          VARCHAR2,
       p_table          VARCHAR2,
       p_index_type     VARCHAR2 DEFAULT NULL,
       p_index_regexp   VARCHAR2 DEFAULT NULL,
-      p_debug          BOOLEAN DEFAULT FALSE)
+      p_runmode        VARCHAR2 DEFAULT NULL)
    IS
       l_rows       BOOLEAN       := FALSE;
       l_tab_name   VARCHAR2 (61) := p_owner || '.' || p_table;
       l_idx_cnt    NUMBER        := 0;
-      o_app        applog        := applog (p_module => 'dbflex.drop_indexes', p_debug => p_debug);
+      o_app        applog     := applog (p_module       => 'dbflex.drop_indexes',
+                                         p_runmode      => p_runmode);
    BEGIN
       FOR c_indexes IN (SELECT 'drop index ' || owner || '.' || index_name index_ddl,
                                index_name,
@@ -478,7 +470,7 @@ AS
                            AND REGEXP_LIKE (index_type, '^' || NVL (p_index_type, '.'), 'i'))
       LOOP
          l_rows := TRUE;
-         coreutils.ddl_exec (c_indexes.index_ddl);
+         coreutils.exec_auto (c_indexes.index_ddl, p_runmode);
          l_idx_cnt := l_idx_cnt + 1;
          o_app.log_msg ('Index ' || c_indexes.index_name || ' dropped');
       END LOOP;
@@ -490,9 +482,9 @@ AS
          o_app.log_msg (   l_idx_cnt
                         || ' index'
                         || CASE
-                              WHEN l_idx_cnt > 1
-                                 THEN 'es'
-                              ELSE NULL
+                              WHEN l_idx_cnt = 1
+                                 THEN NULL
+                              ELSE 'es'
                            END
                         || ' dropped on '
                         || l_tab_name);
@@ -501,19 +493,19 @@ AS
       o_app.clear_app_info;
    END drop_indexes;
 
-   -- drop indexes and constraints from a table
+   -- drop particular constraints from a table
    PROCEDURE drop_constraints (
       p_owner               VARCHAR2,
       p_table               VARCHAR2,
       p_constraint_type     VARCHAR2 DEFAULT NULL,
       p_constraint_regexp   VARCHAR2 DEFAULT NULL,
-      p_debug               BOOLEAN DEFAULT FALSE)
+      p_runmode             VARCHAR2 DEFAULT NULL)
    IS
       l_con_cnt    NUMBER        := 0;
       l_tab_name   VARCHAR2 (61) := p_owner || '.' || p_table;
       l_rows       BOOLEAN       := FALSE;
-      o_app        applog     := applog (p_module      => 'dbflex.drop_constraints',
-                                         p_debug       => p_debug);
+      o_app        applog := applog (p_module       => 'dbflex.drop_constraints',
+                                     p_runmode      => p_runmode);
    BEGIN
       -- drop constraints
       FOR c_constraints IN (SELECT    'alter table '
@@ -533,7 +525,7 @@ AS
       LOOP
          -- catch empty cursor sets
          l_rows := TRUE;
-         coreutils.ddl_exec (c_constraints.constraint_ddl);
+         coreutils.exec_auto (c_constraints.constraint_ddl, p_runmode);
          l_con_cnt := l_con_cnt + 1;
          o_app.log_msg ('Constraint ' || c_constraints.constraint_name || ' dropped');
       END LOOP;
@@ -545,9 +537,9 @@ AS
          o_app.log_msg (   l_con_cnt
                         || ' constraint'
                         || CASE
-                              WHEN l_con_cnt > 1
-                                 THEN 's'
-                              ELSE NULL
+                              WHEN l_con_cnt = 1
+                                 THEN NULL
+                              ELSE 's'
                            END
                         || ' dropped on '
                         || l_tab_name);
@@ -557,119 +549,247 @@ AS
    END drop_constraints;
 
    -- structures an insert or insert append statement from the source to the target provided
-   PROCEDURE load_tab (
+   PROCEDURE insert_table (
       p_source_owner    VARCHAR2,
       p_source_object   VARCHAR2,
       p_owner           VARCHAR2,
       p_table           VARCHAR2,
-      p_trunc           BOOLEAN DEFAULT FALSE,
-      p_direct          BOOLEAN DEFAULT TRUE)
+      p_trunc           VARCHAR2 DEFAULT 'no',
+      p_direct          VARCHAR2 DEFAULT 'yes',
+      p_log_table       VARCHAR2 DEFAULT NULL,
+      p_reject_limit    VARCHAR2 DEFAULT 'unlimited',
+      p_runmode         VARCHAR2 DEFAULT NULL)
    IS
-      l_sqlstmt   VARCHAR2 (2000);
-      l_object    all_objects.object_name%TYPE;
-      l_table     all_tables.table_name%TYPE;
-      o_app       applog                         := applog (p_module => 'dbflex.load_tab');
+      l_src_name   VARCHAR2 (61) := p_source_owner || '.' || p_source_object;
+      l_trg_name   VARCHAR2 (61) := p_owner || '.' || p_table;
+      o_app        applog
+         := applog (p_module       => 'dbflex.insert_table',
+                    p_runmode      => p_runmode,
+                    p_action       => 'Check existence of objects');
    BEGIN
-      IF p_trunc
+      CASE
+         WHEN NOT coreutils.object_exists (p_source_owner, p_source_object)
+         THEN
+            raise_application_error (coreutils.get_err_cd ('no_object'),
+                                     coreutils.get_err_msg ('no_object') || ' : ' || l_src_name);
+         WHEN NOT coreutils.table_exists (p_owner, p_table)
+         THEN
+            raise_application_error (coreutils.get_err_cd ('no_object'),
+                                     coreutils.get_err_msg ('no_object') || ' : ' || l_trg_name);
+         ELSE
+            NULL;
+      END CASE;
+
+      -- warning concerning using LOG ERRORS clause and the APPEND hint
+      IF coreutils.is_true (p_direct) AND p_log_table IS NOT NULL
+      THEN
+         o_app.log_msg
+            ('Unique constraints can still be violated when using P_LOG_TABLE in conjunction with P_DIRECT mode',
+             4);
+      END IF;
+
+      IF coreutils.is_true (p_trunc)
       THEN
          -- truncate the target table
-         trunc_tab (p_owner, p_table);
+         trunc_tab (p_owner, p_table, p_runmode);
       END IF;
 
-      -- change the action back after calling trunc_tab
-      o_app.set_action ('Construnct insert statement');
-      o_app.log_msg (   'Loading records from '
-                     || p_source_owner
-                     || '.'
-                     || p_source_object
-                     || ' into '
-                     || p_owner
-                     || '.'
-                     || p_table);
-      l_sqlstmt :=
-            'insert /*+ APPEND */ into '
-         || p_owner
-         || '.'
-         || p_table
-         || ' select * from '
-         || p_source_owner
-         || '.'
-         || p_source_object;
-
-      -- if this is not direct-path, then modify the statement
-      IF NOT p_direct
-      THEN
-         l_sqlstmt := REGEXP_REPLACE (l_sqlstmt, '/\*\+ APPEND \*/ ', NULL);
-      END IF;
-
-      -- debug statement
-      --o_app.log_msg ('Insert statement: ' || l_sqlstmt);
-      EXECUTE IMMEDIATE l_sqlstmt;
-
-      o_app.log_msg (SQL%ROWCOUNT || ' records loaded' || CHR (10));
-      -- load the bad data into the ext_bad_log
+      -- enable|disable parallel dml depending on the parameter for P_DIRECT
+      coreutils.exec_sql (   'ALTER SESSION '
+                          || CASE
+                                WHEN REGEXP_LIKE ('yes', p_direct, 'i')
+                                   THEN 'ENABLE'
+                                ELSE 'DISABLE'
+                             END
+                          || ' PARALLEL DML',
+                          p_runmode      => p_runmode);
+      o_app.log_msg ('Inserting records from ' || l_src_name || ' into ' || l_trg_name, 3);
+      coreutils.exec_sql (   REGEXP_REPLACE (   'insert /*+ APPEND */ into '
+                                             || l_trg_name
+                                             || ' select * from '
+                                             || l_src_name,
+                                             CASE
+                                                -- just use a regular expression to remove the APPEND hint if P_DIRECT is disabled
+                                             WHEN REGEXP_LIKE ('no', p_direct, 'i')
+                                                   THEN '/\*\+ APPEND \*/ '
+                                                ELSE NULL
+                                             END)
+                          -- if a logging table is specified, then just append it on the end
+                          || CASE NVL (p_log_table, 'N/A')
+                                WHEN 'N/A'
+                                   THEN NULL
+                                ELSE    ' log errors into '
+                                     || p_log_table
+                                     || ' reject limit '
+                                     || p_reject_limit
+                             END,
+                          p_runmode);
+      -- record the number of rows affected
+      o_app.log_cnt_msg (SQL%ROWCOUNT);
       o_app.clear_app_info;
-   END load_tab;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         o_app.log_err;
+         RAISE;
+   END insert_table;
 
    -- structures a merge statement between two tables that have the same table
-   PROCEDURE merge_tab (
-      p_source_owner   VARCHAR2,
-      p_source_table   VARCHAR2,
-      p_owner          VARCHAR2,
-      p_table          VARCHAR2,
-      p_direct         BOOLEAN DEFAULT TRUE)
+   PROCEDURE merge_table (
+      p_source_owner    VARCHAR2,
+      p_source_object   VARCHAR2,
+      p_owner           VARCHAR2,
+      p_table           VARCHAR2,
+      p_columns         VARCHAR2 DEFAULT NULL,
+      p_direct          VARCHAR2 DEFAULT 'yes',
+      p_log_table       VARCHAR2 DEFAULT NULL,
+      p_reject_limit    VARCHAR2 DEFAULT 'unlimited',
+      p_runmode         VARCHAR2 DEFAULT 'no')
    IS
-      l_sqlstmt      VARCHAR2 (32000);
-      l_onclause     VARCHAR2 (32000);
-      l_update       VARCHAR2 (32000);
-      l_insert       VARCHAR2 (32000);
-      l_values       VARCHAR2 (32000);
-      e_unique_key   EXCEPTION;
-      PRAGMA EXCEPTION_INIT (e_unique_key, -936);
-      o_app          applog
-                       := applog (p_module      => 'dbflex.merge_tab',
-                                  p_action      => 'Generate ON clause');
+      l_onclause        VARCHAR2 (32000);
+      l_update          VARCHAR2 (32000);
+      l_insert          VARCHAR2 (32000);
+      l_values          VARCHAR2 (32000);
+      l_src_name        VARCHAR2 (61)    := p_source_owner || '.' || p_source_object;
+      l_trg_name        VARCHAR2 (61)    := p_owner || '.' || p_table;
+      e_no_on_columns   EXCEPTION;
+      PRAGMA EXCEPTION_INIT (e_no_on_columns, -936);
+      o_app             applog
+         := applog (p_module       => 'dbflex.merge_table',
+                    p_runmode      => p_runmode,
+                    p_action       => 'Check existence of objects');
    BEGIN
-      -- construct the "ON" clause for the MERGE statement
-      SELECT LIST
-        INTO l_onclause
-        FROM (SELECT REGEXP_REPLACE (   '('
-                                     || stragg ('target.' || column_name || ' = source.'
-                                                || column_name)
-                                     || ')',
-                                     ',',
-                                     ' AND' || CHR (10)) LIST,
-                     MIN (dc.constraint_type) con_type
-                FROM all_cons_columns dcc JOIN all_constraints dc USING (constraint_name,
-                                                                         table_name)
-               WHERE table_name = UPPER (p_table)
-                 AND dcc.owner = UPPER (p_owner)
-                 AND dc.constraint_type IN ('P', 'U'));
+      CASE
+         WHEN NOT coreutils.object_exists (p_source_owner, p_source_object)
+         THEN
+            raise_application_error (coreutils.get_err_cd ('no_object'),
+                                     coreutils.get_err_msg ('no_object') || ' : ' || l_src_name);
+         WHEN NOT coreutils.table_exists (p_owner, p_table)
+         THEN
+            raise_application_error (coreutils.get_err_cd ('no_object'),
+                                     coreutils.get_err_msg ('no_object') || ' : ' || l_trg_name);
+         ELSE
+            NULL;
+      END CASE;
 
-      o_app.set_action ('Generate UPDATE clause');
+      -- warning concerning using LOG ERRORS clause and the APPEND hint
+      IF REGEXP_LIKE ('yes', p_direct, 'i') AND p_log_table IS NOT NULL
+      THEN
+         o_app.log_msg
+            ('Unique constraints can still be violated when using P_LOG_TABLE in conjunction with P_DIRECT mode',
+             4);
+      END IF;
 
-      -- construct the "UPDATE" clause for the MERGE statement
-      SELECT REGEXP_REPLACE (stragg ('target.' || column_name || ' = source.' || column_name),
-                             ',',
-                             ',' || CHR (10))
-        INTO l_update
-        FROM (SELECT column_name
-                FROM all_tab_columns
-               WHERE table_name = UPPER (p_table) AND owner = UPPER (p_owner)
-              MINUS
-              SELECT column_name
-                FROM (SELECT   column_name,
-                               MIN (dc.constraint_type) con_type
-                          FROM all_cons_columns dcc JOIN all_constraints dc
-                               USING (constraint_name, table_name)
-                         WHERE table_name = UPPER (p_table)
-                           AND dcc.owner = UPPER (p_owner)
-                           AND dc.constraint_type IN ('P', 'U')
-                      GROUP BY column_name));
+      o_app.set_action ('Construct MERGE ON clause');
 
-      o_app.set_action ('Generate INSERT clause');
+      -- use the columns provided in P_COLUMNS.
+      -- if that is left null, then choose the columns in the primary key of the target table
+      -- if there is no primary key, then choose a unique key (any unique key)
+      IF p_columns IS NOT NULL
+      THEN
+         WITH DATA AS
+              
+              -- this allows us to create a variable IN LIST based on multiple column names provided
+              (SELECT     TRIM (SUBSTR (COLUMNS,
+                                        INSTR (COLUMNS, ',', 1, LEVEL) + 1,
+                                          INSTR (COLUMNS, ',', 1, LEVEL + 1)
+                                        - INSTR (COLUMNS, ',', 1, LEVEL)
+                                        - 1)) AS token
+                     FROM (SELECT ',' || p_columns || ',' COLUMNS
+                             FROM DUAL)
+               CONNECT BY LEVEL <= LENGTH (p_columns) - LENGTH (REPLACE (p_columns, ',', '')) + 1)
+         SELECT REGEXP_REPLACE (   '('
+                                || stragg ('target.' || column_name || ' = source.' || column_name)
+                                || ')',
+                                ',',
+                                ' AND' || CHR (10)) LIST
+           INTO l_onclause
+           FROM dba_tab_columns
+          WHERE table_name = UPPER (p_table)
+            AND owner = UPPER (p_owner)
+            -- select from the variable IN LIST
+            AND column_name IN (SELECT *
+                                  FROM DATA);
+      ELSE
+         -- otherwise, we need to get a constraint name
+         -- we first choose a PK if it exists
+         -- otherwise get a UK at random
+         SELECT LIST
+           INTO l_onclause
+           FROM (SELECT REGEXP_REPLACE (   '('
+                                        || stragg (   'target.'
+                                                   || column_name
+                                                   || ' = source.'
+                                                   || column_name)
+                                        || ')',
+                                        ',',
+                                        ' AND' || CHR (10)) LIST,
+                        -- the MIN function will ensure that primary keys are selected first
+                        -- otherwise, it will randonmly choose a remaining constraint to use
+                        MIN (dc.constraint_type) con_type
+                   FROM all_cons_columns dcc JOIN all_constraints dc USING (constraint_name,
+                                                                            table_name)
+                  WHERE table_name = UPPER (p_table)
+                    AND dcc.owner = UPPER (p_owner)
+                    AND dc.constraint_type IN ('P', 'U'));
+      END IF;
 
-      -- construct the "INSERT" clause for the MERGE statement
+      o_app.set_action ('Construct MERGE update clause');
+
+      IF p_columns IS NOT NULL
+      THEN
+         SELECT REGEXP_REPLACE (stragg ('target.' || column_name || ' = source.' || column_name),
+                                ',',
+                                ',' || CHR (10))
+           INTO l_update
+           -- if P_COLUMNS is provided, we use the same logic from the ON clause
+           -- to make sure those same columns are not inlcuded in the update clause
+           -- MINUS gives us that
+         FROM   (WITH DATA AS
+                      (SELECT     TRIM (SUBSTR (COLUMNS,
+                                                INSTR (COLUMNS, ',', 1, LEVEL) + 1,
+                                                  INSTR (COLUMNS, ',', 1, LEVEL + 1)
+                                                - INSTR (COLUMNS, ',', 1, LEVEL)
+                                                - 1)) AS token
+                             FROM (SELECT ',' || p_columns || ',' COLUMNS
+                                     FROM DUAL)
+                       CONNECT BY LEVEL <=
+                                        LENGTH (p_columns) - LENGTH (REPLACE (p_columns, ',', ''))
+                                        + 1)
+                 SELECT column_name
+                   FROM all_tab_columns
+                  WHERE table_name = UPPER (p_table) AND owner = UPPER (p_owner)
+                 MINUS
+                 SELECT column_name
+                   FROM dba_tab_columns
+                  WHERE table_name = UPPER (p_table)
+                    AND owner = UPPER (p_owner)
+                    AND column_name IN (SELECT *
+                                          FROM DATA));
+      ELSE
+         -- otherwise, we once again MIN a constraint type to ensure it's the same constraint
+         -- then, we just minus the column names so they aren't included
+         SELECT REGEXP_REPLACE (stragg ('target.' || column_name || ' = source.' || column_name),
+                                ',',
+                                ',' || CHR (10))
+           INTO l_update
+           FROM (SELECT column_name
+                   FROM all_tab_columns
+                  WHERE table_name = UPPER (p_table) AND owner = UPPER (p_owner)
+                 MINUS
+                 SELECT column_name
+                   FROM (SELECT   column_name,
+                                  MIN (dc.constraint_type) con_type
+                             FROM all_cons_columns dcc JOIN all_constraints dc
+                                  USING (constraint_name, table_name)
+                            WHERE table_name = UPPER (p_table)
+                              AND dcc.owner = UPPER (p_owner)
+                              AND dc.constraint_type IN ('P', 'U')
+                         GROUP BY column_name));
+      END IF;
+
+      o_app.set_action ('Construnct MERGE insert clause');
+
       SELECT   REGEXP_REPLACE ('(' || stragg ('target.' || column_name) || ') ', ',',
                                ',' || CHR (10)) LIST
           INTO l_insert
@@ -677,279 +797,218 @@ AS
          WHERE table_name = UPPER (p_table) AND owner = UPPER (p_owner)
       ORDER BY column_name;
 
-      o_app.set_action ('Generate VALUES clause');
-      -- construct the "VALUES" clause for the MERGE statement
+      o_app.set_action ('Construct MERGE values clause');
       l_values := REGEXP_REPLACE (l_insert, 'target.', 'source.');
-      -- put the entire statement together
-      l_sqlstmt :=
-            'MERGE INTO '
-         || p_owner
-         || '.'
-         || p_table
-         || ' target using '
-         || CHR (10)
-         || '(select * from '
-         || p_source_owner
-         || '.'
-         || p_source_table
-         || ') source on '
-         || CHR (10)
-         || l_onclause
-         || CHR (10)
-         || ' WHEN MATCHED THEN UPDATE SET '
-         || CHR (10)
-         || l_update
-         || CHR (10)
-         || ' WHEN NOT MATCHED THEN INSERT /*+ APPEND */ '
-         || CHR (10)
-         || l_insert
-         || CHR (10)
-         || ' VALUES '
-         || CHR (10)
-         || l_values;
       o_app.log_msg (   'Merging records from '
                      || p_source_owner
                      || '.'
-                     || p_source_table
+                     || p_source_object
                      || ' into '
                      || p_owner
                      || '.'
                      || p_table);
 
-      -- if the insert won't be direct, then modify the ddl statement
-      IF NOT p_direct
-      THEN
-         l_sqlstmt := REGEXP_REPLACE (l_sqlstmt, '/\*\+ APPEND \*/ ', NULL);
-      END IF;
-
       BEGIN
          o_app.set_action ('Issue MERGE statement');
-
-         EXECUTE IMMEDIATE l_sqlstmt;
+         -- ENABLE|DISABLE parallel dml depending on the value of P_DIRECT
+         coreutils.exec_sql (   'ALTER SESSION '
+                             || CASE
+                                   WHEN REGEXP_LIKE ('yes', p_direct, 'i')
+                                      THEN 'ENABLE'
+                                   ELSE 'DISABLE'
+                                END
+                             || ' PARALLEL DML',
+                             p_runmode      => p_runmode);
+         o_app.log_msg ('Merging records from ' || l_src_name || ' into ' || l_trg_name, 3);
+         -- we put the merge statement together using all the different clauses constructed above
+         coreutils.exec_sql (   REGEXP_REPLACE (   'MERGE INTO '
+                                                || p_owner
+                                                || '.'
+                                                || p_table
+                                                || ' target using '
+                                                || CHR (10)
+                                                || '(select * from '
+                                                || p_source_owner
+                                                || '.'
+                                                || p_source_object
+                                                || ') source on '
+                                                || CHR (10)
+                                                || l_onclause
+                                                || CHR (10)
+                                                || ' WHEN MATCHED THEN UPDATE SET '
+                                                || CHR (10)
+                                                || l_update
+                                                || CHR (10)
+                                                || ' WHEN NOT MATCHED THEN INSERT /*+ APPEND */ '
+                                                || CHR (10)
+                                                || l_insert
+                                                || CHR (10)
+                                                || ' VALUES '
+                                                || CHR (10)
+                                                || l_values,
+                                                -- just strip the APPEND hint out if P_DIRECT is 'no'
+                                                CASE
+                                                   WHEN REGEXP_LIKE ('no', p_direct, 'i')
+                                                      THEN '/\*\+ APPEND \*/ '
+                                                   ELSE NULL
+                                                END)
+                             -- if we specify a logging table, append that on the end
+                             || CASE p_log_table
+                                   WHEN NULL
+                                      THEN NULL
+                                   ELSE    ' log errors into '
+                                        || p_log_table
+                                        || ' reject limit '
+                                        -- if no reject limit is specified, then use unlimited
+                                        || p_reject_limit
+                                END,
+                             p_runmode);
       EXCEPTION
-         -- catch "non-unique" errors
-         WHEN e_unique_key
+         -- ON columns not specified correctly
+         WHEN e_no_on_columns
          THEN
-            raise_application_error (-20001, 'Missing a unique constraint for MERGE operation.');
+            raise_application_error (coreutils.get_err_cd ('on_clause_missing'),
+                                     coreutils.get_err_msg ('on_clause_missing'));
       END;
 
       -- show the records merged
-      o_app.log_msg (SQL%ROWCOUNT || ' records merged' || CHR (10));
-      o_app.clear_app_info;
-   END merge_tab;
-
-   -- queries the dictionary based on regular expressions and loads tables using either the load_tab method or the merge_tab method
-   PROCEDURE regexp_load (
-      p_source_owner   VARCHAR2,
-      p_regexp         VARCHAR2,
-      p_owner          VARCHAR2 DEFAULT NULL,
-      p_suf_re_rep     VARCHAR2 DEFAULT '?',
-      p_merge          BOOLEAN DEFAULT FALSE,
-      p_part_tabs      BOOLEAN DEFAULT TRUE,
-      p_trunc          BOOLEAN DEFAULT FALSE,
-      p_direct         BOOLEAN DEFAULT TRUE,
-      p_commit         BOOLEAN DEFAULT TRUE,
-      p_debug          BOOLEAN DEFAULT FALSE)
-   IS
-      l_target_owner     all_tables.owner%TYPE   := p_source_owner;
-      l_rows             BOOLEAN                 := FALSE;
-      e_data_cartridge   EXCEPTION;
-      PRAGMA EXCEPTION_INIT (e_data_cartridge, -29913);
-      o_app              applog    := applog (p_module      => 'dbflex.load_regexp',
-                                              p_debug       => p_debug);
-   BEGIN
-      IF NOT p_debug
-      THEN
-         -- enable session parameters depending on p_direct
-         IF p_direct
-         THEN
-            EXECUTE IMMEDIATE 'ALTER SESSION ENABLE PARALLEL DML';
-         ELSE
-            EXECUTE IMMEDIATE 'ALTER SESSION DISABLE PARALLEL DML';
-         END IF;
-      END IF;
-
-      o_app.log_msg (   'Loading tables matching regular expression for the '
-                     || p_source_owner
-                     || ' schema.'
-                     || CHR (10));
-
-      IF p_owner IS NOT NULL
-      THEN
-         l_target_owner := p_owner;
-      END IF;
-
-       -- determine whether partitioned tables will be allowed
-      -- for performance reasons, I wrote two different cursors
-      -- instead of just checking to see if each table is a partitioned table in the loop
-      IF p_part_tabs
-      THEN
-         o_app.set_action ('Load all objects');
-
-         -- dynamic cursor contains source and target objects
-         FOR c_objects IN (SELECT o.owner src_owner,
-                                  object_name src,
-                                  t.owner targ_owner,
-                                  table_name targ
-                             FROM all_objects o JOIN all_tables t
-                                  ON (REGEXP_REPLACE (object_name, '_[[:alnum:]]+$', NULL) =
-                                                     REGEXP_REPLACE (table_name, p_suf_re_rep, NULL))
-                            WHERE REGEXP_LIKE (object_name, p_regexp, 'i')
-                              AND REGEXP_LIKE (table_name, p_suf_re_rep, 'i')
-                              AND o.owner = p_source_owner
-                              AND t.owner = l_target_owner
-                              AND o.object_type IN ('TABLE', 'VIEW', 'SYNONYM'))
-         LOOP
-            l_rows := TRUE;
-
-            IF p_debug
-            THEN
-               o_app.log_msg (   c_objects.src_owner
-                              || '.'
-                              || c_objects.src
-                              || ' will be loaded into '
-                              || c_objects.targ_owner
-                              || '.'
-                              || c_objects.targ);
-            ELSE
-               -- use the load_tab or merge_tab procedure depending on P_MERGE
-               IF p_merge
-               THEN
-                  merge_tab (c_objects.src_owner,
-                             c_objects.src,
-                             c_objects.targ_owner,
-                             c_objects.targ,
-                             p_direct);
-               ELSE
-                  load_tab (c_objects.src_owner,
-                            c_objects.src,
-                            c_objects.targ_owner,
-                            c_objects.targ,
-                            p_trunc,
-                            p_direct);
-               END IF;
-
-               -- whether or not to commit after each table
-               IF p_commit
-               THEN
-                  COMMIT;
-               END IF;
-            END IF;
-         END LOOP;
-      ELSE
-         o_app.set_action ('Load non-partitioned tables and other objects');
-
-         -- dynamic cursor contains source and target objects of only non-partitioned tables
-         FOR c_objects IN (SELECT o.owner src_owner,
-                                  t.owner targ_owner,
-                                  object_name src,
-                                  table_name targ
-                             FROM all_objects o
-                                  JOIN
-                                  (SELECT owner,
-                                          table_name
-                                     FROM all_tables
-                                   MINUS
-                                   SELECT table_owner,
-                                          table_name
-                                     FROM all_tab_partitions) t
-                                  ON (REGEXP_REPLACE (object_name, '_[[:alnum:]]+$', NULL) =
-                                                     REGEXP_REPLACE (table_name, p_suf_re_rep, NULL))
-                            WHERE REGEXP_LIKE (object_name, p_regexp, 'i')
-                              AND REGEXP_LIKE (table_name, p_suf_re_rep, 'i')
-                              AND o.owner = p_source_owner
-                              AND t.owner = l_target_owner
-                              AND o.object_type IN ('TABLE', 'VIEW', 'SYNONYM'))
-         LOOP
-            l_rows := TRUE;
-
-            IF p_debug
-            THEN
-               o_app.log_msg ('Running in DEBUG Mode');
-               o_app.log_msg (   c_objects.src_owner
-                              || '.'
-                              || c_objects.src
-                              || ' will be loaded into '
-                              || c_objects.targ_owner
-                              || '.'
-                              || c_objects.targ);
-            ELSE
-               -- use the load_tab or merge_tab procedure depending on P_MERGE
-               IF p_merge
-               THEN
-                  merge_tab (c_objects.src_owner,
-                             c_objects.src,
-                             c_objects.targ_owner,
-                             c_objects.targ,
-                             p_direct);
-               ELSE
-                  load_tab (c_objects.src_owner,
-                            c_objects.src,
-                            c_objects.targ_owner,
-                            c_objects.targ,
-                            p_trunc,
-                            p_direct);
-               END IF;
-
-               -- whether or not to commit after each table
-               IF p_commit
-               THEN
-                  COMMIT;
-               END IF;
-            END IF;
-         END LOOP;
-      END IF;
-
-      IF NOT l_rows
-      THEN
-         raise_application_error (-20001,
-                                  'Combination of parameters renders zero target tables to load');
-      END IF;
-
+      o_app.log_cnt_msg (SQL%ROWCOUNT);
       o_app.clear_app_info;
    EXCEPTION
-      WHEN e_data_cartridge
-      THEN
-         -- use a regular expression to pull the KUP error out of SQLERRM
-         CASE REGEXP_SUBSTR (SQLERRM, '^KUP-[[:digit:]]{5}', 1, 1, 'im')
-             -- the case statement allows multiple WHEN/THEN clauses
-            -- to handle any number of errors
-         WHEN 'KUP-04040'
-            THEN
-               o_app.log_msg ('The file does not exist in the directory');
-               -- do whatever else needs to be done if the file doesn't exist
-            -- you could even retry the FTP (using UTL_FTP)
-            -- or send the logfile using UTL_MAIL, which allows attachments
-         ELSE
-               o_app.log_msg ('Unknown data cartridge error');
-         -- do whatever is needed if error is unknown
-         END CASE;
-
-         RAISE;
       WHEN OTHERS
       THEN
          o_app.log_err;
          RAISE;
-   END regexp_load;
+   END merge_table;
+
+   -- queries the dictionary based on regular expressions and loads tables using either the load_tab method or the merge_tab method
+   PROCEDURE load_tables (
+      p_source_owner    VARCHAR2,
+      p_source_regexp   VARCHAR2,
+      p_owner           VARCHAR2 DEFAULT NULL,
+      p_suffix          VARCHAR2 DEFAULT NULL,
+      p_merge           VARCHAR2 DEFAULT 'no',
+      p_part_tabs       VARCHAR2 DEFAULT 'yes',
+      p_trunc           VARCHAR2 DEFAULT 'no',
+      p_direct          VARCHAR2 DEFAULT 'yes',
+      p_commit          VARCHAR2 DEFAULT 'yes',
+      p_runmode         VARCHAR2 DEFAULT NULL)
+   IS
+      l_rows   BOOLEAN := FALSE;
+      o_app    applog  := applog (p_module => 'dbflex.load_tables', p_runmode => p_runmode);
+   BEGIN
+      o_app.log_msg ('Loading matching objects from the ' || p_source_owner || ' schema.');
+
+      -- dynamic cursor contains source and target objects
+      FOR c_objects IN (SELECT o.owner src_owner,
+                               object_name src,
+                               t.owner targ_owner,
+                               table_name targ
+                          FROM all_objects o JOIN all_tables t
+                               ON (REGEXP_REPLACE (object_name, '([^_]+)(_)([^_]+)$', '\1') =
+                                      REGEXP_REPLACE (table_name,
+                                                      CASE
+                                                         WHEN p_suffix IS NULL
+                                                            THEN '?'
+                                                         ELSE '_' || p_suffix || '$'
+                                                      END,
+                                                      NULL))
+                         WHERE REGEXP_LIKE (object_name, p_source_regexp, 'i')
+                           AND REGEXP_LIKE (table_name,
+                                            CASE
+                                               WHEN p_suffix IS NULL
+                                                  THEN '?'
+                                               ELSE '_' || p_suffix || '$'
+                                            END,
+                                            'i')
+                           AND o.owner = UPPER (p_source_owner)
+                           AND t.owner = UPPER (NVL (p_owner, p_source_owner))
+                           AND o.object_type IN ('TABLE', 'VIEW', 'SYNONYM')
+                           AND object_name <> CASE
+                                                WHEN o.owner = t.owner
+                                                   THEN table_name
+                                                ELSE NULL
+                                             END
+                           AND partitioned <>
+                                  CASE
+                                     WHEN REGEXP_LIKE ('no', p_part_tabs, 'i')
+                                        THEN NULL
+                                     WHEN REGEXP_LIKE ('yes', p_part_tabs, 'i')
+                                        THEN 'YES'
+                                  END)
+      LOOP
+         l_rows := TRUE;
+         o_app.log_msg (   c_objects.src_owner
+                        || '.'
+                        || c_objects.src
+                        || ' loading into '
+                        || c_objects.targ_owner
+                        || '.'
+                        || c_objects.targ,
+                        3);
+
+         -- use the load_tab or merge_tab procedure depending on P_MERGE
+         CASE
+            WHEN coreutils.is_true (p_trunc)
+            THEN
+               merge_table (p_source_owner       => c_objects.src_owner,
+                            p_source_object      => c_objects.src,
+                            p_owner              => c_objects.targ_owner,
+                            p_table              => c_objects.targ,
+                            p_direct             => p_direct,
+                            p_runmode            => p_runmode);
+            WHEN NOT coreutils.is_true (p_trunc)
+            THEN
+               insert_table (p_source_owner       => c_objects.src_owner,
+                             p_source_object      => c_objects.src,
+                             p_owner              => c_objects.targ_owner,
+                             p_table              => c_objects.targ,
+                             p_direct             => p_direct,
+                             p_trunc              => p_trunc,
+                             p_runmode            => p_runmode);
+         END CASE;
+
+         -- whether or not to commit after each table
+         IF REGEXP_LIKE ('yes', p_commit, 'i')
+         THEN
+            COMMIT;
+         END IF;
+      END LOOP;
+
+      IF NOT l_rows
+      THEN
+         raise_application_error (coreutils.get_err_cd ('incorrect_parameters'),
+                                  coreutils.get_err_msg ('incorrect_parameters'));
+      END IF;
+
+      o_app.clear_app_info;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         o_app.log_err;
+         RAISE;
+   END load_tables;
 
    -- procedure to exchange a partitioned table with a non-partitioned table
-   PROCEDURE table_exchange (
+   PROCEDURE exchange_partition (
       p_source_owner   VARCHAR2,
       p_source_table   VARCHAR2,
       p_owner          VARCHAR2,
       p_table          VARCHAR2,
       p_partname       VARCHAR2 DEFAULT NULL,
-      p_index_drop     BOOLEAN DEFAULT TRUE,
-      p_stats          VARCHAR2 DEFAULT 'KEEP',
+      p_index_drop     VARCHAR2 DEFAULT 'yes',
+      p_gather_stats   VARCHAR2 DEFAULT 'yes',
       p_statpercent    NUMBER DEFAULT DBMS_STATS.auto_sample_size,
-      p_statdegree     NUMBER DEFAULT DBMS_STATS.default_degree,
-      p_statmo         VARCHAR2 DEFAULT 'FOR ALL COLUMNS SIZE AUTO',
-      p_debug          BOOLEAN DEFAULT FALSE)
+      p_statdegree     NUMBER DEFAULT DBMS_STATS.auto_degree,
+      p_statmethod     VARCHAR2 DEFAULT DBMS_STATS.get_param ('method_opt'),
+      p_runmode        VARCHAR2 DEFAULT NULL)
    IS
+      l_src_name       VARCHAR2 (61)                     := p_source_owner || '.' || p_source_table;
+      l_tab_name       VARCHAR2 (61)                            := p_owner || '.' || p_table;
       l_target_owner   all_tab_partitions.table_name%TYPE       DEFAULT p_source_owner;
       l_rows           BOOLEAN                                  := FALSE;
-      l_partname       all_tab_partitions.partition_name%TYPE;
-      l_sql            VARCHAR2 (2000);
+      l_partname       dba_tab_partitions.partition_name%TYPE;
+      l_ddl            LONG;
       l_numrows        NUMBER;
       l_numblks        NUMBER;
       l_avgrlen        NUMBER;
@@ -957,148 +1016,109 @@ AS
       l_cachehit       NUMBER;
       e_no_stats       EXCEPTION;
       PRAGMA EXCEPTION_INIT (e_no_stats, -20000);
-      o_app            applog   := applog (p_module      => 'dbflex.exchange_table',
-                                           p_debug       => p_debug);
+      o_app            applog
+                        := applog (p_module       => 'dbflex.exchange_partition',
+                                   p_runmode      => p_runmode);
    BEGIN
-      IF NOT p_debug
-      THEN
-         o_app.log_msg (   'Exchanging table '
-                        || p_source_owner
-                        || '.'
-                        || p_source_table
-                        || ' for '
-                        || p_owner
-                        || '.'
-                        || p_table
-                        || CHR (10));
-      END IF;
+      o_app.set_action ('Determine partition to use');
 
-      -- determine whether to use P_PARTNAME or use the max partition
-      IF p_partname IS NOT NULL
-      THEN
-         l_partname := p_partname;
-      ELSE
-         BEGIN
-            o_app.set_action ('Determine partition name');
+      BEGIN
+         -- get the max partition and the partition position
+         SELECT partition_name
+           INTO l_partname
+           FROM all_tab_partitions
+          WHERE table_name = p_table
+            AND table_owner = p_owner
+            AND partition_position IN (SELECT MAX (partition_position)
+                                         FROM all_tab_partitions
+                                        WHERE table_name = p_table AND table_owner = p_owner);
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            raise_application_error (coreutils.get_err_cd ('no_max_part'),
+                                     coreutils.get_err_msg ('no_max_part'));
+      END;
 
-            SELECT partition_name
-              INTO l_partname
-              FROM all_tab_partitions
-             WHERE table_name = p_table
-               AND table_owner = p_owner
-               AND partition_position IN (SELECT MAX (partition_position)
-                                            FROM all_tab_partitions
-                                           WHERE table_name = p_table AND table_owner = p_owner);
-         EXCEPTION
-            WHEN NO_DATA_FOUND
-            THEN
-               raise_application_error (-20001, 'Partition name cannot be returned.');
-         END;
-      END IF;
-
-      IF p_debug
-      THEN
-         NULL;
-      ELSE
-         -- do something with stats
-         BEGIN
-            CASE
-               WHEN REGEXP_LIKE (p_stats, 'keep', 'i')
+      CASE
+         WHEN coreutils.is_true (p_gather_stats) AND NOT o_app.is_debugmode
+         THEN
+            o_app.set_action ('Gather stats on new partition');
+            DBMS_STATS.gather_table_stats (p_source_owner,
+                                           p_source_table,
+                                           estimate_percent      => p_statpercent,
+                                           DEGREE                => p_statdegree,
+                                           method_opt            => p_statmethod);
+            o_app.log_msg ('Statistics gathered on table ' || l_tab_name, 3);
+         WHEN NOT coreutils.is_true (p_gather_stats) AND NOT o_app.is_debugmode
+         THEN
+            BEGIN
+               -- if partition stats are not going to be gathered on the new schema,
+               -- keep the current stats of the partition
+               o_app.set_action ('Transfer stats');
+               DBMS_STATS.get_table_stats (p_owner,
+                                           p_table,
+                                           l_partname,
+                                           numrows        => l_numrows,
+                                           numblks        => l_numblks,
+                                           avgrlen        => l_avgrlen,
+                                           cachedblk      => l_cachedblk,
+                                           cachehit       => l_cachehit);
+               o_app.log_msg (   'Statistics exported from partition '
+                              || p_partname
+                              || ' of table '
+                              || l_src_name,
+                              3);
+               DBMS_STATS.set_table_stats (p_source_owner,
+                                           p_source_table,
+                                           numrows        => l_numrows,
+                                           numblks        => l_numblks,
+                                           avgrlen        => l_avgrlen,
+                                           cachedblk      => l_cachedblk,
+                                           cachehit       => l_cachehit);
+               o_app.log_msg ('Statistics imported into table ' || l_src_name, 3);
+            EXCEPTION
+               WHEN e_no_stats
                THEN
-                  -- just use the table level statistics for the new partition now
-                  -- the automatic stats collection will gather new stats later
-                  o_app.set_action ('Transfer table stats to new partition');
-                  DBMS_STATS.get_table_stats (p_owner,
-                                              p_table,
-                                              l_partname,
-                                              numrows        => l_numrows,
-                                              numblks        => l_numblks,
-                                              avgrlen        => l_avgrlen,
-                                              cachedblk      => l_cachedblk,
-                                              cachehit       => l_cachehit);
-                  DBMS_STATS.set_table_stats (p_source_owner,
-                                              p_source_table,
-                                              numrows        => l_numrows,
-                                              numblks        => l_numblks,
-                                              avgrlen        => l_avgrlen,
-                                              cachedblk      => l_cachedblk,
-                                              cachehit       => l_cachehit);
-               -- gather new stats on the partition
-            WHEN REGEXP_LIKE (p_stats, 'new', 'i')
-               THEN
-                  o_app.set_action ('Gather stats on new partition');
-                  DBMS_STATS.gather_table_stats (p_source_owner,
-                                                 p_source_table,
-                                                 estimate_percent      => p_statpercent,
-                                                 DEGREE                => p_statdegree,
-                                                 method_opt            => p_statmo);
-               ELSE
-                  NULL;
-            END CASE;
-         EXCEPTION
-            WHEN e_no_stats
-            THEN
-               -- if no stats existed on the target table, then generate new stats
-               o_app.log_msg (   'No stats existed on '
-                              || p_owner
-                              || '.'
-                              || p_table
-                              || '... gathered new stats');
-               DBMS_STATS.gather_table_stats (p_source_owner,
-                                              p_source_table,
-                                              estimate_percent      => p_statpercent,
-                                              DEGREE                => p_statdegree,
-                                              method_opt            => p_statmo);
-         END;
-      END IF;
+                  -- no stats existed on the target table
+                  -- just leave them blank
+                  o_app.log_msg ('No stats existed for partition ' || p_part_name, 3);
+            END;
+      END CASE;
 
       -- build the indexes on the stage table just like the target table
       build_indexes (p_owner             => p_owner,
                      p_table             => p_table,
                      p_source_owner      => p_source_owner,
                      p_source_table      => p_source_table,
-                     p_debug             => p_debug);
+                     p_runmode           => p_runmode);
       o_app.set_action ('Exchange table');
-      l_sql :=
-            'alter table '
-         || p_owner
-         || '.'
-         || p_table
-         || ' exchange partition '
-         || l_partname
-         || ' with table '
-         || p_source_owner
-         || '.'
-         || p_source_table
-         || ' including indexes update global indexes';
-
-      BEGIN
-         IF p_debug
-         THEN
-            o_app.log_msg ('SQL: ' || l_sql);
-         ELSE
-            -- exchange in the partitions
-            EXECUTE IMMEDIATE l_sql;
-
-            o_app.log_msg (p_source_table || ' exchanged for ' || p_table);
-         END IF;
-      -- need to drop indexes on the temp partitions if an exception occurs in this block
-      -- this is for restartability
-      EXCEPTION
-         WHEN OTHERS
-         THEN
-            o_app.log_err;
-            o_app.log_msg ('Dropping indexes because of exception');
-            drop_indexes (p_owner      => p_source_owner, p_table => p_source_table,
-                          p_debug      => p_debug);
-            -- re-raise the originial exception
-            RAISE;
-      END;
+      o_app.log_msg (   'Exchanging table '
+                     || l_src_name
+                     || ' for '
+                     || ' partition '
+                     || p_partname
+                     || ' of table '
+                     || l_tab_name,
+                     3);
+      coreutils.exec_auto (   'alter table '
+                           || p_owner
+                           || '.'
+                           || p_table
+                           || ' exchange partition '
+                           || l_partname
+                           || ' with table '
+                           || p_source_owner
+                           || '.'
+                           || p_source_table
+                           || ' including indexes update global indexes',
+                           p_runmode);
+      o_app.log_msg (p_source_table || ' exchanged for ' || p_table);
 
       -- drop the indexes on the stage table
-      IF p_index_drop
+      IF coreutils.is_true (p_index_drop)
       THEN
-         drop_indexes (p_owner => p_source_owner, p_table => p_source_table, p_debug => p_debug);
+         drop_indexes (p_owner        => p_source_owner, p_table => p_source_table,
+                       p_runmode      => p_runmode);
       END IF;
 
       o_app.clear_app_info;
@@ -1107,97 +1127,7 @@ AS
       THEN
          o_app.log_err;
          RAISE;
-   END table_exchange;
-
-   -- queries the dictionary using a regexp looking for single-partitioned tables
-   -- those tables matching will be exchanged with non-partitioned tables matching a similar regexp
-   PROCEDURE regexp_exchange (
-      p_source_owner   VARCHAR2,
-      p_regexp         VARCHAR2,
-      p_owner          VARCHAR2 DEFAULT NULL,
-      p_suf_re_rep     VARCHAR2 DEFAULT '?',
-      p_partname       VARCHAR2 DEFAULT NULL,
-      p_index_drop     BOOLEAN DEFAULT TRUE,
-      p_stats          VARCHAR2 DEFAULT 'KEEP',
-      p_statpercent    NUMBER DEFAULT DBMS_STATS.auto_sample_size,
-      p_statdegree     NUMBER DEFAULT DBMS_STATS.default_degree,
-      p_statmo         VARCHAR2 DEFAULT 'FOR ALL COLUMNS SIZE AUTO',
-      p_debug          BOOLEAN DEFAULT FALSE)
-   IS
-      l_target_owner   all_tab_partitions.table_name%TYPE       DEFAULT p_source_owner;
-      l_rows           BOOLEAN                                  := FALSE;
-      l_partname       all_tab_partitions.partition_name%TYPE;
-      l_sql            VARCHAR2 (2000);
-      o_app            applog  := applog (p_module      => 'dbflex.exchange_regexp',
-                                          p_debug       => p_debug);
-   BEGIN
-      IF NOT p_debug
-      THEN
-         o_app.log_msg (   'Exchanging tables matching the regular expression for the '
-                        || p_source_owner
-                        || ' schema'
-                        || CHR (10));
-      END IF;
-
-      IF p_owner IS NOT NULL
-      THEN
-         l_target_owner := p_owner;
-      END IF;
-
-      o_app.set_action ('Open cursor of tables');
-
-      -- dynamic cursor containing all single-partitioned tables
-      FOR c_objects IN (SELECT tt.owner src_owner,
-                               tt.table_name src,
-                               tp.table_owner targ_owner,
-                               tp.table_name targ,
-                               tp.num_partitions
-                          FROM all_tables tt
-                               JOIN
-                               (SELECT   table_owner,
-                                         table_name,
-                                         COUNT (partition_name) num_partitions
-                                    FROM all_tab_partitions
-                                GROUP BY table_owner,
-                                         table_name) tp
-                               ON (REGEXP_REPLACE (tt.table_name, '_[[:alnum:]]+$', NULL) =
-                                                  REGEXP_REPLACE (tp.table_name, p_suf_re_rep, NULL))
-                         WHERE REGEXP_LIKE (tt.table_name, p_regexp, 'i')
-                           AND REGEXP_LIKE (tp.table_name, p_suf_re_rep, 'i')
-                           AND tt.owner = p_source_owner
-                           AND tp.table_owner = l_target_owner)
-      LOOP
-         -- as I'm using dynamic cursors, I need to catch empty cursor sets
-         l_rows := TRUE;
-         o_app.set_action ('Exchange tables');
-         table_exchange (c_objects.src_owner,
-                         c_objects.src,
-                         c_objects.targ_owner,
-                         c_objects.targ,
-                         p_partname,
-                         p_index_drop,
-                         p_stats,
-                         p_statpercent,
-                         p_statdegree,
-                         p_statmo,
-                         p_debug);
-      END LOOP;
-
-      o_app.set_action ('Check exceptions');
-
-      -- if l_rows is still false, then no results from the cursor
-      IF NOT l_rows
-      THEN
-         raise_application_error (-20001, 'No target tables exist for the schema specified');
-      END IF;
-
-      o_app.clear_app_info;
-   EXCEPTION
-      WHEN OTHERS
-      THEN
-         o_app.log_err;
-         RAISE;
-   END regexp_exchange;
+   END exchange_partition;
 
    -- sets particular indexes on a table as unusable depending on provided parameters
    PROCEDURE unusable_indexes (
@@ -1207,14 +1137,15 @@ AS
       p_index_type   VARCHAR2 DEFAULT NULL,       -- possible options: specify different index types
       p_global       BOOLEAN DEFAULT FALSE,
       -- when P_PART_NAME is specified, then whether to mark all global's as unusable
-      p_debug        BOOLEAN DEFAULT FALSE)
+      p_runmode      VARCHAR2 DEFAULT NULL)
    IS
       l_msg           VARCHAR2 (2000);
       l_ddl           VARCHAR2 (2000);
       l_cnt           NUMBER                         := 0;
       l_partitioned   all_indexes.partitioned%TYPE;
-      o_app           applog  := applog (p_module      => 'dbflex.unusable_indexes',
-                                         p_debug       => p_debug);
+      o_app           applog
+                          := applog (p_module       => 'dbflex.unusable_indexes',
+                                     p_runmode      => p_runmode);
    BEGIN
       o_app.set_action ('Test to see if the table is partitioned');
 
@@ -1257,7 +1188,7 @@ AS
                               AND partitioned = 'NO'
                               AND status = 'VALID')
             LOOP
-               IF p_debug
+               IF o_app.is_debugmode
                THEN
                   o_app.log_msg ('Index DDL: ' || c_gidx.DDL);
                ELSE
@@ -1302,7 +1233,7 @@ AS
                                 AND NOT REGEXP_LIKE (index_type, 'iot', 'i')
                                 AND REGEXP_LIKE (NVL (part_name, '^'), '^' || p_part_name, 'i'))
       LOOP
-         IF p_debug
+         IF o_app.is_debugmode
          THEN
             o_app.log_msg ('Index DDL: ' || c_idx.DDL);
          ELSE
@@ -1346,7 +1277,7 @@ AS
       p_global          BOOLEAN DEFAULT FALSE,
       p_d_num           NUMBER DEFAULT 0,       -- first "magic" number in the undocumented function
       p_p_num           NUMBER DEFAULT 65535,  -- second "magic" number in the undocumented function
-      p_debug           BOOLEAN DEFAULT FALSE)
+      p_runmode         VARCHAR2 DEFAULT NULL)
    IS
       l_ddl         VARCHAR2 (2000);
       l_dyn_ddl     VARCHAR2 (2000);
@@ -1363,8 +1294,9 @@ AS
          INDEX BY BINARY_INTEGER;
 
       tt_parts      parts_ttyp;
-      o_app         applog    := applog (p_module      => 'dbflex.unusable_idx_src',
-                                         p_debug       => p_debug);
+      o_app         applog
+                          := applog (p_module       => 'dbflex.unusable_idx_src',
+                                     p_runmode      => p_runmode);
    BEGIN
       IF p_source_column IS NULL
       THEN
@@ -1410,7 +1342,7 @@ AS
          || ') '
          || 'ORDER By partition_position';
 
-      IF p_debug
+      IF o_app.is_debugmode
       THEN
          o_app.log_msg ('Dynamic Cursor: ' || l_dyn_ddl);
       END IF;
@@ -1425,7 +1357,7 @@ AS
                            p_part_name       => tt_parts (i),
                            p_index_type      => p_index_type,
                            p_global          => p_global,
-                           p_debug           => p_debug);
+                           p_runmode         => p_runmode);
       END LOOP;
 
       o_app.clear_app_info;
@@ -1438,19 +1370,19 @@ AS
 
    -- rebuilds all unusable index segments on a particular table
    PROCEDURE usable_indexes (
-      p_owner   VARCHAR2,                               -- owner of table for the indexes to work on
-      p_table   VARCHAR2,                                         -- table to operate on indexes for
-      p_debug   BOOLEAN DEFAULT FALSE)
+      p_owner     VARCHAR2,                             -- owner of table for the indexes to work on
+      p_table     VARCHAR2,                                       -- table to operate on indexes for
+      p_runmode   VARCHAR2 DEFAULT NULL)
    IS
       l_ddl    VARCHAR2 (2000);
       l_rows   BOOLEAN         := FALSE;                                  -- to catch empty cursors
       l_cnt    NUMBER          := 0;
       o_app    applog
-         := applog (p_module      => 'dbflex.usable_indexes',
-                    p_action      => 'Rebuild indexes',
-                    p_debug       => p_debug);
+         := applog (p_module       => 'dbflex.usable_indexes',
+                    p_action       => 'Rebuild indexes',
+                    p_runmode      => p_runmode);
    BEGIN
-      IF NOT p_debug
+      IF NOT o_app.is_debugmode
       THEN
          o_app.log_msg ('Making unusable indexes on ' || p_owner || '.' || p_table || ' usable');
       END IF;
@@ -1473,7 +1405,7 @@ AS
       LOOP
          l_rows := TRUE;
 
-         IF p_debug
+         IF o_app.is_debugmode
          THEN
             o_app.log_msg ('Partition DDL: ' || c_idx.DDL);
          ELSE
@@ -1502,7 +1434,7 @@ AS
       LOOP
          l_rows := TRUE;
 
-         IF p_debug
+         IF o_app.is_debugmode
          THEN
             o_app.log_msg ('Partition DDL: ' || c_gidx.DDL);
          ELSE

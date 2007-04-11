@@ -26,12 +26,12 @@ CREATE OR REPLACE TYPE tdinc.fhconf UNDER tdinc.basetype (
       p_num_bytes         NUMBER,
       p_num_lines         NUMBER,
       p_file_dt           DATE,
-      p_validate          BOOLEAN DEFAULT TRUE),
+      p_validate          VARCHAR2 DEFAULT 'yes'),
    MEMBER PROCEDURE audit_file (
       p_num_bytes   NUMBER,
       p_num_lines   NUMBER,
       p_file_dt     DATE,
-      p_validate    BOOLEAN DEFAULT TRUE),
+      p_validate    VARCHAR2 DEFAULT 'yes'),
    MEMBER PROCEDURE send (p_action VARCHAR2, p_module VARCHAR2, p_message VARCHAR2 DEFAULT NULL)
 )
 NOT FINAL;

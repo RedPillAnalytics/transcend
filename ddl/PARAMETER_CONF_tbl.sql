@@ -27,3 +27,11 @@ ALTER TABLE tdinc.parameter_conf ADD (
 
 CREATE SEQUENCE tdinc.parameter_conf_seq
 /
+
+ALTER TABLE tdinc.parameter_conf ADD CONSTRAINT parameter_conf_uk1 UNIQUE (name) USING INDEX;
+ALTER TABLE tdinc.parameter_conf ADD CONSTRAINT parameter_conf_ck1 CHECK (REGEXP_LIKE(name,'[[:lower:]]+'));
+ALTER TABLE tdinc.parameter_conf ADD CONSTRAINT parameter_conf_ck2 CHECK (REGEXP_LIKE(value,'([[:lower:]]|[[:digit:]])+'));
+
+INSERT INTO parameter_conf VALUES (parameter_conf_seq.nextval,'runmode','runtime','system',sys_context('USERENV','SESSION_USER'),SYSDATE,NULL,null);
+INSERT INTO parameter_conf VALUES (parameter_conf_seq.nextval,'registration','register','system',sys_context('USERENV','SESSION_USER'),SYSDATE,NULL,null);
+INSERT INTO parameter_conf VALUES (parameter_conf_seq.nextval,'logging_level','2','system',sys_context('USERENV','SESSION_USER'),SYSDATE,NULL,null);

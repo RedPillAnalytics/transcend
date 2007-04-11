@@ -7,9 +7,8 @@ AS
       p_query       VARCHAR2,
       p_dirname     VARCHAR2,
       p_filename    VARCHAR2,
-      p_delimiter   VARCHAR2 DEFAULT ',',
       p_quotechar   VARCHAR2 DEFAULT '',
-      p_append      BOOLEAN DEFAULT FALSE)
+      p_append      varchar2 DEFAULT 'no')
       RETURN NUMBER
    AS
       l_output        UTL_FILE.file_type;
@@ -19,19 +18,14 @@ AS
       l_colcnt        NUMBER             DEFAULT 0;
       l_delimiter     VARCHAR2 (5)       DEFAULT '';
       l_cnt           NUMBER             DEFAULT 0;
-      l_mode          VARCHAR2 (1)       DEFAULT 'w';
+l_mode          VARCHAR2 (1):= CASE lower(p_append) WHEN 'yes' THEN 'a' ELSE 'w' END;
       l_exists        BOOLEAN;
       l_length        NUMBER;
       l_blocksize     NUMBER;
       e_no_var        EXCEPTION;
       PRAGMA EXCEPTION_INIT (e_no_var, -1007);
-      o_app           applog             := applog (p_module => 'EXTRACTS.EXTRACT_QUERY');
+      o_app           applog             := applog (p_module => 'extracts.extract_query');
    BEGIN
-      IF p_append
-      THEN
-         l_mode := 'a';
-      END IF;
-
       l_output := UTL_FILE.fopen (p_dirname, p_filename, l_mode, 32767);
       DBMS_SQL.parse (l_thecursor, p_query, DBMS_SQL.native);
       o_app.set_action ('Open Cursor to define columns');
@@ -60,7 +54,7 @@ AS
          LOOP
             DBMS_SQL.COLUMN_VALUE (l_thecursor, i, l_columnvalue);
             UTL_FILE.put (l_output, l_delimiter || p_quotechar || l_columnvalue || p_quotechar);
-            l_delimiter := p_delimiter;
+            l_delimiter := delimiter;
          END LOOP;
 
          UTL_FILE.new_line (l_output);
@@ -80,27 +74,24 @@ AS
       p_object      VARCHAR2,
       p_dirname     VARCHAR2,
       p_filename    VARCHAR2,
-      p_delimiter   VARCHAR2 DEFAULT ',',
-      p_quotechar   VARCHAR2 DEFAULT '',
-      p_headers     VARCHAR2 DEFAULT 'N',
-      p_append      BOOLEAN DEFAULT FALSE)
+      p_append      varchar2 DEFAULT 'no')
       RETURN NUMBER
    IS
       l_cnt           NUMBER          := 0;
       l_head_sql      VARCHAR (1000);
       l_extract_sql   VARCHAR2 (1000);
       o_app           applog
-                      := applog (p_module      => 'EXTRACTS.EXTRACT_OBJECT',
-                                 p_debug       => SELF.DEBUG_MODE);
+                      := applog (p_module      => 'extracts.extract_object',
+                                 p_runmode       => SELF.runmode);
    BEGIN
       l_head_sql :=
             'select regexp_replace(stragg(column_name),'','','''
-         || p_delimiter
+         || delimiter
          || ''') from '
          || '(select '''
-         || p_quotechar
+         || quotechar
          || '''||column_name||'''
-         || p_quotechar
+         || quotechar
          || ''' as column_name'
          || ' from all_tab_cols '
          || 'where table_name='''
@@ -110,36 +101,31 @@ AS
          || ''' order by column_id)';
       l_extract_sql := 'select * from ' || p_owner || '.' || p_object;
 
-      IF SELF.DEBUG_MODE
+      o_app.log_msg ('Headers query: ' || l_head_sql,3);
+      o_app.log_msg ('Extract query: ' || l_extract_sql,3);
+
+
+      IF NOT SELF.is_debugmode
       THEN
-         o_app.log_msg ('Headers query: ' || l_head_sql);
-         o_app.log_msg ('Extract query: ' || l_extract_sql);
-      ELSE
-         IF p_headers = 'Y'
+         IF headers = 'yes'
          THEN
             o_app.set_action ('Extract headers to file');
             l_cnt :=
                extract_query (p_query          => l_head_sql,
                               p_dirname        => p_dirname,
                               p_filename       => p_filename,
-                              p_delimiter      => p_delimiter,
                               p_quotechar      => NULL,
                               p_append         => p_append);
          END IF;
 
-         o_app.set_action ('Extract date to file');
+         o_app.set_action ('Extract data to file');
          l_cnt :=
               l_cnt
             + extract_query (p_query          => l_extract_sql,
                              p_dirname        => p_dirname,
                              p_filename       => p_filename,
-                             p_delimiter      => p_delimiter,
-                             p_quotechar      => p_quotechar,
-                             p_append         => CASE
-                                WHEN p_headers = 'Y'
-                                   THEN TRUE
-                                ELSE p_append
-                             END);
+                             p_quotechar      => quotechar,
+                             p_append         => p_append);
       END IF;
 
       o_app.clear_app_info;
@@ -155,24 +141,20 @@ AS
       l_file_dt     DATE;
       l_detail_id   NUMBER;
       l_message     notify_conf.MESSAGE%TYPE;
-      o_app         applog
-                     := applog (p_module      => 'extract.process',
-                                p_debug       => SELF.DEBUG_MODE);
+      o_app         applog    := applog (p_module      => 'extract.process',
+                                         p_runmode       => runmode);
    BEGIN
       o_app.set_action ('Configure NLS formats');
       -- set date and timestamp NLS formats
-      coreutils.ddl_exec (dateformat_ddl, 'nls_date_format DDL: ', SELF.DEBUG_MODE);
-      coreutils.ddl_exec (tsformat_ddl, 'nls_timestamp_format DDL: ', SELF.DEBUG_MODE);
+      coreutils.exec_sql (dateformat_ddl, runmode, 'nls_date_format DDL: ');
+      coreutils.exec_sql (tsformat_ddl, runmode, 'nls_timestamp_format DDL: ');
       o_app.set_action ('Extract data');
       -- extract data to arch location first
       l_numlines :=
          extract_object (p_owner          => object_owner,
                          p_object         => object_name,
                          p_dirname        => arch_directory,
-                         p_filename       => arch_filename,
-                         p_delimiter      => delimiter,
-                         p_quotechar      => quotechar,
-                         p_headers        => headers);
+                         p_filename       => arch_filename);
       o_app.log_msg (   l_numlines
                      || ' '
                      || CASE l_numlines
@@ -184,10 +166,10 @@ AS
                      || arch_filepath);
       l_file_dt := SYSDATE;
       -- copy the file to the target location
-      coreutils.copy_file (arch_filepath, filepath, SELF.DEBUG_MODE);
+      coreutils.copy_file (arch_filepath, filepath, SELF.runmode);
 
       -- get file attributes
-      IF SELF.DEBUG_MODE
+      IF SELF.is_debugmode
       THEN
          l_num_bytes := 0;
          o_app.log_msg ('Reporting 0 size file in debug mode');
@@ -212,7 +194,7 @@ AS
             || 'The file is too large for some desktop applications, such as Microsoft Excel, to open.';
       END IF;
 
-      SELF.send (p_action=>o_app.action, p_module=>o_app.module, p_message => l_message);
+      SELF.send (p_action => o_app.action, p_module => o_app.module, p_message => l_message);
       o_app.clear_app_info;
    EXCEPTION
       WHEN OTHERS

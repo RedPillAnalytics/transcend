@@ -7,8 +7,8 @@ CREATE OR REPLACE TYPE tdinc.applog UNDER tdinc.basetype (
    client_info        VARCHAR2 (64),
    module             VARCHAR2 (48),
    action             VARCHAR2 (32),
-   run_mode           VARCHAR2 (10),
-   REGISTER           VARCHAR2 (1),
+   registration       VARCHAR2 (20),
+   logging_level      NUMBER,
    prev_client_info   VARCHAR2 (64),
    prev_module        VARCHAR2 (48),
    prev_action        VARCHAR2 (32),
@@ -16,26 +16,28 @@ CREATE OR REPLACE TYPE tdinc.applog UNDER tdinc.basetype (
       p_action        VARCHAR2 DEFAULT 'Begin module',
       p_module        VARCHAR2 DEFAULT NULL,
       p_client_info   VARCHAR2 DEFAULT NULL,
-      p_register      BOOLEAN DEFAULT TRUE,
-      p_debug         BOOLEAN DEFAULT FALSE)
+      p_runmode       VARCHAR2 DEFAULT NULL)
       RETURN SELF AS RESULT,
-   MEMBER FUNCTION get_package_name
-      RETURN VARCHAR2,
    MEMBER FUNCTION whence
       RETURN VARCHAR2,
    MEMBER PROCEDURE set_action (p_action VARCHAR2),
    MEMBER PROCEDURE clear_app_info,
-   MEMBER PROCEDURE log_msg (p_msg VARCHAR2),
+   MEMBER PROCEDURE log_msg (
+      p_msg      VARCHAR2,
+      p_level    NUMBER DEFAULT 2,
+      p_stdout   VARCHAR2 DEFAULT 'yes'),
    MEMBER PROCEDURE log_err,
-   MEMBER PROCEDURE log_cnt (p_count NUMBER),
    MEMBER PROCEDURE log_cnt_msg (p_count NUMBER, p_msg VARCHAR2 DEFAULT NULL),
    MEMBER FUNCTION get_err_cd (p_name VARCHAR2)
       RETURN NUMBER,
    MEMBER FUNCTION get_err_msg (p_name VARCHAR2)
       RETURN VARCHAR2,
-   MEMBER FUNCTION register_mode
+   MEMBER FUNCTION is_registered
       RETURN BOOLEAN,
-   MEMBER PROCEDURE register_mode (p_register BOOLEAN DEFAULT TRUE)
+   MEMBER FUNCTION get_value_vchr (p_name VARCHAR2)
+      RETURN VARCHAR2,
+   MEMBER FUNCTION get_value_num (p_name VARCHAR2)
+      RETURN NUMBER
 )
 ;
 /

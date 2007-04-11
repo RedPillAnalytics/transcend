@@ -2,7 +2,7 @@ CREATE OR REPLACE VIEW tdinc.feed_ot
 OF tdinc.feed
 WITH object identifier (filehub_id)
 as
-SELECT cast('N' AS VARCHAR2(1)) debug,
+SELECT cast('runtime' AS VARCHAR2(10)) runmode,
        filehub_id,
        filehub_name,
        filehub_group,

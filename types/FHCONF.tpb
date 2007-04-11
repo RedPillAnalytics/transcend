@@ -8,9 +8,9 @@ AS
       p_num_bytes         NUMBER,
       p_num_lines         NUMBER,
       p_file_dt           DATE,
-      p_validate          BOOLEAN DEFAULT TRUE)
+      p_validate          VARCHAR2 DEFAULT 'yes')
    AS
-      o_app   applog := applog (p_module => 'fhconf.audit_file', p_debug => SELF.DEBUG_MODE);
+      o_app   applog := applog (p_module => 'fhconf.audit_file', p_runmode => SELF.runmode);
    BEGIN
       o_app.set_action ('Insert FILEHUB_DETAIL');
 
@@ -42,8 +42,10 @@ AS
       -- the job fails when size threshholds are not met
       o_app.set_action ('Check file details');
 
-      IF NOT SELF.DEBUG_MODE AND p_validate
+      IF NOT SELF.is_debugmode AND LOWER (p_validate) = 'yes'
       THEN
+	 o_app.set_action('file size error');
+	 SELF.send (p_module => o_app.module, p_action => o_app.action);
          IF p_num_bytes >= max_bytes AND max_bytes <> 0
          THEN
             raise_application_error (o_app.get_err_cd ('file_too_large'),
@@ -66,9 +68,9 @@ AS
       p_num_bytes   NUMBER,
       p_num_lines   NUMBER,
       p_file_dt     DATE,
-      p_validate    BOOLEAN DEFAULT TRUE)
+      p_validate    VARCHAR2 DEFAULT 'yes')
    AS
-      o_app   applog := applog (p_module => 'fhconf.audit_file', p_debug => SELF.DEBUG_MODE);
+      o_app   applog := applog (p_module => 'fhconf.audit_file', p_runmode => SELF.runmode);
    BEGIN
       o_app.set_action ('Insert FILE_DTL');
       audit_file (p_filepath             => SELF.filepath,
@@ -86,14 +88,10 @@ AS
    MEMBER PROCEDURE send (p_action VARCHAR2, p_module VARCHAR2, p_message VARCHAR2 DEFAULT NULL)
    AS
       o_notify   notify;
-      o_app      applog := applog (p_module => 'fhconf.send', p_debug => SELF.DEBUG_MODE);
+      o_app      applog := applog (p_module => 'fhconf.send', p_runmode => SELF.runmode);
    BEGIN
-
-      IF self.debug_mode
-      THEN
-	 o_app.log_msg('The notification action is: '||p_action);
-	 o_app.log_msg('The notification module is: '||p_module);
-      END IF;
+      o_app.log_msg ('The notification action is: ' || p_action, 4);
+      o_app.log_msg ('The notification module is: ' || p_module, 4);
 
       SELECT VALUE (t)
         INTO o_notify
@@ -102,7 +100,7 @@ AS
          AND LOWER (t.action) = LOWER (p_action)
          AND LOWER (t.module) = LOWER (p_module);
 
-      o_notify.DEBUG_MODE (SELF.DEBUG_MODE);
+      o_notify.runmode := SELF.runmode;
       o_notify.MESSAGE :=
          CASE p_message
             WHEN NULL
@@ -115,7 +113,7 @@ AS
    EXCEPTION
       WHEN NO_DATA_FOUND
       THEN
-         o_app.log_msg ('Notification not configured for this action');
+         o_app.log_msg ('Notification not configured for this action',3);
       WHEN OTHERS
       THEN
          o_app.log_err;

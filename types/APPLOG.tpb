@@ -11,22 +11,25 @@ AS
       -- get the session id
       session_id := SYS_CONTEXT ('USERENV', 'SESSIONID');
       -- first we need to populate the module attribute, because it helps us determine parameter values
-      module := CASE
-                  WHEN p_module IS NOT NULL
-                     THEN p_module
-                  ELSE get_package_name
-               END;
+      module := p_module;
       -- we also set the action, which may be used one day to fine tune parameters
       action := p_action;
       -- now we can use the MODULE attribute to get parameters
       -- if this is null (unprovided), then the module or system parameter is pulled (in that order)
       -- the get_value_vchr function handles the hierarchy
-      runmode := NVL (p_runmode, get_value_vchr ('runmode'));
+      runmode :=
+         CASE
+            WHEN REGEXP_LIKE ('debug', '^' || NVL (p_runmode, '^\W$'), 'i')
+               THEN 'debug'
+            WHEN REGEXP_LIKE ('runtime', '^' || NVL (p_runmode, '^\W$'), 'i')
+               THEN 'runtime'
+            ELSE get_value_vchr ('runmode')
+         END;
       -- get the registration value for this module
       registration := get_value_vchr ('registration');
       -- get the logging level
-      logging_level := CASE self.is_debugmode
-                         WHEN TRUE
+      logging_level := CASE
+                         WHEN runmode = 'debug'
                             THEN 5
                          ELSE get_value_num ('logging_level')
                       END;
@@ -57,6 +60,8 @@ AS
          DBMS_APPLICATION_INFO.set_module (module, action);
       END IF;
 
+      log_msg ('New MODULE ' || module || ' beginning in RUNMODE "' || runmode || '"', 4);
+      log_msg ('Inital ACTION attribute set to "' || action || '"', 4);
       RETURN;
    END applog;
    -- used to pull the calling block from the dictionary
@@ -89,19 +94,11 @@ AS
 
       RETURN l_line;
    END whence;
-   -- formats the results of WHENCE function to pull out the current package name
-   MEMBER FUNCTION get_package_name
-      RETURN VARCHAR2
-   AS
-      l_package_name   log_table.call_stack%TYPE;
-   BEGIN
-      l_package_name := REGEXP_SUBSTR (whence, '\\S+$', 1, 1, 'i');
-      RETURN l_package_name;
-   END get_package_name;
    MEMBER PROCEDURE set_action (p_action VARCHAR2)
    AS
    BEGIN
       action := p_action;
+      log_msg ('ACTION attribute changed to "' || p_action || '"', 4);
 
       IF is_registered
       THEN
@@ -123,7 +120,10 @@ AS
          RAISE;
    END clear_app_info;
    -- used to write a standard message to the LOG_TABLE
-   MEMBER PROCEDURE log_msg (p_msg VARCHAR2, p_level NUMBER DEFAULT 2)
+   MEMBER PROCEDURE log_msg (
+      p_msg      VARCHAR2,
+      p_level    NUMBER DEFAULT 2,
+      p_stdout   VARCHAR2 DEFAULT 'yes')
    -- P_MSG is simply the text that will be written to the LOG_TABLE
    AS
       PRAGMA AUTONOMOUS_TRANSACTION;
@@ -148,55 +148,60 @@ AS
       SELECT current_scn
         INTO l_scn
         FROM v$database;
-      
+
       IF logging_level >= p_level
       THEN
+         -- write the record to the log table
+         INSERT INTO log_table
+                     (msg,
+                      client_info,
+                      module,
+                      action,
+                      runmode,
+                      session_id,
+                      current_scn,
+                      instance_name,
+                      machine,
+                      dbuser,
+                      osuser,
+                      code,
+                      call_stack,
+                      back_trace)
+              VALUES (l_msg,
+                      NVL (SELF.client_info, 'Not Set'),
+                      NVL (SELF.module, 'Not Set'),
+                      NVL (SELF.action, 'Not Set'),
+                      SELF.runmode,
+                      SELF.session_id,
+                      l_scn,
+                      SELF.instance_name,
+                      SELF.machine,
+                      SELF.dbuser,
+                      SELF.osuser,
+                      l_code,
+                      l_whence,
+                      REGEXP_REPLACE (SUBSTR (DBMS_UTILITY.format_error_backtrace, 1, 4000),
+                                      '[[:cntrl:]]',
+                                      '; '));
 
-	 -- write the record to the log table
-	 INSERT INTO log_table
-                (msg,
-                  client_info,
-                  module,
-                  action,
-                  runmode,
-                  session_id,
-                  current_scn,
-                  instance_name,
-                  machine,
-                  dbuser,
-                  osuser,
-                  code,
-                  call_stack,
-                  back_trace)
-		VALUES (l_msg,
-			 NVL (SELF.client_info, 'Not Set'),
-			 NVL (SELF.module, 'Not Set'),
-			 NVL (SELF.action, 'Not Set'),
-			 SELF.runmode,
-			 SELF.session_id,
-			 l_scn,
-			 SELF.instance_name,
-			 SELF.machine,
-			 SELF.dbuser,
-			 SELF.osuser,
-			 l_code,
-			 l_whence,
-			 REGEXP_REPLACE (SUBSTR (DBMS_UTILITY.format_error_backtrace, 1, 4000),
-					  '[[:cntrl:]]',
-					  '; '));
+         COMMIT;
 
-	 COMMIT;
-	 -- also output the message to the screen
-	 -- the client can control whether or not they want to see this
-	 -- in sqlplus, just SET SERVEROUTPUT ON or OFF
-	 DBMS_OUTPUT.put_line (p_msg);
+              -- also output the message to the screen
+              -- the client can control whether or not they want to see this
+              -- in sqlplus, just SET SERVEROUTPUT ON or OFF
+         -- by default, all messages are logged to STDOUT
+         -- this can be controlled per message with P_STDOUT, which defaults to 'yes'
+         IF REGEXP_LIKE ('yes', p_stdout, 'i')
+         THEN
+            DBMS_OUTPUT.put_line (p_msg);
+         END IF;
       END IF;
    END log_msg;
    MEMBER PROCEDURE log_err
    AS
       l_msg   VARCHAR2 (1020) DEFAULT SQLERRM;
    BEGIN
-      log_msg (l_msg, 1);
+      log_msg (l_msg, 1, 'no');
    EXCEPTION
       WHEN OTHERS
       THEN
@@ -204,8 +209,23 @@ AS
    END log_err;
    MEMBER PROCEDURE log_cnt_msg (p_count NUMBER, p_msg VARCHAR2 DEFAULT NULL)
    AS
+      PRAGMA AUTONOMOUS_TRANSACTION;
    BEGIN
-      log_cnt (p_count);
+      -- store in COUNT_TABLE numbers of records affected by particular actions in modules
+      INSERT INTO count_table
+                  (client_info,
+                   module,
+                   action,
+                   runmode,
+                   session_id,
+                   row_cnt)
+           VALUES (NVL (SELF.client_info, 'Not Set'),
+                   NVL (SELF.module, 'Not Set'),
+                   NVL (SELF.action, 'Not Set'),
+                   SELF.runmode,
+                   SELF.session_id,
+                   p_count);
+
       -- if a message was provided to this procedure, then write it to the log table
       -- if not, then simply use the default message below
       log_msg (NVL (p_msg, 'Number of records selected/affected: ' || p_count));
@@ -215,39 +235,6 @@ AS
       THEN
          log_err;
    END log_cnt_msg;
-   MEMBER PROCEDURE log_cnt (p_count NUMBER)
-   AS
-      PRAGMA AUTONOMOUS_TRANSACTION;
-      l_client_info     VARCHAR2 (64);
-      l_module          VARCHAR2 (48);
-      l_action          VARCHAR2 (32);
-      l_sessionid       NUMBER;
-      l_instance_name   VARCHAR2 (30);
-   BEGIN
-      DBMS_APPLICATION_INFO.read_client_info (l_client_info);
-      DBMS_APPLICATION_INFO.read_module (l_module, l_action);
-      l_sessionid := SYS_CONTEXT ('USERENV', 'SESSIONID');
-      l_instance_name := SYS_CONTEXT ('USERENV', 'INSTANCE_NAME');
-
-      -- store in COUNT_TABLE numbers of records affected by particular actions in modules
-      INSERT INTO count_table
-                  (client_info,
-                   module,
-                   action,
-                   session_id,
-                   row_cnt)
-           VALUES (SELF.client_info,
-                   SELF.module,
-                   SELF.action,
-                   SELF.session_id,
-                   p_count);
-
-      COMMIT;
-   EXCEPTION
-      WHEN OTHERS
-      THEN
-         log_err;
-   END log_cnt;
    -- method for returning boolean if the application is registered
    MEMBER FUNCTION is_registered
       RETURN BOOLEAN

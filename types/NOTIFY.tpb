@@ -5,7 +5,7 @@ AS
       l_recipients   VARCHAR2 (2000);
       l_sender       VARCHAR2 (50);
       o_app          applog      := applog (p_module      => 'notify.email',
-                                            p_debug       => SELF.DEBUG_MODE);
+                                            p_runmode       => SELF.runmode);
    BEGIN
       CASE nvl(notify_method,'NA')
          WHEN 'email'
@@ -17,7 +17,7 @@ AS
               FROM email_notify_conf
              WHERE notify_id = SELF.notify_id;
 
-            IF SELF.DEBUG_MODE
+            IF SELF.is_debugmode
             THEN
                o_app.log_msg (   'Email Information:'
                               || CHR (10)

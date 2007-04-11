@@ -3,40 +3,58 @@ AS
 -- audits information about external tables after the file(s) have been put in place
    MEMBER PROCEDURE audit_ext_tab (p_num_lines NUMBER)
    IS
-      l_num_rows   NUMBER         := 0;
-      l_pct_miss   NUMBER;
-      l_sql        VARCHAR2 (100);
-      e_no_table   EXCEPTION;
+      l_num_rows         NUMBER         := 0;
+      l_pct_miss         NUMBER;
+      l_sql              VARCHAR2 (100);
+      e_data_cartridge   EXCEPTION;
+      PRAGMA EXCEPTION_INIT (e_data_cartridge, -29913);
+      e_no_table         EXCEPTION;
       PRAGMA EXCEPTION_INIT (e_no_table, -942);
-      e_no_files   EXCEPTION;
-PRAGMA EXCEPTION_INIT (e_no_files, -1756);
-      o_app        applog  := applog (p_module      => 'feed.audit_ext_tab',
-                                      p_debug       => SELF.DEBUG_MODE);
+      e_no_files         EXCEPTION;
+      PRAGMA EXCEPTION_INIT (e_no_files, -1756);
+      o_app              applog
+                            := applog (p_module       => 'feed.audit_ext_tab',
+                                       p_runmode      => SELF.runmode);
    BEGIN
       -- type object which handles logging and application registration for instrumentation purposes
       -- defaults to registering with DBMS_APPLICATION_INFO
       o_app.set_action ('Get count from table');
       l_sql := 'SELECT count(*) FROM ' || SELF.object_owner || '.' || SELF.object_name;
+      o_app.log_msg ('Count SQL: ' || l_sql, 3);
 
-      -- translates the Y/N attribute into a boolean
-      IF SELF.DEBUG_MODE
+      IF NOT SELF.is_debugmode
       THEN
-         o_app.log_msg ('Count SQL: ' || l_sql);
-      ELSE
-         EXECUTE IMMEDIATE l_sql
-                      INTO l_num_rows;
+         BEGIN
+            EXECUTE IMMEDIATE l_sql
+                         INTO l_num_rows;
+         EXCEPTION
+            WHEN e_data_cartridge
+            THEN
+               -- use a regular expression to pull the KUP error out of SQLERRM
+               CASE REGEXP_SUBSTR (SQLERRM, '^KUP-[[:digit:]]{5}', 1, 1, 'im')
+                  WHEN 'KUP-04040'
+                  THEN
+                     o_app.set_action ('location file missing');
+                     SELF.send (p_module => o_app.module, p_action => o_app.action);
+                     raise_application_error (o_app.get_err_cd ('location_file_missing'),
+                                              o_app.get_err_msg ('location_file_missing'));
+                  ELSE
+                     o_app.log_msg ('Unknown data cartridge error');
+               END CASE;
+         END;
 
          BEGIN
             -- calculate the percentage difference
             l_pct_miss := 100 - ((l_num_rows / p_num_lines) * 100);
-	    IF l_pct_miss > reject_limit
-	    THEN
-	       o_app.set_action('reject limit exceeded');
-	       self.send(p_module=>o_app.module,p_action=>o_app.action);
-	       raise_application_error (o_app.get_err_cd ('reject_limit_exceeded'),
-                                  o_app.get_err_msg ('reject_limit_exceeded'));
 
-	    END IF;
+            IF l_pct_miss > reject_limit
+            THEN
+               o_app.set_action ('reject limit exceeded');
+               -- notify if reject limit is exceeded
+               SELF.send (p_module => o_app.module, p_action => o_app.action);
+               raise_application_error (o_app.get_err_cd ('reject_limit_exceeded'),
+                                        o_app.get_err_msg ('reject_limit_exceeded'));
+            END IF;
          EXCEPTION
             WHEN ZERO_DIVIDE
             THEN
@@ -77,10 +95,10 @@ PRAGMA EXCEPTION_INIT (e_no_files, -1756);
          o_app.log_err;
          RAISE;
    END audit_ext_tab;
-   MEMBER PROCEDURE process (p_keep_source BOOLEAN DEFAULT FALSE)
+   MEMBER PROCEDURE process (p_keep_source VARCHAR2 DEFAULT 'no')
    IS
-   l_rows_dirlist           BOOLEAN                    := FALSE;               -- TO catch empty cursors
-   l_rows_delete BOOLEAN := FALSE;
+      l_rows_dirlist   BOOLEAN                    := FALSE;               -- TO catch empty cursors
+      l_rows_delete    BOOLEAN                    := FALSE;
       l_numlines       NUMBER;
       l_cmd            VARCHAR2 (500);
       l_filepath       VARCHAR2 (200);
@@ -92,8 +110,8 @@ PRAGMA EXCEPTION_INIT (e_no_files, -1756);
       l_message        notify_conf.MESSAGE%TYPE;
       e_no_files       EXCEPTION;
       PRAGMA EXCEPTION_INIT (e_no_files, -1756);
-      o_app            applog    := applog (p_module      => 'feed.process',
-                                            p_debug       => SELF.DEBUG_MODE);
+      o_app            applog     := applog (p_module       => 'feed.process',
+                                             p_runmode      => SELF.runmode);
    BEGIN
       o_app.set_action ('Evaluate source directory');
 
@@ -107,13 +125,15 @@ PRAGMA EXCEPTION_INIT (e_no_files, -1756);
                             WHERE owner = UPPER (object_owner) AND table_name = UPPER (object_name)
                          ORDER BY LOCATION)
       LOOP
-	 l_rows_delete := TRUE;
-         coreutils.delete_file (c_location.DIRECTORY, c_location.LOCATION, SELF.DEBUG_MODE);
+         l_rows_delete := TRUE;
+         coreutils.delete_file (c_location.DIRECTORY, c_location.LOCATION, runmode);
       END LOOP;
+
       IF l_rows_delete
       THEN
-	 o_app.log_msg('Previous external table location files removed');
+         o_app.log_msg ('Previous external table location files removed');
       END IF;
+
       -- now we need to see all the source files in the source directory that match the regular expression
       -- use java stored procedure to populate global temp table DIR_LIST with all the files in the directory
       coreutils.get_dir_list (source_dirpath);
@@ -156,7 +176,7 @@ PRAGMA EXCEPTION_INIT (e_no_files, -1756);
                    || SELF.object_name
                    || ' location ('
                    || REGEXP_REPLACE
-                         (stragg (   SELF.DIRECTORY
+                         (MAX (   SELF.DIRECTORY
                                || ':'''
                                || CASE
                                      WHEN ext_tab_ind = 'Y' AND ext_tab_type_cnt > 1
@@ -174,7 +194,7 @@ PRAGMA EXCEPTION_INIT (e_no_files, -1756);
                    -- this constructs a STRAGGED list of URL's if multiple files exist
                              -- otherwise it's null
                    REGEXP_REPLACE
-                      (stragg (   SELF.baseurl
+                      (MAX (   SELF.baseurl
                             || '/'
                             || CASE
                                   WHEN ext_tab_ind = 'Y' AND ext_tab_type_cnt > 1
@@ -263,8 +283,7 @@ PRAGMA EXCEPTION_INIT (e_no_files, -1756);
          l_numlines := 0;
          -- copy file to the archive location
          o_app.set_action ('Copy archivefile');
-         coreutils.copy_file (c_dir_list.source_filepath, c_dir_list.arch_filepath,
-                              SELF.DEBUG_MODE);
+         coreutils.copy_file (c_dir_list.source_filepath, c_dir_list.arch_filepath, runmode);
          o_app.log_msg ('Archive file ' || c_dir_list.arch_filepath || ' created');
          -- copy the file to the external table
          o_app.set_action ('Copy external table files');
@@ -281,9 +300,7 @@ PRAGMA EXCEPTION_INIT (e_no_files, -1756);
             l_files_url := c_dir_list.files_url;
             -- first move the file to the target destination without changing the name
             -- because the file might be zipped or encrypted
-            coreutils.copy_file (c_dir_list.arch_filepath,
-                                 c_dir_list.pre_mv_filepath,
-                                 SELF.DEBUG_MODE);
+            coreutils.copy_file (c_dir_list.arch_filepath, c_dir_list.pre_mv_filepath, runmode);
             -- decrypt the file if it's encrypted
             -- currently only supports gpg
             -- decrypt_file will return the decrypted filename
@@ -292,50 +309,48 @@ PRAGMA EXCEPTION_INIT (e_no_files, -1756);
                coreutils.decrypt_file (dirpath,
                                        c_dir_list.source_filename,
                                        SELF.passphrase,
-                                       SELF.DEBUG_MODE);
+                                       runmode);
             -- unzip the file if it's zipped
             -- currently will unzip, or gunzip, or bunzip2 or uncompress
             -- unzip_file will return the unzipped filename
             -- IF the file isn't a recognized zip archive file, it just returns the name passed
-            l_filepath :=
-                         coreutils.unzip_file (dirpath, c_dir_list.source_filename, SELF.DEBUG_MODE);
+            l_filepath := coreutils.unzip_file (dirpath, c_dir_list.source_filename, runmode);
                  -- now move the file to the expected name
             -- do this with a copy/delete
-            coreutils.copy_file (l_filepath, c_dir_list.filepath, SELF.DEBUG_MODE);
-            coreutils.delete_file (DIRECTORY, c_dir_list.source_filename, SELF.DEBUG_MODE);
+            coreutils.copy_file (l_filepath, c_dir_list.filepath, runmode);
+            coreutils.delete_file (DIRECTORY, c_dir_list.source_filename, runmode);
             o_app.log_msg ('File ' || c_dir_list.source_filepath || ' moved to '
                            || c_dir_list.filepath);
---            coreutils.delete_file (c_dir_list.pre_mv_filepath, SELF.DEBUG_MODE);
             -- get the number of lines in the file now that it is decrypted and uncompressed
-            l_numlines :=
-                       coreutils.get_numlines (SELF.DIRECTORY, c_dir_list.filename, SELF.DEBUG_MODE);
+            l_numlines := coreutils.get_numlines (SELF.DIRECTORY, c_dir_list.filename, runmode);
             -- get a total count of all the lines in all the files making up the external table
             l_sum_numlines := l_sum_numlines + l_numlines;
          END IF;
 
          -- WRITE an audit record for the file that was just archived
-	 IF NOT self.debug_mode
-	 THEN
-         o_app.set_action ('Audit feed');
-         SELF.audit_file (p_source_filepath      => c_dir_list.source_filepath,
-                          p_arch_filepath        => c_dir_list.arch_filepath,
-                          p_filepath             => c_dir_list.filepath,
-                          p_num_bytes            => c_dir_list.file_size,
-                          p_num_lines            => l_numlines,
-                          p_file_dt              => c_dir_list.file_dt,
-                          p_validate             => CASE c_dir_list.ext_tab_ind
-                             WHEN 'Y'
-                                THEN TRUE
-                             ELSE FALSE
-                           END);
-	 END IF;
+         IF NOT SELF.is_debugmode
+         THEN
+            o_app.set_action ('Audit feed');
+            SELF.audit_file (p_source_filepath      => c_dir_list.source_filepath,
+                             p_arch_filepath        => c_dir_list.arch_filepath,
+                             p_filepath             => c_dir_list.filepath,
+                             p_num_bytes            => c_dir_list.file_size,
+                             p_num_lines            => l_numlines,
+                             p_file_dt              => c_dir_list.file_dt,
+                             p_validate             => CASE c_dir_list.ext_tab_ind
+                                WHEN 'Y'
+                                   THEN 'yes'
+                                ELSE 'no'
+                             END);
+         END IF;
+
          -- IF we get this far, then we need to delete the source files
-         -- this step is ignored if p_keep_source = TRUE
+         -- this step is ignored if p_keep_source = 'yes'
          o_app.set_action ('Delete source files');
 
-         IF NOT p_keep_source
+         IF LOWER (p_keep_source) = 'no'
          THEN
-            coreutils.delete_file (source_directory, c_dir_list.source_filename, SELF.DEBUG_MODE);
+            coreutils.delete_file (source_directory, c_dir_list.source_filename, runmode);
          END IF;
       END LOOP;
 
@@ -364,7 +379,7 @@ PRAGMA EXCEPTION_INIT (e_no_files, -1756);
                                 WHERE owner = UPPER (object_owner)
                                   AND table_name = UPPER (object_name))
             LOOP
-               coreutils.create_file (c_location.DIRECTORY, c_location.LOCATION, SELF.DEBUG_MODE);
+               coreutils.create_file (c_location.DIRECTORY, c_location.LOCATION, runmode);
             END LOOP;
          WHEN l_rows_dirlist AND LOWER (source_policy) = 'all'
          -- matching files found, so ignore
@@ -373,8 +388,8 @@ PRAGMA EXCEPTION_INIT (e_no_files, -1756);
             o_app.set_action ('Alter external table');
 
             BEGIN
-               coreutils.ddl_exec (l_ext_tab_ddl, p_debug => SELF.DEBUG_MODE);
-	       o_app.log_msg('External table '||object_owner||'.'||object_name||' altered');
+               coreutils.exec_auto (l_ext_tab_ddl, p_runmode => SELF.runmode);
+               o_app.log_msg ('External table ' || object_owner || '.' || object_name || ' altered');
             EXCEPTION
                WHEN e_no_files
                THEN

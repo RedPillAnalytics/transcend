@@ -9,7 +9,7 @@ IS
    PROCEDURE process (
       p_filehub_group   VARCHAR2,
       p_filehub_name    VARCHAR2 DEFAULT NULL,
-      p_keep_source     BOOLEAN DEFAULT FALSE,
-      p_debug           BOOLEAN DEFAULT FALSE);
+      p_keep_source     varchar2 DEFAULT 'no',
+      p_runmode         varchar2 DEFAULT null);
 END filehub;
 /
