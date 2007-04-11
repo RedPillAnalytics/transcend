@@ -1081,7 +1081,7 @@ AS
                THEN
                   -- no stats existed on the target table
                   -- just leave them blank
-                  o_app.log_msg ('No stats existed for partition ' || p_part_name, 3);
+                  o_app.log_msg ('No stats existed for partition ' || p_partname, 3);
             END;
       END CASE;
 
@@ -1120,7 +1120,6 @@ AS
          drop_indexes (p_owner        => p_source_owner, p_table => p_source_table,
                        p_runmode      => p_runmode);
       END IF;
-
       o_app.clear_app_info;
    EXCEPTION
       WHEN OTHERS
