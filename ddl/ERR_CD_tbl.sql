@@ -39,4 +39,4 @@ INSERT INTO tdinc.err_cd (code,name,message) VALUES (-20019, 'on_clause_missing'
 INSERT INTO tdinc.err_cd (code,name,message) VALUES (-20020, 'incorrect_parameters','The combination of parameters provided yields no matching objects.');
 INSERT INTO tdinc.err_cd (code,name,message) VALUES (-20021, 'no_object','The specified object does not exist');
 INSERT INTO tdinc.err_cd (code,name,message) VALUES (-20022, 'unrecognized_parm','The specified parameter is not recognized');
-INSERT INTO tdinc.err_cd (code,name,message) VALUES (-20023, 'no_max_part','Max partition could not be returned');
+INSERT INTO tdinc.err_cd (code,name,message) VALUES (-20023, 'not partitioned','The specified table is not partititoned');
