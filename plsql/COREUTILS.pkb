@@ -61,7 +61,7 @@ AS
          RAISE;
    END copy_file;
 
-   -- procedure executes the delete_file function and raises an exception with the return code
+   -- uses UTL_FILE to remove an OS level file
    PROCEDURE delete_file (p_directory VARCHAR2, p_filename VARCHAR2, p_runmode VARCHAR2 DEFAULT NULL)
    AS
       l_retval     NUMBER;
@@ -88,7 +88,7 @@ AS
          RAISE;
    END delete_file;
 
-   -- procedure executes the create_file function and raises an exception with the return code
+   -- uses UTL_FILE to "touch" a file
    PROCEDURE create_file (p_directory VARCHAR2, p_filename VARCHAR2, p_runmode VARCHAR2 DEFAULT NULL)
    AS
       l_fh        UTL_FILE.file_type;
@@ -161,23 +161,17 @@ AS
       RETURN VARCHAR2
    AS
       l_path   all_directories.directory_path%TYPE;
-      o_app    applog                              := applog (p_module      => 'coreutils.get_dir_path');
    BEGIN
       SELECT directory_path
         INTO l_path
         FROM all_directories
        WHERE directory_name = UPPER (p_dirname);
 
-      o_app.clear_app_info;
       RETURN l_path;
    EXCEPTION
       WHEN NO_DATA_FOUND
       THEN
          raise_application_error (-20010, 'Directory object does not exist');
-      WHEN OTHERS
-      THEN
-         o_app.log_err;
-         RAISE;
    END get_dir_path;
 
    -- used to get a directory name associated with a directory path
@@ -187,14 +181,12 @@ AS
       RETURN VARCHAR2
    AS
       l_dirname   all_directories.directory_name%TYPE;
-      o_app       applog                           := applog (p_module      => 'coreutils.get_dir_name');
    BEGIN
       SELECT directory_name
         INTO l_dirname
         FROM all_directories
        WHERE directory_path = p_dir_path;
 
-      o_app.clear_app_info;
       RETURN l_dirname;
    EXCEPTION
       WHEN NO_DATA_FOUND
@@ -204,11 +196,35 @@ AS
       THEN
          raise_application_error (-20012,
                                   'More than one directory object defined for the specified path');
-      WHEN OTHERS
-      THEN
-         o_app.log_err;
-         RAISE;
    END get_dir_name;
+
+   -- GET method for pulling an error code out of the ERR_CD table
+   FUNCTION get_err_cd (p_name VARCHAR2)
+      RETURN NUMBER
+   AS
+      l_code   err_cd.code%TYPE;
+   BEGIN
+      SELECT code
+        INTO l_code
+        FROM err_cd
+       WHERE NAME = p_name;
+
+      RETURN l_code;
+   END get_err_cd;
+
+   -- GET method for pulling error text out of the ERR_CD table
+   FUNCTION get_err_msg (p_name VARCHAR2)
+      RETURN VARCHAR2
+   AS
+      l_msg   err_cd.MESSAGE%TYPE;
+   BEGIN
+      SELECT MESSAGE
+        INTO l_msg
+        FROM err_cd
+       WHERE NAME = p_name;
+
+      RETURN l_msg;
+   END get_err_msg;
 
    -- returns a boolean
    -- does a check to see if a table exists
@@ -217,25 +233,45 @@ AS
       RETURN BOOLEAN
    AS
       l_table   dba_tables.table_name%TYPE;
-      o_app     applog                       := applog (p_module => 'coreutils.table_exists');
    BEGIN
       SELECT table_name
         INTO l_table
         FROM dba_tables
        WHERE owner = UPPER (p_owner) AND table_name = UPPER (p_table);
 
-      o_app.clear_app_info;
       RETURN TRUE;
    EXCEPTION
       WHEN NO_DATA_FOUND
       THEN
-         o_app.clear_app_info;
          RETURN FALSE;
-      WHEN OTHERS
-      THEN
-         o_app.log_err;
-         RAISE;
    END table_exists;
+
+   -- returns a boolean
+   -- does a check to see if table is partitioned
+   -- raises an error if it doesn't
+   FUNCTION is_part_table (p_owner VARCHAR2, p_table VARCHAR2)
+      RETURN BOOLEAN
+   AS
+      l_partitioned   dba_tables.partitioned%TYPE;
+   BEGIN
+      SELECT partitioned
+        INTO l_partitioned
+        FROM dba_tables
+       WHERE owner = UPPER (p_owner) AND table_name = UPPER (p_table);
+
+      CASE
+         WHEN is_true (l_partitioned)
+         THEN
+            RETURN TRUE;
+         WHEN NOT is_true (l_partitioned)
+         THEN
+            RETURN FALSE;
+      END CASE;
+   EXCEPTION
+      WHEN NO_DATA_FOUND
+      THEN
+         RETURN FALSE;
+   END is_part_table;
 
    -- returns a boolean
    -- does a check to see if a object exists
@@ -270,36 +306,43 @@ AS
    FUNCTION is_true (p_parm VARCHAR2)
       RETURN BOOLEAN
    AS
-      l_object   dba_objects.object_name%TYPE;
-      o_app      applog                         := applog (p_module => 'coreutils.is_true');
    BEGIN
       -- use the load_tab or merge_tab procedure depending on P_MERGE
       CASE
          WHEN REGEXP_LIKE ('yes', p_parm, 'i')
          THEN
-            o_app.clear_app_info;
             RETURN TRUE;
          WHEN REGEXP_LIKE ('no', p_parm, 'i')
          THEN
-            o_app.clear_app_info;
             RETURN FALSE;
          ELSE
-            raise_application_error (o_app.get_err_cd ('unrecognized_parm'),
-                                     o_app.get_err_msg ('unrecognized_parm') || ' : ' || p_parm);
+            raise_application_error (get_err_cd ('unrecognized_parm'),
+                                     get_err_msg ('unrecognized_parm') || ' : ' || p_parm);
       END CASE;
-
-      o_app.clear_app_info;
-      RETURN TRUE;
-   EXCEPTION
-      WHEN NO_DATA_FOUND
-      THEN
-         o_app.clear_app_info;
-         RETURN FALSE;
-      WHEN OTHERS
-      THEN
-         o_app.log_err;
-         RAISE;
    END is_true;
+
+   -- much like IS_TRUE above, but BOOLEANS, though useful in PL/SQL, are not supported in SQL
+   -- this can be used in SQL cursors
+   -- returns a varchar2
+   -- accepts a varchar2 and determines if regexp matches 'yes' or 'no'
+   -- raises an error if it doesn't
+   FUNCTION get_yn_ind (p_parm VARCHAR2)
+      RETURN VARCHAR2
+   AS
+   BEGIN
+      -- use the load_tab or merge_tab procedure depending on P_MERGE
+      CASE
+         WHEN REGEXP_LIKE ('yes', p_parm, 'i')
+         THEN
+            RETURN 'yes';
+         WHEN REGEXP_LIKE ('no', p_parm, 'i')
+         THEN
+            RETURN 'no';
+         ELSE
+            raise_application_error (get_err_cd ('unrecognized_parm'),
+                                     get_err_msg ('unrecognized_parm') || ' : ' || p_parm);
+      END CASE;
+   END get_yn_ind;
 
    -- get the number of lines in a file
    FUNCTION get_numlines (
