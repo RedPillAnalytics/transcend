@@ -1164,127 +1164,213 @@ AS
          RAISE;
    END exchange_partition;
 
+   PROCEDURE pop_partname (
+      p_owner           VARCHAR2,
+      p_table           VARCHAR2,
+      p_partname        VARCHAR2 DEFAULT NULL,
+      p_source_owner    VARCHAR2 DEFAULT NULL,
+      p_source_object   VARCHAR2 DEFAULT NULL,
+      p_source_column   VARCHAR2 DEFAULT NULL,
+      p_d_num           NUMBER DEFAULT 0,
+      p_p_num           NUMBER DEFAULT 65535)
+   AS
+      l_dsql            LONG;
+      -- to catch empty cursors
+      l_source_column   all_part_key_columns.column_name%TYPE;
+
+      TYPE partname_type IS TABLE OF partname.partition_name%TYPE
+         INDEX BY BINARY_INTEGER;
+
+      t_partname        partname_type;
+   BEGIN
+      IF p_partname IS NOT NULL
+      THEN
+         INSERT INTO tdinc.partname
+              VALUES (p_partname);
+      ELSE
+         IF p_source_column IS NULL
+         THEN
+            SELECT column_name
+              INTO l_source_column
+              FROM all_part_key_columns
+             WHERE NAME = UPPER (p_table) AND owner = UPPER (p_owner);
+         ELSE
+            l_source_column := p_source_column;
+         END IF;
+
+         coreutils.exec_sql (   'insert into tdinc.partname '
+                             || ' SELECT partition_name'
+                             || '  FROM all_tab_partitions'
+                             || ' WHERE table_owner = '''
+                             || UPPER (p_owner)
+                             || ''' AND table_name = '''
+                             || UPPER (p_table)
+                             || ''' AND partition_position IN '
+                             || ' (SELECT DISTINCT tbl$or$idx$part$num("'
+                             || UPPER (p_owner)
+                             || '"."'
+                             || UPPER (p_table)
+                             || '", 0, '
+                             || p_d_num
+                             || ', '
+                             || p_p_num
+                             || ', "'
+                             || UPPER (l_source_column)
+                             || '")	 FROM '
+                             || UPPER (p_source_owner)
+                             || '.'
+                             || UPPER (p_source_object)
+                             || ') '
+                             || 'ORDER By partition_position');
+      END IF;
+   END pop_partname;
+
+   -- Provides functionality for setting local and non-local indexes to unusable based on parameters
+   -- Can also base which index partitions to mark as unuable based on the contents of another table
+   -- This procedure uses an undocumented database function called tbl$or$idx$part$num.
+   -- There are two "magic" numbers that are required to make it work correctly.
+   -- The defaults will quite often work.
+   -- The simpliest way to find which magic numbers make this function work is to
+   -- do a partition exchange on the target table and trace that statement.
    -- sets particular indexes on a table as unusable depending on provided parameters
    PROCEDURE unusable_indexes (
-      p_owner        VARCHAR2,                          -- owner of table for the indexes to work on
-      p_table        VARCHAR2,                                    -- table to operate on indexes for
-      p_part_name    VARCHAR2 DEFAULT NULL,           -- partition to mark indexes on (if specified)
-      p_index_type   VARCHAR2 DEFAULT NULL,       -- possible options: specify different index types
-      p_global       BOOLEAN DEFAULT FALSE,
+      p_owner           VARCHAR2,                       -- owner of table for the indexes to work on
+      p_table           VARCHAR2,                                 -- table to operate on indexes for
+      p_partname        VARCHAR2 DEFAULT NULL,        -- partition to mark indexes on (if specified)
+      p_source_owner    VARCHAR2 DEFAULT NULL,
+      p_source_object   VARCHAR2 DEFAULT NULL,
+      p_source_column   VARCHAR2 DEFAULT NULL,
+      p_d_num           NUMBER DEFAULT 0,                     -- first magic number from unpublished
+      p_p_num           NUMBER DEFAULT 65535,
+      p_index_type      VARCHAR2 DEFAULT NULL,    -- possible options: specify different index types
+      p_part_type       VARCHAR2 DEFAULT NULL,
       -- when P_PART_NAME is specified, then whether to mark all global's as unusable
-      p_runmode      VARCHAR2 DEFAULT NULL)
+      p_runmode         VARCHAR2 DEFAULT NULL)
    IS
-      l_msg           VARCHAR2 (2000);
-      l_ddl           VARCHAR2 (2000);
-      l_cnt           NUMBER                         := 0;
-      l_partitioned   all_indexes.partitioned%TYPE;
-      o_app           applog
-                          := applog (p_module       => 'dbflex.unusable_indexes',
+      l_msg        VARCHAR2 (2000);
+      l_ddl        VARCHAR2 (2000);
+      l_pidx_cnt   NUMBER;
+      l_idx_cnt    NUMBER;
+      l_rows       BOOLEAN         DEFAULT FALSE;
+      o_app        applog := applog (p_module       => 'dbflex.unusable_indexes',
                                      p_runmode      => p_runmode);
    BEGIN
-      o_app.set_action ('Test to see if the table is partitioned');
-
-      -- find out whether the table specified is partitioned
-      SELECT partitioned
-        INTO l_partitioned
-        FROM all_tables
-       WHERE table_name = UPPER (p_table) AND owner = UPPER (p_owner);
-
-      o_app.set_action ('Evaluate global indexes to work on');
-
       CASE
-         -- error if P_PART_NAME is specified but the table isn't partitioned
-      WHEN l_partitioned = 'NO' AND p_part_name IS NOT NULL
+         WHEN     p_partname IS NOT NULL
+              AND (p_source_owner IS NOT NULL OR p_source_object IS NOT NULL)
          THEN
-            raise_application_error (-20001,
-                                        p_owner
-                                     || '.'
-                                     || p_table
-                                     || ' is not partitioned; cannot specify P_PART_NAME');
-         -- P_GLOBAL is only approprate when this is a partitioned table
-         -- and P_PART_NAME is specified
-      WHEN p_global AND (p_part_name IS NULL OR l_partitioned = 'NO')
+            raise_application_error (coreutils.get_err_cd ('parms_not_compatible'),
+                                        coreutils.get_err_msg ('parms_not_compatible')
+                                     || ': P_PARTNAME with either P_SOURCE_OWNER or P_SOURCE_OBJECT');
+         WHEN p_source_owner IS NOT NULL AND p_source_object IS NULL
          THEN
-            raise_application_error
-               (-20001,
-                'Specifying TRUE for P_GLOBAL is only appropriate when P_PART_NAME is specified and the table is partitioned.');
-         WHEN p_global AND l_partitioned = 'YES' AND p_part_name IS NOT NULL
+            raise_application_error (coreutils.get_err_cd ('parms_not_compatible'),
+                                        coreutils.get_err_msg ('parms_not_compatible')
+                                     || ': P_SOURCE_OWNER without P_SOURCE_OBJECT');
+         WHEN p_source_owner IS NULL AND p_source_object IS NOT NULL
          THEN
-            -- this is a partitioned table
-            -- and we specified TRUE for P_GLOBAL
-            -- and we specified P_PART_NAME
-            -- first mark all global indexes as unusable
-            FOR c_gidx IN (SELECT 'alter index ' || owner || '.' || index_name || ' unusable' DDL
-                             FROM all_indexes
-                            WHERE table_name = UPPER (p_table)
-                              AND table_owner = UPPER (p_owner)
-                              AND NOT REGEXP_LIKE (index_type, 'iot', 'i')
-                              AND REGEXP_LIKE (index_type, '^' || p_index_type, 'i')
-                              AND partitioned = 'NO'
-                              AND status = 'VALID')
-            LOOP
-               IF o_app.is_debugmode
-               THEN
-                  o_app.log_msg ('Index DDL: ' || c_gidx.DDL);
-               ELSE
-                  EXECUTE IMMEDIATE c_gidx.DDL;
-               END IF;
-
-               l_cnt := l_cnt + 1;
-            END LOOP;
-
-            -- only give this message if there were indexes returned in the cursor
-            IF l_cnt > 0
-            THEN
-               o_app.log_msg (l_cnt || ' global index(es) affected');
-            END IF;
+            raise_application_error (coreutils.get_err_cd ('parms_not_compatible'),
+                                        coreutils.get_err_msg ('parms_not_compatible')
+                                     || ': P_SOURCE_OBJECT without P_SOURCE_OWNER');
          ELSE
             NULL;
       END CASE;
 
-      l_cnt := 0;
-      o_app.set_action ('Evaluate indexes to work on');
+      o_app.set_action ('Populate PARTNAME table');
+      -- populate a global temporary table with the indexes to work on
+      -- this is a requirement because the dynamic SQL needed to use the tbl$or$idx$part$num function
+      pop_partname (p_owner              => p_owner,
+                    p_table              => p_table,
+                    p_partname           => p_partname,
+                    p_source_owner       => p_source_owner,
+                    p_source_object      => p_source_object,
+                    p_source_column      => p_source_column,
+                    p_d_num              => p_d_num,
+                    p_p_num              => p_p_num);
 
       -- this cursor will contain all the ALTER INDEX statements necessary to mark indexes unusable
       -- the contents of the cursor depends very much on the parameters specified
-      FOR c_idx IN (SELECT DISTINCT DDL
-                               FROM (SELECT    'alter index '
-                                            || owner
-                                            || '.'
-                                            || ai.index_name
-                                            || DECODE (p_part_name,
-                                                       NULL, NULL,
-                                                       ' modify partition ' || p_part_name)
-                                            || ' unusable' DDL,
-                                            index_type,
-                                            partition_name part_name
-                                       FROM all_indexes ai LEFT OUTER JOIN all_ind_partitions aip
+      -- also depends on the contents of the PARTNAME global temporary table
+      FOR c_idx IN (SELECT DISTINCT    'alter index '
+                                    || owner
+                                    || '.'
+                                    || index_name
+                                    || CASE idx_ddl_type
+                                          WHEN 'I'
+                                             THEN NULL
+                                          ELSE ' modify partition ' || partition_name
+                                       END
+                                    || ' unusable' DDL,
+                                    idx_ddl_type,
+                                    partition_name,
+                                    SUM (CASE idx_ddl_type
+                                            WHEN 'I'
+                                               THEN 1
+                                            ELSE 0
+                                         END) OVER (PARTITION BY 1) num_indexes,
+                                    SUM (CASE idx_ddl_type
+                                            WHEN 'P'
+                                               THEN 1
+                                            ELSE 0
+                                         END) OVER (PARTITION BY 1) num_partitions
+                               FROM (SELECT index_type,
+                                            owner,
+                                            ai.index_name,
+                                            partition_name,
+                                            partitioned,
+                                            CASE
+                                               WHEN partition_name IS NULL OR partitioned = 'NO'
+                                                  THEN 'I'
+                                               ELSE 'P'
+                                            END idx_ddl_type
+                                       FROM tdinc.partname JOIN all_ind_partitions aip
+                                            USING (partition_name)
+                                            RIGHT JOIN all_indexes ai
                                             ON ai.index_name = aip.index_name
                                           AND ai.owner = aip.index_owner
                                       WHERE table_name = UPPER (p_table)
                                         AND table_owner = UPPER (p_owner)
-                                        AND (ai.status = 'VALID' OR aip.status = 'USABLE')) INDEXES
+                                        AND (ai.status = 'VALID' OR aip.status = 'USABLE'))
                               WHERE REGEXP_LIKE (index_type, '^' || p_index_type, 'i')
                                 AND NOT REGEXP_LIKE (index_type, 'iot', 'i')
-                                AND REGEXP_LIKE (NVL (part_name, '^'), '^' || p_part_name, 'i'))
+                           ORDER BY idx_ddl_type ASC,
+                                    partition_name)
       LOOP
-         IF o_app.is_debugmode
-         THEN
-            o_app.log_msg ('Index DDL: ' || c_idx.DDL);
-         ELSE
-            EXECUTE IMMEDIATE c_idx.DDL;
-         END IF;
-
-         l_cnt := l_cnt + 1;
+         l_rows := TRUE;
+         coreutils.exec_auto (c_idx.DDL, p_runmode => p_runmode);
+         l_pidx_cnt := c_idx.num_partitions;
+         l_idx_cnt := c_idx.num_indexes;
       END LOOP;
 
-      o_app.log_msg (   l_cnt
-                     || ' index(es) affected'
-                     || CASE
-                           WHEN p_part_name IS NULL
-                              THEN NULL
-                           ELSE ' for partition ' || p_part_name
-                        END);
+      IF l_rows
+      THEN
+         o_app.log_msg (   l_idx_cnt
+                        || CASE
+                              WHEN coreutils.is_part_table (p_owner, p_table)
+                                 THEN ' global'
+                              ELSE NULL
+                           END
+                        || ' index'
+                        || CASE l_idx_cnt
+                              WHEN 1
+                                 THEN NULL
+                              ELSE 'es'
+                           END
+                        || ' affected');
+         o_app.log_msg (   l_pidx_cnt
+                        || ' local index partition'
+                        || CASE l_idx_cnt
+                              WHEN 1
+                                 THEN NULL
+                              ELSE 's'
+                           END
+                        || ' affected');
+      ELSE
+         o_app.log_msg ('No matching usable indexes found');
+      END IF;
+
+      -- commit needed to clear the contents of the global temporary table
+      COMMIT;
       o_app.clear_app_info;
    EXCEPTION
       WHEN OTHERS
@@ -1292,116 +1378,6 @@ AS
          o_app.log_err;
          RAISE;
    END unusable_indexes;
-
-   -- Provides functionality for setting indexes to unusable based on the contents of another object
-   -- This procedure uses an undocumented database function called tbl$or$idx$part$num.
-   -- There are two "magic" numbers that are required to make it work correctly.
-   -- The defaults will quite often work.
-   -- The simpliest way to find which magic numbers make this function work is to
-   -- do a partition exchange on the target table and trace that statement.
-   PROCEDURE unusable_idx_src (
-      p_owner           VARCHAR2,                       -- owner of table for the indexes to work on
-      p_table           VARCHAR2,                                 -- table to operate on indexes for
-      p_source_owner    VARCHAR2 DEFAULT NULL,
-      -- owner of the object to use to evaluate indexes to make unusable
-      p_source_object   VARCHAR2 DEFAULT NULL,
-      -- object to use to look for partitions to make unusable
-      p_source_column   VARCHAR2 DEFAULT NULL,
-      -- column to use to base comparision... defaults to partitioned column
-      p_index_type      VARCHAR2 DEFAULT NULL,
-      p_global          BOOLEAN DEFAULT FALSE,
-      p_d_num           NUMBER DEFAULT 0,       -- first "magic" number in the undocumented function
-      p_p_num           NUMBER DEFAULT 65535,  -- second "magic" number in the undocumented function
-      p_runmode         VARCHAR2 DEFAULT NULL)
-   IS
-      l_ddl         VARCHAR2 (2000);
-      l_dyn_ddl     VARCHAR2 (2000);
-      l_src_owner   all_tables.owner%TYPE
-                                    := NVL (p_source_owner, REGEXP_REPLACE (p_owner, 'DW$', 'STG'));
-      l_src_obj     all_objects.object_name%TYPE        := NVL (p_source_object, p_table || '_STG');
-      -- to catch empty cursors
-      l_rows        BOOLEAN                                 := FALSE;
-      l_src_col     all_part_key_columns.column_name%TYPE;
-      l_cnt         NUMBER                                  := 0;
-
-      -- type for doing a dynamic bulk collection
-      TYPE parts_ttyp IS TABLE OF all_tab_partitions.partition_name%TYPE
-         INDEX BY BINARY_INTEGER;
-
-      tt_parts      parts_ttyp;
-      o_app         applog
-                          := applog (p_module       => 'dbflex.unusable_idx_src',
-                                     p_runmode      => p_runmode);
-   BEGIN
-      IF p_source_column IS NULL
-      THEN
-         SELECT column_name
-           INTO l_src_col
-           FROM all_part_key_columns
-          WHERE NAME = UPPER (p_table) AND owner = UPPER (p_owner);
-      ELSE
-         l_src_col := p_source_column;
-      END IF;
-
-      o_app.log_msg (   'Evaluating '
-                     || l_src_owner
-                     || '.'
-                     || l_src_obj
-                     || ' to determine partitions on '
-                     || p_owner
-                     || '.'
-                     || p_table
-                     || ' to operate on');
-      l_dyn_ddl :=
-            'SELECT partition_name '
-         || '  FROM all_tab_partitions'
-         || ' WHERE table_owner = '''
-         || UPPER (p_owner)
-         || ''' AND table_name = '''
-         || UPPER (p_table)
-         || ''' AND partition_position IN '
-         || ' (SELECT DISTINCT tbl$or$idx$part$num("'
-         || UPPER (p_owner)
-         || '"."'
-         || UPPER (p_table)
-         || '", 0, '
-         || p_d_num
-         || ', '
-         || p_p_num
-         || ', "'
-         || UPPER (l_src_col)
-         || '")	 FROM '
-         || UPPER (l_src_owner)
-         || '.'
-         || UPPER (l_src_obj)
-         || ') '
-         || 'ORDER By partition_position';
-
-      IF o_app.is_debugmode
-      THEN
-         o_app.log_msg ('Dynamic Cursor: ' || l_dyn_ddl);
-      END IF;
-
-      EXECUTE IMMEDIATE l_dyn_ddl
-      BULK COLLECT INTO tt_parts;
-
-      FOR i IN 1 .. tt_parts.COUNT
-      LOOP
-         unusable_indexes (p_owner           => p_owner,
-                           p_table           => p_table,
-                           p_part_name       => tt_parts (i),
-                           p_index_type      => p_index_type,
-                           p_global          => p_global,
-                           p_runmode         => p_runmode);
-      END LOOP;
-
-      o_app.clear_app_info;
-   EXCEPTION
-      WHEN OTHERS
-      THEN
-         o_app.log_err;
-         RAISE;
-   END unusable_idx_src;
 
    -- rebuilds all unusable index segments on a particular table
    PROCEDURE usable_indexes (
@@ -1422,40 +1398,42 @@ AS
          o_app.log_msg ('Making unusable indexes on ' || p_owner || '.' || p_table || ' usable');
       END IF;
 
-      -- rebuild local indexes first
-      FOR c_idx IN (SELECT   table_name,
-                             partition_position,
-                                'alter table '
-                             || table_owner
-                             || '.'
-                             || table_name
-                             || ' modify partition '
-                             || partition_name
-                             || ' rebuild unusable local indexes' DDL,
-                             partition_name
-                        FROM all_tab_partitions
-                       WHERE table_name = UPPER (p_table) AND table_owner = UPPER (p_owner)
-                    ORDER BY table_name,
-                             partition_position)
-      LOOP
-         l_rows := TRUE;
-
-         IF o_app.is_debugmode
-         THEN
-            o_app.log_msg ('Partition DDL: ' || c_idx.DDL);
-         ELSE
-            EXECUTE IMMEDIATE c_idx.DDL;
-         END IF;
-
-         l_cnt := l_cnt + 1;
-      END LOOP;
-
-      IF l_cnt > 0
+      IF coreutils.is_part_table (p_owner, p_table)
       THEN
-         o_app.log_msg ('Any unusable local indexes on ' || l_cnt || ' table partitions rebuilt');
+         -- rebuild local indexes first
+         FOR c_idx IN (SELECT   table_name,
+                                partition_position,
+                                   'alter table '
+                                || table_owner
+                                || '.'
+                                || table_name
+                                || ' modify partition '
+                                || partition_name
+                                || ' rebuild unusable local indexes' DDL,
+                                partition_name
+                           FROM all_tab_partitions
+                          WHERE table_name = UPPER (p_table) AND table_owner = UPPER (p_owner)
+                       ORDER BY table_name,
+                                partition_position)
+         LOOP
+            coreutils.exec_auto (c_idx.DDL, p_runmode => p_runmode);
+            l_cnt := l_cnt + 1;
+         END LOOP;
+
+         o_app.log_msg (   'Any unusable indexes on '
+                        || l_cnt
+                        || ' table partition'
+                        || CASE
+                              WHEN l_cnt = 1
+                                 THEN NULL
+                              ELSE 's'
+                           END
+                        || ' rebuilt');
       END IF;
 
+      -- reset variables
       l_cnt := 0;
+      l_rows := FALSE;
 
       -- now see if any global are still unusable
       FOR c_gidx IN (SELECT   table_name,
@@ -1468,20 +1446,33 @@ AS
                      ORDER BY table_name)
       LOOP
          l_rows := TRUE;
-
-         IF o_app.is_debugmode
-         THEN
-            o_app.log_msg ('Partition DDL: ' || c_gidx.DDL);
-         ELSE
-            EXECUTE IMMEDIATE c_gidx.DDL;
-         END IF;
-
+         coreutils.exec_auto (c_gidx.DDL, p_runmode);
          l_cnt := l_cnt + 1;
       END LOOP;
 
-      IF l_cnt > 0
+      IF l_rows
       THEN
-         o_app.log_msg (l_cnt || ' non-local index(es) affected');
+         o_app.log_msg (   l_cnt
+                        || CASE
+                              WHEN coreutils.is_part_table (p_owner, p_table)
+                                 THEN ' global'
+                              ELSE NULL
+                           END
+                        || ' index'
+                        || CASE l_cnt
+                              WHEN 1
+                                 THEN NULL
+                              ELSE 'es'
+                           END
+                        || ' rebuilt');
+      ELSE
+         o_app.log_msg (   'No matching unusable '
+                        || CASE
+                              WHEN coreutils.is_part_table (p_owner, p_table)
+                                 THEN 'global '
+                              ELSE NULL
+                           END
+                        || 'indexes found');
       END IF;
 
       o_app.clear_app_info;
