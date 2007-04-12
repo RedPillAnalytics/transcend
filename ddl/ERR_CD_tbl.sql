@@ -38,5 +38,6 @@ INSERT INTO tdinc.err_cd (code,name,message) VALUES (-20018, 'ext_file_missing',
 INSERT INTO tdinc.err_cd (code,name,message) VALUES (-20019, 'on_clause_missing','The ON clause of the MERGE statement was invalid'||chr(10)||'If P_COLUMNS is not provided, then check to see that a primary or unique key exists');
 INSERT INTO tdinc.err_cd (code,name,message) VALUES (-20020, 'incorrect_parameters','The combination of parameters provided yields no matching objects.');
 INSERT INTO tdinc.err_cd (code,name,message) VALUES (-20021, 'no_object','The specified object does not exist');
-INSERT INTO tdinc.err_cd (code,name,message) VALUES (-20022, 'unrecognized_parm','The specified parameter is not recognized');
+INSERT INTO tdinc.err_cd (code,name,message) VALUES (-20022, 'unrecognized_parm','The specified parameter value is not recognized');
 INSERT INTO tdinc.err_cd (code,name,message) VALUES (-20023, 'not partitioned','The specified table is not partititoned');
+INSERT INTO tdinc.err_cd (code,name,message) VALUES (-20024, 'parms_not_compatible','The specified parameters are not compatible');
