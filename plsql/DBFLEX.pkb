@@ -1303,6 +1303,7 @@ AS
                                     || ' unusable' DDL,
                                     idx_ddl_type,
                                     partition_name,
+                                    partition_position,
                                     SUM (CASE idx_ddl_type
                                             WHEN 'I'
                                                THEN 1
@@ -1317,6 +1318,7 @@ AS
                                             owner,
                                             ai.index_name,
                                             partition_name,
+                                            partition_position,
                                             partitioned,
                                             CASE
                                                WHEN partition_name IS NULL OR partitioned = 'NO'
@@ -1332,9 +1334,18 @@ AS
                                         AND table_owner = UPPER (p_owner)
                                         AND (ai.status = 'VALID' OR aip.status = 'USABLE'))
                               WHERE REGEXP_LIKE (index_type, '^' || p_index_type, 'i')
+                                AND REGEXP_LIKE (partitioned,
+                                                 CASE
+                                                    WHEN REGEXP_LIKE ('global', p_part_type, 'i')
+                                                       THEN 'NO'
+                                                    WHEN REGEXP_LIKE ('local', p_part_type, 'i')
+                                                       THEN 'YES'
+                                                    ELSE '.'
+                                                 END,
+                                                 'i')
                                 AND NOT REGEXP_LIKE (index_type, 'iot', 'i')
-                           ORDER BY idx_ddl_type ASC,
-                                    partition_name)
+                           ORDER BY idx_ddl_type,
+                                    partition_position)
       LOOP
          l_rows := TRUE;
          coreutils.exec_auto (c_idx.DDL, p_runmode => p_runmode);
@@ -1344,27 +1355,34 @@ AS
 
       IF l_rows
       THEN
-         o_app.log_msg (   l_idx_cnt
-                        || CASE
-                              WHEN coreutils.is_part_table (p_owner, p_table)
-                                 THEN ' global'
-                              ELSE NULL
-                           END
-                        || ' index'
-                        || CASE l_idx_cnt
-                              WHEN 1
-                                 THEN NULL
-                              ELSE 'es'
-                           END
-                        || ' affected');
-         o_app.log_msg (   l_pidx_cnt
-                        || ' local index partition'
-                        || CASE l_idx_cnt
-                              WHEN 1
-                                 THEN NULL
-                              ELSE 's'
-                           END
-                        || ' affected');
+         IF l_idx_cnt > 0
+         THEN
+            o_app.log_msg (   l_idx_cnt
+                           || CASE
+                                 WHEN coreutils.is_part_table (p_owner, p_table)
+                                    THEN ' global'
+                                 ELSE NULL
+                              END
+                           || ' index'
+                           || CASE l_idx_cnt
+                                 WHEN 1
+                                    THEN NULL
+                                 ELSE 'es'
+                              END
+                           || ' affected');
+         END IF;
+
+         IF l_pidx_cnt > 0
+         THEN
+            o_app.log_msg (   l_pidx_cnt
+                           || ' local index partition'
+                           || CASE l_idx_cnt
+                                 WHEN 1
+                                    THEN NULL
+                                 ELSE 's'
+                              END
+                           || ' affected');
+         END IF;
       ELSE
          o_app.log_msg ('No matching usable indexes found');
       END IF;
