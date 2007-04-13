@@ -44,8 +44,8 @@ AS
          THEN
             o_app.log_msg ('Notification disabled');
          ELSE
-            raise_application_error (o_app.get_err_cd ('notify_method_invalid'),
-                                     o_app.get_err_msg ('notify_method_invalid'));
+            raise_application_error (coreutils.get_err_cd ('notify_method_invalid'),
+                                     coreutils.get_err_msg ('notify_method_invalid'));
       END CASE;
    EXCEPTION
       WHEN OTHERS
