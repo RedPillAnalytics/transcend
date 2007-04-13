@@ -48,12 +48,12 @@ AS
 	 SELF.send (p_module => o_app.module, p_action => o_app.action);
          IF p_num_bytes >= max_bytes AND max_bytes <> 0
          THEN
-            raise_application_error (o_app.get_err_cd ('file_too_large'),
-                                     o_app.get_err_msg ('file_too_large'));
+            raise_application_error (coreutils.get_err_cd ('file_too_large'),
+                                     coreutils.get_err_msg ('file_too_large'));
          ELSIF p_num_bytes < min_bytes
          THEN
-            raise_application_error (o_app.get_err_cd ('file_too_small'),
-                                     o_app.get_err_msg ('file_too_small'));
+            raise_application_error (coreutils.get_err_cd ('file_too_small'),
+                                     coreutils.get_err_msg ('file_too_small'));
          END IF;
       END IF;
 
