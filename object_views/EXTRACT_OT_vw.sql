@@ -41,7 +41,7 @@ SELECT cast('runtime' AS VARCHAR2(10)) runmode,
                object_name,
                directory,
 	       coreutils.get_dir_path (directory) dirpath,
-               CASE file_datestamp
+               CASE nvl(file_datestamp,'NA')
                WHEN 'NA'
                THEN filename
                ELSE regexp_replace (filename,
@@ -51,8 +51,8 @@ SELECT cast('runtime' AS VARCHAR2(10)) runmode,
                                                   file_datestamp)
                                      || '.')
                END filename,
-               CASE file_datestamp
-               WHEN 'NA'
+	       CASE nvl(file_datestamp,'NA')
+	       WHEN 'NA'
                THEN  filename
                || '.'
                || to_char (SYSDATE, 'yyyymmddhhmiss')
@@ -73,12 +73,7 @@ SELECT cast('runtime' AS VARCHAR2(10)) runmode,
                dateformat,
                timestampformat,
                delimiter,
-               CASE
-               WHEN quotechar = 'NA'
-               THEN NULL
-               WHEN quotechar IS NOT NULL
-               THEN quotechar
-               END quotechar,
+               quotechar,
                headers
           FROM tdinc.filehub_conf
 	 WHERE REGEXP_LIKE (filehub_type, '^extract$', 'i'));
