@@ -36,8 +36,8 @@ AS
                   THEN
                      o_app.set_action ('location file missing');
                      SELF.send (p_module => o_app.module, p_action => o_app.action);
-                     raise_application_error (o_app.get_err_cd ('location_file_missing'),
-                                              o_app.get_err_msg ('location_file_missing'));
+                     raise_application_error (coreutils.get_err_cd ('location_file_missing'),
+                                              coreutils.get_err_msg ('location_file_missing'));
                   ELSE
                      o_app.log_msg ('Unknown data cartridge error');
                END CASE;
@@ -52,8 +52,8 @@ AS
                o_app.set_action ('reject limit exceeded');
                -- notify if reject limit is exceeded
                SELF.send (p_module => o_app.module, p_action => o_app.action);
-               raise_application_error (o_app.get_err_cd ('reject_limit_exceeded'),
-                                        o_app.get_err_msg ('reject_limit_exceeded'));
+               raise_application_error (coreutils.get_err_cd ('reject_limit_exceeded'),
+                                        coreutils.get_err_msg ('reject_limit_exceeded'));
             END IF;
          EXCEPTION
             WHEN ZERO_DIVIDE
@@ -88,8 +88,8 @@ AS
    EXCEPTION
       WHEN e_no_table
       THEN
-         raise_application_error (o_app.get_err_cd ('no_ext_tab'),
-                                  o_app.get_err_msg ('no_ext_tab'));
+         raise_application_error (coreutils.get_err_cd ('no_ext_tab'),
+                                  coreutils.get_err_msg ('no_ext_tab'));
       WHEN OTHERS
       THEN
          o_app.log_err;
@@ -360,8 +360,8 @@ AS
       CASE
          WHEN NOT l_rows_dirlist AND required = 'Y'
          THEN
-            raise_application_error (o_app.get_err_cd ('no_files_found'),
-                                     o_app.get_err_msg ('no_files_found'));
+            raise_application_error (coreutils.get_err_cd ('no_files_found'),
+                                     coreutils.get_err_msg ('no_files_found'));
          -- there were no matching files for this configuration
          -- however, the REQUIRED attribute is N
          -- therefore, and load process dependent on this job will proceed
@@ -393,8 +393,8 @@ AS
             EXCEPTION
                WHEN e_no_files
                THEN
-                  raise_application_error (o_app.get_err_cd ('no_ext_files'),
-                                           o_app.get_err_msg ('no_ext_files'));
+                  raise_application_error (coreutils.get_err_cd ('no_ext_files'),
+                                           coreutils.get_err_msg ('no_ext_files'));
             END;
 
             -- audit the external table
