@@ -45,7 +45,7 @@ AS
       IF NOT SELF.is_debugmode AND LOWER (p_validate) = 'yes'
       THEN
 	 o_app.set_action('file size error');
-	 SELF.send (p_module => o_app.module, p_action => o_app.action);
+	 o_app.send (p_module_id => filehub_id);
          IF p_num_bytes >= max_bytes AND max_bytes <> 0
          THEN
             raise_application_error (coreutils.get_err_cd ('file_too_large'),
@@ -85,39 +85,5 @@ AS
          o_app.log_err;
          RAISE;
    END audit_file;
-   MEMBER PROCEDURE send (p_action VARCHAR2, p_module VARCHAR2, p_message VARCHAR2 DEFAULT NULL)
-   AS
-      o_notify   notify;
-      o_app      applog := applog (p_module => 'fhconf.send', p_runmode => SELF.runmode);
-   BEGIN
-      o_app.log_msg ('The notification action is: ' || p_action, 4);
-      o_app.log_msg ('The notification module is: ' || p_module, 4);
-
-      SELECT VALUE (t)
-        INTO o_notify
-        FROM notify_ot t
-       WHERE t.module_id = SELF.filehub_id
-         AND LOWER (t.action) = LOWER (p_action)
-         AND LOWER (t.module) = LOWER (p_module);
-
-      o_notify.runmode := SELF.runmode;
-      o_notify.MESSAGE :=
-         CASE p_message
-            WHEN NULL
-               THEN o_notify.MESSAGE
-            ELSE o_notify.MESSAGE || CHR (10) || CHR (10) || p_message
-         END;
-      o_notify.module := p_module;
-      o_notify.action := p_action;
-      o_notify.send;
-   EXCEPTION
-      WHEN NO_DATA_FOUND
-      THEN
-         o_app.log_msg ('Notification not configured for this action',3);
-      WHEN OTHERS
-      THEN
-         o_app.log_err;
-         RAISE;
-   END send;
 END;
 /
