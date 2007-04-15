@@ -1,19 +1,20 @@
 CREATE OR REPLACE TYPE BODY tdinc.applog
 AS
    CONSTRUCTOR FUNCTION applog (
-      p_action        VARCHAR2 DEFAULT 'Begin module',
+      p_action        VARCHAR2 DEFAULT 'begin module',
       p_module        VARCHAR2 DEFAULT NULL,
       p_client_info   VARCHAR2 DEFAULT NULL,
       p_runmode       VARCHAR2 DEFAULT NULL)
       RETURN SELF AS RESULT
    AS
+      l_logging_level   logging_conf.logging_level%TYPE;
    BEGIN
       -- get the session id
       session_id := SYS_CONTEXT ('USERENV', 'SESSIONID');
       -- first we need to populate the module attribute, because it helps us determine parameter values
-      module := p_module;
+      module := LOWER (p_module);
       -- we also set the action, which may be used one day to fine tune parameters
-      action := p_action;
+      action := LOWER (p_action);
       -- now we can use the MODULE attribute to get parameters
       -- if this is null (unprovided), then the module or system parameter is pulled (in that order)
       -- the get_value_vchr function handles the hierarchy
@@ -27,12 +28,54 @@ AS
          END;
       -- get the registration value for this module
       registration := get_value_vchr ('registration');
+
       -- get the logging level
-      logging_level := CASE
-                         WHEN runmode = 'debug'
-                            THEN 5
-                         ELSE get_value_num ('logging_level')
-                      END;
+      IF self.is_debugmode
+      THEN
+         SELECT debug_level
+           INTO l_logging_level
+           FROM (SELECT debug_level,
+                        parameter_level,
+                        max (parameter_level) OVER (PARTITION BY 1) max_parameter_level
+                   FROM (SELECT debug_level,
+                                module,
+                                action,
+                                CASE
+                                   WHEN action IS NULL AND module IS NULL
+                                      THEN 1
+                                   WHEN action IS NULL AND module IS NOT NULL
+                                      THEN 2
+                                   WHEN module IS NOT NULL AND action IS NOT NULL
+                                      THEN 3
+                                END parameter_level
+                           FROM logging_conf)
+                  WHERE (module = SELF.module OR module IS NULL)
+                    AND (action = SELF.action OR action IS NULL))
+          WHERE parameter_level = max_parameter_level;
+      ELSE
+         SELECT logging_level
+           INTO l_logging_level
+           FROM (SELECT logging_level,
+                        parameter_level,
+                        max (parameter_level) OVER (PARTITION BY 1) max_parameter_level
+                   FROM (SELECT logging_level,
+                                module,
+                                action,
+                                CASE
+                                   WHEN action IS NULL AND module IS NULL
+                                      THEN 1
+                                   WHEN action IS NULL AND module IS NOT NULL
+                                      THEN 2
+                                   WHEN module IS NOT NULL AND action IS NOT NULL
+                                      THEN 3
+                                END parameter_level
+                           FROM logging_conf)
+                  WHERE (module = SELF.module OR module IS NULL)
+                    AND (action = SELF.action OR action IS NULL))
+          WHERE parameter_level = max_parameter_level;
+      END IF;
+            
+      logging_level := l_logging_level;
 
       -- if we are registering, then we need to save the old values
       IF SELF.is_registered
@@ -60,7 +103,7 @@ AS
          DBMS_APPLICATION_INFO.set_module (module, action);
       END IF;
 
-      log_msg ('New MODULE ' || module || ' beginning in RUNMODE "' || runmode || '"', 4);
+      log_msg ('New MODULE "' || module || '" beginning in RUNMODE "' || runmode || '"', 4);
       log_msg ('Inital ACTION attribute set to "' || action || '"', 4);
       RETURN;
    END applog;
@@ -97,27 +140,28 @@ AS
    MEMBER PROCEDURE set_action (p_action VARCHAR2)
    AS
    BEGIN
-      action := p_action;
-      log_msg ('ACTION attribute changed to "' || p_action || '"', 4);
+      action := LOWER (p_action);
+      log_msg ('ACTION attribute changed to "' || action || '"', 4);
 
       IF is_registered
       THEN
-         DBMS_APPLICATION_INFO.set_action (p_action);
+         DBMS_APPLICATION_INFO.set_action (action);
       END IF;
    END set_action;
    MEMBER PROCEDURE clear_app_info
    AS
    BEGIN
+      action := prev_action;
+      module := prev_module;
+      client_info := prev_client_info;
+      log_msg ('ACTION attribute changed to "' || NVL (action, 'NA') || '"', 4);
+      log_msg ('MODULE attribute changed to "' || NVL (module, 'NA') || '"', 4);
+
       IF is_registered
       THEN
          DBMS_APPLICATION_INFO.set_client_info (prev_client_info);
          DBMS_APPLICATION_INFO.set_module (prev_module, prev_action);
       END IF;
-   EXCEPTION
-      WHEN OTHERS
-      THEN
-         log_err;
-         RAISE;
    END clear_app_info;
    -- used to write a standard message to the LOG_TABLE
    MEMBER PROCEDURE log_msg (
@@ -168,9 +212,9 @@ AS
                       call_stack,
                       back_trace)
               VALUES (l_msg,
-                      NVL (SELF.client_info, 'Not Set'),
-                      NVL (SELF.module, 'Not Set'),
-                      NVL (SELF.action, 'Not Set'),
+                      NVL (SELF.client_info, 'NA'),
+                      NVL (SELF.module, 'NA'),
+                      NVL (SELF.action, 'NA'),
                       SELF.runmode,
                       SELF.session_id,
                       l_scn,
@@ -202,10 +246,6 @@ AS
       l_msg   VARCHAR2 (1020) DEFAULT SQLERRM;
    BEGIN
       log_msg (l_msg, 1, 'no');
-   EXCEPTION
-      WHEN OTHERS
-      THEN
-         ROLLBACK;
    END log_err;
    MEMBER PROCEDURE log_cnt_msg (p_count NUMBER, p_msg VARCHAR2 DEFAULT NULL)
    AS
@@ -230,10 +270,6 @@ AS
       -- if not, then simply use the default message below
       log_msg (NVL (p_msg, 'Number of records selected/affected: ' || p_count));
       COMMIT;
-   EXCEPTION
-      WHEN OTHERS
-      THEN
-         log_err;
    END log_cnt_msg;
    -- method for returning boolean if the application is registered
    MEMBER FUNCTION is_registered
@@ -314,5 +350,59 @@ AS
 
          RETURN TO_NUMBER (l_value);
    END get_value_num;
+   MEMBER PROCEDURE send (p_module_id NUMBER, p_message VARCHAR2 DEFAULT NULL)
+   AS
+      l_notify_method   notify_conf.notify_method%TYPE;
+      l_notify_id       notify_conf.notify_id%TYPE;
+      o_email           email;
+   BEGIN
+      BEGIN
+         SELECT notify_method,
+                notify_id
+           INTO l_notify_method,
+                l_notify_id
+           FROM notify_conf
+          WHERE module_id = p_module_id
+            AND LOWER (action) = SELF.action
+            AND LOWER (module) = SELF.module;
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            SELECT notify_method,
+                   notify_id
+              INTO l_notify_method,
+                   l_notify_id
+              FROM notify_conf
+             WHERE module_id IS NULL AND LOWER (action) = SELF.action
+                   AND LOWER (module) = SELF.module;
+      END;
+
+      CASE l_notify_method
+         WHEN 'email'
+         THEN
+            SELECT VALUE (t)
+              INTO o_email
+              FROM email_ot t
+             WHERE t.notify_id = l_notify_id;
+         ELSE
+            raise_application_error (coreutils.get_err_cd ('notify_method_invalid'),
+                                     coreutils.get_err_msg ('notify_method_invalid'));
+      END CASE;
+
+      o_email.runmode := runmode;
+      o_email.MESSAGE :=
+         CASE p_message
+            WHEN NULL
+               THEN o_email.MESSAGE
+            ELSE o_email.MESSAGE || CHR (10) || CHR (10) || p_message
+         END;
+      o_email.module := SELF.module;
+      o_email.action := SELF.action;
+      o_email.send;
+   EXCEPTION
+      WHEN NO_DATA_FOUND
+      THEN
+         log_msg ('Notification not configured for this action', 3);
+   END send;
 END;
 /
