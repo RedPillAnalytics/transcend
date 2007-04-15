@@ -6,9 +6,10 @@ DROP SEQUENCE tdinc.parameter_conf_seq
 
 CREATE TABLE tdinc.parameter_conf
        ( parameter_id	NUMBER NOT NULL,
-	 name VARCHAR2(40),
-	 value VARCHAR2(40),
-	 module 	VARCHAR2(48),
+	 module 	VARCHAR2(48) NOT NULL,
+	 action		VARCHAR2(32),
+	 name 		VARCHAR2(40) NOT NULL,
+	 value 		VARCHAR2(40) NOT NULL,
 	 created_user   VARCHAR2(30) NOT NULL,
 	 created_dt     DATE NOT NULL,
 	 modified_user  VARCHAR2(30),
@@ -32,6 +33,6 @@ ALTER TABLE tdinc.parameter_conf ADD CONSTRAINT parameter_conf_uk1 UNIQUE (name)
 ALTER TABLE tdinc.parameter_conf ADD CONSTRAINT parameter_conf_ck1 CHECK (REGEXP_LIKE(name,'[[:lower:]]+'));
 ALTER TABLE tdinc.parameter_conf ADD CONSTRAINT parameter_conf_ck2 CHECK (REGEXP_LIKE(value,'([[:lower:]]|[[:digit:]])+'));
 
-INSERT INTO parameter_conf VALUES (parameter_conf_seq.nextval,'runmode','runtime','system',sys_context('USERENV','SESSION_USER'),SYSDATE,NULL,null);
-INSERT INTO parameter_conf VALUES (parameter_conf_seq.nextval,'registration','register','system',sys_context('USERENV','SESSION_USER'),SYSDATE,NULL,null);
-INSERT INTO parameter_conf VALUES (parameter_conf_seq.nextval,'logging_level','2','system',sys_context('USERENV','SESSION_USER'),SYSDATE,NULL,null);
+INSERT INTO tdinc.parameter_conf (parameter_id,module,name,value,created_user,created_dt) VALUES (tdinc.parameter_conf_seq.nextval,'system','runmode','runtime',sys_context('USERENV','SESSION_USER'),SYSDATE);
+INSERT INTO tdinc.parameter_conf (parameter_id,module,name,value,created_user,created_dt) VALUES (tdinc.parameter_conf_seq.nextval,'system','registration','register',sys_context('USERENV','SESSION_USER'),SYSDATE);
+INSERT INTO tdinc.parameter_conf (parameter_id,module,name,value,created_user,created_dt) VALUES (tdinc.parameter_conf_seq.nextval,'system','logging_level','2',sys_context('USERENV','SESSION_USER'),SYSDATE);
