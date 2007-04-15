@@ -139,6 +139,7 @@ AS
       END IF;
 
       COMMIT;
+      o_app.clear_app_info;
    END exec_auto;
 
    PROCEDURE exec_sql (
@@ -154,6 +155,7 @@ AS
       THEN
          EXECUTE IMMEDIATE p_dml;
       END IF;
+      o_app.clear_app_info;
    END exec_sql;
 
    -- used to get the path associated with a directory location
@@ -360,6 +362,7 @@ AS
       IF o_app.is_debugmode
       THEN
          o_app.log_msg (o_app.module || ' returning 0 because of DEBUG mode');
+	 o_app.clear_app_info;
          RETURN 0;
       ELSE
          BEGIN
