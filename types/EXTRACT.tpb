@@ -194,7 +194,7 @@ l_mode          VARCHAR2 (1):= CASE lower(p_append) WHEN 'yes' THEN 'a' ELSE 'w'
             || 'The file is too large for some desktop applications, such as Microsoft Excel, to open.';
       END IF;
 
-      SELF.send (p_action => o_app.action, p_module => o_app.module, p_message => l_message);
+      o_app.send (p_module_id =>filehub_id, p_message => l_message);
       o_app.clear_app_info;
    EXCEPTION
       WHEN OTHERS
