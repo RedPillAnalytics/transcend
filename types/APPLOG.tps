@@ -13,7 +13,7 @@ CREATE OR REPLACE TYPE tdinc.applog UNDER tdinc.basetype (
    prev_module        VARCHAR2 (48),
    prev_action        VARCHAR2 (32),
    CONSTRUCTOR FUNCTION applog (
-      p_action        VARCHAR2 DEFAULT 'Begin module',
+      p_action        VARCHAR2 DEFAULT 'begin module',
       p_module        VARCHAR2 DEFAULT NULL,
       p_client_info   VARCHAR2 DEFAULT NULL,
       p_runmode       VARCHAR2 DEFAULT NULL)
@@ -37,7 +37,10 @@ CREATE OR REPLACE TYPE tdinc.applog UNDER tdinc.basetype (
    MEMBER FUNCTION get_value_vchr (p_name VARCHAR2)
       RETURN VARCHAR2,
    MEMBER FUNCTION get_value_num (p_name VARCHAR2)
-      RETURN NUMBER
+      RETURN NUMBER,
+   MEMBER PROCEDURE send (
+      p_module_id   number,
+      p_message     VARCHAR2 DEFAULT null)
 )
 ;
 /
