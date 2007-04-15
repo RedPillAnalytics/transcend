@@ -35,7 +35,7 @@ AS
                   WHEN 'KUP-04040'
                   THEN
                      o_app.set_action ('location file missing');
-                     SELF.send (p_module => o_app.module, p_action => o_app.action);
+                     o_app.send (p_module_id => SELF.filehub_id);
                      raise_application_error (coreutils.get_err_cd ('location_file_missing'),
                                               coreutils.get_err_msg ('location_file_missing'));
                   ELSE
@@ -51,7 +51,7 @@ AS
             THEN
                o_app.set_action ('reject limit exceeded');
                -- notify if reject limit is exceeded
-               SELF.send (p_module => o_app.module, p_action => o_app.action);
+               o_app.send (p_module_id => SELF.filehub_id);
                raise_application_error (coreutils.get_err_cd ('reject_limit_exceeded'),
                                         coreutils.get_err_msg ('reject_limit_exceeded'));
             END IF;
@@ -90,10 +90,6 @@ AS
       THEN
          raise_application_error (coreutils.get_err_cd ('no_ext_tab'),
                                   coreutils.get_err_msg ('no_ext_tab'));
-      WHEN OTHERS
-      THEN
-         o_app.log_err;
-         RAISE;
    END audit_ext_tab;
    MEMBER PROCEDURE process (p_keep_source VARCHAR2 DEFAULT 'no')
    IS
@@ -348,7 +344,7 @@ AS
          -- this step is ignored if p_keep_source = 'yes'
          o_app.set_action ('Delete source files');
 
-         IF LOWER (p_keep_source) = 'no'
+         IF coreutils.is_true (p_keep_source)
          THEN
             coreutils.delete_file (source_directory, c_dir_list.source_filename, runmode);
          END IF;
@@ -430,13 +426,8 @@ AS
             || 'The file is too large for some desktop applications, such as Microsoft Excel, to open.';
       END IF;
 
-      SELF.send (o_app.action, o_app.module, p_message => l_message);
+      o_app.send (p_module_id => filehub_id);
       o_app.clear_app_info;
-   EXCEPTION
-      WHEN OTHERS
-      THEN
-         o_app.log_err;
-         RAISE;
    END process;
 END;
 /
