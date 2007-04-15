@@ -43,7 +43,7 @@ IS
       l_filehub_type   filehub_conf.filehub_type%TYPE;
       o_extract        EXTRACT;
       o_feed           feed;
-      o_app            applog     := applog (p_module      => 'FILEHUB.PROCESS_JOB',
+      o_app            applog     := applog (p_module      => 'filehub.process',
                                              p_runmode     => p_runmode);
    BEGIN
       FOR c_fh_conf IN (SELECT   filehub_id,
