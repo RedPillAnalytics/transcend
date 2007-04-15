@@ -344,7 +344,7 @@ AS
          -- this step is ignored if p_keep_source = 'yes'
          o_app.set_action ('Delete source files');
 
-         IF coreutils.is_true (p_keep_source)
+         IF NOT coreutils.is_true (p_keep_source)
          THEN
             coreutils.delete_file (source_directory, c_dir_list.source_filename, runmode);
          END IF;
