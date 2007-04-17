@@ -42,3 +42,4 @@ INSERT INTO tdinc.err_cd (code,name,message) VALUES (-20022, 'unrecognized_parm'
 INSERT INTO tdinc.err_cd (code,name,message) VALUES (-20023, 'not partitioned','The specified table is not partititoned');
 INSERT INTO tdinc.err_cd (code,name,message) VALUES (-20024, 'parms_not_compatible','The specified parameters are not compatible');
 INSERT INTO tdinc.err_cd (code,name,message) VALUES (-20025, 'parm_not_configured','The specified parameter is not configured');
+INSERT INTO tdinc.err_cd (code,name,message) VALUES (-20026, 'file_not_found','Expected file does not exist');
