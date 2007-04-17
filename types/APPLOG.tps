@@ -19,7 +19,9 @@ CREATE OR REPLACE TYPE tdinc.applog UNDER tdinc.basetype (
       p_runmode       VARCHAR2 DEFAULT NULL)
       RETURN SELF AS RESULT,
    MEMBER FUNCTION whence
-      RETURN VARCHAR2,
+							   RETURN VARCHAR2,
+							   member FUNCTION get_package_name
+							   RETURN VARCHAR2,
    MEMBER PROCEDURE set_action (p_action VARCHAR2),
    MEMBER PROCEDURE clear_app_info,
    MEMBER PROCEDURE log_msg (
@@ -34,10 +36,6 @@ CREATE OR REPLACE TYPE tdinc.applog UNDER tdinc.basetype (
       RETURN VARCHAR2,
    MEMBER FUNCTION is_registered
       RETURN BOOLEAN,
-   MEMBER FUNCTION get_value_vchr (p_name VARCHAR2)
-      RETURN VARCHAR2,
-   MEMBER FUNCTION get_value_num (p_name VARCHAR2)
-      RETURN NUMBER,
    MEMBER PROCEDURE send (
       p_module_id   number,
       p_message     VARCHAR2 DEFAULT null)
