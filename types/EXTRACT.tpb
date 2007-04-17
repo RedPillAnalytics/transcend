@@ -24,7 +24,7 @@ l_mode          VARCHAR2 (1):= CASE lower(p_append) WHEN 'yes' THEN 'a' ELSE 'w'
       l_blocksize     NUMBER;
       e_no_var        EXCEPTION;
       PRAGMA EXCEPTION_INIT (e_no_var, -1007);
-      o_app           applog             := applog (p_module => 'extracts.extract_query');
+      o_app           applog             := applog (p_module => 'extract_query');
    BEGIN
       l_output := UTL_FILE.fopen (p_dirname, p_filename, l_mode, 32767);
       DBMS_SQL.parse (l_thecursor, p_query, DBMS_SQL.native);
@@ -81,7 +81,7 @@ l_mode          VARCHAR2 (1):= CASE lower(p_append) WHEN 'yes' THEN 'a' ELSE 'w'
       l_head_sql      VARCHAR (1000);
       l_extract_sql   VARCHAR2 (1000);
       o_app           applog
-                      := applog (p_module      => 'extracts.extract_object',
+                      := applog (p_module      => 'extract_object',
                                  p_runmode       => SELF.runmode);
    BEGIN
       l_head_sql :=
@@ -141,7 +141,7 @@ l_mode          VARCHAR2 (1):= CASE lower(p_append) WHEN 'yes' THEN 'a' ELSE 'w'
       l_file_dt     DATE;
       l_detail_id   NUMBER;
       l_message     notify_conf.MESSAGE%TYPE;
-      o_app         applog    := applog (p_module      => 'extract.process',
+      o_app         applog    := applog (p_module      => 'process',
                                          p_runmode       => runmode);
    BEGIN
       o_app.set_action ('Configure NLS formats');
@@ -196,11 +196,6 @@ l_mode          VARCHAR2 (1):= CASE lower(p_append) WHEN 'yes' THEN 'a' ELSE 'w'
 
       o_app.send (p_module_id =>filehub_id, p_message => l_message);
       o_app.clear_app_info;
-   EXCEPTION
-      WHEN OTHERS
-      THEN
-         o_app.log_err;
-         RAISE;
    END process;
 END;
 /
