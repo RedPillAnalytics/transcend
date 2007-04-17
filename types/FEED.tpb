@@ -13,7 +13,7 @@ AS
       e_no_files         EXCEPTION;
       PRAGMA EXCEPTION_INIT (e_no_files, -1756);
       o_app              applog
-                            := applog (p_module       => 'feed.audit_ext_tab',
+                            := applog (p_module       => 'audit_ext_tab',
                                        p_runmode      => SELF.runmode);
    BEGIN
       -- type object which handles logging and application registration for instrumentation purposes
@@ -106,7 +106,7 @@ AS
       l_message        notify_conf.MESSAGE%TYPE;
       e_no_files       EXCEPTION;
       PRAGMA EXCEPTION_INIT (e_no_files, -1756);
-      o_app            applog     := applog (p_module       => 'feed.process',
+      o_app            applog     := applog (p_module       => 'process',
                                              p_runmode      => SELF.runmode);
    BEGIN
       o_app.set_action ('Evaluate source directory');
@@ -314,8 +314,8 @@ AS
                  -- now move the file to the expected name
             -- do this with a copy/delete
             coreutils.copy_file (l_filepath, c_dir_list.filepath, runmode);
-            coreutils.delete_file (DIRECTORY, c_dir_list.source_filename, runmode);
-            o_app.log_msg ('File ' || c_dir_list.source_filepath || ' moved to '
+            coreutils.delete_file (DIRECTORY, l_filepath, runmode);
+            o_app.log_msg ('Source file ' || c_dir_list.source_filepath || ' moved to destination '
                            || c_dir_list.filepath);
             -- get the number of lines in the file now that it is decrypted and uncompressed
             l_numlines := coreutils.get_numlines (SELF.DIRECTORY, c_dir_list.filename, runmode);
