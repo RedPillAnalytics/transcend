@@ -37,14 +37,14 @@ AS
    PROCEDURE log_msg (p_msg log_table.msg%TYPE);
 
    PROCEDURE exec_auto (
-      p_ddl           VARCHAR2,
+      p_sql           VARCHAR2,
       p_runmode       VARCHAR2 DEFAULT NULL,
-      p_runmode_msg   VARCHAR2 DEFAULT 'DDL: ');
+      p_msg   VARCHAR2 DEFAULT 'DDL: ');
 
    PROCEDURE exec_sql (
-      p_dml           VARCHAR2,
+      p_sql           VARCHAR2,
       p_runmode       VARCHAR2 DEFAULT NULL,
-      p_runmode_msg   VARCHAR2 DEFAULT 'DML: ');
+      p_msg   VARCHAR2 DEFAULT 'DML: ');
 
    FUNCTION get_dir_path (p_dirname VARCHAR2)
       RETURN VARCHAR2;
