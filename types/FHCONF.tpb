@@ -44,25 +44,21 @@ AS
 
       IF NOT SELF.is_debugmode AND LOWER (p_validate) = 'yes'
       THEN
-	 o_app.set_action('file size error');
-	 o_app.send (p_module_id => filehub_id);
+	 o_app.set_action('validate file size');
          IF p_num_bytes >= max_bytes AND max_bytes <> 0
          THEN
+	 o_app.send (p_module_id => filehub_id);
             raise_application_error (coreutils.get_err_cd ('file_too_large'),
                                      coreutils.get_err_msg ('file_too_large'));
          ELSIF p_num_bytes < min_bytes
          THEN
+	 o_app.send (p_module_id => filehub_id);
             raise_application_error (coreutils.get_err_cd ('file_too_small'),
                                      coreutils.get_err_msg ('file_too_small'));
          END IF;
       END IF;
 
       o_app.clear_app_info;
-   EXCEPTION
-      WHEN OTHERS
-      THEN
-         o_app.log_err;
-         RAISE;
    END audit_file;
    MEMBER PROCEDURE audit_file (
       p_num_bytes   NUMBER,
@@ -79,11 +75,6 @@ AS
                   p_num_bytes            => p_num_bytes,
                   p_num_lines            => p_num_lines,
                   p_file_dt              => p_file_dt);
-   EXCEPTION
-      WHEN OTHERS
-      THEN
-         o_app.log_err;
-         RAISE;
    END audit_file;
 END;
 /
