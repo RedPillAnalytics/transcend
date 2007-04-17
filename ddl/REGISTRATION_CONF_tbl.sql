@@ -9,8 +9,8 @@ CREATE TABLE tdinc.registration_conf
 	 registration  	     VARCHAR2(10) not NULL,
 	 action 	     VARCHAR2(32),
 	 module 	     VARCHAR2(48),
-	 created_user	     VARCHAR2(30) NOT NULL,
-	 created_dt	     DATE NOT NULL,
+	 created_user	     VARCHAR2(30) DEFAULT sys_context('USERENV','SESSION_USER') NOT NULL,
+	 created_dt	     DATE DEFAULT SYSDATE NOT NULL,
 	 modified_user	     VARCHAR2(30),
 	 modified_dt	     DATE
        )
