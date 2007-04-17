@@ -7,75 +7,146 @@ AS
       p_runmode       VARCHAR2 DEFAULT NULL)
       RETURN SELF AS RESULT
    AS
-      l_logging_level   logging_conf.logging_level%TYPE;
    BEGIN
       -- get the session id
       session_id := SYS_CONTEXT ('USERENV', 'SESSIONID');
       -- first we need to populate the module attribute, because it helps us determine parameter values
-      module := LOWER (p_module);
+      module := get_package_name||'.'||LOWER (p_module);
       -- we also set the action, which may be used one day to fine tune parameters
       action := LOWER (p_action);
+
       -- now we can use the MODULE attribute to get parameters
       -- if this is null (unprovided), then the module or system parameter is pulled (in that order)
       -- the get_value_vchr function handles the hierarchy
-      runmode :=
-         CASE
-            WHEN REGEXP_LIKE ('debug', '^' || NVL (p_runmode, '^\W$'), 'i')
-               THEN 'debug'
-            WHEN REGEXP_LIKE ('runtime', '^' || NVL (p_runmode, '^\W$'), 'i')
-               THEN 'runtime'
-            ELSE get_value_vchr ('runmode')
-         END;
+      CASE
+         WHEN REGEXP_LIKE ('debug', '^' || NVL (p_runmode, '^\W$'), 'i')
+         THEN
+            runmode := 'debug';
+         WHEN REGEXP_LIKE ('runtime', '^' || NVL (p_runmode, '^\W$'), 'i')
+         THEN
+            runmode := 'runtime';
+         ELSE
+            BEGIN
+               SELECT default_runmode
+                 INTO SELF.runmode
+                 FROM (SELECT default_runmode,
+                              parameter_level,
+                              MAX (parameter_level) OVER (PARTITION BY 1) max_parameter_level
+                         FROM (SELECT default_runmode,
+                                      module,
+                                      action,
+                                      CASE
+                                         WHEN action = 'default' AND module = 'default'
+                                            THEN 1
+                                         WHEN action = 'default' AND module IS NOT NULL
+                                            THEN 2
+                                         WHEN module IS NOT NULL AND action IS NOT NULL
+                                            THEN 3
+                                      END parameter_level
+                                 FROM runmode_conf)
+                        WHERE (module = SELF.module OR module = 'default')
+                          AND (action = SELF.action OR action = 'default'))
+                WHERE parameter_level = max_parameter_level;
+            EXCEPTION
+               WHEN NO_DATA_FOUND
+               THEN
+                  raise_application_error (coreutils.get_err_cd ('parm_not_configured'),
+                                              coreutils.get_err_msg ('parm_not_configured')
+                                           || ': RUNMODE');
+            END;
+      END CASE;
+
       -- get the registration value for this module
-      registration := get_value_vchr ('registration');
+      BEGIN
+         SELECT registration
+           INTO registration
+           FROM (SELECT registration,
+                        parameter_level,
+                        MAX (parameter_level) OVER (PARTITION BY 1) max_parameter_level
+                   FROM (SELECT registration,
+                                module,
+                                action,
+                                CASE
+                                   WHEN action = 'default' AND module = 'default'
+                                      THEN 1
+                                   WHEN action = 'default' AND module IS NOT NULL
+                                      THEN 2
+                                   WHEN module IS NOT NULL AND action IS NOT NULL
+                                      THEN 3
+                                END parameter_level
+                           FROM registration_conf)
+                  WHERE (module = SELF.module OR module = 'default')
+                    AND (action = SELF.action OR action = 'default'))
+          WHERE parameter_level = max_parameter_level;
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            raise_application_error (coreutils.get_err_cd ('parm_not_configured'),
+                                        coreutils.get_err_msg ('parm_not_configured')
+                                     || ': REGISTRATION');
+      END;
 
       -- get the logging level
-      IF self.is_debugmode
+      IF SELF.is_debugmode
       THEN
-         SELECT debug_level
-           INTO l_logging_level
-           FROM (SELECT debug_level,
-                        parameter_level,
-                        max (parameter_level) OVER (PARTITION BY 1) max_parameter_level
-                   FROM (SELECT debug_level,
-                                module,
-                                action,
-                                CASE
-                                   WHEN action IS NULL AND module IS NULL
-                                      THEN 1
-                                   WHEN action IS NULL AND module IS NOT NULL
-                                      THEN 2
-                                   WHEN module IS NOT NULL AND action IS NOT NULL
-                                      THEN 3
-                                END parameter_level
-                           FROM logging_conf)
-                  WHERE (module = SELF.module OR module IS NULL)
-                    AND (action = SELF.action OR action IS NULL))
-          WHERE parameter_level = max_parameter_level;
+         BEGIN
+            SELECT debug_level
+              INTO logging_level
+              FROM (SELECT debug_level,
+                           parameter_level,
+                           MAX (parameter_level) OVER (PARTITION BY 1) max_parameter_level
+                      FROM (SELECT debug_level,
+                                   module,
+                                   action,
+                                   CASE
+                                      WHEN action = 'default' AND module = 'default'
+                                         THEN 1
+                                      WHEN action = 'default' AND module IS NOT NULL
+                                         THEN 2
+                                      WHEN module IS NOT NULL AND action IS NOT NULL
+                                         THEN 3
+                                   END parameter_level
+                              FROM logging_conf)
+                     WHERE (module = SELF.module OR module = 'default')
+                       AND (action = SELF.action OR action = 'default'))
+             WHERE parameter_level = max_parameter_level;
+         EXCEPTION
+            WHEN NO_DATA_FOUND
+            THEN
+               raise_application_error (coreutils.get_err_cd ('parm_not_configured'),
+                                           coreutils.get_err_msg ('parm_not_configured')
+                                        || ': DEBUG_LEVEL');
+         END;
       ELSE
-         SELECT logging_level
-           INTO l_logging_level
-           FROM (SELECT logging_level,
-                        parameter_level,
-                        max (parameter_level) OVER (PARTITION BY 1) max_parameter_level
-                   FROM (SELECT logging_level,
-                                module,
-                                action,
-                                CASE
-                                   WHEN action IS NULL AND module IS NULL
-                                      THEN 1
-                                   WHEN action IS NULL AND module IS NOT NULL
-                                      THEN 2
-                                   WHEN module IS NOT NULL AND action IS NOT NULL
-                                      THEN 3
-                                END parameter_level
-                           FROM logging_conf)
-                  WHERE (module = SELF.module OR module IS NULL)
-                    AND (action = SELF.action OR action IS NULL))
-          WHERE parameter_level = max_parameter_level;
+         BEGIN
+            SELECT logging_level
+              INTO logging_level
+              FROM (SELECT logging_level,
+                           parameter_level,
+                           MAX (parameter_level) OVER (PARTITION BY 1) max_parameter_level
+                      FROM (SELECT logging_level,
+                                   module,
+                                   action,
+                                   CASE
+                                      WHEN action = 'default' AND module = 'default'
+                                         THEN 1
+                                      WHEN action = 'default' AND module IS NOT NULL
+                                         THEN 2
+                                      WHEN module IS NOT NULL AND action IS NOT NULL
+                                         THEN 3
+                                   END parameter_level
+                              FROM logging_conf)
+                     WHERE (module = SELF.module OR module = 'default')
+                       AND (action = SELF.action OR action = 'default'))
+             WHERE parameter_level = max_parameter_level;
+         EXCEPTION
+            WHEN NO_DATA_FOUND
+            THEN
+               raise_application_error (coreutils.get_err_cd ('parm_not_configured'),
+                                           coreutils.get_err_msg ('parm_not_configured')
+                                        || ': LOGGING_LEVEL');
+         END;
       END IF;
-            
-      logging_level := l_logging_level;
 
       -- if we are registering, then we need to save the old values
       IF SELF.is_registered
@@ -137,6 +208,74 @@ AS
 
       RETURN l_line;
    END whence;
+   MEMBER FUNCTION get_package_name
+      RETURN VARCHAR2
+   AS
+      l_call_stack    VARCHAR2 (4096) DEFAULT DBMS_UTILITY.format_call_stack;
+      l_num           NUMBER;
+      l_found_stack   BOOLEAN         DEFAULT FALSE;
+      l_line          VARCHAR2 (255);
+      l_cnt           NUMBER          := 0;
+      l_name          VARCHAR2 (30);
+      l_caller        VARCHAR2 (30);
+   BEGIN
+      LOOP
+         l_num := INSTR (l_call_stack, CHR (10));
+         EXIT WHEN (l_cnt = 3 OR l_num IS NULL OR l_num = 0);
+         l_line := SUBSTR (l_call_stack, 1, l_num - 1);
+         l_call_stack := SUBSTR (l_call_stack, l_num + 1);
+
+         IF (NOT l_found_stack)
+         THEN
+            IF (l_line LIKE '%handle%number%name%')
+            THEN
+               l_found_stack := TRUE;
+            END IF;
+         ELSE
+            l_cnt := l_cnt + 1;
+
+            -- l_cnt = 1 is ME
+            -- l_cnt = 2 is MY Caller
+            -- l_cnt = 3 is Their Caller
+            IF (l_cnt = 3)
+            THEN
+               l_line := SUBSTR (l_line, 21);
+
+               IF (l_line LIKE 'pr%')
+               THEN
+                  l_num := LENGTH ('procedure ');
+               ELSIF (l_line LIKE 'fun%')
+               THEN
+                  l_num := LENGTH ('function ');
+               ELSIF (l_line LIKE 'package body%')
+               THEN
+                  l_num := LENGTH ('package body ');
+               ELSIF (l_line LIKE 'pack%')
+               THEN
+                  l_num := LENGTH ('package ');
+               ELSIF (l_line LIKE 'anonymous%')
+               THEN
+                  l_num := LENGTH ('anonymous block ');
+               ELSE
+                  l_num := NULL;
+               END IF;
+
+               IF (l_num IS NOT NULL)
+               THEN
+                  l_caller := LTRIM (RTRIM (UPPER (SUBSTR (l_line, 1, l_num - 1))));
+               ELSE
+                  l_caller := 'TRIGGER';
+               END IF;
+
+               l_line := SUBSTR (l_line, NVL (l_num, 1));
+               l_num := INSTR (l_line, '.');
+               l_name := LTRIM (RTRIM (SUBSTR (l_line, l_num + 1)));
+            END IF;
+         END IF;
+      END LOOP;
+
+      RETURN LOWER (l_name);
+   END get_package_name;
    MEMBER PROCEDURE set_action (p_action VARCHAR2)
    AS
    BEGIN
@@ -308,74 +447,40 @@ AS
 
       RETURN l_msg;
    END get_err_msg;
-   MEMBER FUNCTION get_value_vchr (p_name VARCHAR2)
-      RETURN VARCHAR2
-   AS
-      l_value   parameter_conf.VALUE%TYPE;
-   BEGIN
-      SELECT VALUE
-        INTO l_value
-        FROM parameter_conf
-       WHERE NAME = p_name AND module = SELF.module;
-
-      RETURN l_value;
-   EXCEPTION
-      WHEN NO_DATA_FOUND
-      THEN
-         SELECT VALUE
-           INTO l_value
-           FROM parameter_conf
-          WHERE NAME = p_name AND module = 'system';
-
-         RETURN l_value;
-   END get_value_vchr;
-   MEMBER FUNCTION get_value_num (p_name VARCHAR2)
-      RETURN NUMBER
-   AS
-      l_value   parameter_conf.VALUE%TYPE;
-   BEGIN
-      SELECT VALUE
-        INTO l_value
-        FROM parameter_conf
-       WHERE NAME = p_name AND module = SELF.module;
-
-      RETURN TO_NUMBER (l_value);
-   EXCEPTION
-      WHEN NO_DATA_FOUND
-      THEN
-         SELECT VALUE
-           INTO l_value
-           FROM parameter_conf
-          WHERE NAME = p_name AND module = 'system';
-
-         RETURN TO_NUMBER (l_value);
-   END get_value_num;
    MEMBER PROCEDURE send (p_module_id NUMBER, p_message VARCHAR2 DEFAULT NULL)
    AS
       l_notify_method   notify_conf.notify_method%TYPE;
       l_notify_id       notify_conf.notify_id%TYPE;
       o_email           email;
    BEGIN
-      BEGIN
-         SELECT notify_method,
-                notify_id
-           INTO l_notify_method,
-                l_notify_id
-           FROM notify_conf
-          WHERE module_id = p_module_id
-            AND LOWER (action) = SELF.action
-            AND LOWER (module) = SELF.module;
-      EXCEPTION
-         WHEN NO_DATA_FOUND
-         THEN
-            SELECT notify_method,
-                   notify_id
-              INTO l_notify_method,
-                   l_notify_id
-              FROM notify_conf
-             WHERE module_id IS NULL AND LOWER (action) = SELF.action
-                   AND LOWER (module) = SELF.module;
-      END;
+      SELECT notify_method,
+             notify_id
+        INTO l_notify_method,
+             l_notify_id
+        FROM (SELECT notify_method,
+                     notify_id,
+                     parameter_level,
+                     MAX (parameter_level) OVER (PARTITION BY 1) max_parameter_level
+                FROM (SELECT notify_method,
+                             notify_id,
+                             module,
+                             module_id,
+                             action,
+                             CASE
+                                WHEN action IS NULL AND module_id IS NULL
+                                   THEN 1
+                                WHEN action IS NULL AND module_id IS NOT NULL
+                                   THEN 2
+                                WHEN action IS NOT NULL AND module_id IS NULL
+                                   THEN 3
+                                WHEN action IS NOT NULL AND module_id IS NOT NULL
+                                   THEN 4
+                             END parameter_level
+                        FROM notify_conf)
+               WHERE (module = SELF.module)
+                 AND (action = SELF.action OR action IS NULL)
+                 AND (module_id = p_module_id OR module_id IS NULL))
+       WHERE parameter_level = max_parameter_level;
 
       CASE l_notify_method
          WHEN 'email'
@@ -384,21 +489,21 @@ AS
               INTO o_email
               FROM email_ot t
              WHERE t.notify_id = l_notify_id;
+
+            o_email.runmode := runmode;
+            o_email.MESSAGE :=
+               CASE p_message
+                  WHEN NULL
+                     THEN o_email.MESSAGE
+                  ELSE o_email.MESSAGE || CHR (10) || CHR (10) || p_message
+               END;
+            o_email.module := SELF.module;
+            o_email.action := SELF.action;
+            o_email.send;
          ELSE
             raise_application_error (coreutils.get_err_cd ('notify_method_invalid'),
                                      coreutils.get_err_msg ('notify_method_invalid'));
       END CASE;
-
-      o_email.runmode := runmode;
-      o_email.MESSAGE :=
-         CASE p_message
-            WHEN NULL
-               THEN o_email.MESSAGE
-            ELSE o_email.MESSAGE || CHR (10) || CHR (10) || p_message
-         END;
-      o_email.module := SELF.module;
-      o_email.action := SELF.action;
-      o_email.send;
    EXCEPTION
       WHEN NO_DATA_FOUND
       THEN
