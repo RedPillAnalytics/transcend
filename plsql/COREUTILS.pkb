@@ -5,10 +5,9 @@ AS
             DEFAULT NULL)
    AS
       l_retval   NUMBER;
-      o_app      applog := applog (p_module => 'coreutils.host_cmd');
+      o_app      applog := applog (p_module => 'host_cmd',p_runmode=>p_runmode);
    BEGIN
       DBMS_JAVA.set_output (1000000);
-      o_app.log_msg ('Host command: ' || p_cmd, 3);
 
       IF NOT o_app.is_debugmode
       THEN
@@ -18,9 +17,10 @@ AS
          THEN
             raise_application_error
                              (-20020,
-                              'Java Error: method CoreUtils.hostCmd made unsuccessful system calls');
+                              'Java Error: method hostCmd made unsuccessful system calls');
          END IF;
       END IF;
+      o_app.log_msg ('Host command: ' || p_cmd, 3);
 
       o_app.clear_app_info;
    EXCEPTION
@@ -34,10 +34,9 @@ AS
    PROCEDURE copy_file (p_srcfile VARCHAR2, p_dstfile VARCHAR2, p_runmode VARCHAR2 DEFAULT NULL)
    AS
       l_retval   NUMBER;
-      o_app      applog := applog (p_module => 'coreutils.copy_file', p_runmode => p_runmode);
+      o_app      applog := applog (p_module => 'copy_file', p_runmode => p_runmode);
    BEGIN
       DBMS_JAVA.set_output (1000000);
-      o_app.log_msg ('File ' || p_srcfile || ' would be copied to ' || p_dstfile, 3);
 
       IF NOT o_app.is_debugmode
       THEN
@@ -53,12 +52,8 @@ AS
          END IF;
       END IF;
 
+      o_app.log_msg ('File ' || p_srcfile || ' copied to ' || p_dstfile, 3);
       o_app.clear_app_info;
-   EXCEPTION
-      WHEN OTHERS
-      THEN
-         o_app.log_err;
-         RAISE;
    END copy_file;
 
    -- uses UTL_FILE to remove an OS level file
@@ -66,26 +61,22 @@ AS
    AS
       l_retval     NUMBER;
       l_filepath   VARCHAR2 (100);
-      o_app        applog   := applog (p_module       => 'coreutils.delete_file',
+      o_app        applog   := applog (p_module       => 'delete_file',
                                        p_runmode      => p_runmode);
    BEGIN
       l_filepath := coreutils.get_dir_path (p_directory) || '/' || p_filename;
-      o_app.log_msg ('File to delete: ' || l_filepath, 3);
 
       IF NOT o_app.is_debugmode
       THEN
          UTL_FILE.fremove (p_directory, p_filename);
       END IF;
 
+      o_app.log_msg ('File '|| l_filepath||' deleted', 3);
       o_app.clear_app_info;
    EXCEPTION
       WHEN UTL_FILE.invalid_operation
       THEN
-         o_app.log_msg (l_filepath || ' could not be deleted. It probably does not exist');
-      WHEN OTHERS
-      THEN
-         o_app.log_err;
-         RAISE;
+      o_app.log_msg (l_filepath || ' could not be deleted, or does not exist');
    END delete_file;
 
    -- uses UTL_FILE to "touch" a file
@@ -93,24 +84,19 @@ AS
    AS
       l_fh        UTL_FILE.file_type;
       l_dirpath   VARCHAR2 (100);
-      o_app       applog             := applog (p_module => 'coreutils.create_file');
+      o_app       applog             := applog (p_module => 'create_file');
    BEGIN
       l_dirpath := get_dir_path (p_directory) || '/' || p_filename;
 
-      IF o_app.is_debugmode
+      IF NOT o_app.is_debugmode
       THEN
-         o_app.log_msg ('File to create: ' || l_dirpath);
-      ELSE
          l_fh := UTL_FILE.fopen (p_directory, p_filename, 'W');
       END IF;
-
+      
+      o_app.log_msg ('File ' || l_dirpath||' created',3);
       o_app.clear_app_info;
-   EXCEPTION
-      WHEN OTHERS
-      THEN
-         o_app.log_err;
-         RAISE;
    END create_file;
+
 
 -- log a message to the log_table
 -- the preferred method for using the logging framework is to instantiate a APPLOG object and use that
@@ -122,38 +108,43 @@ AS
    BEGIN
       o_app.log_msg (p_msg);
    END log_msg;
-
+   
+   -- use EXECUTE IMMEDIATE to execute a SQL statement
+   -- uses AUTONOMOUS_TRANSACTION, so this will NOT execute within the current transaction
+   -- excellent for DDL that where the commit incurred by the DDL will not affect the current transaction
    PROCEDURE exec_auto (
-      p_ddl           VARCHAR2,
+      p_sql           VARCHAR2,
       p_runmode       VARCHAR2 DEFAULT NULL,
-      p_runmode_msg   VARCHAR2 DEFAULT 'DDL: ')
+      p_msg   VARCHAR2 DEFAULT 'DDL: ')
    AS
       PRAGMA AUTONOMOUS_TRANSACTION;
-      o_app   applog := applog (p_module => 'coreutils.exec_auto', p_runmode => p_runmode);
+      o_app   applog := applog (p_module => 'exec_auto', p_runmode => p_runmode);
    BEGIN
-      o_app.log_msg (p_runmode_msg || p_ddl, 3);
+      o_app.log_msg (p_msg || p_sql, 3);
 
       IF NOT o_app.is_debugmode
       THEN
-         EXECUTE IMMEDIATE p_ddl;
+         EXECUTE IMMEDIATE p_sql;
       END IF;
 
       COMMIT;
       o_app.clear_app_info;
    END exec_auto;
-
+   
+   -- use EXECUTE IMMEDIATE to execute a SQL statement
+   -- no AUTONOMOUS_TRANSACTION, so this will execute within the current transaction
    PROCEDURE exec_sql (
-      p_dml           VARCHAR2,
+      p_sql           VARCHAR2,
       p_runmode       VARCHAR2 DEFAULT NULL,
-      p_runmode_msg   VARCHAR2 DEFAULT 'DML: ')
+      p_msg   VARCHAR2 DEFAULT 'DML: ')
    AS
-      o_app   applog := applog (p_module => 'coreutils.exec_sql', p_runmode => p_runmode);
+      o_app   applog := applog (p_module => 'exec_sql', p_runmode => p_runmode);
    BEGIN
-      o_app.log_msg (p_runmode_msg || p_dml, 3);
+      o_app.log_msg (p_msg || p_sql, 3);
 
       IF NOT o_app.is_debugmode
       THEN
-         EXECUTE IMMEDIATE p_dml;
+         EXECUTE IMMEDIATE p_sql;
       END IF;
       o_app.clear_app_info;
    END exec_sql;
@@ -282,7 +273,7 @@ AS
       RETURN BOOLEAN
    AS
       l_object   dba_objects.object_name%TYPE;
-      o_app      applog                         := applog (p_module => 'coreutils.object_exists');
+      o_app      applog                         := applog (p_module => 'object_exists');
    BEGIN
       SELECT DISTINCT object_name
                  INTO l_object
@@ -296,10 +287,6 @@ AS
       THEN
          o_app.clear_app_info;
          RETURN FALSE;
-      WHEN OTHERS
-      THEN
-         o_app.log_err;
-         RAISE;
    END object_exists;
 
    -- returns a boolean
@@ -356,7 +343,7 @@ AS
       l_fh     UTL_FILE.file_type;
       l_line   VARCHAR2 (2000);
       l_cnt    NUMBER             := 0;
-      o_app    applog      := applog (p_module       => 'coreutils.get_numlines',
+      o_app    applog      := applog (p_module       => 'get_numlines',
                                       p_runmode      => p_runmode);
    BEGIN
       IF o_app.is_debugmode
@@ -380,11 +367,6 @@ AS
                RETURN l_cnt;
          END;
       END IF;
-   EXCEPTION
-      WHEN OTHERS
-      THEN
-         o_app.log_err;
-         RAISE;
    END get_numlines;
 
    -- a function used to unzip a file regardless of which library was used to zip it
@@ -404,26 +386,31 @@ AS
       l_file_size      NUMBER;
       l_blocksize      NUMBER;
       o_app            applog
-                             := applog (p_module       => 'coreutils.unzip_file',
+                             := applog (p_module       => 'unzip_file',
                                         p_runmode      => p_runmode);
    BEGIN
       l_filebase := REGEXP_REPLACE (p_filename, '\.[^\.]+$', NULL, 1, 1, 'i');
       l_filesuf := REGEXP_SUBSTR (p_filename, '[^\.]+$');
       l_filebasepath := p_dirpath || '/' || l_filebase;
-
+      
+      o_app.log_msg(l_filepath||' checked for compression using standard libraries',3);
       CASE l_filesuf
          WHEN 'gz'
-         THEN
-            host_cmd ('gzip -df ' || l_filepath, p_runmode => p_runmode);
+      THEN
+      host_cmd ('gzip -df ' || l_filepath, p_runmode => o_app.runmode);
+      o_app.log_msg(l_filepath||' gunzipped',3);
          WHEN 'Z'
          THEN
-            host_cmd ('uncompress ' || l_filepath, p_runmode => p_runmode);
+      host_cmd ('uncompress ' || l_filepath, p_runmode => o_app.runmode);
+      o_app.log_msg(l_filepath||' uncompressed',3);
          WHEN 'bz2'
          THEN
-            host_cmd ('bunzip2 ' || l_filepath, p_runmode => p_runmode);
+      host_cmd ('bunzip2 ' || l_filepath, p_runmode => o_app.runmode);
+      o_app.log_msg(l_filepath||' bunzipped',3);
          WHEN 'zip'
          THEN
-            host_cmd ('unzip ' || l_filepath, p_runmode => p_runmode);
+      host_cmd ('unzip ' || l_filepath, p_runmode => o_app.runmode);
+      o_app.log_msg(l_filepath||' unzipped',3);
          ELSE
             -- this is the only case where the file wasn't compressed
             l_compressed := FALSE;
@@ -453,17 +440,14 @@ AS
 
          IF NOT l_file_exists
          THEN
-            raise_application_error (-20020, 'Filename to return does not exist');
+            raise_application_error (coreutils.get_err_cd ('file_not_found'),
+                                      coreutils.get_err_msg ('file_not_found'));
+
          END IF;
       END IF;
 
       o_app.clear_app_info;
       RETURN l_return;
-   EXCEPTION
-      WHEN OTHERS
-      THEN
-         o_app.log_err;
-         RAISE;
    END unzip_file;
 
    -- a function used to decrypt a file regardless of which method was used to encrypt it
@@ -487,7 +471,7 @@ AS
       l_file_size      NUMBER;
       l_blocksize      NUMBER;
       o_app            applog
-                           := applog (p_module       => 'coreutils.decrypt_file',
+                           := applog (p_module       => 'decrypt_file',
                                       p_runmode      => p_runmode);
    BEGIN
       l_filebase := REGEXP_REPLACE (p_filename, '\.[^\.]+$', NULL, 1, 1, 'i');
@@ -502,7 +486,7 @@ AS
                       || ' '
                       || l_filebasepath,
                       p_passphrase,
-                      p_runmode      => p_runmode);
+                      p_runmode      => o_app.runmode);
          ELSE
             -- this is the only case where the extension wasn't recognized
             l_encrypted := FALSE;
@@ -538,11 +522,6 @@ AS
 
       o_app.clear_app_info;
       RETURN l_return;
-   EXCEPTION
-      WHEN OTHERS
-      THEN
-         o_app.log_err;
-         RAISE;
    END decrypt_file;
 END coreutils;
 /
