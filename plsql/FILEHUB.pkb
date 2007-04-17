@@ -9,7 +9,7 @@ IS
    IS
       l_pct_diff   NUMBER;
       l_rej_ind    VARCHAR2 (1);
-      o_app        applog       := applog (p_module => 'FILEHUB.CALC_REJ_IND');
+      o_app        applog       := applog (p_module => 'calc_rej_ind');
    BEGIN
       SELECT percent_diff
         INTO l_pct_diff
@@ -36,15 +36,14 @@ IS
    PROCEDURE process (
       p_filehub_group   VARCHAR2,
       p_filehub_name    VARCHAR2 DEFAULT NULL,
-      p_keep_source     varchar2 DEFAULT 'no',
-      p_runmode         varchar2 DEFAULT null)
+      p_keep_source     VARCHAR2 DEFAULT 'no',
+      p_runmode         VARCHAR2 DEFAULT NULL)
    IS
       l_rows           BOOLEAN                          := FALSE;         -- TO catch empty cursors
-      l_filehub_type   filehub_conf.filehub_type%TYPE;
       o_extract        EXTRACT;
       o_feed           feed;
-      o_app            applog     := applog (p_module      => 'filehub.process',
-                                             p_runmode     => p_runmode);
+      o_app            applog     := applog (p_module       => 'process',
+                                             p_runmode      => p_runmode);
    BEGIN
       FOR c_fh_conf IN (SELECT   filehub_id,
                                  filehub_type
@@ -54,7 +53,8 @@ IS
                                               DECODE (p_filehub_name, NULL, '?', p_filehub_name))
                         ORDER BY filehub_id)
       LOOP
-         CASE lower(c_fh_conf.filehub_type)
+	 l_rows := TRUE;
+         CASE LOWER (c_fh_conf.filehub_type)
             WHEN 'extract'
             THEN
                SELECT VALUE (t)
@@ -62,7 +62,7 @@ IS
                  FROM extract_ot t
                 WHERE t.filehub_id = c_fh_conf.filehub_id;
 
-         o_extract.runmode := p_runmode;
+               o_extract.runmode := o_app.runmode;
                o_extract.process;
             WHEN 'feed'
             THEN
@@ -71,11 +71,18 @@ IS
                  FROM feed_ot t
                 WHERE t.filehub_id = c_fh_conf.filehub_id;
 
-         o_feed.runmode := p_runmode;
+               o_feed.runmode := o_app.runmode;
                o_feed.process (p_keep_source);
             ELSE
                NULL;
          END CASE;
+	 -- no matching filehub entries are found
+	 IF  NOT l_rows
+	 THEN
+	    raise_application_error ( coreutils.get_err_cd ('incorrect_parameters'),
+                                      coreutils.get_err_msg ('incorrect_parameters'));
+	 END IF;
+	 
 
          -- need this commit to clear out the contents of the DIR_LIST table
          COMMIT;
