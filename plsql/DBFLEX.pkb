@@ -3,9 +3,9 @@ AS
 -- this is not an autonomous transaction because COREUTILS.exec_auto is
    PROCEDURE trunc_tab (p_owner IN VARCHAR2, p_table IN VARCHAR2, p_runmode VARCHAR2 DEFAULT NULL)
    AS
-      o_app   applog := applog (p_runmode => p_runmode, p_module => 'dbflex.trunc_tab');
+      o_app   applog := applog (p_runmode => p_runmode, p_module => 'trunc_tab');
    BEGIN
-      coreutils.exec_auto ('truncate table ' || p_owner || '.' || p_table, p_runmode => p_runmode);
+      coreutils.exec_auto ('truncate table ' || p_owner || '.' || p_table, p_runmode => o_app.runmode);
       o_app.clear_app_info;
    END trunc_tab;
 
@@ -37,7 +37,7 @@ AS
       e_dup_col_list   EXCEPTION;
       PRAGMA EXCEPTION_INIT (e_dup_col_list, -1408);
       o_app            applog
-                             := applog (p_module       => 'dbflex.build_indexes',
+                             := applog (p_module       => 'build_indexes',
                                         p_runmode      => p_runmode);
    BEGIN
       -- execute immediate doesn't like ";" on the end
@@ -178,16 +178,17 @@ AS
                             1,
                             0,
                             'i');
-         o_app.log_msg ('Renamed DDL for exceptions: ' || l_e_ddl, 3);
+         o_app.log_msg ('Renamed DDL for exceptions: ' || l_e_ddl, 4);
 
          BEGIN
-            coreutils.exec_auto (l_ddl, p_runmode => p_runmode);
+            coreutils.exec_auto (l_ddl, p_runmode => o_app.runmode);
             o_app.log_msg ('Index ' || c_indexes.idx_rename || ' built');
             l_idx_cnt := l_idx_cnt + 1;
          EXCEPTION
             -- if this index_name already exists, try to rename it to something else
             WHEN e_dup_idx_name
             THEN
+	    o_app.log_msg('New index name being used because index name already exists',3);
                BEGIN
                   coreutils.exec_auto (l_e_ddl);
                   o_app.log_msg ('Index ' || c_indexes.idx_e_rename || ' built');
@@ -251,7 +252,7 @@ AS
       e_dup_pk         EXCEPTION;
       PRAGMA EXCEPTION_INIT (e_dup_pk, -2260);
       o_app            applog
-                         := applog (p_module       => 'dbflex.build_constraints',
+                         := applog (p_module       => 'build_constraints',
                                     p_runmode      => p_runmode);
    BEGIN
       -- execute immediate doesn't like ";" on the end
@@ -397,7 +398,7 @@ AS
          o_app.set_action ('Execute constraint DDL');
 
          BEGIN
-            coreutils.exec_auto (l_ddl, p_runmode => p_runmode);
+            coreutils.exec_auto (l_ddl, p_runmode => o_app.runmode);
             o_app.log_msg ('Constraint ' || c_constraints.con_rename || ' built');
             l_con_cnt := l_con_cnt + 1;
          EXCEPTION
@@ -455,7 +456,7 @@ AS
       l_rows       BOOLEAN       := FALSE;
       l_tab_name   VARCHAR2 (61) := p_owner || '.' || p_table;
       l_idx_cnt    NUMBER        := 0;
-      o_app        applog     := applog (p_module       => 'dbflex.drop_indexes',
+      o_app        applog     := applog (p_module       => 'drop_indexes',
                                          p_runmode      => p_runmode);
    BEGIN
       o_app.log_msg ('Dropping indexes on ' || l_tab_name);
@@ -472,7 +473,7 @@ AS
                            AND REGEXP_LIKE (index_type, '^' || NVL (p_index_type, '.'), 'i'))
       LOOP
          l_rows := TRUE;
-         coreutils.exec_auto (c_indexes.index_ddl, p_runmode);
+         coreutils.exec_auto (c_indexes.index_ddl, o_app.runmode);
          l_idx_cnt := l_idx_cnt + 1;
          o_app.log_msg ('Index ' || c_indexes.index_name || ' dropped');
       END LOOP;
@@ -506,7 +507,7 @@ AS
       l_con_cnt    NUMBER        := 0;
       l_tab_name   VARCHAR2 (61) := p_owner || '.' || p_table;
       l_rows       BOOLEAN       := FALSE;
-      o_app        applog := applog (p_module       => 'dbflex.drop_constraints',
+      o_app        applog := applog (p_module       => 'drop_constraints',
                                      p_runmode      => p_runmode);
    BEGIN
       -- drop constraints
@@ -527,7 +528,7 @@ AS
       LOOP
          -- catch empty cursor sets
          l_rows := TRUE;
-         coreutils.exec_auto (c_constraints.constraint_ddl, p_runmode);
+         coreutils.exec_auto (c_constraints.constraint_ddl, o_app.runmode);
          l_con_cnt := l_con_cnt + 1;
          o_app.log_msg ('Constraint ' || c_constraints.constraint_name || ' dropped');
       END LOOP;
@@ -565,7 +566,7 @@ AS
       l_src_name   VARCHAR2 (61) := p_source_owner || '.' || p_source_object;
       l_trg_name   VARCHAR2 (61) := p_owner || '.' || p_table;
       o_app        applog
-         := applog (p_module       => 'dbflex.insert_table',
+         := applog (p_module       => 'insert_table',
                     p_runmode      => p_runmode,
                     p_action       => 'Check existence of objects');
    BEGIN
@@ -593,7 +594,7 @@ AS
       IF coreutils.is_true (p_trunc)
       THEN
          -- truncate the target table
-         trunc_tab (p_owner, p_table, p_runmode);
+         trunc_tab (p_owner, p_table, o_app.runmode);
       END IF;
 
       -- enable|disable parallel dml depending on the parameter for P_DIRECT
@@ -604,7 +605,7 @@ AS
                                 ELSE 'DISABLE'
                              END
                           || ' PARALLEL DML',
-                          p_runmode      => p_runmode);
+                          p_runmode      => o_app.runmode);
       o_app.log_msg ('Inserting records from ' || l_src_name || ' into ' || l_trg_name, 3);
       coreutils.exec_sql (   REGEXP_REPLACE (   'insert /*+ APPEND */ into '
                                              || l_trg_name
@@ -625,7 +626,7 @@ AS
                                      || ' reject limit '
                                      || p_reject_limit
                              END,
-                          p_runmode);
+                          o_app.runmode);
       -- record the number of rows affected
       o_app.log_cnt_msg (SQL%ROWCOUNT);
       o_app.clear_app_info;
@@ -657,7 +658,7 @@ AS
       e_no_on_columns   EXCEPTION;
       PRAGMA EXCEPTION_INIT (e_no_on_columns, -936);
       o_app             applog
-         := applog (p_module       => 'dbflex.merge_table',
+         := applog (p_module       => 'merge_table',
                     p_runmode      => p_runmode,
                     p_action       => 'Check existence of objects');
    BEGIN
@@ -820,7 +821,7 @@ AS
                                    ELSE 'DISABLE'
                                 END
                              || ' PARALLEL DML',
-                             p_runmode      => p_runmode);
+                             p_runmode      => o_app.runmode);
          o_app.log_msg ('Merging records from ' || l_src_name || ' into ' || l_trg_name, 3);
          -- we put the merge statement together using all the different clauses constructed above
          coreutils.exec_sql (   REGEXP_REPLACE (   'MERGE INTO '
@@ -864,7 +865,7 @@ AS
                                         -- if no reject limit is specified, then use unlimited
                                         || p_reject_limit
                                 END,
-                             p_runmode);
+                             o_app.runmode);
       EXCEPTION
          -- ON columns not specified correctly
          WHEN e_no_on_columns
@@ -897,7 +898,7 @@ AS
       p_runmode         VARCHAR2 DEFAULT NULL)
    IS
       l_rows   BOOLEAN := FALSE;
-      o_app    applog  := applog (p_module => 'dbflex.load_tables', p_runmode => p_runmode);
+      o_app    applog  := applog (p_module => 'load_tables', p_runmode => p_runmode);
    BEGIN
       o_app.log_msg ('Loading matching objects from the ' || p_source_owner || ' schema.');
 
@@ -958,7 +959,7 @@ AS
                             p_owner              => c_objects.targ_owner,
                             p_table              => c_objects.targ,
                             p_direct             => p_direct,
-                            p_runmode            => p_runmode);
+                            p_runmode            => o_app.runmode);
             WHEN NOT coreutils.is_true (p_trunc)
             THEN
                insert_table (p_source_owner       => c_objects.src_owner,
@@ -967,7 +968,7 @@ AS
                              p_table              => c_objects.targ,
                              p_direct             => p_direct,
                              p_trunc              => p_trunc,
-                             p_runmode            => p_runmode);
+                             p_runmode            => o_app.runmode);
          END CASE;
 
          -- whether or not to commit after each table
@@ -1022,7 +1023,7 @@ AS
       e_compress       EXCEPTION;
       PRAGMA EXCEPTION_INIT (e_compress, -14646);
       o_app            applog
-                        := applog (p_module       => 'dbflex.exchange_partition',
+                        := applog (p_module       => 'exchange_partition',
                                    p_runmode      => p_runmode);
    BEGIN
       o_app.set_action ('Determine partition to use');
@@ -1111,7 +1112,7 @@ AS
                      p_source_table      => p_table,
                      p_part_type         => 'local',
                      p_tablespace        => p_idx_tablespace,
-                     p_runmode           => p_runmode);
+                     p_runmode           => o_app.runmode);
       o_app.set_action ('Exchange table');
 
       BEGIN
@@ -1122,7 +1123,7 @@ AS
                               || ' with table '
                               || l_src_name
                               || ' including indexes update global indexes',
-                              p_runmode);
+                              o_app.runmode);
          o_app.log_msg (   l_src_name
                         || ' exchanged for partition '
                         || l_partname
@@ -1132,7 +1133,7 @@ AS
          WHEN e_compress
          THEN
             -- need to compress the staging table
-            coreutils.exec_auto ('alter table ' || l_src_name || ' move compress', p_runmode);
+            coreutils.exec_auto ('alter table ' || l_src_name || ' move compress', o_app.runmode);
             -- now, rerun the exchange
             coreutils.exec_auto (   'alter table '
                                  || l_tab_name
@@ -1141,7 +1142,7 @@ AS
                                  || ' with table '
                                  || l_src_name
                                  || ' including indexes update global indexes',
-                                 p_runmode);
+                                 o_app.runmode);
             o_app.log_msg (   l_src_name
                            || ' exchanged for partition '
                            || l_partname
@@ -1153,7 +1154,7 @@ AS
       IF coreutils.is_true (p_index_drop)
       THEN
          drop_indexes (p_owner        => p_source_owner, p_table => p_source_table,
-                       p_runmode      => p_runmode);
+                       p_runmode      => o_app.runmode);
       END IF;
 
       o_app.clear_app_info;
@@ -1252,7 +1253,7 @@ AS
       l_pidx_cnt   NUMBER;
       l_idx_cnt    NUMBER;
       l_rows       BOOLEAN         DEFAULT FALSE;
-      o_app        applog := applog (p_module       => 'dbflex.unusable_indexes',
+      o_app        applog := applog (p_module       => 'unusable_indexes',
                                      p_runmode      => p_runmode);
    BEGIN
       CASE
@@ -1348,7 +1349,7 @@ AS
                                     partition_position)
       LOOP
          l_rows := TRUE;
-         coreutils.exec_auto (c_idx.DDL, p_runmode => p_runmode);
+         coreutils.exec_auto (c_idx.DDL, p_runmode => o_app.runmode);
          l_pidx_cnt := c_idx.num_partitions;
          l_idx_cnt := c_idx.num_indexes;
       END LOOP;
@@ -1407,7 +1408,7 @@ AS
       l_rows   BOOLEAN         := FALSE;                                  -- to catch empty cursors
       l_cnt    NUMBER          := 0;
       o_app    applog
-         := applog (p_module       => 'dbflex.usable_indexes',
+         := applog (p_module       => 'usable_indexes',
                     p_action       => 'Rebuild indexes',
                     p_runmode      => p_runmode);
    BEGIN
@@ -1434,7 +1435,7 @@ AS
                        ORDER BY table_name,
                                 partition_position)
          LOOP
-            coreutils.exec_auto (c_idx.DDL, p_runmode => p_runmode);
+            coreutils.exec_auto (c_idx.DDL, p_runmode => o_app.runmode);
             l_cnt := l_cnt + 1;
          END LOOP;
 
@@ -1464,7 +1465,7 @@ AS
                      ORDER BY table_name)
       LOOP
          l_rows := TRUE;
-         coreutils.exec_auto (c_gidx.DDL, p_runmode);
+         coreutils.exec_auto (c_gidx.DDL, o_app.runmode);
          l_cnt := l_cnt + 1;
       END LOOP;
 
