@@ -71,12 +71,6 @@ ALTER TABLE tdinc.filehub_conf ADD (
     USING INDEX)
 /
 
-ALTER TABLE tdinc.filehub_conf ADD CONSTRAINT
-      notify_id_fk FOREIGN KEY (notify_id)
-      REFERENCES tdinc.notify_conf(notify_id)
-      ON DELETE CASCADE
-/
-
 ALTER TABLE tdinc.filehub_conf
       ADD CONSTRAINT filehub_conf_uk1 UNIQUE (filehub_name,filehub_group)
       USING INDEX
