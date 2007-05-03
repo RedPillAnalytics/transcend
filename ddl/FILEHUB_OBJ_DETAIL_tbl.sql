@@ -35,5 +35,8 @@ COMMENT ON COLUMN tdinc.filehub_obj_detail.session_id IS 'SESSION_ID of the proc
 GRANT SELECT ON tdinc.filehub_obj_detail TO tdinc_filehub
 /
 
+DROP SEQUENCE tdinc.filehub_obj_detail_seq
+/
+
 CREATE SEQUENCE tdinc.filehub_obj_detail_seq
 /
