@@ -1501,5 +1501,223 @@ AS
          o_app.log_err;
          RAISE;
    END usable_indexes;
+   
+   -- structures a merge statement between two tables that have the same table
+   PROCEDURE load_scd (
+      p_source_owner    VARCHAR2,
+      p_source_object   VARCHAR2,
+      p_owner           VARCHAR2,
+      p_table           VARCHAR2,
+      p_type1_columns   VARCHAR2 DEFAULT NULL,
+      p_type2_columns   VARCHAR2 DEFAULT NULL
+      p_runmode         VARCHAR2 DEFAULT 'no')
+   IS
+      l_src_name        VARCHAR2 (61)    := p_source_owner || '.' || p_source_object;
+      l_trg_name        VARCHAR2 (61)    := p_owner || '.' || p_table;
+      o_app             applog
+         := applog (p_module       => 'load_scd',
+                    p_runmode      => p_runmode,
+                    p_action       => 'Check existence of objects');
+   BEGIN
+      o_app.set_action ('Construct MERGE ON clause');
+
+      -- use the columns provided in P_COLUMNS.
+      -- if that is left null, then choose the columns in the primary key of the target table
+      -- if there is no primary key, then choose a unique key (any unique key)
+      IF p_columns IS NOT NULL
+      THEN
+         WITH DATA AS
+              
+              -- this allows us to create a variable IN LIST based on multiple column names provided
+              (SELECT     TRIM (SUBSTR (COLUMNS,
+                                        INSTR (COLUMNS, ',', 1, LEVEL) + 1,
+                                          INSTR (COLUMNS, ',', 1, LEVEL + 1)
+                                        - INSTR (COLUMNS, ',', 1, LEVEL)
+                                        - 1)) AS token
+                     FROM (SELECT ',' || p_columns || ',' COLUMNS
+                             FROM DUAL)
+               CONNECT BY LEVEL <= LENGTH (p_columns) - LENGTH (REPLACE (p_columns, ',', '')) + 1)
+         SELECT REGEXP_REPLACE (   '('
+                                || stragg ('target.' || column_name || ' = source.' || column_name)
+                                || ')',
+                                ',',
+                                ' AND' || CHR (10)) LIST
+           INTO l_onclause
+           FROM dba_tab_columns
+          WHERE table_name = UPPER (p_table)
+            AND owner = UPPER (p_owner)
+            -- select from the variable IN LIST
+            AND column_name IN (SELECT *
+                                  FROM DATA);
+      ELSE
+         -- otherwise, we need to get a constraint name
+         -- we first choose a PK if it exists
+         -- otherwise get a UK at random
+         SELECT LIST
+           INTO l_onclause
+           FROM (SELECT REGEXP_REPLACE (   '('
+                                        || stragg (   'target.'
+                                                   || column_name
+                                                   || ' = source.'
+                                                   || column_name)
+                                        || ')',
+                                        ',',
+                                        ' AND' || CHR (10)) LIST,
+                        -- the MIN function will ensure that primary keys are selected first
+                        -- otherwise, it will randonmly choose a remaining constraint to use
+                        MIN (dc.constraint_type) con_type
+                   FROM all_cons_columns dcc JOIN all_constraints dc USING (constraint_name,
+                                                                            table_name)
+                  WHERE table_name = UPPER (p_table)
+                    AND dcc.owner = UPPER (p_owner)
+                    AND dc.constraint_type IN ('P', 'U'));
+      END IF;
+
+      o_app.set_action ('Construct MERGE update clause');
+
+      IF p_columns IS NOT NULL
+      THEN
+         SELECT REGEXP_REPLACE (stragg ('target.' || column_name || ' = source.' || column_name),
+                                ',',
+                                ',' || CHR (10))
+           INTO l_update
+           -- if P_COLUMNS is provided, we use the same logic from the ON clause
+           -- to make sure those same columns are not inlcuded in the update clause
+           -- MINUS gives us that
+         FROM   (WITH DATA AS
+                      (SELECT     TRIM (SUBSTR (COLUMNS,
+                                                INSTR (COLUMNS, ',', 1, LEVEL) + 1,
+                                                  INSTR (COLUMNS, ',', 1, LEVEL + 1)
+                                                - INSTR (COLUMNS, ',', 1, LEVEL)
+                                                - 1)) AS token
+                             FROM (SELECT ',' || p_columns || ',' COLUMNS
+                                     FROM DUAL)
+                       CONNECT BY LEVEL <=
+                                        LENGTH (p_columns) - LENGTH (REPLACE (p_columns, ',', ''))
+                                        + 1)
+                 SELECT column_name
+                   FROM all_tab_columns
+                  WHERE table_name = UPPER (p_table) AND owner = UPPER (p_owner)
+                 MINUS
+                 SELECT column_name
+                   FROM dba_tab_columns
+                  WHERE table_name = UPPER (p_table)
+                    AND owner = UPPER (p_owner)
+                    AND column_name IN (SELECT *
+                                          FROM DATA));
+      ELSE
+         -- otherwise, we once again MIN a constraint type to ensure it's the same constraint
+         -- then, we just minus the column names so they aren't included
+         SELECT REGEXP_REPLACE (stragg ('target.' || column_name || ' = source.' || column_name),
+                                ',',
+                                ',' || CHR (10))
+           INTO l_update
+           FROM (SELECT column_name
+                   FROM all_tab_columns
+                  WHERE table_name = UPPER (p_table) AND owner = UPPER (p_owner)
+                 MINUS
+                 SELECT column_name
+                   FROM (SELECT   column_name,
+                                  MIN (dc.constraint_type) con_type
+                             FROM all_cons_columns dcc JOIN all_constraints dc
+                                  USING (constraint_name, table_name)
+                            WHERE table_name = UPPER (p_table)
+                              AND dcc.owner = UPPER (p_owner)
+                              AND dc.constraint_type IN ('P', 'U')
+                         GROUP BY column_name));
+      END IF;
+
+      o_app.set_action ('Construnct MERGE insert clause');
+
+      SELECT   REGEXP_REPLACE ('(' || stragg ('target.' || column_name) || ') ', ',',
+                               ',' || CHR (10)) LIST
+          INTO l_insert
+          FROM all_tab_columns
+         WHERE table_name = UPPER (p_table) AND owner = UPPER (p_owner)
+      ORDER BY column_name;
+
+      o_app.set_action ('Construct MERGE values clause');
+      l_values := REGEXP_REPLACE (l_insert, 'target.', 'source.');
+      o_app.log_msg (   'Merging records from '
+                     || p_source_owner
+                     || '.'
+                     || p_source_object
+                     || ' into '
+                     || p_owner
+                     || '.'
+                     || p_table);
+
+      BEGIN
+         o_app.set_action ('Issue MERGE statement');
+         -- ENABLE|DISABLE parallel dml depending on the value of P_DIRECT
+         coreutils.exec_sql (   'ALTER SESSION '
+                             || CASE
+                                   WHEN REGEXP_LIKE ('yes', p_direct, 'i')
+                                      THEN 'ENABLE'
+                                   ELSE 'DISABLE'
+                                END
+                             || ' PARALLEL DML',
+                             p_runmode      => o_app.runmode);
+         o_app.log_msg ('Merging records from ' || l_src_name || ' into ' || l_trg_name, 3);
+         -- we put the merge statement together using all the different clauses constructed above
+         coreutils.exec_sql (   REGEXP_REPLACE (   'MERGE INTO '
+                                                || p_owner
+                                                || '.'
+                                                || p_table
+                                                || ' target using '
+                                                || CHR (10)
+                                                || '(select * from '
+                                                || p_source_owner
+                                                || '.'
+                                                || p_source_object
+                                                || ') source on '
+                                                || CHR (10)
+                                                || l_onclause
+                                                || CHR (10)
+                                                || ' WHEN MATCHED THEN UPDATE SET '
+                                                || CHR (10)
+                                                || l_update
+                                                || CHR (10)
+                                                || ' WHEN NOT MATCHED THEN INSERT /*+ APPEND */ '
+                                                || CHR (10)
+                                                || l_insert
+                                                || CHR (10)
+                                                || ' VALUES '
+                                                || CHR (10)
+                                                || l_values,
+                                                -- just strip the APPEND hint out if P_DIRECT is 'no'
+                                                CASE
+                                                   WHEN REGEXP_LIKE ('no', p_direct, 'i')
+                                                      THEN '/\*\+ APPEND \*/ '
+                                                   ELSE NULL
+                                                END)
+                             -- if we specify a logging table, append that on the end
+                             || CASE p_log_table
+                                   WHEN NULL
+                                      THEN NULL
+                                   ELSE    ' log errors into '
+                                        || p_log_table
+                                        || ' reject limit '
+                                        -- if no reject limit is specified, then use unlimited
+                                        || p_reject_limit
+                                END,
+                             o_app.runmode);
+      EXCEPTION
+         -- ON columns not specified correctly
+         WHEN e_no_on_columns
+         THEN
+            raise_application_error (coreutils.get_err_cd ('on_clause_missing'),
+                                     coreutils.get_err_msg ('on_clause_missing'));
+      END;
+
+      -- show the records merged
+      o_app.log_cnt_msg (SQL%ROWCOUNT);
+      o_app.clear_app_info;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         o_app.log_err;
+         RAISE;
+   END load_scd;
 END dbflex;
 /
