@@ -1,4 +1,11 @@
-SELECT CASE test_key WHEN -1 THEN test_dim_seq.nextval ELSE test_key END test_key,
+SELECT -- the staging records don't have a surrogate key yet
+       -- the '-1' is a constant for all records from the staging table
+       CASE test_key 
+         WHEN -1 
+            THEN test_dim_seq.nextval 
+            ELSE test_key 
+       END test_key,
+       -- now just select out the rest of the records
        nat_key,
        birthdate,
        name,
@@ -51,7 +58,6 @@ SELECT CASE test_key WHEN -1 THEN test_dim_seq.nextval ELSE test_key END test_ke
 			                        THEN 'Y' 
 			                        ELSE 'N' 
 					   END,
-
                         -- SET the CURRENT_IND flag of the current record to 'Y' or 'N'
                         effect_end_dt['D','Y'] = CASE 
 			                              WHEN name['S','N'] <> name['D','Y'] 
@@ -72,4 +78,3 @@ SELECT CASE test_key WHEN -1 THEN test_dim_seq.nextval ELSE test_key END test_ke
           ORDER BY nat_key,source,effect_start_dt)
  WHERE include='Y'
 /
- 
