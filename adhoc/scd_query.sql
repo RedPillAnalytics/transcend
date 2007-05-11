@@ -2,6 +2,7 @@ SELECT CASE test_key WHEN -1 THEN test_dim_seq.nextval ELSE test_key END test_ke
        nat_key,
        birthdate,
        name,
+       zip,
        effect_start_dt,
        effect_end_dt,
        new_current_ind current_ind
@@ -15,6 +16,7 @@ SELECT CASE test_key WHEN -1 THEN test_dim_seq.nextval ELSE test_key END test_ke
                         -1 test_key,
                         birthdate,
                         name,
+			zip,
                         'Y' include
                    FROM test_stg
                         UNION
@@ -27,6 +29,7 @@ SELECT CASE test_key WHEN -1 THEN test_dim_seq.nextval ELSE test_key END test_ke
                         test_key,
                         birthdate,
                         name,
+			zip,
                         'Y' include
                    FROM test_dim)
           MODEL partition BY ( nat_key)
@@ -35,20 +38,21 @@ SELECT CASE test_key WHEN -1 THEN test_dim_seq.nextval ELSE test_key END test_ke
                 measures ( test_key,
                            birthdate,
                            name,
+			   zip,
                            include,
 			   effect_start_dt,
 			   effect_end_dt,
                            new_current_ind)
                 UNIQUE single reference
                 rules ( -- SET the include flag to 'Y' or 'N' to determine whether to include the row from STG table
-                        include['S','N'] = CASE WHEN name['S','N'] = name['D','Y'] THEN 'N' ELSE 'Y' END,
+                        include['S','N'] = CASE WHEN name['S','N'] = name['D','Y'] OR zip['S','N'] = zip['D','Y'] THEN 'N' ELSE 'Y' END,
                         -- SET the CURRENT_IND flag of the current record to 'Y' or 'N'
-                        effect_end_dt['D','Y'] = CASE WHEN name['S','N'] = name['D','Y'] THEN effect_end_dt['S','N'] ELSE effect_start_dt['S','N'] END,
+                        effect_end_dt['D','Y'] = CASE WHEN name['S','N'] = name['D','Y'] OR zip['S','N'] = zip['D','Y'] THEN effect_end_dt['S','N'] ELSE effect_start_dt['S','N'] END,
                         -- SET the effect dates
-                        new_current_ind['D','Y'] = CASE WHEN name['S','N'] = name['D','Y'] THEN 'Y' ELSE 'N' END,
+                        new_current_ind['D','Y'] = CASE WHEN name['S','N'] = name['D','Y'] OR zip['S','N'] = zip['D','Y'] THEN 'Y' ELSE 'N' END,
                         -- SET the TYPE 1 attribute to the new value for all records
                         birthdate['D',ANY] = birthdate['S','N']
                       )
-                ORDER BY source,name)
+          ORDER BY nat_key,source,effect_start_dt)
  WHERE include='Y'
 /
