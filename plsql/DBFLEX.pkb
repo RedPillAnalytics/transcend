@@ -647,7 +647,7 @@ AS
       p_direct          VARCHAR2 DEFAULT 'yes',
       p_log_table       VARCHAR2 DEFAULT NULL,
       p_reject_limit    VARCHAR2 DEFAULT 'unlimited',
-      p_runmode         VARCHAR2 DEFAULT 'no')
+      p_runmode         VARCHAR2 DEFAULT NULL)
    IS
       l_onclause        VARCHAR2 (32000);
       l_update          VARCHAR2 (32000);
@@ -1508,9 +1508,11 @@ AS
       p_source_object   VARCHAR2,
       p_owner           VARCHAR2,
       p_table           VARCHAR2,
-      p_type1_columns   VARCHAR2 DEFAULT NULL,
-      p_type2_columns   VARCHAR2 DEFAULT NULL
-      p_runmode         VARCHAR2 DEFAULT 'no')
+      p_type2_columns   VARCHAR2,
+      p_start_dt_col	VARCHAR2 DEFAULT NULL,
+      p_end_dt_col	VARCHAR2 DEFAULT NULL,
+      p_curr_ind_col	VARCHAR2 DEFAULT NULL,
+      p_runmode         VARCHAR2 DEFAULT NULL)
    IS
       l_src_name        VARCHAR2 (61)    := p_source_owner || '.' || p_source_object;
       l_trg_name        VARCHAR2 (61)    := p_owner || '.' || p_table;
@@ -1524,24 +1526,16 @@ AS
       -- use the columns provided in P_COLUMNS.
       -- if that is left null, then choose the columns in the primary key of the target table
       -- if there is no primary key, then choose a unique key (any unique key)
-      IF p_columns IS NOT NULL
-      THEN
          WITH DATA AS
-              
               -- this allows us to create a variable IN LIST based on multiple column names provided
               (SELECT     TRIM (SUBSTR (COLUMNS,
                                         INSTR (COLUMNS, ',', 1, LEVEL) + 1,
                                           INSTR (COLUMNS, ',', 1, LEVEL + 1)
                                         - INSTR (COLUMNS, ',', 1, LEVEL)
                                         - 1)) AS token
-                     FROM (SELECT ',' || p_columns || ',' COLUMNS
+                     FROM (SELECT ',' || p_type2_columns || ',' COLUMNS
                              FROM DUAL)
-               CONNECT BY LEVEL <= LENGTH (p_columns) - LENGTH (REPLACE (p_columns, ',', '')) + 1)
-         SELECT REGEXP_REPLACE (   '('
-                                || stragg ('target.' || column_name || ' = source.' || column_name)
-                                || ')',
-                                ',',
-                                ' AND' || CHR (10)) LIST
+               CONNECT BY LEVEL <= LENGTH (p_type2_columns) - LENGTH (REPLACE (p_type2_columns, ',', '')) + 1)
            INTO l_onclause
            FROM dba_tab_columns
           WHERE table_name = UPPER (p_table)
