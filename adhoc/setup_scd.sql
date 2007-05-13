@@ -44,7 +44,10 @@ INSERT INTO test_dim VALUES (test_dim_seq.nextval, test_natkey_seq.currval, '02/
 INSERT INTO test_dim VALUES (test_dim_seq.nextval, test_natkey_seq.currval, '02/03/1972','Stewart C. Bryson',30075,to_date('02/28/2006','mm/dd/yyyy'),to_date('12/31/9999','mm/dd/yyyy'),'Y')
 /
 
-INSERT INTO test_stg VALUES (test_natkey_seq.currval, '02/04/1972', 'Stewart W. Bryson', 30066, SYSDATE)
+INSERT INTO test_stg VALUES (test_natkey_seq.currval, '02/04/1972', 'Stewart D. Bryson', 30066, to_date('03/04/2006','mm/dd/yyyy'))
+/
+
+INSERT INTO test_stg VALUES (test_natkey_seq.currval, '02/04/1972', 'Stewart W. Bryson', 30066, to_date('03/09/2006','mm/dd/yyyy'))
 /
 
 INSERT INTO test_dim VALUES (test_dim_seq.nextval, test_natkey_seq.nextval, '07/26/1975','Pamela S. Bryson',30328,to_date('01/01/2006','mm/dd/yyyy'),to_date('12/31/9999','mm/dd/yyyy'),'Y')
