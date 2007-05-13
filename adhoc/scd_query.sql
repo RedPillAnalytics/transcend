@@ -63,7 +63,7 @@ SELECT complete_data.*,
                ELSE 'N'
                END,
                -- SET the TYPE 1 attribute to the new value for all records
-               birthdate['D',ANY] = birthdate['S','Y']
+               birthdate[ANY,ANY] = CASE WHEN birthdate['S','Y'] IS present then birthdate['S','N'] ELSE birthdate['D','Y'] end 
              )
        ) include_data
  WHERE include='Y'
