@@ -1,3 +1,5 @@
+
+COL name format a20
 DROP TABLE test_dim
 /
 
@@ -35,28 +37,43 @@ DROP SEQUENCE test_natkey_seq
 CREATE SEQUENCE test_natkey_seq START WITH 1033477
 /
 
-INSERT INTO test_dim VALUES (test_dim_seq.nextval, test_natkey_seq.nextval, '02/03/1972','Stewart A. Bryson',30328,to_date('01/01/2006','mm/dd/yyyy'),to_date('01/31/2006','mm/dd/yyyy'),'N')
+INSERT INTO test_dim VALUES 
+       (test_dim_seq.nextval, test_natkey_seq.nextval, '01/03/1975','John Smith',30328,
+	 to_date('01/01/2006','mm/dd/yyyy'),to_date('01/31/2006','mm/dd/yyyy'),'N')
 /
 
-INSERT INTO test_dim VALUES (test_dim_seq.nextval, test_natkey_seq.currval, '02/03/1972','Stewart B. Bryson',30075,to_date('01/31/2006','mm/dd/yyyy'),to_date('02/28/2006','mm/dd/yyyy'),'N')
+INSERT INTO test_dim VALUES 
+       (test_dim_seq.nextval, test_natkey_seq.currval, '01/03/1975','John A. Smith',30075,
+	 to_date('01/31/2006','mm/dd/yyyy'),to_date('02/28/2006','mm/dd/yyyy'),'N')
 /
 
-INSERT INTO test_dim VALUES (test_dim_seq.nextval, test_natkey_seq.currval, '02/03/1972','Stewart C. Bryson',30075,to_date('02/28/2006','mm/dd/yyyy'),to_date('12/31/9999','mm/dd/yyyy'),'Y')
+INSERT INTO test_dim VALUES 
+       (test_dim_seq.nextval, test_natkey_seq.currval, '01/03/1975','John D. Smith',30075,
+	 to_date('02/28/2006','mm/dd/yyyy'),to_date('12/31/9999','mm/dd/yyyy'),'Y')
 /
 
-INSERT INTO test_stg VALUES (test_natkey_seq.currval, '02/03/1972', 'Stewart D. Bryson', 30066, to_date('03/04/2006','mm/dd/yyyy'))
+INSERT INTO test_stg VALUES 
+       (test_natkey_seq.currval, '01/03/1975', 'John H. Smith', 30066, 
+	 to_date('03/04/2006','mm/dd/yyyy'))
 /
 
-INSERT INTO test_stg VALUES (test_natkey_seq.currval, '02/04/1972', 'Stewart W. Bryson', 30066, to_date('03/09/2006','mm/dd/yyyy'))
+INSERT INTO test_stg VALUES 
+       (test_natkey_seq.currval, '01/04/1975', 'John H. Smith', 30066, 
+	 to_date('03/09/2006','mm/dd/yyyy'))
 /
 
-INSERT INTO test_dim VALUES (test_dim_seq.nextval, test_natkey_seq.nextval, '07/26/1975','Pamela S. Bryson',30328,to_date('01/01/2006','mm/dd/yyyy'),to_date('12/31/9999','mm/dd/yyyy'),'Y')
+INSERT INTO test_dim VALUES 
+       (test_dim_seq.nextval, test_natkey_seq.nextval, '07/26/1975','Jane S. Smith',30328,
+	 to_date('01/01/2006','mm/dd/yyyy'),to_date('12/31/9999','mm/dd/yyyy'),'Y')
 /
 
-INSERT INTO test_stg VALUES (test_natkey_seq.currval, '07/26/1975','Pamela E. Bryson',30075,to_date('03/04/2006','mm/dd/yyyy'))
+INSERT INTO test_stg VALUES 
+       (test_natkey_seq.currval, '09/26/1980','Jane B. Smtih',30075,
+	 to_date('03/04/2006','mm/dd/yyyy'))
 /
 
-INSERT INTO test_stg VALUES (test_natkey_seq.currval, '06/26/1975','Pamela E. Bryson',30066,SYSDATE)
+INSERT INTO test_stg VALUES 
+(test_natkey_seq.currval, '08/26/1980','Jane W. Smith',30066,SYSDATE)
 /
 
 SELECT * FROM test_dim
