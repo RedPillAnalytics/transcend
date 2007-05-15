@@ -8,8 +8,10 @@ SELECT CASE test_key
        name,
        zip,
        effect_start_dt,
-       nvl(lead(effect_start_dt) OVER (partition BY nat_key ORDER BY effect_start_dt), to_date('12/31/9999','mm/dd/yyyy')) effect_end_dt,
-       CASE MAX(effect_start_dt) OVER (partition BY nat_key)
+       nvl(lead(effect_start_dt) OVER 
+	    (partition BY nat_key ORDER BY effect_start_dt), to_date('12/31/9999','mm/dd/yyyy')) effect_end_dt,
+       CASE MAX(effect_start_dt) 
+          OVER (partition BY nat_key)
        WHEN effect_start_dt
        THEN 'Y'
        ELSE 'N'
