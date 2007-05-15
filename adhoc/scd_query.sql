@@ -67,14 +67,6 @@ SELECT CASE test_key
 		       THEN 'Y'
 		       ELSE 'N'
 		       END,
-		       -- SET the include flag to 'Y' or 'N' to determine whether to keep other values from source
-		       -- decision is made based on comparing all the type2 attributes
-		       include['S','N'] = CASE
-		       WHEN name['S','N'] <> name['S','Y']
-		       OR zip['S','N'] <> zip['S','Y']
-		       THEN 'Y'
-		       ELSE 'N'
-		       END,
 		       -- SET the TYPE 1 attribute to the value of the max source record if it exists
 		       -- otherwise set it to the value for the max dimension record (which it should have been to begin with)
 		       -- there needs to be a rule here for every type1 attribute
