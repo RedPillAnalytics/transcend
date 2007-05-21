@@ -5,6 +5,8 @@ CREATE OR REPLACE TYPE tdinc.scdhybrid UNDER tdinc.basetype (
    source_object       VARCHAR2(30),
    object_owner        VARCHAR2 (30),
    object_name         VARCHAR2 (30),
+   sequence_owner      VARCHAR2 (30),
+   sequence_name       VARCHAR2 (30),
    type2_attribs       VARCHAR2(2000),
    type1_attribs       VARCHAR2(2000),
    surrogate_key       VARCHAR(30),
