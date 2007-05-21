@@ -1,6 +1,8 @@
 CREATE OR REPLACE TYPE tdinc.scdhybrid UNDER tdinc.basetype (
    scdhybrid_id        NUMBER,
    scdhybrid_name      VARCHAR2 (100),
+   source_owner	       VARCHAR2(30),
+   source_object       VARCHAR2(30),
    object_owner        VARCHAR2 (30),
    object_name         VARCHAR2 (30),
    type2_attribs       VARCHAR2(2000),
