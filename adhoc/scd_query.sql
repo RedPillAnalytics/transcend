@@ -32,29 +32,29 @@ SELECT CASE test_key
 	       name,
 	       zip,
 	       effect_start_dt,
-	       source,
 	       -- we now exclude records based on what the value is directly preceeding the record
 	       -- the list of requirements in the CASE statement needs to include all Type 2 attributes
-	       CASE 
-	       WHEN 
-	       ( zip = lag(zip) OVER (partition BY nat_key ORDER BY effect_start_dt) 
-		 and name = lag(name) OVER (partition BY nat_key ORDER BY effect_start_dt))
-	       -- only consider excluding staging records... never dimension records
-	       AND source='S'
-	       THEN 'N'
+	       CASE
+	       WHEN zip <> LAG(zip) OVER (partition BY nat_key ORDER BY effect_start_dt)
+	       THEN 'Y'
+	       WHEN name <> LAG(name) OVER (partition BY nat_key ORDER BY effect_start_dt)
+	       THEN 'Y'
+	       ELSE
+	       CASE test_key
+	       WHEN -1 THEN 'N'
 	       ELSE 'Y'
+	       END
 	       END include
 	  FROM (SELECT nat_key,
 		       effect_start_dt,
 		       -- FOR now, use a -1 for the surrogate key
 		       -- selecting from a sequence is not allowed inside analytics statements
 		       -- it'll be cased later
+		       -- the -1 also tells us which records are new
 		       -1 test_key,
 		       birthdate,
 		       name,
-		       zip,
-		       -- need to identify where each record came from 
-		       'S' source
+		       zip
 		  FROM test_stg
 		       UNION
 		SELECT nat_key,
@@ -62,9 +62,7 @@ SELECT CASE test_key
 		       test_key,
 		       birthdate,
 		       name,
-		       zip,
-		       -- need to identify where each record came from 
-		       'D' source
+		       zip
 		  FROM test_dim)
 	 ORDER BY nat_key, effect_start_dt)
  WHERE include='Y'
