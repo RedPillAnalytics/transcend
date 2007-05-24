@@ -7,6 +7,7 @@ SELECT CASE test_key
        birthdate,
        name,
        zip,
+       zip_plus4,
        effect_start_dt,
        -- effective end date is always based on EFFECTIVE_START_DT of proceeding record
        nvl( lead(effect_start_dt) OVER 
@@ -31,6 +32,10 @@ SELECT CASE test_key
 					    ROWS BETWEEN unbounded preceding AND unbounded following) birthdate,
 	       name,
 	       zip,
+	       -- all non-SCD columns (or SCD type 0) records just need to update the most recent, surviving record
+	       last_value(zip_plus4) OVER ( partition BY nat_key  
+					    ORDER BY effect_start_dt
+					    ROWS BETWEEN CURRENT ROW AND CASE test_key WHEN -1 THEN 1 ELSE 0 end following) zip_plus4,
 	       effect_start_dt,
 	       -- we now exclude records based on what the value is directly preceeding the record
 	       -- the list of requirements in the CASE statement needs to include all Type 2 attributes
@@ -42,7 +47,6 @@ SELECT CASE test_key
 	       ELSE
 	       CASE test_key
 	       WHEN -1 THEN 'N'
-	       ELSE 'Y'
 	       END
 	       END include
 	  FROM (SELECT nat_key,
@@ -54,7 +58,8 @@ SELECT CASE test_key
 		       -1 test_key,
 		       birthdate,
 		       name,
-		       zip
+		       zip,
+		       zip_plus4
 		  FROM test_stg
 		       UNION
 		SELECT nat_key,
@@ -62,7 +67,8 @@ SELECT CASE test_key
 		       test_key,
 		       birthdate,
 		       name,
-		       zip
+		       zip,
+		       zip_plus4 
 		  FROM test_dim)
 	 ORDER BY nat_key, effect_start_dt)
  WHERE include='Y'
