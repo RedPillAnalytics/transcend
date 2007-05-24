@@ -37,6 +37,14 @@ AS
       p_constraint_type     VARCHAR2 DEFAULT NULL,
       p_constraint_regexp   VARCHAR2 DEFAULT NULL,
       p_runmode             VARCHAR2 DEFAULT NULL);
+      
+   PROCEDURE build_table (
+      p_source_owner   VARCHAR2,
+      p_source_table   VARCHAR2,
+      p_owner          VARCHAR2,
+      p_table          VARCHAR2,
+      p_tablespace     VARCHAR2 DEFAULT NULL,
+      p_runmode        VARCHAR2 DEFAULT NULL);
 
    PROCEDURE insert_table (
       p_source_owner    VARCHAR2,
