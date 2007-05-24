@@ -670,6 +670,253 @@ AS
 
       o_app.clear_app_info;
    END drop_constraints;
+   
+   PROCEDURE build_table (
+      p_source_owner   VARCHAR2,
+      p_source_table   VARCHAR2,
+      p_owner          VARCHAR2,
+      p_table          VARCHAR2,
+      p_partitioned    VARCHAR2,
+      p_tablespace     VARCHAR2 DEFAULT NULL,
+      p_runmode        VARCHAR2 DEFAULT NULL
+   )
+   IS
+      l_ddl            LONG;
+      l_tab_name       VARCHAR2 (61)      := p_owner || '.' || p_table;
+      l_src_name       VARCHAR2 (61)      := p_source_owner || '.' || p_source_table;
+      l_source_part      dba_tables.partitioned%TYPE;
+      l_rows           BOOLEAN            := FALSE;
+      o_app            applog
+              := applog (p_module       => 'build_table',
+                         p_runmode      => p_runmode);
+   BEGIN
+      -- execute immediate doesn't like ";" on the end
+      DBMS_METADATA.set_transform_param (DBMS_METADATA.session_transform,
+                                         'SQLTERMINATOR',
+                                         FALSE
+                                        );
+      -- we need the segment attributes so things go where we want them to
+      DBMS_METADATA.set_transform_param (DBMS_METADATA.session_transform,
+                                         'SEGMENT_ATTRIBUTES',
+                                         TRUE
+                                        );
+      -- don't want all the other storage aspects though
+      DBMS_METADATA.set_transform_param (DBMS_METADATA.session_transform,
+                                         'STORAGE',
+                                         FALSE
+                                        );
+      o_app.set_action ('Build table');
+
+      -- find out if the source table is partitioned so we know how to formulate the index ddl
+      SELECT partitioned
+        INTO l_source_part
+        FROM dba_tables
+       WHERE table_name = UPPER (p_source_table) AND owner = UPPER (p_source_owner);
+
+      o_app.log_msg ('Creating table ' || l_tab_name);
+
+      -- create a cursor containing the DDL from the target indexes
+      FOR c_indexes IN
+         (SELECT
+                    -- if idx_rename already exists (constructed below), then we will try to rename the index to something generic
+                    -- this name will only be used when an exception is raised
+                    -- this index is shown in debug mode
+                    p_table
+                 || '_'
+                 || idx_e_ext
+                 -- rank function gives us the index number by specific index extension (formulated below)
+                 || RANK () OVER (PARTITION BY idx_e_ext ORDER BY index_name)
+                                                                 idx_e_rename,
+                 index_ddl, table_owner, table_name, owner, index_name,
+                 idx_rename, partitioned, uniqueness, idx_e_ext, index_type
+            FROM (SELECT    REGEXP_REPLACE
+                               
+                               -- dbms_metadata pulls the metadata for the source object out of the dictionary
+                            (   DBMS_METADATA.get_ddl ('INDEX',
+                                                       index_name,
+                                                       owner
+                                                      ),
+                                CASE
+                                   -- target is not partitioned and no tablespace provided
+                                WHEN l_targ_part = 'NO'
+                                AND p_tablespace IS NULL
+                                      -- remove all partitioning and the local keyword
+                                THEN '(\(\s*partition.+\))|local'
+                                   -- target is not partitioned but tablespace is provided
+                                WHEN l_targ_part = 'NO'
+                                AND p_tablespace IS NOT NULL
+                                      -- strip out partitioned info and local keyword and tablespace clause
+                                THEN '(\(\s*partition.+\))|local|(tablespace)\s*[^ ]+'
+                                   -- target is partitioned and tablespace is provided
+                                WHEN l_targ_part = 'YES'
+                                AND p_tablespace IS NOT NULL
+                                      -- strip out partitioned info keeping local keyword and remove tablespace clause
+                                THEN '(\(\s*partition.+\))|(tablespace)\s*[^ ]+'
+                                   ELSE NULL
+                                END,
+                                NULL,
+                                1,
+                                0,
+                                'in'
+                               )
+                         || CASE
+                               -- if tablespace is provided, tack it on the end
+                            WHEN p_tablespace IS NOT NULL
+                                  THEN ' TABLESPACE ' || p_tablespace
+                               ELSE NULL
+                            END index_ddl,
+                         table_owner, table_name, owner, index_name,
+                         
+                         -- this is the index name that will be used in the first attempt
+                         -- this index name is shown in debug mode
+                         REGEXP_REPLACE (index_name,
+                                         p_source_table,
+                                         p_table,
+                                         1,
+                                         0,
+                                         'i'
+                                        ) idx_rename,
+                         CASE
+                            -- devise generic index extensions for the different types
+                         WHEN index_type = 'BITMAP'
+                               THEN 'BMI'
+                            WHEN REGEXP_LIKE (index_type,
+                                              '^function',
+                                              'i'
+                                             )
+                               THEN 'FNC'
+                            WHEN uniqueness = 'UNIQUE'
+                               THEN 'UK'
+                            ELSE 'IK'
+                         END idx_e_ext,
+                         partitioned, uniqueness, index_type
+                    FROM all_indexes
+                   -- use a CASE'd regular expression to determine whether to include global indexes
+                  WHERE  REGEXP_LIKE
+                                    (partitioned,
+                                     CASE
+                                        WHEN REGEXP_LIKE ('global',
+                                                          p_part_type,
+                                                          'i'
+                                                         )
+                                           THEN 'NO'
+                                        WHEN REGEXP_LIKE ('local',
+                                                          p_part_type,
+                                                          'i'
+                                                         )
+                                           THEN 'YES'
+                                        ELSE '.'
+                                     END,
+                                     'i'
+                                    )
+                     AND table_name = UPPER (p_source_table)
+                     AND table_owner = UPPER (p_source_owner)
+                     -- use an NVL'd regular expression to determine specific indexes to work on
+                     AND REGEXP_LIKE (index_name,
+                                      NVL (p_index_regexp, '.'),
+                                      'i'
+                                     )
+                     -- use an NVL'd regular expression to determine the index types to worked on
+                     AND REGEXP_LIKE (index_type,
+                                      '^' || NVL (p_index_type, '.'),
+                                      'i'
+                                     )))
+      LOOP
+         o_app.log_msg ('Source index: ' || c_indexes.index_name, 4);
+         o_app.log_msg ('Renamed index: ' || c_indexes.idx_rename, 4);
+         o_app.log_msg ('Exception renamed index: ' || c_indexes.idx_e_rename,
+                        4
+                       );
+         l_rows := TRUE;
+         o_app.set_action ('Format index DDL');
+         -- replace the source table name with the target table name
+         -- if a " is found, then use it... otherwise don't
+         l_ddl :=
+            REGEXP_REPLACE (c_indexes.index_ddl,
+                            '(\."?)(' || p_source_table || ')(")?',
+                            '\1' || p_table || '\3'
+                           );
+              -- replace the index owner with the target owner
+         -- if a " is found, then use it... otherwise don't
+         l_ddl :=
+            REGEXP_REPLACE (l_ddl,
+                            '(")?(' || c_indexes.owner || ')("?\.)',
+                            '\1' || p_owner || '\3',
+                            1,
+                            0,
+                            'i'
+                           );
+         -- though it's not necessary for EXECUTE IMMEDIATE, remove blank lines for looks
+         l_ddl :=
+            REGEXP_REPLACE (l_ddl, CHR (10) || '[[:space:]]+' || CHR (10),
+                            NULL);
+         -- and for looks, remove the last carriage return
+         l_ddl := REGEXP_REPLACE (l_ddl, '[[:space:]]*$', NULL);
+         o_app.set_action ('Execute index DDL');
+         l_e_ddl :=
+            REGEXP_REPLACE (l_ddl,
+                            '(\."?)(\w)+(")?( on)',
+                            '\1' || c_indexes.idx_e_rename || '\3 \4',
+                            1,
+                            0,
+                            'i'
+                           );
+         o_app.log_msg ('Renamed DDL for exceptions: ' || l_e_ddl, 4);
+
+         BEGIN
+            coreutils.exec_auto (l_ddl, p_runmode => o_app.runmode);
+            o_app.log_msg ('Index ' || c_indexes.idx_rename || ' built');
+            l_idx_cnt := l_idx_cnt + 1;
+         EXCEPTION
+            -- if this index_name already exists, try to rename it to something else
+            WHEN e_dup_idx_name
+            THEN
+               o_app.log_msg
+                  ('New index name being used because index name already exists',
+                   3
+                  );
+
+               BEGIN
+                  coreutils.exec_auto (l_e_ddl);
+                  o_app.log_msg ('Index ' || c_indexes.idx_e_rename
+                                 || ' built'
+                                );
+                  l_idx_cnt := l_idx_cnt + 1;
+               EXCEPTION
+                  -- now the name is different, but check to see if the columns are already indexed
+                  WHEN e_dup_col_list
+                  THEN
+                     o_app.log_msg (   'Index comparable to '
+                                    || c_indexes.index_name
+                                    || ' already exists'
+                                   );
+               END;
+         END;
+      END LOOP;
+
+      IF NOT l_rows
+      THEN
+         o_app.log_msg ('No matching indexes found on ' || l_src_name);
+      ELSE
+         o_app.log_msg (   l_idx_cnt
+                        || ' index'
+                        || CASE
+                              WHEN l_idx_cnt = 1
+                                 THEN NULL
+                              ELSE 'es'
+                           END
+                        || ' built on '
+                        || l_tab_name
+                       );
+      END IF;
+
+      o_app.clear_app_info;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         o_app.log_err;
+         RAISE;
+   END build_table;
 
    -- structures an insert or insert append statement from the source to the target provided
    PROCEDURE insert_table (
