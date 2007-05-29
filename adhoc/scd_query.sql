@@ -1,3 +1,9 @@
+
+DROP TABLE new_dim
+/
+
+CREATE TABLE new_dim
+as
 SELECT CASE test_key
        WHEN -1
        THEN test_dim_seq.nextval
@@ -24,6 +30,7 @@ SELECT CASE test_key
                birthdate,
                name,
                zip,
+	       -- all non-SCD columns (or SCD type 0) will simply apply the the latest value to the most recent surviving record
 	       CASE  WHEN (last_value(include) OVER ( partition BY nat_key
 						      ORDER BY effect_start_dt
 						      ROWS BETWEEN CURRENT ROW AND 1 following) ) = 'N' 
@@ -34,7 +41,7 @@ SELECT CASE test_key
                                             ROWS BETWEEN CURRENT ROW AND 1 following) 
                ELSE
                zip_plus4
-               END zip_plus4, /* Get the last value only when there is chance we miss out type0 attribute change in the records without type2 change- (records with just type 0 change) */
+               END zip_plus4, 
 	       effect_start_dt,
 	       include 
 	  FROM (SELECT test_key,
@@ -55,11 +62,16 @@ SELECT CASE test_key
 		       effect_start_dt,
 		       -- we now exclude records based on what the value is directly preceeding the record
 		       -- the list of requirements in the CASE statement needs to include all Type 2 attributes
+		       -- the coaelesce helps ensure that a NULL = NULL issue does not slip through
 		       CASE
 		       WHEN zip <> LAG(zip) OVER (partition BY nat_key ORDER BY effect_start_dt)
+		   AND coalesce(zip,LAG(zip) OVER (partition BY nat_key ORDER BY effect_start_dt)) IS NOT null
 		       THEN 'Y'
 		       WHEN name <> LAG(name) OVER (partition BY nat_key ORDER BY effect_start_dt)
+		   AND coalesce(zip,LAG(zip) OVER (partition BY nat_key ORDER BY effect_start_dt)) IS NOT null
 		       THEN 'Y'
+		       WHEN effect_start_dt=lag(effect_start_dt) OVER (partition BY nat_key ORDER BY effect_start_dt)
+		       THEN 'N'
 		       ELSE
 		       CASE test_key
 		       WHEN -1 THEN 'N'
@@ -90,3 +102,6 @@ SELECT CASE test_key
 		 ORDER BY nat_key, effect_start_dt))
  WHERE include='Y'
 /
+DROP TABLE test_dim;
+       
+ALTER TABLE new_dim RENAME TO test_dim; 
