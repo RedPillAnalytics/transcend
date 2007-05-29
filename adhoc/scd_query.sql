@@ -1,9 +1,3 @@
-
-DROP TABLE new_dim
-/
-
-CREATE TABLE new_dim
-as
 SELECT CASE test_key
        WHEN -1
        THEN test_dim_seq.nextval
@@ -102,6 +96,3 @@ SELECT CASE test_key
 		 ORDER BY nat_key, effect_start_dt))
  WHERE include='Y'
 /
-DROP TABLE test_dim;
-       
-ALTER TABLE new_dim RENAME TO test_dim; 
