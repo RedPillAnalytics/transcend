@@ -38,14 +38,6 @@ AS
       p_constraint_regexp   VARCHAR2 DEFAULT NULL,
       p_runmode             VARCHAR2 DEFAULT NULL);
       
-   PROCEDURE build_table (
-      p_source_owner   VARCHAR2,
-      p_source_table   VARCHAR2,
-      p_owner          VARCHAR2,
-      p_table          VARCHAR2,
-      p_tablespace     VARCHAR2 DEFAULT NULL,
-      p_runmode        VARCHAR2 DEFAULT NULL);
-
    PROCEDURE insert_table (
       p_source_owner    VARCHAR2,
       p_source_object   VARCHAR2,
@@ -66,7 +58,7 @@ AS
       p_direct          VARCHAR2 DEFAULT 'yes',
       p_log_table       VARCHAR2 DEFAULT NULL,
       p_reject_limit    VARCHAR2 DEFAULT 'unlimited',
-      p_runmode         VARCHAR2 DEFAULT 'no');
+      p_runmode         VARCHAR2 DEFAULT NULL);
 
    PROCEDURE load_tables (
       p_source_owner    VARCHAR2,
