@@ -293,8 +293,8 @@ AS
       action := prev_action;
       module := prev_module;
       client_info := prev_client_info;
-      log_msg ('ACTION attribute changed to "' || NVL (action, 'NA') || '"', 4);
-      log_msg ('MODULE attribute changed to "' || NVL (module, 'NA') || '"', 4);
+      log_msg ('ACTION attribute changed to "' || action || '"', 4);
+      log_msg ('MODULE attribute changed to "' || module || '"', 4);
 
       IF is_registered
       THEN
