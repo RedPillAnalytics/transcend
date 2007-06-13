@@ -1,4 +1,4 @@
-CREATE OR REPLACE TYPE tdinc.string_agg_type AS OBJECT (
+CREATE OR REPLACE TYPE string_agg_type AS OBJECT (
    total   VARCHAR2 (4000),
    STATIC FUNCTION odciaggregateinitialize (
       sctx   IN OUT   string_agg_type)

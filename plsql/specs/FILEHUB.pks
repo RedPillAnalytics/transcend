@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE tdinc.filehub
+CREATE OR REPLACE PACKAGE filehub
 IS
    FUNCTION calc_rej_ind (
       p_filehub_group   VARCHAR2,

@@ -1,4 +1,4 @@
-CREATE OR REPLACE TYPE tdinc.notify UNDER tdinc.basetype (
+CREATE OR REPLACE TYPE notify UNDER basetype (
    notify_id        NUMBER,
    notify_enabled   VARCHAR2 (3),
    action           VARCHAR2 (32),

@@ -1,4 +1,4 @@
-CREATE OR REPLACE TYPE BODY tdinc.scdhybrid
+CREATE OR REPLACE TYPE BODY scdhybrid
 AS
    -- store audit information about the feed or extract
    MEMBER PROCEDURE process

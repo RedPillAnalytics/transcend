@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE BODY tdinc.owb_utils
+CREATE OR REPLACE PACKAGE BODY owb_utils
 AS
    g_app   app_info;
 

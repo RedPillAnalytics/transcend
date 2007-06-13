@@ -1,4 +1,4 @@
-CREATE OR REPLACE TYPE tdinc.feed UNDER tdinc.fhconf (
+CREATE OR REPLACE TYPE feed UNDER fhconf (
    source_directory   VARCHAR2 (50),
    source_dirpath     VARCHAR2 (200),
    source_regexp      VARCHAR2 (100),

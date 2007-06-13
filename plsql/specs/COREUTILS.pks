@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE tdinc.coreutils
+CREATE OR REPLACE PACKAGE coreutils
 AS
    PROCEDURE get_dir_list (p_directory IN VARCHAR2)
    AS

@@ -1,4 +1,4 @@
-CREATE OR REPLACE TYPE tdinc.fhconf UNDER tdinc.basetype (
+CREATE OR REPLACE TYPE fhconf UNDER basetype (
    filehub_id       NUMBER,
    filehub_name     VARCHAR2 (100),
    filehub_group    VARCHAR2 (64),

@@ -1,4 +1,4 @@
-CREATE OR REPLACE TYPE tdinc.scdhybrid UNDER tdinc.basetype (
+CREATE OR REPLACE TYPE scdhybrid UNDER basetype (
    scdhybrid_id        NUMBER,
    scdhybrid_name      VARCHAR2 (100),
    source_owner	       VARCHAR2(30),

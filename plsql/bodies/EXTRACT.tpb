@@ -1,4 +1,4 @@
-CREATE OR REPLACE TYPE BODY tdinc.EXTRACT
+CREATE OR REPLACE TYPE BODY EXTRACT
 AS
    -- modified FROM tom kyte's "dump_csv":
    -- 1. allow a quote CHARACTER

@@ -1,4 +1,4 @@
-CREATE OR REPLACE TYPE BODY tdinc.feed
+CREATE OR REPLACE TYPE BODY feed
 AS
 -- audits information about external tables after the file(s) have been put in place
    MEMBER PROCEDURE audit_ext_tab (p_num_lines NUMBER)

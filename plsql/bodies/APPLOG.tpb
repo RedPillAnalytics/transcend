@@ -1,4 +1,4 @@
-CREATE OR REPLACE TYPE BODY tdinc.applog
+CREATE OR REPLACE TYPE BODY applog
 AS
    CONSTRUCTOR FUNCTION applog (
       p_action        VARCHAR2 DEFAULT 'begin module',

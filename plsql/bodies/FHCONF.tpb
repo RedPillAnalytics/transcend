@@ -1,4 +1,4 @@
-CREATE OR REPLACE TYPE BODY tdinc.fhconf
+CREATE OR REPLACE TYPE BODY fhconf
 AS
    -- store audit information about the feed or extract
    MEMBER PROCEDURE audit_file (

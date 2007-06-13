@@ -1,4 +1,4 @@
-CREATE OR REPLACE TYPE BODY tdinc.basetype
+CREATE OR REPLACE TYPE BODY basetype
 AS
    -- GET method for DEBUG mode
    MEMBER FUNCTION is_debugmode

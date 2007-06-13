@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE tdinc.control
+CREATE OR REPLACE PACKAGE control
 IS
    PROCEDURE set_logging_level (
       p_module          VARCHAR2 DEFAULT 'default',

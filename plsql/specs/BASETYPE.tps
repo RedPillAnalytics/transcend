@@ -1,4 +1,4 @@
-CREATE OR REPLACE TYPE tdinc.basetype AS OBJECT (
+CREATE OR REPLACE TYPE basetype AS OBJECT (
    runmode   VARCHAR2 (10),
    MEMBER FUNCTION is_debugmode
       RETURN BOOLEAN,

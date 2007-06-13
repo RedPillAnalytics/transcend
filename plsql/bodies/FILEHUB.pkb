@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE BODY tdinc.filehub
+CREATE OR REPLACE PACKAGE BODY filehub
 IS
    -- calculates whether the anticipated number of rejected (bad) records meets a certain threshhold, which is specified in terms of percentage
    FUNCTION calc_rej_ind (

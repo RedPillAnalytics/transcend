@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE BODY tdinc.coreutils
+CREATE OR REPLACE PACKAGE BODY coreutils
 AS
    -- procedure executes the host_cmd function and raises an exception with the return code
    PROCEDURE host_cmd (p_cmd VARCHAR2, p_stdin VARCHAR2 DEFAULT ' ', p_runmode VARCHAR2

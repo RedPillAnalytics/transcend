@@ -1,4 +1,4 @@
-CREATE OR REPLACE TYPE tdinc.EXTRACT UNDER tdinc.fhconf (
+CREATE OR REPLACE TYPE extract UNDER fhconf (
    dateformat_ddl   VARCHAR2 (250),
    tsformat_ddl     VARCHAR2 (250),
    delimiter        VARCHAR2 (1),

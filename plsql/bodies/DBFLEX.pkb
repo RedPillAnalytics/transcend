@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE BODY tdinc.dbflex
+CREATE OR REPLACE PACKAGE BODY dbflex
 AS
 -- this is not an autonomous transaction because COREUTILS.exec_auto is
    PROCEDURE trunc_tab(
