@@ -1,5 +1,5 @@
-CREATE OR REPLACE VIEW tdinc.email_ot 
-OF tdinc.email
+CREATE OR REPLACE VIEW email_ot 
+OF email
 WITH object identifier (notify_id)
 as
 SELECT cast('runtime' AS VARCHAR2(10)) runmode,
@@ -12,4 +12,4 @@ SELECT cast('runtime' AS VARCHAR2(10)) runmode,
        subject,
        sender,
        recipients
-  FROM tdinc.notify_conf;
+  FROM notify_conf;
