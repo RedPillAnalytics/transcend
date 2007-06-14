@@ -1,5 +1,5 @@
-CREATE OR REPLACE VIEW tdinc.feed_ot 
-OF tdinc.feed
+CREATE OR REPLACE VIEW feed_ot 
+OF feed
 WITH object identifier (filehub_id)
 as
 SELECT cast('runtime' AS VARCHAR2(10)) runmode,
@@ -53,5 +53,5 @@ SELECT cast('runtime' AS VARCHAR2(10)) runmode,
 	       source_policy,
 	       required,
 	       reject_limit
-          FROM tdinc.filehub_conf
+          FROM filehub_conf
 	 WHERE REGEXP_LIKE (filehub_type, '^feed$', 'i'));
