@@ -1,5 +1,5 @@
-CREATE OR REPLACE VIEW tdinc.extract_ot 
-OF tdinc.extract
+CREATE OR REPLACE VIEW extract_ot 
+OF extract
 WITH object identifier (filehub_id)
 as
 SELECT cast('runtime' AS VARCHAR2(10)) runmode,
@@ -75,5 +75,5 @@ SELECT cast('runtime' AS VARCHAR2(10)) runmode,
                delimiter,
                quotechar,
                headers
-          FROM tdinc.filehub_conf
+          FROM filehub_conf
 	 WHERE REGEXP_LIKE (filehub_type, '^extract$', 'i'));
