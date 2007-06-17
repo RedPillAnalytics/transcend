@@ -221,7 +221,7 @@ IS
                           -- this is the index name that will be used in the first attempt
                           -- this index name is shown in debug mode
                           REGEXP_REPLACE( index_name,
-                                          '(")?'||p_source_table||'(")?',
+                                          '(")?' || p_source_table || '(")?',
                                           p_table,
                                           1,
                                           0,
@@ -262,26 +262,20 @@ IS
          o_app.log_msg( 'Exception renamed index: ' || c_indexes.idx_e_rename, 4 );
          l_rows := TRUE;
          o_app.set_action( 'Format index DDL' );
-	 -- first remove any ALTER INDEX statements that may be included
-	 -- this could occur if the indexes are in an unusable state, for instance
-	 -- we don't care if they are unusable or not
-	 l_ddl :=
-            REGEXP_REPLACE( c_indexes.index_ddl,
-                            '(alter index).+',
-                            null,
-			    1,
-			    0,
-			    'i'
-                          );
+         -- first remove any ALTER INDEX statements that may be included
+         -- this could occur if the indexes are in an unusable state, for instance
+         -- we don't care if they are unusable or not
+         l_ddl :=
+                REGEXP_REPLACE( c_indexes.index_ddl, '(alter index).+', NULL, 1, 0, 'i' );
          -- replace the source table name with the target table name
          -- if a " is found, then use it... otherwise don't
          l_ddl :=
             REGEXP_REPLACE( l_ddl,
                             '(\."?)(' || p_source_table || ')(\w*)("?)',
-                            '.' || p_table||'\3',
-			    1,
-			    0,
-			    'i'
+                            '.' || p_table || '\3',
+                            1,
+                            0,
+                            'i'
                           );
               -- replace the index owner with the target owner
          -- if a " is found, then use it... otherwise don't
@@ -1486,6 +1480,7 @@ IS
       p_d_num           NUMBER DEFAULT 0,
       -- first magic number from unpublished
       p_p_num           NUMBER DEFAULT 65535,
+      p_index_regexp    VARCHAR2 DEFAULT NULL,
       p_index_type      VARCHAR2 DEFAULT NULL,
       -- possible options: specify different index types
       p_part_type       VARCHAR2 DEFAULT NULL,
@@ -1596,6 +1591,8 @@ IS
                                        END,
                                        'i'
                                      )
+                      -- use an NVL'd regular expression to determine specific indexes to work on
+                      AND REGEXP_LIKE( index_name, NVL( p_index_regexp, '.' ), 'i' )
                       AND NOT REGEXP_LIKE( index_type, 'iot', 'i' )
                  ORDER BY idx_ddl_type, partition_position )
       LOOP
