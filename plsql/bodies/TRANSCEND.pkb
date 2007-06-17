@@ -262,10 +262,21 @@ IS
          o_app.log_msg( 'Exception renamed index: ' || c_indexes.idx_e_rename, 4 );
          l_rows := TRUE;
          o_app.set_action( 'Format index DDL' );
+	 -- first remove any ALTER INDEX statements that may be included
+	 -- this could occur if the indexes are in an unusable state, for instance
+	 -- we don't care if they are unusable or not
+	 l_ddl :=
+            REGEXP_REPLACE( c_indexes.index_ddl,
+                            '(alter index).+',
+                            null,
+			    1,
+			    0,
+			    'i'
+                          );
          -- replace the source table name with the target table name
          -- if a " is found, then use it... otherwise don't
          l_ddl :=
-            REGEXP_REPLACE( c_indexes.index_ddl,
+            REGEXP_REPLACE( l_ddl,
                             '(\."?)(' || p_source_table || ')(\w*)("?)',
                             '.' || p_table||'\3',
 			    1,
