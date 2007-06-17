@@ -52,12 +52,6 @@ AS
    FUNCTION get_dir_name (p_dir_path VARCHAR2)
       RETURN VARCHAR2;
 
-   FUNCTION get_err_cd (p_name VARCHAR2)
-      RETURN NUMBER;
-
-   FUNCTION get_err_msg (p_name VARCHAR2)
-      RETURN VARCHAR2;
-
    FUNCTION table_exists (p_owner VARCHAR2, p_table VARCHAR2)
       RETURN BOOLEAN;
 

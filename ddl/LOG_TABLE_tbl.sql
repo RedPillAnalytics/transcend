@@ -1,7 +1,7 @@
-DROP TABLE tdinc.log_table
+DROP TABLE log_table
 /
 
-CREATE TABLE tdinc.log_table
+CREATE TABLE log_table
        ( entry_ts TIMESTAMP (6) DEFAULT systimestamp NOT NULL,
 	 msg VARCHAR2(2000) NOT NULL,
 	 client_info VARCHAR2(64) NOT NULL,
@@ -20,5 +20,5 @@ CREATE TABLE tdinc.log_table
        ) TABLESPACE tdinc
 /
 
-GRANT SELECT ON tdinc.log_table TO tdinc_applog
+GRANT SELECT ON log_table TO tdinc_applog
 /

@@ -1,7 +1,7 @@
-DROP TABLE tdinc.count_table purge
+DROP TABLE count_table purge
 /
 
-CREATE TABLE tdinc.count_table
+CREATE TABLE count_table
 (
   entry_ts       TIMESTAMP DEFAULT systimestamp NOT null,
   client_info    VARCHAR2(64) NOT null,
@@ -11,13 +11,11 @@ CREATE TABLE tdinc.count_table
   session_id     NUMBER NOT null,
   row_cnt        NUMBER NOT null
 )
-TABLESPACE tdinc
 /
 
-ALTER TABLE tdinc.count_table ADD CONSTRAINT count_tbl_pk PRIMARY KEY (session_id, entry_ts)
+ALTER TABLE count_table ADD CONSTRAINT count_tbl_pk PRIMARY KEY (session_id, entry_ts)
     USING INDEX
-    TABLESPACE tdinc
 /
 
-GRANT SELECT ON tdinc.count_table TO tdinc_applog
+GRANT SELECT ON count_table TO tdinc_applog
 /

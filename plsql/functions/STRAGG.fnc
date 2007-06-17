@@ -1,5 +1,4 @@
-CREATE OR REPLACE FUNCTION tdinc.stragg (
-   input   VARCHAR2)
+CREATE OR REPLACE FUNCTION tdinc.stragg( input VARCHAR2 )
    RETURN VARCHAR2 PARALLEL_ENABLE AGGREGATE
    USING string_agg_type;
 /
