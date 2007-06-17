@@ -627,15 +627,15 @@ AS
       CASE
          WHEN NOT coreutils.object_exists( p_source_owner, p_source_object )
          THEN
-            raise_application_error( coreutils.get_err_cd( 'no_object' ),
-                                        coreutils.get_err_msg( 'no_object' )
+            raise_application_error( get_err_cd( 'no_object' ),
+                                        get_err_msg( 'no_object' )
                                      || ' : '
                                      || l_src_name
                                    );
          WHEN NOT coreutils.table_exists( p_owner, p_table )
          THEN
-            raise_application_error( coreutils.get_err_cd( 'no_object' ),
-                                        coreutils.get_err_msg( 'no_object' )
+            raise_application_error( get_err_cd( 'no_object' ),
+                                        get_err_msg( 'no_object' )
                                      || ' : '
                                      || l_trg_name
                                    );
@@ -732,15 +732,15 @@ AS
       CASE
          WHEN NOT coreutils.object_exists( p_source_owner, p_source_object )
          THEN
-            raise_application_error( coreutils.get_err_cd( 'no_object' ),
-                                        coreutils.get_err_msg( 'no_object' )
+            raise_application_error( get_err_cd( 'no_object' ),
+                                        get_err_msg( 'no_object' )
                                      || ' : '
                                      || l_src_name
                                    );
          WHEN NOT coreutils.table_exists( p_owner, p_table )
          THEN
-            raise_application_error( coreutils.get_err_cd( 'no_object' ),
-                                        coreutils.get_err_msg( 'no_object' )
+            raise_application_error( get_err_cd( 'no_object' ),
+                                        get_err_msg( 'no_object' )
                                      || ' : '
                                      || l_trg_name
                                    );
@@ -977,8 +977,8 @@ AS
          -- ON columns not specified correctly
          WHEN e_no_on_columns
          THEN
-            raise_application_error( coreutils.get_err_cd( 'on_clause_missing' ),
-                                     coreutils.get_err_msg( 'on_clause_missing' )
+            raise_application_error( get_err_cd( 'on_clause_missing' ),
+                                     get_err_msg( 'on_clause_missing' )
                                    );
       END;
 
@@ -1095,8 +1095,8 @@ AS
 
       IF NOT l_rows
       THEN
-         raise_application_error( coreutils.get_err_cd( 'incorrect_parameters' ),
-                                  coreutils.get_err_msg( 'incorrect_parameters' )
+         raise_application_error( get_err_cd( 'incorrect_parameters' ),
+                                  get_err_msg( 'incorrect_parameters' )
                                 );
       END IF;
 
@@ -1148,8 +1148,8 @@ AS
       -- error if the target table is not partitioned
       IF NOT coreutils.is_part_table( p_owner, p_table )
       THEN
-         raise_application_error( coreutils.get_err_cd( 'not_partitioned' ),
-                                  coreutils.get_err_msg(    'not_partitioned'
+         raise_application_error( get_err_cd( 'not_partitioned' ),
+                                  get_err_msg(    'not_partitioned'
                                                          || ': '
                                                          || p_table
                                                        )
@@ -1321,7 +1321,7 @@ AS
    BEGIN
       IF p_partname IS NOT NULL
       THEN
-         INSERT INTO tdinc.partname
+         INSERT INTO partname
               VALUES ( p_partname );
       ELSE
          IF p_source_column IS NULL
@@ -1402,20 +1402,20 @@ AS
               AND ( p_source_owner IS NOT NULL OR p_source_object IS NOT NULL )
          THEN
             raise_application_error
-                            ( coreutils.get_err_cd( 'parms_not_compatible' ),
-                                 coreutils.get_err_msg( 'parms_not_compatible' )
+                            ( get_err_cd( 'parms_not_compatible' ),
+                                 get_err_msg( 'parms_not_compatible' )
                               || ': P_PARTNAME with either P_SOURCE_OWNER or P_SOURCE_OBJECT'
                             );
          WHEN p_source_owner IS NOT NULL AND p_source_object IS NULL
          THEN
-            raise_application_error( coreutils.get_err_cd( 'parms_not_compatible' ),
-                                        coreutils.get_err_msg( 'parms_not_compatible' )
+            raise_application_error( get_err_cd( 'parms_not_compatible' ),
+                                        get_err_msg( 'parms_not_compatible' )
                                      || ': P_SOURCE_OWNER without P_SOURCE_OBJECT'
                                    );
          WHEN p_source_owner IS NULL AND p_source_object IS NOT NULL
          THEN
-            raise_application_error( coreutils.get_err_cd( 'parms_not_compatible' ),
-                                        coreutils.get_err_msg( 'parms_not_compatible' )
+            raise_application_error( get_err_cd( 'parms_not_compatible' ),
+                                        get_err_msg( 'parms_not_compatible' )
                                      || ': P_SOURCE_OBJECT without P_SOURCE_OWNER'
                                    );
          ELSE
