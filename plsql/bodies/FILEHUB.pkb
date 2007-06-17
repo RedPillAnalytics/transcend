@@ -79,8 +79,8 @@ IS
 	 -- no matching filehub entries are found
 	 IF  NOT l_rows
 	 THEN
-	    raise_application_error ( coreutils.get_err_cd ('incorrect_parameters'),
-                                      coreutils.get_err_msg ('incorrect_parameters'));
+	    raise_application_error ( get_err_cd ('incorrect_parameters'),
+                                      get_err_msg ('incorrect_parameters'));
 	 END IF;
 	 
 
