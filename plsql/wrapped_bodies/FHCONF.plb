@@ -1,0 +1,35 @@
+CREATE OR REPLACE TYPE BODY fhconf wrapped 
+a000000
+b2
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+e
+a5e 3a8
+BX3LFaHVPnsGJHzlcWr7+jWiD5kwg0MrDyCDfC+agk8GGeEJRugA4kT6FB9LXbRYhqBD+uZs
+2BHYWgIugyJzfubThHTNoKEStKHIzs+1TtpPPXqEdeMwywqwxs1O5YCbHKa0DxgpNmyRCaIE
+H9M3jn9ce2t0+J+aaZ9UAaLXDmvaZoyI9ywVYBsfAl9QlM2XVNQmLeJ0lgkAWNVH/Q9AC+Z6
+jXCJD/dL0fXYg7ioG54Fc9oVTUP1TjcEtgl8RK/QwB9UAjdzCvwBWhHxAaf3AVlZElBr0IyG
+h5rOoelxS4PZEXQ1XPnuBgXA7bEKgeh05tCyB2VimUhHcAvvgKd09ouP1OWuuPK+/Y98gGOh
+Gk2PEOd9TuLPMdZil9h1fQSUa1ZLRYCQhtabdmNlKGz/RgB/M6hYpL8q8GpgrxDBFJWfKo1R
+heQpPGaXjyFGghQCDuNuUcAESVebE35wjubWnMVvHXTQ1N1DiM+OOYdzA2V9diSyrSIWA7Xq
+grn1rn0hTDAZVz9t3MFGSLdGeSTOJSJbN1sks146zkRWoziTuR8e1/9EKC6pmVyv8YvoCbfg
+I90b7n98UtDCu59opmB5IIgJgl15cRy7mh8TgcAtlgqmnx5PYx7tnt0AKtTvWvpqUjgLEerE
+CzCa/JAjn25OU81MTjJ56w2akrTAsqHmx6AYX2DbQNjM8jjAYeMqZHtlPOH9mBkgxCMDMDp+
+tjBjzfbl8Bo6dxdDYmBoMPdDFz1FAomb/HMs6sn+Mi0x5FIBJ9WdTIgdjux3XyM9x+vQBNPe
+miFD9Ffjo76fhxxUIOywuV+Y31Xi1w3Zts0kWAHoLz2OCkaQexIgVkrG9lsmu2ZeJpusf51g
+/qOGVxKBfTNMQsUQ/lqdTTAjtsCUCoaaCrTtyj0YnGCV3ZkwA7xC/pnpPGkM
+
+/
