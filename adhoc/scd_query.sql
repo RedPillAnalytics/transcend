@@ -43,6 +43,8 @@ SELECT CASE test_key
 	       -- if we ever have a record where the effective date and expiry date are the same, they should be excluded
 	       -- this situation makes no logical sense, and usually wouldn't happen
 	       -- this can sometimes occur on a rerun of a dimensional load
+	       -- the order by TEST_KEY DESC makes sure the new record comes after the established dim record
+	       -- that way it will be considered for inclusion
 	       WHEN effect_start_dt=LAG(effect_start_dt) OVER (partition BY nat_key ORDER BY effect_start_dt,test_key desc)
 	       THEN 'N'
 	       -- we now exclude records based on comparing all type2 attributes with the preceeding record
