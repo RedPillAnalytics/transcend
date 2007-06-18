@@ -4,43 +4,44 @@ SET echo off
 ACCEPT schema char default 'TDINC' prompt 'Schema to install Transcend in [TDINC]: '
 ACCEPT tablespace char default 'TDINC' prompt 'Tablespace to install Transcend in [TDINC]: '
 
-GRANT CONNECT TO &schema;
-GRANT RESOURCE TO &schema;
-GRANT ALTER ANY TABLE TO &schema;
-GRANT ALTER SESSION TO &schema;
-GRANT EXECUTE ANY PROCEDURE TO &schema;
-GRANT INSERT ANY TABLE TO &schema;
-GRANT SELECT ANY dictionary TO &schema;
-GRANT SELECT ANY TABLE TO &schema;
-GRANT UPDATE ANY TABLE TO &schema;
-GRANT ALTER ANY INDEX TO &schema;
-GRANT CREATE ANY INDEX TO &schema;
-GRANT DROP ANY INDEX TO &schema;
-GRANT CREATE ANY directory TO &schema;
-GRANT EXECUTE ON sys.utl_mail TO &schema;
+-- GRANT CONNECT TO &schema;
+-- GRANT RESOURCE TO &schema;
+-- GRANT ALTER ANY TABLE TO &schema;
+-- GRANT ALTER SESSION TO &schema;
+-- GRANT EXECUTE ANY PROCEDURE TO &schema;
+-- GRANT INSERT ANY TABLE TO &schema;
+-- GRANT SELECT ANY dictionary TO &schema;
+-- GRANT SELECT ANY TABLE TO &schema;
+-- GRANT UPDATE ANY TABLE TO &schema;
+-- GRANT ALTER ANY INDEX TO &schema;
+-- GRANT CREATE ANY INDEX TO &schema;
+-- GRANT DROP ANY INDEX TO &schema;
+-- GRANT CREATE ANY directory TO &schema;
+-- GRANT EXECUTE ON sys.utl_mail TO &schema;
 
-CREATE ROLE coreutils;
-CREATE ROLE transcend;
-CREATE ROLE applog;
+-- CREATE ROLE coreutils;
+-- CREATE ROLE transcend;
+-- CREATE ROLE applog;
 
-ALTER USER &schema DEFAULT TABLESPACE &tablespace;
+-- ALTER USER &schema DEFAULT TABLESPACE &tablespace;
 ALTER SESSION SET current_schema=&schema;
 
 SET echo on
 
 --first create framework tables
-@../ddl/COUNT_TABLE_TBL.sql
-@../ddl/DIR_LIST_TBL.sql
-@../ddl/ERR_CD_TBL.sql
-@../ddl/FILEHUB_CONF_TBL.sql
-@../ddl/FILEHUB_DETAIL_TBL.sql
-@../ddl/FILEHUB_OBJ_DETAIL_TBL.sql
-@../ddl/LOGGING_CONF_TBL.sql
-@../ddl/LOG_TABLE_TBL.sql
-@../ddl/NOTIFY_CONF_TBL.sql
-@../ddl/PARTNAME_TBL.sql
-@../ddl/REGISTRATION_CONF_TBL.sql
-@../ddl/RUNMODE_CONF_TBL.sql
+@../ddl/COUNT_TABLE_tbl.sql
+@../ddl/DIR_LIST_tbl.sql
+@../ddl/ERR_CD_tbl.sql
+@../ddl/FILEHUB_CONF_tbl.sql
+@../ddl/FILEHUB_DETAIL_tbl.sql
+@../ddl/FILEHUB_OBJ_DETAIL_tbl.sql
+@../ddl/LOGGING_CONF_tbl.sql
+@../ddl/LOG_TABLE_tbl.sql
+@../ddl/NOTIFY_CONF_tbl.sql
+@../ddl/PARTNAME_tbl.sql
+@../ddl/REGISTRATION_CONF_tbl.sql
+@../ddl/RUNMODE_CONF_tbl.sql
+@../ddl/PARAMETER_CONF_tbl.sql
 
 --CREATE java stored procedure
 @../java/CoreUtils.jvs
@@ -59,14 +60,14 @@ DROP TYPE applog;
 @../plsql/wrapped_bodies/STRAGG.plb
 @../plsql/wrapped_bodies/GET_ERR_CD.plb
 @../plsql/wrapped_bodies/GET_ERR_MSG.plb
-@../plsql/specs/COREUTILS.pks
-@../plsql/wrapped_bodies/COREUTILS.plb
 
---CREATE targeted types and object views
+--CREATE targeted types, packages and object views
 @../plsql/specs/BASETYPE.tps
 @../plsql/wrapped_bodies/BASETYPE.plb
 @../plsql/specs/APPLOG.tps
 @../plsql/wrapped_bodies/APPLOG.plb
+@../plsql/specs/COREUTILS.pks
+@../plsql/wrapped_bodies/COREUTILS.plb
 @../plsql/specs/NOTIFY.tps
 @../plsql/specs/EMAIL.tps
 @../plsql/wrapped_bodies/EMAIL.plb
@@ -92,8 +93,8 @@ CREATE OR REPLACE PUBLIC SYNONYM stragg FOR &schema.stragg;
 
 CREATE OR REPLACE PUBLIC SYNONYM log_table FOR &schema.log_table;
 CREATE OR REPLACE PUBLIC SYNONYM count_table FOR &schema.count_table;
-CREATE OR REPLACE PUBLIC SYNONYM filehub_detail FOR &schema.filehub_detail;
-CREATE OR REPLACE PUBLIC SYNONYM filehub_obj_detail FOR &schema.filehub_obj_detail;
+--CREATE OR REPLACE PUBLIC SYNONYM filehub_detail FOR &schema.filehub_detail;
+--CREATE OR REPLACE PUBLIC SYNONYM filehub_obj_detail FOR &schema.filehub_obj_detail;
 
 --java permissions
 EXEC dbms_java.set_output(1000000);
