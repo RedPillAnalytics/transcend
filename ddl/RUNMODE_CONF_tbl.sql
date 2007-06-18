@@ -1,10 +1,10 @@
-DROP TABLE tdinc.runmode_conf CASCADE CONSTRAINTS purge
+DROP TABLE runmode_conf CASCADE CONSTRAINTS purge
 /
 
-DROP SEQUENCE tdinc.runmode_conf_seq
+DROP SEQUENCE runmode_conf_seq
 /
 
-CREATE TABLE tdinc.runmode_conf
+CREATE TABLE runmode_conf
        ( runmode_id	  NUMBER NOT NULL,
 	 default_runmode  VARCHAR2(10) not NULL,
 	 action 	  VARCHAR2(32),
@@ -16,17 +16,17 @@ CREATE TABLE tdinc.runmode_conf
        )
 /
 
-ALTER TABLE tdinc.runmode_conf ADD (
+ALTER TABLE runmode_conf ADD (
   CONSTRAINT runmode_conf_pk
  PRIMARY KEY
  (runmode_id)
     USING INDEX)
 /
 
-CREATE SEQUENCE tdinc.runmode_conf_seq
+CREATE SEQUENCE runmode_conf_seq
 /
 
-INSERT INTO tdinc.runmode_conf
+INSERT INTO runmode_conf
        ( runmode_id, 
 	 default_runmode, 
 	 action, 
@@ -36,7 +36,7 @@ INSERT INTO tdinc.runmode_conf
 	 modified_user, 
 	 modified_dt
        )
-       VALUES ( tdinc.runmode_conf_seq.nextval,
+       VALUES ( runmode_conf_seq.nextval,
 		'runtime',
 		'default',
 		'default',
