@@ -1,0 +1,32 @@
+CREATE OR REPLACE TYPE BODY email wrapped 
+a000000
+b2
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+e
+5b4 2b9
+rxoL2l55mbFqgAjJdWBgShxGdIowg2NeuiDrfI6Lvp0GNGyN8je9vTvryMCt118GFLRKDq4r
+KWhiTS5p7L3IM4YtE7r9oENrwa+bvs/BA9AkbVysj9T5nnc/kM0by0+mpun8ZtZGlRySPoSP
+BDobzLANa13DFNOIbVhSnRJ159OAeC4iONxnkCLRoaI2tLBLiDTtRbyS9QB5fy318TZ769wE
+W8nEU3mk2vchM+sv7jOCVELMAQWdTtaXuzuIFPFj9/8cx3ZqQzQI9uEfHdMqWZG9h0d8lBRd
+xxVjcD6spJWsVurT78ays0/fDQbLulTwdwEyErLSsy4darPqbrEo49oM6RYmhBW+WFa0yek8
+sNB4fGsxL1d8QByh52Csv90iITmLJvhEAFLUowfUyI6tv+F66d9rzBRrFgLMTAegxYGwI/5U
+zb8rsAJgATvPQC6dKahP3rhUpZrVd5+JtHHVoQniPZH0gEQF4MTVPxc6HXWfDpfCFmu0fkHy
+Mp1LjzqIzrFpt1Du7ma1FHBB91YgG7cfvlDPfFDgOw7Fb7iKaJ093k77CYCrfPrE6b4P6pP3
+ltgfWzv4I790iii7sGQ9VHG1/Vz8tzQrXNml4NHo3zFkWZoQRuIshUOxEpIIXnnU5/2vD0dg
+Pe5LP2nvfoxPXQuw1itp16csQ8mneLWmB8JWJw==
+
+/
