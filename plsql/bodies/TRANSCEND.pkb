@@ -255,7 +255,15 @@ IS
                      -- use an NVL'd regular expression to determine specific indexes to work on
                      AND REGEXP_LIKE( index_name, NVL( p_index_regexp, '.' ), 'i' )
                      -- use an NVL'd regular expression to determine the index types to worked on
-                     AND REGEXP_LIKE( index_type, '^' || NVL( p_index_type, '.' ), 'i' )))
+                      AND REGEXP_LIKE( index_type, '^' || NVL( p_index_type, '.' ), 'i' )
+	      AND index_name NOT IN ( SELECT index_name
+					FROM dba_tables dt
+					JOIN dba_constraints di
+					     USING (owner,table_name)
+				       WHERE iot_type IS NOT NULL
+					 AND constraint_type='P'
+					 AND table_name <> upper(p_source_table)
+					 AND owner <> upper(p_source_owner))))
       LOOP
          o_app.log_msg( 'Source index: ' || c_indexes.index_name, 4 );
          o_app.log_msg( 'Renamed index: ' || c_indexes.idx_rename, 4 );
@@ -609,6 +617,8 @@ IS
       l_rows       BOOLEAN        := FALSE;
       l_tab_name   VARCHAR2( 61 ) := p_owner || '.' || p_table;
       l_idx_cnt    NUMBER         := 0;
+      e_pk_idx   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_pk_idx, -2429 );
       o_app        applog := applog( p_module       => 'drop_indexes',
                                      p_runmode      => p_runmode );
    BEGIN
@@ -627,8 +637,14 @@ IS
                                           ))
       LOOP
          l_rows := TRUE;
-         coreutils.exec_auto( c_indexes.index_ddl, o_app.runmode );
-         l_idx_cnt := l_idx_cnt + 1;
+	 BEGIN
+	    coreutils.exec_auto( c_indexes.index_ddl, o_app.runmode );
+            l_idx_cnt := l_idx_cnt + 1;
+	 EXCEPTION
+	    WHEN e_pk_idx
+	    THEN
+	      NULL;
+	 END;
          o_app.log_msg( 'Index ' || c_indexes.index_name || ' dropped' );
       END LOOP;
 
@@ -1572,7 +1588,7 @@ IS
                                          THEN 'I'
                                       ELSE 'P'
                                    END idx_ddl_type
-                             FROM tdinc.partname JOIN all_ind_partitions aip
+                             FROM partname JOIN all_ind_partitions aip
                                   USING( partition_name )
                                   RIGHT JOIN all_indexes ai
                                   ON ai.index_name = aip.index_name
