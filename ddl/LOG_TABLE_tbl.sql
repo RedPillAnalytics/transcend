@@ -17,8 +17,8 @@ CREATE TABLE log_table
 	 code NUMBER NOT NULL,
 	 call_stack VARCHAR2(1024),
 	 back_trace VARCHAR2(1024)
-       ) TABLESPACE tdinc
+       )log_tablelog_table
 /
 
-GRANT SELECT ON log_table TO tdinc_applog
+GRANT SELECT ON log_table TO applog
 /
