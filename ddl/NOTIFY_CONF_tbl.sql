@@ -1,10 +1,10 @@
-DROP TABLE tdinc.notify_conf CASCADE CONSTRAINTS purge
+DROP TABLE notify_conf CASCADE CONSTRAINTS purge
 /
 
-DROP SEQUENCE tdinc.notify_conf_seq
+DROP SEQUENCE notify_conf_seq
 /
 
-CREATE TABLE tdinc.notify_conf
+CREATE TABLE notify_conf
        ( notify_id	  NUMBER NOT NULL,
 	 notify_method 	  VARCHAR2(20) NOT NULL,
 	 notify_enabled	  VARCHAR2(3) NOT NULL,
@@ -22,23 +22,23 @@ CREATE TABLE tdinc.notify_conf
        )
 /
 
-COMMENT ON TABLE tdinc.notify_conf IS 'table to hold generic notification information regardless of the notification method';
+COMMENT ON TABLE notify_conf IS 'table to hold generic notification information regardless of the notification method';
 
-COMMENT ON COLUMN tdinc.notify_conf.message IS 'The default message body text. This is text that shows up in the email, but the module that sends the notification might add additional information to it';
-COMMENT ON COLUMN tdinc.notify_conf.subject IS 'The default subject text. This is text that shows up in the email, but the module that sends the notification might add additional information to it';
-COMMENT ON COLUMN tdinc.notify_conf.notify_method IS 'the type of notification; currently, only "email" is supported. This column also points to the supporting conf table.';
+COMMENT ON COLUMN notify_conf.message IS 'The default message body text. This is text that shows up in the email, but the module that sends the notification might add additional information to it';
+COMMENT ON COLUMN notify_conf.subject IS 'The default subject text. This is text that shows up in the email, but the module that sends the notification might add additional information to it';
+COMMENT ON COLUMN notify_conf.notify_method IS 'the type of notification; currently, only "email" is supported. This column also points to the supporting conf table.';
 
-ALTER TABLE tdinc.notify_conf ADD (
+ALTER TABLE notify_conf ADD (
   CONSTRAINT notify_conf_pk
  PRIMARY KEY
  (notify_id)
     USING INDEX)
 /
 
-CREATE SEQUENCE tdinc.notify_conf_seq
+CREATE SEQUENCE notify_conf_seq
 /
 
-INSERT INTO tdinc.notify_conf
+INSERT INTO notify_conf
        ( notify_id, 
 	 notify_method, 
 	 notify_enabled, 
@@ -54,7 +54,7 @@ INSERT INTO tdinc.notify_conf
 	 modified_user, 
 	 modified_dt
        ) 
-       VALUES ( tdinc.notify_conf_seq.nextval,
+       VALUES ( notify_conf_seq.nextval,
 		'email',
 		'yes',
 		'test feed file received',
@@ -69,7 +69,7 @@ INSERT INTO tdinc.notify_conf
 		NULL,
 		NULL);
 
-INSERT INTO tdinc.notify_conf
+INSERT INTO notify_conf
        ( notify_id, 
 	 notify_method, 
 	 notify_enabled, 
@@ -85,7 +85,7 @@ INSERT INTO tdinc.notify_conf
 	 modified_user, 
 	 modified_dt
        ) 
-       VALUES ( tdinc.notify_conf_seq.nextval,
+       VALUES ( notify_conf_seq.nextval,
 		'email',
 		'yes',
 		'Source file reject limit exceeded',
@@ -100,7 +100,7 @@ INSERT INTO tdinc.notify_conf
 		NULL,
 		NULL);
 
-INSERT INTO tdinc.notify_conf
+INSERT INTO notify_conf
        ( notify_id, 
 	 notify_method, 
 	 notify_enabled, 
@@ -116,7 +116,7 @@ INSERT INTO tdinc.notify_conf
 	 modified_user, 
 	 modified_dt
        ) 
-       VALUES ( tdinc.notify_conf_seq.nextval,
+       VALUES ( notify_conf_seq.nextval,
 		'email',
 		'yes',
 		'test extract ready for download',
