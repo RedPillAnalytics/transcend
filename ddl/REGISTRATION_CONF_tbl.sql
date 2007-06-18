@@ -1,10 +1,10 @@
-DROP TABLE tdinc.registration_conf CASCADE CONSTRAINTS purge
+DROP TABLE registration_conf CASCADE CONSTRAINTS purge
 /
 
-DROP SEQUENCE tdinc.registration_conf_seq
+DROP SEQUENCE registration_conf_seq
 /
 
-CREATE TABLE tdinc.registration_conf
+CREATE TABLE registration_conf
        ( registration_id     NUMBER NOT NULL,
 	 registration  	     VARCHAR2(10) not NULL,
 	 action 	     VARCHAR2(32),
@@ -16,17 +16,17 @@ CREATE TABLE tdinc.registration_conf
        )
 /
 
-ALTER TABLE tdinc.registration_conf ADD (
+ALTER TABLE registration_conf ADD (
   CONSTRAINT registration_conf_pk
  PRIMARY KEY
  (registration_id)
     USING INDEX)
 /
 
-CREATE SEQUENCE tdinc.registration_conf_seq
+CREATE SEQUENCE registration_conf_seq
 /
 
-INSERT INTO tdinc.registration_conf
+INSERT INTO registration_conf
        ( registration_id, 
 	 registration, 
 	 action, 
@@ -36,7 +36,7 @@ INSERT INTO tdinc.registration_conf
 	 modified_user, 
 	 modified_dt
        )
-       VALUES ( tdinc.registration_conf_seq.nextval,
+       VALUES ( registration_conf_seq.nextval,
 		'register',
 		'default',
 		'default',
