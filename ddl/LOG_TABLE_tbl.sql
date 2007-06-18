@@ -17,7 +17,7 @@ CREATE TABLE log_table
 	 code NUMBER NOT NULL,
 	 call_stack VARCHAR2(1024),
 	 back_trace VARCHAR2(1024)
-       )log_tablelog_table
+       )
 /
 
 GRANT SELECT ON log_table TO applog
