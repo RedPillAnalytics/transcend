@@ -64,7 +64,7 @@ AS
          END;
 
          INSERT INTO filehub_obj_detail
-                     ( fh_obj_id, filehub_id,
+                     ( filehub_obj_id, filehub_id,
                        filehub_type, filehub_name, filehub_group,
                        object_owner, object_name, num_rows, num_lines,
                        percent_diff
