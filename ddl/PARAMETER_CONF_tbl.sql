@@ -27,7 +27,7 @@ ALTER TABLE parameter_conf ADD (
 /
 
 -- make sure that 'default' is not added here
-ALTER TABLE tdinc.parameter_conf ADD CONSTRAINT parameter_conf_ck1 CHECK (lower(value) <> 'default');
+ALTER TABLE parameter_conf ADD CONSTRAINT parameter_conf_ck1 CHECK (lower(value) <> 'default');
 
 CREATE SEQUENCE parameter_conf_seq
 /
