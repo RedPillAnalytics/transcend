@@ -7,7 +7,6 @@ DROP SEQUENCE runmode_conf_seq
 CREATE TABLE runmode_conf
        ( runmode_id	  NUMBER NOT NULL,
 	 default_runmode  VARCHAR2(10) not NULL,
-	 action 	  VARCHAR2(32),
 	 module 	  VARCHAR2(48),
 	 created_user     VARCHAR2(30) DEFAULT sys_context('USERENV','SESSION_USER') NOT NULL,
 	 created_dt       DATE DEFAULT SYSDATE NOT NULL,
@@ -29,7 +28,6 @@ CREATE SEQUENCE runmode_conf_seq
 INSERT INTO runmode_conf
        ( runmode_id, 
 	 default_runmode, 
-	 action, 
 	 module, 
 	 created_user, 
 	 created_dt, 
@@ -38,7 +36,6 @@ INSERT INTO runmode_conf
        )
        VALUES ( runmode_conf_seq.nextval,
 		'runtime',
-		'default',
 		'default',
 		sys_context('USERENV','SESSION_USER'),
 		SYSDATE,
