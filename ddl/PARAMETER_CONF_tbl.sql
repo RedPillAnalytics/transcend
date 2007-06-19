@@ -8,7 +8,6 @@ CREATE TABLE parameter_conf
        ( parameter_id	NUMBER NOT NULL,
 	 name		VARCHAR2(40) NOT NULL,
 	 value 		VARCHAR2(40),
-	 action		VARCHAR2(32),
 	 module 	VARCHAR2(48) NOT NULL,
 	 created_user   VARCHAR2(30) DEFAULT sys_context('USERENV','SESSION_USER') NOT NULL,
 	 created_dt     DATE DEFAULT SYSDATE NOT NULL,
