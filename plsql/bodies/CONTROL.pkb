@@ -67,5 +67,30 @@ IS
                      );
       END IF;
    END set_registration;
+
+   PROCEDURE set_session_parameter(
+      p_module   VARCHAR2 DEFAULT 'default',
+      p_name     VARCHAR2 DEFAULT 'register',
+      p_value    VARCHAR2 DEFAULT 'enable'
+   )
+   IS
+   BEGIN
+      UPDATE parameter_conf
+         SET name = p_name,
+	     value = p_value,
+             modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
+             modified_dt = SYSDATE
+       WHERE module = p_module;
+
+      IF SQL%ROWCOUNT = 0
+      THEN
+         INSERT INTO parameter_conf
+                ( parameter_id, name, value, module
+                     )
+		VALUES ( parameter_conf_seq.NEXTVAL, p_name, p_value, p_module
+                     );
+      END IF;
+   END set_session_parameter;   
+
 END control;
 /
