@@ -12,7 +12,7 @@ AS
       -- get the session id
       session_id := SYS_CONTEXT( 'USERENV', 'SESSIONID' );
       -- first we need to populate the module attribute, because it helps us determine parameter values
-      module := get_package_name || '.' || LOWER( p_module );
+      module := LOWER(get_package_name || '.' || p_module);
       -- we also set the action, which may be used one day to fine tune parameters
       action := LOWER( p_action );
 
@@ -26,7 +26,7 @@ AS
             runmode := 'runtime';
          ELSE
             BEGIN
-               SELECT default_runmode
+               SELECT lower(default_runmode)
                  INTO SELF.runmode
                  FROM ( SELECT default_runmode, parameter_level,
                                MAX( parameter_level ) OVER( PARTITION BY 1 )
@@ -52,7 +52,7 @@ AS
 
       -- get the registration value for this module
       BEGIN
-         SELECT registration
+         SELECT lower(registration)
            INTO registration
            FROM ( SELECT registration, parameter_level,
                          MAX( parameter_level ) OVER( PARTITION BY 1 )
@@ -79,7 +79,7 @@ AS
       IF SELF.is_debugmode
       THEN
          BEGIN
-            SELECT debug_level
+            SELECT lower(debug_level)
               INTO logging_level
               FROM ( SELECT debug_level, parameter_level,
                             MAX( parameter_level ) OVER( PARTITION BY 1 )
@@ -103,7 +103,7 @@ AS
          END;
       ELSE
          BEGIN
-            SELECT logging_level
+            SELECT lower(logging_level)
               INTO logging_level
               FROM ( SELECT logging_level, parameter_level,
                             MAX( parameter_level ) OVER( PARTITION BY 1 )
@@ -158,6 +158,20 @@ AS
       log_msg( 'New MODULE "' || module || '" beginning in RUNMODE "' || runmode || '"',
                4 );
       log_msg( 'Inital ACTION attribute set to "' || action || '"', 4 );
+      
+      -- set session level parameters
+      FOR c_params IN ( SELECT CASE
+			       WHEN REGEXP_LIKE(name,'^enable$','i')
+			       THEN 'alter session '||name||' '||value
+			       ELSE 'alter session set '||name||'='||value
+			       END ddl
+			  FROM parameter_conf
+			 WHERE lower(module) = self.module)
+      LOOP
+	 coreutils.exec_sql(c_params.ddl,p_runmode => self.runmode);
+      END LOOP;
+      
+
       RETURN;
    END applog;
    -- used to pull the calling block from the dictionary
