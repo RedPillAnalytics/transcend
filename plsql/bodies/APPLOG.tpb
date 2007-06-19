@@ -12,7 +12,12 @@ AS
       -- get the session id
       session_id := SYS_CONTEXT( 'USERENV', 'SESSIONID' );
       -- first we need to populate the module attribute, because it helps us determine parameter values
-      module := LOWER(get_package_name || '.' || p_module);
+      module := LOWER(CASE
+		       WHEN p_module IS NULL
+		       THEN get_package_name
+		       ELSE
+		       get_package_name || '.' || p_module
+		       END);
       -- we also set the action, which may be used one day to fine tune parameters
       action := LOWER( p_action );
 
@@ -303,7 +308,8 @@ AS
    MEMBER PROCEDURE log_msg(
       p_msg      VARCHAR2,
       p_level    NUMBER DEFAULT 2,
-      p_stdout   VARCHAR2 DEFAULT 'yes'
+      p_stdout   VARCHAR2 DEFAULT 'yes',
+      p_oper_id  NUMBER DEFAULT NULL
    )
    -- P_MSG is simply the text that will be written to the LOG_TABLE
    AS
@@ -338,7 +344,7 @@ AS
                        action, runmode, session_id, current_scn,
                        instance_name, machine, dbuser, osuser,
                        code, call_stack,
-                       back_trace
+                       back_trace, oper_id
                      )
               VALUES ( l_msg, NVL( SELF.client_info, 'NA' ), NVL( SELF.module, 'NA' ),
                        NVL( SELF.action, 'NA' ), SELF.runmode, SELF.session_id, l_scn,
@@ -350,7 +356,8 @@ AS
                                              ),
                                        '[[:cntrl:]]',
                                        '; '
-                                     )
+                                     ),
+		       p_oper_id
                      );
 
          COMMIT;
