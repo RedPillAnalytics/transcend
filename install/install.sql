@@ -4,24 +4,24 @@ SET echo off
 ACCEPT schema char default 'TDINC' prompt 'Schema to install Transcend in [TDINC]: '
 ACCEPT tablespace char default 'TDINC' prompt 'Tablespace to install Transcend in [TDINC]: '
 
--- GRANT CONNECT TO &schema;
--- GRANT RESOURCE TO &schema;
--- GRANT ALTER ANY TABLE TO &schema;
--- GRANT ALTER SESSION TO &schema;
--- GRANT EXECUTE ANY PROCEDURE TO &schema;
--- GRANT INSERT ANY TABLE TO &schema;
--- GRANT SELECT ANY dictionary TO &schema;
--- GRANT SELECT ANY TABLE TO &schema;
--- GRANT UPDATE ANY TABLE TO &schema;
--- GRANT ALTER ANY INDEX TO &schema;
--- GRANT CREATE ANY INDEX TO &schema;
--- GRANT DROP ANY INDEX TO &schema;
--- GRANT CREATE ANY directory TO &schema;
--- GRANT EXECUTE ON sys.utl_mail TO &schema;
+GRANT CONNECT TO &schema;
+GRANT RESOURCE TO &schema;
+GRANT ALTER ANY TABLE TO &schema;
+GRANT ALTER SESSION TO &schema;
+GRANT EXECUTE ANY PROCEDURE TO &schema;
+GRANT INSERT ANY TABLE TO &schema;
+GRANT SELECT ANY dictionary TO &schema;
+GRANT SELECT ANY TABLE TO &schema;
+GRANT UPDATE ANY TABLE TO &schema;
+GRANT ALTER ANY INDEX TO &schema;
+GRANT CREATE ANY INDEX TO &schema;
+GRANT DROP ANY INDEX TO &schema;
+GRANT CREATE ANY directory TO &schema;
+GRANT EXECUTE ON sys.utl_mail TO &schema;
 
--- CREATE ROLE coreutils;
--- CREATE ROLE transcend;
--- CREATE ROLE applog;
+CREATE ROLE transcend_sel;
+CREATE ROLE transcend_adm;
+CREATE ROLE applog;
 
 -- ALTER USER &schema DEFAULT TABLESPACE &tablespace;
 ALTER SESSION SET current_schema=&schema;
