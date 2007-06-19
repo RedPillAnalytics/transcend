@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE owb_utils
+CREATE OR REPLACE PACKAGE owb_api
 AS
    PROCEDURE start_map_control
       ( p_owner          VARCHAR2 DEFAULT NULL,
@@ -11,15 +11,14 @@ AS
 	p_p_num   NUMBER DEFAULT NULL,
 	p_index_regexp   VARCHAR2 DEFAULT NULL,
 	p_index_type     VARCHAR2 DEFAULT NULL,
-	p_part_type      BOOLEAN DEFAULT FALSE,
+	p_part_type      VARCHAR2 DEFAULT NULL,
+	p_oper_id	 NUMBER DEFAULT NULL
       );
 
    PROCEDURE end_map_control
       ( p_owner   VARCHAR2 DEFAULT NULL,
-	p_table   VARCHAR2 DEFAULT NULL );
+	p_table   VARCHAR2 DEFAULT NULL,
+	p_oper_id NUMBER DEFAULT NULL );
 
-  PROCEDURE run_process_flow
-      ( p_flow_name       VARCHAR2,
-	p_flow_location   VARCHAR2 DEFAULT 'OWF_LOCATION' );
-END owb_utils;
+END owb_api;
 /
