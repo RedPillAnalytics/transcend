@@ -87,14 +87,19 @@ DROP TYPE applog;
 @../plsql/specs/CONTROL.pks
 @../plsql/wrapped_bodies/CONTROL.plb
 
+-- set the default logging, registration and runmodes
+EXEC control.set_logging_level;
+EXEC control.set_runmode;
+EXEC control.set_registration;
+
 --PUBLIC synonyms
 CREATE OR REPLACE PUBLIC SYNONYM transcend FOR &schema.transcend;
 CREATE OR REPLACE PUBLIC SYNONYM stragg FOR &schema.stragg;
 
 CREATE OR REPLACE PUBLIC SYNONYM log_table FOR &schema.log_table;
 CREATE OR REPLACE PUBLIC SYNONYM count_table FOR &schema.count_table;
---CREATE OR REPLACE PUBLIC SYNONYM filehub_detail FOR &schema.filehub_detail;
---CREATE OR REPLACE PUBLIC SYNONYM filehub_obj_detail FOR &schema.filehub_obj_detail;
+CREATE OR REPLACE PUBLIC SYNONYM filehub_detail FOR &schema.filehub_detail;
+CREATE OR REPLACE PUBLIC SYNONYM filehub_obj_detail FOR &schema.filehub_obj_detail;
 
 --java permissions
 EXEC dbms_java.set_output(1000000);
