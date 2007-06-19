@@ -19,7 +19,7 @@ AS
 
       -- INSERT into the FILE_DETAIL table to record the movement
       INSERT INTO filehub_detail
-                  ( fh_detail_id, filehub_id, filehub_name, filehub_group,
+                  ( filehub_detail_id, filehub_id, filehub_name, filehub_group,
                     filehub_type, source_filepath, target_filepath, arch_filepath,
                     num_bytes, num_lines, file_dt
                   )
