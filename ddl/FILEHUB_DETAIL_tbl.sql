@@ -45,7 +45,7 @@ COMMENT ON COLUMN filehub_detail.file_dt IS 'last modified date on the file';
 COMMENT ON COLUMN filehub_detail.processed_ts IS 'date the file was processed by File Package';
 COMMENT ON COLUMN filehub_detail.session_id IS 'AUDSID number of the oracle session';
 
-GRANT SELECT ON FILEHUB_DETAIL TO tdinc_filehub;
+GRANT SELECT ON FILEHUB_DETAIL TO transcend_sel;
 /
 
 CREATE SEQUENCE filehub_detail_seq
