@@ -17,9 +17,9 @@ IS
    );
       
    PROCEDURE set_session_parameter(
-      p_module   VARCHAR2 DEFAULT 'default',
-      p_name     VARCHAR2 DEFAULT 'register',
-      p_value    VARCHAR2 DEFAULT 'enable'
+      p_module   VARCHAR2,
+      p_name     VARCHAR2,
+      p_value    VARCHAR2
    );
 
 END control;
