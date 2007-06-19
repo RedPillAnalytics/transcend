@@ -17,7 +17,7 @@ CREATE TABLE parameter_conf
 )
 /
 
-COMMENT ON TABLE parameter_conf IS 'table to hold parameters for the entire framework';
+COMMENT ON TABLE parameter_conf IS 'table to hold session level parameters';
 
 ALTER TABLE parameter_conf ADD (
   CONSTRAINT parameter_conf_pk
@@ -25,6 +25,9 @@ ALTER TABLE parameter_conf ADD (
  (parameter_id)
     USING INDEX)
 /
+
+-- make sure that 'default' is not added here
+ALTER TABLE tdinc.parameter_conf ADD CONSTRAINT parameter_conf_ck1 CHECK (lower(value) <> 'default');
 
 CREATE SEQUENCE parameter_conf_seq
 /
