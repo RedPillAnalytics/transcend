@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION tdinc.stragg wrapped 
+CREATE OR REPLACE FUNCTION stragg wrapped 
 a000000
 b2
 abcd
