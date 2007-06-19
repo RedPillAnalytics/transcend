@@ -86,6 +86,8 @@ DROP TYPE applog;
 @../plsql/wrapped_bodies/TRANSCEND.plb
 @../plsql/specs/CONTROL.pks
 @../plsql/wrapped_bodies/CONTROL.plb
+@../plsql/specs/OWB_API.pks
+@../plsql/wrapped_bodies/OWB_API.pkb
 
 -- set the default logging, registration and runmodes
 EXEC control.set_logging_level;
