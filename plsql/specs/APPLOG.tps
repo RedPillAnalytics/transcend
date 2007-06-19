@@ -28,7 +28,8 @@ CREATE OR REPLACE TYPE applog UNDER basetype(
    MEMBER PROCEDURE log_msg(
       p_msg      VARCHAR2,
       p_level    NUMBER DEFAULT 2,
-      p_stdout   VARCHAR2 DEFAULT 'yes'
+      p_stdout   VARCHAR2 DEFAULT 'yes',
+      p_oper_id  NUMBER DEFAULT NULL
    ),
    MEMBER PROCEDURE log_err,
    MEMBER PROCEDURE log_cnt_msg( p_count NUMBER, p_msg VARCHAR2 DEFAULT NULL ),
