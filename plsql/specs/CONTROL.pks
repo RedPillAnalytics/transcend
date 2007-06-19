@@ -21,6 +21,11 @@ IS
       p_name     VARCHAR2,
       p_value    VARCHAR2
    );
+      
+   PROCEDURE clear_log(
+      p_session_id   NUMBER DEFAULT sys_context('USERENV','SESSIONID'),
+      p_runmode      VARCHAR2 DEFAULT 'debug'
+   );
 
 END control;
 /
