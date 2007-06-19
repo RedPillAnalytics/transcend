@@ -16,9 +16,7 @@ AS
       -- we also set the action, which may be used one day to fine tune parameters
       action := LOWER( p_action );
 
-      -- now we can use the MODULE attribute to get parameters
-      -- if this is null (unprovided), then the module or system parameter is pulled (in that order)
-      -- the get_value_vchr function handles the hierarchy
+      -- now we can use the MODULE attribute to get the runmode
       CASE
          WHEN REGEXP_LIKE( 'debug', '^' || NVL( p_runmode, '^\W$' ), 'i' )
          THEN
@@ -33,19 +31,14 @@ AS
                  FROM ( SELECT default_runmode, parameter_level,
                                MAX( parameter_level ) OVER( PARTITION BY 1 )
                                                                       max_parameter_level
-                         FROM ( SELECT default_runmode, module, action,
+                         FROM ( SELECT default_runmode, module,
                                        CASE
-                                          WHEN action = 'default'
-                                          AND module = 'default'
+                                          WHEN module = 'default'
                                              THEN 1
-                                          WHEN action = 'default' AND module IS NOT NULL
-                                             THEN 2
-                                          WHEN module IS NOT NULL AND action IS NOT NULL
-                                             THEN 3
+                                          ELSE 2
                                        END parameter_level
                                  FROM runmode_conf )
-                        WHERE ( module = SELF.module OR module = 'default' )
-                          AND ( action = SELF.action OR action = 'default' ))
+                        WHERE ( module = SELF.module OR module = 'default' ))
                 WHERE parameter_level = max_parameter_level;
             EXCEPTION
                WHEN NO_DATA_FOUND
@@ -64,19 +57,14 @@ AS
            FROM ( SELECT registration, parameter_level,
                          MAX( parameter_level ) OVER( PARTITION BY 1 )
                                                                       max_parameter_level
-                   FROM ( SELECT registration, module, action,
+                   FROM ( SELECT registration, module,
                                  CASE
-                                    WHEN action = 'default'
-                                    AND module = 'default'
+                                    WHEN module = 'default'
                                        THEN 1
-                                    WHEN action = 'default' AND module IS NOT NULL
-                                       THEN 2
-                                    WHEN module IS NOT NULL AND action IS NOT NULL
-                                       THEN 3
+                                    ELSE 2
                                  END parameter_level
                            FROM registration_conf )
-                  WHERE ( module = SELF.module OR module = 'default' )
-                    AND ( action = SELF.action OR action = 'default' ))
+                  WHERE ( module = SELF.module OR module = 'default' ))
           WHERE parameter_level = max_parameter_level;
       EXCEPTION
          WHEN NO_DATA_FOUND
@@ -96,19 +84,14 @@ AS
               FROM ( SELECT debug_level, parameter_level,
                             MAX( parameter_level ) OVER( PARTITION BY 1 )
                                                                       max_parameter_level
-                      FROM ( SELECT debug_level, module, action,
+                      FROM ( SELECT debug_level, module,
                                     CASE
-                                       WHEN action = 'default'
-                                       AND module = 'default'
+                                       WHEN module = 'default'
                                           THEN 1
-                                       WHEN action = 'default' AND module IS NOT NULL
-                                          THEN 2
-                                       WHEN module IS NOT NULL AND action IS NOT NULL
-                                          THEN 3
+                                       ELSE 2
                                     END parameter_level
                               FROM logging_conf )
-                     WHERE ( module = SELF.module OR module = 'default' )
-                       AND ( action = SELF.action OR action = 'default' ))
+                     WHERE ( module = SELF.module OR module = 'default' ))
              WHERE parameter_level = max_parameter_level;
          EXCEPTION
             WHEN NO_DATA_FOUND
@@ -125,19 +108,14 @@ AS
               FROM ( SELECT logging_level, parameter_level,
                             MAX( parameter_level ) OVER( PARTITION BY 1 )
                                                                       max_parameter_level
-                      FROM ( SELECT logging_level, module, action,
+                      FROM ( SELECT logging_level, module,
                                     CASE
-                                       WHEN action = 'default'
-                                       AND module = 'default'
+                                       WHEN module = 'default'
                                           THEN 1
-                                       WHEN action = 'default' AND module IS NOT NULL
-                                          THEN 2
-                                       WHEN module IS NOT NULL AND action IS NOT NULL
-                                          THEN 3
+                                       ELSE 2
                                     END parameter_level
                               FROM logging_conf )
-                     WHERE ( module = SELF.module OR module = 'default' )
-                       AND ( action = SELF.action OR action = 'default' ))
+                     WHERE ( module = SELF.module OR module = 'default' ))
              WHERE parameter_level = max_parameter_level;
          EXCEPTION
             WHEN NO_DATA_FOUND
