@@ -6,10 +6,10 @@ DROP SEQUENCE parameter_conf_seq
 
 CREATE TABLE parameter_conf
        ( parameter_id	NUMBER NOT NULL,
-	 module 	VARCHAR2(48) NOT NULL,
+	 name		VARCHAR2(40) NOT NULL,
+	 value 		VARCHAR2(40),
 	 action		VARCHAR2(32),
-	 name 		VARCHAR2(40) NOT NULL,
-	 value 		VARCHAR2(40) NOT NULL,
+	 module 	VARCHAR2(48) NOT NULL,
 	 created_user   VARCHAR2(30) NOT NULL,
 	 created_dt     DATE NOT NULL,
 	 modified_user  VARCHAR2(30),
@@ -28,11 +28,3 @@ ALTER TABLE parameter_conf ADD (
 
 CREATE SEQUENCE parameter_conf_seq
 /
-
-ALTER TABLE parameter_conf ADD CONSTRAINT parameter_conf_uk1 UNIQUE (name) USING INDEX;
-ALTER TABLE parameter_conf ADD CONSTRAINT parameter_conf_ck1 CHECK (REGEXP_LIKE(name,'[[:lower:]]+'));
-ALTER TABLE parameter_conf ADD CONSTRAINT parameter_conf_ck2 CHECK (REGEXP_LIKE(value,'([[:lower:]]|[[:digit:]])+'));
-
-INSERT INTO parameter_conf (parameter_id,module,name,value,created_user,created_dt) VALUES (parameter_conf_seq.nextval,'system','runmode','runtime',sys_context('USERENV','SESSION_USER'),SYSDATE);
-INSERT INTO parameter_conf (parameter_id,module,name,value,created_user,created_dt) VALUES (parameter_conf_seq.nextval,'system','registration','register',sys_context('USERENV','SESSION_USER'),SYSDATE);
-INSERT INTO parameter_conf (parameter_id,module,name,value,created_user,created_dt) VALUES (parameter_conf_seq.nextval,'system','logging_level','2',sys_context('USERENV','SESSION_USER'),SYSDATE);
