@@ -15,5 +15,12 @@ IS
       p_module         VARCHAR2 DEFAULT 'default',
       p_registration   VARCHAR2 DEFAULT 'register'
    );
+      
+   PROCEDURE set_session_parameter(
+      p_module   VARCHAR2 DEFAULT 'default',
+      p_name     VARCHAR2 DEFAULT 'register',
+      p_value    VARCHAR2 DEFAULT 'enable'
+   );
+
 END control;
 /
