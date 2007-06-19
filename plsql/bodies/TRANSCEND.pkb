@@ -1425,7 +1425,7 @@ IS
       p_source_column   VARCHAR2 DEFAULT NULL,
       p_d_num           NUMBER DEFAULT 0,
       p_p_num           NUMBER DEFAULT 65535,
-      p_runmode         VARCHAR2
+      p_runmode         VARCHAR2 DEFAULT null
    )
    AS
       l_dsql            LONG;
@@ -1559,8 +1559,7 @@ IS
                        p_source_object      => p_source_object,
                        p_source_column      => p_source_column,
                        p_d_num              => p_d_num,
-                       p_p_num              => p_p_num,
-		       p_runmode	    => o_app.runmode
+                       p_p_num              => p_p_num
                      );
       END IF;
 
