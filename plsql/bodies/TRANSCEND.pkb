@@ -1424,7 +1424,8 @@ IS
       p_source_object   VARCHAR2 DEFAULT NULL,
       p_source_column   VARCHAR2 DEFAULT NULL,
       p_d_num           NUMBER DEFAULT 0,
-      p_p_num           NUMBER DEFAULT 65535
+      p_p_num           NUMBER DEFAULT 65535,
+      p_runmode         VARCHAR2
    )
    AS
       l_dsql            LONG;
@@ -1435,6 +1436,9 @@ IS
          INDEX BY BINARY_INTEGER;
 
       t_partname        partname_type;
+      o_app            applog
+                    := applog( p_module       => 'pop_partname',
+                               p_runmode      => p_runmode );
    BEGIN
       IF p_partname IS NOT NULL
       THEN
@@ -1445,15 +1449,15 @@ IS
          THEN
             SELECT column_name
               INTO l_source_column
-              FROM all_part_key_columns
+              FROM dba_part_key_columns
              WHERE NAME = UPPER( p_table ) AND owner = UPPER( p_owner );
          ELSE
             l_source_column := p_source_column;
          END IF;
 
-         coreutils.exec_sql(    'insert into tdinc.partname '
+         coreutils.exec_sql(    'insert into partname '
                              || ' SELECT partition_name'
-                             || '  FROM all_tab_partitions'
+                             || '  FROM dba_tab_partitions'
                              || ' WHERE table_owner = '''
                              || UPPER( p_owner )
                              || ''' AND table_name = '''
@@ -1474,9 +1478,11 @@ IS
                              || '.'
                              || UPPER( p_source_object )
                              || ') '
-                             || 'ORDER By partition_position'
+                             || 'ORDER By partition_position',
+			     p_runmode => o_app.runmode
                            );
       END IF;
+      o_app.clear_app_info;
    END pop_partname;
 
    -- Provides functionality for setting local and non-local indexes to unusable based on parameters
@@ -1553,7 +1559,8 @@ IS
                        p_source_object      => p_source_object,
                        p_source_column      => p_source_column,
                        p_d_num              => p_d_num,
-                       p_p_num              => p_p_num
+                       p_p_num              => p_p_num,
+		       p_runmode	    => o_app.runmode
                      );
       END IF;
 
