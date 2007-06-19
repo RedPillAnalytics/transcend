@@ -79,5 +79,5 @@ ALTER TABLE filehub_conf
 CREATE SEQUENCE filehub_conf_seq
 /
 
-GRANT SELECT ON filehub_conf TO filehub
+GRANT SELECT ON filehub_conf TO filehub_sel
 /
