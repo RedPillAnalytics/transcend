@@ -39,7 +39,7 @@ COMMENT ON COLUMN filehub_obj_detail.num_lines IS 'The number of lines at the OS
 COMMENT ON COLUMN filehub_obj_detail.percent_diff IS 'Percentage difference between the two.';
 COMMENT ON COLUMN filehub_obj_detail.session_id IS 'SESSION_ID of the processing session.';
 
-GRANT SELECT ON filehub_obj_detail TO tdinc_filehub
+GRANT SELECT ON filehub_obj_detail TO filehub_sel;
 /
 
 DROP SEQUENCE filehub_obj_detail_seq
