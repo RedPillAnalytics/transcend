@@ -24,20 +24,3 @@ ALTER TABLE registration_conf ADD (
 
 CREATE SEQUENCE registration_conf_seq
 /
-
-INSERT INTO registration_conf
-       ( registration_id, 
-	 registration, 
-	 module, 
-	 created_user, 
-	 created_dt, 
-	 modified_user, 
-	 modified_dt
-       )
-       VALUES ( registration_conf_seq.nextval,
-		'register',
-		'default',
-		sys_context('USERENV','SESSION_USER'),
-		SYSDATE,
-		NULL,
-		NULL);
