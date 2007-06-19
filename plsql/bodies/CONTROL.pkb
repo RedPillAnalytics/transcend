@@ -74,13 +74,32 @@ IS
       p_value    VARCHAR2
    )
    IS
+      l_parameter v$parameter.name%type;
    BEGIN
+      BEGIN
+	 SELECT name
+	   INTO l_parameter
+	   FROM v$parameter
+	  WHERE name=p_name
+	    AND isses_modifiable='TRUE';
+      EXCEPTION
+	 WHEN no_data_found
+	 THEN
+	   IF p_name = lower('enable')
+	      THEN NULL;
+	   ELSE
+              raise_application_error( get_err_cd( 'no_session_parm' ),
+                                       get_err_msg( 'no_session_parm' )||': '||p_name
+                                     );
+	   END IF;
+      END;
+
       UPDATE parameter_conf
-         SET name = p_name,
-	     value = p_value,
+         SET value = p_value,
              modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
              modified_dt = SYSDATE
-       WHERE module = p_module;
+       WHERE module = p_module
+	 AND name = p_name;
 
       IF SQL%ROWCOUNT = 0
       THEN
