@@ -7,7 +7,6 @@ DROP SEQUENCE registration_conf_seq
 CREATE TABLE registration_conf
        ( registration_id     NUMBER NOT NULL,
 	 registration  	     VARCHAR2(10) not NULL,
-	 action 	     VARCHAR2(32),
 	 module 	     VARCHAR2(48),
 	 created_user	     VARCHAR2(30) DEFAULT sys_context('USERENV','SESSION_USER') NOT NULL,
 	 created_dt	     DATE DEFAULT SYSDATE NOT NULL,
@@ -29,7 +28,6 @@ CREATE SEQUENCE registration_conf_seq
 INSERT INTO registration_conf
        ( registration_id, 
 	 registration, 
-	 action, 
 	 module, 
 	 created_user, 
 	 created_dt, 
@@ -38,7 +36,6 @@ INSERT INTO registration_conf
        )
        VALUES ( registration_conf_seq.nextval,
 		'register',
-		'default',
 		'default',
 		sys_context('USERENV','SESSION_USER'),
 		SYSDATE,
