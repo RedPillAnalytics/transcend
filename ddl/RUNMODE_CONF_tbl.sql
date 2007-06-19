@@ -24,20 +24,3 @@ ALTER TABLE runmode_conf ADD (
 
 CREATE SEQUENCE runmode_conf_seq
 /
-
-INSERT INTO runmode_conf
-       ( runmode_id, 
-	 default_runmode, 
-	 module, 
-	 created_user, 
-	 created_dt, 
-	 modified_user, 
-	 modified_dt
-       )
-       VALUES ( runmode_conf_seq.nextval,
-		'runtime',
-		'default',
-		sys_context('USERENV','SESSION_USER'),
-		SYSDATE,
-		NULL,
-		NULL);
