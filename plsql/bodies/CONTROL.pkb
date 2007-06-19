@@ -109,7 +109,18 @@ IS
 		VALUES ( parameter_conf_seq.NEXTVAL, p_name, p_value, p_module
                      );
       END IF;
-   END set_session_parameter;   
+   END set_session_parameter;
+
+   PROCEDURE clear_log(
+      p_session_id   NUMBER DEFAULT sys_context('USERENV','SESSIONID'),
+      p_runmode      VARCHAR2 DEFAULT 'debug'
+   )
+   AS
+   BEGIN
+      DELETE FROM log_table
+       WHERE session_id = p_session_id
+	 AND runmode = lower(p_runmode);
+   END clear_log;
 
 END control;
 /
