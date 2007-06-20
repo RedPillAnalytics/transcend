@@ -68,59 +68,53 @@ IS
       END IF;
    END set_registration;
 
-   PROCEDURE set_session_parameter(
-      p_module   VARCHAR2,
-      p_name     VARCHAR2,
-      p_value    VARCHAR2
-   )
+   PROCEDURE set_session_parameter( p_module VARCHAR2, p_name VARCHAR2, p_value VARCHAR2 )
    IS
-      l_parameter v$parameter.name%type;
+      l_parameter   v$parameter.NAME%TYPE;
    BEGIN
       BEGIN
-	 SELECT name
-	   INTO l_parameter
-	   FROM v$parameter
-	  WHERE name=p_name
-	    AND isses_modifiable='TRUE';
+         SELECT NAME
+           INTO l_parameter
+           FROM v$parameter
+          WHERE NAME = p_name AND isses_modifiable = 'TRUE';
       EXCEPTION
-	 WHEN no_data_found
-	 THEN
-	   IF p_name = lower('enable')
-	      THEN NULL;
-	   ELSE
-              raise_application_error( get_err_cd( 'no_session_parm' ),
-                                       get_err_msg( 'no_session_parm' )||': '||p_name
-                                     );
-	   END IF;
+         WHEN NO_DATA_FOUND
+         THEN
+            IF p_name = LOWER( 'enable' )
+            THEN
+               NULL;
+            ELSE
+               raise_application_error( get_err_cd( 'no_session_parm' ),
+                                        get_err_msg( 'no_session_parm' ) || ': ' || p_name
+                                      );
+            END IF;
       END;
 
       UPDATE parameter_conf
-         SET value = p_value,
+         SET VALUE = p_value,
              modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
              modified_dt = SYSDATE
-       WHERE module = p_module
-	 AND name = p_name;
+       WHERE module = p_module AND NAME = p_name;
 
       IF SQL%ROWCOUNT = 0
       THEN
          INSERT INTO parameter_conf
-                ( parameter_id, name, value, module
+                     ( parameter_id, NAME, VALUE, module
                      )
-		VALUES ( parameter_conf_seq.NEXTVAL, p_name, p_value, p_module
+              VALUES ( parameter_conf_seq.NEXTVAL, p_name, p_value, p_module
                      );
       END IF;
    END set_session_parameter;
 
    PROCEDURE clear_log(
-      p_session_id   NUMBER DEFAULT sys_context('USERENV','SESSIONID'),
-      p_runmode      VARCHAR2 DEFAULT 'debug'
+      p_session_id   NUMBER DEFAULT SYS_CONTEXT( 'USERENV', 'SESSIONID' ),
+      p_runmode      VARCHAR2 DEFAULT NULL
    )
    AS
    BEGIN
       DELETE FROM log_table
-       WHERE session_id = p_session_id
-	 AND runmode = lower(p_runmode);
+            WHERE session_id = p_session_id
+              AND REGEXP_LIKE( runmode, NVL( p_runmode, '.' ), 'i' );
    END clear_log;
-
 END control;
 /

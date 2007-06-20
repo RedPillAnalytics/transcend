@@ -15,17 +15,12 @@ IS
       p_module         VARCHAR2 DEFAULT 'default',
       p_registration   VARCHAR2 DEFAULT 'register'
    );
-      
-   PROCEDURE set_session_parameter(
-      p_module   VARCHAR2,
-      p_name     VARCHAR2,
-      p_value    VARCHAR2
-   );
-      
-   PROCEDURE clear_log(
-      p_session_id   NUMBER DEFAULT sys_context('USERENV','SESSIONID'),
-      p_runmode      VARCHAR2 DEFAULT 'debug'
-   );
 
+   PROCEDURE set_session_parameter( p_module VARCHAR2, p_name VARCHAR2, p_value VARCHAR2 );
+
+   PROCEDURE clear_log(
+      p_runmode      VARCHAR2 DEFAULT NULL,
+      p_session_id   NUMBER DEFAULT SYS_CONTEXT( 'USERENV', 'SESSIONID' )
+   );
 END control;
 /

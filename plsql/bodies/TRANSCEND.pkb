@@ -1425,7 +1425,7 @@ IS
       p_source_column   VARCHAR2 DEFAULT NULL,
       p_d_num           NUMBER DEFAULT 0,
       p_p_num           NUMBER DEFAULT 65535,
-      p_runmode         VARCHAR2 DEFAULT null
+      p_runmode         VARCHAR2 DEFAULT NULL
    )
    AS
       l_dsql            LONG;
@@ -1436,9 +1436,9 @@ IS
          INDEX BY BINARY_INTEGER;
 
       t_partname        partname_type;
-      o_app            applog
-                    := applog( p_module       => 'pop_partname',
-                               p_runmode      => p_runmode );
+      o_app             applog
+                          := applog( p_module       => 'pop_partname',
+                                     p_runmode      => p_runmode );
    BEGIN
       IF p_partname IS NOT NULL
       THEN
@@ -1479,9 +1479,10 @@ IS
                              || UPPER( p_source_object )
                              || ') '
                              || 'ORDER By partition_position',
-			     p_runmode => o_app.runmode
+                             p_runmode      => o_app.runmode
                            );
       END IF;
+
       o_app.clear_app_info;
    END pop_partname;
 

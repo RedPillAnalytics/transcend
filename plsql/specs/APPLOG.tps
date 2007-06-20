@@ -26,10 +26,10 @@ CREATE OR REPLACE TYPE applog UNDER basetype(
    MEMBER PROCEDURE set_action( p_action VARCHAR2 ),
    MEMBER PROCEDURE clear_app_info,
    MEMBER PROCEDURE log_msg(
-      p_msg      VARCHAR2,
-      p_level    NUMBER DEFAULT 2,
-      p_stdout   VARCHAR2 DEFAULT 'yes',
-      p_oper_id  NUMBER DEFAULT NULL
+      p_msg       VARCHAR2,
+      p_level     NUMBER DEFAULT 2,
+      p_stdout    VARCHAR2 DEFAULT 'yes',
+      p_oper_id   NUMBER DEFAULT NULL
    ),
    MEMBER PROCEDURE log_err,
    MEMBER PROCEDURE log_cnt_msg( p_count NUMBER, p_msg VARCHAR2 DEFAULT NULL ),

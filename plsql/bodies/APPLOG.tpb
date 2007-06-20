@@ -12,12 +12,13 @@ AS
       -- get the session id
       session_id := SYS_CONTEXT( 'USERENV', 'SESSIONID' );
       -- first we need to populate the module attribute, because it helps us determine parameter values
-      module := LOWER(CASE
-		       WHEN p_module IS NULL
-		       THEN get_package_name
-		       ELSE
-		       get_package_name || '.' || p_module
-		       END);
+      module :=
+         LOWER( CASE
+                   WHEN p_module IS NULL
+                      THEN get_package_name
+                   ELSE get_package_name || '.' || p_module
+                END
+              );
       -- we also set the action, which may be used one day to fine tune parameters
       action := LOWER( p_action );
 
@@ -31,7 +32,7 @@ AS
             runmode := 'runtime';
          ELSE
             BEGIN
-               SELECT lower(default_runmode)
+               SELECT LOWER( default_runmode )
                  INTO SELF.runmode
                  FROM ( SELECT default_runmode, parameter_level,
                                MAX( parameter_level ) OVER( PARTITION BY 1 )
@@ -57,7 +58,7 @@ AS
 
       -- get the registration value for this module
       BEGIN
-         SELECT lower(registration)
+         SELECT LOWER( registration )
            INTO registration
            FROM ( SELECT registration, parameter_level,
                          MAX( parameter_level ) OVER( PARTITION BY 1 )
@@ -84,7 +85,7 @@ AS
       IF SELF.is_debugmode
       THEN
          BEGIN
-            SELECT lower(debug_level)
+            SELECT LOWER( debug_level )
               INTO logging_level
               FROM ( SELECT debug_level, parameter_level,
                             MAX( parameter_level ) OVER( PARTITION BY 1 )
@@ -108,7 +109,7 @@ AS
          END;
       ELSE
          BEGIN
-            SELECT lower(logging_level)
+            SELECT LOWER( logging_level )
               INTO logging_level
               FROM ( SELECT logging_level, parameter_level,
                             MAX( parameter_level ) OVER( PARTITION BY 1 )
@@ -163,19 +164,19 @@ AS
       log_msg( 'New MODULE "' || module || '" beginning in RUNMODE "' || runmode || '"',
                4 );
       log_msg( 'Inital ACTION attribute set to "' || action || '"', 4 );
-      
+
       -- set session level parameters
-      FOR c_params IN ( SELECT CASE
-			       WHEN REGEXP_LIKE(name,'^enable$','i')
-			       THEN 'alter session '||name||' '||value
-			       ELSE 'alter session set '||name||'='||value
-			       END ddl
-			  FROM parameter_conf
-			 WHERE lower(module) = self.module)
+      FOR c_params IN
+         ( SELECT CASE
+                     WHEN REGEXP_LIKE( NAME, '^enable$', 'i' )
+                        THEN 'alter session ' || NAME || ' ' || VALUE
+                     ELSE 'alter session set ' || NAME || '=' || VALUE
+                  END DDL
+            FROM parameter_conf
+           WHERE LOWER( module ) = SELF.module )
       LOOP
-	 coreutils.exec_sql(c_params.ddl,p_runmode => self.runmode);
+         coreutils.exec_sql( c_params.DDL, p_runmode => SELF.runmode );
       END LOOP;
-      
 
       RETURN;
    END applog;
@@ -306,10 +307,10 @@ AS
    END clear_app_info;
    -- used to write a standard message to the LOG_TABLE
    MEMBER PROCEDURE log_msg(
-      p_msg      VARCHAR2,
-      p_level    NUMBER DEFAULT 2,
-      p_stdout   VARCHAR2 DEFAULT 'yes',
-      p_oper_id  NUMBER DEFAULT NULL
+      p_msg       VARCHAR2,
+      p_level     NUMBER DEFAULT 2,
+      p_stdout    VARCHAR2 DEFAULT 'yes',
+      p_oper_id   NUMBER DEFAULT NULL
    )
    -- P_MSG is simply the text that will be written to the LOG_TABLE
    AS
@@ -344,7 +345,8 @@ AS
                        action, runmode, session_id, current_scn,
                        instance_name, machine, dbuser, osuser,
                        code, call_stack,
-                       back_trace, oper_id
+                       back_trace,
+                       oper_id
                      )
               VALUES ( l_msg, NVL( SELF.client_info, 'NA' ), NVL( SELF.module, 'NA' ),
                        NVL( SELF.action, 'NA' ), SELF.runmode, SELF.session_id, l_scn,
@@ -357,7 +359,7 @@ AS
                                        '[[:cntrl:]]',
                                        '; '
                                      ),
-		       p_oper_id
+                       p_oper_id
                      );
 
          COMMIT;
