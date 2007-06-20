@@ -1,3 +1,6 @@
+CREATE or REPLACE directory extdata AS '/transcend/ext';
+GRANT READ,WRITE ON directory extdata TO tdinc;
+
 TRUNCATE TABLE tdinc.email_notify_conf;
 DELETE (SELECT * FROM tdinc.filehub_conf);
 DELETE (SELECT * FROM tdinc.notify_conf);
