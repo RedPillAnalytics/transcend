@@ -21,5 +21,5 @@ CREATE TABLE log_table
        )
 /
 
-GRANT SELECT ON log_table TO applog
+GRANT SELECT ON log_table TO td_sel
 /

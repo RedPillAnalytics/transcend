@@ -146,8 +146,8 @@ l_mode          VARCHAR2 (1):= CASE lower(p_append) WHEN 'yes' THEN 'a' ELSE 'w'
    BEGIN
       o_app.set_action ('Configure NLS formats');
       -- set date and timestamp NLS formats
-      coreutils.exec_sql (dateformat_ddl, runmode, 'nls_date_format DDL: ');
-      coreutils.exec_sql (tsformat_ddl, runmode, 'nls_timestamp_format DDL: ');
+      td_core.exec_sql (dateformat_ddl, runmode, 'nls_date_format DDL: ');
+      td_core.exec_sql (tsformat_ddl, runmode, 'nls_timestamp_format DDL: ');
       o_app.set_action ('Extract data');
       -- extract data to arch location first
       l_numlines :=
@@ -166,7 +166,7 @@ l_mode          VARCHAR2 (1):= CASE lower(p_append) WHEN 'yes' THEN 'a' ELSE 'w'
                      || arch_filepath);
       l_file_dt := SYSDATE;
       -- copy the file to the target location
-      coreutils.copy_file (arch_filepath, filepath, SELF.runmode);
+      td_core.copy_file (arch_filepath, filepath, SELF.runmode);
 
       -- get file attributes
       IF SELF.is_debugmode

@@ -115,7 +115,7 @@ AS
                          ORDER BY LOCATION )
       LOOP
          l_rows_delete := TRUE;
-         coreutils.delete_file( c_location.DIRECTORY, c_location.LOCATION, runmode );
+         td_core.delete_file( c_location.DIRECTORY, c_location.LOCATION, runmode );
       END LOOP;
 
       IF l_rows_delete
@@ -125,7 +125,7 @@ AS
 
       -- now we need to see all the source files in the source directory that match the regular expression
       -- use java stored procedure to populate global temp table DIR_LIST with all the files in the directory
-      coreutils.get_dir_list( source_dirpath );
+      td_core.get_dir_list( source_dirpath );
 
       -- look at the contents of the DIR_LIST table to evaluate source files
       -- pull out only the ones matching the regular expression
@@ -288,7 +288,7 @@ AS
          l_numlines := 0;
          -- copy file to the archive location
          o_app.set_action( 'Copy archivefile' );
-         coreutils.copy_file( c_dir_list.source_filepath,
+         td_core.copy_file( c_dir_list.source_filepath,
                               c_dir_list.arch_filepath,
                               runmode
                             );
@@ -308,7 +308,7 @@ AS
             l_files_url := c_dir_list.files_url;
             -- first move the file to the target destination without changing the name
             -- because the file might be zipped or encrypted
-            coreutils.copy_file( c_dir_list.arch_filepath,
+            td_core.copy_file( c_dir_list.arch_filepath,
                                  c_dir_list.pre_mv_filepath,
                                  runmode
                                );
@@ -317,7 +317,7 @@ AS
             -- decrypt_file will return the decrypted filename
             -- IF the file isn't a recognized encrypted file type, it just returns the name passed
             l_filepath :=
-               coreutils.decrypt_file( dirpath,
+               td_core.decrypt_file( dirpath,
                                        c_dir_list.source_filename,
                                        SELF.passphrase,
                                        runmode
@@ -327,11 +327,11 @@ AS
             -- unzip_file will return the unzipped filename
             -- IF the file isn't a recognized zip archive file, it just returns the name passed
             l_filepath :=
-                      coreutils.unzip_file( dirpath, c_dir_list.source_filename, runmode );
+                      td_core.unzip_file( dirpath, c_dir_list.source_filename, runmode );
                  -- now move the file to the expected name
             -- do this with a copy/delete
-            coreutils.copy_file( l_filepath, c_dir_list.filepath, runmode );
-            coreutils.delete_file( DIRECTORY, l_filepath, runmode );
+            td_core.copy_file( l_filepath, c_dir_list.filepath, runmode );
+            td_core.delete_file( DIRECTORY, l_filepath, runmode );
             o_app.log_msg(    'Source file '
                            || c_dir_list.source_filepath
                            || ' moved to destination '
@@ -339,7 +339,7 @@ AS
                          );
             -- get the number of lines in the file now that it is decrypted and uncompressed
             l_numlines :=
-                    coreutils.get_numlines( SELF.DIRECTORY, c_dir_list.filename, runmode );
+                    td_core.get_numlines( SELF.DIRECTORY, c_dir_list.filename, runmode );
             -- get a total count of all the lines in all the files making up the external table
             l_sum_numlines := l_sum_numlines + l_numlines;
          END IF;
@@ -366,9 +366,9 @@ AS
          -- this step is ignored if p_keep_source = 'yes'
          o_app.set_action( 'Delete source files' );
 
-         IF NOT coreutils.is_true( p_keep_source )
+         IF NOT td_core.is_true( p_keep_source )
          THEN
-            coreutils.delete_file( source_directory, c_dir_list.source_filename, runmode );
+            td_core.delete_file( source_directory, c_dir_list.source_filename, runmode );
          END IF;
       END LOOP;
 
@@ -397,7 +397,7 @@ AS
                                 WHERE owner = UPPER( object_owner )
                                   AND table_name = UPPER( object_name ))
             LOOP
-               coreutils.create_file( c_location.DIRECTORY, c_location.LOCATION, runmode );
+               td_core.create_file( c_location.DIRECTORY, c_location.LOCATION, runmode );
             END LOOP;
          WHEN l_rows_dirlist AND LOWER( source_policy ) = 'all'
          -- matching files found, so ignore
@@ -406,7 +406,7 @@ AS
             o_app.set_action( 'Alter external table' );
 
             BEGIN
-               coreutils.exec_auto( l_ext_tab_ddl, p_runmode => SELF.runmode );
+               td_core.exec_auto( l_ext_tab_ddl, p_runmode => SELF.runmode );
                o_app.log_msg(    'External table '
                               || object_owner
                               || '.'

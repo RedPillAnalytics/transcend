@@ -79,5 +79,5 @@ ALTER TABLE filehub_conf
 CREATE SEQUENCE filehub_conf_seq
 /
 
-GRANT SELECT ON filehub_conf TO transcend_sel
+GRANT SELECT ON filehub_conf TO td_sel
 /

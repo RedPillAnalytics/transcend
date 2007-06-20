@@ -8,7 +8,7 @@ IS
    AS
       o_app   applog := applog( p_runmode => p_runmode, p_module => 'trunc_tab' );
    BEGIN
-      coreutils.exec_auto( 'truncate table ' || p_owner || '.' || p_table,
+      td_core.exec_auto( 'truncate table ' || p_owner || '.' || p_table,
                            p_runmode      => o_app.runmode
                          );
       o_app.clear_app_info;
@@ -208,7 +208,7 @@ IS
          o_app.log_msg( 'Renamed DDL for exceptions: ' || l_e_ddl, 4 );
 
          BEGIN
-            coreutils.exec_auto( l_ddl, p_runmode => o_app.runmode );
+            td_core.exec_auto( l_ddl, p_runmode => o_app.runmode );
             o_app.log_msg( 'Index ' || c_indexes.idx_rename || ' built' );
             l_idx_cnt := l_idx_cnt + 1;
          EXCEPTION
@@ -221,7 +221,7 @@ IS
                          );
 
                BEGIN
-                  coreutils.exec_auto( l_e_ddl );
+                  td_core.exec_auto( l_e_ddl );
                   o_app.log_msg( 'Index ' || c_indexes.idx_e_rename || ' built' );
                   l_idx_cnt := l_idx_cnt + 1;
                EXCEPTION
@@ -367,7 +367,7 @@ IS
                                '(\s+)(enable|disable)(\s*)$',
                                CASE
                                   -- if tablespace is provided, tack it on the end
-                               WHEN coreutils.get_yn_ind( p_seg_attributes ) = 'yes'
+                               WHEN td_core.get_yn_ind( p_seg_attributes ) = 'yes'
                                AND p_tablespace IS NOT NULL
                                AND constraint_type IN( 'P', 'U' )
                                      THEN '\1TABLESPACE ' || p_tablespace || '\1\2'
@@ -446,7 +446,7 @@ IS
          o_app.set_action( 'Execute constraint DDL' );
 
          BEGIN
-            coreutils.exec_auto( l_ddl, p_runmode => o_app.runmode );
+            td_core.exec_auto( l_ddl, p_runmode => o_app.runmode );
             o_app.log_msg( 'Constraint ' || c_constraints.con_rename || ' built' );
             l_con_cnt := l_con_cnt + 1;
          EXCEPTION
@@ -463,7 +463,7 @@ IS
                            );
             WHEN e_dup_con_name
             THEN
-               coreutils.exec_auto( REGEXP_REPLACE( l_ddl,
+               td_core.exec_auto( REGEXP_REPLACE( l_ddl,
                                                     '(constraint "?)(\w+)("?)',
                                                        '\1'
                                                     || c_constraints.con_e_rename
@@ -536,15 +536,15 @@ IS
          l_rows := TRUE;
 
          BEGIN
-            coreutils.exec_auto( c_indexes.index_ddl, o_app.runmode );
+            td_core.exec_auto( c_indexes.index_ddl, o_app.runmode );
             l_idx_cnt := l_idx_cnt + 1;
+	    o_app.log_msg( 'Index ' || c_indexes.index_name || ' dropped' );
          EXCEPTION
             WHEN e_pk_idx
             THEN
                NULL;
          END;
 
-         o_app.log_msg( 'Index ' || c_indexes.index_name || ' dropped' );
       END LOOP;
 
       IF NOT l_rows
@@ -604,7 +604,7 @@ IS
       LOOP
          -- catch empty cursor sets
          l_rows := TRUE;
-         coreutils.exec_auto( c_constraints.constraint_ddl, o_app.runmode );
+         td_core.exec_auto( c_constraints.constraint_ddl, o_app.runmode );
          l_con_cnt := l_con_cnt + 1;
          o_app.log_msg( 'Constraint ' || c_constraints.constraint_name || ' dropped' );
       END LOOP;
@@ -650,12 +650,12 @@ IS
                   );
    BEGIN
       CASE
-         WHEN NOT coreutils.object_exists( p_source_owner, p_source_object )
+         WHEN NOT td_core.object_exists( p_source_owner, p_source_object )
          THEN
             raise_application_error( get_err_cd( 'no_object' ),
                                      get_err_msg( 'no_object' ) || ' : ' || l_src_name
                                    );
-         WHEN NOT coreutils.table_exists( p_owner, p_table )
+         WHEN NOT td_core.table_exists( p_owner, p_table )
          THEN
             raise_application_error( get_err_cd( 'no_object' ),
                                      get_err_msg( 'no_object' ) || ' : ' || l_trg_name
@@ -665,7 +665,7 @@ IS
       END CASE;
 
       -- warning concerning using LOG ERRORS clause and the APPEND hint
-      IF coreutils.is_true( p_direct ) AND p_log_table IS NOT NULL
+      IF td_core.is_true( p_direct ) AND p_log_table IS NOT NULL
       THEN
          o_app.log_msg
             ( 'Unique constraints can still be violated when using P_LOG_TABLE in conjunction with P_DIRECT mode',
@@ -673,14 +673,14 @@ IS
             );
       END IF;
 
-      IF coreutils.is_true( p_trunc )
+      IF td_core.is_true( p_trunc )
       THEN
          -- truncate the target table
          trunc_tab( p_owner, p_table, o_app.runmode );
       END IF;
 
       -- enable|disable parallel dml depending on the parameter for P_DIRECT
-      coreutils.exec_sql(    'ALTER SESSION '
+      td_core.exec_sql(    'ALTER SESSION '
                           || CASE
                                 WHEN REGEXP_LIKE( 'yes', p_direct, 'i' )
                                    THEN 'ENABLE'
@@ -690,7 +690,7 @@ IS
                           p_runmode      => o_app.runmode
                         );
       o_app.log_msg( 'Inserting records from ' || l_src_name || ' into ' || l_trg_name, 3 );
-      coreutils.exec_sql
+      td_core.exec_sql
                 (    REGEXP_REPLACE(    'insert /*+ APPEND */ into '
                                      || l_trg_name
                                      || ' select * from '
@@ -751,12 +751,12 @@ IS
                   );
    BEGIN
       CASE
-         WHEN NOT coreutils.object_exists( p_source_owner, p_source_object )
+         WHEN NOT td_core.object_exists( p_source_owner, p_source_object )
          THEN
             raise_application_error( get_err_cd( 'no_object' ),
                                      get_err_msg( 'no_object' ) || ' : ' || l_src_name
                                    );
-         WHEN NOT coreutils.table_exists( p_owner, p_table )
+         WHEN NOT td_core.table_exists( p_owner, p_table )
          THEN
             raise_application_error( get_err_cd( 'no_object' ),
                                      get_err_msg( 'no_object' ) || ' : ' || l_trg_name
@@ -933,7 +933,7 @@ IS
       BEGIN
          o_app.set_action( 'Issue MERGE statement' );
          -- ENABLE|DISABLE parallel dml depending on the value of P_DIRECT
-         coreutils.exec_sql(    'ALTER SESSION '
+         td_core.exec_sql(    'ALTER SESSION '
                              || CASE
                                    WHEN REGEXP_LIKE( 'yes', p_direct, 'i' )
                                       THEN 'ENABLE'
@@ -945,7 +945,7 @@ IS
          o_app.log_msg( 'Merging records from ' || l_src_name || ' into ' || l_trg_name,
                         3 );
          -- we put the merge statement together using all the different clauses constructed above
-         coreutils.exec_sql
+         td_core.exec_sql
                 (    REGEXP_REPLACE(    'MERGE INTO '
                                      || p_owner
                                      || '.'
@@ -1082,7 +1082,7 @@ IS
 
          -- use the load_tab or merge_tab procedure depending on P_MERGE
          CASE
-            WHEN coreutils.is_true( p_trunc )
+            WHEN td_core.is_true( p_trunc )
             THEN
                merge_table( p_source_owner       => c_objects.src_owner,
                             p_source_object      => c_objects.src,
@@ -1091,7 +1091,7 @@ IS
                             p_direct             => p_direct,
                             p_runmode            => o_app.runmode
                           );
-            WHEN NOT coreutils.is_true( p_trunc )
+            WHEN NOT td_core.is_true( p_trunc )
             THEN
                insert_table( p_source_owner       => c_objects.src_owner,
                              p_source_object      => c_objects.src,
@@ -1163,10 +1163,10 @@ IS
       o_app.set_action( 'Determine partition to use' );
 
       -- error if the target table is not partitioned
-      IF NOT coreutils.is_part_table( p_owner, p_table )
+      IF NOT td_core.is_part_table( p_owner, p_table )
       THEN
          raise_application_error( get_err_cd( 'not_partitioned' ),
-                                  get_err_msg( 'not_partitioned' || ': ' || p_table )
+                                  get_err_msg( 'not_partitioned' )|| ': ' || p_table 
                                 );
       END IF;
 
@@ -1185,7 +1185,7 @@ IS
       -- either gather stats on the table prior to exchanging
       -- or get the stats from the current partition and import it in for the table
       CASE
-         WHEN coreutils.is_true( p_gather_stats )
+         WHEN td_core.is_true( p_gather_stats )
          THEN
             o_app.set_action( 'Gather stats on new partition' );
 
@@ -1200,7 +1200,7 @@ IS
             END IF;
 
             o_app.log_msg( 'Statistics gathered on table ' || l_src_name, 3 );
-         WHEN NOT coreutils.is_true( p_gather_stats )
+         WHEN NOT td_core.is_true( p_gather_stats )
          THEN
             IF NOT o_app.is_debugmode
             THEN
@@ -1256,7 +1256,7 @@ IS
       o_app.set_action( 'Exchange table' );
 
       BEGIN
-         coreutils.exec_auto(    'alter table '
+         td_core.exec_auto(    'alter table '
                               || l_tab_name
                               || ' exchange partition '
                               || l_partname
@@ -1275,11 +1275,11 @@ IS
          WHEN e_compress
          THEN
             -- need to compress the staging table
-            coreutils.exec_auto( 'alter table ' || l_src_name || ' move compress',
+            td_core.exec_auto( 'alter table ' || l_src_name || ' move compress',
                                  o_app.runmode
                                );
             -- now, rerun the exchange
-            coreutils.exec_auto(    'alter table '
+            td_core.exec_auto(    'alter table '
                                  || l_tab_name
                                  || ' exchange partition '
                                  || l_partname
@@ -1297,7 +1297,7 @@ IS
       END;
 
       -- drop the indexes on the stage table
-      IF coreutils.is_true( p_index_drop )
+      IF td_core.is_true( p_index_drop )
       THEN
          drop_indexes( p_owner        => p_source_owner,
                        p_table        => p_source_table,
@@ -1352,7 +1352,7 @@ IS
             l_source_column := p_source_column;
          END IF;
 
-         coreutils.exec_sql(    'insert into partname '
+         td_core.exec_sql(    'insert into partname '
                              || ' SELECT partition_name'
                              || '  FROM dba_tab_partitions'
                              || ' WHERE table_owner = '''
@@ -1518,7 +1518,7 @@ IS
                  ORDER BY idx_ddl_type, partition_position )
       LOOP
          l_rows := TRUE;
-         coreutils.exec_auto( c_idx.DDL, p_runmode => o_app.runmode );
+         td_core.exec_auto( c_idx.DDL, p_runmode => o_app.runmode );
          l_pidx_cnt := c_idx.num_partitions;
          l_idx_cnt := c_idx.num_indexes;
       END LOOP;
@@ -1529,7 +1529,7 @@ IS
          THEN
             o_app.log_msg(    l_idx_cnt
                            || CASE
-                                 WHEN coreutils.is_part_table( p_owner, p_table )
+                                 WHEN td_core.is_part_table( p_owner, p_table )
                                     THEN ' global'
                                  ELSE NULL
                               END
@@ -1595,7 +1595,7 @@ IS
                       );
       END IF;
 
-      IF coreutils.is_part_table( p_owner, p_table )
+      IF td_core.is_part_table( p_owner, p_table )
       THEN
          -- rebuild local indexes first
          FOR c_idx IN ( SELECT  table_name, partition_position,
@@ -1612,7 +1612,7 @@ IS
                             AND table_owner = UPPER( p_owner )
                        ORDER BY table_name, partition_position )
          LOOP
-            coreutils.exec_auto( c_idx.DDL, p_runmode => o_app.runmode );
+            td_core.exec_auto( c_idx.DDL, p_runmode => o_app.runmode );
             l_cnt := l_cnt + 1;
          END LOOP;
 
@@ -1644,7 +1644,7 @@ IS
                      ORDER BY table_name )
       LOOP
          l_rows := TRUE;
-         coreutils.exec_auto( c_gidx.DDL, o_app.runmode );
+         td_core.exec_auto( c_gidx.DDL, o_app.runmode );
          l_cnt := l_cnt + 1;
       END LOOP;
 
@@ -1652,7 +1652,7 @@ IS
       THEN
          o_app.log_msg(    l_cnt
                         || CASE
-                              WHEN coreutils.is_part_table( p_owner, p_table )
+                              WHEN td_core.is_part_table( p_owner, p_table )
                                  THEN ' global'
                               ELSE NULL
                            END
@@ -1667,7 +1667,7 @@ IS
       ELSE
          o_app.log_msg(    'No matching unusable '
                         || CASE
-                              WHEN coreutils.is_part_table( p_owner, p_table )
+                              WHEN td_core.is_part_table( p_owner, p_table )
                                  THEN 'global '
                               ELSE NULL
                            END

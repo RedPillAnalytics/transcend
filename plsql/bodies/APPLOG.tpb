@@ -175,7 +175,7 @@ AS
             FROM parameter_conf
            WHERE LOWER( module ) = SELF.module )
       LOOP
-         coreutils.exec_sql( c_params.DDL, p_runmode => SELF.runmode );
+         td_core.exec_sql( c_params.DDL, p_runmode => SELF.runmode );
       END LOOP;
 
       RETURN;

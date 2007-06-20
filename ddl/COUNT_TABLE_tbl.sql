@@ -17,5 +17,5 @@ ALTER TABLE count_table ADD CONSTRAINT count_tbl_pk PRIMARY KEY (session_id, ent
     USING INDEX
 /
 
-GRANT SELECT ON count_table TO applog
+GRANT SELECT ON count_table TO td_sel
 /

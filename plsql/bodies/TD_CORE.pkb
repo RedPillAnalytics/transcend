@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE BODY coreutils
+CREATE OR REPLACE PACKAGE BODY td_core
 AS
    -- procedure executes the host_cmd function and raises an exception with the return code
    PROCEDURE host_cmd(
@@ -54,7 +54,7 @@ AS
          THEN
             raise_application_error
                          ( -20020,
-                              'Java Error: method CoreUtils.copyFile was unable to copy '
+                              'Java Error: method TdCore.copyFile was unable to copy '
                            || p_srcfile
                            || ' to '
                            || p_dstfile
@@ -78,7 +78,7 @@ AS
       o_app        applog  := applog( p_module       => 'delete_file',
                                       p_runmode      => p_runmode );
    BEGIN
-      l_filepath := coreutils.get_dir_path( p_directory ) || '/' || p_filename;
+      l_filepath := get_dir_path( p_directory ) || '/' || p_filename;
 
       IF NOT o_app.is_debugmode
       THEN
@@ -436,7 +436,7 @@ AS
          o_app.set_action( 'Check for extracted file' );
          -- check and make sure the unzip process worked
          -- do this by checking to see if the expected file exists
-         UTL_FILE.fgetattr( coreutils.get_dir_name( p_dirpath ),
+         UTL_FILE.fgetattr( get_dir_name( p_dirpath ),
                             l_return,
                             l_file_exists,
                             l_file_size,
@@ -515,7 +515,7 @@ AS
          o_app.set_action( 'Check for decrypted file' );
          -- check and make sure the unzip process worked
          -- do this by checking to see if the expected file exists
-         UTL_FILE.fgetattr( coreutils.get_dir_name( p_dirpath ),
+         UTL_FILE.fgetattr( get_dir_name( p_dirpath ),
                             l_return,
                             l_file_exists,
                             l_file_size,
@@ -531,5 +531,5 @@ AS
       o_app.clear_app_info;
       RETURN l_return;
    END decrypt_file;
-END coreutils;
+END td_core;
 /

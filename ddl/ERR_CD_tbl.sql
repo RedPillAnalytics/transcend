@@ -1,4 +1,4 @@
-DROP TABLE err_cd
+DROP TABLE err_cd purge
 /
 
 CREATE TABLE err_cd
@@ -36,7 +36,7 @@ INSERT INTO err_cd (code,name,message) VALUES (-20019, 'on_clause_missing','The 
 INSERT INTO err_cd (code,name,message) VALUES (-20020, 'incorrect_parameters','The combination of parameters provided yields no matching objects.');
 INSERT INTO err_cd (code,name,message) VALUES (-20021, 'no_object','The specified object does not exist');
 INSERT INTO err_cd (code,name,message) VALUES (-20022, 'unrecognized_parm','The specified parameter value is not recognized');
-INSERT INTO err_cd (code,name,message) VALUES (-20023, 'not partitioned','The specified table is not partititoned');
+INSERT INTO err_cd (code,name,message) VALUES (-20023, 'not_partitioned','The specified table is not partititoned');
 INSERT INTO err_cd (code,name,message) VALUES (-20024, 'parms_not_compatible','The specified parameters are not compatible');
 INSERT INTO err_cd (code,name,message) VALUES (-20025, 'parm_not_configured','The specified parameter is not configured');
 INSERT INTO err_cd (code,name,message) VALUES (-20026, 'file_not_found','Expected file does not exist');

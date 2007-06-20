@@ -24,3 +24,6 @@ ALTER TABLE registration_conf ADD (
 
 CREATE SEQUENCE registration_conf_seq
 /
+
+GRANT SELECT ON registration_conf TO td_sel
+/

@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE BODY td_fileapi
+CREATE OR REPLACE PACKAGE td_fileapi
 IS
    FUNCTION calc_rej_ind(
       p_filehub_group   VARCHAR2,
@@ -7,7 +7,7 @@ IS
    )
       RETURN VARCHAR2;
 
-   PROCEDURE filehub(
+   PROCEDURE process_file(
       p_filehub_group   VARCHAR2,
       p_filehub_name    VARCHAR2 DEFAULT NULL,
       p_keep_source     VARCHAR2 DEFAULT 'no',

@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE coreutils
+CREATE OR REPLACE PACKAGE td_core
 AS
    PROCEDURE get_dir_list( p_directory IN VARCHAR2 )
    AS
@@ -103,5 +103,5 @@ AS
       p_runmode    VARCHAR2 DEFAULT NULL
    )
       RETURN VARCHAR2;
-END coreutils;
+END td_core;
 /

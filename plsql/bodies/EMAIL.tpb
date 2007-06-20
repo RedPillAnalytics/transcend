@@ -6,7 +6,7 @@ AS
       PRAGMA EXCEPTION_INIT (e_smtp_error, -29279);
       o_app          applog    := applog (p_module => 'notify.send', p_runmode => SELF.runmode);
    BEGIN
-      IF coreutils.is_true (notify_enabled)
+      IF td_core.is_true (notify_enabled)
       THEN
          IF NOT SELF.is_debugmode
          THEN

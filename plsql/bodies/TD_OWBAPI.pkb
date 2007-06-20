@@ -1,7 +1,5 @@
 CREATE OR REPLACE PACKAGE BODY td_owbapi
 AS
-   g_app   applog;
-
    PROCEDURE start_map_control(
       p_owner           VARCHAR2 DEFAULT NULL,
       p_table           VARCHAR2 DEFAULT NULL,
@@ -9,17 +7,19 @@ AS
       p_source_owner    VARCHAR2 DEFAULT NULL,
       p_source_object   VARCHAR2 DEFAULT NULL,
       p_source_column   VARCHAR2 DEFAULT NULL,
-      p_d_num           NUMBER DEFAULT NULL,
-      p_p_num           NUMBER DEFAULT NULL,
+      p_d_num           NUMBER   DEFAULT NULL,
+      p_p_num           NUMBER   DEFAULT NULL,
       p_index_regexp    VARCHAR2 DEFAULT NULL,
       p_index_type      VARCHAR2 DEFAULT NULL,
       p_part_type       VARCHAR2 DEFAULT NULL,
-      p_oper_id         NUMBER DEFAULT NULL
+      p_oper_id         NUMBER   DEFAULT NULL,
+      p_runmode		VARCHAR2 DEFAULT NULL
    )
    AS
+      o_app applog := applog( p_module=>'start_map_control', p_runmode => p_runmode ); 
    BEGIN
-      g_app := applog( p_module=>'start_map_control', p_action => 'get mapping name' );
-      g_app.log_msg( 'Beginning OWB mapping', p_oper_id => p_oper_id );
+      o_app.set_action(REGEXP_SUBSTR( o_app.whence,'\S+$',1,1,'i' ));
+      o_app.log_msg( 'Beginning OWB mapping', p_oper_id => p_oper_id );
 
       -- see whether or not to call UNUSABLE_INDEXES
       IF p_owner IS NOT NULL AND p_table IS NOT NULL
@@ -40,26 +40,48 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         g_app.log_err;
+         o_app.log_err;
          RAISE;
    END start_map_control;
 
    PROCEDURE end_map_control(
-      p_owner     VARCHAR2 DEFAULT NULL,
-      p_table     VARCHAR2 DEFAULT NULL,
-      p_oper_id   NUMBER DEFAULT NULL
+      p_owner		 VARCHAR2 DEFAULT NULL,
+      p_table     	 VARCHAR2 DEFAULT NULL,
+      p_source_owner     VARCHAR2 DEFAULT NULL,
+      p_source_table     VARCHAR2 DEFAULT NULL,
+      p_partname         VARCHAR2 DEFAULT NULL,
+      p_idx_tablespace   VARCHAR2 DEFAULT NULL,
+      p_index_drop       VARCHAR2 DEFAULT NULL,
+      p_oper_id   	 NUMBER   DEFAULT NULL,
+      p_runmode		 VARCHAR2 DEFAULT NULL
    )
    AS
+      o_app applog := applog( p_module=>'end_map_control', p_runmode => p_runmode );
    BEGIN
-      g_app.set_module( 'get mapping name' );
+      o_app.set_action(REGEXP_SUBSTR( o_app.whence,'\S+$',1,1,'i' ));
 
-      IF p_owner IS NOT NULL AND p_table IS NOT NULL
+      CASE
+      WHEN p_source_owner IS NOT NULL AND p_source_table IS NOT NULL
       THEN
-         td_dbapi.usable_indexes( p_owner, p_table );
-      END IF;
+      td_dbapi.exchange_partition( p_source_owner    => p_source_owner,
+				   p_source_table    => p_source_table,
+				   p_owner	     => p_owner,
+				   p_table	     => p_table,
+				   p_partname	     => p_partname,
+				   p_idx_tablespace  => p_idx_tablespace,
+				   p_index_drop	     => nvl(p_index_drop,'yes'),
+				   -- OWB can handle gathering stats
+				   p_gather_stats    => 'no',
+				   p_runmode	     => o_app.runmode );
+      WHEN p_owner IS NOT NULL AND p_table IS NOT NULL
+      THEN
+         td_dbapi.usable_indexes( p_owner, p_table, p_runmode=> o_app.runmode );
+      ELSE
+      NULL;
+   END CASE;
 
-      g_app.log_msg( 'Ending OWB mapping', p_oper_id => p_oper_id );
-      g_app.clear_app_info;
+      o_app.log_msg( 'Ending OWB mapping', p_oper_id => p_oper_id );
+      o_app.clear_app_info;
    END end_map_control;
 END td_owbapi;
 /

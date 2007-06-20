@@ -19,9 +19,8 @@ GRANT DROP ANY INDEX TO &schema;
 GRANT CREATE ANY directory TO &schema;
 GRANT EXECUTE ON sys.utl_mail TO &schema;
 
-CREATE ROLE transcend_sel;
-CREATE ROLE transcend_adm;
-CREATE ROLE applog;
+CREATE ROLE td_sel;
+CREATE ROLE td_adm;
 
 -- ALTER USER &schema DEFAULT TABLESPACE &tablespace;
 ALTER SESSION SET current_schema=&schema;
@@ -44,7 +43,7 @@ SET echo on
 @../ddl/PARAMETER_CONF_tbl.sql
 
 --CREATE java stored procedure
-@../java/CoreUtils.jvs
+@../java/TdCore.jvs
 
 --DROP all types due to inheritance
 DROP TYPE feed;
@@ -66,8 +65,8 @@ DROP TYPE applog;
 @../plsql/wrapped_bodies/BASETYPE.plb
 @../plsql/specs/APPLOG.tps
 @../plsql/wrapped_bodies/APPLOG.plb
-@../plsql/specs/COREUTILS.pks
-@../plsql/wrapped_bodies/COREUTILS.plb
+@../plsql/specs/TD_CORE.pks
+@../plsql/wrapped_bodies/TD_CORE.plb
 @../plsql/specs/NOTIFY.tps
 @../plsql/specs/EMAIL.tps
 @../plsql/wrapped_bodies/EMAIL.plb
@@ -82,17 +81,19 @@ DROP TYPE applog;
 @../object_views/FEED_OT_vw.sql
 
 --CREATE callable packages
-@../plsql/specs/TRANSCEND.pks
-@../plsql/wrapped_bodies/TRANSCEND.plb
-@../plsql/specs/CONTROL.pks
-@../plsql/wrapped_bodies/CONTROL.plb
-@../plsql/specs/OWB_API.pks
-@../plsql/wrapped_bodies/OWB_API.pkb
+@../plsql/specs/TD_DBAPI.pks
+@../plsql/wrapped_bodies/TD_DBAPI.plb
+@../plsql/specs/TD_FILEAPI.pks
+@../plsql/wrapped_bodies/TD_FILEAPI.plb
+@../plsql/specs/TD_CONTROL.pks
+@../plsql/wrapped_bodies/TD_CONTROL.plb
+@../plsql/specs/TD_OWBAPI.pks
+@../plsql/wrapped_bodies/TD_OWBAPI.plb
 
 -- set the default logging, registration and runmodes
-EXEC control.set_logging_level;
-EXEC control.set_runmode;
-EXEC control.set_registration;
+EXEC td_control.set_logging_level;
+EXEC td_control.set_runmode;
+EXEC td_control.set_registration;
 
 --PUBLIC synonyms
 CREATE OR REPLACE PUBLIC SYNONYM transcend FOR &schema.transcend;

@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE BODY control
+CREATE OR REPLACE PACKAGE BODY td_control
 IS
    PROCEDURE set_logging_level(
       p_module          VARCHAR2 DEFAULT 'default',
@@ -107,8 +107,8 @@ IS
    END set_session_parameter;
 
    PROCEDURE clear_log(
-      p_session_id   NUMBER DEFAULT SYS_CONTEXT( 'USERENV', 'SESSIONID' ),
-      p_runmode      VARCHAR2 DEFAULT NULL
+      p_runmode      VARCHAR2 DEFAULT NULL,
+      p_session_id   NUMBER DEFAULT SYS_CONTEXT( 'USERENV', 'SESSIONID' )
    )
    AS
    BEGIN
@@ -116,5 +116,5 @@ IS
             WHERE session_id = p_session_id
               AND REGEXP_LIKE( runmode, NVL( p_runmode, '.' ), 'i' );
    END clear_log;
-END control;
+END td_control;
 /

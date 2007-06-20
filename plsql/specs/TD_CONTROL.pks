@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE control
+CREATE OR REPLACE PACKAGE td_control
 IS
    PROCEDURE set_logging_level(
       p_module          VARCHAR2 DEFAULT 'default',
@@ -22,5 +22,5 @@ IS
       p_runmode      VARCHAR2 DEFAULT NULL,
       p_session_id   NUMBER DEFAULT SYS_CONTEXT( 'USERENV', 'SESSIONID' )
    );
-END control;
+END td_control;
 /

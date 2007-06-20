@@ -24,3 +24,6 @@ ALTER TABLE runmode_conf ADD (
 
 CREATE SEQUENCE runmode_conf_seq
 /
+
+GRANT SELECT ON runmode_conf TO td_sel
+/
