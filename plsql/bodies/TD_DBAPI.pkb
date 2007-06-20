@@ -1,6 +1,5 @@
-CREATE OR REPLACE PACKAGE BODY dbflex
-AS
--- this is not an autonomous transaction because COREUTILS.exec_auto is
+CREATE OR REPLACE PACKAGE BODY td_dbapi
+IS
    PROCEDURE trunc_tab(
       p_owner     IN   VARCHAR2,
       p_table     IN   VARCHAR2,
@@ -119,7 +118,7 @@ AS
                           -- this is the index name that will be used in the first attempt
                           -- this index name is shown in debug mode
                           REGEXP_REPLACE( index_name,
-                                          p_source_table,
+                                          '(")?' || p_source_table || '(")?',
                                           p_table,
                                           1,
                                           0,
@@ -153,26 +152,42 @@ AS
                      -- use an NVL'd regular expression to determine specific indexes to work on
                      AND REGEXP_LIKE( index_name, NVL( p_index_regexp, '.' ), 'i' )
                      -- use an NVL'd regular expression to determine the index types to worked on
-                     AND REGEXP_LIKE( index_type, '^' || NVL( p_index_type, '.' ), 'i' )))
+                     AND REGEXP_LIKE( index_type, '^' || NVL( p_index_type, '.' ), 'i' )
+                     AND index_name NOT IN(
+                            SELECT index_name
+                              FROM dba_tables dt JOIN dba_constraints di
+                                   USING( owner, table_name )
+                             WHERE iot_type IS NOT NULL
+                               AND constraint_type = 'P'
+                               AND table_name <> UPPER( p_source_table )
+                               AND owner <> UPPER( p_source_owner ))))
       LOOP
          o_app.log_msg( 'Source index: ' || c_indexes.index_name, 4 );
          o_app.log_msg( 'Renamed index: ' || c_indexes.idx_rename, 4 );
          o_app.log_msg( 'Exception renamed index: ' || c_indexes.idx_e_rename, 4 );
          l_rows := TRUE;
          o_app.set_action( 'Format index DDL' );
+         -- first remove any ALTER INDEX statements that may be included
+         -- this could occur if the indexes are in an unusable state, for instance
+         -- we don't care if they are unusable or not
+         l_ddl :=
+                REGEXP_REPLACE( c_indexes.index_ddl, '(alter index).+', NULL, 1, 0, 'i' );
          -- replace the source table name with the target table name
          -- if a " is found, then use it... otherwise don't
          l_ddl :=
-            REGEXP_REPLACE( c_indexes.index_ddl,
-                            '(\."?)(' || p_source_table || ')(")?',
-                            '\1' || p_table || '\3'
+            REGEXP_REPLACE( l_ddl,
+                            '(\."?)(' || p_source_table || ')(\w*)("?)',
+                            '.' || p_table || '\3',
+                            1,
+                            0,
+                            'i'
                           );
               -- replace the index owner with the target owner
          -- if a " is found, then use it... otherwise don't
          l_ddl :=
             REGEXP_REPLACE( l_ddl,
                             '(")?(' || c_indexes.owner || ')("?\.)',
-                            '\1' || p_owner || '\3',
+                            p_owner || '.',
                             1,
                             0,
                             'i'
@@ -185,7 +200,7 @@ AS
          l_e_ddl :=
             REGEXP_REPLACE( l_ddl,
                             '(\."?)(\w)+(")?( on)',
-                            '\1' || c_indexes.idx_e_rename || '\3 \4',
+                            '.' || c_indexes.idx_e_rename || ' \4',
                             1,
                             0,
                             'i'
@@ -499,6 +514,8 @@ AS
       l_rows       BOOLEAN        := FALSE;
       l_tab_name   VARCHAR2( 61 ) := p_owner || '.' || p_table;
       l_idx_cnt    NUMBER         := 0;
+      e_pk_idx     EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_pk_idx, -2429 );
       o_app        applog := applog( p_module       => 'drop_indexes',
                                      p_runmode      => p_runmode );
    BEGIN
@@ -517,8 +534,16 @@ AS
                                           ))
       LOOP
          l_rows := TRUE;
-         coreutils.exec_auto( c_indexes.index_ddl, o_app.runmode );
-         l_idx_cnt := l_idx_cnt + 1;
+
+         BEGIN
+            coreutils.exec_auto( c_indexes.index_ddl, o_app.runmode );
+            l_idx_cnt := l_idx_cnt + 1;
+         EXCEPTION
+            WHEN e_pk_idx
+            THEN
+               NULL;
+         END;
+
          o_app.log_msg( 'Index ' || c_indexes.index_name || ' dropped' );
       END LOOP;
 
@@ -628,16 +653,12 @@ AS
          WHEN NOT coreutils.object_exists( p_source_owner, p_source_object )
          THEN
             raise_application_error( get_err_cd( 'no_object' ),
-                                        get_err_msg( 'no_object' )
-                                     || ' : '
-                                     || l_src_name
+                                     get_err_msg( 'no_object' ) || ' : ' || l_src_name
                                    );
          WHEN NOT coreutils.table_exists( p_owner, p_table )
          THEN
             raise_application_error( get_err_cd( 'no_object' ),
-                                        get_err_msg( 'no_object' )
-                                     || ' : '
-                                     || l_trg_name
+                                     get_err_msg( 'no_object' ) || ' : ' || l_trg_name
                                    );
          ELSE
             NULL;
@@ -733,16 +754,12 @@ AS
          WHEN NOT coreutils.object_exists( p_source_owner, p_source_object )
          THEN
             raise_application_error( get_err_cd( 'no_object' ),
-                                        get_err_msg( 'no_object' )
-                                     || ' : '
-                                     || l_src_name
+                                     get_err_msg( 'no_object' ) || ' : ' || l_src_name
                                    );
          WHEN NOT coreutils.table_exists( p_owner, p_table )
          THEN
             raise_application_error( get_err_cd( 'no_object' ),
-                                        get_err_msg( 'no_object' )
-                                     || ' : '
-                                     || l_trg_name
+                                     get_err_msg( 'no_object' ) || ' : ' || l_trg_name
                                    );
          ELSE
             NULL;
@@ -1149,10 +1166,7 @@ AS
       IF NOT coreutils.is_part_table( p_owner, p_table )
       THEN
          raise_application_error( get_err_cd( 'not_partitioned' ),
-                                  get_err_msg(    'not_partitioned'
-                                                         || ': '
-                                                         || p_table
-                                                       )
+                                  get_err_msg( 'not_partitioned' || ': ' || p_table )
                                 );
       END IF;
 
@@ -1307,7 +1321,8 @@ AS
       p_source_object   VARCHAR2 DEFAULT NULL,
       p_source_column   VARCHAR2 DEFAULT NULL,
       p_d_num           NUMBER DEFAULT 0,
-      p_p_num           NUMBER DEFAULT 65535
+      p_p_num           NUMBER DEFAULT 65535,
+      p_runmode         VARCHAR2 DEFAULT NULL
    )
    AS
       l_dsql            LONG;
@@ -1318,6 +1333,9 @@ AS
          INDEX BY BINARY_INTEGER;
 
       t_partname        partname_type;
+      o_app             applog
+                          := applog( p_module       => 'pop_partname',
+                                     p_runmode      => p_runmode );
    BEGIN
       IF p_partname IS NOT NULL
       THEN
@@ -1328,15 +1346,15 @@ AS
          THEN
             SELECT column_name
               INTO l_source_column
-              FROM all_part_key_columns
+              FROM dba_part_key_columns
              WHERE NAME = UPPER( p_table ) AND owner = UPPER( p_owner );
          ELSE
             l_source_column := p_source_column;
          END IF;
 
-         coreutils.exec_sql(    'insert into tdinc.partname '
+         coreutils.exec_sql(    'insert into partname '
                              || ' SELECT partition_name'
-                             || '  FROM all_tab_partitions'
+                             || '  FROM dba_tab_partitions'
                              || ' WHERE table_owner = '''
                              || UPPER( p_owner )
                              || ''' AND table_name = '''
@@ -1357,9 +1375,12 @@ AS
                              || '.'
                              || UPPER( p_source_object )
                              || ') '
-                             || 'ORDER By partition_position'
+                             || 'ORDER By partition_position',
+                             p_runmode      => o_app.runmode
                            );
       END IF;
+
+      o_app.clear_app_info;
    END pop_partname;
 
    -- Provides functionality for setting local and non-local indexes to unusable based on parameters
@@ -1381,6 +1402,7 @@ AS
       p_d_num           NUMBER DEFAULT 0,
       -- first magic number from unpublished
       p_p_num           NUMBER DEFAULT 65535,
+      p_index_regexp    VARCHAR2 DEFAULT NULL,
       p_index_type      VARCHAR2 DEFAULT NULL,
       -- possible options: specify different index types
       p_part_type       VARCHAR2 DEFAULT NULL,
@@ -1472,8 +1494,7 @@ AS
                                          THEN 'I'
                                       ELSE 'P'
                                    END idx_ddl_type
-                             FROM tdinc.partname JOIN all_ind_partitions aip
-                                  USING( partition_name )
+                             FROM partname JOIN all_ind_partitions aip USING( partition_name )
                                   RIGHT JOIN all_indexes ai
                                   ON ai.index_name = aip.index_name
                                 AND ai.owner = aip.index_owner
@@ -1491,6 +1512,8 @@ AS
                                        END,
                                        'i'
                                      )
+                      -- use an NVL'd regular expression to determine specific indexes to work on
+                      AND REGEXP_LIKE( index_name, NVL( p_index_regexp, '.' ), 'i' )
                       AND NOT REGEXP_LIKE( index_type, 'iot', 'i' )
                  ORDER BY idx_ddl_type, partition_position )
       LOOP
@@ -1659,5 +1682,5 @@ AS
          o_app.log_err;
          RAISE;
    END usable_indexes;
-END dbflex;
+END td_dbapi;
 /
