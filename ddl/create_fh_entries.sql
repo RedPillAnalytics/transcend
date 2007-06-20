@@ -1,5 +1,16 @@
+CREATE OR replace directory extdata AS '/transcend/ext';
+GRANT READ,WRITE ON directory extdata TO tdinc;
+
+CREATE OR replace directory archdata AS '/transcend/arch';
+GRANT READ,WRITE ON directory archdata TO tdinc;
+
+CREATE OR REPLACE directory extractdata AS '/transcend/extract';
+GRANT READ,WRITE ON directory extractdata TO tdinc;
+
+CREATE OR REPLACE directory sourcedata AS '/transcend/source';
+GRANT READ,WRITE ON directory extractdata TO tdinc;
+
 TRUNCATE TABLE tdinc.filehub_conf;
---TRUNCATE TABLE tdinc.notify_conf;
 
 DROP TABLE tdinc.test_feed
 /
@@ -150,19 +161,3 @@ INSERT INTO tdinc.filehub_conf
 	 ',',
 	 '"',
 	 'Y');
-
--- INSERT INTO tdinc.notify_conf
---        VALUES ( tdinc.notify_conf_seq.nextval,
--- 		'email',
--- 		'yes',
--- 		'notify success',
--- 		'extract.process',
--- 		tdinc.filehub_conf_seq.currval,
--- 		'test extract ready for download',
--- 		'test extract ready for download',
--- 		'stewart.bryson@transcendentdat.com',
--- 		'stewartbryson@gmail.com,stewart.bryson@transcendentdata.com',
--- 		sys_context('USERENV','SESSION_USER'),
--- 		SYSDATE,
--- 		NULL,
--- 		NULL);
