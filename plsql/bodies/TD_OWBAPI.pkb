@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE BODY owb_api
+CREATE OR REPLACE PACKAGE BODY td_owbapi
 AS
    g_app   applog;
 
@@ -18,23 +18,23 @@ AS
    )
    AS
    BEGIN
-      g_app := applog( p_action => 'start OWB mapping' );
+      g_app := applog( p_module=>'start_map_control', p_action => 'get mapping name' );
       g_app.log_msg( 'Beginning OWB mapping', p_oper_id => p_oper_id );
 
       -- see whether or not to call UNUSABLE_INDEXES
       IF p_owner IS NOT NULL AND p_table IS NOT NULL
       THEN
-         transcend.unusable_indexes( p_owner              => p_owner,
-                                     p_table              => p_table,
-                                     p_partname           => p_partname,
-                                     p_source_owner       => p_source_owner,
-                                     p_source_object      => p_source_object,
-                                     p_source_column      => p_source_column,
-                                     p_d_num              => NVL( p_d_num, 0 ),
-                                     p_p_num              => NVL( p_p_num, 65535 ),
-                                     p_index_regexp       => p_index_regexp,
-                                     p_index_type         => p_index_type,
-                                     p_part_type          => p_part_type
+         td_dbapi.unusable_indexes( p_owner              => p_owner,
+                                    p_table              => p_table,
+                                    p_partname           => p_partname,
+                                    p_source_owner       => p_source_owner,
+                                    p_source_object      => p_source_object,
+                                    p_source_column      => p_source_column,
+                                    p_d_num              => NVL( p_d_num, 0 ),
+                                    p_p_num              => NVL( p_p_num, 65535 ),
+                                    p_index_regexp       => p_index_regexp,
+                                    p_index_type         => p_index_type,
+                                    p_part_type          => p_part_type
                                    );
       END IF;
    EXCEPTION
@@ -51,15 +51,15 @@ AS
    )
    AS
    BEGIN
-      g_app.set_action( 'end OWB mapping' );
+      g_app.set_module( 'get mapping name' );
 
-      IF p_owner IS NULL AND p_table IS NULL
+      IF p_owner IS NOT NULL AND p_table IS NOT NULL
       THEN
-         transcend.usable_indexes( p_owner, p_table );
+         td_dbapi.usable_indexes( p_owner, p_table );
       END IF;
 
       g_app.log_msg( 'Ending OWB mapping', p_oper_id => p_oper_id );
       g_app.clear_app_info;
    END end_map_control;
-END owb_api;
+END td_owbapi;
 /
