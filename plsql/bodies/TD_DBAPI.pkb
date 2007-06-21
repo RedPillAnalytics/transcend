@@ -1146,6 +1146,13 @@ IS
       l_rows           BOOLEAN                                  := FALSE;
       l_partname       dba_tab_partitions.partition_name%TYPE;
       l_ddl            LONG;
+      l_numrows        NUMBER;
+      l_numblks        NUMBER;
+      l_avgrlen        NUMBER;
+      l_cachedblk      NUMBER;
+      l_cachehit       NUMBER;
+      e_no_stats       EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_no_stats, -20000 );
       e_compress       EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_compress, -14646 );
       o_app            applog
@@ -1174,19 +1181,68 @@ IS
                       WHERE table_name = UPPER( p_table )
                         AND table_owner = UPPER( p_owner ));
 
-      -- if p_gather_stats is true, then gather them 
-      IF td_core.is_true( p_gather_stats ) AND NOT o_app.is_debugmode
-      THEN
-         o_app.set_action( 'Gather stats on new partition' );
+      -- either gather stats on the table prior to exchanging
+      -- or get the stats from the current partition and import it in for the table
+      CASE
+         WHEN td_core.is_true( p_gather_stats )
+         THEN
+            o_app.set_action( 'Gather stats on new partition' );
 
-         DBMS_STATS.gather_table_stats( UPPER( p_source_owner ),
-                                        UPPER( p_source_table ),
-                                        estimate_percent      => p_statpercent,
-                                        DEGREE                => p_statdegree,
-                                        method_opt            => p_statmethod
-                                      );
-	 o_app.log_msg( 'Statistics gathered on table ' || l_src_name, 3 );
-      END IF;
+            IF NOT o_app.is_debugmode
+            THEN
+               DBMS_STATS.gather_table_stats( UPPER( p_source_owner ),
+                                              UPPER( p_source_table ),
+                                              estimate_percent      => p_statpercent,
+                                              DEGREE                => p_statdegree,
+                                              method_opt            => p_statmethod
+                                            );
+            END IF;
+
+            o_app.log_msg( 'Statistics gathered on table ' || l_src_name, 3 );
+         WHEN NOT td_core.is_true( p_gather_stats )
+         THEN
+            IF NOT o_app.is_debugmode
+            THEN
+               BEGIN
+                  -- if partition stats are not going to be gathered on the new schema,
+                  -- keep the current stats of the partition
+                  o_app.set_action( 'Transfer stats' );
+                  DBMS_STATS.get_table_stats( UPPER( p_owner ),
+                                              UPPER( p_table ),
+                                              l_partname,
+                                              numrows        => l_numrows,
+                                              numblks        => l_numblks,
+                                              avgrlen        => l_avgrlen,
+                                              cachedblk      => l_cachedblk,
+                                              cachehit       => l_cachehit
+                                            );
+                  DBMS_STATS.set_table_stats( UPPER( p_source_owner ),
+                                              UPPER( p_source_table ),
+                                              numrows        => l_numrows,
+                                              numblks        => l_numblks,
+                                              avgrlen        => l_avgrlen,
+                                              cachedblk      => l_cachedblk,
+                                              cachehit       => l_cachehit
+                                            );
+               EXCEPTION
+                  WHEN e_no_stats
+                  THEN
+                     -- no stats existed on the target table
+                     -- just leave them blank
+                     o_app.log_msg( 'No stats existed for partition ' || p_partname, 3 );
+               END;
+            END IF;
+
+            o_app.log_msg(    'Statistics transferred from partition '
+                           || l_partname
+                           || ' of table '
+                           || l_tab_name
+                           || ' to table '
+                           || l_src_name,
+                           3
+                         );
+      END CASE;
+      
 
       -- build the indexes on the stage table just like the target table
       build_indexes( p_owner             => p_source_owner,
