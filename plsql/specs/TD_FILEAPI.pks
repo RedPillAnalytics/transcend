@@ -7,7 +7,7 @@ IS
    )
       RETURN VARCHAR2;
 
-   PROCEDURE process_file(
+   PROCEDURE process_files(
       p_filehub_group   VARCHAR2,
       p_filehub_name    VARCHAR2 DEFAULT NULL,
       p_keep_source     VARCHAR2 DEFAULT 'no',

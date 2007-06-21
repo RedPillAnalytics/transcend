@@ -34,7 +34,7 @@ IS
 
    -- processes files for a particular job
    -- if P_FILENAME is null, then all files are processed
-   PROCEDURE process_file(
+   PROCEDURE process_files(
       p_filehub_group   VARCHAR2,
       p_filehub_name    VARCHAR2 DEFAULT NULL,
       p_keep_source     VARCHAR2 DEFAULT 'no',
@@ -44,7 +44,8 @@ IS
       l_rows      BOOLEAN := FALSE;                             -- TO catch empty cursors
       o_extract   EXTRACT;
       o_feed      feed;
-      o_app       applog  := applog( p_module => 'process_file', p_runmode => p_runmode );
+      o_app       applog  := applog( p_module       => 'process_file',
+                                     p_runmode      => p_runmode );
    BEGIN
       FOR c_fh_conf IN ( SELECT  filehub_id, filehub_type
                             FROM filehub_conf
@@ -101,7 +102,6 @@ IS
          o_app.log_err;
          ROLLBACK;
          RAISE;
-   END process_file;
-
+   END process_files;
 END td_fileapi;
 /

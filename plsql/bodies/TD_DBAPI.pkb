@@ -9,8 +9,8 @@ IS
       o_app   applog := applog( p_runmode => p_runmode, p_module => 'trunc_tab' );
    BEGIN
       td_core.exec_auto( 'truncate table ' || p_owner || '.' || p_table,
-                           p_runmode      => o_app.runmode
-                         );
+                         p_runmode      => o_app.runmode
+                       );
       o_app.clear_app_info;
    END trunc_tab;
 
@@ -464,15 +464,15 @@ IS
             WHEN e_dup_con_name
             THEN
                td_core.exec_auto( REGEXP_REPLACE( l_ddl,
-                                                    '(constraint "?)(\w+)("?)',
-                                                       '\1'
-                                                    || c_constraints.con_e_rename
-                                                    || '\3 \4',
-                                                    1,
-                                                    0,
-                                                    'i'
-                                                  )
-                                  );
+                                                  '(constraint "?)(\w+)("?)',
+                                                     '\1'
+                                                  || c_constraints.con_e_rename
+                                                  || '\3 \4',
+                                                  1,
+                                                  0,
+                                                  'i'
+                                                )
+                                );
                o_app.log_msg( 'Constraint ' || c_constraints.con_e_rename || ' built' );
                l_con_cnt := l_con_cnt + 1;
          END;
@@ -538,13 +538,12 @@ IS
          BEGIN
             td_core.exec_auto( c_indexes.index_ddl, o_app.runmode );
             l_idx_cnt := l_idx_cnt + 1;
-	    o_app.log_msg( 'Index ' || c_indexes.index_name || ' dropped' );
+            o_app.log_msg( 'Index ' || c_indexes.index_name || ' dropped' );
          EXCEPTION
             WHEN e_pk_idx
             THEN
                NULL;
          END;
-
       END LOOP;
 
       IF NOT l_rows
@@ -681,14 +680,14 @@ IS
 
       -- enable|disable parallel dml depending on the parameter for P_DIRECT
       td_core.exec_sql(    'ALTER SESSION '
-                          || CASE
-                                WHEN REGEXP_LIKE( 'yes', p_direct, 'i' )
-                                   THEN 'ENABLE'
-                                ELSE 'DISABLE'
-                             END
-                          || ' PARALLEL DML',
-                          p_runmode      => o_app.runmode
-                        );
+                        || CASE
+                              WHEN REGEXP_LIKE( 'yes', p_direct, 'i' )
+                                 THEN 'ENABLE'
+                              ELSE 'DISABLE'
+                           END
+                        || ' PARALLEL DML',
+                        p_runmode      => o_app.runmode
+                      );
       o_app.log_msg( 'Inserting records from ' || l_src_name || ' into ' || l_trg_name, 3 );
       td_core.exec_sql
                 (    REGEXP_REPLACE(    'insert /*+ APPEND */ into '
@@ -934,14 +933,14 @@ IS
          o_app.set_action( 'Issue MERGE statement' );
          -- ENABLE|DISABLE parallel dml depending on the value of P_DIRECT
          td_core.exec_sql(    'ALTER SESSION '
-                             || CASE
-                                   WHEN REGEXP_LIKE( 'yes', p_direct, 'i' )
-                                      THEN 'ENABLE'
-                                   ELSE 'DISABLE'
-                                END
-                             || ' PARALLEL DML',
-                             p_runmode      => o_app.runmode
-                           );
+                           || CASE
+                                 WHEN REGEXP_LIKE( 'yes', p_direct, 'i' )
+                                    THEN 'ENABLE'
+                                 ELSE 'DISABLE'
+                              END
+                           || ' PARALLEL DML',
+                           p_runmode      => o_app.runmode
+                         );
          o_app.log_msg( 'Merging records from ' || l_src_name || ' into ' || l_trg_name,
                         3 );
          -- we put the merge statement together using all the different clauses constructed above
@@ -1147,13 +1146,6 @@ IS
       l_rows           BOOLEAN                                  := FALSE;
       l_partname       dba_tab_partitions.partition_name%TYPE;
       l_ddl            LONG;
-      l_numrows        NUMBER;
-      l_numblks        NUMBER;
-      l_avgrlen        NUMBER;
-      l_cachedblk      NUMBER;
-      l_cachehit       NUMBER;
-      e_no_stats       EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_no_stats, -20000 );
       e_compress       EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_compress, -14646 );
       o_app            applog
@@ -1166,7 +1158,7 @@ IS
       IF NOT td_core.is_part_table( p_owner, p_table )
       THEN
          raise_application_error( get_err_cd( 'not_partitioned' ),
-                                  get_err_msg( 'not_partitioned' )|| ': ' || p_table 
+                                  get_err_msg( 'not_partitioned' ) || ': ' || p_table
                                 );
       END IF;
 
@@ -1182,67 +1174,19 @@ IS
                       WHERE table_name = UPPER( p_table )
                         AND table_owner = UPPER( p_owner ));
 
-      -- either gather stats on the table prior to exchanging
-      -- or get the stats from the current partition and import it in for the table
-      CASE
-         WHEN td_core.is_true( p_gather_stats )
-         THEN
-            o_app.set_action( 'Gather stats on new partition' );
+      -- gather statistics or 
+      IF td_core.is_true( p_gather_stats ) AND o_app.is_debugmode
+      THEN
+         o_app.set_action( 'Gather stats on new partition' );
 
-            IF NOT o_app.is_debugmode
-            THEN
-               DBMS_STATS.gather_table_stats( UPPER( p_source_owner ),
-                                              UPPER( p_source_table ),
-                                              estimate_percent      => p_statpercent,
-                                              DEGREE                => p_statdegree,
-                                              method_opt            => p_statmethod
-                                            );
-            END IF;
-
-            o_app.log_msg( 'Statistics gathered on table ' || l_src_name, 3 );
-         WHEN NOT td_core.is_true( p_gather_stats )
-         THEN
-            IF NOT o_app.is_debugmode
-            THEN
-               BEGIN
-                  -- if partition stats are not going to be gathered on the new schema,
-                  -- keep the current stats of the partition
-                  o_app.set_action( 'Transfer stats' );
-                  DBMS_STATS.get_table_stats( UPPER( p_owner ),
-                                              UPPER( p_table ),
-                                              l_partname,
-                                              numrows        => l_numrows,
-                                              numblks        => l_numblks,
-                                              avgrlen        => l_avgrlen,
-                                              cachedblk      => l_cachedblk,
-                                              cachehit       => l_cachehit
-                                            );
-                  DBMS_STATS.set_table_stats( UPPER( p_source_owner ),
-                                              UPPER( p_source_table ),
-                                              numrows        => l_numrows,
-                                              numblks        => l_numblks,
-                                              avgrlen        => l_avgrlen,
-                                              cachedblk      => l_cachedblk,
-                                              cachehit       => l_cachehit
-                                            );
-               EXCEPTION
-                  WHEN e_no_stats
-                  THEN
-                     -- no stats existed on the target table
-                     -- just leave them blank
-                     o_app.log_msg( 'No stats existed for partition ' || p_partname, 3 );
-               END;
-            END IF;
-
-            o_app.log_msg(    'Statistics transferred from partition '
-                           || l_partname
-                           || ' of table '
-                           || l_tab_name
-                           || ' to table '
-                           || l_src_name,
-                           3
-                         );
-      END CASE;
+         DBMS_STATS.gather_table_stats( UPPER( p_source_owner ),
+                                        UPPER( p_source_table ),
+                                        estimate_percent      => p_statpercent,
+                                        DEGREE                => p_statdegree,
+                                        method_opt            => p_statmethod
+                                      );
+	 o_app.log_msg( 'Statistics gathered on table ' || l_src_name, 3 );
+      END IF;
 
       -- build the indexes on the stage table just like the target table
       build_indexes( p_owner             => p_source_owner,
@@ -1257,14 +1201,14 @@ IS
 
       BEGIN
          td_core.exec_auto(    'alter table '
-                              || l_tab_name
-                              || ' exchange partition '
-                              || l_partname
-                              || ' with table '
-                              || l_src_name
-                              || ' including indexes update global indexes',
-                              o_app.runmode
-                            );
+                            || l_tab_name
+                            || ' exchange partition '
+                            || l_partname
+                            || ' with table '
+                            || l_src_name
+                            || ' including indexes update global indexes',
+                            o_app.runmode
+                          );
          o_app.log_msg(    l_src_name
                         || ' exchanged for partition '
                         || l_partname
@@ -1276,18 +1220,18 @@ IS
          THEN
             -- need to compress the staging table
             td_core.exec_auto( 'alter table ' || l_src_name || ' move compress',
-                                 o_app.runmode
-                               );
+                               o_app.runmode
+                             );
             -- now, rerun the exchange
             td_core.exec_auto(    'alter table '
-                                 || l_tab_name
-                                 || ' exchange partition '
-                                 || l_partname
-                                 || ' with table '
-                                 || l_src_name
-                                 || ' including indexes update global indexes',
-                                 o_app.runmode
-                               );
+                               || l_tab_name
+                               || ' exchange partition '
+                               || l_partname
+                               || ' with table '
+                               || l_src_name
+                               || ' including indexes update global indexes',
+                               o_app.runmode
+                             );
             o_app.log_msg(    l_src_name
                            || ' exchanged for partition '
                            || l_partname
@@ -1353,31 +1297,31 @@ IS
          END IF;
 
          td_core.exec_sql(    'insert into partname '
-                             || ' SELECT partition_name'
-                             || '  FROM dba_tab_partitions'
-                             || ' WHERE table_owner = '''
-                             || UPPER( p_owner )
-                             || ''' AND table_name = '''
-                             || UPPER( p_table )
-                             || ''' AND partition_position IN '
-                             || ' (SELECT DISTINCT tbl$or$idx$part$num("'
-                             || UPPER( p_owner )
-                             || '"."'
-                             || UPPER( p_table )
-                             || '", 0, '
-                             || p_d_num
-                             || ', '
-                             || p_p_num
-                             || ', "'
-                             || UPPER( l_source_column )
-                             || '")	 FROM '
-                             || UPPER( p_source_owner )
-                             || '.'
-                             || UPPER( p_source_object )
-                             || ') '
-                             || 'ORDER By partition_position',
-                             p_runmode      => o_app.runmode
-                           );
+                           || ' SELECT partition_name'
+                           || '  FROM dba_tab_partitions'
+                           || ' WHERE table_owner = '''
+                           || UPPER( p_owner )
+                           || ''' AND table_name = '''
+                           || UPPER( p_table )
+                           || ''' AND partition_position IN '
+                           || ' (SELECT DISTINCT tbl$or$idx$part$num("'
+                           || UPPER( p_owner )
+                           || '"."'
+                           || UPPER( p_table )
+                           || '", 0, '
+                           || p_d_num
+                           || ', '
+                           || p_p_num
+                           || ', "'
+                           || UPPER( l_source_column )
+                           || '")	 FROM '
+                           || UPPER( p_source_owner )
+                           || '.'
+                           || UPPER( p_source_object )
+                           || ') '
+                           || 'ORDER By partition_position',
+                           p_runmode      => o_app.runmode
+                         );
       END IF;
 
       o_app.clear_app_info;
