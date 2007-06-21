@@ -80,7 +80,7 @@ IS
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
-            IF p_name = LOWER( 'enable' )
+          IF REGEXP_LIKE(p_name,'enable|disable','i')
             THEN
                NULL;
             ELSE
@@ -89,12 +89,21 @@ IS
                                       );
             END IF;
       END;
-
-      UPDATE parameter_conf
-         SET VALUE = p_value,
-             modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
-             modified_dt = SYSDATE
-       WHERE module = p_module AND NAME = p_name;
+      
+      IF REGEXP_LIKE( p_name,'disable|enable','i' )
+      THEN
+	 UPDATE parameter_conf
+	    SET name = p_name,
+		modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
+		modified_dt = SYSDATE
+	  WHERE module = p_module AND value = p_value;
+      ELSE
+	 UPDATE parameter_conf
+            SET VALUE = p_value,
+		modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
+		modified_dt = SYSDATE
+	  WHERE module = p_module AND NAME = p_name;
+      END IF;
 
       IF SQL%ROWCOUNT = 0
       THEN

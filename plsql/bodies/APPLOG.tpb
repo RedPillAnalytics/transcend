@@ -168,7 +168,7 @@ AS
       -- set session level parameters
       FOR c_params IN
          ( SELECT CASE
-                     WHEN REGEXP_LIKE( NAME, '^enable$', 'i' )
+                  WHEN REGEXP_LIKE( NAME, 'enable|disable', 'i' )
                         THEN 'alter session ' || NAME || ' ' || VALUE
                      ELSE 'alter session set ' || NAME || '=' || VALUE
                   END DDL
