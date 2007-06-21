@@ -1174,8 +1174,8 @@ IS
                       WHERE table_name = UPPER( p_table )
                         AND table_owner = UPPER( p_owner ));
 
-      -- gather statistics or 
-      IF td_core.is_true( p_gather_stats ) AND o_app.is_debugmode
+      -- if p_gather_stats is true, then gather them 
+      IF td_core.is_true( p_gather_stats ) AND NOT o_app.is_debugmode
       THEN
          o_app.set_action( 'Gather stats on new partition' );
 
@@ -1206,18 +1206,25 @@ IS
 				     ||'.'
 				     ||table_name
 				     ||' disable constraint '
-				     ||constraint_name ddl
-			     FROM dba_constraints
-			    WHERE constraint_type = 'R'
-			      AND r_constraint_name IN (SELECT constraint_name
-							  FROM dba_constraints
-							 WHERE table_name = upper(p_table)
-							   AND owner = upper(p_owner)
-							   AND constraint_type = 'P'))
+				     ||constraint_name ddl,
+				     'Constraint '
+				     ||constraint_name
+				     ||' disabled on '
+				     ||owner
+				     ||'.'
+				     ||table_name msg
+				FROM dba_constraints
+			       WHERE constraint_type = 'R'
+				 AND r_constraint_name IN (SELECT constraint_name
+							     FROM dba_constraints
+							    WHERE table_name = upper(p_table)
+							      AND owner = upper(p_owner)
+							      AND constraint_type = 'P'))
       LOOP
 	 td_core.exec_auto( c_dis_for_keys.ddl,
                             o_app.runmode
                           );
+	 o_app.log_msg( c_dis_for_keys.msg);
       END LOOP;
       
       -- now exchange the table
@@ -1263,29 +1270,36 @@ IS
                            || l_tab_name
                          );
       END;
-
+      
       -- enable any foreign keys on other tables that reference this table
       o_app.set_action( 'Enable foreign keys' );
 
       FOR c_en_for_keys IN ( SELECT 'alter table '
-				    ||owner
-				    ||'.'
-				    ||table_name
-				    ||' enable constraint '
-				    ||constraint_name ddl
-			     FROM dba_constraints
-			    WHERE constraint_type = 'R'
-			      AND r_constraint_name IN (SELECT constraint_name
-							  FROM dba_constraints
-							 WHERE table_name = upper(p_table)
-							   AND owner = upper(p_owner)
-							   AND constraint_type = 'P'))
+				     ||owner
+				     ||'.'
+				     ||table_name
+				     ||' enable constraint '
+				     ||constraint_name ddl,
+				     'Constraint '
+				     ||constraint_name
+				     ||' enabled on '
+				     ||owner
+				     ||'.'
+				     ||table_name msg
+				FROM dba_constraints
+			       WHERE constraint_type = 'R'
+				 AND r_constraint_name IN (SELECT constraint_name
+							     FROM dba_constraints
+							    WHERE table_name = upper(p_table)
+							      AND owner = upper(p_owner)
+							      AND constraint_type = 'P'))
       LOOP
 	 td_core.exec_auto( c_en_for_keys.ddl,
                             o_app.runmode
                           );
+	 o_app.log_msg( c_en_for_keys.msg);
       END LOOP;
-
+      
       -- drop the indexes on the stage table
       IF td_core.is_true( p_index_drop )
       THEN
