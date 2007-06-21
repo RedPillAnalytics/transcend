@@ -1197,6 +1197,30 @@ IS
                      p_tablespace        => p_idx_tablespace,
                      p_runmode           => o_app.runmode
                    );
+      
+      -- disable any foreign keys on other tables that reference this table
+      o_app.set_action( 'Disable foreign keys' );
+
+      FOR c_dis_for_keys IN ( SELECT 'alter table '
+				     ||owner
+				     ||'.'
+				     ||table_name
+				     ||' disable constraint '
+				     ||constraint_name ddl
+			     FROM dba_constraints
+			    WHERE constraint_type = 'R'
+			      AND r_constraint_name IN (SELECT constraint_name
+							  FROM dba_constraints
+							 WHERE table_name = upper(p_table)
+							   AND owner = upper(p_owner)
+							   AND constraint_type = 'P'))
+      LOOP
+	 td_core.exec_auto( c_dis_for_keys.ddl,
+                            o_app.runmode
+                          );
+      END LOOP;
+      
+      -- now exchange the table
       o_app.set_action( 'Exchange table' );
 
       BEGIN
@@ -1239,6 +1263,28 @@ IS
                            || l_tab_name
                          );
       END;
+
+      -- enable any foreign keys on other tables that reference this table
+      o_app.set_action( 'Enable foreign keys' );
+
+      FOR c_en_for_keys IN ( SELECT 'alter table '
+				    ||owner
+				    ||'.'
+				    ||table_name
+				    ||' enable constraint '
+				    ||constraint_name ddl
+			     FROM dba_constraints
+			    WHERE constraint_type = 'R'
+			      AND r_constraint_name IN (SELECT constraint_name
+							  FROM dba_constraints
+							 WHERE table_name = upper(p_table)
+							   AND owner = upper(p_owner)
+							   AND constraint_type = 'P'))
+      LOOP
+	 td_core.exec_auto( c_en_for_keys.ddl,
+                            o_app.runmode
+                          );
+      END LOOP;
 
       -- drop the indexes on the stage table
       IF td_core.is_true( p_index_drop )
