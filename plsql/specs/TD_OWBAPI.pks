@@ -17,15 +17,16 @@ AS
    );
 
    PROCEDURE end_map_control(
-      p_owner		 VARCHAR2 DEFAULT NULL,
-      p_table     	 VARCHAR2 DEFAULT NULL,
+      p_owner            VARCHAR2 DEFAULT NULL,
+      p_table            VARCHAR2 DEFAULT NULL,
       p_source_owner     VARCHAR2 DEFAULT NULL,
       p_source_table     VARCHAR2 DEFAULT NULL,
       p_partname         VARCHAR2 DEFAULT NULL,
       p_idx_tablespace   VARCHAR2 DEFAULT NULL,
       p_index_drop       VARCHAR2 DEFAULT NULL,
-      p_oper_id   	 NUMBER   DEFAULT NULL,
-      p_runmode		 VARCHAR2 DEFAULT NULL
+      p_handle_fkeys     VARCHAR2 DEFAULT NULL,
+      p_oper_id          NUMBER DEFAULT NULL,
+      p_runmode          VARCHAR2 DEFAULT NULL
    );
 END td_owbapi;
 /

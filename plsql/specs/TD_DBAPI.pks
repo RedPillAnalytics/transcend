@@ -91,6 +91,7 @@ IS
       p_partname         VARCHAR2 DEFAULT NULL,
       p_idx_tablespace   VARCHAR2 DEFAULT NULL,
       p_index_drop       VARCHAR2 DEFAULT 'yes',
+      p_handle_fkeys     VARCHAR2 DEFAULT 'yes',
       p_gather_stats     VARCHAR2 DEFAULT 'yes',
       p_statpercent      NUMBER DEFAULT DBMS_STATS.auto_sample_size,
       p_statdegree       NUMBER DEFAULT DBMS_STATS.auto_degree,
