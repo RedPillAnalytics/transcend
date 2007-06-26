@@ -1361,8 +1361,7 @@ IS
                                            FROM dba_constraints
                                           WHERE table_name = UPPER( p_table )
                                             AND owner = UPPER( p_owner )
-                                            AND constraint_type = 'P' 
-					    AND status = 'DISABLED'))
+                                            AND constraint_type = 'P' ))
          LOOP
             td_core.exec_auto( c_en_for_keys.DDL, o_app.runmode );
             o_app.log_msg( c_en_for_keys.msg );
