@@ -80,8 +80,8 @@ AS
    EXCEPTION
       WHEN e_no_table
       THEN
-         raise_application_error( get_err_cd( 'no_ext_tab' ),
-                                  get_err_msg( 'no_ext_tab' ));
+         raise_application_error( get_err_cd( 'no_tab' ),
+                                  get_err_msg( 'no_tab' ) || ': '||self.object_owner||'.'||self.object_name);
    END audit_ext_tab;
    MEMBER PROCEDURE process( p_keep_source VARCHAR2 DEFAULT 'no' )
    IS
