@@ -74,7 +74,8 @@ AS
                                          p_idx_tablespace      => p_idx_tablespace,
                                          p_index_drop          => NVL( p_index_drop,
                                                                        'yes' ),
-                                         p_handle_fkeys        => p_handle_fkeys,
+                                         p_handle_fkeys        => NVL( p_handle_fkeys,
+								       'yes'),
                                          p_statistics          => p_statistics,
                                          p_runmode             => o_app.runmode
                                        );
