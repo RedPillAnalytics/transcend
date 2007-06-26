@@ -25,6 +25,7 @@ AS
       p_idx_tablespace   VARCHAR2 DEFAULT NULL,
       p_index_drop       VARCHAR2 DEFAULT NULL,
       p_handle_fkeys     VARCHAR2 DEFAULT NULL,
+      p_statistics	 VARCHAR2 DEFAULT NULL, 
       p_oper_id          NUMBER DEFAULT NULL,
       p_runmode          VARCHAR2 DEFAULT NULL
    );
