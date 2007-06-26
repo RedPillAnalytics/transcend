@@ -307,10 +307,16 @@ IS
                                        );
 
       -- need this to determine how to build constraints associated with indexes on target table
-      SELECT partitioned
-        INTO l_targ_part
-        FROM dba_tables
-       WHERE table_name = UPPER( p_table ) AND owner = UPPER( p_owner );
+      BEGIN
+	 SELECT partitioned
+           INTO l_targ_part
+           FROM dba_tables
+	  WHERE table_name = UPPER( p_table ) AND owner = UPPER( p_owner );
+      EXCEPTION
+	 WHEN no_data_found
+	 THEN
+           o_app.log_msg( 'Table ' || l_tab_name || ' does not exist' );
+      END;
 
       o_app.set_action( 'Build constraints' );
       o_app.log_msg( 'Adding constraints on ' || l_tab_name );
@@ -1134,7 +1140,7 @@ IS
       p_idx_tablespace   VARCHAR2 DEFAULT NULL,
       p_index_drop       VARCHAR2 DEFAULT 'yes',
       p_handle_fkeys     VARCHAR2 DEFAULT 'yes',
-      p_gather_stats     VARCHAR2 DEFAULT 'yes',
+      p_statistics       VARCHAR2 DEFAULT NULL,
       p_statpercent      NUMBER DEFAULT DBMS_STATS.auto_sample_size,
       p_statdegree       NUMBER DEFAULT DBMS_STATS.auto_degree,
       p_statmethod       VARCHAR2 DEFAULT DBMS_STATS.get_param( 'method_opt' ),
@@ -1182,10 +1188,9 @@ IS
                       WHERE table_name = UPPER( p_table )
                         AND table_owner = UPPER( p_owner ));
 
-      -- either gather stats on the table prior to exchanging
-      -- or get the stats from the current partition and import it in for the table
+      -- how to handle statistics for the source table
       CASE
-         WHEN td_core.is_true( p_gather_stats )
+         WHEN REGEXP_LIKE( 'compute', p_statistics, 'i' )
          THEN
             o_app.set_action( 'Gather stats on new partition' );
 
@@ -1200,7 +1205,7 @@ IS
             END IF;
 
             o_app.log_msg( 'Statistics gathered on table ' || l_src_name, 3 );
-         WHEN NOT td_core.is_true( p_gather_stats )
+         WHEN REGEXP_LIKE( 'transfer', p_statistics, 'i' )
          THEN
             IF NOT o_app.is_debugmode
             THEN
@@ -1242,7 +1247,9 @@ IS
                            || l_src_name,
                            3
                          );
-      END CASE;
+	 ELSE
+	    NULL;
+	 END CASE;
 
       -- build the indexes on the stage table just like the target table
       build_indexes( p_owner             => p_source_owner,
@@ -1278,7 +1285,8 @@ IS
                                             FROM dba_constraints
                                            WHERE table_name = UPPER( p_table )
                                              AND owner = UPPER( p_owner )
-                                             AND constraint_type = 'P' ))
+                                             AND constraint_type = 'P' 
+					     AND status = 'ENABLED'))
          LOOP
             td_core.exec_auto( c_dis_for_keys.DDL, o_app.runmode );
             o_app.log_msg( c_dis_for_keys.msg );
@@ -1353,7 +1361,8 @@ IS
                                            FROM dba_constraints
                                           WHERE table_name = UPPER( p_table )
                                             AND owner = UPPER( p_owner )
-                                            AND constraint_type = 'P' ))
+                                            AND constraint_type = 'P' 
+					    AND status = 'DISABLED'))
          LOOP
             td_core.exec_auto( c_en_for_keys.DDL, o_app.runmode );
             o_app.log_msg( c_en_for_keys.msg );
