@@ -54,6 +54,7 @@ AS
       p_idx_tablespace   VARCHAR2 DEFAULT NULL,
       p_index_drop       VARCHAR2 DEFAULT NULL,
       p_handle_fkeys     VARCHAR2 DEFAULT NULL,
+      p_statistics	 VARCHAR2 DEFAULT NULL, 
       p_oper_id          NUMBER DEFAULT NULL,
       p_runmode          VARCHAR2 DEFAULT NULL
    )
@@ -73,11 +74,8 @@ AS
                                          p_idx_tablespace      => p_idx_tablespace,
                                          p_index_drop          => NVL( p_index_drop,
                                                                        'yes' ),
-                                         p_handle_fkeys        => NVL( p_handle_fkeys,
-                                                                       'yes'
-                                                                     ),
-                                         -- OWB can handle gathering stats
-                                         p_gather_stats        => 'no',
+                                         p_handle_fkeys        => p_handle_fkeys,
+                                         p_statistics          => p_statistics,
                                          p_runmode             => o_app.runmode
                                        );
          WHEN p_owner IS NOT NULL AND p_table IS NOT NULL
