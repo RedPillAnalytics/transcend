@@ -1,3 +1,5 @@
+COLUMN CON_E_RENAME format a30
+
 var p_table VARCHAR2(30)
 var p_tablespace VARCHAR2(30)
 var p_source_table VARCHAR2(30)
@@ -8,18 +10,18 @@ var p_seg_attributes VARCHAR2 (3)
 var l_targ_part VARCHAR2(3)
 var p_owner VARCHAR2(30)
 var p_table VARCHAR2(30)
+var p_handle_fkeys VARCHAR2(3)
 
-EXEC :p_table := 'test_stg'
-     EXEC :p_tablespace := NULL;
+EXEC :p_tablespace := NULL;
 EXEC :p_constraint_regexp := NULL;
-EXEC :p_source_table := 'test_dim';
-EXEC :p_source_owner := 'stewart';
+EXEC :p_owner := 'whimport';
+EXEC :p_table := 'customer_scd';
+EXEC :p_source_owner := 'whdata';
+EXEC :p_source_table := 'customer_dim';
 EXEC :p_constraint_type := NULL;
 EXEC :p_seg_attributes := 'no';
 EXEC :l_targ_part := 'no';
-EXEC :p_owner := 'stewart';
-EXEC :p_table := 'test_dim';
-
+EXEC :p_handle_fkeys := 'yes';
 
 
 SELECT
@@ -101,18 +103,35 @@ SELECT
                 THEN 'F'
                 ELSE constraint_type || 'K'
                 END con_e_ext
-           FROM dba_constraints
-          WHERE (table_name = upper( :p_source_table )
-		  AND owner = upper( :p_source_owner )
-		  AND REGEXP_LIKE( constraint_name,
-				   nvl( :p_constraint_regexp, '.' ),
-				   'i'
-				 )
-		  AND REGEXP_LIKE( constraint_type, nvl( :p_constraint_type, '.' ), 'i' ))
-	     OR (constraint_type = 'R'
-		  AND r_constraint_name IN( SELECT constraint_name
-					      FROM dba_constraints
-					     WHERE table_name = upper( :p_table )
-					       AND owner = upper( :p_owner )
-					       AND constraint_type = 'P' )))
+           FROM (SELECT owner, 
+			constraint_name,
+			constraint_type,
+			index_owner, 
+			index_name
+		   FROM dba_constraints
+		  WHERE (table_name = upper( :p_source_table )
+			  AND owner = upper( :p_source_owner )
+			  AND REGEXP_LIKE( constraint_name,
+					   nvl( :p_constraint_regexp, '.' ),
+					   'i'
+					 )
+			  AND REGEXP_LIKE( constraint_type, nvl( :p_constraint_type, '.' ), 'i' ))
+			UNION
+		 SELECT owner, 
+			constraint_name,
+			constraint_type,
+			index_owner, 
+			index_name
+		   FROM dba_constraints
+		  WHERE constraint_type = 'R'
+		    AND r_constraint_name IN ( SELECT constraint_name
+						FROM dba_constraints
+					       WHERE table_name = upper( :p_source_table )
+						 AND owner = upper( :p_source_owner )
+						 AND constraint_type = CASE
+						                         WHEN td_core.get_yn_ind( :p_handle_fkeys ) = 'yes'
+						                         THEN 'P'
+						                         ELSE '~'
+						                         END
+					    )))
 
