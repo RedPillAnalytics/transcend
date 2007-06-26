@@ -161,7 +161,7 @@ AS
          DBMS_APPLICATION_INFO.set_module( module, action );
       END IF;
 
-      log_msg( 'New MODULE "' || module || '" beginning in RUNMODE "' || runmode || '"',
+      log_msg( 'MODULE "' || module || '" beginning in RUNMODE "' || runmode || '"',
                4 );
       log_msg( 'Inital ACTION attribute set to "' || action || '"', 4 );
 
