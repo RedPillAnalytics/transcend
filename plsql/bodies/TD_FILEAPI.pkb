@@ -83,17 +83,18 @@ IS
                NULL;
          END CASE;
 
-         -- no matching filehub entries are found
-         IF NOT l_rows
-         THEN
-            raise_application_error( get_err_cd( 'incorrect_parameters' ),
-                                     get_err_msg( 'incorrect_parameters' )
-                                   );
-         END IF;
-
          -- need this commit to clear out the contents of the DIR_LIST table
          COMMIT;
       END LOOP;
+      
+      -- no matching filehub entries are found
+      IF NOT l_rows
+      THEN
+         raise_application_error( get_err_cd( 'incorrect_parameters' ),
+                                  get_err_msg( 'incorrect_parameters' )
+                                );
+      END IF;
+
 
       o_app.clear_app_info;
    EXCEPTION
