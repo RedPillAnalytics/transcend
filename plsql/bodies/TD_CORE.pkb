@@ -243,14 +243,14 @@ AS
    AS
       l_partitioned   dba_tables.partitioned%TYPE;
    BEGIN
-      
-      IF NOT table_exists(upper(p_owner),upper(p_table))
+      IF NOT table_exists( UPPER( p_owner ), UPPER( p_table ))
       THEN
          raise_application_error( get_err_cd( 'no_tab' ),
-                                  get_err_msg( 'no_tab' )||': '||p_owner||'.'||p_table
+                                  get_err_msg( 'no_tab' ) || ': ' || p_owner || '.'
+                                  || p_table
                                 );
       END IF;
-      
+
       SELECT partitioned
         INTO l_partitioned
         FROM dba_tables
