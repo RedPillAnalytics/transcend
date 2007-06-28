@@ -308,14 +308,14 @@ IS
 
       -- need this to determine how to build constraints associated with indexes on target table
       BEGIN
-	 SELECT partitioned
+         SELECT partitioned
            INTO l_targ_part
            FROM dba_tables
-	  WHERE table_name = UPPER( p_table ) AND owner = UPPER( p_owner );
+          WHERE table_name = UPPER( p_table ) AND owner = UPPER( p_owner );
       EXCEPTION
-	 WHEN no_data_found
-	 THEN
-           o_app.log_msg( 'Table ' || l_tab_name || ' does not exist' );
+         WHEN NO_DATA_FOUND
+         THEN
+            o_app.log_msg( 'Table ' || l_tab_name || ' does not exist' );
       END;
 
       o_app.set_action( 'Build constraints' );
@@ -1247,9 +1247,9 @@ IS
                            || l_src_name,
                            3
                          );
-	 ELSE
-	    NULL;
-	 END CASE;
+         ELSE
+            NULL;
+      END CASE;
 
       -- build the indexes on the stage table just like the target table
       build_indexes( p_owner             => p_source_owner,
@@ -1266,27 +1266,28 @@ IS
       THEN
          o_app.set_action( 'Disable foreign keys' );
 
-         FOR c_dis_for_keys IN ( SELECT    'alter table '
-                                        || owner
-                                        || '.'
-                                        || table_name
-                                        || ' disable constraint '
-                                        || constraint_name DDL,
-                                           'Constraint '
-                                        || constraint_name
-                                        || ' disabled on '
-                                        || owner
-                                        || '.'
-                                        || table_name msg
-                                  FROM dba_constraints
-                                 WHERE constraint_type = 'R'
-                                   AND r_constraint_name IN(
-                                          SELECT constraint_name
-                                            FROM dba_constraints
-                                           WHERE table_name = UPPER( p_table )
-                                             AND owner = UPPER( p_owner )
-                                             AND constraint_type = 'P' 
-					     AND status = 'ENABLED'))
+         FOR c_dis_for_keys IN
+            ( SELECT    'alter table '
+                     || owner
+                     || '.'
+                     || table_name
+                     || ' disable constraint '
+                     || constraint_name DDL,
+                        'Constraint '
+                     || constraint_name
+                     || ' disabled on '
+                     || owner
+                     || '.'
+                     || table_name msg
+               FROM dba_constraints
+              WHERE constraint_type = 'R'
+                AND r_constraint_name IN(
+                       SELECT constraint_name
+                         FROM dba_constraints
+                        WHERE table_name = UPPER( p_table )
+                          AND owner = UPPER( p_owner )
+                          AND constraint_type = 'P'
+                          AND status = 'ENABLED' ))
          LOOP
             td_core.exec_auto( c_dis_for_keys.DDL, o_app.runmode );
             o_app.log_msg( c_dis_for_keys.msg );
