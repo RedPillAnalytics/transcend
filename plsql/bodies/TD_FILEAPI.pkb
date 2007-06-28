@@ -86,7 +86,7 @@ IS
          -- need this commit to clear out the contents of the DIR_LIST table
          COMMIT;
       END LOOP;
-      
+
       -- no matching filehub entries are found
       IF NOT l_rows
       THEN
@@ -94,7 +94,6 @@ IS
                                   get_err_msg( 'incorrect_parameters' )
                                 );
       END IF;
-
 
       o_app.clear_app_info;
    EXCEPTION
