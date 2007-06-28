@@ -161,14 +161,13 @@ AS
          DBMS_APPLICATION_INFO.set_module( module, action );
       END IF;
 
-      log_msg( 'MODULE "' || module || '" beginning in RUNMODE "' || runmode || '"',
-               4 );
+      log_msg( 'MODULE "' || module || '" beginning in RUNMODE "' || runmode || '"', 4 );
       log_msg( 'Inital ACTION attribute set to "' || action || '"', 4 );
 
       -- set session level parameters
       FOR c_params IN
          ( SELECT CASE
-                  WHEN REGEXP_LIKE( NAME, 'enable|disable', 'i' )
+                     WHEN REGEXP_LIKE( NAME, 'enable|disable', 'i' )
                         THEN 'alter session ' || NAME || ' ' || VALUE
                      ELSE 'alter session set ' || NAME || '=' || VALUE
                   END DDL
