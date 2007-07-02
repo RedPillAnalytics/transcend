@@ -380,7 +380,13 @@ AS
    BEGIN
       log_msg( l_msg, 1, 'no' );
    END log_err;
-   MEMBER PROCEDURE log_cnt_msg( p_count NUMBER, p_msg VARCHAR2 DEFAULT NULL )
+   MEMBER PROCEDURE log_cnt_msg( 
+      p_count NUMBER, 
+      p_msg VARCHAR2 DEFAULT NULL,
+      p_level     NUMBER DEFAULT 2,
+      p_stdout    VARCHAR2 DEFAULT 'yes',
+      p_oper_id   NUMBER DEFAULT NULL 
+   )
    AS
       PRAGMA AUTONOMOUS_TRANSACTION;
    BEGIN
@@ -389,13 +395,16 @@ AS
                   ( client_info, module,
                     action, runmode, session_id, row_cnt
                   )
-           VALUES ( NVL( SELF.client_info, 'Not Set' ), NVL( SELF.module, 'Not Set' ),
-                    NVL( SELF.action, 'Not Set' ), SELF.runmode, SELF.session_id, p_count
+           VALUES ( NVL( SELF.client_info, 'NA' ), NVL( SELF.module, 'NA' ),
+                    NVL( SELF.action, 'NA' ), SELF.runmode, SELF.session_id, p_count
                   );
 
       -- if a message was provided to this procedure, then write it to the log table
       -- if not, then simply use the default message below
-      log_msg( NVL( p_msg, 'Number of records selected/affected: ' || p_count ));
+      log_msg( NVL( p_msg, 'Number of records selected/affected') ||': '|| p_count,
+	       p_level,
+	       p_stdout,
+	       p_oper_id);
       COMMIT;
    END log_cnt_msg;
    -- method for returning boolean if the application is registered
