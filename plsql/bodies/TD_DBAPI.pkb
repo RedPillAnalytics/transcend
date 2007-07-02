@@ -508,6 +508,156 @@ IS
          RAISE;
    END build_constraints;
 
+   -- builds the constraints from one table on another
+   PROCEDURE enable_constraints(
+      p_owner               VARCHAR2,
+      p_table               VARCHAR2,
+      p_constraint_type     VARCHAR2 DEFAULT NULL,
+      p_constraint_regexp   VARCHAR2 DEFAULT NULL,
+      p_runmode             VARCHAR2 DEFAULT NULL
+   )
+   IS
+      l_con_cnt    NUMBER         := 0;
+      l_tab_name   VARCHAR2( 61 ) := p_owner || '.' || p_table;
+      l_rows       BOOLEAN        := FALSE;
+      o_app        applog
+                      := applog( p_module       => 'enable_constraints',
+                                 p_runmode      => p_runmode );
+   BEGIN
+      o_app.set_action( 'Enable constraints' );
+      o_app.log_msg( 'Enable constraints on ' || l_tab_name );
+
+      FOR c_constraints IN ( SELECT    'alter table '
+                                    || owner
+                                    || '.'
+                                    || table_name
+                                    || ' enable constraint '
+                                    || constraint_name constraint_ddl,
+				       'Constraint '
+				    || constraint_name
+				    || ' enabled on '
+                                    || owner
+                                    || '.'
+                                    || table_name msg                                     
+                              FROM dba_constraints
+                             WHERE table_name = UPPER( p_table )
+				AND owner = UPPER( p_owner )
+				AND status='DISABLED'
+                               AND REGEXP_LIKE( constraint_name,
+                                                NVL( p_constraint_regexp, '.' ),
+                                                'i'
+                                              )
+                               AND REGEXP_LIKE( constraint_type,
+                                                NVL( p_constraint_type, '.' ),
+                                                'i'
+                                              ))
+      LOOP
+         -- catch empty cursor sets
+         l_rows := TRUE;
+         td_core.exec_auto( c_constraints.constraint_ddl, o_app.runmode );
+         l_con_cnt := l_con_cnt + 1;
+         o_app.log_msg( c_constraints.msg );
+      END LOOP;
+
+      IF NOT l_rows
+      THEN
+         o_app.log_msg( 'No matching disabled constraints found on ' || l_tab_name );
+      ELSE
+         o_app.log_msg(    l_con_cnt
+                        || ' constraint'
+                        || CASE
+                              WHEN l_con_cnt = 1
+                                 THEN NULL
+                              ELSE 's'
+                           END
+                        || ' enabled on '
+                        || l_tab_name
+                      );
+      END IF;
+
+      o_app.clear_app_info;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         o_app.log_err;
+         RAISE;
+   END enable_constraints;
+   
+   -- builds the constraints from one table on another
+   PROCEDURE disable_constraints(
+      p_owner               VARCHAR2,
+      p_table               VARCHAR2,
+      p_constraint_type     VARCHAR2 DEFAULT NULL,
+      p_constraint_regexp   VARCHAR2 DEFAULT NULL,
+      p_runmode             VARCHAR2 DEFAULT NULL
+   )
+   IS
+      l_con_cnt    NUMBER         := 0;
+      l_tab_name   VARCHAR2( 61 ) := p_owner || '.' || p_table;
+      l_rows       BOOLEAN        := FALSE;
+      o_app        applog
+                      := applog( p_module       => 'disable_constraints',
+                                 p_runmode      => p_runmode );
+   BEGIN
+      o_app.set_action( 'Disable constraints' );
+      o_app.log_msg( 'Disabling constraints on ' || l_tab_name );
+
+      FOR c_constraints IN ( SELECT    'alter table '
+                                    || owner
+                                    || '.'
+                                    || table_name
+                                    || ' disable constraint '
+                                    || constraint_name constraint_ddl,
+				       'Constraint '
+				    || constraint_name
+				    || ' disabled on '
+                                    || owner
+                                    || '.'
+                                    || table_name msg                                     
+                              FROM dba_constraints
+                             WHERE table_name = UPPER( p_table )
+				AND owner = UPPER( p_owner )
+				AND status='ENABLED'
+                               AND REGEXP_LIKE( constraint_name,
+                                                NVL( p_constraint_regexp, '.' ),
+                                                'i'
+                                              )
+                               AND REGEXP_LIKE( constraint_type,
+                                                NVL( p_constraint_type, '.' ),
+                                                'i'
+                                              ))
+      LOOP
+         -- catch empty cursor sets
+         l_rows := TRUE;
+         td_core.exec_auto( c_constraints.constraint_ddl, o_app.runmode );
+         l_con_cnt := l_con_cnt + 1;
+         o_app.log_msg( c_constraints.msg );
+      END LOOP;
+
+      IF NOT l_rows
+      THEN
+         o_app.log_msg( 'No matching enabled constraints found on ' || l_tab_name );
+      ELSE
+         o_app.log_msg(    l_con_cnt
+                        || ' constraint'
+                        || CASE
+                              WHEN l_con_cnt = 1
+                                 THEN NULL
+                              ELSE 's'
+                           END
+                        || ' disabled on '
+                        || l_tab_name
+                      );
+      END IF;
+
+      o_app.clear_app_info;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         o_app.log_err;
+         RAISE;
+   END disable_constraints;   
+
    -- drop particular indexes from a table
    PROCEDURE drop_indexes(
       p_owner          VARCHAR2,
@@ -1281,13 +1431,13 @@ IS
                      || table_name msg
                FROM dba_constraints
               WHERE constraint_type = 'R'
+		 AND status = 'ENABLED'
                 AND r_constraint_name IN(
                        SELECT constraint_name
                          FROM dba_constraints
                         WHERE table_name = UPPER( p_table )
                           AND owner = UPPER( p_owner )
-                          AND constraint_type = 'P'
-                          AND status = 'ENABLED' ))
+                          AND constraint_type = 'P' ))
          LOOP
             td_core.exec_auto( c_dis_for_keys.DDL, o_app.runmode );
             o_app.log_msg( c_dis_for_keys.msg );
@@ -1517,6 +1667,16 @@ IS
             NULL;
       END CASE;
 
+      IF NOT o_app.is_debugmode
+      THEN
+         o_app.log_msg(    'Making specified indexes on '
+                        || p_owner
+                        || '.'
+                        || p_table
+                        || ' unusable'
+                      );
+      END IF;
+
       o_app.set_action( 'Populate PARTNAME table' );
 
       IF p_partname IS NOT NULL OR p_source_object IS NOT NULL
@@ -1537,6 +1697,7 @@ IS
       -- this cursor will contain all the ALTER INDEX statements necessary to mark indexes unusable
       -- the contents of the cursor depends very much on the parameters specified
       -- also depends on the contents of the PARTNAME global temporary table
+      o_app.set_action( 'Calculate indexes to affect');
       FOR c_idx IN
          ( SELECT DISTINCT    'alter index '
                            || owner
@@ -1590,6 +1751,7 @@ IS
                       AND NOT REGEXP_LIKE( index_type, 'iot', 'i' )
                  ORDER BY idx_ddl_type, partition_position )
       LOOP
+	 o_app.set_action( 'Execute index DDL');
          l_rows := TRUE;
          td_core.exec_auto( c_idx.DDL, p_runmode => o_app.runmode );
          l_pidx_cnt := c_idx.num_partitions;
@@ -1708,7 +1870,7 @@ IS
       -- now see if any global are still unusable
       FOR c_gidx IN ( SELECT  table_name,
                               'alter index ' || owner || '.' || index_name
-                              || ' rebuild' DDL
+                             || ' rebuild parallel nologging' DDL
                          FROM all_indexes
                         WHERE table_name = UPPER( p_table )
                           AND table_owner = UPPER( p_owner )
