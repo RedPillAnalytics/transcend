@@ -29,6 +29,22 @@ IS
       p_tablespace          VARCHAR2 DEFAULT NULL,
       p_runmode             VARCHAR2 DEFAULT NULL
    );
+      
+   PROCEDURE disable_constraints(
+      p_owner               VARCHAR2,
+      p_table               VARCHAR2,
+      p_constraint_type     VARCHAR2 DEFAULT NULL,
+      p_constraint_regexp   VARCHAR2 DEFAULT NULL,
+      p_runmode             VARCHAR2 DEFAULT NULL
+   );
+
+   PROCEDURE enable_constraints(
+      p_owner               VARCHAR2,
+      p_table               VARCHAR2,
+      p_constraint_type     VARCHAR2 DEFAULT NULL,
+      p_constraint_regexp   VARCHAR2 DEFAULT NULL,
+      p_runmode             VARCHAR2 DEFAULT NULL
+   );
 
    PROCEDURE drop_indexes(
       p_owner          VARCHAR2,
