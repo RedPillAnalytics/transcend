@@ -1,31 +1,23 @@
+SET echo off
+SET feedback off
+SET timing off
+
 var p_table VARCHAR2(30)
-var p_tablespace VARCHAR2(30)
-var p_source_table VARCHAR2(30)
-var p_source_owner VARCHAR2(30)
-var p_constraint_regexp VARCHAR2(30)
-var p_constraint_type VARCHAR2(30)
-var p_seg_attributes VARCHAR2 (3)
-var l_targ_part VARCHAR2(3)
 var p_owner VARCHAR2(30)
 var p_table VARCHAR2(30)
-var p_handle_fkeys VARCHAR2(3)
-var p_part_type VARCHAR2(30)
 var p_index_type VARCHAR2(30)
 var p_index_regexp VARCHAR2(30)
 
 EXEC :p_tablespace := NULL;
-EXEC :p_constraint_regexp := NULL;
-EXEC :p_owner := 'stewart';
-EXEC :p_table := 'test1_prd';
-EXEC :p_source_owner := 'stewart';
-EXEC :p_source_table := 'test2_prd';
-EXEC :p_constraint_type := NULL;
-EXEC :p_seg_attributes := 'no';
-EXEC :l_targ_part := 'no';
-EXEC :p_handle_fkeys := 'yes';
+EXEC :p_owner := 'whdata';
+EXEC :p_table := 'ar_transaction_fact';
 --EXEC :p_part_type := 'local';
 EXEC :p_index_type := NULL;
-EXEC :p_index_regexp := NULL;
+EXEC :p_index_regexp := '_r$';
+
+SET feedback on
+SET echo on
+SET timing on
 
 SELECT DISTINCT    'alter index '
        || owner
