@@ -1564,6 +1564,9 @@ IS
       THEN
          INSERT INTO partname
               VALUES ( p_partname );
+	 o_app.log_cnt_msg( SQL%ROWCOUNT,
+			    'Number of records inserted into PARTNAME table',
+			    4);
       ELSE
          IF p_source_column IS NULL
          THEN
@@ -1601,6 +1604,9 @@ IS
                            || 'ORDER By partition_position',
                            p_runmode      => o_app.runmode
                          );
+	 o_app.log_cnt_msg( SQL%ROWCOUNT,
+			    'Number of records inserted into PARTNAME table',
+			    4);
       END IF;
 
       o_app.clear_app_info;
@@ -1690,7 +1696,8 @@ IS
                        p_source_object      => p_source_object,
                        p_source_column      => p_source_column,
                        p_d_num              => p_d_num,
-                       p_p_num              => p_p_num
+                       p_p_num              => p_p_num,
+		       p_runmode	    => o_app.runmode
                      );
       END IF;
 
