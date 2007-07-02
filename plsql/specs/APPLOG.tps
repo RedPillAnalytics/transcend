@@ -32,7 +32,13 @@ CREATE OR REPLACE TYPE applog UNDER basetype(
       p_oper_id   NUMBER DEFAULT NULL
    ),
    MEMBER PROCEDURE log_err,
-   MEMBER PROCEDURE log_cnt_msg( p_count NUMBER, p_msg VARCHAR2 DEFAULT NULL ),
+   MEMBER PROCEDURE log_cnt_msg( 
+      p_count NUMBER, 
+      p_msg VARCHAR2 DEFAULT NULL,
+      p_level     NUMBER DEFAULT 2,
+      p_stdout    VARCHAR2 DEFAULT 'yes',
+      p_oper_id   NUMBER DEFAULT NULL
+   ),
    MEMBER FUNCTION get_err_cd( p_name VARCHAR2 )
       RETURN NUMBER,
    MEMBER FUNCTION get_err_msg( p_name VARCHAR2 )
