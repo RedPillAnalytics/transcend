@@ -3,21 +3,21 @@ AS
    PROCEDURE get_dir_list( p_directory IN VARCHAR2 )
    AS
       LANGUAGE JAVA
-      NAME 'CoreUtils.getDirList( java.lang.String )';
+      NAME 'TdCore.getDirList( java.lang.String )';
 
    -- procedure to copy a file from one place to another
    FUNCTION copy_file( p_srcfile VARCHAR2, p_dstfile VARCHAR2 )
       RETURN NUMBER
    AS
       LANGUAGE JAVA
-      NAME 'CoreUtils.copyFile( java.lang.String, java.lang.String ) return integer';
+      NAME 'TdCore.copyFile( java.lang.String, java.lang.String ) return integer';
 
    -- procedure calls Utils.runCmd java method
    FUNCTION host_cmd( p_cmd IN VARCHAR2, p_stdin IN VARCHAR2 )
       RETURN NUMBER
    AS
       LANGUAGE JAVA
-      NAME 'CoreUtils.hostCmd(java.lang.String, java.lang.String) return integer';
+      NAME 'TdCore.hostCmd(java.lang.String, java.lang.String) return integer';
 
    -- procedure executes the copy_file function and translates the return code to an exception
    PROCEDURE copy_file(
