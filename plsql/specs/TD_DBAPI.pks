@@ -109,9 +109,9 @@ IS
       p_index_drop       VARCHAR2 DEFAULT 'yes',
       p_handle_fkeys     VARCHAR2 DEFAULT 'yes',
       p_statistics       VARCHAR2 DEFAULT NULL,
-      p_statpercent      NUMBER DEFAULT DBMS_STATS.auto_sample_size,
-      p_statdegree       NUMBER DEFAULT DBMS_STATS.auto_degree,
-      p_statmethod       VARCHAR2 DEFAULT DBMS_STATS.get_param( 'method_opt' ),
+      p_statpercent      NUMBER DEFAULT NULL,
+      p_statdegree       NUMBER DEFAULT NULL,
+      p_statmethod       VARCHAR2 DEFAULT NULL,
       p_runmode          VARCHAR2 DEFAULT NULL
    );
 
@@ -135,5 +135,19 @@ IS
       p_table     VARCHAR2,
       p_runmode   VARCHAR2 DEFAULT NULL
    );
+
+   PROCEDURE gather_stats(
+      p_owner            VARCHAR2,
+      p_table            VARCHAR2 DEFAULT NULL,
+      p_partname         VARCHAR2 DEFAULT NULL,
+      p_percent      	 NUMBER   DEFAULT dbms_stats.auto_sample_size,
+      p_degree       	 NUMBER   DEFAULT dbms_stats.auto_degree,
+      p_method       	 VARCHAR2 DEFAULT 'FOR ALL COLUMNS SIZE AUTO',
+      p_granularity	 VARCHAR2 DEFAULT 'AUTO',
+      p_cascade		 BOOLEAN  DEFAULT dbms_stats.auto_cascade,
+      p_options		 VARCHAR2 DEFAULT 'GATHER AUTO',
+      p_runmode          VARCHAR2 DEFAULT NULL
+   );
+
 END td_dbapi;
 /
