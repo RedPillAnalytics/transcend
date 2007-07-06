@@ -217,7 +217,6 @@ AS
 
    -- returns a boolean
    -- does a check to see if a table exists
-   -- raises an error if it doesn't
    FUNCTION table_exists( p_owner VARCHAR2, p_table VARCHAR2 )
       RETURN BOOLEAN
    AS
@@ -237,7 +236,6 @@ AS
 
    -- returns a boolean
    -- does a check to see if table is partitioned
-   -- raises an error if it doesn't
    FUNCTION is_part_table( p_owner VARCHAR2, p_table VARCHAR2 )
       RETURN BOOLEAN
    AS
@@ -272,7 +270,6 @@ AS
 
    -- returns a boolean
    -- does a check to see if a object exists
-   -- raises an error if it doesn't
    FUNCTION object_exists( p_owner VARCHAR2, p_object VARCHAR2 )
       RETURN BOOLEAN
    AS
@@ -292,6 +289,77 @@ AS
          o_app.clear_app_info;
          RETURN FALSE;
    END object_exists;
+   
+   -- checks things about a table depending on the parameters passed
+   -- raises an exception if the specified things are not true
+   PROCEDURE check_table
+      ( p_owner       VARCHAR2,
+	p_table       VARCHAR2,
+	p_partname    VARCHAR2,
+	p_partitioned VARCHAR2,
+	p_iot         VARCHAR2,
+	p_compression VARCHAR2 )
+   AS
+      l_seg_name       VARCHAR2( 61 )   := p_owner || '.' || p_table || CASE WHEN p_partname IS NOT NULL THEN ':'||p_partname ELSE NULL END;
+      l_partitioned   dba_tables.partitioned%type;
+      l_iot_type      dba_tables.iot_type%type;
+      l_compression   dba_tables.compression%type;
+      l_partition_name dba_tab_partitions.partition_name%type;
+      o_app           applog	:= applog( p_module => 'object_exists' );
+   BEGIN
+      BEGIN
+	 SELECT partitioned,
+		iot_type,
+		CASE
+		WHEN p_partname IS NOT NULL
+		THEN dtp.compression
+		ELSE dt.compression
+		END,
+		partition_name
+	   INTO l_partitioned,
+		l_iot_type,
+		l_compression,
+		l_partition_name
+	   FROM dba_tables dt
+		left JOIN dba_tab_partitions dtp
+		ON dt.owner = dtp.table_owner AND
+		dt.table_name = dtp.table_name
+	  WHERE dt.owner = upper(p_owner)
+	    AND dt.table_name = upper(p_table)
+	    AND partition_name = upper(p_partname);
+      EXCEPTION
+	 WHEN NO_DATA_FOUND
+	 THEN
+	   raise_application_error( get_err_cd( 'no_tab' ),
+                                    get_err_msg( 'no_tab' ) || ': ' || l_seg_name
+                                  );
+      END;
+      
+      CASE
+   WHEN p_partname IS NOT NULL AND l_partition_name IS NULL
+      THEN
+         raise_application_error( get_err_cd( 'no_part' ),
+                                  get_err_msg( 'no_part' ) || ': ' || l_seg_name
+                                );
+   WHEN is_true(p_partitioned) AND NOT is_true(l_partitioned)
+      THEN
+         raise_application_error( get_err_cd( 'not_partitioned' ),
+                                  get_err_msg( 'not_partitioned' ) || ': ' || l_seg_name
+                                );
+   WHEN is_true(p_iot) AND l_iot_type <> 'IOT'
+      THEN
+         raise_application_error( get_err_cd( 'not_iot' ),
+                                  get_err_msg( 'not_iot' ) || ': ' || l_seg_name
+                                );
+   WHEN is_true(p_compression) AND NOT is_true(l_compression)
+      THEN
+         raise_application_error( get_err_cd( 'not_compressed' ),
+                                  get_err_msg( 'not_compressed' ) || ': ' || l_seg_name
+                                );
+   ELSE
+      NULL;
+   END CASE;
+   END check_table;   
 
    -- returns a boolean
    -- accepts a varchar2 and determines if regexp matches 'yes' or 'no'
