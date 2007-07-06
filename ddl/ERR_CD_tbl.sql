@@ -41,3 +41,6 @@ INSERT INTO err_cd (code,name,message) VALUES (-20024, 'parms_not_compatible','T
 INSERT INTO err_cd (code,name,message) VALUES (-20025, 'parm_not_configured','The specified parameter is not configured');
 INSERT INTO err_cd (code,name,message) VALUES (-20026, 'file_not_found','Expected file does not exist');
 INSERT INTO err_cd (code,name,message) VALUES (-20027, 'no_session_parm','The specified parameter name is not a recognized database parameter');
+INSERT INTO err_cd (code,name,message) VALUES (-20028, 'not_iot','The specified table is not index-organized');
+INSERT INTO err_cd (code,name,message) VALUES (-20029, 'not_compressed','The specified segment is not compresed');
+INSERT INTO err_cd (code,name,message) VALUES (-20030, 'no_part','The specified partition does not exist');
