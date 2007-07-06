@@ -212,6 +212,14 @@ IS
             o_app.log_msg( 'Index ' || c_indexes.idx_rename || ' built' );
             l_idx_cnt := l_idx_cnt + 1;
          EXCEPTION
+	    -- if a duplicate column list of indexes already exist, log it, but continue
+            WHEN e_dup_col_list
+            THEN
+            o_app.log_msg(    'Index comparable to '
+                           || c_indexes.index_name
+                           || ' already exists'
+                         );
+
             -- if this index_name already exists, try to rename it to something else
             WHEN e_dup_idx_name
             THEN
@@ -1486,6 +1494,19 @@ IS
                            || ' of table '
                            || l_tab_name
                          );
+	 WHEN OTHERS
+	 THEN
+	 -- need to drop indexes if there is an exception
+	 -- this is for rerunability
+	 IF td_core.is_true( p_index_drop )
+	 THEN
+            drop_indexes( p_owner        => p_source_owner,
+			  p_table        => p_source_table,
+			  p_runmode      => o_app.runmode
+			);
+	 END IF;
+	 RAISE;
+
       END;
 
       -- enable any foreign keys on other tables that reference this table
