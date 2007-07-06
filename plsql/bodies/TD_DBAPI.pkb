@@ -1976,26 +1976,6 @@ IS
 					    cascade	      => nvl(p_cascade,dbms_stats.auto_cascade),
 					    options	      => p_options);
 	 END IF;
-	 o_app.log_msg(    'Called DBMS_STATS.GATHER_SCHEMA_STATS with the following parameters:'
-			|| chr(10)
- 			|| 'ownname=>'
-			|| p_owner
-			|| ', estimate_percent=>'
-			|| nvl(p_percent,'dbms_stats.auto_sample_size')
-			|| ', method_opt=>'
-			|| p_method
-			|| ', degree=>'
-			|| nvl(p_degree,'dbms_stats.auto_degree')
-			|| ', granularity=>'
-			|| p_granularity
- 			|| ', p_cascade=>'
-			||  CASE
-			    WHEN nvl(p_cascade,'dbms_stats.auto_cascade') 
-			    THEN 'TRUE'
-			    ELSE 'FALSE' 
-			    END
-			|| ', p_options=>'
-			|| p_options, 4 );
 
       ELSE
 	 IF NOT o_app.is_debugmode
@@ -2008,27 +1988,6 @@ IS
 					   granularity 	     => p_granularity,
 					   cascade	     => nvl(p_cascade,dbms_stats.auto_cascade));
 	 END IF;
-	 o_app.log_msg(   'Called DBMS_STATS.GATHER_TABLE_STATS with the following parameters:'
-			|| chr(10)
-			|| 'ownname=>'
-			|| p_owner
-			|| ', tabname=>'
-			|| p_table
-			|| ', estimate_percent=>'
-			|| nvl(p_percent,'dbms_stats.auto_sample_size')
-			|| ', method_opt=>'
-			|| p_method
-			|| ', degree=>'
-			|| nvl(p_degree,'dbms_stats.auto_degree')
-			|| ', granularity=>'
-			|| p_granularity
-			|| ', p_cascade=>'
-			||  CASE
-			    WHEN nvl(p_cascade,'dbms_stats.auto_cascade')
-			    THEN 'TRUE'
-			    ELSE 'FALSE' 
-			    END, 
-			4);
       END IF;
 
       o_app.clear_app_info;
