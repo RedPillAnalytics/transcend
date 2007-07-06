@@ -1291,9 +1291,9 @@ IS
       p_index_drop       VARCHAR2 DEFAULT 'yes',
       p_handle_fkeys     VARCHAR2 DEFAULT 'yes',
       p_statistics       VARCHAR2 DEFAULT NULL,
-      p_statpercent      NUMBER DEFAULT DBMS_STATS.auto_sample_size,
-      p_statdegree       NUMBER DEFAULT DBMS_STATS.auto_degree,
-      p_statmethod       VARCHAR2 DEFAULT DBMS_STATS.get_param( 'method_opt' ),
+      p_statpercent      NUMBER DEFAULT NULL,
+      p_statdegree       NUMBER DEFAULT NULL,
+      p_statmethod       VARCHAR2 DEFAULT NULL,
       p_runmode          VARCHAR2 DEFAULT NULL
    )
    IS
@@ -1338,21 +1338,31 @@ IS
                       WHERE table_name = UPPER( p_table )
                         AND table_owner = UPPER( p_owner ));
 
+      -- build the indexes on the stage table just like the target table
+      build_indexes( p_owner             => p_source_owner,
+                     p_table             => p_source_table,
+                     p_source_owner      => p_owner,
+                     p_source_table      => p_table,
+                     p_part_type         => 'local',
+                     p_tablespace        => p_idx_tablespace,
+                     p_runmode           => o_app.runmode
+                   );
+
       -- how to handle statistics for the source table
       CASE
-         WHEN REGEXP_LIKE( 'compute', p_statistics, 'i' )
+         WHEN REGEXP_LIKE( 'gather', p_statistics, 'i' )
          THEN
-            o_app.set_action( 'Gather stats on new partition' );
+	   o_app.set_action( 'Gather stats on source table' );
+      
 
-            IF NOT o_app.is_debugmode
-            THEN
-               DBMS_STATS.gather_table_stats( UPPER( p_source_owner ),
-                                              UPPER( p_source_table ),
-                                              estimate_percent      => p_statpercent,
-                                              DEGREE                => p_statdegree,
-                                              method_opt            => p_statmethod
-                                            );
-            END IF;
+           gather_stats( p_owner	=> UPPER( p_source_owner ),
+			 p_table	=> UPPER( p_source_table ),
+			 p_percent  	=> p_statpercent,
+			 p_degree  	=> p_statdegree,
+			 p_method	=> p_statmethod,
+			 p_cascade	=> FALSE,
+			 p_runmode	=> o_app.runmode
+                       );
 
             o_app.log_msg( 'Statistics gathered on table ' || l_src_name, 3 );
          WHEN REGEXP_LIKE( 'transfer', p_statistics, 'i' )
@@ -1400,16 +1410,6 @@ IS
          ELSE
             NULL;
       END CASE;
-
-      -- build the indexes on the stage table just like the target table
-      build_indexes( p_owner             => p_source_owner,
-                     p_table             => p_source_table,
-                     p_source_owner      => p_owner,
-                     p_source_table      => p_table,
-                     p_part_type         => 'local',
-                     p_tablespace        => p_idx_tablespace,
-                     p_runmode           => o_app.runmode
-                   );
 
       -- disable any foreign keys on other tables that reference this table
       IF td_core.is_true( p_handle_fkeys )
@@ -1927,5 +1927,75 @@ IS
          o_app.log_err;
          RAISE;
    END usable_indexes;
+
+   PROCEDURE gather_stats(
+      p_owner            VARCHAR2,
+      p_table            VARCHAR2 DEFAULT NULL,
+      p_partname         VARCHAR2 DEFAULT NULL,
+      p_percent      	 NUMBER   DEFAULT dbms_stats.auto_sample_size,
+      p_degree       	 NUMBER   DEFAULT dbms_stats.auto_degree,
+      p_method       	 VARCHAR2 DEFAULT 'FOR ALL COLUMNS SIZE AUTO',
+      p_granularity	 VARCHAR2 DEFAULT 'AUTO',
+      p_cascade		 BOOLEAN  DEFAULT dbms_stats.auto_cascade,
+      p_options		 VARCHAR2 DEFAULT 'GATHER AUTO',
+      p_runmode          VARCHAR2 DEFAULT NULL
+   )
+   IS
+      l_rows   BOOLEAN          := FALSE;                       -- to catch empty cursors
+      o_app    applog
+         := applog( p_module       => 'usable_indexes',
+                    p_action       => 'Rebuild indexes',
+                    p_runmode      => p_runmode
+                  );
+   BEGIN
+      o_app.log_msg(    'Gathering statistics for '
+		     || CASE 
+		     WHEN p_partname IS NULL THEN null
+		     ELSE 'partition '||upper(p_partname)||' of table ' END
+		     || CASE
+		     WHEN p_table IS NULL
+		     THEN 'schema '
+		     ELSE NULL END
+                     || upper(p_owner)
+                     || CASE
+		     WHEN p_table IS NULL THEN NULL
+		     ELSE '.' END
+                     || upper(p_table)
+                   );
+      
+      o_app.set_action( 'Gathering statistics' );
+      IF p_table IS NULL
+      THEN
+	 IF NOT o_app.is_debugmode
+	 THEN
+	    dbms_stats.gather_schema_stats( ownname           => p_owner,
+					    estimate_percent  => p_percent,
+					    method_opt	   => p_method,
+					    degree		   => p_degree,
+					    granularity	   => p_granularity,
+					    cascade	   => p_cascade,
+					    options	   => p_options);
+	 END IF;
+      ELSE
+	 IF NOT o_app.is_debugmode
+	 THEN
+	    dbms_stats.gather_table_stats( ownname           => p_owner,
+					   tabname		  => p_table,
+					   estimate_percent  => p_percent,
+					   method_opt    	  => p_method,
+					   degree		  => p_degree,
+					   granularity 	  => p_granularity,
+					   cascade	      	  => p_cascade);
+	 END IF;
+      END IF;
+
+      o_app.clear_app_info;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         o_app.log_err;
+         RAISE;
+   END gather_stats;
+
 END td_dbapi;
 /
