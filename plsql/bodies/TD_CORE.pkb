@@ -289,82 +289,156 @@ AS
          o_app.clear_app_info;
          RETURN FALSE;
    END object_exists;
-   
+
    -- checks things about a table depending on the parameters passed
    -- raises an exception if the specified things are not true
-   PROCEDURE check_table
-      ( p_owner       VARCHAR2,
-	p_table       VARCHAR2,
-	p_partname    VARCHAR2,
-	p_partitioned VARCHAR2,
-	p_iot         VARCHAR2,
-	p_compression VARCHAR2 )
+   PROCEDURE check_table(
+      p_owner         VARCHAR2,
+      p_table         VARCHAR2,
+      p_partname      VARCHAR2 DEFAULT NULL,
+      p_partitioned   VARCHAR2 DEFAULT NULL,
+      p_iot           VARCHAR2 DEFAULT NULL,
+      p_compressed    VARCHAR2 DEFAULT NULL,
+      p_runmode       VARCHAR2 DEFAULT NULL
+   )
    AS
-      l_seg_name       VARCHAR2( 61 )   := p_owner || '.' || p_table || CASE WHEN p_partname IS NOT NULL THEN ':'||p_partname ELSE NULL END;
-      l_partitioned   dba_tables.partitioned%type;
-      l_iot_type      dba_tables.iot_type%type;
-      l_compression   dba_tables.compression%type;
-      l_partition_name dba_tab_partitions.partition_name%type;
-      o_app           applog	:= applog( p_module => 'object_exists' );
+      l_tab_name         VARCHAR2( 61 )     := UPPER( p_owner ) || '.'
+                                               || UPPER( p_table );
+      l_part_name        VARCHAR2( 92 )       := l_tab_name || ':' || UPPER( p_partname );
+      l_partitioned      VARCHAR2( 3 );
+      l_iot              VARCHAR2( 3 );
+      l_compressed       VARCHAR2( 3 );
+      l_partition_name   dba_tab_partitions.partition_name%TYPE;
+      o_app              applog
+                         := applog( p_module       => 'object_exists',
+                                    p_runmode      => p_runmode );
    BEGIN
       BEGIN
-	 SELECT partitioned,
-		iot_type,
-		CASE
-		WHEN p_partname IS NOT NULL
-		THEN dtp.compression
-		ELSE dt.compression
-		END,
-		partition_name
-	   INTO l_partitioned,
-		l_iot_type,
-		l_compression,
-		l_partition_name
-	   FROM dba_tables dt
-		left JOIN dba_tab_partitions dtp
-		ON dt.owner = dtp.table_owner AND
-		dt.table_name = dtp.table_name
-	  WHERE dt.owner = upper(p_owner)
-	    AND dt.table_name = upper(p_table)
-	    AND partition_name = upper(p_partname);
+         SELECT CASE
+                   WHEN compression = 'DISABLED'
+                      THEN 'no'
+                   WHEN compression = 'N/A'
+                      THEN 'no'
+                   WHEN compression IS NULL
+                      THEN 'no'
+                   ELSE 'yes'
+                END,
+                LOWER( partitioned ) partitioned,
+                CASE iot_type
+                   WHEN 'IOT'
+                      THEN 'yes'
+                   ELSE 'no'
+                END iot
+           INTO l_compressed,
+                l_partitioned,
+                l_iot
+           FROM dba_tables
+          WHERE owner = UPPER( p_owner ) AND table_name = UPPER( p_table );
       EXCEPTION
-	 WHEN NO_DATA_FOUND
-	 THEN
-	   raise_application_error( get_err_cd( 'no_tab' ),
-                                    get_err_msg( 'no_tab' ) || ': ' || l_seg_name
-                                  );
+         WHEN NO_DATA_FOUND
+         THEN
+            raise_application_error( get_err_cd( 'no_tab' ),
+                                     get_err_msg( 'no_tab' ) || ': ' || l_tab_name
+                                   );
       END;
-      
+
+      IF l_partitioned = 'yes' AND p_partname IS NULL AND p_compressed IS NOT NULL
+      THEN
+         raise_application_error
+                        ( get_err_cd( 'parms_not_compatible' ),
+                             get_err_msg( 'parms_not_compatible' )
+                          || ': '
+                          || 'P_COMPRESSED requires P_PARTNAME when the table is partitioned'
+                        );
+      END IF;
+
+      IF p_partname IS NOT NULL
+      THEN
+         IF l_partitioned = 'no'
+         THEN
+            raise_application_error( get_err_cd( 'not_partitioned' ),
+                                     get_err_msg( 'not_partitioned' ) || ': '
+                                     || l_tab_name
+                                   );
+         END IF;
+
+         BEGIN
+            SELECT CASE
+                      WHEN compression = 'DISABLED'
+                         THEN 'no'
+                      WHEN compression = 'N/A'
+                         THEN 'no'
+                      WHEN compression IS NULL
+                         THEN 'no'
+                      ELSE 'yes'
+                   END
+              INTO l_compressed
+              FROM dba_tab_partitions
+             WHERE table_owner = UPPER( p_owner )
+               AND table_name = UPPER( p_table )
+               AND partition_name = UPPER( p_partname );
+         EXCEPTION
+            WHEN NO_DATA_FOUND
+            THEN
+               raise_application_error( get_err_cd( 'no_part' ),
+                                        get_err_msg( 'no_part' ) || ': ' || l_part_name
+                                      );
+         END;
+      END IF;
+
       CASE
-   WHEN p_partname IS NOT NULL AND l_partition_name IS NULL
-      THEN
-         raise_application_error( get_err_cd( 'no_part' ),
-                                  get_err_msg( 'no_part' ) || ': ' || l_seg_name
-                                );
-   WHEN is_true(p_partitioned) AND NOT is_true(l_partitioned)
-      THEN
-         raise_application_error( get_err_cd( 'not_partitioned' ),
-                                  get_err_msg( 'not_partitioned' ) || ': ' || l_seg_name
-                                );
-   WHEN is_true(p_iot) AND l_iot_type <> 'IOT'
-      THEN
-         raise_application_error( get_err_cd( 'not_iot' ),
-                                  get_err_msg( 'not_iot' ) || ': ' || l_seg_name
-                                );
-   WHEN is_true(p_compression) AND NOT is_true(l_compression)
-      THEN
-         raise_application_error( get_err_cd( 'not_compressed' ),
-                                  get_err_msg( 'not_compressed' ) || ': ' || l_seg_name
-                                );
-   ELSE
-      NULL;
-   END CASE;
-   END check_table;   
+         WHEN is_true( p_partitioned, TRUE ) AND NOT is_true( l_partitioned )
+         THEN
+            raise_application_error( get_err_cd( 'not_partitioned' ),
+                                     get_err_msg( 'not_partitioned' ) || ': '
+                                     || l_tab_name
+                                   );
+         WHEN NOT is_true( p_partitioned, TRUE ) AND is_true( l_partitioned )
+         THEN
+            raise_application_error( get_err_cd( 'partitioned' ),
+                                     get_err_msg( 'partitioned' ) || ': ' || l_tab_name
+                                   );
+         WHEN is_true( p_iot, TRUE ) AND NOT is_true( l_iot )
+         THEN
+            raise_application_error( get_err_cd( 'not_iot' ),
+                                     get_err_msg( 'not_iot' ) || ': ' || l_tab_name
+                                   );
+         WHEN NOT is_true( p_iot, TRUE ) AND is_true( l_iot )
+         THEN
+            raise_application_error( get_err_cd( 'iot' ),
+                                     get_err_msg( 'iot' ) || ': ' || l_tab_name
+                                   );
+         WHEN is_true( p_compressed, TRUE ) AND NOT is_true( l_compressed )
+         THEN
+            raise_application_error( get_err_cd( 'not_compressed' ),
+                                        get_err_msg( 'not_compressed' )
+                                     || ': '
+                                     || CASE
+                                           WHEN p_partname IS NULL
+                                              THEN l_tab_name
+                                           ELSE l_part_name
+                                        END
+                                   );
+         WHEN NOT is_true( p_compressed, TRUE ) AND is_true( l_compressed )
+         THEN
+            raise_application_error( get_err_cd( 'compressed' ),
+                                        get_err_msg( 'compressed' )
+                                     || ': '
+                                     || CASE
+                                           WHEN p_partname IS NULL
+                                              THEN l_tab_name
+                                           ELSE l_part_name
+                                        END
+                                   );
+         ELSE
+            NULL;
+      END CASE;
+   END check_table;
 
    -- returns a boolean
    -- accepts a varchar2 and determines if regexp matches 'yes' or 'no'
    -- raises an error if it doesn't
-   FUNCTION is_true( p_parm VARCHAR2 )
+   FUNCTION is_true( p_parm VARCHAR2, p_allownulls BOOLEAN DEFAULT FALSE )
       RETURN BOOLEAN
    AS
    BEGIN
@@ -377,9 +451,16 @@ AS
          THEN
             RETURN FALSE;
          ELSE
-            raise_application_error( get_err_cd( 'unrecognized_parm' ),
-                                     get_err_msg( 'unrecognized_parm' ) || ' : ' || p_parm
-                                   );
+            IF p_parm IS NULL AND p_allownulls
+            THEN
+               RETURN NULL;
+            ELSE
+               raise_application_error( get_err_cd( 'unrecognized_parm' ),
+                                           get_err_msg( 'unrecognized_parm' )
+                                        || ' : '
+                                        || p_parm
+                                      );
+            END IF;
       END CASE;
    END is_true;
 
