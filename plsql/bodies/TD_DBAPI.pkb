@@ -1552,6 +1552,12 @@ IS
          RAISE;
    END exchange_partition;
 
+   -- find records in p_source_table that match the values of the partitioned column in p_table
+   -- This procedure uses an undocumented database function called tbl$or$idx$part$num.
+   -- There are two "magic" numbers that are required to make it work correctly.
+   -- The defaults will quite often work.
+   -- The simpliest way to find which magic numbers make this function work is to
+   -- do a partition exchange on the target table and trace that statement.
    PROCEDURE pop_partname(
       p_owner           VARCHAR2,
       p_table           VARCHAR2,
@@ -1570,13 +1576,30 @@ IS
       o_app             applog
                           := applog( p_module       => 'pop_partname',
                                      p_runmode      => p_runmode );
+      l_part_position   all_tab_partitions.partition_position%TYPE;
+      l_high_value      all_tab_partitions.high_value%TYPE;
    BEGIN
+      td_core.check_table( p_owner            => p_owner,
+                           p_table            => p_table,
+                           p_partname         => p_partname,
+                           p_partitioned      => 'yes'
+                         );
+
       IF p_partname IS NOT NULL
       THEN
+         SELECT partition_position, high_value
+           INTO l_part_position, l_high_value
+           FROM all_tab_partitions
+          WHERE table_owner = UPPER( p_owner )
+            AND table_name = UPPER( p_table )
+            AND partition_name = UPPER( p_partname );
+
          INSERT INTO partname
-                     ( partition_name
+                     ( table_owner, table_name, partition_name,
+                       partition_position
                      )
-              VALUES ( UPPER( p_partname )
+              VALUES ( UPPER( p_owner ), UPPER( p_table ), UPPER( p_partname ),
+                       l_part_position
                      );
 
          o_app.log_cnt_msg( SQL%ROWCOUNT,
@@ -1595,9 +1618,9 @@ IS
          END IF;
 
          td_core.exec_sql
-            (    'insert into partname (table_owner, table_name, partition_name, high_value, partition_position '
-              || ' SELECT table_owner, table_name, partition_name, high_value, partition_position'
-              || '  FROM dba_tab_partitions'
+            (    'insert into partname (table_owner, table_name, partition_name, partition_position) '
+              || ' SELECT table_owner, table_name, partition_name, partition_position'
+              || '  FROM all_tab_partitions'
               || ' WHERE table_owner = '''
               || UPPER( p_owner )
               || ''' AND table_name = '''
@@ -1618,8 +1641,7 @@ IS
               || '.'
               || UPPER( p_source_object )
               || ') '
-              || 'ORDER By partition_position',
-              p_runmode      => o_app.runmode
+              || 'ORDER By partition_position'
             );
          o_app.log_cnt_msg( SQL%ROWCOUNT,
                             'Number of records inserted into PARTNAME table',
@@ -1632,12 +1654,10 @@ IS
 
    -- Provides functionality for setting local and non-local indexes to unusable based on parameters
    -- Can also base which index partitions to mark as unuable based on the contents of another table
-   -- This procedure uses an undocumented database function called tbl$or$idx$part$num.
    -- There are two "magic" numbers that are required to make it work correctly.
    -- The defaults will quite often work.
    -- The simpliest way to find which magic numbers make this function work is to
    -- do a partition exchange on the target table and trace that statement.
-   -- sets particular indexes on a table as unusable depending on provided parameters
    PROCEDURE unusable_indexes(
       p_owner           VARCHAR2,             -- owner of table for the indexes to work on
       p_table           VARCHAR2,                       -- table to operate on indexes for
@@ -1657,6 +1677,10 @@ IS
       p_runmode         VARCHAR2 DEFAULT NULL
    )
    IS
+      l_tab_name   VARCHAR2( 61 )   := UPPER( p_owner ) || '.' || UPPER( p_table );
+      l_src_name   VARCHAR2( 61 )
+                             := UPPER( p_source_owner ) || '.'
+                                || UPPER( p_source_object );
       l_msg        VARCHAR2( 2000 );
       l_ddl        VARCHAR2( 2000 );
       l_pidx_cnt   NUMBER;
@@ -1691,14 +1715,24 @@ IS
             NULL;
       END CASE;
 
+      -- test the target table
+      td_core.check_table( p_owner         => p_owner,
+                           p_table         => p_table,
+                           p_partname      => p_partname
+                         );
+
+      -- test the source object
+      IF NOT td_core.object_exists( p_owner       => p_source_owner,
+                                    p_object      => p_source_object )
+      THEN
+         raise_application_error( get_err_cd( 'no_object' ),
+                                  get_err_msg( 'no_object' ) || ' : ' || l_src_name
+                                );
+      END IF;
+
       IF NOT o_app.is_debugmode
       THEN
-         o_app.log_msg(    'Making specified indexes on '
-                        || p_owner
-                        || '.'
-                        || p_table
-                        || ' unusable'
-                      );
+         o_app.log_msg( 'Making specified indexes on ' || l_tab_name || ' unusable' );
       END IF;
 
       o_app.set_action( 'Populate PARTNAME table' );
@@ -1754,7 +1788,7 @@ IS
                                       ELSE aip_status
                                    END status
                              FROM ( SELECT index_type, owner, ai.index_name,
-                                           partition_name, partition_position,
+                                           partition_name, aip.partition_position,
                                            partitioned, aip.status aip_status,
                                            ai.status ai_status,
                                            CASE
@@ -1858,6 +1892,8 @@ IS
                     p_runmode      => p_runmode
                   );
    BEGIN
+      td_core.check_table( p_owner => p_owner, p_table => p_table );
+
       IF NOT o_app.is_debugmode
       THEN
          o_app.log_msg(    'Making unusable indexes on '
