@@ -29,7 +29,7 @@ IS
       p_tablespace          VARCHAR2 DEFAULT NULL,
       p_runmode             VARCHAR2 DEFAULT NULL
    );
-      
+
    PROCEDURE disable_constraints(
       p_owner               VARCHAR2,
       p_table               VARCHAR2,
@@ -137,17 +137,16 @@ IS
    );
 
    PROCEDURE gather_stats(
-      p_owner            VARCHAR2,
-      p_table            VARCHAR2 DEFAULT NULL,
-      p_partname         VARCHAR2 DEFAULT NULL,
-      p_percent      	 NUMBER   DEFAULT NULL,
-      p_degree       	 NUMBER   DEFAULT NULL,
-      p_method       	 VARCHAR2 DEFAULT 'FOR ALL COLUMNS SIZE AUTO',
-      p_granularity	 VARCHAR2 DEFAULT 'AUTO',
-      p_cascade		 BOOLEAN  DEFAULT NULL,
-      p_options		 VARCHAR2 DEFAULT 'GATHER AUTO',
-      p_runmode          VARCHAR2 DEFAULT NULL
+      p_owner         VARCHAR2,
+      p_table         VARCHAR2 DEFAULT NULL,
+      p_partname      VARCHAR2 DEFAULT NULL,
+      p_percent       NUMBER DEFAULT NULL,
+      p_degree        NUMBER DEFAULT NULL,
+      p_method        VARCHAR2 DEFAULT 'FOR ALL COLUMNS SIZE AUTO',
+      p_granularity   VARCHAR2 DEFAULT 'AUTO',
+      p_cascade       BOOLEAN DEFAULT NULL,
+      p_options       VARCHAR2 DEFAULT 'GATHER AUTO',
+      p_runmode       VARCHAR2 DEFAULT NULL
    );
-
 END td_dbapi;
 /
