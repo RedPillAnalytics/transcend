@@ -212,14 +212,13 @@ IS
             o_app.log_msg( 'Index ' || c_indexes.idx_rename || ' built' );
             l_idx_cnt := l_idx_cnt + 1;
          EXCEPTION
-	    -- if a duplicate column list of indexes already exist, log it, but continue
+            -- if a duplicate column list of indexes already exist, log it, but continue
             WHEN e_dup_col_list
             THEN
-            o_app.log_msg(    'Index comparable to '
-                           || c_indexes.index_name
-                           || ' already exists'
-                         );
-
+               o_app.log_msg(    'Index comparable to '
+                              || c_indexes.index_name
+                              || ' already exists'
+                            );
             -- if this index_name already exists, try to rename it to something else
             WHEN e_dup_idx_name
             THEN
@@ -529,8 +528,8 @@ IS
       l_tab_name   VARCHAR2( 61 ) := p_owner || '.' || p_table;
       l_rows       BOOLEAN        := FALSE;
       o_app        applog
-                      := applog( p_module       => 'enable_constraints',
-                                 p_runmode      => p_runmode );
+                    := applog( p_module       => 'enable_constraints',
+                               p_runmode      => p_runmode );
    BEGIN
       o_app.set_action( 'Enable constraints' );
       o_app.log_msg( 'Enable constraints on ' || l_tab_name );
@@ -541,16 +540,16 @@ IS
                                     || table_name
                                     || ' enable constraint '
                                     || constraint_name constraint_ddl,
-				       'Constraint '
-				    || constraint_name
-				    || ' enabled on '
+                                       'Constraint '
+                                    || constraint_name
+                                    || ' enabled on '
                                     || owner
                                     || '.'
-                                    || table_name msg                                     
+                                    || table_name msg
                               FROM dba_constraints
                              WHERE table_name = UPPER( p_table )
-				AND owner = UPPER( p_owner )
-				AND status='DISABLED'
+                               AND owner = UPPER( p_owner )
+                               AND status = 'DISABLED'
                                AND REGEXP_LIKE( constraint_name,
                                                 NVL( p_constraint_regexp, '.' ),
                                                 'i'
@@ -590,7 +589,7 @@ IS
          o_app.log_err;
          RAISE;
    END enable_constraints;
-   
+
    -- builds the constraints from one table on another
    PROCEDURE disable_constraints(
       p_owner               VARCHAR2,
@@ -604,8 +603,8 @@ IS
       l_tab_name   VARCHAR2( 61 ) := p_owner || '.' || p_table;
       l_rows       BOOLEAN        := FALSE;
       o_app        applog
-                      := applog( p_module       => 'disable_constraints',
-                                 p_runmode      => p_runmode );
+                   := applog( p_module       => 'disable_constraints',
+                              p_runmode      => p_runmode );
    BEGIN
       o_app.set_action( 'Disable constraints' );
       o_app.log_msg( 'Disabling constraints on ' || l_tab_name );
@@ -616,16 +615,16 @@ IS
                                     || table_name
                                     || ' disable constraint '
                                     || constraint_name constraint_ddl,
-				       'Constraint '
-				    || constraint_name
-				    || ' disabled on '
+                                       'Constraint '
+                                    || constraint_name
+                                    || ' disabled on '
                                     || owner
                                     || '.'
-                                    || table_name msg                                     
+                                    || table_name msg
                               FROM dba_constraints
                              WHERE table_name = UPPER( p_table )
-				AND owner = UPPER( p_owner )
-				AND status='ENABLED'
+                               AND owner = UPPER( p_owner )
+                               AND status = 'ENABLED'
                                AND REGEXP_LIKE( constraint_name,
                                                 NVL( p_constraint_regexp, '.' ),
                                                 'i'
@@ -664,7 +663,7 @@ IS
       THEN
          o_app.log_err;
          RAISE;
-   END disable_constraints;   
+   END disable_constraints;
 
    -- drop particular indexes from a table
    PROCEDURE drop_indexes(
@@ -1360,18 +1359,15 @@ IS
       CASE
          WHEN REGEXP_LIKE( 'gather', p_statistics, 'i' )
          THEN
-	   o_app.set_action( 'Gather stats on source table' );
-      
-
-           gather_stats( p_owner	=> UPPER( p_source_owner ),
-			 p_table	=> UPPER( p_source_table ),
-			 p_percent  	=> p_statpercent,
-			 p_degree  	=> p_statdegree,
-			 p_method	=> p_statmethod,
-			 p_cascade	=> FALSE,
-			 p_runmode	=> o_app.runmode
-                       );
-
+            o_app.set_action( 'Gather stats on source table' );
+            gather_stats( p_owner        => UPPER( p_source_owner ),
+                          p_table        => UPPER( p_source_table ),
+                          p_percent      => p_statpercent,
+                          p_degree       => p_statdegree,
+                          p_method       => p_statmethod,
+                          p_cascade      => FALSE,
+                          p_runmode      => o_app.runmode
+                        );
             o_app.log_msg( 'Statistics gathered on table ' || l_src_name, 3 );
          WHEN REGEXP_LIKE( 'transfer', p_statistics, 'i' )
          THEN
@@ -1424,28 +1420,27 @@ IS
       THEN
          o_app.set_action( 'Disable foreign keys' );
 
-         FOR c_dis_for_keys IN
-            ( SELECT    'alter table '
-                     || owner
-                     || '.'
-                     || table_name
-                     || ' disable constraint '
-                     || constraint_name DDL,
-                        'Constraint '
-                     || constraint_name
-                     || ' disabled on '
-                     || owner
-                     || '.'
-                     || table_name msg
-               FROM dba_constraints
-              WHERE constraint_type = 'R'
-		 AND status = 'ENABLED'
-                AND r_constraint_name IN(
-                       SELECT constraint_name
-                         FROM dba_constraints
-                        WHERE table_name = UPPER( p_table )
-                          AND owner = UPPER( p_owner )
-                          AND constraint_type = 'P' ))
+         FOR c_dis_for_keys IN ( SELECT    'alter table '
+                                        || owner
+                                        || '.'
+                                        || table_name
+                                        || ' disable constraint '
+                                        || constraint_name DDL,
+                                           'Constraint '
+                                        || constraint_name
+                                        || ' disabled on '
+                                        || owner
+                                        || '.'
+                                        || table_name msg
+                                  FROM dba_constraints
+                                 WHERE constraint_type = 'R'
+                                   AND status = 'ENABLED'
+                                   AND r_constraint_name IN(
+                                          SELECT constraint_name
+                                            FROM dba_constraints
+                                           WHERE table_name = UPPER( p_table )
+                                             AND owner = UPPER( p_owner )
+                                             AND constraint_type = 'P' ))
          LOOP
             td_core.exec_auto( c_dis_for_keys.DDL, o_app.runmode );
             o_app.log_msg( c_dis_for_keys.msg );
@@ -1494,19 +1489,19 @@ IS
                            || ' of table '
                            || l_tab_name
                          );
-	 WHEN OTHERS
-	 THEN
-	 -- need to drop indexes if there is an exception
-	 -- this is for rerunability
-	 IF td_core.is_true( p_index_drop )
-	 THEN
-            drop_indexes( p_owner        => p_source_owner,
-			  p_table        => p_source_table,
-			  p_runmode      => o_app.runmode
-			);
-	 END IF;
-	 RAISE;
+         WHEN OTHERS
+         THEN
+            -- need to drop indexes if there is an exception
+            -- this is for rerunability
+            IF td_core.is_true( p_index_drop )
+            THEN
+               drop_indexes( p_owner        => p_source_owner,
+                             p_table        => p_source_table,
+                             p_runmode      => o_app.runmode
+                           );
+            END IF;
 
+            RAISE;
       END;
 
       -- enable any foreign keys on other tables that reference this table
@@ -1572,11 +1567,6 @@ IS
       l_dsql            LONG;
       -- to catch empty cursors
       l_source_column   all_part_key_columns.column_name%TYPE;
-
-      TYPE partname_type IS TABLE OF partname.partition_name%TYPE
-         INDEX BY BINARY_INTEGER;
-
-      t_partname        partname_type;
       o_app             applog
                           := applog( p_module       => 'pop_partname',
                                      p_runmode      => p_runmode );
@@ -1584,10 +1574,15 @@ IS
       IF p_partname IS NOT NULL
       THEN
          INSERT INTO partname
-              VALUES ( p_partname );
-	 o_app.log_cnt_msg( SQL%ROWCOUNT,
-			    'Number of records inserted into PARTNAME table',
-			    4);
+                     ( partition_name
+                     )
+              VALUES ( UPPER( p_partname )
+                     );
+
+         o_app.log_cnt_msg( SQL%ROWCOUNT,
+                            'Number of records inserted into PARTNAME table',
+                            4
+                          );
       ELSE
          IF p_source_column IS NULL
          THEN
@@ -1599,35 +1594,37 @@ IS
             l_source_column := p_source_column;
          END IF;
 
-         td_core.exec_sql(    'insert into partname '
-                           || ' SELECT partition_name'
-                           || '  FROM dba_tab_partitions'
-                           || ' WHERE table_owner = '''
-                           || UPPER( p_owner )
-                           || ''' AND table_name = '''
-                           || UPPER( p_table )
-                           || ''' AND partition_position IN '
-                           || ' (SELECT DISTINCT tbl$or$idx$part$num("'
-                           || UPPER( p_owner )
-                           || '"."'
-                           || UPPER( p_table )
-                           || '", 0, '
-                           || p_d_num
-                           || ', '
-                           || p_p_num
-                           || ', "'
-                           || UPPER( l_source_column )
-                           || '")	 FROM '
-                           || UPPER( p_source_owner )
-                           || '.'
-                           || UPPER( p_source_object )
-                           || ') '
-                           || 'ORDER By partition_position',
-                           p_runmode      => o_app.runmode
-                         );
-	 o_app.log_cnt_msg( SQL%ROWCOUNT,
-			    'Number of records inserted into PARTNAME table',
-			    4);
+         td_core.exec_sql
+            (    'insert into partname (table_owner, table_name, partition_name, high_value, partition_position '
+              || ' SELECT table_owner, table_name, partition_name, high_value, partition_position'
+              || '  FROM dba_tab_partitions'
+              || ' WHERE table_owner = '''
+              || UPPER( p_owner )
+              || ''' AND table_name = '''
+              || UPPER( p_table )
+              || ''' AND partition_position IN '
+              || ' (SELECT DISTINCT tbl$or$idx$part$num("'
+              || UPPER( p_owner )
+              || '"."'
+              || UPPER( p_table )
+              || '", 0, '
+              || p_d_num
+              || ', '
+              || p_p_num
+              || ', "'
+              || UPPER( l_source_column )
+              || '")	 FROM '
+              || UPPER( p_source_owner )
+              || '.'
+              || UPPER( p_source_object )
+              || ') '
+              || 'ORDER By partition_position',
+              p_runmode      => o_app.runmode
+            );
+         o_app.log_cnt_msg( SQL%ROWCOUNT,
+                            'Number of records inserted into PARTNAME table',
+                            4
+                          );
       END IF;
 
       o_app.clear_app_info;
@@ -1718,76 +1715,86 @@ IS
                        p_source_column      => p_source_column,
                        p_d_num              => p_d_num,
                        p_p_num              => p_p_num,
-		       p_runmode	    => o_app.runmode
+                       p_runmode            => o_app.runmode
                      );
       END IF;
 
       -- this cursor will contain all the ALTER INDEX statements necessary to mark indexes unusable
       -- the contents of the cursor depends very much on the parameters specified
       -- also depends on the contents of the PARTNAME global temporary table
-      o_app.set_action( 'Calculate indexes to affect');
+      o_app.set_action( 'Calculate indexes to affect' );
+
       FOR c_idx IN
          ( SELECT *
-	     FROM (SELECT DISTINCT    'alter index '
-			  || owner
-			  || '.'
-			  || index_name
-			  || CASE idx_ddl_type
-			  WHEN 'I'
-			  THEN NULL
-			  ELSE ' modify partition ' || partition_name
-			  END
-			  || ' unusable' ddl,
-			  idx_ddl_type, partition_name, partition_position,
-			  SUM( CASE idx_ddl_type
-			       WHEN 'I'
-			       THEN 1
-			       ELSE 0
-			       END ) OVER( partition BY 1 ) num_indexes,
-			  SUM( CASE idx_ddl_type
-			       WHEN 'P'
-			       THEN 1
-			       ELSE 0
-			       END ) OVER( partition BY 1 ) num_partitions,
-			  CASE idx_ddl_type
-			  WHEN 'I' THEN ai_status
-			  ELSE aip_status
-			  END status
-		     FROM ( SELECT index_type, owner, ai.index_name, partition_name,
-				   partition_position, partitioned,
-				   aip.status aip_status,
-				   ai.status ai_status,
-				   CASE
-				   WHEN partition_name IS NULL
-				OR partitioned = 'NO'
-				   THEN 'I'
-				   ELSE 'P'
-				   END idx_ddl_type
-			      FROM partname JOIN all_ind_partitions aip USING( partition_name )
-				   right JOIN all_indexes ai
-				   ON ai.index_name = aip.index_name
-			       AND ai.owner = aip.index_owner
-			     WHERE table_name = upper(p_table )
-			       AND table_owner = upper(p_owner )
-			  )
-		    WHERE REGEXP_LIKE( index_type, '^' ||p_index_type, 'i' )
-		      AND REGEXP_LIKE( partitioned,
-				       CASE
-				       WHEN REGEXP_LIKE( 'global',p_part_type, 'i' )
-				       THEN 'NO'
-				       WHEN REGEXP_LIKE( 'local',p_part_type, 'i' )
-				       THEN 'YES'
-				       ELSE '.'
-				       END,
-				       'i'
-				     )
-			  -- USE an NVL'd regular expression to determine specific indexes to work on
-		      AND REGEXP_LIKE( index_name, nvl(p_index_regexp, '.' ), 'i' )
-		      AND NOT REGEXP_LIKE( index_type, 'iot', 'i' )
-		    ORDER BY idx_ddl_type, partition_position ) 
-	    WHERE status IN ('VALID','USABLE','N/A'))
+            FROM ( SELECT DISTINCT    'alter index '
+                                   || owner
+                                   || '.'
+                                   || index_name
+                                   || CASE idx_ddl_type
+                                         WHEN 'I'
+                                            THEN NULL
+                                         ELSE ' modify partition ' || partition_name
+                                      END
+                                   || ' unusable' DDL,
+                                   idx_ddl_type, partition_name, partition_position,
+                                   SUM( CASE idx_ddl_type
+                                           WHEN 'I'
+                                              THEN 1
+                                           ELSE 0
+                                        END ) OVER( PARTITION BY 1 ) num_indexes,
+                                   SUM( CASE idx_ddl_type
+                                           WHEN 'P'
+                                              THEN 1
+                                           ELSE 0
+                                        END
+                                      ) OVER( PARTITION BY 1 ) num_partitions,
+                                   CASE idx_ddl_type
+                                      WHEN 'I'
+                                         THEN ai_status
+                                      ELSE aip_status
+                                   END status
+                             FROM ( SELECT index_type, owner, ai.index_name,
+                                           partition_name, partition_position,
+                                           partitioned, aip.status aip_status,
+                                           ai.status ai_status,
+                                           CASE
+                                              WHEN partition_name IS NULL
+                                               OR partitioned = 'NO'
+                                                 THEN 'I'
+                                              ELSE 'P'
+                                           END idx_ddl_type
+                                     FROM partname JOIN all_ind_partitions aip
+                                          USING( partition_name )
+                                          RIGHT JOIN all_indexes ai
+                                          ON ai.index_name = aip.index_name
+                                        AND ai.owner = aip.index_owner
+                                    WHERE ai.table_name = UPPER( p_table )
+                                      AND ai.table_owner = UPPER( p_owner ))
+                            WHERE REGEXP_LIKE( index_type, '^' || p_index_type, 'i' )
+                              AND REGEXP_LIKE( partitioned,
+                                               CASE
+                                                  WHEN REGEXP_LIKE( 'global',
+                                                                    p_part_type,
+                                                                    'i'
+                                                                  )
+                                                     THEN 'NO'
+                                                  WHEN REGEXP_LIKE( 'local',
+                                                                    p_part_type,
+                                                                    'i'
+                                                                  )
+                                                     THEN 'YES'
+                                                  ELSE '.'
+                                               END,
+                                               'i'
+                                             )
+                              -- USE an NVL'd regular expression to determine specific indexes to work on
+                              AND REGEXP_LIKE( index_name, NVL( p_index_regexp, '.' ),
+                                               'i' )
+                              AND NOT REGEXP_LIKE( index_type, 'iot', 'i' )
+                         ORDER BY idx_ddl_type, partition_position )
+           WHERE status IN( 'VALID', 'USABLE', 'N/A' ))
       LOOP
-	 o_app.set_action( 'Execute index DDL');
+         o_app.set_action( 'Execute index DDL' );
          l_rows := TRUE;
          td_core.exec_auto( c_idx.DDL, p_runmode => o_app.runmode );
          l_pidx_cnt := c_idx.num_partitions;
@@ -1900,8 +1907,11 @@ IS
 
       -- now see if any global are still unusable
       FOR c_gidx IN ( SELECT  table_name,
-                              'alter index ' || owner || '.' || index_name
-                             || ' rebuild parallel nologging' DDL
+                                 'alter index '
+                              || owner
+                              || '.'
+                              || index_name
+                              || ' rebuild parallel nologging' DDL
                          FROM all_indexes
                         WHERE table_name = UPPER( p_table )
                           AND table_owner = UPPER( p_owner )
@@ -1950,19 +1960,19 @@ IS
    END usable_indexes;
 
    PROCEDURE gather_stats(
-      p_owner            VARCHAR2,
-      p_table            VARCHAR2 DEFAULT NULL,
-      p_partname         VARCHAR2 DEFAULT NULL,
-      p_percent      	 NUMBER   DEFAULT NULL,
-      p_degree       	 NUMBER   DEFAULT NULL,
-      p_method       	 VARCHAR2 DEFAULT 'FOR ALL COLUMNS SIZE AUTO',
-      p_granularity	 VARCHAR2 DEFAULT 'AUTO',
-      p_cascade		 BOOLEAN  DEFAULT NULL,
-      p_options		 VARCHAR2 DEFAULT 'GATHER AUTO',
-      p_runmode          VARCHAR2 DEFAULT NULL
+      p_owner         VARCHAR2,
+      p_table         VARCHAR2 DEFAULT NULL,
+      p_partname      VARCHAR2 DEFAULT NULL,
+      p_percent       NUMBER DEFAULT NULL,
+      p_degree        NUMBER DEFAULT NULL,
+      p_method        VARCHAR2 DEFAULT 'FOR ALL COLUMNS SIZE AUTO',
+      p_granularity   VARCHAR2 DEFAULT 'AUTO',
+      p_cascade       BOOLEAN DEFAULT NULL,
+      p_options       VARCHAR2 DEFAULT 'GATHER AUTO',
+      p_runmode       VARCHAR2 DEFAULT NULL
    )
    IS
-      l_rows   BOOLEAN          := FALSE;                       -- to catch empty cursors
+      l_rows   BOOLEAN := FALSE;                                -- to catch empty cursors
       o_app    applog
          := applog( p_module       => 'usable_indexes',
                     p_action       => 'Rebuild indexes',
@@ -1970,45 +1980,67 @@ IS
                   );
    BEGIN
       o_app.log_msg(    'Gathering statistics for '
-		     || CASE 
-		     WHEN p_partname IS NULL THEN null
-		     ELSE 'partition '||upper(p_partname)||' of table ' END
-		     || CASE
-		     WHEN p_table IS NULL
-		     THEN 'schema '
-		     ELSE NULL END
-                     || upper(p_owner)
                      || CASE
-		     WHEN p_table IS NULL THEN NULL
-		     ELSE '.' END
-                     || upper(p_table)
+                           WHEN p_partname IS NULL
+                              THEN NULL
+                           ELSE 'partition ' || UPPER( p_partname ) || ' of table '
+                        END
+                     || CASE
+                           WHEN p_table IS NULL
+                              THEN 'schema '
+                           ELSE NULL
+                        END
+                     || UPPER( p_owner )
+                     || CASE
+                           WHEN p_table IS NULL
+                              THEN NULL
+                           ELSE '.'
+                        END
+                     || UPPER( p_table )
                    );
-      
       o_app.set_action( 'Gathering statistics' );
+
       IF p_table IS NULL
       THEN
-	 IF NOT o_app.is_debugmode
-	 THEN
-	    dbms_stats.gather_schema_stats( ownname           => p_owner,
-					    estimate_percent  => nvl(p_percent,dbms_stats.auto_sample_size),
-					    method_opt	      => p_method,
-					    degree	      => nvl(p_degree,dbms_stats.auto_degree),
-					    granularity	      => p_granularity,
-					    cascade	      => nvl(p_cascade,dbms_stats.auto_cascade),
-					    options	      => p_options);
-	 END IF;
-
+         IF NOT o_app.is_debugmode
+         THEN
+            DBMS_STATS.gather_schema_stats
+                                 ( ownname               => p_owner,
+                                   estimate_percent      => NVL
+                                                               ( p_percent,
+                                                                 DBMS_STATS.auto_sample_size
+                                                               ),
+                                   method_opt            => p_method,
+                                   DEGREE                => NVL( p_degree,
+                                                                 DBMS_STATS.auto_degree
+                                                               ),
+                                   granularity           => p_granularity,
+                                   CASCADE               => NVL( p_cascade,
+                                                                 DBMS_STATS.auto_cascade
+                                                               ),
+                                   options               => p_options
+                                 );
+         END IF;
       ELSE
-	 IF NOT o_app.is_debugmode
-	 THEN
-	    dbms_stats.gather_table_stats( ownname           => p_owner,
-					   tabname	     => p_table,
-					   estimate_percent  => nvl(p_percent,dbms_stats.auto_sample_size),
-					   method_opt        => p_method,
-					   degree	     => nvl(p_degree,dbms_stats.auto_degree),
-					   granularity 	     => p_granularity,
-					   cascade	     => nvl(p_cascade,dbms_stats.auto_cascade));
-	 END IF;
+         IF NOT o_app.is_debugmode
+         THEN
+            DBMS_STATS.gather_table_stats
+                                  ( ownname               => p_owner,
+                                    tabname               => p_table,
+                                    estimate_percent      => NVL
+                                                                ( p_percent,
+                                                                  DBMS_STATS.auto_sample_size
+                                                                ),
+                                    method_opt            => p_method,
+                                    DEGREE                => NVL( p_degree,
+                                                                  DBMS_STATS.auto_degree
+                                                                ),
+                                    granularity           => p_granularity,
+                                    CASCADE               => NVL( p_cascade,
+                                                                  DBMS_STATS.auto_cascade
+                                                                )
+                                  );
+         END IF;
       END IF;
 
       o_app.clear_app_info;
@@ -2018,6 +2050,5 @@ IS
          o_app.log_err;
          RAISE;
    END gather_stats;
-
 END td_dbapi;
 /
