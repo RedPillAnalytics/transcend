@@ -36,7 +36,7 @@ AS
                                     p_index_regexp       => p_index_regexp,
                                     p_index_type         => p_index_type,
                                     p_part_type          => p_part_type,
-				    p_runmode		 => o_app.runmode
+                                    p_runmode            => o_app.runmode
                                   );
       END IF;
    EXCEPTION
