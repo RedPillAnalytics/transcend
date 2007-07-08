@@ -44,3 +44,6 @@ INSERT INTO err_cd (code,name,message) VALUES (-20027, 'no_session_parm','The sp
 INSERT INTO err_cd (code,name,message) VALUES (-20028, 'not_iot','The specified table is not index-organized');
 INSERT INTO err_cd (code,name,message) VALUES (-20029, 'not_compressed','The specified segment is not compresed');
 INSERT INTO err_cd (code,name,message) VALUES (-20030, 'no_part','The specified partition does not exist');
+INSERT INTO err_cd (code,name,message) VALUES (-20031, 'partitioned','The specified table is partitioned');
+INSERT INTO err_cd (code,name,message) VALUES (-20032, 'iot','The specified table is index-organized');
+INSERT INTO err_cd (code,name,message) VALUES (-20033, 'compressed','The specified segment is compresed');
