@@ -129,44 +129,63 @@ AS
    -- use EXECUTE IMMEDIATE to execute a SQL statement
    -- uses AUTONOMOUS_TRANSACTION, so this will NOT execute within the current transaction
    -- excellent for DDL that where the commit incurred by the DDL will not affect the current transaction
-   PROCEDURE exec_auto(
+   FUNCTION exec_auto(
       p_sql       VARCHAR2,
-      p_runmode   VARCHAR2 DEFAULT NULL,
-      p_msg       VARCHAR2 DEFAULT 'DDL: '
+      p_runmode   VARCHAR2 DEFAULT NULL
    )
+      RETURN NUMBER
    AS
       PRAGMA AUTONOMOUS_TRANSACTION;
+      l_results NUMBER;
       o_app   applog := applog( p_module => 'exec_auto', p_runmode => p_runmode );
    BEGIN
-      o_app.log_msg( p_msg || p_sql, 3 );
 
       IF NOT o_app.is_debugmode
       THEN
          EXECUTE IMMEDIATE p_sql;
+	 l_results := SQL%ROWCOUNT;
       END IF;
 
       COMMIT;
       o_app.clear_app_info;
+      RETURN l_results;
    END exec_auto;
 
    -- use EXECUTE IMMEDIATE to execute a SQL statement
    -- no AUTONOMOUS_TRANSACTION, so this will execute within the current transaction
-   PROCEDURE exec_sql(
+   FUNCTION exec_sql(
       p_sql       VARCHAR2,
-      p_runmode   VARCHAR2 DEFAULT NULL,
-      p_msg       VARCHAR2 DEFAULT 'DML: '
+      p_auto	  VARCHAR2 DEFAULT 'no',
+      p_msg       VARCHAR2 DEFAULT NULL,
+      p_runmode   VARCHAR2 DEFAULT NULL
    )
+      RETURN NUMBER
    AS
+      l_results NUMBER;
       o_app   applog := applog( p_module => 'exec_sql', p_runmode => p_runmode );
    BEGIN
       o_app.log_msg( p_msg || p_sql, 3 );
+      o_app.log_msg( CASE 
+      		     WHEN p_msg IS NULL
+		     THEN
+		       'SQL: ' || p_sql
+		     ELSE
+		       p_msg
+		     END, 3 );
 
       IF NOT o_app.is_debugmode
       THEN
-         EXECUTE IMMEDIATE p_sql;
+	 IF is_true(p_auto)
+	 THEN
+	    l_results := exec_auto(p_sql=>p_sql,p_runmode=>o_app.runmode);
+	 ELSE
+	    EXECUTE IMMEDIATE p_sql;
+	    l_results := SQL%ROWCOUNT;
+	 END IF;
       END IF;
-
+      
       o_app.clear_app_info;
+      RETURN l_results;
    END exec_sql;
 
    -- used to get the path associated with a directory location
@@ -298,8 +317,7 @@ AS
       p_partname      VARCHAR2 DEFAULT NULL,
       p_partitioned   VARCHAR2 DEFAULT NULL,
       p_iot           VARCHAR2 DEFAULT NULL,
-      p_compressed    VARCHAR2 DEFAULT NULL,
-      p_runmode       VARCHAR2 DEFAULT NULL
+      p_compressed    VARCHAR2 DEFAULT NULL
    )
    AS
       l_tab_name         VARCHAR2( 61 )     := UPPER( p_owner ) || '.'
@@ -310,8 +328,7 @@ AS
       l_compressed       VARCHAR2( 3 );
       l_partition_name   dba_tab_partitions.partition_name%TYPE;
       o_app              applog
-                         := applog( p_module       => 'object_exists',
-                                    p_runmode      => p_runmode );
+                         := applog( p_module       => 'object_exists' );
    BEGIN
       BEGIN
          SELECT CASE

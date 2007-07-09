@@ -49,17 +49,13 @@ AS
 
    PROCEDURE log_msg( p_msg log_table.msg%TYPE );
 
-   PROCEDURE exec_auto(
+   FUNCTION exec_sql(
       p_sql       VARCHAR2,
-      p_runmode   VARCHAR2 DEFAULT NULL,
-      p_msg       VARCHAR2 DEFAULT 'DDL: '
-   );
-
-   PROCEDURE exec_sql(
-      p_sql       VARCHAR2,
-      p_runmode   VARCHAR2 DEFAULT NULL,
-      p_msg       VARCHAR2 DEFAULT 'DML: '
-   );
+      p_auto	  VARCHAR2 DEFAULT 'no',
+      p_msg       VARCHAR2 DEFAULT NULL,
+      p_runmode   VARCHAR2 DEFAULT NULL
+   )
+      RETURN NUMBER;
 
    FUNCTION get_dir_path( p_dirname VARCHAR2 )
       RETURN VARCHAR2;
@@ -82,8 +78,7 @@ AS
       p_partname      VARCHAR2 DEFAULT NULL,
       p_partitioned   VARCHAR2 DEFAULT NULL,
       p_iot           VARCHAR2 DEFAULT NULL,
-      p_compressed    VARCHAR2 DEFAULT NULL,
-      p_runmode       VARCHAR2 DEFAULT NULL
+      p_compressed    VARCHAR2 DEFAULT NULL
    );
 
    FUNCTION is_true( p_parm VARCHAR2, p_allownulls BOOLEAN DEFAULT FALSE )

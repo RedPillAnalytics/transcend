@@ -8,6 +8,7 @@ AS
    )
       RETURN SELF AS RESULT
    AS
+      l_results NUMBER;
    BEGIN
       -- get the session id
       session_id := SYS_CONTEXT( 'USERENV', 'SESSIONID' );
@@ -174,7 +175,8 @@ AS
             FROM parameter_conf
            WHERE LOWER( module ) = SELF.module )
       LOOP
-         td_core.exec_sql( c_params.DDL, p_runmode => SELF.runmode );
+         l_results := td_core.exec_sql( p_sql => c_params.DDL, 
+	 	      			p_runmode => SELF.runmode );
       END LOOP;
 
       RETURN;

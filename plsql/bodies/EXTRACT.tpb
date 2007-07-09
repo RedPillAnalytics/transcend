@@ -141,13 +141,18 @@ l_mode          VARCHAR2 (1):= CASE lower(p_append) WHEN 'yes' THEN 'a' ELSE 'w'
       l_file_dt     DATE;
       l_detail_id   NUMBER;
       l_message     notify_conf.MESSAGE%TYPE;
+      l_results	    NUMBER;
       o_app         applog    := applog (p_module      => 'process',
                                          p_runmode       => runmode);
    BEGIN
       o_app.set_action ('Configure NLS formats');
       -- set date and timestamp NLS formats
-      td_core.exec_sql (dateformat_ddl, runmode, 'nls_date_format DDL: ');
-      td_core.exec_sql (tsformat_ddl, runmode, 'nls_timestamp_format DDL: ');
+      l_results := td_core.exec_sql ( p_sql => dateformat_ddl, 
+				      p_runmode => runmode, 
+				      p_msg => 'nls_date_format DDL: ');
+      l_results := td_core.exec_sql ( p_sql => tsformat_ddl, 
+				      p_runmode => runmode, 
+				      p_msg => 'nls_timestamp_format DDL: ');
       o_app.set_action ('Extract data');
       -- extract data to arch location first
       l_numlines :=

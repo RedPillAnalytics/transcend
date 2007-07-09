@@ -6,11 +6,13 @@ IS
       p_runmode        VARCHAR2 DEFAULT NULL
    )
    AS
+      l_results NUMBER;
       o_app   applog := applog( p_runmode => p_runmode, p_module => 'trunc_tab' );
    BEGIN
-      td_core.exec_auto( 'truncate table ' || p_owner || '.' || p_table,
-                         p_runmode      => o_app.runmode
-                       );
+      l_results :=	td_core.exec_sql( p_sql => 'truncate table ' || p_owner || '.' || p_table,
+					  p_runmode      => o_app.runmode,
+					  p_auto => 'yes'
+					);
       o_app.clear_app_info;
    END trunc_tab;
 
@@ -37,6 +39,7 @@ IS
       l_src_name       VARCHAR2( 61 )          := p_source_owner || '.' || p_source_table;
       l_part_type      VARCHAR2( 6 );
       l_targ_part      dba_tables.partitioned%TYPE;
+      l_results        NUMBER;
       l_rows           BOOLEAN                       := FALSE;
       e_dup_idx_name   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_idx_name, -955 );
@@ -208,7 +211,9 @@ IS
          o_app.log_msg( 'Renamed DDL for exceptions: ' || l_e_ddl, 4 );
 
          BEGIN
-            td_core.exec_auto( l_ddl, p_runmode => o_app.runmode );
+            l_results := td_core.exec_sql( p_sql => l_ddl, 
+					   p_runmode => o_app.runmode, 
+					   p_auto=> 'yes' );
             o_app.log_msg( 'Index ' || c_indexes.idx_rename || ' built' );
             l_idx_cnt := l_idx_cnt + 1;
          EXCEPTION
@@ -228,7 +233,9 @@ IS
                          );
 
                BEGIN
-                  td_core.exec_auto( l_e_ddl );
+                  l_results := td_core.exec_sql( p_sql => l_e_ddl, 
+						 p_runmode=>o_app.runmode, 
+						 p_auto=>'yes' );
                   o_app.log_msg( 'Index ' || c_indexes.idx_e_rename || ' built' );
                   l_idx_cnt := l_idx_cnt + 1;
                EXCEPTION
@@ -285,6 +292,7 @@ IS
       l_con_cnt        NUMBER                        := 0;
       l_tab_name       VARCHAR2( 61 )                := p_owner || '.' || p_table;
       l_src_name       VARCHAR2( 61 )          := p_source_owner || '.' || p_source_table;
+      l_results	       NUMBER;
       l_rows           BOOLEAN                       := FALSE;
       e_dup_con_name   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_con_name, -2264 );
@@ -459,7 +467,9 @@ IS
          o_app.set_action( 'Execute constraint DDL' );
 
          BEGIN
-            td_core.exec_auto( l_ddl, p_runmode => o_app.runmode );
+            l_results := td_core.exec_sql( p_sql => l_ddl, 
+					   p_runmode => o_app.runmode, 
+					   p_auto=>'yes' );
             o_app.log_msg( 'Constraint ' || c_constraints.con_rename || ' built' );
             l_con_cnt := l_con_cnt + 1;
          EXCEPTION
@@ -476,16 +486,18 @@ IS
                            );
             WHEN e_dup_con_name
             THEN
-               td_core.exec_auto( REGEXP_REPLACE( l_ddl,
-                                                  '(constraint "?)(\w+)("?)',
-                                                     '\1'
-                                                  || c_constraints.con_e_rename
-                                                  || '\3 \4',
-                                                  1,
-                                                  0,
-                                                  'i'
-                                                )
-                                );
+               l_results := td_core.exec_sql( p_sql => REGEXP_REPLACE( l_ddl,
+								       '(constraint "?)(\w+)("?)',
+								       '\1'
+								       || c_constraints.con_e_rename
+								       || '\3 \4',
+								       1,
+								       0,
+								       'i'
+								     ),
+					      p_auto => 'yes',
+					      p_runmode => o_app.runmode
+					    );
                o_app.log_msg( 'Constraint ' || c_constraints.con_e_rename || ' built' );
                l_con_cnt := l_con_cnt + 1;
          END;
@@ -526,6 +538,7 @@ IS
    IS
       l_con_cnt    NUMBER         := 0;
       l_tab_name   VARCHAR2( 61 ) := p_owner || '.' || p_table;
+      l_results	   NUMBER;
       l_rows       BOOLEAN        := FALSE;
       o_app        applog
                     := applog( p_module       => 'enable_constraints',
@@ -561,7 +574,9 @@ IS
       LOOP
          -- catch empty cursor sets
          l_rows := TRUE;
-         td_core.exec_auto( c_constraints.constraint_ddl, o_app.runmode );
+	 l_results := td_core.exec_sql ( p_sql => c_constraints.constraint_ddl, 
+					 p_runmode => o_app.runmode,
+					 p_auto => 'yes' );
          l_con_cnt := l_con_cnt + 1;
          o_app.log_msg( c_constraints.msg );
       END LOOP;
@@ -601,6 +616,7 @@ IS
    IS
       l_con_cnt    NUMBER         := 0;
       l_tab_name   VARCHAR2( 61 ) := p_owner || '.' || p_table;
+      l_results	   NUMBER;
       l_rows       BOOLEAN        := FALSE;
       o_app        applog
                    := applog( p_module       => 'disable_constraints',
@@ -636,7 +652,9 @@ IS
       LOOP
          -- catch empty cursor sets
          l_rows := TRUE;
-         td_core.exec_auto( c_constraints.constraint_ddl, o_app.runmode );
+	 l_results := td_core.exec_sql( p_sql => c_constraints.constraint_ddl,
+					p_auto => 'yes',
+					p_runmode => o_app.runmode );
          l_con_cnt := l_con_cnt + 1;
          o_app.log_msg( c_constraints.msg );
       END LOOP;
@@ -677,6 +695,7 @@ IS
       l_rows       BOOLEAN        := FALSE;
       l_tab_name   VARCHAR2( 61 ) := p_owner || '.' || p_table;
       l_idx_cnt    NUMBER         := 0;
+      l_results	   NUMBER;
       e_pk_idx     EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_pk_idx, -2429 );
       o_app        applog := applog( p_module       => 'drop_indexes',
@@ -699,7 +718,9 @@ IS
          l_rows := TRUE;
 
          BEGIN
-            td_core.exec_auto( c_indexes.index_ddl, o_app.runmode );
+	    l_results := td_core.exec_sql( p_sql => c_indexes.index_ddl, 
+					   p_auto => 'yes',
+					   p_runmode => o_app.runmode );
             l_idx_cnt := l_idx_cnt + 1;
             o_app.log_msg( 'Index ' || c_indexes.index_name || ' dropped' );
          EXCEPTION
@@ -739,6 +760,7 @@ IS
    IS
       l_con_cnt    NUMBER         := 0;
       l_tab_name   VARCHAR2( 61 ) := p_owner || '.' || p_table;
+      l_results	   NUMBER;
       l_rows       BOOLEAN        := FALSE;
       o_app        applog
                       := applog( p_module       => 'drop_constraints',
@@ -766,7 +788,9 @@ IS
       LOOP
          -- catch empty cursor sets
          l_rows := TRUE;
-         td_core.exec_auto( c_constraints.constraint_ddl, o_app.runmode );
+	 l_results := td_core.exec_sql( p_sql => c_constraints.constraint_ddl, 
+					p_auto => 'yes',
+					p_runmode => o_app.runmode );
          l_con_cnt := l_con_cnt + 1;
          o_app.log_msg( 'Constraint ' || c_constraints.constraint_name || ' dropped' );
       END LOOP;
@@ -805,26 +829,23 @@ IS
    IS
       l_src_name   VARCHAR2( 61 ) := p_source_owner || '.' || p_source_object;
       l_trg_name   VARCHAR2( 61 ) := p_owner || '.' || p_table;
+      l_results	   NUMBER;
       o_app        applog
          := applog( p_module       => 'insert_table',
                     p_runmode      => p_runmode,
                     p_action       => 'Check existence of objects'
                   );
    BEGIN
-      CASE
-         WHEN NOT td_core.object_exists( p_source_owner, p_source_object )
-         THEN
-            raise_application_error( get_err_cd( 'no_object' ),
-                                     get_err_msg( 'no_object' ) || ' : ' || l_src_name
-                                   );
-         WHEN NOT td_core.table_exists( p_owner, p_table )
-         THEN
-            raise_application_error( get_err_cd( 'no_object' ),
-                                     get_err_msg( 'no_object' ) || ' : ' || l_trg_name
-                                   );
-         ELSE
-            NULL;
-      END CASE;
+      -- check information about the table
+      td_core.check_table( p_owner => p_owner, p_table => p_table);
+      
+      -- check that the source object exists.
+      IF NOT td_core.object_exists( p_source_owner, p_source_object )
+      THEN
+         raise_application_error( get_err_cd( 'no_object' ),
+                                  get_err_msg( 'no_object' ) || ' : ' || l_src_name
+                                );
+      END IF;
 
       -- warning concerning using LOG ERRORS clause and the APPEND hint
       IF td_core.is_true( p_direct ) AND p_log_table IS NOT NULL
@@ -842,41 +863,41 @@ IS
       END IF;
 
       -- enable|disable parallel dml depending on the parameter for P_DIRECT
-      td_core.exec_sql(    'ALTER SESSION '
-                        || CASE
-                              WHEN REGEXP_LIKE( 'yes', p_direct, 'i' )
-                                 THEN 'ENABLE'
-                              ELSE 'DISABLE'
-                           END
-                        || ' PARALLEL DML',
-                        p_runmode      => o_app.runmode
-                      );
+      l_results :=  td_core.exec_sql(    'ALTER SESSION '
+				      || CASE
+				         WHEN REGEXP_LIKE( 'yes', p_direct, 'i' )
+                                            THEN 'ENABLE'
+				         ELSE 'DISABLE'
+				         END
+				      || ' PARALLEL DML',
+				      p_runmode      => o_app.runmode
+				    );
       o_app.log_msg( 'Inserting records from ' || l_src_name || ' into ' || l_trg_name, 3 );
-      td_core.exec_sql
-                (    REGEXP_REPLACE(    'insert /*+ APPEND */ into '
-                                     || l_trg_name
-                                     || ' select * from '
-                                     || l_src_name,
-                                     CASE
-                                        -- just use a regular expression to remove the APPEND hint if P_DIRECT is disabled
-                                     WHEN REGEXP_LIKE( 'no', p_direct, 'i' )
-                                           THEN '/\*\+ APPEND \*/ '
-                                        ELSE NULL
-                                     END
-                                   )
-                  -- if a logging table is specified, then just append it on the end
-                  || CASE NVL( p_log_table, 'N/A' )
-                        WHEN 'N/A'
-                           THEN NULL
-                        ELSE    ' log errors into '
-                             || p_log_table
-                             || ' reject limit '
-                             || p_reject_limit
-                     END,
-                  o_app.runmode
-                );
+      l_results :=  td_core.exec_sql ( p_sql => REGEXP_REPLACE(    'insert /*+ APPEND */ into '
+								|| l_trg_name
+								|| ' select * from '
+								|| l_src_name,
+								CASE
+								  -- just use a regular expression to remove the APPEND hint if P_DIRECT is disabled
+								  WHEN REGEXP_LIKE( 'no', p_direct, 'i' )
+								     THEN '/\*\+ APPEND \*/ '
+								  ELSE       
+								     NULL
+								END
+							      )
+				                -- if a logging table is specified, then just append it on the end
+				             || CASE NVL( p_log_table, 'N/A' )
+				                  WHEN 'N/A'
+				                    THEN NULL
+				                  ELSE ' log errors into '
+				                       || p_log_table
+				                       || ' reject limit '
+				                       || p_reject_limit
+				                END,
+				       p_runmode => o_app.runmode
+				     );
       -- record the number of rows affected
-      o_app.log_cnt_msg( SQL%ROWCOUNT );
+      o_app.log_cnt_msg( l_results );
       o_app.clear_app_info;
    EXCEPTION
       WHEN OTHERS
@@ -904,6 +925,7 @@ IS
       l_values          VARCHAR2( 32000 );
       l_src_name        VARCHAR2( 61 )    := p_source_owner || '.' || p_source_object;
       l_trg_name        VARCHAR2( 61 )    := p_owner || '.' || p_table;
+      l_results		NUMBER;
       e_no_on_columns   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_on_columns, -936 );
       o_app             applog
@@ -912,20 +934,16 @@ IS
                     p_action       => 'Check existence of objects'
                   );
    BEGIN
-      CASE
-         WHEN NOT td_core.object_exists( p_source_owner, p_source_object )
-         THEN
-            raise_application_error( get_err_cd( 'no_object' ),
-                                     get_err_msg( 'no_object' ) || ' : ' || l_src_name
-                                   );
-         WHEN NOT td_core.table_exists( p_owner, p_table )
-         THEN
-            raise_application_error( get_err_cd( 'no_object' ),
-                                     get_err_msg( 'no_object' ) || ' : ' || l_trg_name
-                                   );
-         ELSE
-            NULL;
-      END CASE;
+      -- check information about the table
+      td_core.check_table( p_owner => p_owner, p_table => p_table);
+      
+      -- check that the source object exists.
+      IF NOT td_core.object_exists( p_source_owner, p_source_object )
+      THEN
+         raise_application_error( get_err_cd( 'no_object' ),
+                                  get_err_msg( 'no_object' ) || ' : ' || l_src_name
+                                );
+      END IF;
 
       -- warning concerning using LOG ERRORS clause and the APPEND hint
       IF REGEXP_LIKE( 'yes', p_direct, 'i' ) AND p_log_table IS NOT NULL
@@ -1095,63 +1113,63 @@ IS
       BEGIN
          o_app.set_action( 'Issue MERGE statement' );
          -- ENABLE|DISABLE parallel dml depending on the value of P_DIRECT
-         td_core.exec_sql(    'ALTER SESSION '
-                           || CASE
-                                 WHEN REGEXP_LIKE( 'yes', p_direct, 'i' )
-                                    THEN 'ENABLE'
-                                 ELSE 'DISABLE'
-                              END
-                           || ' PARALLEL DML',
-                           p_runmode      => o_app.runmode
-                         );
+         l_results := td_core.exec_sql( p_sql => 'ALTER SESSION '
+					|| CASE
+					     WHEN REGEXP_LIKE( 'yes', p_direct, 'i' )
+					        THEN 'ENABLE'
+					     ELSE 'DISABLE'
+					  END
+					|| ' PARALLEL DML',
+					p_runmode      => o_app.runmode
+				      );
          o_app.log_msg( 'Merging records from ' || l_src_name || ' into ' || l_trg_name,
                         3 );
          -- we put the merge statement together using all the different clauses constructed above
-         td_core.exec_sql
-                (    REGEXP_REPLACE(    'MERGE INTO '
-                                     || p_owner
-                                     || '.'
-                                     || p_table
-                                     || ' target using '
-                                     || CHR( 10 )
-                                     || '(select * from '
-                                     || p_source_owner
-                                     || '.'
-                                     || p_source_object
-                                     || ') source on '
-                                     || CHR( 10 )
-                                     || l_onclause
-                                     || CHR( 10 )
-                                     || ' WHEN MATCHED THEN UPDATE SET '
-                                     || CHR( 10 )
-                                     || l_update
-                                     || CHR( 10 )
-                                     || ' WHEN NOT MATCHED THEN INSERT /*+ APPEND */ '
-                                     || CHR( 10 )
-                                     || l_insert
-                                     || CHR( 10 )
-                                     || ' VALUES '
-                                     || CHR( 10 )
-                                     || l_values,
-                                     -- just strip the APPEND hint out if P_DIRECT is 'no'
-                                     CASE
-                                        WHEN REGEXP_LIKE( 'no', p_direct, 'i' )
-                                           THEN '/\*\+ APPEND \*/ '
-                                        ELSE NULL
-                                     END
-                                   )
-                  -- if we specify a logging table, append that on the end
-                  || CASE p_log_table
-                        WHEN NULL
-                           THEN NULL
-                        ELSE    ' log errors into '
-                             || p_log_table
-                             || ' reject limit '
-                             -- if no reject limit is specified, then use unlimited
-                             || p_reject_limit
-                     END,
-                  o_app.runmode
-                );
+	 l_results := td_core.exec_sql
+                             ( p_sql=> REGEXP_REPLACE(    'MERGE INTO '
+                                                        || p_owner
+                                                        || '.'
+                                                        || p_table
+                                                        || ' target using '
+                                                        || CHR( 10 )
+                                                        || '(select * from '
+                                                        || p_source_owner
+                                                        || '.'
+                                                        || p_source_object
+                                                        || ') source on '
+                                                        || CHR( 10 )
+                                                        || l_onclause
+                                                        || CHR( 10 )
+                                                        || ' WHEN MATCHED THEN UPDATE SET '
+                                                        || CHR( 10 )
+                                                        || l_update
+                                                        || CHR( 10 )
+                                                        || ' WHEN NOT MATCHED THEN INSERT /*+ APPEND */ '
+                                                        || CHR( 10 )
+                                                        || l_insert
+                                                        || CHR( 10 )
+                                                        || ' VALUES '
+                                                        || CHR( 10 )
+                                                        || l_values,
+                                                        -- just strip the APPEND hint out if P_DIRECT is 'no'
+                                                        CASE
+                                                           WHEN REGEXP_LIKE( 'no', p_direct, 'i' )
+                                                              THEN '/\*\+ APPEND \*/ '
+                                                           ELSE NULL
+                                                        END
+                                                      )
+                                     -- if we specify a logging table, append that on the end
+                                     || CASE p_log_table
+                                           WHEN NULL
+                                              THEN NULL
+                                           ELSE    ' log errors into '
+                                                || p_log_table
+                                                || ' reject limit '
+                                                -- if no reject limit is specified, then use unlimited
+                                                || p_reject_limit
+                                        END,
+			       p_runmode => o_app.runmode
+                             );
       EXCEPTION
          -- ON columns not specified correctly
          WHEN e_no_on_columns
@@ -1162,7 +1180,7 @@ IS
       END;
 
       -- show the records merged
-      o_app.log_cnt_msg( SQL%ROWCOUNT );
+      o_app.log_cnt_msg( l_results );
       o_app.clear_app_info;
    EXCEPTION
       WHEN OTHERS
@@ -1185,8 +1203,9 @@ IS
       p_runmode         VARCHAR2 DEFAULT NULL
    )
    IS
-      l_rows   BOOLEAN := FALSE;
-      o_app    applog  := applog( p_module => 'load_tables', p_runmode => p_runmode );
+      l_results NUMBER;
+      l_rows    BOOLEAN := FALSE;
+      o_app     applog  := applog( p_module => 'load_tables', p_runmode => p_runmode );
    BEGIN
       o_app.log_msg( 'Loading matching objects from the ' || p_source_owner || ' schema.' );
 
@@ -1315,6 +1334,7 @@ IS
       l_avgrlen        NUMBER;
       l_cachedblk      NUMBER;
       l_cachehit       NUMBER;
+      l_results	       NUMBER;
       e_no_stats       EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_stats, -20000 );
       e_compress       EXCEPTION;
@@ -1442,7 +1462,9 @@ IS
                                              AND owner = UPPER( p_owner )
                                              AND constraint_type = 'P' ))
          LOOP
-            td_core.exec_auto( c_dis_for_keys.DDL, o_app.runmode );
+            l_results := td_core.exec_sql ( p_sql => c_dis_for_keys.DDL, 
+					    p_runmode => o_app.runmode,
+					    p_auto => 'yes' );
             o_app.log_msg( c_dis_for_keys.msg );
          END LOOP;
       END IF;
@@ -1451,15 +1473,16 @@ IS
       o_app.set_action( 'Exchange table' );
 
       BEGIN
-         td_core.exec_auto(    'alter table '
-                            || l_tab_name
-                            || ' exchange partition '
-                            || l_partname
-                            || ' with table '
-                            || l_src_name
-                            || ' including indexes update global indexes',
-                            o_app.runmode
-                          );
+         l_results := td_core.exec_sql ( p_sql =>    'alter table '
+                                                  || l_tab_name
+                                                  || ' exchange partition '
+                                                  || l_partname
+                                                  || ' with table '
+                                                  || l_src_name
+                                                  || ' including indexes update global indexes',
+                                         p_runmode => o_app.runmode,
+					 p_auto => 'yes'
+                                       );
          o_app.log_msg(    l_src_name
                         || ' exchanged for partition '
                         || l_partname
@@ -1470,19 +1493,21 @@ IS
          WHEN e_compress
          THEN
             -- need to compress the staging table
-            td_core.exec_auto( 'alter table ' || l_src_name || ' move compress',
-                               o_app.runmode
+            l_results := td_core.exec_sql ( p_sql => 'alter table ' || l_src_name || ' move compress',
+                                            p_runmode => o_app.runmode,
+					    p_auto => 'yes'
                              );
             -- now, rerun the exchange
-            td_core.exec_auto(    'alter table '
-                               || l_tab_name
-                               || ' exchange partition '
-                               || l_partname
-                               || ' with table '
-                               || l_src_name
-                               || ' including indexes update global indexes',
-                               o_app.runmode
-                             );
+            l_results := td_core.exec_sql ( p_sql =>    'alter table '
+                                                     || l_tab_name
+                                                     || ' exchange partition '
+                                                     || l_partname
+                                                     || ' with table '
+                                                     || l_src_name
+                                                     || ' including indexes update global indexes',
+                                            p_runmode => o_app.runmode,
+					    p_auto => 'yes'
+                                            );
             o_app.log_msg(    l_src_name
                            || ' exchanged for partition '
                            || l_partname
@@ -1530,7 +1555,9 @@ IS
                                             AND owner = UPPER( p_owner )
                                             AND constraint_type = 'P' ))
          LOOP
-            td_core.exec_auto( c_en_for_keys.DDL, o_app.runmode );
+            l_results := td_core.exec_sql ( p_sql => c_en_for_keys.DDL, 
+					    p_runmode => o_app.runmode,
+					    p_auto => 'yes' );
             o_app.log_msg( c_en_for_keys.msg );
          END LOOP;
       END IF;
@@ -1573,6 +1600,7 @@ IS
       l_dsql            LONG;
       -- to catch empty cursors
       l_source_column   all_part_key_columns.column_name%TYPE;
+      l_results		NUMBER;
       o_app             applog
                           := applog( p_module       => 'pop_partname',
                                      p_runmode      => p_runmode );
@@ -1617,33 +1645,33 @@ IS
             l_source_column := p_source_column;
          END IF;
 
-         td_core.exec_sql
-            (    'insert into partname (table_owner, table_name, partition_name, partition_position) '
-              || ' SELECT table_owner, table_name, partition_name, partition_position'
-              || '  FROM all_tab_partitions'
-              || ' WHERE table_owner = '''
-              || UPPER( p_owner )
-              || ''' AND table_name = '''
-              || UPPER( p_table )
-              || ''' AND partition_position IN '
-              || ' (SELECT DISTINCT tbl$or$idx$part$num("'
-              || UPPER( p_owner )
-              || '"."'
-              || UPPER( p_table )
-              || '", 0, '
-              || p_d_num
-              || ', '
-              || p_p_num
-              || ', "'
-              || UPPER( l_source_column )
-              || '")	 FROM '
-              || UPPER( p_source_owner )
-              || '.'
-              || UPPER( p_source_object )
-              || ') '
-              || 'ORDER By partition_position'
+         l_results := td_core.exec_sql
+            ( p_sql =>   'insert into partname (table_owner, table_name, partition_name, partition_position) '
+                      || ' SELECT table_owner, table_name, partition_name, partition_position'
+                      || '  FROM all_tab_partitions'
+                      || ' WHERE table_owner = '''
+                      || UPPER( p_owner )
+                      || ''' AND table_name = '''
+                      || UPPER( p_table )
+                      || ''' AND partition_position IN '
+                      || ' (SELECT DISTINCT tbl$or$idx$part$num("'
+                      || UPPER( p_owner )
+                      || '"."'
+                      || UPPER( p_table )
+                      || '", 0, '
+                      || p_d_num
+                      || ', '
+                      || p_p_num
+                      || ', "'
+                      || UPPER( l_source_column )
+                      || '")	 FROM '
+                      || UPPER( p_source_owner )
+                      || '.'
+                      || UPPER( p_source_object )
+                      || ') '
+                      || 'ORDER By partition_position'
             );
-         o_app.log_cnt_msg( SQL%ROWCOUNT,
+         o_app.log_cnt_msg( l_results,
                             'Number of records inserted into PARTNAME table',
                             4
                           );
@@ -1685,6 +1713,7 @@ IS
       l_ddl        VARCHAR2( 2000 );
       l_pidx_cnt   NUMBER;
       l_idx_cnt    NUMBER;
+      l_results	   NUMBER;
       l_rows       BOOLEAN          DEFAULT FALSE;
       o_app        applog
                       := applog( p_module       => 'unusable_indexes',
@@ -1830,7 +1859,9 @@ IS
       LOOP
          o_app.set_action( 'Execute index DDL' );
          l_rows := TRUE;
-         td_core.exec_auto( c_idx.DDL, p_runmode => o_app.runmode );
+         l_results := td_core.exec_sql ( p_sql => c_idx.DDL, 
+	 	      			 p_runmode => o_app.runmode,
+					 p_auto => 'yes' );
          l_pidx_cnt := c_idx.num_partitions;
          l_idx_cnt := c_idx.num_indexes;
       END LOOP;
@@ -1883,10 +1914,11 @@ IS
       p_runmode   VARCHAR2 DEFAULT NULL
    )
    IS
-      l_ddl    VARCHAR2( 2000 );
-      l_rows   BOOLEAN          := FALSE;                       -- to catch empty cursors
-      l_cnt    NUMBER           := 0;
-      o_app    applog
+      l_ddl     VARCHAR2( 2000 );
+      l_results NUMBER;
+      l_rows    BOOLEAN          := FALSE;                       -- to catch empty cursors
+      l_cnt     NUMBER           := 0;
+      o_app     applog
          := applog( p_module       => 'usable_indexes',
                     p_action       => 'Rebuild indexes',
                     p_runmode      => p_runmode
@@ -1921,7 +1953,9 @@ IS
                             AND table_owner = UPPER( p_owner )
                        ORDER BY table_name, partition_position )
          LOOP
-            td_core.exec_auto( c_idx.DDL, p_runmode => o_app.runmode );
+            l_results := td_core.exec_sql ( p_sql => c_idx.DDL, 
+					    p_runmode => o_app.runmode,
+					    p_auto => 'yes' );
             l_cnt := l_cnt + 1;
          END LOOP;
 
@@ -1956,7 +1990,9 @@ IS
                      ORDER BY table_name )
       LOOP
          l_rows := TRUE;
-         td_core.exec_auto( c_gidx.DDL, o_app.runmode );
+         l_results := td_core.exec_sql ( p_sql => c_gidx.DDL, 
+					 p_runmode => o_app.runmode,
+					 p_auto => 'yes' );
          l_cnt := l_cnt + 1;
       END LOOP;
 

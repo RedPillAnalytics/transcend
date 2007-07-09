@@ -96,6 +96,7 @@ AS
       l_ext_tab_ddl    VARCHAR2( 2000 );
       l_files_url      VARCHAR2( 1000 );
       l_message        notify_conf.MESSAGE%TYPE;
+      l_results	       NUMBER;
       e_no_files       EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_files, -1756 );
       o_app            applog
@@ -406,7 +407,9 @@ AS
             o_app.set_action( 'Alter external table' );
 
             BEGIN
-               td_core.exec_auto( l_ext_tab_ddl, p_runmode => SELF.runmode );
+               l_results := td_core.exec_sql ( p_sql => l_ext_tab_ddl, 
+					       p_runmode => SELF.runmode,
+					       p_auto => 'yes' );
                o_app.log_msg(    'External table '
                               || object_owner
                               || '.'
