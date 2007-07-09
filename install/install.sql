@@ -16,6 +16,7 @@ GRANT UPDATE ANY TABLE TO &schema;
 GRANT ALTER ANY INDEX TO &schema;
 GRANT CREATE ANY INDEX TO &schema;
 GRANT DROP ANY INDEX TO &schema;
+GRANT DROP ANY TABLE TO &schema;
 GRANT CREATE ANY directory TO &schema;
 GRANT EXECUTE ON sys.utl_mail TO &schema;
 
