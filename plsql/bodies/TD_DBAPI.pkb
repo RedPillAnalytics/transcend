@@ -908,13 +908,12 @@ IS
                                      || CASE
                                            -- just use a regular expression to remove the APPEND hint if P_DIRECT is disabled
                                         WHEN p_degree IS NOT NULL
-                                              THEN    '/*+ PARALLEL (p_table '
-                                                   || p_degree
-                                                   || ')'
+                   THEN    '/*+ PARALLEL (source '|| p_degree || ') */'
                                            ELSE NULL
                                         END
                                      || '* from '
                                      || l_src_name
+				     || ' source '
                                      -- if a logging table is specified, then just append it on the end
                                      || CASE NVL( p_log_table, 'N/A' )
                                            WHEN 'N/A'
@@ -927,7 +926,10 @@ IS
                    p_runmode      => o_app.runmode
                  );
       -- record the number of rows affected
-      o_app.log_cnt_msg( l_results );
+      IF NOT o_app.is_debugmode
+      THEN
+	 o_app.log_cnt_msg( l_results );
+      END IF;
       o_app.clear_app_info;
    EXCEPTION
       WHEN OTHERS
