@@ -82,6 +82,7 @@ IS
       p_table           VARCHAR2,
       p_columns         VARCHAR2 DEFAULT NULL,
       p_direct          VARCHAR2 DEFAULT 'yes',
+      p_degree		NUMBER	 DEFAULT NULL,
       p_log_table       VARCHAR2 DEFAULT NULL,
       p_reject_limit    VARCHAR2 DEFAULT 'unlimited',
       p_runmode         VARCHAR2 DEFAULT NULL

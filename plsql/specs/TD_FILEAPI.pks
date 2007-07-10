@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE td_fileapi
+CREATE OR REPLACE PACKAGE td_fileapi AUTHID CURRENT_USER
 IS
    FUNCTION calc_rej_ind(
       p_filehub_group   VARCHAR2,

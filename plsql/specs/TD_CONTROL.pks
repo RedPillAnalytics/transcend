@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE td_control
+CREATE OR REPLACE PACKAGE td_control AUTHID CURRENT_USER
 IS
    PROCEDURE set_logging_level(
       p_module          VARCHAR2 DEFAULT 'default',
