@@ -1,30 +1,40 @@
 SET serveroutput on size unlimited
 SET echo off
 
-ACCEPT schema char default 'TDINC' prompt 'Schema to install Transcend in [TDINC]: '
-ACCEPT tablespace char default 'TDINC' prompt 'Tablespace to install Transcend in [TDINC]: '
+ACCEPT app_schema char default 'TDINC' prompt 'Schema in which to install Transcend packages [TDINC]: '
+ACCEPT tab_schema char default 'TDINC' prompt 'Schema in which to install Transcend tables [TDINC]: '
+ACCEPT tablespace char default 'TDINC' prompt 'Tablespace in which to install Transcend tables [TDINC]: '
 
-GRANT CONNECT TO &schema;
-GRANT RESOURCE TO &schema;
-GRANT ALTER ANY TABLE TO &schema;
-GRANT ALTER SESSION TO &schema;
-GRANT EXECUTE ANY PROCEDURE TO &schema;
-GRANT INSERT ANY TABLE TO &schema;
-GRANT SELECT ANY dictionary TO &schema;
-GRANT SELECT ANY TABLE TO &schema;
-GRANT UPDATE ANY TABLE TO &schema;
-GRANT ALTER ANY INDEX TO &schema;
-GRANT CREATE ANY INDEX TO &schema;
-GRANT DROP ANY INDEX TO &schema;
-GRANT DROP ANY TABLE TO &schema;
-GRANT CREATE ANY directory TO &schema;
-GRANT EXECUTE ON sys.utl_mail TO &schema;
+GRANT CONNECT TO &app_schema;
+GRANT RESOURCE TO &app_schema;
+GRANT ALTER ANY TABLE TO &app_schema;
+GRANT ALTER SESSION TO &app_schema;
+GRANT EXECUTE ANY PROCEDURE TO &app_schema;
+GRANT INSERT ANY TABLE TO &app_schema;
+GRANT SELECT ANY dictionary TO &app_schema;
+GRANT SELECT ANY TABLE TO &app_schema;
+GRANT UPDATE ANY TABLE TO &app_schema;
+GRANT ALTER ANY INDEX TO &app_schema;
+GRANT CREATE ANY INDEX TO &app_schema;
+GRANT DROP ANY INDEX TO &app_schema;
+GRANT DROP ANY TABLE TO &app_schema;
+GRANT CREATE ANY directory TO &app_schema;
+GRANT EXECUTE ON sys.utl_mail TO &app_schema;
 
 CREATE ROLE td_sel;
 CREATE ROLE td_adm;
 
--- ALTER USER &schema DEFAULT TABLESPACE &tablespace;
-ALTER SESSION SET current_schema=&schema;
+VARIABLE old_tbspace char(30)
+BEGIN
+   SELECT default_tablespace
+     INTO :old_tbspace
+     FROM dba_users
+    WHERE username='&tab_schema';
+END;
+/
+
+ALTER USER &tab_schema DEFAULT TABLESPACE &tablespace;
+ALTER SESSION SET current_schema=&tab_schema;
 
 SET echo on
 
@@ -42,6 +52,8 @@ SET echo on
 @../ddl/REGISTRATION_CONF_tbl.sql
 @../ddl/RUNMODE_CONF_tbl.sql
 @../ddl/PARAMETER_CONF_tbl.sql
+
+ALTER SESSION SET current_schema=&app_schema;
 
 --CREATE java stored procedure
 @../java/TdCore.jvs
@@ -109,11 +121,16 @@ CREATE OR REPLACE PUBLIC SYNONYM filehub_obj_detail FOR filehub_obj_detail;
 
 --java permissions
 EXEC dbms_java.set_output(1000000);
-EXEC dbms_java.grant_permission( upper('&schema'), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'execute' );
-EXEC dbms_java.grant_permission( upper('&schema'), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'read' );
-EXEC dbms_java.grant_permission( upper('&schema'), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'write' );
-EXEC dbms_java.grant_permission( upper('&schema'), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'delete' );
-EXEC dbms_java.grant_permission( upper('&schema'), 'SYS:java.lang.RuntimePermission', 'writeFileDescriptor', '' );
-EXEC dbms_java.grant_permission( upper('&schema'), 'SYS:java.lang.RuntimePermission', 'readFileDescriptor','' );
+EXEC dbms_java.grant_permission( upper('&app_schema'), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'execute' );
+EXEC dbms_java.grant_permission( upper('&app_schema'), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'read' );
+EXEC dbms_java.grant_permission( upper('&app_schema'), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'write' );
+EXEC dbms_java.grant_permission( upper('&app_schema'), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'delete' );
+EXEC dbms_java.grant_permission( upper('&app_schema'), 'SYS:java.lang.RuntimePermission', 'writeFileDescriptor', '' );
+EXEC dbms_java.grant_permission( upper('&app_schema'), 'SYS:java.lang.RuntimePermission', 'readFileDescriptor','' );
 
 ALTER SESSION SET current_schema=&_USER;
+
+BEGIN
+   EXECUTE IMMEDIATE 'alter user &tab_schema default tablespace '||:old_tbspace;
+END;
+/
