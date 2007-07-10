@@ -898,9 +898,8 @@ IS
          td_core.exec_sql
                  ( p_sql          =>    'insert '
                                      || CASE
-                                           -- just use a regular expression to remove the APPEND hint if P_DIRECT is disabled
-                                        WHEN td_core.is_true( p_direct )
-                                              THEN '/\*\+ APPEND \*/ '
+                                           WHEN td_core.is_true( p_direct )
+                                              THEN '/*+ APPEND */ '
                                            ELSE NULL
                                         END
                                      || 'into '
@@ -909,7 +908,9 @@ IS
                                      || CASE
                                            -- just use a regular expression to remove the APPEND hint if P_DIRECT is disabled
                                         WHEN p_degree IS NOT NULL
-                                              THEN '/*+ PARALLEL (p_table ' || p_degree
+                                              THEN    '/*+ PARALLEL (p_table '
+                                                   || p_degree
+                                                   || ')'
                                            ELSE NULL
                                         END
                                      || '* from '
@@ -1160,8 +1161,7 @@ IS
          -- we put the merge statement together using all the different clauses constructed above
          l_results :=
             td_core.exec_sql
-               ( p_sql          =>    REGEXP_REPLACE
-                                         (    'MERGE INTO '
+                       ( p_sql          =>    'MERGE INTO '
                                            || p_owner
                                            || '.'
                                            || p_table
@@ -1179,32 +1179,30 @@ IS
                                            || CHR( 10 )
                                            || l_update
                                            || CHR( 10 )
-                                           || ' WHEN NOT MATCHED THEN INSERT /*+ APPEND */ '
+                                           || ' WHEN NOT MATCHED THEN INSERT '
+                                           || CASE
+                                                 WHEN td_core.is_true( p_direct )
+                                                    THEN '/*+ APPEND */ '
+                                                 ELSE NULL
+                                              END
                                            || CHR( 10 )
                                            || l_insert
                                            || CHR( 10 )
                                            || ' VALUES '
                                            || CHR( 10 )
-                                           || l_values,
-                                           -- just strip the APPEND hint out if P_DIRECT is 'no'
-                                           CASE
-                                              WHEN REGEXP_LIKE( 'no', p_direct, 'i' )
-                                                 THEN '/\*\+ APPEND \*/ '
-                                              ELSE NULL
-                                           END
-                                         )
-                                   -- if we specify a logging table, append that on the end
-                                   || CASE p_log_table
-                                         WHEN NULL
-                                            THEN NULL
-                                         ELSE    ' log errors into '
-                                              || p_log_table
-                                              || ' reject limit '
-                                              -- if no reject limit is specified, then use unlimited
-                                              || p_reject_limit
-                                      END,
-                 p_runmode      => o_app.runmode
-               );
+                                           || l_values
+                                           -- if we specify a logging table, append that on the end
+                                           || CASE p_log_table
+                                                 WHEN NULL
+                                                    THEN NULL
+                                                 ELSE    ' log errors into '
+                                                      || p_log_table
+                                                      || ' reject limit '
+                                                      -- if no reject limit is specified, then use unlimited
+                                                      || p_reject_limit
+                                              END,
+                         p_runmode      => o_app.runmode
+                       );
       EXCEPTION
          -- ON columns not specified correctly
          WHEN e_no_on_columns
