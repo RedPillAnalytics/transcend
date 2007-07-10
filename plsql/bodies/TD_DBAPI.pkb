@@ -1792,12 +1792,16 @@ IS
                          );
 
       -- test the source object
-      IF NOT td_core.object_exists( p_owner       => p_source_owner,
-                                    p_object      => p_source_object )
+      -- but only if it's specified
+      IF p_source_object IS NOT NULL
       THEN
-         raise_application_error( get_err_cd( 'no_object' ),
-                                  get_err_msg( 'no_object' ) || ' : ' || l_src_name
-                                );
+	 IF NOT td_core.object_exists( p_owner       => p_source_owner,
+                                       p_object      => p_source_object )
+	 THEN
+            raise_application_error( get_err_cd( 'no_object' ),
+                                     get_err_msg( 'no_object' ) || ' : ' || l_src_name
+                                   );
+	 END IF;
       END IF;
 
       IF NOT o_app.is_debugmode
