@@ -908,15 +908,15 @@ IS
                                      || CASE
                                            -- just use a regular expression to remove the APPEND hint if P_DIRECT is disabled
                                         WHEN p_degree IS NOT NULL
-                   THEN    '/*+ PARALLEL (source '|| p_degree || ') */'
+                   THEN    '/*+ PARALLEL (source '|| p_degree || ') */ '
                                            ELSE NULL
                                         END
                                      || '* from '
                                      || l_src_name
-				     || ' source '
+				     || ' source'
                                      -- if a logging table is specified, then just append it on the end
-                                     || CASE NVL( p_log_table, 'N/A' )
-                                           WHEN 'N/A'
+                                     || CASE 
+                                           WHEN p_log_table IS null
                                               THEN NULL
                                            ELSE    ' log errors into '
                                                 || p_log_table
@@ -946,6 +946,7 @@ IS
       p_table           VARCHAR2,
       p_columns         VARCHAR2 DEFAULT NULL,
       p_direct          VARCHAR2 DEFAULT 'yes',
+      p_degree		NUMBER	 DEFAULT NULL,
       p_log_table       VARCHAR2 DEFAULT NULL,
       p_reject_limit    VARCHAR2 DEFAULT 'unlimited',
       p_runmode         VARCHAR2 DEFAULT NULL
@@ -1169,11 +1170,18 @@ IS
                                            || p_table
                                            || ' target using '
                                            || CHR( 10 )
-                                           || '(select * from '
+                         || '(select '
+			 || CASE
+                                           -- just use a regular expression to remove the APPEND hint if P_DIRECT is disabled
+                                        WHEN p_degree IS NOT NULL
+                   THEN    '/*+ PARALLEL (src '|| p_degree || ') */ '
+                                           ELSE NULL
+                                        END
+			 ||'* from '
                                            || p_source_owner
                                            || '.'
                                            || p_source_object
-                                           || ') source on '
+                                           || ' src ) source on '
                                            || CHR( 10 )
                                            || l_onclause
                                            || CHR( 10 )
@@ -1194,10 +1202,10 @@ IS
                                            || CHR( 10 )
                                            || l_values
                                            -- if we specify a logging table, append that on the end
-                                           || CASE p_log_table
-                                                 WHEN NULL
+                                           || CASE
+                                                 WHEN p_log_table is NULL
                                                     THEN NULL
-                                                 ELSE    ' log errors into '
+                                                 ELSE    'log errors into '
                                                       || p_log_table
                                                       || ' reject limit '
                                                       -- if no reject limit is specified, then use unlimited
@@ -1214,8 +1222,11 @@ IS
                                    );
       END;
 
-      -- show the records merged
-      o_app.log_cnt_msg( l_results );
+      -- record the number of rows affected
+      IF NOT o_app.is_debugmode
+      THEN
+	 o_app.log_cnt_msg( l_results );
+      END IF;
       o_app.clear_app_info;
    EXCEPTION
       WHEN OTHERS
