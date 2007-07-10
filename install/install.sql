@@ -25,11 +25,32 @@ CREATE ROLE td_sel;
 CREATE ROLE td_adm;
 
 VARIABLE old_tbspace char(30)
+DECLARE
+   l_app_schema VARCHAR2(30) := '&app_schema';
+   l_tab_schema VARCHAR2(30) := '&tab_schema';
 BEGIN
    SELECT default_tablespace
      INTO :old_tbspace
      FROM dba_users
-    WHERE username='&tab_schema';
+    WHERE username=upper('&tab_schema');
+   
+   IF upper(l_app_schema) <> upper(l_tab_schema)
+   THEN
+      EXECUTE IMMEDIATE 'create synonym '||l_app_schema||'.COUNT_TABLE for '||l_tab_schema||'.COUNT_TABLE';
+      EXECUTE IMMEDIATE 'create synonym '||l_app_schema||'.DIR_LIST for '||l_tab_schema||'.DIR_LIST';
+      EXECUTE IMMEDIATE 'create synonym '||l_app_schema||'.ERR_CD for '||l_tab_schema||'.ERR_CD';
+      EXECUTE IMMEDIATE 'create synonym '||l_app_schema||'.FILEHUB_CONF for '||l_tab_schema||'.FILEHUB_CONF';
+      EXECUTE IMMEDIATE 'create synonym '||l_app_schema||'.FILEHUB_DETAIL for '||l_tab_schema||'.FILEHUB_DETAIL';
+      EXECUTE IMMEDIATE 'create synonym '||l_app_schema||'.FILEHUB_OBJ_DETAIL for '||l_tab_schema||'.FILEHUB_OBJ_DETAIL';
+      EXECUTE IMMEDIATE 'create synonym '||l_app_schema||'.LOGGING_CONF for '||l_tab_schema||'.LOGGING_CONF';
+      EXECUTE IMMEDIATE 'create synonym '||l_app_schema||'.LOG_TABLE for '||l_tab_schema||'.LOG_TABLE';
+      EXECUTE IMMEDIATE 'create synonym '||l_app_schema||'.NOTIFY_CONF for '||l_tab_schema||'.NOTIFY_CONF';
+      EXECUTE IMMEDIATE 'create synonym '||l_app_schema||'.PARTNAME for '||l_tab_schema||'.PARTNAME';
+      EXECUTE IMMEDIATE 'create synonym '||l_app_schema||'.REGISTRATION_CONF for '||l_tab_schema||'.REGISTRATION_CONF';
+      EXECUTE IMMEDIATE 'create synonym '||l_app_schema||'.RUNMODE_CONF for '||l_tab_schema||'.RUNMODE_CONF';
+      EXECUTE IMMEDIATE 'create synonym '||l_app_schema||'.PARAMETER_CONF for '||l_tab_schema||'.PARAMETER_CONF';
+   END IF;
+      
 END;
 /
 
