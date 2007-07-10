@@ -164,7 +164,6 @@ AS
       l_results NUMBER;
       o_app   applog := applog( p_module => 'exec_sql', p_runmode => p_runmode );
    BEGIN
-      o_app.log_msg( p_msg || p_sql, 3 );
       o_app.log_msg( CASE 
       		     WHEN p_msg IS NULL
 		     THEN
