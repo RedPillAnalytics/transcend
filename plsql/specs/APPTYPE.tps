@@ -1,4 +1,4 @@
-CREATE OR REPLACE TYPE apptype UNDER basetype (
+CREATE OR REPLACE TYPE apptype UNDER basetype(
    client_info        VARCHAR2( 64 ),
    module             VARCHAR2( 48 ),
    action             VARCHAR2( 32 ),
