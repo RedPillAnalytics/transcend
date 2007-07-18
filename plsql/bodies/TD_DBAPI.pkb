@@ -896,40 +896,44 @@ IS
       o_app.log_msg( 'Inserting records from ' || l_src_name || ' into ' || l_trg_name, 3 );
       l_results :=
          td_core.exec_sql
-                 ( p_sql          =>    'insert '
-                                     || CASE
-                                           WHEN td_core.is_true( p_direct )
-                                              THEN '/*+ APPEND */ '
-                                           ELSE NULL
-                                        END
-                                     || 'into '
-                                     || l_trg_name
-                                     || ' select '
-                                     || CASE
-                                           -- just use a regular expression to remove the APPEND hint if P_DIRECT is disabled
-                                        WHEN p_degree IS NOT NULL
-                   THEN    '/*+ PARALLEL (source '|| p_degree || ') */ '
-                                           ELSE NULL
-                                        END
-                                     || '* from '
-                                     || l_src_name
-				     || ' source'
-                                     -- if a logging table is specified, then just append it on the end
-                                     || CASE 
-                                           WHEN p_log_table IS null
-                                              THEN NULL
-                                           ELSE    ' log errors into '
-                                                || p_log_table
-                                                || ' reject limit '
-                                                || p_reject_limit
-                                        END,
-                   p_runmode      => o_app.runmode
-                 );
+                  ( p_sql          =>    'insert '
+                                      || CASE
+                                            WHEN td_core.is_true( p_direct )
+                                               THEN '/*+ APPEND */ '
+                                            ELSE NULL
+                                         END
+                                      || 'into '
+                                      || l_trg_name
+                                      || ' select '
+                                      || CASE
+                                            -- just use a regular expression to remove the APPEND hint if P_DIRECT is disabled
+                                         WHEN p_degree IS NOT NULL
+                                               THEN    '/*+ PARALLEL (source '
+                                                    || p_degree
+                                                    || ') */ '
+                                            ELSE NULL
+                                         END
+                                      || '* from '
+                                      || l_src_name
+                                      || ' source'
+                                      -- if a logging table is specified, then just append it on the end
+                                      || CASE
+                                            WHEN p_log_table IS NULL
+                                               THEN NULL
+                                            ELSE    ' log errors into '
+                                                 || p_log_table
+                                                 || ' reject limit '
+                                                 || p_reject_limit
+                                         END,
+                    p_runmode      => o_app.runmode
+                  );
+
       -- record the number of rows affected
       IF NOT o_app.is_debugmode
       THEN
-	 o_app.log_cnt_msg( l_results );
+         o_app.log_cnt_msg( l_results );
       END IF;
+
       o_app.clear_app_info;
    EXCEPTION
       WHEN OTHERS
@@ -946,7 +950,7 @@ IS
       p_table           VARCHAR2,
       p_columns         VARCHAR2 DEFAULT NULL,
       p_direct          VARCHAR2 DEFAULT 'yes',
-      p_degree		NUMBER	 DEFAULT NULL,
+      p_degree          NUMBER DEFAULT NULL,
       p_log_table       VARCHAR2 DEFAULT NULL,
       p_reject_limit    VARCHAR2 DEFAULT 'unlimited',
       p_runmode         VARCHAR2 DEFAULT NULL
@@ -1164,55 +1168,57 @@ IS
          -- we put the merge statement together using all the different clauses constructed above
          l_results :=
             td_core.exec_sql
-                       ( p_sql          =>    'MERGE INTO '
-                                           || p_owner
-                                           || '.'
-                                           || p_table
-                                           || ' target using '
-                                           || CHR( 10 )
-                         || '(select '
-			 || CASE
-                                           -- just use a regular expression to remove the APPEND hint if P_DIRECT is disabled
-                                        WHEN p_degree IS NOT NULL
-                   THEN    '/*+ PARALLEL (src '|| p_degree || ') */ '
-                                           ELSE NULL
-                                        END
-			 ||'* from '
-                                           || p_source_owner
-                                           || '.'
-                                           || p_source_object
-                                           || ' src ) source on '
-                                           || CHR( 10 )
-                                           || l_onclause
-                                           || CHR( 10 )
-                                           || ' WHEN MATCHED THEN UPDATE SET '
-                                           || CHR( 10 )
-                                           || l_update
-                                           || CHR( 10 )
-                                           || ' WHEN NOT MATCHED THEN INSERT '
-                                           || CASE
-                                                 WHEN td_core.is_true( p_direct )
-                                                    THEN '/*+ APPEND */ '
-                                                 ELSE NULL
-                                              END
-                                           || CHR( 10 )
-                                           || l_insert
-                                           || CHR( 10 )
-                                           || ' VALUES '
-                                           || CHR( 10 )
-                                           || l_values
-                                           -- if we specify a logging table, append that on the end
-                                           || CASE
-                                                 WHEN p_log_table is NULL
-                                                    THEN NULL
-                                                 ELSE    'log errors into '
-                                                      || p_log_table
-                                                      || ' reject limit '
-                                                      -- if no reject limit is specified, then use unlimited
-                                                      || p_reject_limit
-                                              END,
-                         p_runmode      => o_app.runmode
-                       );
+                     ( p_sql          =>    'MERGE INTO '
+                                         || p_owner
+                                         || '.'
+                                         || p_table
+                                         || ' target using '
+                                         || CHR( 10 )
+                                         || '(select '
+                                         || CASE
+                                               -- just use a regular expression to remove the APPEND hint if P_DIRECT is disabled
+                                            WHEN p_degree IS NOT NULL
+                                                  THEN    '/*+ PARALLEL (src '
+                                                       || p_degree
+                                                       || ') */ '
+                                               ELSE NULL
+                                            END
+                                         || '* from '
+                                         || p_source_owner
+                                         || '.'
+                                         || p_source_object
+                                         || ' src ) source on '
+                                         || CHR( 10 )
+                                         || l_onclause
+                                         || CHR( 10 )
+                                         || ' WHEN MATCHED THEN UPDATE SET '
+                                         || CHR( 10 )
+                                         || l_update
+                                         || CHR( 10 )
+                                         || ' WHEN NOT MATCHED THEN INSERT '
+                                         || CASE
+                                               WHEN td_core.is_true( p_direct )
+                                                  THEN '/*+ APPEND */ '
+                                               ELSE NULL
+                                            END
+                                         || CHR( 10 )
+                                         || l_insert
+                                         || CHR( 10 )
+                                         || ' VALUES '
+                                         || CHR( 10 )
+                                         || l_values
+                                         -- if we specify a logging table, append that on the end
+                                         || CASE
+                                               WHEN p_log_table IS NULL
+                                                  THEN NULL
+                                               ELSE    'log errors into '
+                                                    || p_log_table
+                                                    || ' reject limit '
+                                                    -- if no reject limit is specified, then use unlimited
+                                                    || p_reject_limit
+                                            END,
+                       p_runmode      => o_app.runmode
+                     );
       EXCEPTION
          -- ON columns not specified correctly
          WHEN e_no_on_columns
@@ -1225,8 +1231,9 @@ IS
       -- record the number of rows affected
       IF NOT o_app.is_debugmode
       THEN
-	 o_app.log_cnt_msg( l_results );
+         o_app.log_cnt_msg( l_results );
       END IF;
+
       o_app.clear_app_info;
    EXCEPTION
       WHEN OTHERS
@@ -1245,6 +1252,7 @@ IS
       p_part_tabs       VARCHAR2 DEFAULT 'yes',
       p_trunc           VARCHAR2 DEFAULT 'no',
       p_direct          VARCHAR2 DEFAULT 'yes',
+      p_degree          NUMBER DEFAULT NULL,
       p_commit          VARCHAR2 DEFAULT 'yes',
       p_runmode         VARCHAR2 DEFAULT NULL
    )
@@ -1316,6 +1324,7 @@ IS
                             p_owner              => c_objects.targ_owner,
                             p_table              => c_objects.targ,
                             p_direct             => p_direct,
+                            p_degree             => p_degree,
                             p_runmode            => o_app.runmode
                           );
             WHEN NOT td_core.is_true( p_trunc )
@@ -1325,6 +1334,7 @@ IS
                              p_owner              => c_objects.targ_owner,
                              p_table              => c_objects.targ,
                              p_direct             => p_direct,
+                             p_degree             => p_degree,
                              p_trunc              => p_trunc,
                              p_runmode            => o_app.runmode
                            );
@@ -1808,13 +1818,14 @@ IS
       -- but only if it's specified
       IF p_source_object IS NOT NULL
       THEN
-	 IF NOT td_core.object_exists( p_owner       => p_source_owner,
-                                       p_object      => p_source_object )
-	 THEN
+         IF NOT td_core.object_exists( p_owner       => p_source_owner,
+                                       p_object      => p_source_object
+                                     )
+         THEN
             raise_application_error( get_err_cd( 'no_object' ),
                                      get_err_msg( 'no_object' ) || ' : ' || l_src_name
                                    );
-	 END IF;
+         END IF;
       END IF;
 
       IF NOT o_app.is_debugmode
