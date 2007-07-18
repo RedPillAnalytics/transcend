@@ -21,7 +21,7 @@ AS
       -- we also set the action, which may be used one day to fine tune parameters
       action := LOWER( p_action );
       -- now set the runmode
-      self.set_runmode( p_runmode );
+      SELF.set_runmode( p_runmode );
       -- register with DBMS_APPLICATION_INFO
       -- read previous app_info settings
       -- if not registering with oracle, then this is not necessary
@@ -120,6 +120,6 @@ AS
 
       RETURN LOWER( l_name );
    END get_package_name;
-   -- GET method for DEBUG mode
+-- GET method for DEBUG mode
 END;
 /
