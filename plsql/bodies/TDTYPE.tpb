@@ -1,6 +1,6 @@
-CREATE OR REPLACE TYPE BODY applog
+CREATE OR REPLACE TYPE BODY tdtype
 AS
-   CONSTRUCTOR FUNCTION applog(
+   CONSTRUCTOR FUNCTION tdtype(
       p_action        VARCHAR2 DEFAULT 'begin module',
       p_module        VARCHAR2 DEFAULT NULL,
       p_client_info   VARCHAR2 DEFAULT NULL,
@@ -8,7 +8,7 @@ AS
    )
       RETURN SELF AS RESULT
    AS
-      l_results NUMBER;
+      l_results   NUMBER;
    BEGIN
       -- get the session id
       session_id := SYS_CONTEXT( 'USERENV', 'SESSIONID' );
@@ -16,8 +16,8 @@ AS
       module :=
          LOWER( CASE
                    WHEN p_module IS NULL
-                      THEN get_package_name
-                   ELSE get_package_name || '.' || p_module
+                      THEN SELF.get_package_name
+                   ELSE SELF.get_package_name || '.' || p_module
                 END
               );
       -- we also set the action, which may be used one day to fine tune parameters
@@ -175,12 +175,13 @@ AS
             FROM parameter_conf
            WHERE LOWER( module ) = SELF.module )
       LOOP
-         l_results := td_core.exec_sql( p_sql => c_params.DDL, 
-	 	      			p_runmode => SELF.runmode );
+         l_results :=
+                     td_core.exec_sql( p_sql          => c_params.DDL,
+                                       p_runmode      => SELF.runmode );
       END LOOP;
 
       RETURN;
-   END applog;
+   END tdtype;
    -- used to pull the calling block from the dictionary
    -- used to populate CALL_STACK column in the LOG_TABLE
    MEMBER FUNCTION whence
@@ -212,75 +213,7 @@ AS
 
       RETURN l_line;
    END whence;
-   MEMBER FUNCTION get_package_name
-      RETURN VARCHAR2
-   AS
-      l_call_stack    VARCHAR2( 4096 ) DEFAULT DBMS_UTILITY.format_call_stack;
-      l_num           NUMBER;
-      l_found_stack   BOOLEAN          DEFAULT FALSE;
-      l_line          VARCHAR2( 255 );
-      l_cnt           NUMBER           := 0;
-      l_name          VARCHAR2( 30 );
-      l_caller        VARCHAR2( 30 );
-   BEGIN
-      LOOP
-         l_num := INSTR( l_call_stack, CHR( 10 ));
-         EXIT WHEN( l_cnt = 3 OR l_num IS NULL OR l_num = 0 );
-         l_line := SUBSTR( l_call_stack, 1, l_num - 1 );
-         l_call_stack := SUBSTR( l_call_stack, l_num + 1 );
-
-         IF ( NOT l_found_stack )
-         THEN
-            IF ( l_line LIKE '%handle%number%name%' )
-            THEN
-               l_found_stack := TRUE;
-            END IF;
-         ELSE
-            l_cnt := l_cnt + 1;
-
-            -- l_cnt = 1 is ME
-            -- l_cnt = 2 is MY Caller
-            -- l_cnt = 3 is Their Caller
-            IF ( l_cnt = 3 )
-            THEN
-               l_line := SUBSTR( l_line, 21 );
-
-               IF ( l_line LIKE 'pr%' )
-               THEN
-                  l_num := LENGTH( 'procedure ' );
-               ELSIF( l_line LIKE 'fun%' )
-               THEN
-                  l_num := LENGTH( 'function ' );
-               ELSIF( l_line LIKE 'package body%' )
-               THEN
-                  l_num := LENGTH( 'package body ' );
-               ELSIF( l_line LIKE 'pack%' )
-               THEN
-                  l_num := LENGTH( 'package ' );
-               ELSIF( l_line LIKE 'anonymous%' )
-               THEN
-                  l_num := LENGTH( 'anonymous block ' );
-               ELSE
-                  l_num := NULL;
-               END IF;
-
-               IF ( l_num IS NOT NULL )
-               THEN
-                  l_caller := LTRIM( RTRIM( UPPER( SUBSTR( l_line, 1, l_num - 1 ))));
-               ELSE
-                  l_caller := 'TRIGGER';
-               END IF;
-
-               l_line := SUBSTR( l_line, NVL( l_num, 1 ));
-               l_num := INSTR( l_line, '.' );
-               l_name := LTRIM( RTRIM( SUBSTR( l_line, l_num + 1 )));
-            END IF;
-         END IF;
-      END LOOP;
-
-      RETURN LOWER( l_name );
-   END get_package_name;
-   MEMBER PROCEDURE set_action( p_action VARCHAR2 )
+   overriding MEMBER PROCEDURE set_action( p_action VARCHAR2 )
    AS
    BEGIN
       action := LOWER( p_action );
@@ -291,7 +224,7 @@ AS
          DBMS_APPLICATION_INFO.set_action( action );
       END IF;
    END set_action;
-   MEMBER PROCEDURE clear_app_info
+   overriding MEMBER PROCEDURE clear_app_info
    AS
    BEGIN
       action := prev_action;
@@ -382,12 +315,12 @@ AS
    BEGIN
       log_msg( l_msg, 1, 'no' );
    END log_err;
-   MEMBER PROCEDURE log_cnt_msg( 
-      p_count NUMBER, 
-      p_msg VARCHAR2 DEFAULT NULL,
+   MEMBER PROCEDURE log_cnt_msg(
+      p_count     NUMBER,
+      p_msg       VARCHAR2 DEFAULT NULL,
       p_level     NUMBER DEFAULT 2,
       p_stdout    VARCHAR2 DEFAULT 'yes',
-      p_oper_id   NUMBER DEFAULT NULL 
+      p_oper_id   NUMBER DEFAULT NULL
    )
    AS
       PRAGMA AUTONOMOUS_TRANSACTION;
@@ -403,10 +336,11 @@ AS
 
       -- if a message was provided to this procedure, then write it to the log table
       -- if not, then simply use the default message below
-      log_msg( NVL( p_msg, 'Number of records selected/affected') ||': '|| p_count,
-	       p_level,
-	       p_stdout,
-	       p_oper_id);
+      log_msg( NVL( p_msg, 'Number of records selected/affected' ) || ': ' || p_count,
+               p_level,
+               p_stdout,
+               p_oper_id
+             );
       COMMIT;
    END log_cnt_msg;
    -- method for returning boolean if the application is registered
