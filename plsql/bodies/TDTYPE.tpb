@@ -213,7 +213,7 @@ AS
 
       RETURN l_line;
    END whence;
-   overriding MEMBER PROCEDURE set_action( p_action VARCHAR2 )
+   OVERRIDING MEMBER PROCEDURE set_action( p_action VARCHAR2 )
    AS
    BEGIN
       action := LOWER( p_action );
@@ -224,7 +224,7 @@ AS
          DBMS_APPLICATION_INFO.set_action( action );
       END IF;
    END set_action;
-   overriding MEMBER PROCEDURE clear_app_info
+   OVERRIDING MEMBER PROCEDURE clear_app_info
    AS
    BEGIN
       action := prev_action;
