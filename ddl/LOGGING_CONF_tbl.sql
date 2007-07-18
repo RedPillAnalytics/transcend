@@ -26,5 +26,9 @@ ALTER TABLE logging_conf ADD (
 CREATE SEQUENCE logging_conf_seq
 /
 
-GRANT SELECT ON logging_conf TO td_sel
+GRANT SELECT ON logging_conf TO td_sel_&schema
+/
+GRANT SELECT,UPDATE,DELETE,INSERT ON logging_conf TO td_sel_&schema
+/
+GRANT SELECT ON logging_conf_seq TO td_sel_&SCHEMA
 /
