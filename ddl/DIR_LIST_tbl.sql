@@ -8,3 +8,8 @@ CREATE global TEMPORARY TABLE dir_list
 )
 ON COMMIT DELETE ROWS
 /
+
+GRANT SELECT ON dir_list TO td_sel_&schema
+/
+GRANT SELECT,UPDATE,DELETE,INSERT ON dir_list TO td_sel_&schema
+/
