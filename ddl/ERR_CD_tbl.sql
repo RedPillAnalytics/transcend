@@ -24,7 +24,7 @@ ALTER TABLE err_cd ADD (
     USING INDEX)
 /
 
-INSERT INTO err_cd (code,name,message) VALUES (-20010, 'file_too_big','File size larger than MAX_BYTES paramter');
+INSERT INTO err_cd (code,name,message) VALUES (-20010, 'unrecognized_parm','The specified parameter value is not recognized');
 INSERT INTO err_cd (code,name,message) VALUES (-20011, 'file_too_small','File size smaller than MAX_BYTES paramter');
 INSERT INTO err_cd (code,name,message) VALUES (-20012, 'notify_method_invalid','The notification method is not valid');
 INSERT INTO err_cd (code,name,message) VALUES (-20013, 'no_files_found','No files found for this configuration');
@@ -35,7 +35,7 @@ INSERT INTO err_cd (code,name,message) VALUES (-20018, 'ext_file_missing','The p
 INSERT INTO err_cd (code,name,message) VALUES (-20019, 'on_clause_missing','The ON clause of the MERGE statement was invalid'||chr(10)||'If P_COLUMNS is not provided, then check to see that a primary or unique key exists');
 INSERT INTO err_cd (code,name,message) VALUES (-20020, 'incorrect_parameters','The combination of parameters provided yields no matching objects.');
 INSERT INTO err_cd (code,name,message) VALUES (-20021, 'no_object','The specified object does not exist');
-INSERT INTO err_cd (code,name,message) VALUES (-20022, 'unrecognized_parm','The specified parameter value is not recognized');
+INSERT INTO err_cd (code,name,message) VALUES (-20022, 'file_too_big','File size larger than MAX_BYTES paramter');
 INSERT INTO err_cd (code,name,message) VALUES (-20023, 'not_partitioned','The specified table is not partititoned');
 INSERT INTO err_cd (code,name,message) VALUES (-20024, 'parms_not_compatible','The specified parameters are not compatible');
 INSERT INTO err_cd (code,name,message) VALUES (-20025, 'parm_not_configured','The specified parameter is not configured');
@@ -47,3 +47,8 @@ INSERT INTO err_cd (code,name,message) VALUES (-20030, 'no_part','The specified 
 INSERT INTO err_cd (code,name,message) VALUES (-20031, 'partitioned','The specified table is partitioned');
 INSERT INTO err_cd (code,name,message) VALUES (-20032, 'iot','The specified table is index-organized');
 INSERT INTO err_cd (code,name,message) VALUES (-20033, 'compressed','The specified segment is compresed');
+
+GRANT SELECT ON err_cd TO td_sel_&schema
+/
+GRANT SELECT,UPDATE,DELETE,INSERT ON err_cd TO td_sel_&schema
+/
