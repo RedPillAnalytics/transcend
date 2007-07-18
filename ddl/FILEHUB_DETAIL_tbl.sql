@@ -45,8 +45,14 @@ COMMENT ON COLUMN filehub_detail.file_dt IS 'last modified date on the file';
 COMMENT ON COLUMN filehub_detail.processed_ts IS 'date the file was processed by File Package';
 COMMENT ON COLUMN filehub_detail.session_id IS 'AUDSID number of the oracle session';
 
-GRANT SELECT ON FILEHUB_DETAIL TO td_sel;
+DROP SEQUENCE filehub_detail_seq
+/
+CREATE SEQUENCE filehub_detail_seq
 /
 
-CREATE SEQUENCE filehub_detail_seq
+GRANT SELECT ON filehub_detail TO td_sel_&schema
+/
+GRANT SELECT,UPDATE,DELETE,INSERT ON filehub_detail TO td_sel_&schema
+/
+GRANT SELECT ON filehub_detail_seq TO td_sel_&SCHEMA
 /
