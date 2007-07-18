@@ -24,38 +24,7 @@ AS
       action := LOWER( p_action );
 
       -- now we can use the MODULE attribute to get the runmode
-      CASE
-         WHEN REGEXP_LIKE( 'debug', '^' || NVL( p_runmode, '^\W$' ), 'i' )
-         THEN
-            runmode := 'debug';
-         WHEN REGEXP_LIKE( 'runtime', '^' || NVL( p_runmode, '^\W$' ), 'i' )
-         THEN
-            runmode := 'runtime';
-         ELSE
-            BEGIN
-               SELECT LOWER( default_runmode )
-                 INTO SELF.runmode
-                 FROM ( SELECT default_runmode, parameter_level,
-                               MAX( parameter_level ) OVER( PARTITION BY 1 )
-                                                                      max_parameter_level
-                         FROM ( SELECT default_runmode, module,
-                                       CASE
-                                          WHEN module = 'default'
-                                             THEN 1
-                                          ELSE 2
-                                       END parameter_level
-                                 FROM runmode_conf )
-                        WHERE ( module = SELF.module OR module = 'default' ))
-                WHERE parameter_level = max_parameter_level;
-            EXCEPTION
-               WHEN NO_DATA_FOUND
-               THEN
-                  raise_application_error( get_err_cd( 'parm_not_configured' ),
-                                              get_err_msg( 'parm_not_configured' )
-                                           || ': RUNMODE'
-                                         );
-            END;
-      END CASE;
+      self.set_runmode(p_runmode);
 
       -- get the registration value for this module
       BEGIN
