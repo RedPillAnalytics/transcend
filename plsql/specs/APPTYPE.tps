@@ -1,4 +1,4 @@
-CREATE OR REPLACE TYPE apptype AS object (
+CREATE OR REPLACE TYPE apptype AS OBJECT(
    client_info        VARCHAR2( 64 ),
    module             VARCHAR2( 48 ),
    action             VARCHAR2( 32 ),
@@ -21,7 +21,7 @@ CREATE OR REPLACE TYPE apptype AS object (
    MEMBER FUNCTION is_registered
       RETURN BOOLEAN,
    MEMBER FUNCTION get_package_name
-					       RETURN VARCHAR2,
+      RETURN VARCHAR2,
    MEMBER PROCEDURE set_runmode( p_runmode VARCHAR2 ),
    MEMBER FUNCTION is_debugmode
       RETURN BOOLEAN
