@@ -10,11 +10,11 @@ GRANT READ,WRITE ON directory extractdata TO tdinc;
 CREATE OR REPLACE directory sourcedata AS '/transcend/source';
 GRANT READ,WRITE ON directory extractdata TO tdinc;
 
-TRUNCATE TABLE tdinc.filehub_conf;
+TRUNCATE filehub_conf;
 
-DROP TABLE tdinc.test_feed
+DROP TABLE test_feed
 /
-CREATE TABLE tdinc.test_feed
+CREATE TABLE test_feed
        ( feed_id        NUMBER,
 	 feed_desc     VARCHAR2(100))
        organization external
@@ -30,7 +30,7 @@ CREATE TABLE tdinc.test_feed
        PARALLEL
 /
 
-INSERT INTO tdinc.filehub_conf
+INSERT INTO filehub_conf
        ( filehub_id, 
 	 filehub_name, 
 	 filehub_group, 
@@ -55,7 +55,7 @@ INSERT INTO tdinc.filehub_conf
 	 quotechar, 
 	 headers)
        VALUES
-       ( tdinc.filehub_conf_seq.nextval,
+       ( filehub_conf_seq.nextval,
 	 'Test Feed',
 	 'Test Group',
 	 'feed',
@@ -80,7 +80,7 @@ INSERT INTO tdinc.filehub_conf
 	 null);
 
 
--- INSERT INTO tdinc.notify_conf
+-- INSERT INTO notify_conf
 --        VALUES ( tdinc.notify_conf_seq.nextval,
 -- 		'email',
 -- 		'yes',
@@ -96,7 +96,7 @@ INSERT INTO tdinc.filehub_conf
 -- 		NULL,
 -- 		NULL);
 
--- INSERT INTO tdinc.notify_conf
+-- INSERT INTO notify_conf
 --        VALUES ( tdinc.notify_conf_seq.nextval,
 -- 		'email',
 -- 		'yes',
@@ -113,7 +113,7 @@ INSERT INTO tdinc.filehub_conf
 -- 		NULL);
 
 
-INSERT INTO tdinc.filehub_conf
+INSERT INTO filehub_conf
        ( filehub_id, 
 	 filehub_name, 
 	 filehub_group, 
