@@ -323,32 +323,6 @@ AS
          ELSE FALSE
       END;
    END is_registered;
-   -- GET method for pulling an error code out of the ERR_CD table
-   MEMBER FUNCTION get_err_cd( p_name VARCHAR2 )
-      RETURN NUMBER
-   AS
-      l_code   err_cd.code%TYPE;
-   BEGIN
-      SELECT code
-        INTO l_code
-        FROM err_cd
-       WHERE NAME = p_name;
-
-      RETURN l_code;
-   END get_err_cd;
-   -- GET method for pulling error text out of the ERR_CD table
-   MEMBER FUNCTION get_err_msg( p_name VARCHAR2 )
-      RETURN VARCHAR2
-   AS
-      l_msg   err_cd.MESSAGE%TYPE;
-   BEGIN
-      SELECT MESSAGE
-        INTO l_msg
-        FROM err_cd
-       WHERE NAME = p_name;
-
-      RETURN l_msg;
-   END get_err_msg;
    MEMBER PROCEDURE send( p_module_id NUMBER, p_message VARCHAR2 DEFAULT NULL )
    AS
       l_notify_method   notify_conf.notify_method%TYPE;
