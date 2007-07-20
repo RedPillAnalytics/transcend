@@ -33,10 +33,6 @@ CREATE OR REPLACE TYPE tdtype UNDER apptype(
       p_stdout    VARCHAR2 DEFAULT 'yes',
       p_oper_id   NUMBER DEFAULT NULL
    ),
-   MEMBER FUNCTION get_err_cd( p_name VARCHAR2 )
-      RETURN NUMBER,
-   MEMBER FUNCTION get_err_msg( p_name VARCHAR2 )
-      RETURN VARCHAR2,
    MEMBER PROCEDURE send( p_module_id NUMBER, p_message VARCHAR2 DEFAULT NULL )
 )
 ;
