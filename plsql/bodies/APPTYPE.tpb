@@ -4,6 +4,7 @@ AS
       p_action        VARCHAR2 DEFAULT 'begin module',
       p_module        VARCHAR2 DEFAULT NULL,
       p_client_info   VARCHAR2 DEFAULT NULL,
+      p_register      VARCHAR2 DEFAULT 'yes',
       p_runmode       VARCHAR2 DEFAULT 'runtime'
    )
       RETURN SELF AS RESULT
@@ -11,6 +12,33 @@ AS
       l_results   NUMBER;
    BEGIN
       -- first we need to populate the module attribute, because it helps us determine parameter values
+      set_module( p_module );
+      -- we also set the action, which may be used one day to fine tune parameters
+      set_action( p_action );
+      -- now set the runmode
+      SELF.set_runmode( p_runmode );
+      -- set the registration
+      set_register( p_register );
+
+      -- register with DBMS_APPLICATION_INFO
+      -- read previous app_info settings
+      -- if not registering with oracle, then this is not necessary
+      IF REGISTER = 'yes'
+      THEN
+         DBMS_APPLICATION_INFO.read_client_info( prev_client_info );
+         DBMS_APPLICATION_INFO.read_module( prev_module, prev_action );
+         -- populate attributes with new app_info settings
+         client_info := NVL( p_client_info, prev_client_info );
+         -- now set the new values
+         DBMS_APPLICATION_INFO.set_client_info( client_info );
+         DBMS_APPLICATION_INFO.set_module( module, action );
+      END IF;
+
+      RETURN;
+   END apptype;
+   MEMBER PROCEDURE set_module( p_module VARCHAR2 )
+   AS
+   BEGIN
       module :=
          LOWER( CASE
                    WHEN p_module IS NULL
@@ -18,38 +46,44 @@ AS
                    ELSE get_package_name || '.' || p_module
                 END
               );
-      -- we also set the action, which may be used one day to fine tune parameters
-      action := LOWER( p_action );
-      -- now set the runmode
-      SELF.set_runmode( p_runmode );
-      -- register with DBMS_APPLICATION_INFO
-      -- read previous app_info settings
-      -- if not registering with oracle, then this is not necessary
-      DBMS_APPLICATION_INFO.read_client_info( prev_client_info );
-      DBMS_APPLICATION_INFO.read_module( prev_module, prev_action );
-      -- populate attributes with new app_info settings
-      client_info := NVL( p_client_info, prev_client_info );
-      -- now set the new values
-      DBMS_APPLICATION_INFO.set_client_info( client_info );
-      DBMS_APPLICATION_INFO.set_module( module, action );
-      RETURN;
-   END apptype;
+   END set_module;
    MEMBER PROCEDURE set_action( p_action VARCHAR2 )
    AS
    BEGIN
       action := LOWER( p_action );
-      -- set the action attribute for DBMS_APPLICATION_INFO
-      DBMS_APPLICATION_INFO.set_action( action );
    END set_action;
+   MEMBER PROCEDURE set_register( p_register VARCHAR2 )
+   AS
+   BEGIN
+      REGISTER := CASE
+                    WHEN td_ext.is_true( p_register )
+                       THEN 'yes'
+                    ELSE 'no'
+                 END;
+   END set_register;
+   MEMBER PROCEDURE change_action( p_action VARCHAR2 )
+   AS
+   BEGIN
+      set_action( p_action );
+
+      IF REGISTER = 'yes'
+      THEN
+         -- set the action attribute for DBMS_APPLICATION_INFO
+         DBMS_APPLICATION_INFO.set_action( action );
+      END IF;
+   END change_action;
    MEMBER PROCEDURE clear_app_info
    AS
    BEGIN
-      action := prev_action;
-      module := prev_module;
-      client_info := prev_client_info;
-      -- set the old APP_INFO information back
-      DBMS_APPLICATION_INFO.set_client_info( prev_client_info );
-      DBMS_APPLICATION_INFO.set_module( prev_module, prev_action );
+      IF REGISTER = 'yes'
+      THEN
+         action := prev_action;
+         module := prev_module;
+         client_info := prev_client_info;
+         -- set the old APP_INFO information back
+         DBMS_APPLICATION_INFO.set_client_info( prev_client_info );
+         DBMS_APPLICATION_INFO.set_module( prev_module, prev_action );
+      END IF;
    END clear_app_info;
    -- gets the package name
    MEMBER FUNCTION get_package_name
