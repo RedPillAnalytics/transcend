@@ -4,21 +4,17 @@ CREATE OR REPLACE TYPE logtype UNDER apptype(
    machine         VARCHAR2( 50 ),
    dbuser          VARCHAR2( 30 ),
    osuser          VARCHAR2( 30 ),
-   registration    VARCHAR2( 20 ),
-   logging_level   NUMBER,
    CONSTRUCTOR FUNCTION logtype(
       p_action        VARCHAR2 DEFAULT 'begin module',
       p_module        VARCHAR2 DEFAULT NULL,
       p_client_info   VARCHAR2 DEFAULT NULL,
-      p_runmode       VARCHAR2 DEFAULT NULL
+      p_register      VARCHAR2 DEFAULT 'yes',
+      p_runmode       VARCHAR2 DEFAULT 'runtime'
    )
       RETURN SELF AS RESULT,
+   MEMBER PROCEDURE set_session_info,
    MEMBER FUNCTION whence
       RETURN VARCHAR2,
-   OVERRIDING MEMBER PROCEDURE set_action( p_action VARCHAR2 ),
-   OVERRIDING MEMBER PROCEDURE clear_app_info,
-   MEMBER FUNCTION is_registered
-      RETURN BOOLEAN,
    MEMBER PROCEDURE log_msg(
       p_msg       VARCHAR2,
       p_level     NUMBER DEFAULT 2,
@@ -32,12 +28,7 @@ CREATE OR REPLACE TYPE logtype UNDER apptype(
       p_level     NUMBER DEFAULT 2,
       p_stdout    VARCHAR2 DEFAULT 'yes',
       p_oper_id   NUMBER DEFAULT NULL
-   ),
-   MEMBER FUNCTION get_err_cd( p_name VARCHAR2 )
-      RETURN NUMBER,
-   MEMBER FUNCTION get_err_msg( p_name VARCHAR2 )
-      RETURN VARCHAR2,
-   MEMBER PROCEDURE send( p_module_id NUMBER, p_message VARCHAR2 DEFAULT NULL )
+   )
 )
-;
+NOT FINAL;
 /
