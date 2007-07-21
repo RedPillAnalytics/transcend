@@ -3,21 +3,18 @@ AS
    -- use EXECUTE IMMEDIATE to execute a SQL statement
    -- uses AUTONOMOUS_TRANSACTION, so this will NOT execute within the current transaction
    -- excellent for DDL that where the commit incurred by the DDL will not affect the current transaction
-   FUNCTION exec_auto(
-      p_sql       VARCHAR2,
-      p_runmode   VARCHAR2 DEFAULT NULL
-   )
+   FUNCTION exec_auto( p_sql VARCHAR2, p_runmode VARCHAR2 DEFAULT NULL )
       RETURN NUMBER
    AS
       PRAGMA AUTONOMOUS_TRANSACTION;
-      l_results NUMBER;
-      o_app   applog := applog( p_module => 'exec_auto', p_runmode => p_runmode );
+      l_results   NUMBER;
+      o_app       applog := applog( p_module => 'exec_auto', p_runmode => p_runmode );
    BEGIN
-
       IF NOT o_app.is_debugmode
       THEN
          EXECUTE IMMEDIATE p_sql;
-	 l_results := SQL%ROWCOUNT;
+
+         l_results := SQL%ROWCOUNT;
       END IF;
 
       COMMIT;
@@ -29,34 +26,33 @@ AS
    -- no AUTONOMOUS_TRANSACTION, so this will execute within the current transaction
    FUNCTION exec_sql(
       p_sql       VARCHAR2,
-      p_auto	  VARCHAR2 DEFAULT 'no',
+      p_auto      VARCHAR2 DEFAULT 'no',
       p_msg       VARCHAR2 DEFAULT NULL,
       p_runmode   VARCHAR2 DEFAULT NULL
    )
       RETURN NUMBER
    AS
-      l_results NUMBER;
-      o_app   applog := applog( p_module => 'exec_sql', p_runmode => p_runmode );
+      l_results   NUMBER;
+      o_app       applog := applog( p_module => 'exec_sql', p_runmode => p_runmode );
    BEGIN
-      o_app.log_msg( CASE 
-      		     WHEN p_msg IS NULL
-		     THEN
-		       'SQL: ' || p_sql
-		     ELSE
-		       p_msg
-		     END, 3 );
+      o_app.log_msg( CASE
+                        WHEN p_msg IS NULL
+                           THEN 'SQL: ' || p_sql
+                        ELSE p_msg
+                     END, 3 );
 
       IF NOT o_app.is_debugmode
       THEN
-	 IF is_true(p_auto)
-	 THEN
-	    l_results := exec_auto(p_sql=>p_sql,p_runmode=>o_app.runmode);
-	 ELSE
-	    EXECUTE IMMEDIATE p_sql;
-	    l_results := SQL%ROWCOUNT;
-	 END IF;
+         IF is_true( p_auto )
+         THEN
+            l_results := exec_auto( p_sql => p_sql, p_runmode => o_app.runmode );
+         ELSE
+            EXECUTE IMMEDIATE p_sql;
+
+            l_results := SQL%ROWCOUNT;
+         END IF;
       END IF;
-      
+
       o_app.clear_app_info;
       RETURN l_results;
    END exec_sql;
@@ -200,8 +196,7 @@ AS
       l_iot              VARCHAR2( 3 );
       l_compressed       VARCHAR2( 3 );
       l_partition_name   dba_tab_partitions.partition_name%TYPE;
-      o_app              applog
-                         := applog( p_module       => 'object_exists' );
+      o_app              applog                  := applog( p_module      => 'object_exists' );
    BEGIN
       BEGIN
          SELECT CASE
