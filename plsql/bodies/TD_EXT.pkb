@@ -52,15 +52,15 @@ AS
                                    );
       END CASE;
    END get_yn_ind;
-   
+
    FUNCTION get_err_cd( p_name VARCHAR2 )
       RETURN NUMBER
    AS
       l_code   err_cd.code%TYPE;
    BEGIN
       SELECT code
-	INTO l_code
-	FROM err_cd
+        INTO l_code
+        FROM err_cd
        WHERE NAME = p_name;
 
       RETURN l_code;
@@ -72,12 +72,11 @@ AS
       l_msg   err_cd.MESSAGE%TYPE;
    BEGIN
       SELECT MESSAGE
-	INTO l_msg
-	FROM err_cd
+        INTO l_msg
+        FROM err_cd
        WHERE NAME = p_name;
 
       RETURN l_msg;
-   END get_err_msg;   
-
+   END get_err_msg;
 END td_ext;
 /
