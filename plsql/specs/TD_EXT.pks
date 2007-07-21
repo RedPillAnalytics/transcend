@@ -5,12 +5,11 @@ AS
 
    FUNCTION get_yn_ind( p_parm VARCHAR2 )
       RETURN VARCHAR2;
-      
+
    FUNCTION get_err_cd( p_name VARCHAR2 )
       RETURN NUMBER;
 
    FUNCTION get_err_msg( p_name VARCHAR2 )
-      RETURN VARCHAR2;      
-
+      RETURN VARCHAR2;
 END td_ext;
 /
