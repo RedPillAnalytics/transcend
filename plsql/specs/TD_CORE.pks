@@ -49,44 +49,6 @@ AS
 
    PROCEDURE log_msg( p_msg log_table.msg%TYPE );
 
-   FUNCTION exec_sql(
-      p_sql       VARCHAR2,
-      p_auto	  VARCHAR2 DEFAULT 'no',
-      p_msg       VARCHAR2 DEFAULT NULL,
-      p_runmode   VARCHAR2 DEFAULT NULL
-   )
-      RETURN NUMBER;
-
-   FUNCTION get_dir_path( p_dirname VARCHAR2 )
-      RETURN VARCHAR2;
-
-   FUNCTION get_dir_name( p_dir_path VARCHAR2 )
-      RETURN VARCHAR2;
-
-   FUNCTION table_exists( p_owner VARCHAR2, p_table VARCHAR2 )
-      RETURN BOOLEAN;
-
-   FUNCTION is_part_table( p_owner VARCHAR2, p_table VARCHAR2 )
-      RETURN BOOLEAN;
-
-   FUNCTION object_exists( p_owner VARCHAR2, p_object VARCHAR2 )
-      RETURN BOOLEAN;
-
-   PROCEDURE check_table(
-      p_owner         VARCHAR2,
-      p_table         VARCHAR2,
-      p_partname      VARCHAR2 DEFAULT NULL,
-      p_partitioned   VARCHAR2 DEFAULT NULL,
-      p_iot           VARCHAR2 DEFAULT NULL,
-      p_compressed    VARCHAR2 DEFAULT NULL
-   );
-
-   FUNCTION is_true( p_parm VARCHAR2, p_allownulls BOOLEAN DEFAULT FALSE )
-      RETURN BOOLEAN;
-
-   FUNCTION get_yn_ind( p_parm VARCHAR2 )
-      RETURN VARCHAR2;
-
    FUNCTION get_numlines(
       p_dirname    IN   VARCHAR2,
       p_filename   IN   VARCHAR2,
