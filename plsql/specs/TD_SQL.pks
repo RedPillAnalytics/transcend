@@ -2,7 +2,7 @@ CREATE OR REPLACE PACKAGE td_core AUTHID CURRENT_USER
 AS
    FUNCTION exec_sql(
       p_sql       VARCHAR2,
-      p_auto	  VARCHAR2 DEFAULT 'no',
+      p_auto      VARCHAR2 DEFAULT 'no',
       p_msg       VARCHAR2 DEFAULT NULL,
       p_runmode   VARCHAR2 DEFAULT NULL
    )
@@ -31,6 +31,5 @@ AS
       p_iot           VARCHAR2 DEFAULT NULL,
       p_compressed    VARCHAR2 DEFAULT NULL
    );
-      
 END td_core;
 /
