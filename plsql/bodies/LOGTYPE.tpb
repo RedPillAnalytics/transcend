@@ -1,110 +1,28 @@
-CREATE OR REPLACE TYPE BODY tdtype
+CREATE OR REPLACE TYPE BODY logtype
 AS
-   CONSTRUCTOR FUNCTION tdtype(
+   CONSTRUCTOR FUNCTION logtype(
       p_action        VARCHAR2 DEFAULT 'begin module',
       p_module        VARCHAR2 DEFAULT NULL,
       p_client_info   VARCHAR2 DEFAULT NULL,
-      p_runmode       VARCHAR2 DEFAULT NULL
+      p_register      VARCHAR2 DEFAULT 'yes',
+      p_runmode       VARCHAR2 DEFAULT 'runtime'
    )
       RETURN SELF AS RESULT
    AS
-      l_results   NUMBER;
    BEGIN
       -- get the session id
       session_id := SYS_CONTEXT( 'USERENV', 'SESSIONID' );
       -- first we need to populate the module attribute, because it helps us determine parameter values
-      module :=
-         LOWER( CASE
-                   WHEN p_module IS NULL
-                      THEN SELF.get_package_name
-                   ELSE SELF.get_package_name || '.' || p_module
-                END
-              );
+      SELF.set_module( p_module );
       -- we also set the action, which may be used one day to fine tune parameters
-      action := LOWER( p_action );
-
+      SELF.set_action( p_action );
       -- now we can use the MODULE attribute to get the runmode
-      self.set_runmode(p_runmode);
-
-      -- get the registration value for this module
-      BEGIN
-         SELECT LOWER( registration )
-           INTO registration
-           FROM ( SELECT registration, parameter_level,
-                         MAX( parameter_level ) OVER( PARTITION BY 1 )
-                                                                      max_parameter_level
-                   FROM ( SELECT registration, module,
-                                 CASE
-                                    WHEN module = 'default'
-                                       THEN 1
-                                    ELSE 2
-                                 END parameter_level
-                           FROM registration_conf )
-                  WHERE ( module = SELF.module OR module = 'default' ))
-          WHERE parameter_level = max_parameter_level;
-      EXCEPTION
-         WHEN NO_DATA_FOUND
-         THEN
-            raise_application_error( get_err_cd( 'parm_not_configured' ),
-                                        get_err_msg( 'parm_not_configured' )
-                                     || ': REGISTRATION'
-                                   );
-      END;
-
-      -- get the logging level
-      IF SELF.is_debugmode
-      THEN
-         BEGIN
-            SELECT LOWER( debug_level )
-              INTO logging_level
-              FROM ( SELECT debug_level, parameter_level,
-                            MAX( parameter_level ) OVER( PARTITION BY 1 )
-                                                                      max_parameter_level
-                      FROM ( SELECT debug_level, module,
-                                    CASE
-                                       WHEN module = 'default'
-                                          THEN 1
-                                       ELSE 2
-                                    END parameter_level
-                              FROM logging_conf )
-                     WHERE ( module = SELF.module OR module = 'default' ))
-             WHERE parameter_level = max_parameter_level;
-         EXCEPTION
-            WHEN NO_DATA_FOUND
-            THEN
-               raise_application_error( get_err_cd( 'parm_not_configured' ),
-                                           get_err_msg( 'parm_not_configured' )
-                                        || ': DEBUG_LEVEL'
-                                      );
-         END;
-      ELSE
-         BEGIN
-            SELECT LOWER( logging_level )
-              INTO logging_level
-              FROM ( SELECT logging_level, parameter_level,
-                            MAX( parameter_level ) OVER( PARTITION BY 1 )
-                                                                      max_parameter_level
-                      FROM ( SELECT logging_level, module,
-                                    CASE
-                                       WHEN module = 'default'
-                                          THEN 1
-                                       ELSE 2
-                                    END parameter_level
-                              FROM logging_conf )
-                     WHERE ( module = SELF.module OR module = 'default' ))
-             WHERE parameter_level = max_parameter_level;
-         EXCEPTION
-            WHEN NO_DATA_FOUND
-            THEN
-               raise_application_error( get_err_cd( 'parm_not_configured' ),
-                                           get_err_msg( 'parm_not_configured' )
-                                        || ': LOGGING_LEVEL'
-                                      );
-         END;
-      END IF;
+      SELF.set_runmode( p_runmode );
+      -- set the registration
+      SELF.set_register( p_register );
 
       -- if we are registering, then we need to save the old values
-      IF SELF.is_registered
+      IF REGISTER = 'yes'
       THEN
          -- read previous app_info settings
          -- if not registering with oracle, then this is not necessary
@@ -114,6 +32,21 @@ AS
 
       -- populate attributes with new app_info settings
       client_info := NVL( p_client_info, prev_client_info );
+      -- get information about the session for logging purposes
+      set_session_info;
+
+      IF REGISTER = 'yes'
+      THEN
+         -- now set the new values
+         DBMS_APPLICATION_INFO.set_client_info( client_info );
+         DBMS_APPLICATION_INFO.set_module( module, action );
+      END IF;
+
+      RETURN;
+   END logtype;
+   MEMBER PROCEDURE set_session_info
+   AS
+   BEGIN
       -- set other attributes
       instance_name := SYS_CONTEXT( 'USERENV', 'INSTANCE_NAME' );
       dbuser := SYS_CONTEXT( 'USERENV', 'SESSION_USER' );
@@ -123,34 +56,7 @@ AS
          || '['
          || SYS_CONTEXT( 'USERENV', 'IP_ADDRESS' )
          || ']';
-
-      IF SELF.is_registered
-      THEN
-         -- now set the new values
-         DBMS_APPLICATION_INFO.set_client_info( client_info );
-         DBMS_APPLICATION_INFO.set_module( module, action );
-      END IF;
-
-      log_msg( 'MODULE "' || module || '" beginning in RUNMODE "' || runmode || '"', 4 );
-      log_msg( 'Inital ACTION attribute set to "' || action || '"', 4 );
-
-      -- set session level parameters
-      FOR c_params IN
-         ( SELECT CASE
-                     WHEN REGEXP_LIKE( NAME, 'enable|disable', 'i' )
-                        THEN 'alter session ' || NAME || ' ' || VALUE
-                     ELSE 'alter session set ' || NAME || '=' || VALUE
-                  END DDL
-            FROM parameter_conf
-           WHERE LOWER( module ) = SELF.module )
-      LOOP
-         l_results :=
-                     td_core.exec_sql( p_sql          => c_params.DDL,
-                                       p_runmode      => SELF.runmode );
-      END LOOP;
-
-      RETURN;
-   END tdtype;
+   END set_session_info;
    -- used to pull the calling block from the dictionary
    -- used to populate CALL_STACK column in the LOG_TABLE
    MEMBER FUNCTION whence
@@ -182,32 +88,6 @@ AS
 
       RETURN l_line;
    END whence;
-   OVERRIDING MEMBER PROCEDURE set_action( p_action VARCHAR2 )
-   AS
-   BEGIN
-      action := LOWER( p_action );
-      log_msg( 'ACTION attribute changed to "' || action || '"', 4 );
-
-      IF is_registered
-      THEN
-         DBMS_APPLICATION_INFO.set_action( action );
-      END IF;
-   END set_action;
-   OVERRIDING MEMBER PROCEDURE clear_app_info
-   AS
-   BEGIN
-      action := prev_action;
-      module := prev_module;
-      client_info := prev_client_info;
-      log_msg( 'ACTION attribute changed to "' || action || '"', 4 );
-      log_msg( 'MODULE attribute changed to "' || module || '"', 4 );
-
-      IF is_registered
-      THEN
-         DBMS_APPLICATION_INFO.set_client_info( prev_client_info );
-         DBMS_APPLICATION_INFO.set_module( prev_module, prev_action );
-      END IF;
-   END clear_app_info;
    -- used to write a standard message to the LOG_TABLE
    MEMBER PROCEDURE log_msg(
       p_msg       VARCHAR2,
@@ -219,9 +99,11 @@ AS
    AS
       PRAGMA AUTONOMOUS_TRANSACTION;
       l_whence   VARCHAR2( 1024 );
-      l_code     NUMBER                        DEFAULT SQLCODE;
+      l_code     NUMBER               DEFAULT SQLCODE;
       l_msg      log_table.msg%TYPE;
-      l_scn      v$database.current_scn%TYPE;
+      l_scn      NUMBER;
+      e_no_tab   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_no_tab, -942 );
    BEGIN
       -- still write as much to the logfile if we can even if it's too large for the log table
       BEGIN
@@ -235,47 +117,49 @@ AS
       -- find out what called me
       l_whence := whence;
 
-      -- get the current_scn
-      SELECT current_scn
-        INTO l_scn
-        FROM v$database;
-
-      IF logging_level >= p_level
-      THEN
-         -- write the record to the log table
-         INSERT INTO log_table
-                     ( msg, client_info, module,
-                       action, runmode, session_id, current_scn,
-                       instance_name, machine, dbuser, osuser,
-                       code, call_stack,
-                       back_trace,
-                       oper_id
-                     )
-              VALUES ( l_msg, NVL( SELF.client_info, 'NA' ), NVL( SELF.module, 'NA' ),
-                       NVL( SELF.action, 'NA' ), SELF.runmode, SELF.session_id, l_scn,
-                       SELF.instance_name, SELF.machine, SELF.dbuser, SELF.osuser,
-                       l_code, l_whence,
-                       REGEXP_REPLACE( SUBSTR( DBMS_UTILITY.format_error_backtrace,
-                                               1,
-                                               4000
-                                             ),
-                                       '[[:cntrl:]]',
-                                       '; '
-                                     ),
-                       p_oper_id
-                     );
-
-         COMMIT;
-
-              -- also output the message to the screen
-              -- the client can control whether or not they want to see this
-              -- in sqlplus, just SET SERVEROUTPUT ON or OFF
-         -- by default, all messages are logged to STDOUT
-         -- this can be controlled per message with P_STDOUT, which defaults to 'yes'
-         IF REGEXP_LIKE( 'yes', p_stdout, 'i' )
+      -- using invokers rights model
+      -- some users won't have access to see the SCN
+      -- need to use dynamic sql to make sure compilation is not an issue
+      -- if cannot see the scn, then use a 0
+      BEGIN
+         EXECUTE IMMEDIATE 'select current_scn from v$database'
+                      INTO l_scn;
+      EXCEPTION
+         WHEN e_no_tab
          THEN
-            DBMS_OUTPUT.put_line( p_msg );
-         END IF;
+            l_scn := 0;
+      END;
+
+      -- write the record to the log table
+      INSERT INTO log_table
+                  ( msg, client_info, module,
+                    action, runmode, session_id, current_scn,
+                    instance_name, machine, dbuser, osuser, code,
+                    call_stack,
+                    back_trace,
+                    oper_id, logging_level
+                  )
+           VALUES ( l_msg, NVL( SELF.client_info, 'NA' ), NVL( SELF.module, 'NA' ),
+                    NVL( SELF.action, 'NA' ), SELF.runmode, SELF.session_id, l_scn,
+                    SELF.instance_name, SELF.machine, SELF.dbuser, SELF.osuser, l_code,
+                    l_whence,
+                    REGEXP_REPLACE( SUBSTR( DBMS_UTILITY.format_error_backtrace, 1, 4000 ),
+                                    '[[:cntrl:]]',
+                                    '; '
+                                  ),
+                    p_oper_id, logging_level
+                  );
+
+      COMMIT;
+
+           -- also output the message to the screen
+           -- the client can control whether or not they want to see this
+           -- in sqlplus, just SET SERVEROUTPUT ON or OFF
+      -- by default, all messages are logged to STDOUT
+      -- this can be controlled per message with P_STDOUT, which defaults to 'yes'
+      IF REGEXP_LIKE( 'yes', p_stdout, 'i' )
+      THEN
+         DBMS_OUTPUT.put_line( p_msg );
       END IF;
    END log_msg;
    MEMBER PROCEDURE log_err
@@ -312,99 +196,5 @@ AS
              );
       COMMIT;
    END log_cnt_msg;
-   -- method for returning boolean if the application is registered
-   MEMBER FUNCTION is_registered
-      RETURN BOOLEAN
-   AS
-   BEGIN
-      RETURN CASE registration
-         WHEN 'register'
-            THEN TRUE
-         ELSE FALSE
-      END;
-   END is_registered;
-   -- GET method for pulling an error code out of the ERR_CD table
-   MEMBER FUNCTION get_err_cd( p_name VARCHAR2 )
-      RETURN NUMBER
-   AS
-      l_code   err_cd.code%TYPE;
-   BEGIN
-      SELECT code
-        INTO l_code
-        FROM err_cd
-       WHERE NAME = p_name;
-
-      RETURN l_code;
-   END get_err_cd;
-   -- GET method for pulling error text out of the ERR_CD table
-   MEMBER FUNCTION get_err_msg( p_name VARCHAR2 )
-      RETURN VARCHAR2
-   AS
-      l_msg   err_cd.MESSAGE%TYPE;
-   BEGIN
-      SELECT MESSAGE
-        INTO l_msg
-        FROM err_cd
-       WHERE NAME = p_name;
-
-      RETURN l_msg;
-   END get_err_msg;
-   MEMBER PROCEDURE send( p_module_id NUMBER, p_message VARCHAR2 DEFAULT NULL )
-   AS
-      l_notify_method   notify_conf.notify_method%TYPE;
-      l_notify_id       notify_conf.notify_id%TYPE;
-      o_email           email;
-   BEGIN
-      SELECT notify_method, notify_id
-        INTO l_notify_method, l_notify_id
-        FROM ( SELECT notify_method, notify_id, parameter_level,
-                      MAX( parameter_level ) OVER( PARTITION BY 1 ) max_parameter_level
-                FROM ( SELECT notify_method, notify_id, module, module_id, action,
-                              CASE
-                                 WHEN action IS NULL
-                                      AND module_id IS NULL
-                                    THEN 1
-                                 WHEN action IS NULL
-                                 AND module_id IS NOT NULL
-                                    THEN 2
-                                 WHEN action IS NOT NULL AND module_id IS NULL
-                                    THEN 3
-                                 WHEN action IS NOT NULL AND module_id IS NOT NULL
-                                    THEN 4
-                              END parameter_level
-                        FROM notify_conf )
-               WHERE ( module = SELF.module )
-                 AND ( action = SELF.action OR action IS NULL )
-                 AND ( module_id = p_module_id OR module_id IS NULL ))
-       WHERE parameter_level = max_parameter_level;
-
-      CASE l_notify_method
-         WHEN 'email'
-         THEN
-            SELECT VALUE( t )
-              INTO o_email
-              FROM email_ot t
-             WHERE t.notify_id = l_notify_id;
-
-            o_email.runmode := runmode;
-            o_email.MESSAGE :=
-               CASE p_message
-                  WHEN NULL
-                     THEN o_email.MESSAGE
-                  ELSE o_email.MESSAGE || CHR( 10 ) || CHR( 10 ) || p_message
-               END;
-            o_email.module := SELF.module;
-            o_email.action := SELF.action;
-            o_email.send;
-         ELSE
-            raise_application_error( get_err_cd( 'notify_method_invalid' ),
-                                     get_err_msg( 'notify_method_invalid' )
-                                   );
-      END CASE;
-   EXCEPTION
-      WHEN NO_DATA_FOUND
-      THEN
-         log_msg( 'Notification not configured for this action', 3 );
-   END send;
 END;
 /
