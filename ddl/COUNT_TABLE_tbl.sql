@@ -16,8 +16,3 @@ CREATE TABLE count_table
 ALTER TABLE count_table ADD CONSTRAINT count_tbl_pk PRIMARY KEY (session_id, entry_ts)
     USING INDEX
 /
-
-GRANT SELECT ON count_table TO td_sel_&schema
-/
-GRANT SELECT,UPDATE,DELETE,INSERT ON count_table TO td_sel_&schema
-/
