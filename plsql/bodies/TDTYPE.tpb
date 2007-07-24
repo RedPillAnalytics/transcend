@@ -9,13 +9,15 @@ AS
       RETURN SELF AS RESULT
    AS
       l_results   NUMBER;
-   BEGIN
-      -- first we need to populate the module attribute, because it helps us determine parameter values
-      SELF.set_module( p_module );
-      -- we also set the action, which may be used one day to fine tune parameters
-      SELF.set_action( p_action );
-      -- now we can use the MODULE attribute to get the runmode
-      SELF.set_runmode( p_runmode );
+BEGIN
+       -- get information about the session for logging purposes
+       self.set_session_info;
+       -- first we need to populate the module attribute, because it helps us determine parameter values
+       SELF.set_module( p_module );
+       -- we also set the action, which may be used one day to fine tune parameters
+       SELF.set_action( p_action );
+       -- now we can use the MODULE attribute to get the runmode
+       SELF.set_runmode( p_runmode );
 
       -- get the registration value for this module
       BEGIN
@@ -36,8 +38,8 @@ AS
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
-            raise_application_error( get_err_cd( 'parm_not_configured' ),
-                                     get_err_msg( 'parm_not_configured' ) || ': REGISTER'
+            raise_application_error( td_ext.get_err_cd( 'parm_not_configured' ),
+                                     td_ext.get_err_msg( 'parm_not_configured' ) || ': REGISTER'
                                    );
       END;
 
@@ -62,8 +64,8 @@ AS
          EXCEPTION
             WHEN NO_DATA_FOUND
             THEN
-               raise_application_error( get_err_cd( 'parm_not_configured' ),
-                                           get_err_msg( 'parm_not_configured' )
+               raise_application_error( td_ext.get_err_cd( 'parm_not_configured' ),
+                                           td_ext.get_err_msg( 'parm_not_configured' )
                                         || ': DEBUG_LEVEL'
                                       );
          END;
@@ -86,8 +88,8 @@ AS
          EXCEPTION
             WHEN NO_DATA_FOUND
             THEN
-               raise_application_error( get_err_cd( 'parm_not_configured' ),
-                                           get_err_msg( 'parm_not_configured' )
+               raise_application_error( td_ext.get_err_cd( 'parm_not_configured' ),
+                                           td_ext.get_err_msg( 'parm_not_configured' )
                                         || ': LOGGING_LEVEL'
                                       );
          END;
@@ -102,17 +104,14 @@ AS
          DBMS_APPLICATION_INFO.read_module( prev_module, prev_action );
       END IF;
 
-      -- populate attributes with new app_info settings
-      client_info := NVL( p_client_info, prev_client_info );
-      -- set session information for logging purposes
-      SELF.set_session_info;
-
       IF SELF.REGISTER = 'yes'
       THEN
          -- now set the new values
          DBMS_APPLICATION_INFO.set_client_info( client_info );
          DBMS_APPLICATION_INFO.set_module( module, action );
       END IF;
+      -- populate attributes with new app_info settings
+      client_info := NVL( p_client_info, prev_client_info );
 
       SELF.log_msg( 'MODULE "' || module || '" beginning in RUNMODE "' || runmode || '"',
                     4
@@ -214,8 +213,8 @@ AS
             o_email.action := SELF.action;
             o_email.send;
          ELSE
-            raise_application_error( get_err_cd( 'notify_method_invalid' ),
-                                     get_err_msg( 'notify_method_invalid' )
+            raise_application_error( td_ext.get_err_cd( 'notify_method_invalid' ),
+                                     td_ext.get_err_msg( 'notify_method_invalid' )
                                    );
       END CASE;
    EXCEPTION
