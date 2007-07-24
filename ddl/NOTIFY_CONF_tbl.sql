@@ -37,10 +37,3 @@ ALTER TABLE notify_conf ADD (
 
 CREATE SEQUENCE notify_conf_seq
 /
-
-GRANT SELECT ON notify_conf TO td_sel_&schema
-/
-GRANT SELECT,UPDATE,DELETE,INSERT ON notify_conf TO td_sel_&schema
-/
-GRANT SELECT ON notify_conf_seq TO td_sel_&SCHEMA
-/
