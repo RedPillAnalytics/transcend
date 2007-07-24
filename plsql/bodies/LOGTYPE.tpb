@@ -9,7 +9,7 @@ AS
    )
       RETURN SELF AS RESULT
    AS
-BEGIN
+   BEGIN
       -- get information about the session for logging purposes
       set_session_info;
       -- first we need to populate the module attribute, because it helps us determine parameter values
