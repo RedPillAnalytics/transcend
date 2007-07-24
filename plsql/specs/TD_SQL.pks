@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE td_core AUTHID CURRENT_USER
+CREATE OR REPLACE PACKAGE td_sql AUTHID CURRENT_USER
 AS
    FUNCTION exec_sql(
       p_sql       VARCHAR2,
@@ -8,21 +8,6 @@ AS
    )
       RETURN NUMBER;
 
-   FUNCTION get_dir_path( p_dirname VARCHAR2 )
-      RETURN VARCHAR2;
-
-   FUNCTION get_dir_name( p_dir_path VARCHAR2 )
-      RETURN VARCHAR2;
-
-   FUNCTION table_exists( p_owner VARCHAR2, p_table VARCHAR2 )
-      RETURN BOOLEAN;
-
-   FUNCTION is_part_table( p_owner VARCHAR2, p_table VARCHAR2 )
-      RETURN BOOLEAN;
-
-   FUNCTION object_exists( p_owner VARCHAR2, p_object VARCHAR2 )
-      RETURN BOOLEAN;
-
    PROCEDURE check_table(
       p_owner         VARCHAR2,
       p_table         VARCHAR2,
@@ -31,5 +16,5 @@ AS
       p_iot           VARCHAR2 DEFAULT NULL,
       p_compressed    VARCHAR2 DEFAULT NULL
    );
-END td_core;
+END td_sql;
 /
