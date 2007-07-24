@@ -30,6 +30,3 @@ ALTER TABLE parameter_conf ADD CONSTRAINT parameter_conf_ck1 CHECK (lower(value)
 
 CREATE SEQUENCE parameter_conf_seq
 /
-
-GRANT SELECT ON parameter_conf TO td_sel
-/
