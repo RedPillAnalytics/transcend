@@ -12,15 +12,15 @@ AS
       PRAGMA EXCEPTION_INIT( e_no_table, -942 );
       e_no_files         EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_files, -1756 );
-      o_app              applog
-                      := applog( p_module       => 'audit_ext_tab',
+      o_td              tdtype
+                      := tdtype( p_module       => 'audit_ext_tab',
                                  p_runmode      => SELF.runmode );
    BEGIN
       -- type object which handles logging and application registration for instrumentation purposes
       -- defaults to registering with DBMS_APPLICATION_INFO
-      o_app.set_action( 'Get count from table' );
+      o_td.change_action( 'Get count from table' );
       l_sql := 'SELECT count(*) FROM ' || SELF.object_owner || '.' || SELF.object_name;
-      o_app.log_msg( 'Count SQL: ' || l_sql, 3 );
+      o_td.log_msg( 'Count SQL: ' || l_sql, 3 );
 
       IF NOT SELF.is_debugmode
       THEN
@@ -34,13 +34,13 @@ AS
                CASE REGEXP_SUBSTR( SQLERRM, '^KUP-[[:digit:]]{5}', 1, 1, 'im' )
                   WHEN 'KUP-04040'
                   THEN
-                     o_app.set_action( 'location file missing' );
-                     o_app.send( p_module_id => SELF.filehub_id );
-                     raise_application_error( get_err_cd( 'location_file_missing' ),
-                                              get_err_msg( 'location_file_missing' )
+                     o_td.change_action( 'location file missing' );
+                     o_td.send( p_module_id => SELF.filehub_id );
+                     raise_application_error( td_ext.get_err_cd( 'location_file_missing' ),
+                                              td_ext.get_err_msg( 'location_file_missing' )
                                             );
                   ELSE
-                     o_app.log_msg( 'Unknown data cartridge error' );
+                     o_td.log_msg( 'Unknown data cartridge error' );
                END CASE;
          END;
 
@@ -50,17 +50,17 @@ AS
 
             IF l_pct_miss > reject_limit
             THEN
-               o_app.set_action( 'reject limit exceeded' );
+               o_td.change_action( 'reject limit exceeded' );
                -- notify if reject limit is exceeded
-               o_app.send( p_module_id => SELF.filehub_id );
-               raise_application_error( get_err_cd( 'reject_limit_exceeded' ),
-                                        get_err_msg( 'reject_limit_exceeded' )
+               o_td.send( p_module_id => SELF.filehub_id );
+               raise_application_error( td_ext.get_err_cd( 'reject_limit_exceeded' ),
+                                        td_ext.get_err_msg( 'reject_limit_exceeded' )
                                       );
             END IF;
          EXCEPTION
             WHEN ZERO_DIVIDE
             THEN
-               o_app.log_msg( 'External table location is an empty file' );
+               o_td.log_msg( 'External table location is an empty file' );
          END;
 
          INSERT INTO filehub_obj_detail
@@ -76,12 +76,12 @@ AS
                      );
       END IF;
 
-      o_app.clear_app_info;
+      o_td.clear_app_info;
    EXCEPTION
       WHEN e_no_table
       THEN
-         raise_application_error( get_err_cd( 'no_tab' ),
-                                  get_err_msg( 'no_tab' ) || ': '||self.object_owner||'.'||self.object_name);
+         raise_application_error( td_ext.get_err_cd( 'no_tab' ),
+                                  td_ext.get_err_msg( 'no_tab' ) || ': '||self.object_owner||'.'||self.object_name);
    END audit_ext_tab;
    MEMBER PROCEDURE process( p_keep_source VARCHAR2 DEFAULT 'no' )
    IS
@@ -99,11 +99,11 @@ AS
       l_results	       NUMBER;
       e_no_files       EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_files, -1756 );
-      o_app            applog
-                            := applog( p_module       => 'process',
+      o_td            tdtype
+                            := tdtype( p_module       => 'process',
                                        p_runmode      => SELF.runmode );
    BEGIN
-      o_app.set_action( 'Evaluate source directory' );
+      o_td.change_action( 'Evaluate source directory' );
 
       -- first we remove all current files in the external table
       -- we don't want the possiblity of data for a previous run getting loaded in
@@ -121,7 +121,7 @@ AS
 
       IF l_rows_delete
       THEN
-         o_app.log_msg( 'Previous external table location files removed' );
+         o_td.log_msg( 'Previous external table location files removed' );
       END IF;
 
       -- now we need to see all the source files in the source directory that match the regular expression
@@ -288,14 +288,14 @@ AS
          -- reset variables used in the cursor
          l_numlines := 0;
          -- copy file to the archive location
-         o_app.set_action( 'Copy archivefile' );
+         o_td.change_action( 'Copy archivefile' );
          td_core.copy_file( c_dir_list.source_filepath,
                               c_dir_list.arch_filepath,
                               runmode
                             );
-         o_app.log_msg( 'Archive file ' || c_dir_list.arch_filepath || ' created' );
+         o_td.log_msg( 'Archive file ' || c_dir_list.arch_filepath || ' created' );
          -- copy the file to the external table
-         o_app.set_action( 'Copy external table files' );
+         o_td.change_action( 'Copy external table files' );
 
          IF c_dir_list.ext_tab_ind = 'Y'
          THEN
@@ -333,7 +333,7 @@ AS
             -- do this with a copy/delete
             td_core.copy_file( l_filepath, c_dir_list.filepath, runmode );
             td_core.delete_file( DIRECTORY, l_filepath, runmode );
-            o_app.log_msg(    'Source file '
+            o_td.log_msg(    'Source file '
                            || c_dir_list.source_filepath
                            || ' moved to destination '
                            || c_dir_list.filepath
@@ -348,7 +348,7 @@ AS
          -- WRITE an audit record for the file that was just archived
          IF NOT SELF.is_debugmode
          THEN
-            o_app.set_action( 'Audit feed' );
+            o_td.change_action( 'Audit feed' );
             SELF.audit_file( p_source_filepath      => c_dir_list.source_filepath,
                              p_arch_filepath        => c_dir_list.arch_filepath,
                              p_filepath             => c_dir_list.filepath,
@@ -365,22 +365,22 @@ AS
 
          -- IF we get this far, then we need to delete the source files
          -- this step is ignored if p_keep_source = 'yes'
-         o_app.set_action( 'Delete source files' );
+         o_td.change_action( 'Delete source files' );
 
-         IF NOT td_core.is_true( p_keep_source )
+         IF NOT td_ext.is_true( p_keep_source )
          THEN
             td_core.delete_file( source_directory, c_dir_list.source_filename, runmode );
          END IF;
       END LOOP;
 
       -- check to see if the cursor was empty
-      o_app.set_action( 'Check for matching files' );
+      o_td.change_action( 'Check for matching files' );
 
       CASE
          WHEN NOT l_rows_dirlist AND required = 'Y'
          THEN
-            raise_application_error( get_err_cd( 'no_files_found' ),
-                                     get_err_msg( 'no_files_found' )
+            raise_application_error( td_ext.get_err_cd( 'no_files_found' ),
+                                     td_ext.get_err_msg( 'no_files_found' )
                                    );
          -- there were no matching files for this configuration
          -- however, the REQUIRED attribute is N
@@ -390,8 +390,8 @@ AS
          -- an external table with a zero-byte file gives "no rows returned"
       WHEN NOT l_rows_dirlist AND required = 'N'
          THEN
-            o_app.log_msg( 'No files found... but none are required' );
-            o_app.set_action( 'Empty previous files' );
+            o_td.log_msg( 'No files found... but none are required' );
+            o_td.change_action( 'Empty previous files' );
 
             FOR c_location IN ( SELECT DIRECTORY, LOCATION
                                  FROM dba_external_locations
@@ -404,13 +404,13 @@ AS
          -- matching files found, so ignore
                   -- alter the external table to contain all the files
       THEN
-            o_app.set_action( 'Alter external table' );
+            o_td.change_action( 'Alter external table' );
 
             BEGIN
-               l_results := td_core.exec_sql ( p_sql => l_ext_tab_ddl, 
+               l_results := td_sql.exec_sql ( p_sql => l_ext_tab_ddl, 
 					       p_runmode => SELF.runmode,
 					       p_auto => 'yes' );
-               o_app.log_msg(    'External table '
+               o_td.log_msg(    'External table '
                               || object_owner
                               || '.'
                               || object_name
@@ -419,18 +419,18 @@ AS
             EXCEPTION
                WHEN e_no_files
                THEN
-                  raise_application_error( get_err_cd( 'no_ext_files' ),
-                                           get_err_msg( 'no_ext_files' )
+                  raise_application_error( td_ext.get_err_cd( 'no_ext_files' ),
+                                           td_ext.get_err_msg( 'no_ext_files' )
                                          );
             END;
 
             -- audit the external table
-            o_app.set_action( 'Audit external table' );
+            o_td.change_action( 'Audit external table' );
             SELF.audit_ext_tab( p_num_lines => l_sum_numlines );
       END CASE;
 
       -- notify about successful arrival of feed
-      o_app.set_action( 'Notify success' );
+      o_td.change_action( 'Notify success' );
       l_message :=
             'The file'
          || CASE
@@ -457,8 +457,8 @@ AS
             || 'The file is too large for some desktop applications, such as Microsoft Excel, to open.';
       END IF;
 
-      o_app.send( p_module_id => filehub_id );
-      o_app.clear_app_info;
+      o_td.send( p_module_id => filehub_id );
+      o_td.clear_app_info;
    END process;
 END;
 /
