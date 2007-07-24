@@ -11,11 +11,11 @@ AS
       p_validate          VARCHAR2 DEFAULT 'yes'
    )
    AS
-      o_app   applog
-                  := applog( p_module       => 'fhconf.audit_file',
+      o_td   tdtype
+                  := tdtype( p_module       => 'fhconf.audit_file',
                              p_runmode      => SELF.runmode );
    BEGIN
-      o_app.set_action( 'Insert FILEHUB_DETAIL' );
+      o_td.change_action( 'Insert FILEHUB_DETAIL' );
 
       -- INSERT into the FILE_DETAIL table to record the movement
       INSERT INTO filehub_detail
@@ -29,28 +29,28 @@ AS
                   );
 
       -- the job fails when size threshholds are not met
-      o_app.set_action( 'Check file details' );
+      o_td.change_action( 'Check file details' );
 
       IF NOT SELF.is_debugmode AND LOWER( p_validate ) = 'yes'
       THEN
-         o_app.set_action( 'validate file size' );
+         o_td.change_action( 'validate file size' );
 
          IF p_num_bytes >= max_bytes AND max_bytes <> 0
          THEN
-            o_app.send( p_module_id => filehub_id );
-            raise_application_error( get_err_cd( 'file_too_large' ),
-                                     get_err_msg( 'file_too_large' )
+            o_td.send( p_module_id => filehub_id );
+            raise_application_error( td_ext.get_err_cd( 'file_too_large' ),
+                                     td_ext.get_err_msg( 'file_too_large' )
                                    );
          ELSIF p_num_bytes < min_bytes
          THEN
-            o_app.send( p_module_id => filehub_id );
-            raise_application_error( get_err_cd( 'file_too_small' ),
-                                     get_err_msg( 'file_too_small' )
+            o_td.send( p_module_id => filehub_id );
+            raise_application_error( td_ext.get_err_cd( 'file_too_small' ),
+                                     td_ext.get_err_msg( 'file_too_small' )
                                    );
          END IF;
       END IF;
 
-      o_app.clear_app_info;
+      o_td.clear_app_info;
    END audit_file;
    MEMBER PROCEDURE audit_file(
       p_num_bytes   NUMBER,
@@ -59,11 +59,11 @@ AS
       p_validate    VARCHAR2 DEFAULT 'yes'
    )
    AS
-      o_app   applog
-                  := applog( p_module       => 'fhconf.audit_file',
+      o_td   tdtype
+                  := tdtype( p_module       => 'fhconf.audit_file',
                              p_runmode      => SELF.runmode );
    BEGIN
-      o_app.set_action( 'Insert FILE_DTL' );
+      o_td.change_action( 'Insert FILE_DTL' );
       audit_file( p_filepath             => SELF.filepath,
                   p_source_filepath      => NULL,
                   p_arch_filepath        => SELF.arch_filepath,
