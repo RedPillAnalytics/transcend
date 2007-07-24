@@ -297,7 +297,7 @@ AS
    AS
       l_notify_method   notify_conf.notify_method%TYPE;
       l_notify_id       notify_conf.notify_id%TYPE;
-      o_email           email;
+      o_email           emailtype;
    BEGIN
       SELECT notify_method, notify_id
         INTO l_notify_method, l_notify_id
