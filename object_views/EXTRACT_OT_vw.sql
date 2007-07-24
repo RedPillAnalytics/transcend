@@ -1,5 +1,5 @@
 CREATE OR REPLACE VIEW extract_ot 
-OF extract
+OF extracttype
 WITH object identifier (filehub_id)
 as
 SELECT cast('runtime' AS VARCHAR2(10)) runmode,
