@@ -20,10 +20,3 @@ CREATE TABLE log_table
 	 oper_id number
        )
 /
-
-GRANT SELECT ON log_table TO td_sel_&schema
-/
-GRANT SELECT,UPDATE,DELETE,INSERT ON log_table TO td_sel_&schema
-/
-GRANT SELECT ON log_table_seq TO td_sel_&schema
-/
