@@ -8,7 +8,7 @@ AS
    )
       RETURN SELF AS RESULT
    AS
-      l_results NUMBER;
+      l_results   NUMBER;
    BEGIN
       -- get the session id
       session_id := SYS_CONTEXT( 'USERENV', 'SESSIONID' );
@@ -16,8 +16,8 @@ AS
       module :=
          LOWER( CASE
                    WHEN p_module IS NULL
-                      THEN get_package_name
-                   ELSE get_package_name || '.' || p_module
+                      THEN SELF.get_package_name
+                   ELSE SELF.get_package_name || '.' || p_module
                 END
               );
       -- we also set the action, which may be used one day to fine tune parameters
@@ -50,8 +50,8 @@ AS
             EXCEPTION
                WHEN NO_DATA_FOUND
                THEN
-                  raise_application_error( get_err_cd( 'parm_not_configured' ),
-                                              get_err_msg( 'parm_not_configured' )
+                  raise_application_error( td_ext.get_err_cd( 'parm_not_configured' ),
+                                              td_ext.get_err_msg( 'parm_not_configured' )
                                            || ': RUNMODE'
                                          );
             END;
@@ -60,7 +60,7 @@ AS
       -- get the registration value for this module
       BEGIN
          SELECT LOWER( registration )
-           INTO registration
+           INTO SELF.registration
            FROM ( SELECT registration, parameter_level,
                          MAX( parameter_level ) OVER( PARTITION BY 1 )
                                                                       max_parameter_level
@@ -76,8 +76,8 @@ AS
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
-            raise_application_error( get_err_cd( 'parm_not_configured' ),
-                                        get_err_msg( 'parm_not_configured' )
+            raise_application_error( td_ext.get_err_cd( 'parm_not_configured' ),
+                                        td_ext.get_err_msg( 'parm_not_configured' )
                                      || ': REGISTRATION'
                                    );
       END;
@@ -103,8 +103,8 @@ AS
          EXCEPTION
             WHEN NO_DATA_FOUND
             THEN
-               raise_application_error( get_err_cd( 'parm_not_configured' ),
-                                           get_err_msg( 'parm_not_configured' )
+               raise_application_error( td_ext.get_err_cd( 'parm_not_configured' ),
+                                           td_ext.get_err_msg( 'parm_not_configured' )
                                         || ': DEBUG_LEVEL'
                                       );
          END;
@@ -127,8 +127,8 @@ AS
          EXCEPTION
             WHEN NO_DATA_FOUND
             THEN
-               raise_application_error( get_err_cd( 'parm_not_configured' ),
-                                           get_err_msg( 'parm_not_configured' )
+               raise_application_error( td_ext.get_err_cd( 'parm_not_configured' ),
+                                           td_ext.get_err_msg( 'parm_not_configured' )
                                         || ': LOGGING_LEVEL'
                                       );
          END;
@@ -162,8 +162,10 @@ AS
          DBMS_APPLICATION_INFO.set_module( module, action );
       END IF;
 
-      log_msg( 'MODULE "' || module || '" beginning in RUNMODE "' || runmode || '"', 4 );
-      log_msg( 'Inital ACTION attribute set to "' || action || '"', 4 );
+      SELF.log_msg( 'MODULE "' || module || '" beginning in RUNMODE "' || runmode || '"',
+                    4
+                  );
+      SELF.log_msg( 'Inital ACTION attribute set to "' || action || '"', 4 );
 
       -- set session level parameters
       FOR c_params IN
@@ -175,130 +177,35 @@ AS
             FROM parameter_conf
            WHERE LOWER( module ) = SELF.module )
       LOOP
-         l_results := td_sql.exec_sql( p_sql => c_params.DDL, 
-	 	      			p_runmode => SELF.runmode );
+         IF SELF.is_debugmode
+         THEN
+            SELF.log_msg( 'Session SQL: ' || c_params.DDL );
+         ELSE
+            EXECUTE IMMEDIATE ( c_params.DDL );
+         END IF;
       END LOOP;
 
       RETURN;
    END tdtype;
-   -- used to pull the calling block from the dictionary
-   -- used to populate CALL_STACK column in the LOG_TABLE
-   MEMBER FUNCTION whence
-      RETURN VARCHAR2
-   AS
-      l_call_stack    VARCHAR2( 4096 )
-                                      DEFAULT DBMS_UTILITY.format_call_stack || CHR( 10 );
-      l_num           NUMBER;
-      l_found_stack   BOOLEAN          DEFAULT FALSE;
-      l_line          VARCHAR2( 255 );
-      l_cnt           NUMBER           := 0;
-   BEGIN
-      LOOP
-         l_num := INSTR( l_call_stack, CHR( 10 ));
-         EXIT WHEN( l_cnt = 4 OR l_num IS NULL OR l_num = 0 );
-         l_line := SUBSTR( l_call_stack, 1, l_num - 1 );
-         l_call_stack := SUBSTR( l_call_stack, l_num + 1 );
-
-         IF ( NOT l_found_stack )
-         THEN
-            IF ( l_line LIKE '%handle%number%name%' )
-            THEN
-               l_found_stack := TRUE;
-            END IF;
-         ELSE
-            l_cnt := l_cnt + 1;
-         END IF;
-      END LOOP;
-
-      RETURN l_line;
-   END whence;
-   MEMBER FUNCTION get_package_name
-      RETURN VARCHAR2
-   AS
-      l_call_stack    VARCHAR2( 4096 ) DEFAULT DBMS_UTILITY.format_call_stack;
-      l_num           NUMBER;
-      l_found_stack   BOOLEAN          DEFAULT FALSE;
-      l_line          VARCHAR2( 255 );
-      l_cnt           NUMBER           := 0;
-      l_name          VARCHAR2( 30 );
-      l_caller        VARCHAR2( 30 );
-   BEGIN
-      LOOP
-         l_num := INSTR( l_call_stack, CHR( 10 ));
-         EXIT WHEN( l_cnt = 3 OR l_num IS NULL OR l_num = 0 );
-         l_line := SUBSTR( l_call_stack, 1, l_num - 1 );
-         l_call_stack := SUBSTR( l_call_stack, l_num + 1 );
-
-         IF ( NOT l_found_stack )
-         THEN
-            IF ( l_line LIKE '%handle%number%name%' )
-            THEN
-               l_found_stack := TRUE;
-            END IF;
-         ELSE
-            l_cnt := l_cnt + 1;
-
-            -- l_cnt = 1 is ME
-            -- l_cnt = 2 is MY Caller
-            -- l_cnt = 3 is Their Caller
-            IF ( l_cnt = 3 )
-            THEN
-               l_line := SUBSTR( l_line, 21 );
-
-               IF ( l_line LIKE 'pr%' )
-               THEN
-                  l_num := LENGTH( 'procedure ' );
-               ELSIF( l_line LIKE 'fun%' )
-               THEN
-                  l_num := LENGTH( 'function ' );
-               ELSIF( l_line LIKE 'package body%' )
-               THEN
-                  l_num := LENGTH( 'package body ' );
-               ELSIF( l_line LIKE 'pack%' )
-               THEN
-                  l_num := LENGTH( 'package ' );
-               ELSIF( l_line LIKE 'anonymous%' )
-               THEN
-                  l_num := LENGTH( 'anonymous block ' );
-               ELSE
-                  l_num := NULL;
-               END IF;
-
-               IF ( l_num IS NOT NULL )
-               THEN
-                  l_caller := LTRIM( RTRIM( UPPER( SUBSTR( l_line, 1, l_num - 1 ))));
-               ELSE
-                  l_caller := 'TRIGGER';
-               END IF;
-
-               l_line := SUBSTR( l_line, NVL( l_num, 1 ));
-               l_num := INSTR( l_line, '.' );
-               l_name := LTRIM( RTRIM( SUBSTR( l_line, l_num + 1 )));
-            END IF;
-         END IF;
-      END LOOP;
-
-      RETURN LOWER( l_name );
-   END get_package_name;
-   MEMBER PROCEDURE change_action( p_action VARCHAR2 )
+   OVERRIDING MEMBER PROCEDURE change_action( p_action VARCHAR2 )
    AS
    BEGIN
       action := LOWER( p_action );
-      log_msg( 'ACTION attribute changed to "' || action || '"', 4 );
+      SELF.log_msg( 'ACTION attribute changed to "' || action || '"', 4 );
 
       IF is_registered
       THEN
          DBMS_APPLICATION_INFO.set_action( action );
       END IF;
    END change_action;
-   MEMBER PROCEDURE clear_app_info
+   OVERRIDING MEMBER PROCEDURE clear_app_info
    AS
    BEGIN
       action := prev_action;
       module := prev_module;
       client_info := prev_client_info;
-      log_msg( 'ACTION attribute changed to "' || action || '"', 4 );
-      log_msg( 'MODULE attribute changed to "' || module || '"', 4 );
+      SELF.log_msg( 'ACTION attribute changed to "' || action || '"', 4 );
+      SELF.log_msg( 'MODULE attribute changed to "' || module || '"', 4 );
 
       IF is_registered
       THEN
@@ -307,7 +214,7 @@ AS
       END IF;
    END clear_app_info;
    -- used to write a standard message to the LOG_TABLE
-   MEMBER PROCEDURE log_msg(
+   OVERRIDING MEMBER PROCEDURE log_msg(
       p_msg       VARCHAR2,
       p_level     NUMBER DEFAULT 2,
       p_stdout    VARCHAR2 DEFAULT 'yes',
@@ -331,7 +238,7 @@ AS
       END;
 
       -- find out what called me
-      l_whence := whence;
+      l_whence := SELF.whence;
 
       -- get the current_scn
       SELECT current_scn
@@ -376,40 +283,6 @@ AS
          END IF;
       END IF;
    END log_msg;
-   MEMBER PROCEDURE log_err
-   AS
-      l_msg   VARCHAR2( 1020 ) DEFAULT SQLERRM;
-   BEGIN
-      log_msg( l_msg, 1, 'no' );
-   END log_err;
-   MEMBER PROCEDURE log_cnt_msg( 
-      p_count NUMBER, 
-      p_msg VARCHAR2 DEFAULT NULL,
-      p_level     NUMBER DEFAULT 2,
-      p_stdout    VARCHAR2 DEFAULT 'yes',
-      p_oper_id   NUMBER DEFAULT NULL 
-   )
-   AS
-      PRAGMA AUTONOMOUS_TRANSACTION;
-   BEGIN
-      -- store in COUNT_TABLE numbers of records affected by particular actions in modules
-      INSERT INTO count_table
-                  ( client_info, module,
-                    action, runmode, session_id, row_cnt
-                  )
-           VALUES ( NVL( SELF.client_info, 'NA' ), NVL( SELF.module, 'NA' ),
-                    NVL( SELF.action, 'NA' ), SELF.runmode, SELF.session_id, p_count
-                  );
-
-      -- if a message was provided to this procedure, then write it to the log table
-      -- if not, then simply use the default message below
-      log_msg( NVL( p_msg, 'Number of records selected/affected') ||': '|| p_count,
-	       p_level,
-	       p_stdout,
-	       p_oper_id);
-      COMMIT;
-   END log_cnt_msg;
-   -- method for returning boolean if the application is registered
    MEMBER FUNCTION is_registered
       RETURN BOOLEAN
    AS
@@ -420,32 +293,6 @@ AS
          ELSE FALSE
       END;
    END is_registered;
-   -- GET method for pulling an error code out of the ERR_CD table
-   MEMBER FUNCTION get_err_cd( p_name VARCHAR2 )
-      RETURN NUMBER
-   AS
-      l_code   err_cd.code%TYPE;
-   BEGIN
-      SELECT code
-        INTO l_code
-        FROM err_cd
-       WHERE NAME = p_name;
-
-      RETURN l_code;
-   END get_err_cd;
-   -- GET method for pulling error text out of the ERR_CD table
-   MEMBER FUNCTION get_err_msg( p_name VARCHAR2 )
-      RETURN VARCHAR2
-   AS
-      l_msg   err_cd.MESSAGE%TYPE;
-   BEGIN
-      SELECT MESSAGE
-        INTO l_msg
-        FROM err_cd
-       WHERE NAME = p_name;
-
-      RETURN l_msg;
-   END get_err_msg;
    MEMBER PROCEDURE send( p_module_id NUMBER, p_message VARCHAR2 DEFAULT NULL )
    AS
       l_notify_method   notify_conf.notify_method%TYPE;
@@ -494,14 +341,14 @@ AS
             o_email.action := SELF.action;
             o_email.send;
          ELSE
-            raise_application_error( get_err_cd( 'notify_method_invalid' ),
-                                     get_err_msg( 'notify_method_invalid' )
+            raise_application_error( td_ext.get_err_cd( 'notify_method_invalid' ),
+                                     td_ext.get_err_msg( 'notify_method_invalid' )
                                    );
       END CASE;
    EXCEPTION
       WHEN NO_DATA_FOUND
       THEN
-         log_msg( 'Notification not configured for this action', 3 );
+         SELF.log_msg( 'Notification not configured for this action', 3 );
    END send;
 END;
 /
