@@ -1,5 +1,4 @@
-DROP TABLE dir_list purge
-/
+DROP TABLE dir_list PURGE;
 
 CREATE global TEMPORARY TABLE dir_list
 ( filename VARCHAR2(255),
@@ -7,9 +6,4 @@ CREATE global TEMPORARY TABLE dir_list
   file_size NUMBER
 )
 ON COMMIT DELETE ROWS
-/
-
-GRANT SELECT ON dir_list TO td_sel_&schema
-/
-GRANT SELECT,UPDATE,DELETE,INSERT ON dir_list TO td_sel_&schema
 /
