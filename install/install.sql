@@ -1,39 +1,47 @@
 SET serveroutput on size unlimited
 SET echo off
-
--- install the Transcend repository (tables) first
+ALTER SESSION SET nls_date_format = 'yyyymmdd_hhmiss';
+SPOOL install_&_DATE..log
+-- first get the schema for the Transcend repository (tables) first
 ACCEPT td_rep char default 'TD_REP' prompt 'Schema name for the Transcend repository [TD_REP]: '
-@transcend_repository &td_rep
+-- get the tablespace for the repository
+ACCEPT tablespace char default 'TD_APP' prompt 'Tablespace in which to install Transcend default repository: [TD_REP]: '
+-- get application user
 ACCEPT td_app char default 'TD_REP' prompt 'Schema name for the Transcend application [TD_REP]: '
-DECLARE
-   l_rep_schema VARCHAR2(30) := '&rep_schema';
-   l_app_schema VARCHAR2(30) := '&app_schema';
-BEGIN   
-   IF upper(l_rep_schema) <> upper(l_app_schema)
-   THEN
-      EXECUTE IMMEDIATE 'create synonym '||l_app_schema||'.COUNT_TABLE for '||l_rep_schema||'.COUNT_TABLE';
-      EXECUTE IMMEDIATE 'create synonym '||l_app_schema||'.DIR_LIST for '||l_rep_schema||'.DIR_LIST';
-      EXECUTE IMMEDIATE 'create synonym '||l_app_schema||'.ERR_CD for '||l_rep_schema||'.ERR_CD';
-      EXECUTE IMMEDIATE 'create synonym '||l_app_schema||'.FILEHUB_CONF for '||l_rep_schema||'.FILEHUB_CONF';
-      EXECUTE IMMEDIATE 'create synonym '||l_app_schema||'.FILEHUB_DETAIL for '||l_rep_schema||'.FILEHUB_DETAIL';
-      EXECUTE IMMEDIATE 'create synonym '||l_app_schema||'.FILEHUB_OBJ_DETAIL for '||l_rep_schema||'.FILEHUB_OBJ_DETAIL';
-      EXECUTE IMMEDIATE 'create synonym '||l_app_schema||'.LOGGING_CONF for '||l_rep_schema||'.LOGGING_CONF';
-      EXECUTE IMMEDIATE 'create synonym '||l_app_schema||'.LOG_TABLE for '||l_rep_schema||'.LOG_TABLE';
-      EXECUTE IMMEDIATE 'create synonym '||l_app_schema||'.NOTIFY_CONF for '||l_rep_schema||'.NOTIFY_CONF';
-      EXECUTE IMMEDIATE 'create synonym '||l_app_schema||'.PARTNAME for '||l_rep_schema||'.PARTNAME';
-      EXECUTE IMMEDIATE 'create synonym '||l_app_schema||'.REGISTRATION_CONF for '||l_rep_schema||'.REGISTRATION_CONF';
-      EXECUTE IMMEDIATE 'create synonym '||l_app_schema||'.RUNMODE_CONF for '||l_rep_schema||'.RUNMODE_CONF';
-      EXECUTE IMMEDIATE 'create synonym '||l_app_schema||'.PARAMETER_CONF for '||l_rep_schema||'.PARAMETER_CONF';
-   END IF;
-      
-END;
-/
--- install the Transcend application (stored code)
-@transcend_application &td_app
 
-ALTER SESSION SET current_schema=&_USER;
 
+-- get the current default tablespace of the repository user
+VARIABLE old_tbspace char(30)
 BEGIN
-   EXECUTE IMMEDIATE 'alter user &tab_schema default tablespace '||:old_tbspace;
+   SELECT default_tablespace
+     INTO :old_tbspace
+     FROM dba_users
+    WHERE username=upper('&td_rep');
 END;
 /
+
+-- create role for this repository
+DROP ROLE &td_rep._sel;
+CREATE ROLE &td_rep._sel;
+DROP ROLE &td_rep._adm;
+CREATE ROLE &td_rep._adm;
+
+-- alter the default tablespace of the repository user
+ALTER USER &td_rep DEFAULT TABLESPACE &tablespace;
+ALTER USER &td_rep QUOTA 50M ON &TABLESPACE;
+
+-- install the repository
+@@transcend_repository &td_rep
+-- create the synonyms between the two if they are different
+@@rep_syns &td_app &td_rep
+
+-- install the Transcend application (stored code)
+@@transcend_application &td_app
+
+-- set default tablespace back
+BEGIN
+   EXECUTE IMMEDIATE 'alter user &td_rep default tablespace '||:old_tbspace;
+END;
+/
+
+SPOOL off
