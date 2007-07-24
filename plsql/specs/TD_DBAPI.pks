@@ -97,6 +97,7 @@ IS
       p_part_tabs       VARCHAR2 DEFAULT 'yes',
       p_trunc           VARCHAR2 DEFAULT 'no',
       p_direct          VARCHAR2 DEFAULT 'yes',
+      p_degree          NUMBER DEFAULT NULL,
       p_commit          VARCHAR2 DEFAULT 'yes',
       p_runmode         VARCHAR2 DEFAULT NULL
    );
