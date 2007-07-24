@@ -48,7 +48,7 @@ IS
 
    PROCEDURE set_registration(
       p_module         VARCHAR2 DEFAULT 'default',
-      p_registration   VARCHAR2 DEFAULT 'register'
+      p_registration   VARCHAR2 DEFAULT 'yes'
    )
    IS
    BEGIN
@@ -84,8 +84,10 @@ IS
             THEN
                NULL;
             ELSE
-               raise_application_error( get_err_cd( 'no_session_parm' ),
-                                        get_err_msg( 'no_session_parm' ) || ': ' || p_name
+               raise_application_error( td_ext.get_err_cd( 'no_session_parm' ),
+                                           td_ext.get_err_msg( 'no_session_parm' )
+                                        || ': '
+                                        || p_name
                                       );
             END IF;
       END;
