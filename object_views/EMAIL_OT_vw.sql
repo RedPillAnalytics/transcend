@@ -1,5 +1,5 @@
 CREATE OR REPLACE VIEW email_ot 
-OF email
+OF emailtype
 WITH object identifier (notify_id)
 as
 SELECT cast('runtime' AS VARCHAR2(10)) runmode,
