@@ -42,8 +42,8 @@ IS
    )
    IS
       l_rows      BOOLEAN := FALSE;                             -- TO catch empty cursors
-      o_extract   EXTRACT;
-      o_feed      feed;
+      o_extract   extracttype;
+      o_feed      feedtype;
       o_td        tdtype  := tdtype( p_module       => 'process_file',
                                      p_runmode      => p_runmode );
    BEGIN
