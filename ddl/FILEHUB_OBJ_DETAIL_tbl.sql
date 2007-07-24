@@ -44,10 +44,3 @@ DROP SEQUENCE filehub_obj_detail_seq
 
 CREATE SEQUENCE filehub_obj_detail_seq
 /
-
-GRANT SELECT ON filehub_obj_detail TO td_sel_&schema
-/
-GRANT SELECT,UPDATE,DELETE,INSERT ON filehub_obj_detail TO td_sel_&schema
-/
-GRANT SELECT ON filehub_obj_detail_seq TO td_sel_&SCHEMA
-/
