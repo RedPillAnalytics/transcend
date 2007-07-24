@@ -23,11 +23,11 @@ ALTER SESSION SET current_schema=&1;
 @../java/TdCore.jvs
 
 --DROP all types due to inheritance
-DROP TYPE feed;
-DROP TYPE extract;
-DROP TYPE fhconf;
-DROP TYPE email;
-DROP TYPE notify;
+DROP TYPE feedtype;
+DROP TYPE extracttype;
+DROP TYPE filetype;
+DROP TYPE emailtype;
+DROP TYPE notifytype;
 DROP TYPE tdtype;
 DROP TYPE apptype;
 
@@ -35,17 +35,17 @@ DROP TYPE apptype;
 @../plsql/specs/STRING_AGG_TYPE.tps
 @../plsql/wrapped_bodies/STRING_AGG_TYPE.plb
 @../plsql/wrapped_bodies/STRAGG.plb
-
---CREATE targeted types, packages and object views
 @../plsql/specs/TD_EXT.pks
 @../plsql/wrapped_bodies/TD_EXT.plb
 @../plsql/specs/BASETYPE.tps
 @../plsql/wrapped_bodies/BASETYPE.plb
+
+--CREATE targeted types, packages and object views
 @../plsql/specs/APPTYPE.tps
 @../plsql/wrapped_bodies/APPTYPE.plb
-@../plsql/specs/NOTIFY.tps
-@../plsql/specs/EMAIL.tps
-@../plsql/wrapped_bodies/EMAIL.plb
+@../plsql/specs/NOTIFYTYPE.tps
+@../plsql/specs/EMAILTYPE.tps
+@../plsql/wrapped_bodies/EMAILTYPE.plb
 @../object_views/EMAIL_OT_vw.sql
 @../plsql/specs/TDTYPE.tps
 @../plsql/wrapped_bodies/TDTYPE.plb
@@ -53,13 +53,13 @@ DROP TYPE apptype;
 @../plsql/wrapped_bodies/TD_CORE.plb
 @../plsql/specs/TD_SQL.pks
 @../plsql/wrapped_bodies/TD_SQL.plb
-@../plsql/specs/FHCONF.tps
-@../plsql/wrapped_bodies/FHCONF.plb
-@../plsql/specs/EXTRACT.tps
-@../plsql/wrapped_bodies/EXTRACT.plb
+@../plsql/specs/FILETYPE.tps
+@../plsql/wrapped_bodies/FILETYPE.plb
+@../plsql/specs/EXTRACTTYPE.tps
+@../plsql/wrapped_bodies/EXTRACTTYPE.plb
 @../object_views/EXTRACT_OT_vw.sql
-@../plsql/specs/FEED.tps
-@../plsql/wrapped_bodies/FEED.plb
+@../plsql/specs/FEEDTYPE.tps
+@../plsql/wrapped_bodies/FEEDTYPE.plb
 @../object_views/FEED_OT_vw.sql
 
 --CREATE callable packages
