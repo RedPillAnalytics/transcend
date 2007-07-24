@@ -3,11 +3,11 @@ SET echo off
 ALTER SESSION SET nls_date_format = 'yyyymmdd_hhmiss';
 SPOOL install_&_DATE..log
 -- first get the schema for the Transcend repository (tables) first
-ACCEPT td_rep char default 'TD_REP' prompt 'Schema name for the Transcend repository [TD_REP]: '
+ACCEPT td_rep char default 'TDREP' prompt 'Schema name for the Transcend repository [tdrep]: '
 -- get the tablespace for the repository
-ACCEPT tablespace char default 'TD_APP' prompt 'Tablespace in which to install Transcend default repository: [TD_REP]: '
+ACCEPT tablespace char default 'TDREP' prompt 'Tablespace in which to install Transcend default repository: [tdrep]: '
 -- get application user
-ACCEPT td_app char default 'TD_REP' prompt 'Schema name for the Transcend application [TD_REP]: '
+ACCEPT td_app char default 'TDREP' prompt 'Schema name for the Transcend application [tdrep]: '
 
 
 -- get the current default tablespace of the repository user
