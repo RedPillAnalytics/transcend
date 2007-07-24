@@ -13,7 +13,7 @@ IS
 
    PROCEDURE set_registration(
       p_module         VARCHAR2 DEFAULT 'default',
-      p_registration   VARCHAR2 DEFAULT 'register'
+      p_registration   VARCHAR2 DEFAULT 'yes'
    );
 
    PROCEDURE set_session_parameter( p_module VARCHAR2, p_name VARCHAR2, p_value VARCHAR2 );
