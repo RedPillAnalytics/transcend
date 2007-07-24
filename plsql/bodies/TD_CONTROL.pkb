@@ -48,7 +48,7 @@ IS
 
    PROCEDURE set_registration(
       p_module         VARCHAR2 DEFAULT 'default',
-      p_registration   VARCHAR2 DEFAULT 'yes'
+      p_registration   VARCHAR2 DEFAULT 'register'
    )
    IS
    BEGIN
