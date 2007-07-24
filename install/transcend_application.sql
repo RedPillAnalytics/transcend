@@ -77,6 +77,11 @@ EXEC td_control.set_logging_level('default',2,3);
 EXEC td_control.set_runmode;
 EXEC td_control.set_registration;
 
+-- don't register TD_SQL components
+-- that's because DBMS_MONITOR should look for calling modules for tracing
+exec td_control.set_registration('td_sql.exec_sql','noregister');
+exec td_control.set_registration('td_sql.exec_auto','noregister');
+
 --java permissions
 EXEC dbms_java.set_output(1000000);
 EXEC dbms_java.grant_permission( upper('&1'), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'execute' );
