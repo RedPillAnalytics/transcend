@@ -10,7 +10,7 @@ IS
    IS
       l_pct_diff   NUMBER;
       l_rej_ind    VARCHAR2( 1 );
-      o_app        applog        := applog( p_module => 'calc_rej_ind' );
+      o_td         tdtype        := tdtype( p_module => 'calc_rej_ind' );
    BEGIN
       SELECT percent_diff
         INTO l_pct_diff
@@ -29,7 +29,7 @@ IS
          RETURN 'Y';
       END IF;
 
-      o_app.clear_app_info;
+      o_td.clear_app_info;
    END calc_rej_ind;
 
    -- processes files for a particular job
@@ -44,7 +44,7 @@ IS
       l_rows      BOOLEAN := FALSE;                             -- TO catch empty cursors
       o_extract   EXTRACT;
       o_feed      feed;
-      o_app       applog  := applog( p_module       => 'process_file',
+      o_td        tdtype  := tdtype( p_module       => 'process_file',
                                      p_runmode      => p_runmode );
    BEGIN
       FOR c_fh_conf IN ( SELECT  filehub_id, filehub_type
@@ -68,7 +68,7 @@ IS
                  FROM extract_ot t
                 WHERE t.filehub_id = c_fh_conf.filehub_id;
 
-               o_extract.runmode := o_app.runmode;
+               o_extract.runmode := o_td.runmode;
                o_extract.process;
             WHEN 'feed'
             THEN
@@ -77,7 +77,7 @@ IS
                  FROM feed_ot t
                 WHERE t.filehub_id = c_fh_conf.filehub_id;
 
-               o_feed.runmode := o_app.runmode;
+               o_feed.runmode := o_td.runmode;
                o_feed.process( p_keep_source );
             ELSE
                NULL;
@@ -90,16 +90,16 @@ IS
       -- no matching filehub entries are found
       IF NOT l_rows
       THEN
-         raise_application_error( get_err_cd( 'incorrect_parameters' ),
-                                  get_err_msg( 'incorrect_parameters' )
+         raise_application_error( td_ext.get_err_cd( 'incorrect_parameters' ),
+                                  td_ext.get_err_msg( 'incorrect_parameters' )
                                 );
       END IF;
 
-      o_app.clear_app_info;
+      o_td.clear_app_info;
    EXCEPTION
       WHEN OTHERS
       THEN
-         o_app.log_err;
+         o_td.log_err;
          ROLLBACK;
          RAISE;
    END process_files;
