@@ -9,9 +9,9 @@ AS
    )
       RETURN SELF AS RESULT
    AS
-   BEGIN
-      -- get the session id
-      session_id := SYS_CONTEXT( 'USERENV', 'SESSIONID' );
+BEGIN
+      -- get information about the session for logging purposes
+      set_session_info;
       -- first we need to populate the module attribute, because it helps us determine parameter values
       SELF.set_module( p_module );
       -- we also set the action, which may be used one day to fine tune parameters
@@ -32,8 +32,6 @@ AS
 
       -- populate attributes with new app_info settings
       client_info := NVL( p_client_info, prev_client_info );
-      -- get information about the session for logging purposes
-      set_session_info;
 
       IF REGISTER = 'yes'
       THEN
@@ -48,6 +46,8 @@ AS
    AS
    BEGIN
       -- set other attributes
+      -- get the session id
+      session_id := SYS_CONTEXT( 'USERENV', 'SESSIONID' );
       instance_name := SYS_CONTEXT( 'USERENV', 'INSTANCE_NAME' );
       dbuser := SYS_CONTEXT( 'USERENV', 'SESSION_USER' );
       osuser := SYS_CONTEXT( 'USERENV', 'OS_USER' );
@@ -147,7 +147,7 @@ AS
                                     '[[:cntrl:]]',
                                     '; '
                                   ),
-                    p_oper_id, logging_level
+                    p_oper_id, p_level
                   );
 
       COMMIT;
