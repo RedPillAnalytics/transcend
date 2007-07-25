@@ -1,3 +1,4 @@
+PROMPT 'Running InstallTranscend.sql'
 SET serveroutput on size unlimited
 SET echo off
 ALTER SESSION SET nls_date_format = 'yyyymmdd_hhmiss';
