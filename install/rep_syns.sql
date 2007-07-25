@@ -8,6 +8,7 @@ DECLARE
 BEGIN   
    IF upper(l_syn_schema) <> upper(l_obj_schema)
    THEN
+      -- tables
       EXECUTE IMMEDIATE 'create synonym '||l_syn_schema||'.COUNT_TABLE for '||l_obj_schema||'.COUNT_TABLE';
       EXECUTE IMMEDIATE 'create synonym '||l_syn_schema||'.DIR_LIST for '||l_obj_schema||'.DIR_LIST';
       EXECUTE IMMEDIATE 'create synonym '||l_syn_schema||'.ERR_CD for '||l_obj_schema||'.ERR_CD';
@@ -21,6 +22,15 @@ BEGIN
       EXECUTE IMMEDIATE 'create synonym '||l_syn_schema||'.REGISTRATION_CONF for '||l_obj_schema||'.REGISTRATION_CONF';
       EXECUTE IMMEDIATE 'create synonym '||l_syn_schema||'.RUNMODE_CONF for '||l_obj_schema||'.RUNMODE_CONF';
       EXECUTE IMMEDIATE 'create synonym '||l_syn_schema||'.PARAMETER_CONF for '||l_obj_schema||'.PARAMETER_CONF';
+      -- sequences
+      EXECUTE IMMEDIATE 'create synonym '||l_syn_schema||'.FILEHUB_CONF_SEQ for '||l_obj_schema||'.FILEHUB_CONF_SEQ';
+      EXECUTE IMMEDIATE 'create synonym '||l_syn_schema||'.FILEHUB_DETAIL_SEQ for '||l_obj_schema||'.FILEHUB_DETAIL_SEQ';
+      EXECUTE IMMEDIATE 'create synonym '||l_syn_schema||'.FILEHUB_OBJ_DETAIL_SEQ for '||l_obj_schema||'.FILEHUB_OBJ_DETAIL_SEQ';
+      EXECUTE IMMEDIATE 'create synonym '||l_syn_schema||'.LOGGING_CONF_SEQ for '||l_obj_schema||'.LOGGING_CONF_SEQ';
+      EXECUTE IMMEDIATE 'create synonym '||l_syn_schema||'.NOTIFY_CONF_SEQ for '||l_obj_schema||'.NOTIFY_CONF_SEQ';
+      EXECUTE IMMEDIATE 'create synonym '||l_syn_schema||'.REGISTRATION_CONF_SEQ for '||l_obj_schema||'.REGISTRATION_CONF_SEQ';
+      EXECUTE IMMEDIATE 'create synonym '||l_syn_schema||'.RUNMODE_CONF_SEQ for '||l_obj_schema||'.RUNMODE_CONF_SEQ';
+      EXECUTE IMMEDIATE 'create synonym '||l_syn_schema||'.PARAMETER_CONF_SEQ for '||l_obj_schema||'.PARAMETER_CONF_SEQ';
    END IF;
       
 END;
