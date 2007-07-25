@@ -1,8 +1,8 @@
 -- create a super role to grant complete power for the entire framework using system privileges
 DROP ROLE &1._sys;
-DROP ROLE &1;
+DROP ROLE &1._app;
 CREATE ROLE &1._sys;
-CREATE ROLE &1;
+CREATE ROLE &1._app;
 
 -- grant full execution rights to the system role as well as the application schema
 -- will have a chance to lock the application schema later
