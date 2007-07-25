@@ -1,3 +1,4 @@
+PROMPT 'Running exec_app_grants.sql'
 -- creates a role for a repository user
 -- grants the role to a repository user
 
