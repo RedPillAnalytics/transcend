@@ -1,34 +1,61 @@
-SET serveroutput on size unlimited
-SET echo off
+-- &1 IS the application SCHEMA
 
-GRANT CONNECT TO &schema;
-GRANT RESOURCE TO &schema;
-GRANT ALTER ANY TABLE TO &schema;
-GRANT ALTER SESSION TO &schema;
-GRANT EXECUTE ANY PROCEDURE TO &schema;
-GRANT INSERT ANY TABLE TO &schema;
-GRANT SELECT ANY dictionary TO &schema;
-GRANT SELECT ANY TABLE TO &schema;
-GRANT UPDATE ANY TABLE TO &schema;
-GRANT ALTER ANY INDEX TO &schema;
-GRANT CREATE ANY INDEX TO &schema;
-GRANT DROP ANY INDEX TO &schema;
-GRANT DROP ANY TABLE TO &schema;
-GRANT CREATE ANY directory TO &schema;
-GRANT EXECUTE ON sys.utl_mail TO &schema;
+-- create a super role to grant complete power for the entire framework using system privileges
+DROP ROLE &1._sys;
+DROP ROLE &1._app;
+CREATE ROLE &1._sys;
+CREATE ROLE &1._app;
 
---java permissions
+-- grant full execution rights to the system role as well as the application schema
+-- will have a chance to lock the application schema later
+GRANT CONNECT TO &1._sys;
+GRANT CONNECT TO &1;
+GRANT RESOURCE TO &1._sys;
+GRANT RESOURCE TO &1;
+GRANT ALTER ANY TABLE TO &1._sys;
+GRANT ALTER ANY TABLE TO &1;
+GRANT ALTER SESSION TO &1._sys;
+GRANT ALTER SESSION TO &1;
+GRANT EXECUTE ANY PROCEDURE TO &1._sys;
+GRANT EXECUTE ANY PROCEDURE TO &1;
+GRANT INSERT ANY TABLE TO &1._sys;
+GRANT INSERT ANY TABLE TO &1;
+GRANT SELECT ANY dictionary TO &1._sys;
+GRANT SELECT ANY dictionary TO &1;
+GRANT SELECT ANY TABLE TO &1._sys;
+GRANT SELECT ANY TABLE TO &1;
+GRANT SELECT ANY SEQUENCE TO &1._sys;
+GRANT SELECT ANY SEQUENCE TO &1;
+GRANT UPDATE ANY TABLE TO &1._sys;
+GRANT UPDATE ANY TABLE TO &1;
+GRANT DELETE ANY TABLE TO &1._sys;
+GRANT DELETE ANY TABLE TO &1;
+GRANT ALTER ANY INDEX TO &1._sys;
+GRANT ALTER ANY INDEX TO &1;
+GRANT CREATE ANY INDEX TO &1._sys;
+GRANT CREATE ANY INDEX TO &1;
+GRANT DROP ANY INDEX TO &1._sys;
+GRANT DROP ANY INDEX TO &1;
+GRANT DROP ANY TABLE TO &1._sys;
+GRANT DROP ANY TABLE TO &1;
+GRANT CREATE ANY directory TO &1._sys;
+GRANT CREATE ANY directory TO &1;
+GRANT ANALYZE ANY TO &1._sys;
+GRANT ANALYZE ANY TO &1;
+GRANT EXECUTE ON sys.utl_mail TO &1._sys;
+GRANT EXECUTE ON sys.utl_mail TO &1;
+
+--java permissions for sys role and application user
 EXEC dbms_java.set_output(1000000);
-EXEC dbms_java.grant_permission( upper('&app_schema'), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'execute' );
-EXEC dbms_java.grant_permission( upper('&app_schema'), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'read' );
-EXEC dbms_java.grant_permission( upper('&app_schema'), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'write' );
-EXEC dbms_java.grant_permission( upper('&app_schema'), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'delete' );
-EXEC dbms_java.grant_permission( upper('&app_schema'), 'SYS:java.lang.RuntimePermission', 'writeFileDescriptor', '' );
-EXEC dbms_java.grant_permission( upper('&app_schema'), 'SYS:java.lang.RuntimePermission', 'readFileDescriptor','' );
-
-ALTER SESSION SET current_schema=&_USER;
-
-BEGIN
-   EXECUTE IMMEDIATE 'alter user &tab_schema default tablespace '||:old_tbspace;
-END;
-/
+EXEC dbms_java.grant_permission( upper('&1._sys'), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'execute' );
+EXEC dbms_java.grant_permission( upper('&1'), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'execute' );
+EXEC dbms_java.grant_permission( upper('&1._sys'), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'read' );
+EXEC dbms_java.grant_permission( upper('&1'), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'read' );
+EXEC dbms_java.grant_permission( upper('&1._sys'), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'write' );
+EXEC dbms_java.grant_permission( upper('&1'), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'write' );
+EXEC dbms_java.grant_permission( upper('&1._sys'), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'delete' );
+EXEC dbms_java.grant_permission( upper('&1'), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'delete' );
+EXEC dbms_java.grant_permission( upper('&1._sys'), 'SYS:java.lang.RuntimePermission', 'writeFileDescriptor', '' );
+EXEC dbms_java.grant_permission( upper('&1'), 'SYS:java.lang.RuntimePermission', 'writeFileDescriptor', '' );
+EXEC dbms_java.grant_permission( upper('&1._sys'), 'SYS:java.lang.RuntimePermission', 'readFileDescriptor','' );
+EXEC dbms_java.grant_permission( upper('&1'), 'SYS:java.lang.RuntimePermission', 'readFileDescriptor','' );
