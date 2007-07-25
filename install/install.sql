@@ -26,8 +26,6 @@ ALTER USER &td_rep QUOTA 50M ON &TABLESPACE;
 
 -- install the repository
 @@transcend_repository &td_rep
--- grant the repository role to the application schema
-GRANT &td_rep._adm TO &td_app;
 
 -- create the synonyms between the two if they are different
 @@rep_syns &td_app &td_rep
