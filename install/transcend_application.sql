@@ -1,4 +1,4 @@
-SET echo on
+-- &1 IS the application schema
 
 -- create a super role to grant complete power for the entire framework using system privileges
 DROP ROLE &1._sys;
