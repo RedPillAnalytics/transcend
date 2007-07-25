@@ -1,3 +1,4 @@
+prompt 'Running rep_syns.sql'
 -- create synonyms for repository objects
 -- first parameter passed is the synonym schema
 -- second parameter passed is the object schema
