@@ -20,18 +20,15 @@ BEGIN
 END;
 /
 
--- create role for this repository
-DROP ROLE &td_rep._sel;
-CREATE ROLE &td_rep._sel;
-DROP ROLE &td_rep._adm;
-CREATE ROLE &td_rep._adm;
-
 -- alter the default tablespace of the repository user
 ALTER USER &td_rep DEFAULT TABLESPACE &tablespace;
 ALTER USER &td_rep QUOTA 50M ON &TABLESPACE;
 
 -- install the repository
 @@transcend_repository &td_rep
+-- grant the repository role to the application schema
+GRANT &td_rep._adm TO &td_app;
+
 -- create the synonyms between the two if they are different
 @@rep_syns &td_app &td_rep
 
