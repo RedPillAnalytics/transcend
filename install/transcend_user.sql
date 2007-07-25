@@ -12,3 +12,14 @@ ACCEPT app_schema char default 'TDREP' prompt 'Schema containing Transcend appli
 @@app_syns &repo_user &app_schema
 
 ACCEPT response char default 'yes' prompt 'Do you want to lock the &app_schema schema? [yes]:'
+
+DECLARE
+   l_response VARCHAR2(30) := lower('&response');
+   l_app_schema VARCHAR2(30) := upper('&app_schema');
+BEGIN   
+   IF l_response = 'yes'
+   THEN
+      EXECUTE IMMEDIATE 'alter user '||l_app_schema||' account lock';
+   END IF;      
+END;
+/
