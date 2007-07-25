@@ -1,20 +1,37 @@
--- grant full execution rights to the repository user
--- will later ask if the schema should be locked
-GRANT CONNECT TO &1;
-GRANT RESOURCE TO &1;
-GRANT ALTER ANY TABLE TO &1;
-GRANT ALTER SESSION TO &1;
-GRANT EXECUTE ANY PROCEDURE TO &1;
-GRANT INSERT ANY TABLE TO &1;
-GRANT SELECT ANY dictionary TO &1;
-GRANT SELECT ANY TABLE TO &1;
-GRANT UPDATE ANY TABLE TO &1;
-GRANT ALTER ANY INDEX TO &1;
-GRANT CREATE ANY INDEX TO &1;
-GRANT DROP ANY INDEX TO &1;
-GRANT DROP ANY TABLE TO &1;
-GRANT CREATE ANY directory TO &1;
-GRANT EXECUTE ON sys.utl_mail TO &1;
+SET echo on
+
+-- create a super role to grant complete power for the entire framework using system privileges
+DROP ROLE &1._sys;
+CREATE ROLE &1._sys;
+
+-- grant full execution rights to the system role
+GRANT CONNECT TO &1._sys;
+GRANT RESOURCE TO &1._sys;
+GRANT ALTER ANY TABLE TO &1._sys;
+GRANT ALTER SESSION TO &1._sys;
+GRANT EXECUTE ANY PROCEDURE TO &1._sys;
+GRANT INSERT ANY TABLE TO &1._sys;
+GRANT SELECT ANY dictionary TO &1._sys;
+GRANT SELECT ANY TABLE TO &1._sys;
+GRANT UPDATE ANY TABLE TO &1._sys;
+GRANT ALTER ANY INDEX TO &1._sys;
+GRANT CREATE ANY INDEX TO &1._sys;
+GRANT DROP ANY INDEX TO &1._sys;
+GRANT DROP ANY TABLE TO &1._sys;
+GRANT CREATE ANY directory TO &1._sys;
+GRANT EXECUTE ON sys.utl_mail TO &1._sys;
+
+--java permissions
+EXEC dbms_java.set_output(1000000);
+EXEC dbms_java.grant_permission( upper('&1'), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'execute' );
+EXEC dbms_java.grant_permission( upper('&1'), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'read' );
+EXEC dbms_java.grant_permission( upper('&1'), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'write' );
+EXEC dbms_java.grant_permission( upper('&1'), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'delete' );
+EXEC dbms_java.grant_permission( upper('&1'), 'SYS:java.lang.RuntimePermission', 'writeFileDescriptor', '' );
+EXEC dbms_java.grant_permission( upper('&1'), 'SYS:java.lang.RuntimePermission', 'readFileDescriptor','' );
+
+-- grant the system role to the application schema
+GRANT &1._sys TO &1;
 
 -- set current schema
 ALTER SESSION SET current_schema=&1;
@@ -82,13 +99,27 @@ EXEC td_control.set_registration;
 exec td_control.set_registration('td_sql.exec_sql','noregister');
 exec td_control.set_registration('td_sql.exec_auto','noregister');
 
---java permissions
-EXEC dbms_java.set_output(1000000);
-EXEC dbms_java.grant_permission( upper('&1'), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'execute' );
-EXEC dbms_java.grant_permission( upper('&1'), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'read' );
-EXEC dbms_java.grant_permission( upper('&1'), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'write' );
-EXEC dbms_java.grant_permission( upper('&1'), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'delete' );
-EXEC dbms_java.grant_permission( upper('&1'), 'SYS:java.lang.RuntimePermission', 'writeFileDescriptor', '' );
-EXEC dbms_java.grant_permission( upper('&1'), 'SYS:java.lang.RuntimePermission', 'readFileDescriptor','' );
+-- create role for this application
+DROP ROLE &1._app;
+CREATE ROLE &1._app;
+
+-- grant execute on components to this role
+GRANT EXECUTE ON STRING_AGG_TYPE to &1._app;
+GRANT EXECUTE ON TD_EXT to &1._app;
+GRANT EXECUTE ON BASETYPE to &1._app;
+GRANT EXECUTE ON APPTYPE to &1._app;
+GRANT EXECUTE ON NOTIFYTYPE to &1._app;
+GRANT EXECUTE ON EMAILTYPE to &1._app;
+GRANT EXECUTE ON TDTYPE to &1._app;
+GRANT EXECUTE ON TD_CORE to &1._app;
+GRANT EXECUTE ON TD_SQL to &1._app;
+GRANT EXECUTE ON FILETYPE to &1._app;
+GRANT EXECUTE ON EXTRACTTYPE to &1._app;
+GRANT EXECUTE ON EXTRACT_OT_vw to &1._app;
+GRANT EXECUTE ON FEEDTYPE to &1._app;
+GRANT EXECUTE ON TD_DBAPI to &1._app;
+GRANT EXECUTE ON TD_FILEAPI to &1._app;
+GRANT EXECUTE ON TD_CONTROL to &1._app;
+GRANT EXECUTE ON TD_OWBAPI to &1._app;
 
 ALTER SESSION SET current_schema=&_USER;
