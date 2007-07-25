@@ -1,3 +1,4 @@
+PROMPT 'Running rep_grants.sql'
 -- create role for this repository
 DROP ROLE &1._sel;
 CREATE ROLE &1._sel;
