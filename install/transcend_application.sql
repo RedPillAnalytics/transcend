@@ -1,64 +1,8 @@
 -- &1 IS the application schema
 
--- create a super role to grant complete power for the entire framework using system privileges
-DROP ROLE &1._sys;
-DROP ROLE &1._app;
-CREATE ROLE &1._sys;
-CREATE ROLE &1._app;
-
--- grant full execution rights to the system role as well as the application schema
--- will have a chance to lock the application schema later
-GRANT CONNECT TO &1._sys;
-GRANT CONNECT TO &1;
-GRANT RESOURCE TO &1._sys;
-GRANT RESOURCE TO &1;
-GRANT ALTER ANY TABLE TO &1._sys;
-GRANT ALTER ANY TABLE TO &1;
-GRANT ALTER SESSION TO &1._sys;
-GRANT ALTER SESSION TO &1;
-GRANT EXECUTE ANY PROCEDURE TO &1._sys;
-GRANT EXECUTE ANY PROCEDURE TO &1;
-GRANT INSERT ANY TABLE TO &1._sys;
-GRANT INSERT ANY TABLE TO &1;
-GRANT SELECT ANY dictionary TO &1._sys;
-GRANT SELECT ANY dictionary TO &1;
-GRANT SELECT ANY TABLE TO &1._sys;
-GRANT SELECT ANY TABLE TO &1;
-GRANT SELECT ANY SEQUENCE TO &1._sys;
-GRANT SELECT ANY SEQUENCE TO &1;
-GRANT UPDATE ANY TABLE TO &1._sys;
-GRANT UPDATE ANY TABLE TO &1;
-GRANT DELETE ANY TABLE TO &1._sys;
-GRANT DELETE ANY TABLE TO &1;
-GRANT ALTER ANY INDEX TO &1._sys;
-GRANT ALTER ANY INDEX TO &1;
-GRANT CREATE ANY INDEX TO &1._sys;
-GRANT CREATE ANY INDEX TO &1;
-GRANT DROP ANY INDEX TO &1._sys;
-GRANT DROP ANY INDEX TO &1;
-GRANT DROP ANY TABLE TO &1._sys;
-GRANT DROP ANY TABLE TO &1;
-GRANT CREATE ANY directory TO &1._sys;
-GRANT CREATE ANY directory TO &1;
-GRANT ANALYZE ANY TO &1._sys;
-GRANT ANALYZE ANY TO &1;
-GRANT EXECUTE ON sys.utl_mail TO &1._sys;
-GRANT EXECUTE ON sys.utl_mail TO &1;
-
---java permissions for sys role and application user
-EXEC dbms_java.set_output(1000000);
-EXEC dbms_java.grant_permission( upper('&1._sys'), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'execute' );
-EXEC dbms_java.grant_permission( upper('&1'), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'execute' );
-EXEC dbms_java.grant_permission( upper('&1._sys'), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'read' );
-EXEC dbms_java.grant_permission( upper('&1'), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'read' );
-EXEC dbms_java.grant_permission( upper('&1._sys'), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'write' );
-EXEC dbms_java.grant_permission( upper('&1'), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'write' );
-EXEC dbms_java.grant_permission( upper('&1._sys'), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'delete' );
-EXEC dbms_java.grant_permission( upper('&1'), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'delete' );
-EXEC dbms_java.grant_permission( upper('&1._sys'), 'SYS:java.lang.RuntimePermission', 'writeFileDescriptor', '' );
-EXEC dbms_java.grant_permission( upper('&1'), 'SYS:java.lang.RuntimePermission', 'writeFileDescriptor', '' );
-EXEC dbms_java.grant_permission( upper('&1._sys'), 'SYS:java.lang.RuntimePermission', 'readFileDescriptor','' );
-EXEC dbms_java.grant_permission( upper('&1'), 'SYS:java.lang.RuntimePermission', 'readFileDescriptor','' );
+-- grant privileges required for package to compile
+-- also privileges needed for the application schema to operate with full power
+@full_app_grants &1
 
 -- set current schema
 ALTER SESSION SET current_schema=&1;
@@ -126,34 +70,11 @@ EXEC td_control.set_registration;
 exec td_control.set_registration('td_sql.exec_sql','noregister');
 exec td_control.set_registration('td_sql.exec_auto','noregister');
 
--- create role for this application
-DROP ROLE &1._app;
-CREATE ROLE &1._app;
+-- create role to execute this application
+-- grant all the needed privileges to the role
+@exec_app_grants &1
 
--- grant execute on components to this role
-GRANT EXECUTE ON STRING_AGG_TYPE to &1._app;
-GRANT EXECUTE ON TD_EXT to &1._app;
-GRANT EXECUTE ON BASETYPE to &1._app;
-GRANT EXECUTE ON APPTYPE to &1._app;
-GRANT EXECUTE ON NOTIFYTYPE to &1._app;
-GRANT EXECUTE ON EMAILTYPE to &1._app;
-GRANT EXECUTE ON TDTYPE to &1._app;
-GRANT EXECUTE ON TD_CORE to &1._app;
-GRANT EXECUTE ON TD_SQL to &1._app;
-GRANT EXECUTE ON FILETYPE to &1._app;
-GRANT EXECUTE ON EXTRACTTYPE to &1._app;
-GRANT SELECT ON EXTRACT_OT_vw to &1._app;
-GRANT EXECUTE ON FEEDTYPE to &1._app;
-GRANT EXECUTE ON TD_DBAPI to &1._app;
-GRANT EXECUTE ON TD_FILEAPI to &1._app;
-GRANT EXECUTE ON TD_CONTROL to &1._app;
-GRANT EXECUTE ON TD_OWBAPI to &1._app;
-
--- grant select on the object views to this role
-GRANT SELECT ON EMAIL_OT to &1._app;
-GRANT SELECT ON EXTRACT_OT to &1._app;
-GRANT SELECT ON FEED_OT to &1._app;
-
+-- go back to connected user as current_schema
 ALTER SESSION SET current_schema=&_USER;
 
 ACCEPT response char default 'yes' prompt 'Do you want to lock the &1? [yes]:'
