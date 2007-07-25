@@ -1,3 +1,5 @@
+-- &1 IS the repository schema
+
 -- set the correct schema
 ALTER SESSION SET current_schema=&1;
 
