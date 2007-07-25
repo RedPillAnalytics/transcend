@@ -1,3 +1,4 @@
+PROMPT 'Running full_app_grants.sql'
 -- &1 IS the application SCHEMA
 
 -- create a super role to grant complete power for the entire framework using system privileges
