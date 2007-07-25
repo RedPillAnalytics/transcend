@@ -1,3 +1,4 @@
+PROMPT 'Running transcend_repository.sql'
 -- &1 IS the repository schema
 
 -- set the correct schema
