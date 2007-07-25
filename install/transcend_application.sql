@@ -1,3 +1,5 @@
+SET echo on
+
 -- create a super role to grant complete power for the entire framework using system privileges
 DROP ROLE &1._sys;
 DROP ROLE &1._app;
@@ -39,7 +41,7 @@ GRANT CREATE ANY directory TO &1;
 GRANT EXECUTE ON sys.utl_mail TO &1._sys;
 GRANT EXECUTE ON sys.utl_mail TO &1;
 
---java permissions
+--java permissions for sys role and application user
 EXEC dbms_java.set_output(1000000);
 EXEC dbms_java.grant_permission( upper('&1._sys'), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'execute' );
 EXEC dbms_java.grant_permission( upper('&1'), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'execute' );
@@ -136,12 +138,17 @@ GRANT EXECUTE ON TD_CORE to &1._app;
 GRANT EXECUTE ON TD_SQL to &1._app;
 GRANT EXECUTE ON FILETYPE to &1._app;
 GRANT EXECUTE ON EXTRACTTYPE to &1._app;
-GRANT EXECUTE ON EXTRACT_OT_vw to &1._app;
+GRANT SELECT ON EXTRACT_OT_vw to &1._app;
 GRANT EXECUTE ON FEEDTYPE to &1._app;
 GRANT EXECUTE ON TD_DBAPI to &1._app;
 GRANT EXECUTE ON TD_FILEAPI to &1._app;
 GRANT EXECUTE ON TD_CONTROL to &1._app;
 GRANT EXECUTE ON TD_OWBAPI to &1._app;
+
+-- grant select on the object views to this role
+GRANT SELECT ON EMAIL_OT to &1._app;
+GRANT SELECT ON EXTRACT_OT to &1._app;
+GRANT SELECT ON FEED_OT to &1._app;
 
 ALTER SESSION SET current_schema=&_USER;
 
