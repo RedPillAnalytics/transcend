@@ -1,3 +1,10 @@
+-- create role for this repository
+DROP ROLE &1._sel;
+CREATE ROLE &1._sel;
+DROP ROLE &1._adm;
+CREATE ROLE &1._adm;
+
+
 GRANT SELECT ON COUNT_TABLE TO &1._sel;
 GRANT SELECT,UPDATE,DELETE,INSERT ON COUNT_TABLE TO &1._sel;
 
