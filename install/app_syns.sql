@@ -1,5 +1,5 @@
--- first parameter passed is the synonym schema
--- second parameter passed is the object schema
+-- &1  is the synonym schema
+-- &2 is the object schema
 
 DECLARE
    l_syn_schema VARCHAR2(30) := '&1';
