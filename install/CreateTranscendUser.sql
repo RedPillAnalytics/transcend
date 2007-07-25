@@ -8,7 +8,7 @@ ACCEPT repo_user char default 'TDREP_USER' prompt 'Username to configure as Tran
 ACCEPT repo_schema char default 'TDREP' prompt 'Schema containing Transcend repository for this user [tdrep]:'
 ACCEPT app_schema char default 'TDREP' prompt 'Schema containing Transcend application for this user [tdrep]:'
 -- lock the application schema if desired
-ACCEPT response char default 'yes' prompt 'Do you want to lock the &1? [yes]:'
+ACCEPT response char default 'yes' prompt 'Do you want to lock the &app_schema schema? [yes]:'
 
 -- call the modular script
 @@transcend_user &repo_user &repo_schema &app_schema
