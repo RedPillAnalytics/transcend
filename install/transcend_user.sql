@@ -1,3 +1,4 @@
+PROMPT 'Running transcend_user.sql'
 -- &1 IS the repository USER
 -- &2 IS the repository SCHEMA
 -- &3 IS the application SCHEMA
