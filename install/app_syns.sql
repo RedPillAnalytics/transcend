@@ -1,3 +1,4 @@
+PROMPT 'Running app_syns.sql'
 -- &1  is the synonym schema
 -- &2 is the object schema
 
