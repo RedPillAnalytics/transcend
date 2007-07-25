@@ -18,5 +18,5 @@ ALTER SESSION SET current_schema=&1;
 
 -- issue grants to the roles created for this repository
 @@rep_grants &1
-      
+
 ALTER SESSION SET current_schema=&_USER;
