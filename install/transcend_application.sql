@@ -1,3 +1,4 @@
+PROMPT 'Running transcend_application.sql'
 -- &1 IS the application schema
 
 -- grant privileges required for package to compile
