@@ -1,16 +1,13 @@
-SET serveroutput on size unlimited
-SET echo off
-
-ACCEPT repo_user char default 'TDREP_USER' prompt 'Username to configure as Transcend repository user [tdrep_user]:'
-ACCEPT repo_schema char default 'TDREP' prompt 'Schema containing Transcend repository for this user [tdrep]:'
-ACCEPT app_schema char default 'TDREP' prompt 'Schema containing Transcend application for this user [tdrep]:'
+-- &1 IS the repository USER
+-- &2 IS the repository SCHEMA
+-- &3 IS the application SCHEMA
 
 -- create synonyms from the user to the repository
-@@rep_syns &repo_user &repo_schema
+@@rep_syns &1 &2
 
 -- create synonyms from the user to the application
-@@app_syns &repo_user &app_schema
+@@app_syns &1 &3
 
 -- need to give roles for the repository and the application
-GRANT &repo_schema._adm TO &repo_user;
-GRANT &app_schema._app TO &repo_user;
+GRANT &2._adm TO &1;
+GRANT &3._app TO &1;
