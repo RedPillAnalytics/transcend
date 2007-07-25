@@ -76,16 +76,3 @@ exec td_control.set_registration('td_sql.exec_auto','noregister');
 
 -- go back to connected user as current_schema
 ALTER SESSION SET current_schema=&_USER;
-
-ACCEPT response char default 'yes' prompt 'Do you want to lock the &1? [yes]:'
-
-DECLARE
-   l_response VARCHAR2(30) := lower('&response');
-   l_app_schema VARCHAR2(30) := upper('&1');
-BEGIN   
-   IF l_response = 'yes'
-   THEN
-      EXECUTE IMMEDIATE 'alter user '||l_app_schema||' account lock';
-   END IF;      
-END;
-/
