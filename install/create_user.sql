@@ -5,9 +5,10 @@ DEFINE rep_schema = &1
 -- &2 IS the tablespace name
 DEFINE tablespace = &2
 
-WHENEVER sqlerror exit sql.sqlcode
+--WHENEVER sqlerror exit sql.sqlcode
 
 VARIABLE old_tbspace char(30)
+VARIABLE tbspace_changed char(3)
 DECLARE
    l_rep_schema VARCHAR2(30) := upper('&rep_schema');
    l_tablespace VARCHAR2(30) := upper('&tablespace');
@@ -16,8 +17,6 @@ DECLARE
    e_no_tbspace	 EXCEPTION;
    PRAGMA EXCEPTION_INIT( e_no_tbspace, -959 );
 BEGIN
-   EXECUTE IMMEDIATE l_tablespace INTO :old_tbspace;
-
    BEGIN
       EXECUTE IMMEDIATE 'CREATE USER '
       	      		||l_rep_schema
@@ -33,6 +32,8 @@ BEGIN
 	INTO :old_tbspace
 	FROM dba_users
        WHERE username=l_rep_schema;
+      EXECUTE IMMEDIATE 'alter user &rep_schema default tablespace '||l_tablespace;
+      :tbspace_changed := 'yes';
       WHEN e_no_tbspace
       THEN
       raise_application_error(-20001,'Tablespace '||l_tablespace||' does not exist');
