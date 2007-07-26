@@ -2,13 +2,8 @@ PROMPT 'Running create_app_user.sql'
 
 -- &1 IS the repository schema
 DEFINE app_schema_cau = &1
--- &2 IS the tablespace name
-DEFINE tablespace_cu = &2
 
 WHENEVER sqlerror exit sql.sqlcode
-
-VARIABLE old_tbspace char(30)
-VARIABLE tbspace_changed char(3)
 DECLARE
    l_app_schema_cau VARCHAR2(30) := upper('&app_schema_cau');
    l_tablespace VARCHAR2(30) := upper('&tablespace_cu');
