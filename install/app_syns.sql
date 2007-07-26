@@ -1,18 +1,15 @@
 PROMPT 'Running app_syns.sql'
 -- &1  is the synonym SCHEMA
-DEFINE syn_schema = &1
+DEFINE syn_schema_as = &1
 -- &2 is the object SCHEMA
-DEFINE obj_schema = &2
+DEFINE obj_schema_as = &2
 
-DECLARE
-   l_syn_schema VARCHAR2(30) := '&syn_schema';
-   l_obj_schema VARCHAR2(30) := '&obj_schema';
 BEGIN   
-   IF upper(l_syn_schema) <> upper(l_obj_schema)
+   IF upper('&syn_schema_as') <> upper('&obj_schema_as')
    THEN
-      EXECUTE IMMEDIATE 'create synonym '||l_syn_schema||'.td_fileapi for '||l_obj_schema||'.td_fileapi';
-      EXECUTE IMMEDIATE 'create synonym '||l_syn_schema||'.td_dbapi for '||l_obj_schema||'.td_dbapi';
-      EXECUTE IMMEDIATE 'create synonym '||l_syn_schema||'.td_owbapi for '||l_obj_schema||'.td_owbapi';
+      EXECUTE IMMEDIATE 'create or replace synonym &syn_schem..td_fileapi for &obj_schem..td_fileapi';
+      EXECUTE IMMEDIATE 'create or replace synonym &syn_schem..td_dbapi for &obj_schem..td_dbapi';
+      EXECUTE IMMEDIATE 'create or replace synonym &syn_schem..td_owbapi for &obj_schem..td_owbapi';
    END IF;
       
 END;
