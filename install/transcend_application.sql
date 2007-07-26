@@ -62,16 +62,6 @@ DROP TYPE apptype;
 @../plsql/specs/TD_OWBAPI.pks
 @../plsql/wrapped_bodies/TD_OWBAPI.plb
 
--- set the default logging, registration and runmodes
-EXEC td_control.set_logging_level('default',2,3);
-EXEC td_control.set_runmode;
-EXEC td_control.set_registration;
-
--- don't register TD_SQL components
--- that's because DBMS_MONITOR should look for calling modules for tracing
-exec td_control.set_registration('td_sql.exec_sql','noregister');
-exec td_control.set_registration('td_sql.exec_auto','noregister');
-
 -- create role to execute this application
 -- grant all the needed privileges to the role
 @exec_app_grants &app_schema
