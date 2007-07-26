@@ -26,7 +26,7 @@ ACCEPT app_schema_it char default 'TDREP' prompt 'Schema name for the Transcend 
 -- set default tablespace back
 -- it was only changed if the user already existed
 BEGIN
-   IF :tbspace_changed = 'yes'
+   IF :old_tbspace IS NOT null
    THEN
       EXECUTE IMMEDIATE 'alter user &rep_schema_it default tablespace '||:old_tbspace;
    END IF;
