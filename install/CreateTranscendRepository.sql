@@ -9,4 +9,3 @@ ACCEPT td_rep char default 'TDREP' prompt 'Schema name for the Transcend reposit
 
 -- install the repository
 @@transcend_repository &td_rep
-
