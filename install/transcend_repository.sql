@@ -8,6 +8,9 @@ DEFINE tablespace = &2
 -- create the user if the user doesn't exist
 @@create_user &rep_schema &tablespace
 
+-- give the rep schema a quota on the tablespace
+ALTER USER &rep_schema QUOTA 50M ON &tablespace;
+
 -- set the correct schema
 ALTER SESSION SET current_schema=&rep_schema;
 
