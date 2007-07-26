@@ -10,6 +10,7 @@ DECLARE
 BEGIN
    BEGIN
       EXECUTE IMMEDIATE 'CREATE USER &app_schema_cau identified by no2&app_schema_cau';
+      EXECUTE IMMEDIATE 'grant connect to &app_schema_cau';
    EXCEPTION
       WHEN e_user_exists
       THEN
