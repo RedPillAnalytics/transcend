@@ -1,13 +1,13 @@
 PROMPT 'Running transcend_application.sql'
 -- &1 IS the application SCHEMA
-DEFINE app_schema = &1
+DEFINE app_schema_ta = &1
 
 -- grant privileges required for package to compile
 -- also privileges needed for the application schema to operate with full power
-@full_app_grants &app_schema
+@full_app_grants &app_schema_ta
 
 -- set current schema
-ALTER SESSION SET current_schema=&app_schema;
+ALTER SESSION SET current_schema=&app_schema_ta;
 
 --CREATE java stored procedure
 @../java/TdCore.jvs
@@ -64,7 +64,7 @@ DROP TYPE apptype;
 
 -- create role to execute this application
 -- grant all the needed privileges to the role
-@exec_app_grants &app_schema
+@exec_app_grants &app_schema_ta
 
 -- go back to connected user as current_schema
 ALTER SESSION SET current_schema=&_USER;
