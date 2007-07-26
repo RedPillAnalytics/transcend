@@ -16,6 +16,8 @@ DECLARE
    e_no_tbspace	 EXCEPTION;
    PRAGMA EXCEPTION_INIT( e_no_tbspace, -959 );
 BEGIN
+   EXECUTE IMMEDIATE l_tablespace INTO :old_tbspace;
+
    BEGIN
       EXECUTE IMMEDIATE 'CREATE USER '
       	      		||l_rep_schema
