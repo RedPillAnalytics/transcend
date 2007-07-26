@@ -12,7 +12,7 @@ ACCEPT tablespace char default 'TDREP' prompt 'Tablespace in which to install Tr
 ACCEPT app_schema char default 'TDREP' prompt 'Schema name for the Transcend application [tdrep]: '
 
 -- install the repository
-@@transcend_repository &rep_schema
+@@transcend_repository &rep_schema &tablespace
 
 -- create the synonyms between the two if they are different
 @@rep_syns &app_schema &rep_schema
