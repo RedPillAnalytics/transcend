@@ -35,6 +35,9 @@ ALTER USER &td_rep QUOTA 50M ON &TABLESPACE;
 -- install the Transcend application (stored code)
 @@transcend_application &td_app
 
+-- set application defaults
+@@td_rep_defaults
+
 -- set default tablespace back
 BEGIN
    EXECUTE IMMEDIATE 'alter user &td_rep default tablespace '||:old_tbspace;
