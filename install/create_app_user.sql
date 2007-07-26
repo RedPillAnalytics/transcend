@@ -5,7 +5,7 @@ DEFINE app_schema_cau = &1
 -- &2 IS the tablespace name
 DEFINE tablespace_cu = &2
 
---WHENEVER sqlerror exit sql.sqlcode
+WHENEVER sqlerror exit sql.sqlcode
 
 VARIABLE old_tbspace char(30)
 VARIABLE tbspace_changed char(3)
@@ -21,22 +21,11 @@ BEGIN
       EXECUTE IMMEDIATE 'CREATE USER '
       	      		||l_app_schema_cau
                         ||' identified by no2'
-                        ||l_app_schema_cau
-                        ||' default tablespace '
-      			||l_tablespace;
+                        ||l_app_schema_cau;
    EXCEPTION
       WHEN e_user_exists
       THEN
-      -- get the current default tablespace of the repository user
-      SELECT default_tablespace
-	INTO :old_tbspace
-	FROM dba_users
-       WHERE username=l_app_schema_cau;
-      EXECUTE IMMEDIATE 'alter user &app_schema_cau default tablespace '||l_tablespace;
-      :tbspace_changed := 'yes';
-      WHEN e_no_tbspace
-      THEN
-      raise_application_error(-20001,'Tablespace '||l_tablespace||' does not exist');
+      NULL;
    END;
 END;
 /
