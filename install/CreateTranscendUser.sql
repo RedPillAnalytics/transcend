@@ -11,7 +11,7 @@ ACCEPT app_schema char default 'TDREP' prompt 'Schema containing Transcend appli
 ACCEPT response char default 'yes' prompt 'Do you want to lock the &app_schema schema? [yes]:'
 
 -- call the modular script
-@@transcend_user &repo_user &repo_schema &app_schema
+START transcend_user &repo_user &repo_schema &app_schema
 
 
 DECLARE
