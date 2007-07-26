@@ -13,5 +13,5 @@ DEFINE app_schema =&3
 @@app_syns &rep_user &app_schema
 
 -- need to give roles for the repository and the application
-GRANT &2._adm TO &1;
-GRANT &3._app TO &1;
+GRANT &rep_schema._adm TO &rep_user;
+GRANT &app_schema._app TO &rep_user;
