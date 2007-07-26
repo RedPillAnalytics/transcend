@@ -7,9 +7,9 @@ DEFINE obj_schema_as = &2
 BEGIN   
    IF upper('&syn_schema_as') <> upper('&obj_schema_as')
    THEN
-      EXECUTE IMMEDIATE 'create or replace synonym &syn_schema..td_fileapi for &obj_schem..td_fileapi';
-      EXECUTE IMMEDIATE 'create or replace synonym &syn_schema..td_dbapi for &obj_schem..td_dbapi';
-      EXECUTE IMMEDIATE 'create or replace synonym &syn_schema..td_owbapi for &obj_schem..td_owbapi';
+      EXECUTE IMMEDIATE 'create or replace synonym &syn_schema_as..td_fileapi for &obj_schem..td_fileapi';
+      EXECUTE IMMEDIATE 'create or replace synonym &syn_schema_as..td_dbapi for &obj_schem..td_dbapi';
+      EXECUTE IMMEDIATE 'create or replace synonym &syn_schema_as..td_owbapi for &obj_schem..td_owbapi';
    END IF;
       
 END;
