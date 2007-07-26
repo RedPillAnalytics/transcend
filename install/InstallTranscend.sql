@@ -11,12 +11,6 @@ ACCEPT tablespace char default 'TDREP' prompt 'Tablespace in which to install Tr
 -- get application user
 ACCEPT app_schema char default 'TDREP' prompt 'Schema name for the Transcend application [tdrep]: '
 
--- create the new user or handle the exception that it exists
-@create_user &rep_schema &tablespace
-
--- give the user a quota on the tablespace
-ALTER USER &rep_schema QUOTA 50M ON &TABLESPACE;
-
 -- install the repository
 @@transcend_repository &rep_schema
 
