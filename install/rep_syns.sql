@@ -5,10 +5,10 @@ DEFINE user_rs = &1
 -- &2 IS the repository SCHEMA
 DEFINE schema_rs = &2
 
--- create synonyms for repository objects
--- first parameter passed is the synonym schema
--- second parameter passed is the object schema
+-- create the user_rs user if it doesn't already exist
+@create_app_user &user_rs
 
+-- create synonyms for repository objects
 BEGIN   
    IF upper('&user_rs') <> upper('&schema_rs')
    THEN
