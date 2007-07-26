@@ -26,3 +26,6 @@ ALTER USER &td_rep QUOTA 50M ON &TABLESPACE;
 
 -- install the repository
 @@transcend_repository &td_rep
+
+-- set application defaults
+@@td_rep_defaults
