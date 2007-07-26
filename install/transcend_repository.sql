@@ -1,18 +1,18 @@
 PROMPT 'Running transcend_repository.sql'
 
 -- &1 IS the repository schema
-DEFINE rep_schema = &1
+DEFINE rep_schema_tr = &1
 -- &2 IS the tablespace name
-DEFINE tablespace = &2
+DEFINE tablespace_tr = &2
 
 -- create the user if the user doesn't exist
-@@create_user &rep_schema &tablespace
+@@create_user &rep_schema_tr &tablespace_tr
 
 -- give the rep schema a quota on the tablespace
-ALTER USER &rep_schema QUOTA 50M ON &tablespace;
+ALTER USER &rep_schema_tr QUOTA 50M ON &tablespace_tr;
 
 -- set the correct schema
-ALTER SESSION SET current_schema=&rep_schema;
+ALTER SESSION SET current_schema=&rep_schema_tr;
 
 -- create Transcend repository tables
 @@../ddl/DIR_LIST_tbl.sql
@@ -30,6 +30,6 @@ ALTER SESSION SET current_schema=&rep_schema;
 @@../ddl/PARAMETER_CONF_tbl.sql
 
 -- issue grants to the roles created for this repository
-@@rep_grants &rep_schema
+@@rep_grants &rep_schema_tr
 
 ALTER SESSION SET current_schema=&_USER;
