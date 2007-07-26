@@ -2,6 +2,11 @@ PROMPT 'Running transcend_repository.sql'
 
 -- &1 IS the repository schema
 DEFINE rep_schema = &1
+-- &2 IS the tablespace name
+DEFINE tablespace = &2
+
+-- create the user if the user doesn't exist
+@@create_user &rep_schema &tablespace
 
 -- set the correct schema
 ALTER SESSION SET current_schema=&rep_schema;
