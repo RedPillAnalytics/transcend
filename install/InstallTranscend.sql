@@ -32,3 +32,5 @@ BEGIN
    END IF;
 END;
 /
+
+SPOOL off;
