@@ -1,11 +1,18 @@
 prompt 'Running rep_syns.sql'
+
+-- &1 IS the repository USER
+DEFINE rep_user = &1
+-- &2 IS the repository SCHEMA
+DEFINE rep_schema = &2
+
+
 -- create synonyms for repository objects
 -- first parameter passed is the synonym schema
 -- second parameter passed is the object schema
 
 DECLARE
-   l_syn_schema VARCHAR2(30) := '&1';
-   l_obj_schema VARCHAR2(30) := '&2';
+   l_syn_schema VARCHAR2(30) := '&rep_user';
+   l_obj_schema VARCHAR2(30) := '&rep_schema';
 BEGIN   
    IF upper(l_syn_schema) <> upper(l_obj_schema)
    THEN
