@@ -6,7 +6,7 @@ DEFINE rep_schema_tr = &1
 DEFINE tablespace_tr = &2
 
 -- create the user if the user doesn't exist
-@@create_user &rep_schema_tr &tablespace_tr
+@@create_rep_user &rep_schema_tr &tablespace_tr
 
 -- give the rep schema a quota on the tablespace
 ALTER USER &rep_schema_tr QUOTA 50M ON &tablespace_tr;
