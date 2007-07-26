@@ -1,8 +1,10 @@
 PROMPT 'Running transcend_repository.sql'
+
 -- &1 IS the repository schema
+DEFINE rep_schema = &1
 
 -- set the correct schema
-ALTER SESSION SET current_schema=&1;
+ALTER SESSION SET current_schema=&rep_schema;
 
 -- create Transcend repository tables
 @@../ddl/DIR_LIST_tbl.sql
@@ -20,6 +22,6 @@ ALTER SESSION SET current_schema=&1;
 @@../ddl/PARAMETER_CONF_tbl.sql
 
 -- issue grants to the roles created for this repository
-@@rep_grants &1
+@@rep_grants &rep_schema
 
 ALTER SESSION SET current_schema=&_USER;
