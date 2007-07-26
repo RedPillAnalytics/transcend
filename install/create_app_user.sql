@@ -5,18 +5,11 @@ DEFINE app_schema_cau = &1
 
 WHENEVER sqlerror exit sql.sqlcode
 DECLARE
-   l_app_schema_cau VARCHAR2(30) := upper('&app_schema_cau');
-   l_tablespace VARCHAR2(30) := upper('&tablespace_cu');
    e_user_exists EXCEPTION;
    PRAGMA EXCEPTION_INIT( e_user_exists, -1920 );
-   e_no_tbspace	 EXCEPTION;
-   PRAGMA EXCEPTION_INIT( e_no_tbspace, -959 );
 BEGIN
    BEGIN
-      EXECUTE IMMEDIATE 'CREATE USER '
-      	      		||l_app_schema_cau
-                        ||' identified by no2'
-                        ||l_app_schema_cau;
+      EXECUTE IMMEDIATE 'CREATE USER &app_schema_cau identified by no2&app_schema_cau';
    EXCEPTION
       WHEN e_user_exists
       THEN
