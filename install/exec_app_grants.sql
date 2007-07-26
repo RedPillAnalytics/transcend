@@ -3,7 +3,7 @@ PROMPT 'Running exec_app_grants.sql'
 -- grants the role to a repository user
 
 -- &1 IS the application SCHEMA
-app_schema = &1
+DEFINE app_schema = &1
 -- create role for this application
 DROP ROLE &app_schema._app;
 CREATE ROLE &app_schema._app;
