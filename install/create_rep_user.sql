@@ -16,6 +16,7 @@ DECLARE
 BEGIN
    BEGIN
       EXECUTE IMMEDIATE 'CREATE USER &rep_schema_cru identified by no2&rep_schema_cru default tablespace &tablespace_cru';
+      EXECUTE IMMEDIATE 'GRANT connect to &rep_schema_cru';
    EXCEPTION
       WHEN e_user_exists
       THEN
