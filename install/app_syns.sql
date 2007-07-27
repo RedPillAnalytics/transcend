@@ -10,6 +10,7 @@ BEGIN
       EXECUTE IMMEDIATE 'create or replace synonym &syn_schema_as..td_fileapi for &obj_schema_as..td_fileapi';
       EXECUTE IMMEDIATE 'create or replace synonym &syn_schema_as..td_dbapi for &obj_schema_as..td_dbapi';
       EXECUTE IMMEDIATE 'create or replace synonym &syn_schema_as..td_owbapi for &obj_schema_as..td_owbapi';
+      EXECUTE IMMEDIATE 'create or replace synonym &syn_schema_as..td_control for &obj_schema_as..td_control';
    END IF;
       
 END;
