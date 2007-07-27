@@ -43,9 +43,7 @@ BEGIN
 EXCEPTION
 WHEN e_obj_exists
    THEN
-   raise_application_error(-20001,    'Schema contains repository objects.'
-			           || chr(10)
-			           || 'They should be removed before continuing.');
+   raise_application_error(-20001, 'Schema contains repository objects. They should be removed before continuing.');
 END;
 /
 WHENEVER sqlerror continue
