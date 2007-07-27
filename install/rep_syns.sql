@@ -9,6 +9,9 @@ DEFINE schema_rs = &2
 @create_app_user &user_rs
 
 -- create synonyms for repository objects
+DECLARE
+   e_obj_exists EXCEPTION;
+   PRAGMA EXCEPTION_INIT( e_obj_exists, -955 );
 BEGIN   
    IF upper('&user_rs') <> upper('&schema_rs')
    THEN
@@ -36,5 +39,9 @@ BEGIN
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..RUNMODE_CONF_SEQ for &schema_rs..RUNMODE_CONF_SEQ';
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..PARAMETER_CONF_SEQ for &schema_rs..PARAMETER_CONF_SEQ';
    END IF;
+EXCEPTION
+WHEN e_obj_exists
+   THEN
+   raise_application_error(-20001,'Schema contains repository objects, which are invalid for a repository user.');
 END;
 /
