@@ -1,6 +1,7 @@
 PROMPT 'Running CreateTranscendUser.sql'
 SET serveroutput on size unlimited
 SET echo off
+SET show off
 ALTER SESSION SET nls_date_format = 'yyyymmdd_hhmiss';
 SPOOL CreateTranscendUser_&_DATE..log
 
