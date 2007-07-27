@@ -8,6 +8,7 @@ DEFINE schema_rs = &2
 -- create the user_rs user if it doesn't already exist
 @create_app_user &user_rs
 
+WHENEVER sqlerror exit sql.sqlcode
 -- create synonyms for repository objects
 DECLARE
    e_obj_exists EXCEPTION;
@@ -45,3 +46,4 @@ WHEN e_obj_exists
    raise_application_error(-20001,'Schema contains repository objects, which are invalid for a repository user.');
 END;
 /
+WHENEVER sqlerror continue
