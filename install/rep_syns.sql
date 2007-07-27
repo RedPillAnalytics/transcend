@@ -1,5 +1,5 @@
 prompt 'Running rep_syns.sql'
-
+SET show off
 -- &1 IS the repository USER
 DEFINE user_rs = &1
 -- &2 IS the repository SCHEMA
