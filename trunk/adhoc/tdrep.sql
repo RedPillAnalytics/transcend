@@ -1,0 +1,13 @@
+DROP USER tdrep CASCADE;
+DROP USER tdapp CASCADE;
+DROP USER tdrep_user CASCADE;
+
+CREATE USER tdrep IDENTIFIED BY tdrep;
+GRANT CONNECT TO tdrep;
+CREATE USER tdapp IDENTIFIED BY tdapp;
+GRANT CONNECT TO tdapp;
+CREATE USER tdrep_user IDENTIFIED BY tdrep_user;
+GRANT CONNECT TO tdrep_user;
+
+GRANT EXECUTE ON sys.utl_mail TO tdapp
+/

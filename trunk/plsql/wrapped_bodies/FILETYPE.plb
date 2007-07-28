@@ -1,0 +1,35 @@
+CREATE OR REPLACE TYPE BODY filetype wrapped 
+a000000
+b2
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+e
+a76 3b0
+eWrOyeGEAEavZHrJS+OpWDY707owg1UrmiCDfC8ZgqqV7UQa5y4ScQxsSSKsbMb6drBirm+r
+MUCnO144t0WdP9+o9KhAnwks6JOs28H4zySbkHInWO+iiEwVsC5MzUE/w+8JX6bd+QlZ74nI
+2VZgo/I2CQno0m5SdgUygptzVkkn+1VTbGWHLzrRivUY2Il/ReWEpNVXGX5N75fDgAwC6RfZ
+Wl9txqtu9JmrPEbo5b8fFsy0ZJrT/9iRBChpbrfx1edB5Xlw+7b4sV3ZX1nVJxwYxbd383TU
++DE4eX5HGohiQvaRnx2v/MEjA+sz1TZrW4pfcdkJBHqfj+E6z4OeSepvHDgVRoa0d0bK03cU
+K1a2C+e0/nmBUx0TSumI3hgYfBxU0vsyMHzMDsOLa8K2AdCchraU1xG09Gi/NQmKF/RHl2gs
+MgrgTm8VvffmaaIbTXav8/Dkup9WnmuMDIZt7gJbf1IBQBxjOLHKUOEkWUQZ1QP55fMoGEn1
+J9F6O/21StzuRkjwRhCtzhUiAaycYAic/Iaxc+77HifEg3e6nIR+y2ZesiSTOMCUjfpBGqJp
+jzGkly26wLZ1gZUBDN43Uf5H9rWx5RnY6pjlUjiYOky+M/0faNaGyTk+viRZ2B9zipI5GTNT
+CwU7OuFEzdmxz3C6P3PBIo4PeBQ4AlLfcq1t9IFUjIlYvaPMeYVlDWgq06QTLh39NxkAen0j
+gc4xQAhHrVBCIzTqoxS814fCnB4AmwYUMrHIZbM0tbbegz+6PYH2YyZVimTrkRbbizsOkPBx
+1MAUJTmwWHUXEi4KPP4l7X3p7TzNqpx7mmNBv7wFc/4Q/xoOKbjwRbc4uwDULUIpz4FMIKtN
+Fq3+70CcpMa0A0lFu2Z3j1W3+Valzj9d4RPij0TLZC5ipXFbWDAmSIvqIPmmdrIrUg==
+
+/
