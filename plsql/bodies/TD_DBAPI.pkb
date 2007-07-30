@@ -1434,7 +1434,7 @@ IS
          WHEN REGEXP_LIKE( 'gather', p_statistics, 'i' )
          THEN
             o_td.change_action( 'Gather stats on source table' );
-            gather_stats( p_owner        => UPPER( p_source_owner ),
+            update_stats( p_owner        => UPPER( p_source_owner ),
                           p_table        => UPPER( p_source_table ),
                           p_percent      => p_statpercent,
                           p_degree       => p_statdegree,
@@ -2100,7 +2100,7 @@ IS
          RAISE;
    END usable_indexes;
 
-   PROCEDURE gather_stats(
+   PROCEDURE update_stats(
       p_owner         VARCHAR2,
       p_table         VARCHAR2 DEFAULT NULL,
       p_partname      VARCHAR2 DEFAULT NULL,
@@ -2190,6 +2190,6 @@ IS
       THEN
          o_td.log_err;
          RAISE;
-   END gather_stats;
+   END update_stats;
 END td_dbapi;
 /
