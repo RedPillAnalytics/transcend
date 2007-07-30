@@ -21,7 +21,7 @@ ACCEPT app_schema_it char default 'TDREP' prompt 'Schema name for the Transcend 
 @@transcend_application &app_schema_it
 
 -- set application defaults
-@@td_rep_defaults
+@@td_rep_defaults &app_schema_it
 
 -- set default tablespace back
 -- it was only changed if the user already existed
