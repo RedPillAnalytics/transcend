@@ -1428,66 +1428,22 @@ IS
                      p_tablespace        => p_idx_tablespace,
                      p_runmode           => o_td.runmode
                    );
-
-      -- how to handle statistics for the source table
-      CASE
-         WHEN REGEXP_LIKE( 'gather', p_statistics, 'i' )
-         THEN
-            o_td.change_action( 'Gather stats on source table' );
-            update_stats( p_owner        => UPPER( p_source_owner ),
-                          p_table        => UPPER( p_source_table ),
+      
+      -- handle statistics for the new partition
+      update_stats( p_owner    => p_source_owner,
+		    p_table => p_source_table,
+		    p_source_owner => CASE
+		    WHEN REGEXP_LIKE( 'gather', p_statistics, 'i')
+		    THEN p_owner ELSE NULL END,
+		    p_source_table => CASE
+		    WHEN REGEXP_LIKE( 'gather', p_statistics, 'i')
+		    THEN p_table ELSE NULL END,
                           p_percent      => p_statpercent,
                           p_degree       => p_statdegree,
                           p_method       => p_statmethod,
                           p_cascade      => FALSE,
-                          p_runmode      => o_td.runmode
-                        );
-            o_td.log_msg( 'Statistics gathered on table ' || l_src_name, 3 );
-         WHEN REGEXP_LIKE( 'transfer', p_statistics, 'i' )
-         THEN
-            IF NOT o_td.is_debugmode
-            THEN
-               BEGIN
-                  -- if partition stats are not going to be gathered on the new schema,
-                  -- keep the current stats of the partition
-                  o_td.change_action( 'Transfer stats' );
-                  DBMS_STATS.get_table_stats( UPPER( p_owner ),
-                                              UPPER( p_table ),
-                                              l_partname,
-                                              numrows        => l_numrows,
-                                              numblks        => l_numblks,
-                                              avgrlen        => l_avgrlen,
-                                              cachedblk      => l_cachedblk,
-                                              cachehit       => l_cachehit
-                                            );
-                  DBMS_STATS.set_table_stats( UPPER( p_source_owner ),
-                                              UPPER( p_source_table ),
-                                              numrows        => l_numrows,
-                                              numblks        => l_numblks,
-                                              avgrlen        => l_avgrlen,
-                                              cachedblk      => l_cachedblk,
-                                              cachehit       => l_cachehit
-                                            );
-               EXCEPTION
-                  WHEN e_no_stats
-                  THEN
-                     -- no stats existed on the target table
-                     -- just leave them blank
-                     o_td.log_msg( 'No stats existed for partition ' || p_partname, 3 );
-               END;
-            END IF;
+                    p_runmode      => o_td.runmode);
 
-            o_td.log_msg(    'Statistics transferred from partition '
-                          || l_partname
-                          || ' of table '
-                          || l_tab_name
-                          || ' to table '
-                          || l_src_name,
-                          3
-                        );
-         ELSE
-            NULL;
-      END CASE;
 
       -- disable any foreign keys on other tables that reference this table
       IF td_ext.is_true( p_handle_fkeys )
@@ -2104,6 +2060,9 @@ IS
       p_owner         VARCHAR2,
       p_table         VARCHAR2 DEFAULT NULL,
       p_partname      VARCHAR2 DEFAULT NULL,
+      p_source_owner  VARCHAR2 DEFAULT NULL,
+      p_source_table  VARCHAR2 DEFAULT NULL,
+      p_source_partname VARCHAR2 DEFAULT NULL,
       p_percent       NUMBER DEFAULT NULL,
       p_degree        NUMBER DEFAULT NULL,
       p_method        VARCHAR2 DEFAULT 'FOR ALL COLUMNS SIZE AUTO',
@@ -2112,7 +2071,18 @@ IS
       p_options       VARCHAR2 DEFAULT 'GATHER AUTO',
       p_runmode       VARCHAR2 DEFAULT NULL
    )
-   IS
+			  IS
+			  l_src_name VARCHAR2(61) := p_source_owner||'.'||p_source_table;
+      l_trg_name VARCHAR2(61) := p_owner||'.'||p_table;
+      l_numrows        NUMBER;
+      l_numblks        NUMBER;
+      l_avgrlen        NUMBER;
+      l_cachedblk      NUMBER;
+      l_cachehit       NUMBER;
+      l_results        NUMBER;
+      e_no_stats       EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_no_stats, -20000 );
+      
       l_rows   BOOLEAN := FALSE;                                -- to catch empty cursors
       o_td     tdtype
          := tdtype( p_module       => 'usable_indexes',
@@ -2120,7 +2090,54 @@ IS
                     p_runmode      => p_runmode
                   );
    BEGIN
-      o_td.log_msg(    'Gathering statistics for '
+      
+      -- check all the parameter requirements
+      CASE
+         WHEN     p_source_owner IS NOT NULL AND p_source_table IS NULL
+              OR ( p_source_owner IS NULL AND p_source_table IS NOT NULL )
+         THEN
+            raise_application_error
+                            ( td_ext.get_err_cd( 'parms_not_compatible' ),
+                                 td_ext.get_err_msg( 'parms_not_compatible' )
+                              || ': P_SOURCE_OWNER and P_SOURCE_OBJECT are mutually inclusive'
+                            );
+         WHEN     p_source_partname IS NOT NULL
+              AND ( p_source_owner IS NULL OR p_source_table IS NULL )
+         THEN
+            raise_application_error
+                            ( td_ext.get_err_cd( 'parms_not_compatible' ),
+                                 td_ext.get_err_msg( 'parms_not_compatible' )
+                              || ': P_SOURCE_PARTNAME requires P_SOURCE_OWNER and P_SOURCE_OBJECT'
+                            );
+         WHEN     p_partname IS NOT NULL
+              AND ( p_owner IS NULL OR p_table IS NULL )
+         THEN
+            raise_application_error
+                            ( td_ext.get_err_cd( 'parms_not_compatible' ),
+                                 td_ext.get_err_msg( 'parms_not_compatible' )
+                              || ': P_PARTNAME requires P_OWNER and P_OBJECT'
+                            );
+         ELSE
+            NULL;
+   END CASE;
+   
+   -- verify the structure of the target table
+   td_sql.check_table( p_owner            => p_owner,
+                       p_table            => p_table,
+                       p_partname         => p_partname
+                     );
+   
+   -- verify the structure of the source table (if specified)
+   IF (p_owner IS NOT NULL OR p_table IS NOT NULL)
+   THEN
+      td_sql.check_table( p_owner            => p_source_owner,
+                          p_table            => p_source_table,
+                          p_partname         => p_source_partname
+                        );
+   END IF;      
+
+
+      o_td.log_msg(    'Updating statistics for '
                     || CASE
                           WHEN p_partname IS NULL
                              THEN NULL
@@ -2140,7 +2157,9 @@ IS
                     || UPPER( p_table )
                   );
       o_td.change_action( 'Gathering statistics' );
-
+   
+   IF p_source_owner IS NULL
+   THEN
       IF p_table IS NULL
       THEN
          IF NOT o_td.is_debugmode
@@ -2183,8 +2202,40 @@ IS
                                   );
          END IF;
       END IF;
-
-      o_td.clear_app_info;
+   ELSE
+      IF NOT o_td.is_debugmode
+      THEN
+         o_td.change_action( 'Transfer stats' );
+         BEGIN
+            DBMS_STATS.get_table_stats( UPPER( p_source_owner ),
+                                        UPPER( p_source_table ),
+                                        upper( p_source_partname ),
+                                        numrows        => l_numrows,
+                                        numblks        => l_numblks,
+                                        avgrlen        => l_avgrlen,
+                                        cachedblk      => l_cachedblk,
+                                        cachehit       => l_cachehit
+                                      );
+            DBMS_STATS.set_table_stats( UPPER( p_source_owner ),
+                                        UPPER( p_source_table ),
+					upper( p_partname ),
+                                        numrows        => l_numrows,
+                                        numblks        => l_numblks,
+                                        avgrlen        => l_avgrlen,
+                                        cachedblk      => l_cachedblk,
+                                        cachehit       => l_cachehit
+                                      );
+         EXCEPTION
+            WHEN e_no_stats
+            THEN
+	    o_td.log_msg('No statistics exist on '||l_src_name);
+            -- no stats existed on the target table
+            -- just leave them blank
+            o_td.log_msg( 'No stats existed for partition ' || p_partname, 3 );
+         END;
+      END IF;
+   END IF;
+   o_td.clear_app_info;
    EXCEPTION
       WHEN OTHERS
       THEN
