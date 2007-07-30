@@ -139,7 +139,7 @@ IS
       p_runmode   VARCHAR2 DEFAULT NULL
    );
 
-   PROCEDURE gather_stats(
+   PROCEDURE update_stats(
       p_owner         VARCHAR2,
       p_table         VARCHAR2 DEFAULT NULL,
       p_partname      VARCHAR2 DEFAULT NULL,
