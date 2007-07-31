@@ -1397,15 +1397,19 @@ IS
                                p_runmode      => p_runmode );
    BEGIN
       o_td.change_action( 'Determine partition to use' );
-
-      -- error if the target table is not partitioned
-      IF NOT td_core.is_part_table( p_owner, p_table )
-      THEN
-         raise_application_error( td_ext.get_err_cd( 'not_partitioned' ),
-                                  td_ext.get_err_msg( 'not_partitioned' ) || ': '
-                                  || p_table
-                                );
-      END IF;
+      
+      -- check to make sure the target table exists, is partitioned, and the partition name exists
+      td_sql.check_table( p_owner            => p_source_owner,
+                          p_table            => p_source_table,
+                          p_partname	     => p_partname,
+                          p_partitioned      => 'yes'
+                        );
+      
+      -- check to make sure the source table exists and is not partitioned
+      td_sql.check_table( p_owner            => p_source_owner,
+                          p_table            => p_source_table,
+                          p_partitioned      => 'no'
+                        );
 
       -- use either the value for P_PARTNAME or the max partition
       SELECT NVL( UPPER( p_partname ), partition_name )
@@ -2072,8 +2076,6 @@ IS
       p_runmode       VARCHAR2 DEFAULT NULL
    )
 			  IS
-			  l_src_name VARCHAR2(61) := p_source_owner||'.'||p_source_table;
-      l_trg_name VARCHAR2(61) := p_owner||'.'||p_table;
       l_numrows        NUMBER;
       l_numblks        NUMBER;
       l_avgrlen        NUMBER;
@@ -2122,19 +2124,23 @@ IS
    END CASE;
    
    -- verify the structure of the target table
-   td_sql.check_table( p_owner            => p_owner,
-                       p_table            => p_table,
-                       p_partname         => p_partname
-                     );
+   -- this is only applicable if a table is having stats gathered, instead of a schema
+   IF p_table IS NOT NULL
+   THEN
+      td_sql.check_table( p_owner            => p_owner,
+			  p_table            => p_table,
+			  p_partname         => p_partname
+			);
+   END IF;
    
    -- verify the structure of the source table (if specified)
-   IF (p_owner IS NOT NULL OR p_table IS NOT NULL)
+   IF (p_source_owner IS NOT NULL OR p_source_table IS NOT NULL)
    THEN
       td_sql.check_table( p_owner            => p_source_owner,
                           p_table            => p_source_table,
                           p_partname         => p_source_partname
                         );
-   END IF;      
+   END IF;
 
 
       o_td.log_msg(    'Updating statistics for '
@@ -2157,54 +2163,47 @@ IS
                     || UPPER( p_table )
                   );
       o_td.change_action( 'Gathering statistics' );
-   
-   IF p_source_owner IS NULL
+   IF NOT o_td.is_debugmode
    THEN
-      IF p_table IS NULL
+      IF p_source_owner IS NULL
       THEN
-         IF NOT o_td.is_debugmode
-         THEN
+	 IF p_table IS NULL
+	 THEN
             DBMS_STATS.gather_schema_stats
-                                 ( ownname               => p_owner,
-                                   estimate_percent      => NVL
-                                                               ( p_percent,
-                                                                 DBMS_STATS.auto_sample_size
-                                                               ),
-                                   method_opt            => p_method,
-                                   DEGREE                => NVL( p_degree,
-                                                                 DBMS_STATS.auto_degree
-                                                               ),
-                                   granularity           => p_granularity,
-                                   CASCADE               => NVL( p_cascade,
-                                                                 DBMS_STATS.auto_cascade
-                                                               ),
-                                   options               => p_options
-                                 );
-         END IF;
-      ELSE
-         IF NOT o_td.is_debugmode
-         THEN
+            ( ownname               => p_owner,
+              estimate_percent      => NVL
+              ( p_percent,
+                DBMS_STATS.auto_sample_size
+              ),
+              method_opt            => p_method,
+              DEGREE                => NVL( p_degree,
+                                            DBMS_STATS.auto_degree
+                                          ),
+              granularity           => p_granularity,
+              CASCADE               => NVL( p_cascade,
+                                            DBMS_STATS.auto_cascade
+                                          ),
+              options               => p_options
+            );
+	 ELSE
             DBMS_STATS.gather_table_stats
-                                  ( ownname               => p_owner,
-                                    tabname               => p_table,
-                                    estimate_percent      => NVL
-                                                                ( p_percent,
-                                                                  DBMS_STATS.auto_sample_size
-                                                                ),
-                                    method_opt            => p_method,
-                                    DEGREE                => NVL( p_degree,
-                                                                  DBMS_STATS.auto_degree
-                                                                ),
-                                    granularity           => p_granularity,
-                                    CASCADE               => NVL( p_cascade,
-                                                                  DBMS_STATS.auto_cascade
-                                                                )
-                                  );
-         END IF;
-      END IF;
-   ELSE
-      IF NOT o_td.is_debugmode
-      THEN
+            ( ownname               => p_owner,
+              tabname               => p_table,
+              estimate_percent      => NVL
+              ( p_percent,
+                DBMS_STATS.auto_sample_size
+              ),
+              method_opt            => p_method,
+              DEGREE                => NVL( p_degree,
+                                            DBMS_STATS.auto_degree
+                                          ),
+              granularity           => p_granularity,
+              CASCADE               => NVL( p_cascade,
+                                            DBMS_STATS.auto_cascade
+                                          )
+            );
+	 END IF;
+      ELSE
          o_td.change_action( 'Transfer stats' );
          BEGIN
             DBMS_STATS.get_table_stats( UPPER( p_source_owner ),
@@ -2228,10 +2227,7 @@ IS
          EXCEPTION
             WHEN e_no_stats
             THEN
-	    o_td.log_msg('No statistics exist on '||l_src_name);
-            -- no stats existed on the target table
-            -- just leave them blank
-            o_td.log_msg( 'No stats existed for partition ' || p_partname, 3 );
+	    o_td.log_msg('No statistics exist on segment '||upper(p_source_owner||'.'||p_source_table));
          END;
       END IF;
    END IF;
