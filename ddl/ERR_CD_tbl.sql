@@ -47,3 +47,4 @@ INSERT INTO err_cd (code,name,message) VALUES (-20030, 'no_part','The specified 
 INSERT INTO err_cd (code,name,message) VALUES (-20031, 'partitioned','The specified table is partitioned');
 INSERT INTO err_cd (code,name,message) VALUES (-20032, 'iot','The specified table is index-organized');
 INSERT INTO err_cd (code,name,message) VALUES (-20033, 'compressed','The specified segment is compresed');
+INSERT INTO err_cd (code,name,message) VALUES (-20034, 'no_stats','The specified segment has no stored statistics');
