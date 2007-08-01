@@ -1397,14 +1397,12 @@ IS
                                p_runmode      => p_runmode );
    BEGIN
       o_td.change_action( 'Determine partition to use' );
-      
       -- check to make sure the target table exists, is partitioned, and the partition name exists
       td_sql.check_table( p_owner            => p_source_owner,
                           p_table            => p_source_table,
-                          p_partname	     => p_partname,
+                          p_partname         => p_partname,
                           p_partitioned      => 'yes'
                         );
-      
       -- check to make sure the source table exists and is not partitioned
       td_sql.check_table( p_owner            => p_source_owner,
                           p_table            => p_source_table,
@@ -1432,22 +1430,25 @@ IS
                      p_tablespace        => p_idx_tablespace,
                      p_runmode           => o_td.runmode
                    );
-      
       -- handle statistics for the new partition
-      update_stats( p_owner    => p_source_owner,
-		    p_table => p_source_table,
-		    p_source_owner => CASE
-		    WHEN REGEXP_LIKE( 'gather', p_statistics, 'i')
-		    THEN p_owner ELSE NULL END,
-		    p_source_table => CASE
-		    WHEN REGEXP_LIKE( 'gather', p_statistics, 'i')
-		    THEN p_table ELSE NULL END,
-                          p_percent      => p_statpercent,
-                          p_degree       => p_statdegree,
-                          p_method       => p_statmethod,
-                          p_cascade      => FALSE,
-                    p_runmode      => o_td.runmode);
-
+      update_stats( p_owner             => p_source_owner,
+                    p_table             => p_source_table,
+                    p_source_owner      => CASE
+                       WHEN REGEXP_LIKE( 'gather', p_statistics, 'i' )
+                          THEN p_owner
+                       ELSE NULL
+                    END,
+                    p_source_table      => CASE
+                       WHEN REGEXP_LIKE( 'gather', p_statistics, 'i' )
+                          THEN p_table
+                       ELSE NULL
+                    END,
+                    p_percent           => p_statpercent,
+                    p_degree            => p_statdegree,
+                    p_method            => p_statmethod,
+                    p_cascade           => FALSE,
+                    p_runmode           => o_td.runmode
+                  );
 
       -- disable any foreign keys on other tables that reference this table
       IF td_ext.is_true( p_handle_fkeys )
@@ -2061,87 +2062,82 @@ IS
    END usable_indexes;
 
    PROCEDURE update_stats(
-      p_owner         VARCHAR2,
-      p_table         VARCHAR2 DEFAULT NULL,
-      p_partname      VARCHAR2 DEFAULT NULL,
-      p_source_owner  VARCHAR2 DEFAULT NULL,
-      p_source_table  VARCHAR2 DEFAULT NULL,
-      p_source_partname VARCHAR2 DEFAULT NULL,
-      p_percent       NUMBER DEFAULT NULL,
-      p_degree        NUMBER DEFAULT NULL,
-      p_method        VARCHAR2 DEFAULT 'FOR ALL COLUMNS SIZE AUTO',
-      p_granularity   VARCHAR2 DEFAULT 'AUTO',
-      p_cascade       BOOLEAN DEFAULT NULL,
-      p_options       VARCHAR2 DEFAULT 'GATHER AUTO',
-      p_runmode       VARCHAR2 DEFAULT NULL
+      p_owner             VARCHAR2,
+      p_table             VARCHAR2 DEFAULT NULL,
+      p_partname          VARCHAR2 DEFAULT NULL,
+      p_source_owner      VARCHAR2 DEFAULT NULL,
+      p_source_table      VARCHAR2 DEFAULT NULL,
+      p_source_partname   VARCHAR2 DEFAULT NULL,
+      p_percent           NUMBER DEFAULT NULL,
+      p_degree            NUMBER DEFAULT NULL,
+      p_method            VARCHAR2 DEFAULT 'FOR ALL COLUMNS SIZE AUTO',
+      p_granularity       VARCHAR2 DEFAULT 'AUTO',
+      p_cascade           BOOLEAN DEFAULT NULL,
+      p_options           VARCHAR2 DEFAULT 'GATHER AUTO',
+      p_runmode           VARCHAR2 DEFAULT NULL
    )
-			  IS
-      l_numrows        NUMBER;
-      l_numblks        NUMBER;
-      l_avgrlen        NUMBER;
-      l_cachedblk      NUMBER;
-      l_cachehit       NUMBER;
-      l_results        NUMBER;
-      e_no_stats       EXCEPTION;
+   IS
+      l_numrows     NUMBER;
+      l_numblks     NUMBER;
+      l_avgrlen     NUMBER;
+      l_cachedblk   NUMBER;
+      l_cachehit    NUMBER;
+      l_results     NUMBER;
+      e_no_stats    EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_stats, -20000 );
-      
-      l_rows   BOOLEAN := FALSE;                                -- to catch empty cursors
-      o_td     tdtype
+      l_rows        BOOLEAN   := FALSE;                         -- to catch empty cursors
+      o_td          tdtype
          := tdtype( p_module       => 'usable_indexes',
                     p_action       => 'Rebuild indexes',
                     p_runmode      => p_runmode
                   );
    BEGIN
-      
       -- check all the parameter requirements
       CASE
-         WHEN     p_source_owner IS NOT NULL AND p_source_table IS NULL
+         WHEN    p_source_owner IS NOT NULL AND p_source_table IS NULL
               OR ( p_source_owner IS NULL AND p_source_table IS NOT NULL )
          THEN
             raise_application_error
-                            ( td_ext.get_err_cd( 'parms_not_compatible' ),
-                                 td_ext.get_err_msg( 'parms_not_compatible' )
-                              || ': P_SOURCE_OWNER and P_SOURCE_OBJECT are mutually inclusive'
-                            );
+                           ( td_ext.get_err_cd( 'parms_not_compatible' ),
+                                td_ext.get_err_msg( 'parms_not_compatible' )
+                             || ': P_SOURCE_OWNER and P_SOURCE_OBJECT are mutually inclusive'
+                           );
          WHEN     p_source_partname IS NOT NULL
               AND ( p_source_owner IS NULL OR p_source_table IS NULL )
          THEN
             raise_application_error
-                            ( td_ext.get_err_cd( 'parms_not_compatible' ),
-                                 td_ext.get_err_msg( 'parms_not_compatible' )
-                              || ': P_SOURCE_PARTNAME requires P_SOURCE_OWNER and P_SOURCE_OBJECT'
-                            );
-         WHEN     p_partname IS NOT NULL
-              AND ( p_owner IS NULL OR p_table IS NULL )
+                       ( td_ext.get_err_cd( 'parms_not_compatible' ),
+                            td_ext.get_err_msg( 'parms_not_compatible' )
+                         || ': P_SOURCE_PARTNAME requires P_SOURCE_OWNER and P_SOURCE_OBJECT'
+                       );
+         WHEN p_partname IS NOT NULL AND( p_owner IS NULL OR p_table IS NULL )
          THEN
-            raise_application_error
-                            ( td_ext.get_err_cd( 'parms_not_compatible' ),
-                                 td_ext.get_err_msg( 'parms_not_compatible' )
-                              || ': P_PARTNAME requires P_OWNER and P_OBJECT'
-                            );
+            raise_application_error( td_ext.get_err_cd( 'parms_not_compatible' ),
+                                        td_ext.get_err_msg( 'parms_not_compatible' )
+                                     || ': P_PARTNAME requires P_OWNER and P_OBJECT'
+                                   );
          ELSE
             NULL;
-   END CASE;
-   
-   -- verify the structure of the target table
-   -- this is only applicable if a table is having stats gathered, instead of a schema
-   IF p_table IS NOT NULL
-   THEN
-      td_sql.check_table( p_owner            => p_owner,
-			  p_table            => p_table,
-			  p_partname         => p_partname
-			);
-   END IF;
-   
-   -- verify the structure of the source table (if specified)
-   IF (p_source_owner IS NOT NULL OR p_source_table IS NOT NULL)
-   THEN
-      td_sql.check_table( p_owner            => p_source_owner,
-                          p_table            => p_source_table,
-                          p_partname         => p_source_partname
-                        );
-   END IF;
+      END CASE;
 
+      -- verify the structure of the target table
+      -- this is only applicable if a table is having stats gathered, instead of a schema
+      IF p_table IS NOT NULL
+      THEN
+         td_sql.check_table( p_owner         => p_owner,
+                             p_table         => p_table,
+                             p_partname      => p_partname
+                           );
+      END IF;
+
+      -- verify the structure of the source table (if specified)
+      IF ( p_source_owner IS NOT NULL OR p_source_table IS NOT NULL )
+      THEN
+         td_sql.check_table( p_owner         => p_source_owner,
+                             p_table         => p_source_table,
+                             p_partname      => p_source_partname
+                           );
+      END IF;
 
       o_td.log_msg(    'Updating statistics for '
                     || CASE
@@ -2163,75 +2159,80 @@ IS
                     || UPPER( p_table )
                   );
       o_td.change_action( 'Gathering statistics' );
-   IF NOT o_td.is_debugmode
-   THEN
-      IF p_source_owner IS NULL
+
+      IF NOT o_td.is_debugmode
       THEN
-	 IF p_table IS NULL
-	 THEN
-            DBMS_STATS.gather_schema_stats
-            ( ownname               => p_owner,
-              estimate_percent      => NVL
-              ( p_percent,
-                DBMS_STATS.auto_sample_size
-              ),
-              method_opt            => p_method,
-              DEGREE                => NVL( p_degree,
-                                            DBMS_STATS.auto_degree
-                                          ),
-              granularity           => p_granularity,
-              CASCADE               => NVL( p_cascade,
-                                            DBMS_STATS.auto_cascade
-                                          ),
-              options               => p_options
-            );
-	 ELSE
-            DBMS_STATS.gather_table_stats
-            ( ownname               => p_owner,
-              tabname               => p_table,
-              estimate_percent      => NVL
-              ( p_percent,
-                DBMS_STATS.auto_sample_size
-              ),
-              method_opt            => p_method,
-              DEGREE                => NVL( p_degree,
-                                            DBMS_STATS.auto_degree
-                                          ),
-              granularity           => p_granularity,
-              CASCADE               => NVL( p_cascade,
-                                            DBMS_STATS.auto_cascade
-                                          )
-            );
-	 END IF;
-      ELSE
-         o_td.change_action( 'Transfer stats' );
-         BEGIN
-            DBMS_STATS.get_table_stats( UPPER( p_source_owner ),
-                                        UPPER( p_source_table ),
-                                        upper( p_source_partname ),
-                                        numrows        => l_numrows,
-                                        numblks        => l_numblks,
-                                        avgrlen        => l_avgrlen,
-                                        cachedblk      => l_cachedblk,
-                                        cachehit       => l_cachehit
-                                      );
-            DBMS_STATS.set_table_stats( UPPER( p_source_owner ),
-                                        UPPER( p_source_table ),
-					upper( p_partname ),
-                                        numrows        => l_numrows,
-                                        numblks        => l_numblks,
-                                        avgrlen        => l_avgrlen,
-                                        cachedblk      => l_cachedblk,
-                                        cachehit       => l_cachehit
-                                      );
-         EXCEPTION
-            WHEN e_no_stats
+         IF p_source_owner IS NULL
+         THEN
+            IF p_table IS NULL
             THEN
-	    o_td.log_msg('No statistics exist on segment '||upper(p_source_owner||'.'||p_source_table));
-         END;
+               DBMS_STATS.gather_schema_stats
+                                 ( ownname               => p_owner,
+                                   estimate_percent      => NVL
+                                                               ( p_percent,
+                                                                 DBMS_STATS.auto_sample_size
+                                                               ),
+                                   method_opt            => p_method,
+                                   DEGREE                => NVL( p_degree,
+                                                                 DBMS_STATS.auto_degree
+                                                               ),
+                                   granularity           => p_granularity,
+                                   CASCADE               => NVL( p_cascade,
+                                                                 DBMS_STATS.auto_cascade
+                                                               ),
+                                   options               => p_options
+                                 );
+            ELSE
+               DBMS_STATS.gather_table_stats
+                                  ( ownname               => p_owner,
+                                    tabname               => p_table,
+                                    estimate_percent      => NVL
+                                                                ( p_percent,
+                                                                  DBMS_STATS.auto_sample_size
+                                                                ),
+                                    method_opt            => p_method,
+                                    DEGREE                => NVL( p_degree,
+                                                                  DBMS_STATS.auto_degree
+                                                                ),
+                                    granularity           => p_granularity,
+                                    CASCADE               => NVL( p_cascade,
+                                                                  DBMS_STATS.auto_cascade
+                                                                )
+                                  );
+            END IF;
+         ELSE
+            o_td.change_action( 'Transfer stats' );
+
+            BEGIN
+               DBMS_STATS.get_table_stats( UPPER( p_source_owner ),
+                                           UPPER( p_source_table ),
+                                           UPPER( p_source_partname ),
+                                           numrows        => l_numrows,
+                                           numblks        => l_numblks,
+                                           avgrlen        => l_avgrlen,
+                                           cachedblk      => l_cachedblk,
+                                           cachehit       => l_cachehit
+                                         );
+               DBMS_STATS.set_table_stats( UPPER( p_source_owner ),
+                                           UPPER( p_source_table ),
+                                           UPPER( p_partname ),
+                                           numrows        => l_numrows,
+                                           numblks        => l_numblks,
+                                           avgrlen        => l_avgrlen,
+                                           cachedblk      => l_cachedblk,
+                                           cachehit       => l_cachehit
+                                         );
+            EXCEPTION
+               WHEN e_no_stats
+               THEN
+                  o_td.log_msg(    'No statistics exist on segment '
+                                || UPPER( p_source_owner || '.' || p_source_table )
+                              );
+            END;
+         END IF;
       END IF;
-   END IF;
-   o_td.clear_app_info;
+
+      o_td.clear_app_info;
    EXCEPTION
       WHEN OTHERS
       THEN
