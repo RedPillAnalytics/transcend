@@ -1398,8 +1398,8 @@ IS
    BEGIN
       o_td.change_action( 'Determine partition to use' );
       -- check to make sure the target table exists, is partitioned, and the partition name exists
-      td_sql.check_table( p_owner            => p_source_owner,
-                          p_table            => p_source_table,
+      td_sql.check_table( p_owner            => p_owner,
+                          p_table            => p_table,
                           p_partname         => p_partname,
                           p_partitioned      => 'yes'
                         );
@@ -1431,23 +1431,28 @@ IS
                      p_runmode           => o_td.runmode
                    );
       -- handle statistics for the new partition
-      update_stats( p_owner             => p_source_owner,
-                    p_table             => p_source_table,
-                    p_source_owner      => CASE
+      update_stats( p_owner                => p_source_owner,
+                    p_table                => p_source_table,
+                    p_source_partname      => CASE
                        WHEN REGEXP_LIKE( 'gather', p_statistics, 'i' )
-                          THEN p_owner
-                       ELSE NULL
+                          THEN NULL
+                       ELSE l_partname
                     END,
-                    p_source_table      => CASE
+                    p_source_owner         => CASE
                        WHEN REGEXP_LIKE( 'gather', p_statistics, 'i' )
-                          THEN p_table
-                       ELSE NULL
+                          THEN NULL
+                       ELSE p_owner
                     END,
-                    p_percent           => p_statpercent,
-                    p_degree            => p_statdegree,
-                    p_method            => p_statmethod,
-                    p_cascade           => FALSE,
-                    p_runmode           => o_td.runmode
+                    p_source_table         => CASE
+                       WHEN REGEXP_LIKE( 'gather', p_statistics, 'i' )
+                          THEN NULL
+                       ELSE p_table
+                    END,
+                    p_percent              => p_statpercent,
+                    p_degree               => p_statdegree,
+                    p_method               => p_statmethod,
+                    p_cascade              => FALSE,
+                    p_runmode              => o_td.runmode
                   );
 
       -- disable any foreign keys on other tables that reference this table
@@ -2139,7 +2144,12 @@ IS
                            );
       END IF;
 
-      o_td.log_msg(    'Updating statistics for '
+      o_td.log_msg(    CASE
+                          WHEN p_source_table IS NULL
+                             THEN 'Gathering'
+                          ELSE 'Transfering'
+                       END
+                    || ' statistics for '
                     || CASE
                           WHEN p_partname IS NULL
                              THEN NULL
