@@ -2092,8 +2092,7 @@ IS
       PRAGMA EXCEPTION_INIT( e_no_stats, -20000 );
       l_rows        BOOLEAN   := FALSE;                         -- to catch empty cursors
       o_td          tdtype
-         := tdtype( p_module       => 'usable_indexes',
-                    p_action       => 'Rebuild indexes',
+         := tdtype( p_module       => 'update_stats',
                     p_runmode      => p_runmode
                   );
    BEGIN
