@@ -448,18 +448,20 @@ IS
          -- replace table name inside the constraint name as well
          l_ddl :=
             REGEXP_REPLACE( c_constraints.constraint_ddl,
-                            '(\."?|constraint "?)(' || p_source_table || ')(")?',
-                            '\1' || p_table || '\3',
+                            '(\.|constraint +)(")?(' || p_source_table || ')(\w*)(")?',
+                            '\1' || p_table || '\4',
                             1,
                             0,
                             'i'
                           );
          -- replace the source owner with the target owner
-         -- if a " is found, then use it... otherwise don't
+         -- if a " is found, then don't put it back in the replace
+	 -- don't want to replace owner in a "REFERENCES" command, so eliminate those
+	 -- best way to do that is to only replace the username references that come right after the word 'TABLE'
          l_ddl :=
             REGEXP_REPLACE( l_ddl,
-                            '(")?(' || p_source_owner || ')("?\.)',
-                            '\1' || p_owner || '\3',
+                            '(table )(")?(' || p_source_owner || ')("?)(\.)',
+                            '\1' || p_owner || '\5',
                             1,
                             0,
                             'i'
