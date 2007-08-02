@@ -624,55 +624,122 @@ IS
       p_table               VARCHAR2,
       p_constraint_type     VARCHAR2 DEFAULT NULL,
       p_constraint_regexp   VARCHAR2 DEFAULT NULL,
+      p_basis    	    VARCHAR2 DEFAULT 'table',
       p_runmode             VARCHAR2 DEFAULT NULL
    )
    IS
       l_con_cnt    NUMBER         := 0;
       l_tab_name   VARCHAR2( 61 ) := p_owner || '.' || p_table;
+      l_tab_cons   BOOLEAN := FALSE;
+      l_ref_cons   BOOLEAN := FALSE;
       l_results    NUMBER;
       l_rows       BOOLEAN        := FALSE;
       o_td         tdtype
                    := tdtype( p_module       => 'disable_constraints',
                               p_runmode      => p_runmode );
    BEGIN
-      o_td.change_action( 'Disable constraints' );
       o_td.log_msg( 'Disabling constraints on ' || l_tab_name );
 
-      FOR c_constraints IN ( SELECT    'alter table '
-                                    || owner
-                                    || '.'
-                                    || table_name
-                                    || ' disable constraint '
-                                    || constraint_name constraint_ddl,
+      -- confirm that the table exists
+      -- raise an error if it doesn't
+      td_sql.check_table( p_owner => p_owner, p_table => p_table );
+
+      -- case on P_BASIS to see which items are performed
+      CASE
+        WHEN REGEXP_LIKE('table',p_basis,'i')
+        THEN
+          l_tab_cons := TRUE;
+        WHEN REGEXP_LIKE('reference',p_basis,'i')
+        THEN
+          l_ref_cons := TRUE;
+        WHEN REGEXP_LIKE('all',p_basis,'i')
+        THEN
+          l_tab_cons := TRUE;
+          l_ref_cons := TRUE;
+        ELSE
+           NULL;
+      END CASE;
+      
+      -- disable all the constraints on this table matching the predicates below
+      o_td.change_action( 'Disable table constraints' );
+      IF l_tab_cons
+      THEN
+	 FOR c_constraints IN ( SELECT    'alter table '
+                                       || owner
+                                       || '.'
+                                       || table_name
+                                       || ' disable constraint '
+                                       || constraint_name constraint_ddl,
                                        'Constraint '
-                                    || constraint_name
-                                    || ' disabled on '
-                                    || owner
-                                    || '.'
-                                    || table_name msg
-                              FROM all_constraints
-                             WHERE table_name = UPPER( p_table )
-                               AND owner = UPPER( p_owner )
-                               AND status = 'ENABLED'
-                               AND REGEXP_LIKE( constraint_name,
-                                                NVL( p_constraint_regexp, '.' ),
-                                                'i'
-                                              )
-                               AND REGEXP_LIKE( constraint_type,
-                                                NVL( p_constraint_type, '.' ),
-                                                'i'
-                                              ))
-      LOOP
-         -- catch empty cursor sets
-         l_rows := TRUE;
-         l_results :=
+                                       || constraint_name
+                                       || ' disabled on '
+                                       || owner
+                                       || '.'
+                                       || table_name msg
+				  FROM all_constraints
+				 WHERE table_name = UPPER( p_table )
+				   AND owner = UPPER( p_owner )
+				   AND status = 'ENABLED'
+				   AND REGEXP_LIKE( constraint_name,
+                                                    NVL( p_constraint_regexp, '.' ),
+                                                    'i'
+						  )
+				   AND REGEXP_LIKE( constraint_type,
+                                                    NVL( p_constraint_type, '.' ),
+                                                    'i'
+						  ))
+	 LOOP
+            -- catch empty cursor sets
+            l_rows := TRUE;
+            l_results :=
             td_sql.exec_sql( p_sql          => c_constraints.constraint_ddl,
                              p_auto         => 'yes',
                              p_runmode      => o_td.runmode
                            );
-         l_con_cnt := l_con_cnt + 1;
-         o_td.log_msg( c_constraints.msg );
-      END LOOP;
+            l_con_cnt := l_con_cnt + 1;
+            o_td.log_msg( c_constraints.msg );
+	 END LOOP;
+      END IF;
+      
+      -- disable all the constraints on other tables that reference this one that match the constraint regexp
+      o_td.change_action( 'Disable reference constraints' );
+      IF l_ref_cons
+      THEN
+         FOR c_dis_for_keys IN ( SELECT    'alter table '
+                                        || owner
+                                        || '.'
+                                        || table_name
+                                        || ' disable constraint '
+                                        || constraint_name DDL,
+                                           'Constraint '
+                                        || constraint_name
+                                        || ' disabled on '
+                                        || owner
+                                        || '.'
+                                        || table_name msg
+                                  FROM all_constraints
+                                 WHERE constraint_type = 'R'
+                                    AND status = 'ENABLED'
+				   AND REGEXP_LIKE( constraint_name,
+                                                    NVL( p_constraint_regexp, '.' ),
+                                                    'i'
+						  )
+                                   AND r_constraint_name IN(
+                                          SELECT constraint_name
+                                            FROM all_constraints
+                                           WHERE table_name = UPPER( p_table )
+                                             AND owner = UPPER( p_owner )
+                                             AND constraint_type = 'P' ))
+         LOOP
+            l_results :=
+               td_sql.exec_sql( p_sql          => c_dis_for_keys.DDL,
+                                p_runmode      => o_td.runmode,
+                                p_auto         => 'yes'
+                              );
+            l_con_cnt := l_con_cnt + 1;
+            o_td.log_msg( c_dis_for_keys.msg );
+         END LOOP;
+      END IF;
 
       IF NOT l_rows
       THEN
