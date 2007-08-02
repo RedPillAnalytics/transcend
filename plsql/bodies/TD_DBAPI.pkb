@@ -1432,6 +1432,17 @@ IS
                      p_tablespace        => p_idx_tablespace,
                      p_runmode           => o_td.runmode
                    );
+      
+      -- create unique constraints
+      build_constraints( p_owner             => p_source_owner,
+                     p_table             => p_source_table,
+                     p_source_owner      => p_owner,
+                     p_source_table      => p_table,
+			 p_constraint_type   => 'p|u',
+                     p_runmode           => o_td.runmode
+                   );
+
+
       -- handle statistics for the new partition
       update_stats( p_owner                => p_source_owner,
                     p_table                => p_source_table,
