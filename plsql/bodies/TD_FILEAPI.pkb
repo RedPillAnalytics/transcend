@@ -1,5 +1,81 @@
 CREATE OR REPLACE PACKAGE BODY td_fileapi
 IS
+   -- modified FROM tom kyte's "dump_csv":
+   -- 1. allow a quote CHARACTER
+   -- 2. allow FOR a FILE TO be appended TO
+   FUNCTION extract_query(
+      p_query       VARCHAR2,
+      p_dirname     VARCHAR2,
+      p_filename    VARCHAR2,
+      p_delimiter   VARCHAR2 DEFAULT '|',
+      p_quotechar   VARCHAR2 DEFAULT '',
+      p_append      VARCHAR2 DEFAULT 'no'
+   )
+      RETURN NUMBER
+   AS
+      l_output        UTL_FILE.file_type;
+      l_thecursor     INTEGER            DEFAULT DBMS_SQL.open_cursor;
+      l_columnvalue   VARCHAR2( 2000 );
+      l_status        INTEGER;
+      l_colcnt        NUMBER             DEFAULT 0;
+      l_delimiter     VARCHAR2( 5 )      DEFAULT '';
+      l_cnt           NUMBER             DEFAULT 0;
+      l_mode          VARCHAR2( 1 )      := CASE LOWER( p_append )
+         WHEN 'yes'
+            THEN 'a'
+         ELSE 'w'
+      END;
+      l_exists        BOOLEAN;
+      l_length        NUMBER;
+      l_blocksize     NUMBER;
+      e_no_var        EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_no_var, -1007 );
+      o_td            tdtype             := tdtype( p_module => 'extract_query' );
+   BEGIN
+      l_output := UTL_FILE.fopen( p_dirname, p_filename, l_mode, 32767 );
+      DBMS_SQL.parse( l_thecursor, p_query, DBMS_SQL.native );
+      o_td.change_action( 'Open Cursor to define columns' );
+
+      FOR i IN 1 .. 255
+      LOOP
+         BEGIN
+            DBMS_SQL.define_column( l_thecursor, i, l_columnvalue, 2000 );
+            l_colcnt := i;
+         EXCEPTION
+            WHEN e_no_var
+            THEN
+               EXIT;
+         END;
+      END LOOP;
+
+      DBMS_SQL.define_column( l_thecursor, 1, l_columnvalue, 2000 );
+      l_status := DBMS_SQL.EXECUTE( l_thecursor );
+      o_td.change_action( 'Open Cursor to pull back records' );
+
+      LOOP
+         EXIT WHEN( DBMS_SQL.fetch_rows( l_thecursor ) <= 0 );
+         l_delimiter := '';
+
+         FOR i IN 1 .. l_colcnt
+         LOOP
+            DBMS_SQL.COLUMN_VALUE( l_thecursor, i, l_columnvalue );
+            UTL_FILE.put( l_output,
+                          l_delimiter || p_quotechar || l_columnvalue || p_quotechar
+                        );
+            l_delimiter := p_delimiter;
+         END LOOP;
+
+         UTL_FILE.new_line( l_output );
+         l_cnt := l_cnt + 1;
+      END LOOP;
+
+      o_td.change_action( 'Close cursor and handles' );
+      DBMS_SQL.close_cursor( l_thecursor );
+      UTL_FILE.fclose( l_output );
+      o_td.clear_app_info;
+      RETURN l_cnt;
+   END extract_query;
+
    -- calculates whether the anticipated number of rejected (bad) records meets a certain threshhold, which is specified in terms of percentage
    FUNCTION calc_rej_ind(
       p_filehub_group   VARCHAR2,
