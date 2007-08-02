@@ -1621,36 +1621,10 @@ IS
       IF td_ext.is_true( p_handle_fkeys )
       THEN
          o_td.change_action( 'Disable foreign keys' );
-
-         FOR c_dis_for_keys IN ( SELECT    'alter table '
-                                        || owner
-                                        || '.'
-                                        || table_name
-                                        || ' disable constraint '
-                                        || constraint_name DDL,
-                                           'Constraint '
-                                        || constraint_name
-                                        || ' disabled on '
-                                        || owner
-                                        || '.'
-                                        || table_name msg
-                                  FROM all_constraints
-                                 WHERE constraint_type = 'R'
-                                   AND status = 'ENABLED'
-                                   AND r_constraint_name IN(
-                                          SELECT constraint_name
-                                            FROM all_constraints
-                                           WHERE table_name = UPPER( p_table )
-                                             AND owner = UPPER( p_owner )
-                                             AND constraint_type = 'P' ))
-         LOOP
-            l_results :=
-               td_sql.exec_sql( p_sql          => c_dis_for_keys.DDL,
-                                p_runmode      => o_td.runmode,
-                                p_auto         => 'yes'
-                              );
-            o_td.log_msg( c_dis_for_keys.msg );
-         END LOOP;
+	 disable_constraints( p_owner => p_owner,
+			      p_table => p_table,
+			      p_basis => 'reference',
+			      p_runmode => o_td.runmode);
       END IF;
 
       -- now exchange the table
@@ -1722,35 +1696,10 @@ IS
       IF td_ext.is_true( p_handle_fkeys )
       THEN
          o_td.change_action( 'Enable foreign keys' );
-
-         FOR c_en_for_keys IN ( SELECT    'alter table '
-                                       || owner
-                                       || '.'
-                                       || table_name
-                                       || ' enable constraint '
-                                       || constraint_name DDL,
-                                          'Constraint '
-                                       || constraint_name
-                                       || ' enabled on '
-                                       || owner
-                                       || '.'
-                                       || table_name msg
-                                 FROM all_constraints
-                                WHERE constraint_type = 'R'
-                                  AND r_constraint_name IN(
-                                         SELECT constraint_name
-                                           FROM all_constraints
-                                          WHERE table_name = UPPER( p_table )
-                                            AND owner = UPPER( p_owner )
-                                            AND constraint_type = 'P' ))
-         LOOP
-            l_results :=
-               td_sql.exec_sql( p_sql          => c_en_for_keys.DDL,
-                                p_runmode      => o_td.runmode,
-                                p_auto         => 'yes'
-                              );
-            o_td.log_msg( c_en_for_keys.msg );
-         END LOOP;
+	 enable_constraints( p_owner => p_owner,
+			      p_table => p_table,
+			      p_basis => 'reference',
+			      p_runmode => o_td.runmode);
       END IF;
 
       -- drop the indexes on the stage table
