@@ -205,5 +205,38 @@ AS
             NULL;
       END CASE;
    END check_table;
+
+   -- checks things about an object depending on the parameters passed
+   -- raises an exception if the specified things are not true
+   PROCEDURE check_object(
+      p_owner         VARCHAR2,
+      p_object        VARCHAR2,
+      p_object_type   VARCHAR2 DEFAULT NULL
+   )
+   AS
+      l_obj_name         VARCHAR2( 61 )     := UPPER( p_owner ) || '.'
+      || UPPER( p_object );
+      l_object_type all_objects.object_type%type;
+   BEGIN
+      BEGIN
+         SELECT DISTINCT object_type
+           INTO l_object_type
+           FROM all_objects
+          WHERE owner = UPPER( p_owner ) AND object_name = UPPER( p_object )
+	    AND REGEXP_LIKE(object_type,p_object_type,'i');
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            raise_application_error( td_ext.get_err_cd( 'no_or_wrong_object' ),
+                                     td_ext.get_err_msg( 'no_or_wrong_object' ) || ': ' || l_obj_name
+                                   );
+         WHEN too_many_rows
+         THEN
+            raise_application_error( td_ext.get_err_cd( 'too_many_objects' ),
+                                     td_ext.get_err_msg( 'too_many_objects' )
+                                   );
+      END;
+      
+   END check_object;
 END td_sql;
 /
