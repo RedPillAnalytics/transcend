@@ -48,3 +48,5 @@ INSERT INTO err_cd (code,name,message) VALUES (-20031, 'partitioned','The specif
 INSERT INTO err_cd (code,name,message) VALUES (-20032, 'iot','The specified table is index-organized');
 INSERT INTO err_cd (code,name,message) VALUES (-20033, 'compressed','The specified segment is compresed');
 INSERT INTO err_cd (code,name,message) VALUES (-20034, 'no_stats','The specified segment has no stored statistics');
+INSERT INTO err_cd (code,name,message) VALUES (-20035, 'no_or_wrong_object','The specified object does not exist or is of the wrong type');
+INSERT INTO err_cd (code,name,message) VALUES (-20036, 'too_many_objects','The specified parameters yield more than one object');
