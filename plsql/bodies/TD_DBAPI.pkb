@@ -629,7 +629,7 @@ IS
    )
    IS
       l_con_cnt    NUMBER         := 0;
-      l_tab_name   VARCHAR2( 61 ) := p_owner || '.' || p_table;
+      l_tab_name   VARCHAR2( 61 ) := upper(p_owner || '.' || p_table);
       l_tab_cons   BOOLEAN := FALSE;
       l_ref_cons   BOOLEAN := FALSE;
       l_results    NUMBER;
@@ -638,7 +638,7 @@ IS
                    := tdtype( p_module       => 'disable_constraints',
                               p_runmode      => p_runmode );
    BEGIN
-      o_td.log_msg( 'Disabling constraints on ' || l_tab_name );
+      o_td.log_msg( 'Disabling constraints related to ' || l_tab_name );
 
       -- confirm that the table exists
       -- raise an error if it doesn't
@@ -743,7 +743,7 @@ IS
 
       IF NOT l_rows
       THEN
-         o_td.log_msg( 'No matching enabled constraints found on ' || l_tab_name );
+         o_td.log_msg( 'No matching enabled constraints related to ' || l_tab_name );
       ELSE
          o_td.log_msg(    l_con_cnt
                        || ' constraint'
@@ -752,7 +752,7 @@ IS
                                 THEN NULL
                              ELSE 's'
                           END
-                       || ' disabled on '
+                       || ' disabled related to '
                        || l_tab_name
                      );
       END IF;
