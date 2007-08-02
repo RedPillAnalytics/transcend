@@ -9,6 +9,10 @@ IS
       l_results   NUMBER;
       o_td        tdtype := tdtype( p_runmode => p_runmode, p_module => 'trunc_tab' );
    BEGIN
+      -- confirm that the table exists
+      -- raise an error if it doesn't
+      td_sql.check_table( p_owner => p_owner, p_table => p_table );
+      
       l_results :=
          td_sql.exec_sql( p_sql          => 'truncate table ' || p_owner || '.' || p_table,
                           p_runmode      => o_td.runmode,
@@ -50,6 +54,14 @@ IS
                          := tdtype( p_module       => 'build_indexes',
                                     p_runmode      => p_runmode );
    BEGIN
+      -- confirm that the target table exists
+      -- raise an error if it doesn't
+      td_sql.check_table( p_owner => p_owner, p_table => p_table );      
+      
+      -- confirm that the source table
+      -- raise an error if it doesn't
+      td_sql.check_table( p_owner => p_source_owner, p_table => p_source_table );      
+
       -- execute immediate doesn't like ";" on the end
       DBMS_METADATA.set_transform_param( DBMS_METADATA.session_transform,
                                          'SQLTERMINATOR',
@@ -309,6 +321,14 @@ IS
                      := tdtype( p_module       => 'build_constraints',
                                 p_runmode      => p_runmode );
    BEGIN
+      -- confirm that the target table exists
+      -- raise an error if it doesn't
+      td_sql.check_table( p_owner => p_owner, p_table => p_table );      
+      
+      -- confirm that the source table
+      -- raise an error if it doesn't
+      td_sql.check_table( p_owner => p_source_owner, p_table => p_source_table );            
+
       -- execute immediate doesn't like ";" on the end
       DBMS_METADATA.set_transform_param( DBMS_METADATA.session_transform,
                                          'SQLTERMINATOR',
@@ -1009,12 +1029,9 @@ IS
       td_sql.check_table( p_owner => p_owner, p_table => p_table );
 
       -- check that the source object exists.
-      IF NOT td_core.object_exists( p_source_owner, p_source_object )
-      THEN
-         raise_application_error( td_ext.get_err_cd( 'no_object' ),
-                                  td_ext.get_err_msg( 'no_object' ) || ' : ' || l_src_name
-                                );
-      END IF;
+      td_sql.check_object( p_owner => p_source_owner, 
+			   p_object => p_source_object,
+			   p_object_type => 'table$|view');
 
       -- warning concerning using LOG ERRORS clause and the APPEND hint
       IF td_ext.is_true( p_direct ) AND p_log_table IS NOT NULL
@@ -1124,12 +1141,9 @@ IS
       td_sql.check_table( p_owner => p_owner, p_table => p_table );
 
       -- check that the source object exists.
-      IF NOT td_core.object_exists( p_source_owner, p_source_object )
-      THEN
-         raise_application_error( td_ext.get_err_cd( 'no_object' ),
-                                  td_ext.get_err_msg( 'no_object' ) || ' : ' || l_src_name
-                                );
-      END IF;
+      td_sql.check_object( p_owner => p_source_owner, 
+			   p_object => p_source_object,
+			   p_object_type => 'table$|view');
 
       -- warning concerning using LOG ERRORS clause and the APPEND hint
       IF REGEXP_LIKE( 'yes', p_direct, 'i' ) AND p_log_table IS NOT NULL
@@ -1885,21 +1899,15 @@ IS
       -- test the target table
       td_sql.check_table( p_owner         => p_owner, p_table => p_table,
                           p_partname      => p_partname );
-
+      
       -- test the source object
       -- but only if it's specified
+      -- make sure it's a table or view
       IF p_source_object IS NOT NULL
       THEN
-         IF NOT td_core.object_exists( p_owner       => p_source_owner,
-                                       p_object      => p_source_object
-                                     )
-         THEN
-            raise_application_error( td_ext.get_err_cd( 'no_object' ),
-                                        td_ext.get_err_msg( 'no_object' )
-                                     || ' : '
-                                     || l_src_name
-                                   );
-         END IF;
+	 td_sql.check_object( p_owner => p_source_owner, 
+			      p_object => p_source_object,
+			      p_object_type => 'table$|view');
       END IF;
 
       IF NOT o_td.is_debugmode
