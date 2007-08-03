@@ -81,7 +81,7 @@ public class TdCore extends Object {
 	    Timestamp fileTs = new Timestamp(element.lastModified());
 	     	
 	    if (element.isFile()) {
-		#sql { INSERT INTO tdinc.DIR_LIST 
+		#sql { INSERT INTO DIR_LIST 
 			(FILENAME,
 			 FILE_DT,
 			 FILE_SIZE)
