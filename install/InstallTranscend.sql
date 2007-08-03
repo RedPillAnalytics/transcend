@@ -11,6 +11,9 @@ ACCEPT tablespace_it char default 'TDREP' prompt 'Tablespace in which to install
 -- get application user
 ACCEPT app_schema_it char default 'TDREP' prompt 'Schema name for the Transcend application [tdrep]: '
 
+-- install the sys_repository
+@@transcend_sys_repository tdsys &tablespace_it
+
 -- install the repository
 @@transcend_repository &rep_schema_it &tablespace_it
 
