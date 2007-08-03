@@ -21,7 +21,7 @@ ACCEPT app_schema_it char default 'TDREP' prompt 'Schema name for the Transcend 
 @@rep_syns &app_schema_it &rep_schema_it
 
 -- install the Transcend application (stored code)
-@@transcend_application &app_schema_it
+@@transcend_application &app_schema_it &rep_schema_it
 
 -- set application defaults
 @@td_rep_defaults &app_schema_it
