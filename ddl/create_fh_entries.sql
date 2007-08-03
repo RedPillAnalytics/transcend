@@ -1,16 +1,16 @@
 CREATE OR replace directory extdata AS '/transcend/ext';
-GRANT READ,WRITE ON directory extdata TO tdinc;
+GRANT READ,WRITE ON directory extdata TO tdrep;
 
 CREATE OR replace directory archdata AS '/transcend/arch';
-GRANT READ,WRITE ON directory archdata TO tdinc;
+GRANT READ,WRITE ON directory archdata TO tdrep;
 
 CREATE OR REPLACE directory extractdata AS '/transcend/extract';
-GRANT READ,WRITE ON directory extractdata TO tdinc;
+GRANT READ,WRITE ON directory extractdata TO tdrep;
 
 CREATE OR REPLACE directory sourcedata AS '/transcend/source';
-GRANT READ,WRITE ON directory extractdata TO tdinc;
+GRANT READ,WRITE ON directory extractdata TO tdrep;
 
-TRUNCATE filehub_conf;
+TRUNCATE TABLE filehub_conf;
 
 DROP TABLE test_feed
 /
@@ -59,7 +59,7 @@ INSERT INTO filehub_conf
 	 'Test Feed',
 	 'Test Group',
 	 'feed',
-	 'tdinc',
+	 'tdrep',
 	 'test_feed',
 	 'EXTDATA',
 	 'TEST_FEED.dat',
@@ -81,12 +81,12 @@ INSERT INTO filehub_conf
 
 
 -- INSERT INTO notify_conf
---        VALUES ( tdinc.notify_conf_seq.nextval,
+--        VALUES ( tdrep.notify_conf_seq.nextval,
 -- 		'email',
 -- 		'yes',
 -- 		'Notify success',
 -- 		'feed.process',
--- 		tdinc.filehub_conf_seq.currval,
+-- 		tdrep.filehub_conf_seq.currval,
 -- 		'test feed file received',
 -- 		'test feed file received',
 -- 		'stewart.bryson@transcendentdat.com',
@@ -97,12 +97,12 @@ INSERT INTO filehub_conf
 -- 		NULL);
 
 -- INSERT INTO notify_conf
---        VALUES ( tdinc.notify_conf_seq.nextval,
+--        VALUES ( tdrep.notify_conf_seq.nextval,
 -- 		'email',
 -- 		'yes',
 -- 		'reject limit exceeded',
 -- 		'feed.process',
--- 		tdinc.filehub_conf_seq.currval,
+-- 		tdrep.filehub_conf_seq.currval,
 -- 		'Source file reject limit exceeded',
 -- 		'Source file reject limit exceeded',
 -- 		'stewart.bryson@transcendentdat.com',
@@ -138,11 +138,11 @@ INSERT INTO filehub_conf
 	 quotechar, 
 	 headers)
        VALUES
-       ( tdinc.filehub_conf_seq.nextval,
+       ( tdrep.filehub_conf_seq.nextval,
 	 'Test Extract',
 	 'Test Group',
 	 'extract',
-	 'tdinc',
+	 'tdrep',
 	 'filehub_conf',
 	 'EXTRACTDATA',
 	 'filehub_conf.csv',
