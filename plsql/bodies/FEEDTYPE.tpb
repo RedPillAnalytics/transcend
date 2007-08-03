@@ -12,7 +12,7 @@ AS
       PRAGMA EXCEPTION_INIT( e_no_table, -942 );
       e_no_files         EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_files, -1756 );
-      o_td              tdtype
+      o_td               tdtype
                       := tdtype( p_module       => 'audit_ext_tab',
                                  p_runmode      => SELF.runmode );
    BEGIN
@@ -36,7 +36,8 @@ AS
                   THEN
                      o_td.change_action( 'location file missing' );
                      o_td.send( p_module_id => SELF.filehub_id );
-                     raise_application_error( td_ext.get_err_cd( 'location_file_missing' ),
+                     raise_application_error
+                                            ( td_ext.get_err_cd( 'location_file_missing' ),
                                               td_ext.get_err_msg( 'location_file_missing' )
                                             );
                   ELSE
@@ -81,7 +82,12 @@ AS
       WHEN e_no_table
       THEN
          raise_application_error( td_ext.get_err_cd( 'no_tab' ),
-                                  td_ext.get_err_msg( 'no_tab' ) || ': '||self.object_owner||'.'||self.object_name);
+                                     td_ext.get_err_msg( 'no_tab' )
+                                  || ': '
+                                  || SELF.object_owner
+                                  || '.'
+                                  || SELF.object_name
+                                );
    END audit_ext_tab;
    MEMBER PROCEDURE process( p_keep_source VARCHAR2 DEFAULT 'no' )
    IS
@@ -96,13 +102,14 @@ AS
       l_ext_tab_ddl    VARCHAR2( 2000 );
       l_files_url      VARCHAR2( 1000 );
       l_message        notify_conf.MESSAGE%TYPE;
-      l_results	       NUMBER;
+      l_results        NUMBER;
       e_no_files       EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_files, -1756 );
-      o_td            tdtype
+      o_td             tdtype
                             := tdtype( p_module       => 'process',
                                        p_runmode      => SELF.runmode );
    BEGIN
+      o_td.log_msg( 'Processing feed "' || filehub_name || '"' );
       o_td.change_action( 'Evaluate source directory' );
 
       -- first we remove all current files in the external table
@@ -136,7 +143,8 @@ AS
                                object_owner,                        -- external table name
                                             source_filename,  -- name of each source files
                                                             source_filepath,
-                                                        -- name converted to absolute path
+                   
+                   -- name converted to absolute path
                    CASE
                       -- use analytics to determine how many files are going into place
                       -- that tells us whether to increment the filenames
@@ -169,7 +177,7 @@ AS
                    || SELF.object_name
                    || ' location ('
                    || REGEXP_REPLACE
-                         ( stragg
+                         ( STRAGG
                               (    SELF.DIRECTORY
                                 || ':'''
                                 || CASE
@@ -192,7 +200,7 @@ AS
                    -- this constructs a STRAGGED list of URL's if multiple files exist
                              -- otherwise it's null
                    REGEXP_REPLACE
-                      ( stragg(    SELF.baseurl
+                      ( STRAGG(    SELF.baseurl
                              || '/'
                              || CASE
                                    WHEN ext_tab_ind = 'Y' AND ext_tab_type_cnt > 1
@@ -289,10 +297,8 @@ AS
          l_numlines := 0;
          -- copy file to the archive location
          o_td.change_action( 'Copy archivefile' );
-         td_core.copy_file( c_dir_list.source_filepath,
-                              c_dir_list.arch_filepath,
-                              runmode
-                            );
+         td_core.copy_file( c_dir_list.source_filepath, c_dir_list.arch_filepath,
+                            runmode );
          o_td.log_msg( 'Archive file ' || c_dir_list.arch_filepath || ' created' );
          -- copy the file to the external table
          o_td.change_action( 'Copy external table files' );
@@ -310,37 +316,37 @@ AS
             -- first move the file to the target destination without changing the name
             -- because the file might be zipped or encrypted
             td_core.copy_file( c_dir_list.arch_filepath,
-                                 c_dir_list.pre_mv_filepath,
-                                 runmode
-                               );
+                               c_dir_list.pre_mv_filepath,
+                               runmode
+                             );
             -- decrypt the file if it's encrypted
             -- currently only supports gpg
             -- decrypt_file will return the decrypted filename
             -- IF the file isn't a recognized encrypted file type, it just returns the name passed
             l_filepath :=
                td_core.decrypt_file( dirpath,
-                                       c_dir_list.source_filename,
-                                       SELF.passphrase,
-                                       runmode
-                                     );
+                                     c_dir_list.source_filename,
+                                     SELF.passphrase,
+                                     runmode
+                                   );
             -- unzip the file if it's zipped
             -- currently will unzip, or gunzip, or bunzip2 or uncompress
             -- unzip_file will return the unzipped filename
             -- IF the file isn't a recognized zip archive file, it just returns the name passed
             l_filepath :=
-                      td_core.unzip_file( dirpath, c_dir_list.source_filename, runmode );
+                        td_core.unzip_file( dirpath, c_dir_list.source_filename, runmode );
                  -- now move the file to the expected name
             -- do this with a copy/delete
             td_core.copy_file( l_filepath, c_dir_list.filepath, runmode );
             td_core.delete_file( DIRECTORY, l_filepath, runmode );
             o_td.log_msg(    'Source file '
-                           || c_dir_list.source_filepath
-                           || ' moved to destination '
-                           || c_dir_list.filepath
-                         );
+                          || c_dir_list.source_filepath
+                          || ' moved to destination '
+                          || c_dir_list.filepath
+                        );
             -- get the number of lines in the file now that it is decrypted and uncompressed
             l_numlines :=
-                    td_core.get_numlines( SELF.DIRECTORY, c_dir_list.filename, runmode );
+                      td_core.get_numlines( SELF.DIRECTORY, c_dir_list.filename, runmode );
             -- get a total count of all the lines in all the files making up the external table
             l_sum_numlines := l_sum_numlines + l_numlines;
          END IF;
@@ -407,15 +413,17 @@ AS
             o_td.change_action( 'Alter external table' );
 
             BEGIN
-               l_results := td_sql.exec_sql ( p_sql => l_ext_tab_ddl, 
-					       p_runmode => SELF.runmode,
-					       p_auto => 'yes' );
+               l_results :=
+                  td_sql.exec_sql( p_sql          => l_ext_tab_ddl,
+                                   p_runmode      => SELF.runmode,
+                                   p_auto         => 'yes'
+                                 );
                o_td.log_msg(    'External table '
-                              || object_owner
-                              || '.'
-                              || object_name
-                              || ' altered'
-                            );
+                             || object_owner
+                             || '.'
+                             || object_name
+                             || ' altered'
+                           );
             EXCEPTION
                WHEN e_no_files
                THEN
