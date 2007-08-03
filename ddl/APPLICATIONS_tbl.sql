@@ -1,13 +1,9 @@
 DROP TABLE applications CASCADE CONSTRAINTS purge
 /
 
-DROP SEQUENCE applications_seq
-/
-
 CREATE TABLE applications
-       ( application_id      NUMBER NOT NULL,
-	 application_schema  VARCHAR2(30) NOT NULL,
-	 repository_schema   VARCHAR2(30) NOT NULL,
+       ( application_name    VARCHAR2(30) NOT NULL,
+	 repository_name     VARCHAR2(30) NOT NULL,
 	 created_user	     VARCHAR2(30) DEFAULT sys_context('USERENV','SESSION_USER') NOT NULL,
 	 created_dt	     DATE DEFAULT SYSDATE NOT NULL,
 	 modified_user	     VARCHAR2(30),
@@ -18,9 +14,15 @@ CREATE TABLE applications
 ALTER TABLE applications ADD (
   CONSTRAINT applications_pk
  PRIMARY KEY
- (application_id)
-    USING INDEX)
+ (application_name)
+    USING INDEX
+)
 /
 
-CREATE SEQUENCE applications_seq
+ALTER TABLE applications ADD (
+      CONSTRAINT applications_fk1
+      FOREIGN KEY (repository_name)
+      REFERENCES repositories  
+      ( repository_name )
+)
 /
