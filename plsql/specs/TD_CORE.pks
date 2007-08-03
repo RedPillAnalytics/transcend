@@ -18,7 +18,7 @@ AS
    AS
       LANGUAGE JAVA
       NAME 'TdCore.hostCmd(java.lang.String, java.lang.String) return integer';
-      
+
    FUNCTION get_dir_path( p_dirname VARCHAR2 )
       RETURN VARCHAR2;
 
@@ -85,5 +85,29 @@ AS
       p_runmode    VARCHAR2 DEFAULT NULL
    )
       RETURN VARCHAR2;
+
+   FUNCTION extract_query(
+      p_query       VARCHAR2,
+      p_dirname     VARCHAR2,
+      p_filename    VARCHAR2,
+      p_delimiter   VARCHAR2 DEFAULT '|',
+      p_quotechar   VARCHAR2 DEFAULT '',
+      p_append      VARCHAR2 DEFAULT 'no',
+      p_runmode     VARCHAR2 DEFAULT NULL
+   )
+      RETURN NUMBER;
+
+   FUNCTION extract_object(
+      p_owner       VARCHAR2,
+      p_object      VARCHAR2,
+      p_dirname     VARCHAR2,
+      p_filename    VARCHAR2,
+      p_delimiter   VARCHAR2 DEFAULT '|',
+      p_quotechar   VARCHAR2 DEFAULT '',
+      p_headers     VARCHAR2 DEFAULT 'yes',
+      p_append      VARCHAR2 DEFAULT 'no',
+      p_runmode     VARCHAR2 DEFAULT NULL
+   )
+      RETURN NUMBER;
 END td_core;
 /
