@@ -1,7 +1,8 @@
 PROMPT 'Running transcend_application.sql'
 -- &1 IS the application SCHEMA
 DEFINE app_schema_ta = &1
-
+-- &2 IS the DEFAULT repository SCHEMA
+DEFINE rep_schema_ta = &2
 -- first create the user if it doesn't already exist
 @create_app_user &app_schema_ta
 
@@ -68,6 +69,14 @@ DROP TYPE apptype;
 -- create role to execute this application
 -- grant all the needed privileges to the role
 @exec_app_grants &app_schema_ta
+
+-- write application tracking record
+INSERT INTO tdsys.applications
+( application_name,
+  repository_name)
+VALUES
+( upper('&app_schema_ta'),
+  upper('&rep_schema_ta'));
 
 -- go back to connected user as current_schema
 ALTER SESSION SET current_schema=&_USER;
