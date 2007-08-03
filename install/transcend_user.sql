@@ -18,3 +18,13 @@ DEFINE app_schema_tu =&3
 -- need to give roles for the repository and the application
 GRANT &rep_schema_tu._adm TO &rep_user_tu;
 GRANT &app_schema_tu._app TO &rep_user_tu;
+
+-- write user tracking record
+INSERT INTO tdsys.users
+( user_name,
+  application_name,
+  repository_name)
+VALUES
+( upper('&rep_user_tu'),
+  upper('&app_schema_tu'),
+  upper('&rep_schema_tu'));
