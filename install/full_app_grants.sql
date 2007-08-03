@@ -5,8 +5,10 @@ DEFINE app_schema_fg = &1
 -- create a super role to grant complete power for the entire framework using system privileges
 DROP ROLE &app_schema_fg._sys;
 DROP ROLE &app_schema_fg._app;
+DROP ROLE &app_schema_fg._java;
 CREATE ROLE &app_schema_fg._sys;
 CREATE ROLE &app_schema_fg._app;
+CREATE ROLE &app_schema_fg._java;
 
 -- grant full execution rights to the system role as well as the application schema
 -- will have a chance to lock the application schema later
@@ -49,15 +51,17 @@ GRANT EXECUTE ON sys.utl_mail TO &app_schema_fg;
 
 --java permissions for sys role and application user
 EXEC dbms_java.set_output(1000000);
-EXEC dbms_java.grant_permission( upper('&app_schema_fg._sys'), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'execute' );
+EXEC dbms_java.grant_permission( upper('&app_schema_fg._java'), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'execute' );
 EXEC dbms_java.grant_permission( upper('&app_schema_fg'), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'execute' );
-EXEC dbms_java.grant_permission( upper('&app_schema_fg._sys'), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'read' );
+EXEC dbms_java.grant_permission( upper('&app_schema_fg._java'), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'read' );
 EXEC dbms_java.grant_permission( upper('&app_schema_fg'), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'read' );
-EXEC dbms_java.grant_permission( upper('&app_schema_fg._sys'), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'write' );
+EXEC dbms_java.grant_permission( upper('&app_schema_fg._java'), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'write' );
 EXEC dbms_java.grant_permission( upper('&app_schema_fg'), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'write' );
-EXEC dbms_java.grant_permission( upper('&app_schema_fg._sys'), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'delete' );
+EXEC dbms_java.grant_permission( upper('&app_schema_fg._java'), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'delete' );
 EXEC dbms_java.grant_permission( upper('&app_schema_fg'), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'delete' );
-EXEC dbms_java.grant_permission( upper('&app_schema_fg._sys'), 'SYS:java.lang.RuntimePermission', 'writeFileDescriptor', '' );
+EXEC dbms_java.grant_permission( upper('&app_schema_fg._java'), 'SYS:java.lang.RuntimePermission', 'writeFileDescriptor', '' );
 EXEC dbms_java.grant_permission( upper('&app_schema_fg'), 'SYS:java.lang.RuntimePermission', 'writeFileDescriptor', '' );
-EXEC dbms_java.grant_permission( upper('&app_schema_fg._sys'), 'SYS:java.lang.RuntimePermission', 'readFileDescriptor','' );
+EXEC dbms_java.grant_permission( upper('&app_schema_fg._java'), 'SYS:java.lang.RuntimePermission', 'readFileDescriptor','' );
 EXEC dbms_java.grant_permission( upper('&app_schema_fg'), 'SYS:java.lang.RuntimePermission', 'readFileDescriptor','' );
+
+GRANT &app_schema_fg._java TO &app_schema_fg._sys;
