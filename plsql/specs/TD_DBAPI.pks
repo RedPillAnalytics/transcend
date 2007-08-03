@@ -35,7 +35,7 @@ IS
       p_table               VARCHAR2,
       p_constraint_type     VARCHAR2 DEFAULT NULL,
       p_constraint_regexp   VARCHAR2 DEFAULT NULL,
-      p_basis    	    VARCHAR2 DEFAULT 'table',
+      p_basis               VARCHAR2 DEFAULT 'table',
       p_runmode             VARCHAR2 DEFAULT NULL
    );
 
@@ -44,7 +44,7 @@ IS
       p_table               VARCHAR2,
       p_constraint_type     VARCHAR2 DEFAULT NULL,
       p_constraint_regexp   VARCHAR2 DEFAULT NULL,
-      p_basis    	    VARCHAR2 DEFAULT 'table',
+      p_basis               VARCHAR2 DEFAULT 'table',
       p_runmode             VARCHAR2 DEFAULT NULL
    );
 
