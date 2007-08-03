@@ -9,7 +9,7 @@ DEFINE tablespace_tsr = &2
 @@create_rep_user &sys_schema_tsr &tablespace_tsr
 
 -- give the rep schema a quota on the tablespace
-ALTER USER &sys_schema_tsr QUOTA 50M ON &tablespace_tr;
+ALTER USER &sys_schema_tsr QUOTA 50M ON &tablespace_tsr;
 
 -- set the correct schema
 ALTER SESSION SET current_schema=&sys_schema_tsr;
