@@ -32,4 +32,10 @@ ALTER SESSION SET current_schema=&rep_schema_tr;
 -- issue grants to the roles created for this repository
 @@rep_grants &rep_schema_tr
 
+-- write application tracking record
+INSERT INTO tdsys.repositories
+( repository_name)
+VALUES
+( upper('&rep_schema_tr'));
+
 ALTER SESSION SET current_schema=&_USER;
