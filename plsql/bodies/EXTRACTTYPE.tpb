@@ -1,4 +1,4 @@
-CREATE OR REPLACE TYPE BODY EXTRACTTYPE
+CREATE OR REPLACE TYPE BODY extracttype
 AS
    -- extract data to a text file, and then peform other functions as defined in the configuration table
    MEMBER PROCEDURE process
@@ -14,6 +14,7 @@ AS
       o_td          tdtype       := tdtype( p_module       => 'process',
                                             p_runmode      => runmode );
    BEGIN
+      o_td.log_msg( 'Processing extract "' || filehub_name || '"' );
       o_td.change_action( 'Configure NLS formats' );
       -- set date and timestamp NLS formats
       l_results :=
@@ -29,11 +30,15 @@ AS
       o_td.change_action( 'Extract data' );
       -- extract data to arch location first
       l_numlines :=
-         extract_object( p_owner         => object_owner,
-                         p_object        => object_name,
-                         p_dirname       => arch_directory,
-                         p_filename      => arch_filename
-                       );
+         td_core.extract_object( p_owner          => object_owner,
+                                 p_object         => object_name,
+                                 p_dirname        => arch_directory,
+                                 p_filename       => arch_filename,
+                                 p_delimiter      => delimiter,
+                                 p_quotechar      => quotechar,
+                                 p_headers        => headers,
+                                 p_runmode        => SELF.runmode
+                               );
       o_td.log_msg(    l_numlines
                     || ' '
                     || CASE l_numlines
@@ -46,7 +51,13 @@ AS
                   );
       l_file_dt := SYSDATE;
       -- copy the file to the target location
-      td_core.copy_file( arch_filepath, filepath, SELF.runmode );
+      td_core.copy_file( p_srcfile      => arch_filepath,
+                         p_dstfile      => filepath,
+                         p_runmode      => SELF.runmode
+                       );
+      o_td.log_msg( 'Archive file ' || arch_filepath || ' copied to destination '
+                    || filepath
+                  );
 
       -- get file attributes
       IF SELF.is_debugmode
