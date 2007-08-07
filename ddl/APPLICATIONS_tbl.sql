@@ -1,6 +1,3 @@
-DROP TABLE applications CASCADE CONSTRAINTS purge
-/
-
 CREATE TABLE applications
        ( application_name    VARCHAR2(30) NOT NULL,
 	 repository_name     VARCHAR2(30) NOT NULL,
