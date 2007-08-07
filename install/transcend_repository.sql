@@ -33,9 +33,16 @@ ALTER SESSION SET current_schema=&rep_schema_tr;
 @@rep_grants &rep_schema_tr
 
 -- write application tracking record
-INSERT INTO tdsys.repositories
-( repository_name)
-VALUES
-( upper('&rep_schema_tr'));
+BEGIN
+   INSERT INTO tdsys.repositories
+	  ( repository_name)
+	  VALUES
+	  ( upper('&rep_schema_tr'));
+EXCEPTION
+   WHEN dup_val_on_index
+   THEN
+      NULL;
+END;
+/
 
 ALTER SESSION SET current_schema=&_USER;
