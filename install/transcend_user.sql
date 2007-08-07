@@ -20,11 +20,25 @@ GRANT &rep_schema_tu._adm TO &rep_user_tu;
 GRANT &app_schema_tu._app TO &rep_user_tu;
 
 -- write user tracking record
-INSERT INTO tdsys.users
-( user_name,
-  application_name,
-  repository_name)
-VALUES
-( upper('&rep_user_tu'),
-  upper('&app_schema_tu'),
-  upper('&rep_schema_tu'));
+
+BEGIN
+   UPDATE tdsys.users
+      SET application_name = upper('&app_schema_tu'),
+          repository_name = upper('&rep_schema_tu'),
+          modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
+          modified_dt = SYSDATE
+    WHERE user_name=upper('&rep_user_tu');
+
+   IF SQL%ROWCOUNT = 0
+   THEN
+      INSERT INTO tdsys.users
+	     ( user_name,
+	       application_name,
+	       repository_name)
+	     VALUES
+	     ( upper('&rep_user_tu'),
+	       upper('&app_schema_tu'),
+	       upper('&rep_schema_tu'));
+   END IF;
+END;
+/
