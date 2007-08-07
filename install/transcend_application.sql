@@ -71,12 +71,24 @@ DROP TYPE apptype;
 @exec_app_grants &app_schema_ta
 
 -- write application tracking record
-INSERT INTO tdsys.applications
-( application_name,
-  repository_name)
-VALUES
-( upper('&app_schema_ta'),
-  upper('&rep_schema_ta'));
+BEGIN
+   UPDATE tdsys.applications
+      SET repository_name = upper('&rep_schema_ta'),
+          modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
+          modified_dt = SYSDATE
+    WHERE application_name=upper('&app_schema_ta');
+
+   IF SQL%ROWCOUNT = 0
+   THEN
+      INSERT INTO tdsys.applications
+	     ( application_name,
+	       repository_name)
+	     VALUES
+	     ( upper('&app_schema_ta'),
+	       upper('&rep_schema_ta'));
+   END IF;
+END;
+/
 
 -- go back to connected user as current_schema
 ALTER SESSION SET current_schema=&_USER;
