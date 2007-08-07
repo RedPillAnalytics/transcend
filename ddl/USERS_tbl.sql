@@ -1,6 +1,3 @@
-DROP TABLE users CASCADE CONSTRAINTS purge
-/
-
 CREATE TABLE users
        ( user_name           VARCHAR2(30) NOT NULL,
 	 application_name    VARCHAR2(30) NOT NULL,
