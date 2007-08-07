@@ -1,6 +1,3 @@
-DROP TABLE repositories CASCADE CONSTRAINTS purge
-/
-
 CREATE TABLE repositories
        ( repository_name     VARCHAR2(30) NOT NULL,
 	 created_user	     VARCHAR2(30) DEFAULT sys_context('USERENV','SESSION_USER') NOT NULL,
