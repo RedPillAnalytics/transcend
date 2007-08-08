@@ -60,3 +60,8 @@ GRANT SELECT ON RUNMODE_CONF TO &rep_schema_rg._sel;
 GRANT SELECT,UPDATE,DELETE,INSERT ON RUNMODE_CONF TO &rep_schema_rg._adm;
 GRANT SELECT ON RUNMODE_CONF_SEQ TO &rep_schema_rg._sel;
 GRANT SELECT ON RUNMODE_CONF_SEQ TO &rep_schema_rg._adm;
+
+GRANT SELECT ON ERR_CD TO &rep_schema_rg._sel;
+GRANT SELECT,UPDATE,DELETE,INSERT ON ERR_CD TO &rep_schema_rg._adm;
+GRANT SELECT ON ERR_CD_SEQ TO &rep_schema_rg._sel;
+GRANT SELECT ON ERR_CD_SEQ TO &rep_schema_rg._adm;
