@@ -187,14 +187,14 @@ AS
       -- find out what called me
       l_whence := whence;
 
-      -- get the current_scn
       -- using invokers rights model
       -- some users won't have access to see the SCN
-      -- need to use dynamic sql to make sure compilation is not an issue
+      -- need to except this just in case
       -- if cannot see the scn, then use a 0
       BEGIN
-         EXECUTE IMMEDIATE 'select current_scn from v$database'
-                      INTO l_scn;
+	 SELECT current_scn
+           INTO l_scn
+           FROM v$database;
       EXCEPTION
          WHEN e_no_tab
          THEN
