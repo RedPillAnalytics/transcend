@@ -2,7 +2,7 @@ DROP TABLE dimension_conf CASCADE CONSTRAINTS purge
 /
 
 CREATE TABLE dimension_conf
-       ( table_owner		VARCHAR2(30) NOT NULL,
+       ( owner			VARCHAR2(30) NOT NULL,
 	 table_name		VARCHAR2(30) NOT NULL,
 	 source_owner		VARCHAR2(30) NOT NULL,
 	 source_name		VARCHAR2(30) NOT NULL,
