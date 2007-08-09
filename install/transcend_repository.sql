@@ -28,6 +28,21 @@ ALTER SESSION SET current_schema=&rep_schema_tr;
 @@../ddl/REGISTRATION_CONF_tbl.sql
 @@../ddl/RUNMODE_CONF_tbl.sql
 @@../ddl/PARAMETER_CONF_tbl.sql
+@@../ddl/DIMENSION_CONF_tbl.sql
+@@../ddl/INDEX_MAINT_CONF_tbl.sql
+@@../ddl/CONSTRAINT_MAINT_CONF_tbl.sql
+@@../ddl/COLUMN_CONF_tbl.sql
+@@../ddl/COLUMN_TYPE_tbl.sql
+
+-- set default tablespace back
+-- it was only changed if the user already existed
+BEGIN
+   IF :old_tbspace IS NOT null
+   THEN
+      EXECUTE IMMEDIATE 'alter user &rep_schema_it default tablespace '||:old_tbspace;
+   END IF;
+END;
+/
 
 -- issue grants to the roles created for this repository
 @@rep_grants &rep_schema_tr
