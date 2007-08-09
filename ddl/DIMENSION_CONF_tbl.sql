@@ -39,3 +39,21 @@ ALTER TABLE dimension_conf
 	    ( owner, table_name )
 	  )
 /
+
+ALTER TABLE dimension_conf
+      ADD (
+	    CONSTRAINT dimension_conf_fk2
+	    FOREIGN KEY ( owner, table_name )
+	    REFERENCES index_maint_conf  
+	    ( owner, table_name )
+	  )
+/
+
+ALTER TABLE dimension_conf
+      ADD (
+	    CONSTRAINT dimension_conf_fk3
+	    FOREIGN KEY ( owner, table_name )
+	    REFERENCES constraint_maint_conf  
+	    ( owner, table_name )
+	  )
+/
