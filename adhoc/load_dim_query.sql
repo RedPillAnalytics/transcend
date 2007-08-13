@@ -24,7 +24,8 @@ SELECT DISTINCT owner,
 	 WHERE ic.owner=owner
 	   AND ic.table_name=table_name
 	     AND REGEXP_LIKE(ic.column_type,'scd','i'))
-       ||' from '||owner||'.'||table_name||')' union_list
+       ||' from '||owner||'.'||table_name||')' union_list,
+       'case when '||nk||' <> -.1 then ''Y'' when '||esd||'=LAG(effect_start_dt) over (partition by '||nk||' order by '||esd||','||sk||' desc) then ''N'' when ' scd2_list
   FROM (SELECT owner,
 	       table_name,
 	       column_type,
