@@ -9,15 +9,28 @@ SELECT DISTINCT owner,
        ||sk||','
        ||nk||','
        ||esd||','
-       ||(SELECT stragg(column_name) OVER ( partition BY column_type)
+       ||(SELECT stragg(column_name)
 	  FROM column_conf ic
 	 WHERE ic.owner=owner
 	   AND ic.table_name=table_name
 	     AND REGEXP_LIKE(ic.column_type,'scd','i'))
+       ||' from '||source_owner||'.'||source_object
+       ||' union select '
+       ||sk||','
+       ||nk||','
+       ||esd||','
+       ||(SELECT stragg(column_name)
+	  FROM column_conf ic
+	 WHERE ic.owner=owner
+	   AND ic.table_name=table_name
+	     AND REGEXP_LIKE(ic.column_type,'scd','i'))
+       ||' from '||owner||'.'||table_name||')' union_list
   FROM (SELECT owner,
 	       table_name,
 	       column_type,
 	       column_name,
+	       source_object,
+	       source_owner,
 	       (SELECT column_name
 		  FROM column_conf ic
 		 WHERE ic.owner=owner
