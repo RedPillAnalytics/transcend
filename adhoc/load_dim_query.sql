@@ -4,10 +4,20 @@ SELECT DISTINCT owner,
 	  FROM column_conf ic
 	 WHERE ic.owner=owner
 	   AND ic.table_name=table_name
-	   AND ic.column_type='scd type 1') scd1
+	   AND ic.column_type='scd type 1') scd1_list,
+       '(select -.1 '
+       ||sk||','
+       ||nk||','
+       ||esd||','
+       ||(SELECT stragg(column_name) OVER ( partition BY column_type)
+	  FROM column_conf ic
+	 WHERE ic.owner=owner
+	   AND ic.table_name=table_name
+	     AND REGEXP_LIKE(ic.column_type,'scd','i'))
   FROM (SELECT owner,
 	       table_name,
 	       column_type,
+	       column_name,
 	       (SELECT column_name
 		  FROM column_conf ic
 		 WHERE ic.owner=owner
