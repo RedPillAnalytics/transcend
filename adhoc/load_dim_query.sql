@@ -1,7 +1,8 @@
 SELECT DISTINCT owner,
        table_name,
        'CASE '||sk||' when -.1 then '||sequence_owner||'.'||sequence_name||' else '||sk||' end '||sk||','
-       ||nk||',' sel1,
+       ||nk||','||scd_list||','
+       ||esd||',' sel1,
        (SELECT stragg('last_value('||column_name||') over (partition by '||nk||' order by '||esd||' ROWS BETWEEN unbounded preceding AND unbounded following)') OVER ( partition BY column_type)
 	  FROM column_conf ic
 	 WHERE ic.owner=owner
