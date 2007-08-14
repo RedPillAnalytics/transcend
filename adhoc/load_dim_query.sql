@@ -6,6 +6,7 @@ SELECT 'SELECT '||sel1||' from ('
        ||include_list
        ||' from '
        ||union_list
+       ||' order by '||nk||','||esd
        ||')'
        ||' where include=''Y''' dim_sql
   FROM (SELECT DISTINCT owner,
@@ -38,7 +39,7 @@ SELECT 'SELECT '||sel1||' from ('
 	       ||esd||','
 	       ||scd_list
 	       ||' from '||owner||'.'||table_name||')' union_list,
-	       'case when '||nk||' <> -.1 then ''Y'' when '||esd||'=LAG(effect_start_dt) over (partition by '||nk||' order by '||esd||','||sk||' desc) then ''N'''
+	       'case when '||sk||' <> -.1 then ''Y'' when '||esd||'=LAG(effect_start_dt) over (partition by '||nk||' order by '||esd||','||sk||' desc) then ''N'''
 	       ||(SELECT regexp_replace(stragg(' WHEN nvl('||column_name||',-.01) < > nvl(LAG('||column_name||') OVER (partition BY '||nk||' ORDER BY '||esd||'),-.01) THEN ''Y'''),', WHEN',' WHEN')
 		    FROM column_conf ic
 		   WHERE ic.owner=owner
