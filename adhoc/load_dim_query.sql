@@ -1,11 +1,17 @@
 SELECT 'SELECT '||sel1||' from ('
        ||'SELECT '||sk||','||nk||','
        ||scd1_analytics||','
-       ||scd2_list
+       ||scd2_list||','
+       ||esd||','
+       ||include_list
+       ||' from '
+       ||union_list
+       ||'))' dim_sql
   FROM (SELECT DISTINCT owner,
 	       table_name,
 	       sk,
 	       nk,
+	       esd,
 	       scd1_list,
 	       scd2_list,
 	       scd_list,
@@ -32,12 +38,12 @@ SELECT 'SELECT '||sel1||' from ('
 	       ||scd_list
 	       ||' from '||owner||'.'||table_name||')' union_list,
 	       'case when '||nk||' <> -.1 then ''Y'' when '||esd||'=LAG(effect_start_dt) over (partition by '||nk||' order by '||esd||','||sk||' desc) then ''N'''
-	       ||(SELECT stragg(' WHEN nvl('||column_name||',-.01) < > nvl(LAG('||column_name||') OVER (partition BY '||nk||' ORDER BY '||esd||'),-.01) THEN ''Y''')
+	       ||(SELECT regexp_replace(stragg(' WHEN nvl('||column_name||',-.01) < > nvl(LAG('||column_name||') OVER (partition BY '||nk||' ORDER BY '||esd||'),-.01) THEN ''Y'''),', WHEN',' WHEN')
 		    FROM column_conf ic
 		   WHERE ic.owner=owner
 		     AND ic.table_name=table_name
 		     AND column_type='scd type 2') 
-	       ||' else ''N'' end' scd2_analytics
+	       ||' else ''N'' end' include_list
 	  FROM (SELECT owner,
 		       table_name,
 		       column_type,
