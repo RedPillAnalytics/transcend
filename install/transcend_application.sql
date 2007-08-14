@@ -24,6 +24,7 @@ DROP TYPE emailtype;
 DROP TYPE notifytype;
 DROP TYPE tdtype;
 DROP TYPE apptype;
+DROP TYPE dimensiontype;
 
 --CREATE core pieces
 @../plsql/specs/STRING_AGG_TYPE.tps
