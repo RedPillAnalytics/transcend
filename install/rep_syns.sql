@@ -30,6 +30,10 @@ BEGIN
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..REGISTRATION_CONF for &schema_rs..REGISTRATION_CONF';
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..RUNMODE_CONF for &schema_rs..RUNMODE_CONF';
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..PARAMETER_CONF for &schema_rs..PARAMETER_CONF';
+      EXECUTE IMMEDIATE 'create or replace synonym &user_rs..COLUMN_CONF for &schema_rs..COLUMN_CONF';
+      EXECUTE IMMEDIATE 'create or replace synonym &user_rs..DIMENSION_CONF for &schema_rs..DIMENSION_CONF';
+      EXECUTE IMMEDIATE 'create or replace synonym &user_rs..INDEX_MAINT_CONF for &schema_rs..INDEX_MAINT_CONF';
+      EXECUTE IMMEDIATE 'create or replace synonym &user_rs..CONSTRAINT_MAINT_CONF for &schema_rs..CONSTRAINT_MAINT_CONF';
       -- sequences
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..FILEHUB_CONF_SEQ for &schema_rs..FILEHUB_CONF_SEQ';
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..FILEHUB_DETAIL_SEQ for &schema_rs..FILEHUB_DETAIL_SEQ';
