@@ -37,3 +37,12 @@ ALTER TABLE index_maint_conf
 	    USING INDEX
 	  )
 /
+
+ALTER TABLE index_maint_conf
+      ADD (
+	    CONSTRAINT index_maint_conf_fk1
+	    FOREIGN KEY ( owner, table_name )
+	    REFERENCES dimension_conf  
+	    ( owner, table_name )
+	  )
+/

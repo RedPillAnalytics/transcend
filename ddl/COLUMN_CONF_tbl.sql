@@ -28,7 +28,7 @@ ALTER TABLE column_conf
       ADD (
 	    CONSTRAINT column_conf_pk
 	    PRIMARY KEY
-	    ( owner, table_name )
+	    ( owner, table_name, column_name )
 	    USING INDEX
 	  )
 /
@@ -39,5 +39,14 @@ ALTER TABLE column_conf
 	    FOREIGN KEY ( column_type )
 	    REFERENCES column_type  
 	    ( column_type )
+	  )
+/
+
+ALTER TABLE column_conf
+      ADD (
+	    CONSTRAINT column_conf_fk2
+	    FOREIGN KEY ( owner, table_name )
+	    REFERENCES dimension_conf  
+	    ( owner, table_name )
 	  )
 /

@@ -7,6 +7,7 @@ SELECT cast('runtime' AS VARCHAR2(10)) runmode,
        table_name,
        source_owner,
        source_object,
+       replace_method,
        'SELECT '||sel1||' from ('
        ||'SELECT '||sk||','||nk||','
        ||scd1_analytics||','
@@ -22,6 +23,7 @@ SELECT cast('runtime' AS VARCHAR2(10)) runmode,
 	       table_name,
 	       source_owner,
 	       source_object,
+	       replace_method,
 	       sk,
 	       nk,
 	       esd,
@@ -65,6 +67,7 @@ SELECT cast('runtime' AS VARCHAR2(10)) runmode,
 		       source_owner,
 		       sequence_owner,
 		       sequence_name,
+		       replace_method,
 		       (SELECT stragg(column_name)
 			  FROM column_conf ic
 			 WHERE ic.owner=owner

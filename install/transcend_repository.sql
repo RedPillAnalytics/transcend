@@ -28,11 +28,11 @@ ALTER SESSION SET current_schema=&rep_schema_tr;
 @@../ddl/REGISTRATION_CONF_tbl.sql
 @@../ddl/RUNMODE_CONF_tbl.sql
 @@../ddl/PARAMETER_CONF_tbl.sql
+@@../ddl/COLUMN_TYPE_tbl.sql
 @@../ddl/DIMENSION_CONF_tbl.sql
 @@../ddl/INDEX_MAINT_CONF_tbl.sql
 @@../ddl/CONSTRAINT_MAINT_CONF_tbl.sql
 @@../ddl/COLUMN_CONF_tbl.sql
-@@../ddl/COLUMN_TYPE_tbl.sql
 
 -- set default tablespace back
 -- it was only changed if the user already existed

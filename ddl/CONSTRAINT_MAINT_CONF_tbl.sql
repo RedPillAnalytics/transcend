@@ -30,3 +30,12 @@ ALTER TABLE constraint_maint_conf
 	    USING INDEX
 	  )
 /
+
+ALTER TABLE constraint_maint_conf
+      ADD (
+	    CONSTRAINT constraint_maint_conf_fk1
+	    FOREIGN KEY ( owner, table_name )
+	    REFERENCES dimension_conf  
+	    ( owner, table_name )
+	  )
+/
