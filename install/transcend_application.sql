@@ -55,6 +55,9 @@ DROP TYPE apptype;
 @../plsql/specs/FEEDTYPE.tps
 @../plsql/wrapped_bodies/FEEDTYPE.plb
 @../object_views/FEED_OT_vw.sql
+@../plsql/specs/DIMENSIONTYPE.tps
+--@../plsql/wrapped_bodies/DIMENSIONTYPE.plb
+@../object_views/DIMENSION_OT_vw.sql
 
 --CREATE callable packages
 @../plsql/specs/TD_DBAPI.pks
