@@ -1,7 +1,6 @@
 CREATE OR REPLACE PACKAGE BODY td_log
 AS
    -- global variables placed in the package body because they should be accessed or set outside the package
-   g_package_name     VARCHAR2(30);
    g_session_id	      NUMBER         DEFAULT SYS_CONTEXT( 'USERENV', 'SESSIONID' );
    g_instance_name    VARCHAR(30)    DEFAULT SYS_CONTEXT( 'USERENV', 'INSTANCE_NAME' );
    g_machine	      VARCHAR2(50)   DEFAULT SYS_CONTEXT( 'USERENV', 'HOST' )
@@ -18,8 +17,7 @@ AS
    g_runmode 	      VARCHAR2(10) DEFAULT 'runtime';
 
    -- decipher the calling package name
-   FUNCTION store_package_name
-      RETURN VARCHAR2
+   PROCEDURE set_default_module
    AS
       l_call_stack    VARCHAR2( 4096 ) DEFAULT DBMS_UTILITY.format_call_stack;
       l_num           NUMBER;
@@ -84,8 +82,8 @@ AS
          END IF;
       END LOOP;
 
-      RETURN LOWER( l_name );
-   END store_package_name;
+      g_module := LOWER( l_name );
+   END set_default_module;
 
    -- begins debug mode
    PROCEDURE begin_debug
@@ -112,7 +110,66 @@ AS
          ELSE FALSE
       END;
    END is_debugmode;   
+   
+   -- DEFAULT ACCESSOR METHODS
+   FUNCTION runmode
+      RETURN VARCHAR2
+   AS
+   BEGIN
+      RETURN g_runmode;
+   END runmode;      
+   
+   PROCEDURE runmode ( p_runmode VARCHAR2 )
+   AS
+   BEGIN
+      g_runmode := p_runmode;
+   END runmode;      
+   
+   FUNCTION registration
+      RETURN VARCHAR2
+   AS
+   BEGIN
+      RETURN g_registration;
+   END registration;      
+   
+   PROCEDURE registration ( p_registration VARCHAR2 )
+   AS
+   BEGIN
+      g_registration := p_registration;
+   END registration;
 
+   FUNCTION logging_level
+      RETURN VARCHAR2
+   AS
+   BEGIN
+      RETURN g_logging_level;
+   END logging_level;      
+   
+   PROCEDURE logging_level ( p_logging_level VARCHAR2 )
+   AS
+   BEGIN
+      g_logging_level := p_logging_level;
+   END logging_level;      
+   
+   -- MODIFIED ACCESSOR METHODS
+   
+   -- when setting the module, only have to give the stored program unit name
+   -- method will append the rest
+   FUNCTION module
+      RETURN VARCHAR2
+   AS
+   BEGIN
+      RETURN g_module;
+   END module;      
+   
+   PROCEDURE module ( p_module VARCHAR2 )
+   AS
+   BEGIN
+      g_module := p_module;
+   END module;      
+
+   
+   -- CUSTOM ACCESSOR METHODS
    -- used to return a distinct error message number by label
    FUNCTION get_err_cd( p_name VARCHAR2 )
       RETURN NUMBER
@@ -141,6 +198,11 @@ AS
       RETURN l_msg;
    END get_err_msg;
    BEGIN
-      g_package_name := store_package_name;
+      -- go ahead and write the package_name as the default module
+      set_default_module;
+      
+      -- set the default action name
+      g_action := 'begin module';
+      
 END td_log;
 /
