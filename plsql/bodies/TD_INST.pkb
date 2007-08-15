@@ -340,6 +340,7 @@ AS
              );
       COMMIT;
    END log_cnt_msg;
-   
+   BEGIN
+      register;
 END td_inst;
 /
