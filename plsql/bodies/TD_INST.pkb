@@ -11,19 +11,19 @@ AS
    g_dbuser	             VARCHAR2(30) := SYS_CONTEXT( 'USERENV', 'SESSION_USER' );
    g_osuser	      	     VARCHAR2(30) := SYS_CONTEXT( 'USERENV', 'OS_USER' );
    g_client_info      	     VARCHAR2(30) := sys_context('USERENV','CLIENT_INFO');
-   g_client_info_priority    NUMBER := 5;
+   g_client_info_priority    NUMBER;
    g_module           	     VARCHAR2(30) := sys_context('USERENV','MODULE');
-   g_module_priority 	     NUMBER := 5;
+   g_module_priority 	     NUMBER;
    g_action           	     VARCHAR2(30) := sys_context('USERENV','ACTION');
-   g_action_priority 	     NUMBER := 5;
+   g_action_priority 	     NUMBER;
    g_batch_id	      	     NUMBER;
-   g_batch_id_priority 	     NUMBER := 5;
+   g_batch_id_priority 	     NUMBER;
    g_registration     	     VARCHAR2(30) := 'appinfo';
-   g_registration_priority   NUMBER := 5;
+   g_registration_priority   NUMBER;
    g_logging_level    	     VARCHAR2(30) := 4;
-   g_logging_level_priority  NUMBER := 5;
-   g_runmode 	      	     VARCHAR2(10);
-   g_runmode_priority 	     NUMBER := 5;   
+   g_logging_level_priority  NUMBER;
+   g_runmode 	      	     VARCHAR2(10) := 'runtime';
+   g_runmode_priority 	     NUMBER;   
 
    -- registers the application
    PROCEDURE register
@@ -151,9 +151,6 @@ AS
    BEGIN
       g_batch_id_priority := p_batch_id_priority;
    END batch_id_priority;
-
-   
-   -- MODIFIED ACCESSOR METHODS
    
    -- accessor methods for module and module priority
    FUNCTION module
@@ -168,7 +165,6 @@ AS
    AS
    BEGIN
       g_module := p_module;
-      register;
    END module;
 
    FUNCTION module_priority
@@ -197,7 +193,6 @@ AS
    AS
    BEGIN
       g_action := p_action;
-      register;
    END action;
    
    FUNCTION action_priority
@@ -226,7 +221,6 @@ AS
    AS
    BEGIN
       g_client_info := p_client_info;
-      register;
    END client_info;
 
    FUNCTION client_info_priority
@@ -241,6 +235,9 @@ AS
    BEGIN
       g_client_info_priority := p_client_info_priority;
    END client_info_priority;
+   
+   -- MODIFIED ACCESSOR METHODS
+   
 
    -- CUSTOM AMETHODS
    -- used to return a distinct error message number by label
@@ -422,7 +419,49 @@ AS
              );
       COMMIT;
    END log_cnt_msg;
+
+   -- set the default priorities
+   PROCEDURE set_priorities
+   AS
+      l_priority number;
    BEGIN
-      register;
+      BEGIN
+	 l_priority := td_control.get_priority($$plsql_unit);
+      EXCEPTION
+	 WHEN no_data_found
+	 THEN
+	 raise_application_error( get_err_cd( 'no_priority'),
+				  get_err_msg( 'no_priority')||': '||lower('$$plsql_unit'));
+      END;
+      
+      -- all the priorities will be set with a default value
+      g_client_info_priority := l_priority;
+      g_module_priority := l_priority;
+      g_action_priority := l_priority;
+      g_batch_id_priority := l_priority;
+      g_registration_priority := l_priority;
+      g_logging_level_priority := l_priority;
+      g_runmode_priority := l_priority;
+      
+   END set_priorities;
+   
+   -- return a boolean
+   -- tell us whether or not we have priority
+   FUNCTION is_runmode_priority ( p_attribute VARCHAR2 )
+     RETURN BOOLEAN
+   AS
+      l_my_priority NUMBER      := td_control.get_priority(lower($$plsql_unit));
+      l_runmode_priority NUMBER := td_inst.runmode_priority;
+   BEGIN
+      IF l_my_priority >= l_runmode_priority
+      THEN
+	 RETURN TRUE;
+      ELSE
+	 RETURN FALSE;
+      END IF;
+   END is_runmode_priority;
+
+   BEGIN
+      set_priorities;
 END td_inst;
 /
