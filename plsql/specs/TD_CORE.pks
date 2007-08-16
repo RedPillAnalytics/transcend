@@ -62,8 +62,6 @@ AS
       p_runmode   VARCHAR2 DEFAULT NULL
    );
 
-   PROCEDURE log_msg( p_msg log_table.msg%TYPE );
-
    FUNCTION get_numlines(
       p_dirname    IN   VARCHAR2,
       p_filename   IN   VARCHAR2,
