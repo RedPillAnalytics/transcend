@@ -42,6 +42,8 @@ AS
    END register;
       
    -- DEFAULT ACCESSOR METHODS
+
+   -- accessor methods for runmode and runmode_priority
    FUNCTION runmode
       RETURN VARCHAR2
    AS
@@ -53,8 +55,23 @@ AS
    AS
    BEGIN
       g_runmode := p_runmode;
-   END runmode;      
+   END runmode;
+
+   FUNCTION runmode_priority
+      RETURN NUMBER 
+   AS
+   BEGIN
+      RETURN g_runmode_priority;
+   END runmode_priority;      
    
+   PROCEDURE runmode_priority ( p_runmode_priority NUMBER )
+   AS
+   BEGIN
+      g_runmode_priority := p_runmode_priority;
+   END runmode_priority;
+
+   
+   -- accessor methods for registration and registration_priority
    FUNCTION registration
       RETURN VARCHAR2
    AS
@@ -67,7 +84,21 @@ AS
    BEGIN
       g_registration := p_registration;
    END registration;
+   
+   FUNCTION registration_priority
+      RETURN NUMBER 
+   AS
+   BEGIN
+      RETURN g_registration_priority;
+   END registration_priority;      
+   
+   PROCEDURE registration_priority ( p_registration_priority NUMBER )
+   AS
+   BEGIN
+      g_registration_priority := p_registration_priority;
+   END registration_priority;
 
+   -- accessor methods for logging_level and logging_level_priority
    FUNCTION logging_level
       RETURN NUMBER 
    AS
@@ -80,7 +111,21 @@ AS
    BEGIN
       g_logging_level := p_logging_level;
    END logging_level;
+   
+   FUNCTION logging_level_priority
+      RETURN NUMBER 
+   AS
+   BEGIN
+      RETURN g_logging_level_priority;
+   END logging_level_priority;      
+   
+   PROCEDURE logging_level_priority ( p_logging_level_priority NUMBER )
+   AS
+   BEGIN
+      g_logging_level_priority := p_logging_level_priority;
+   END logging_level_priority;
 
+   -- accessor methods for batch_id and batch_id_priority
    FUNCTION batch_id
       RETURN NUMBER 
    AS
@@ -94,8 +139,23 @@ AS
       g_batch_id := p_batch_id;
    END batch_id;
    
+   FUNCTION batch_id_priority
+      RETURN NUMBER 
+   AS
+   BEGIN
+      RETURN g_batch_id_priority;
+   END batch_id_priority;      
+   
+   PROCEDURE batch_id_priority ( p_batch_id_priority NUMBER )
+   AS
+   BEGIN
+      g_batch_id_priority := p_batch_id_priority;
+   END batch_id_priority;
+
+   
    -- MODIFIED ACCESSOR METHODS
    
+   -- accessor methods for module and module priority
    FUNCTION module
       RETURN VARCHAR2
    AS
@@ -110,7 +170,21 @@ AS
       g_module := p_module;
       register;
    END module;
+
+   FUNCTION module_priority
+      RETURN NUMBER 
+   AS
+   BEGIN
+      RETURN g_module_priority;
+   END module_priority;      
    
+   PROCEDURE module_priority ( p_module_priority NUMBER )
+   AS
+   BEGIN
+      g_module_priority := p_module_priority;
+   END module_priority;
+
+   -- accessor methods for action and action priority   
    FUNCTION action
       RETURN VARCHAR2
    AS
@@ -126,6 +200,20 @@ AS
       register;
    END action;
    
+   FUNCTION action_priority
+      RETURN NUMBER 
+   AS
+   BEGIN
+      RETURN g_action_priority;
+   END action_priority;      
+   
+   PROCEDURE action_priority ( p_action_priority NUMBER )
+   AS
+   BEGIN
+      g_action_priority := p_action_priority;
+   END action_priority;
+
+   -- accessor methods for client_info and client_info priority
    FUNCTION client_info
       RETURN VARCHAR2
    AS
@@ -140,6 +228,19 @@ AS
       g_client_info := p_client_info;
       register;
    END client_info;
+
+   FUNCTION client_info_priority
+      RETURN NUMBER 
+   AS
+   BEGIN
+      RETURN g_client_info_priority;
+   END client_info_priority;      
+   
+   PROCEDURE client_info_priority ( p_client_info_priority NUMBER )
+   AS
+   BEGIN
+      g_client_info_priority := p_client_info_priority;
+   END client_info_priority;
 
    -- CUSTOM AMETHODS
    -- used to return a distinct error message number by label
