@@ -1,5 +1,20 @@
 CREATE OR REPLACE PACKAGE BODY td_control
 IS
+-- provide an accessor and get a priority
+   FUNCTION get_priority(
+      p_accessor    VARCHAR2
+   )
+      RETURN NUMBER
+   AS
+      l_priority NUMBER;
+   BEGIN
+      SELECT priority
+	INTO l_priority
+	FROM priority_conf
+       WHERE accessor = lower(p_accessor);
+      RETURN l_priority;
+   END get_priority;
+
    PROCEDURE set_logging_level(
       p_module          VARCHAR2 DEFAULT 'default',
       p_logging_level   NUMBER DEFAULT 2,
@@ -84,8 +99,8 @@ IS
             THEN
                NULL;
             ELSE
-               raise_application_error( td_ext.get_err_cd( 'no_session_parm' ),
-                                           td_ext.get_err_msg( 'no_session_parm' )
+               raise_application_error( td_inst.get_err_cd( 'no_session_parm' ),
+                                           td_inst.get_err_msg( 'no_session_parm' )
                                         || ': '
                                         || p_name
                                       );
@@ -116,6 +131,27 @@ IS
                      );
       END IF;
    END set_session_parameter;
+   
+   PROCEDURE set_priority( p_accessor VARCHAR2, 
+			   p_priority NUMBER )
+   IS
+   BEGIN
+      UPDATE priority_conf
+         SET priority = p_priority,
+             modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
+             modified_dt = SYSDATE
+       WHERE accessor = p_accessor;
+
+      IF SQL%ROWCOUNT = 0
+      THEN
+         INSERT INTO priority_conf
+                     ( accessor, priority
+                     )
+              VALUES ( p_accessor, p_priority
+                     );
+      END IF;
+   END set_priority;
+   
 
    PROCEDURE clear_log(
       p_runmode      VARCHAR2 DEFAULT NULL,
