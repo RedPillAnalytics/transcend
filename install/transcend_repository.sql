@@ -28,6 +28,7 @@ ALTER SESSION SET current_schema=&rep_schema_tr;
 @@../ddl/REGISTRATION_CONF_tbl.sql
 @@../ddl/RUNMODE_CONF_tbl.sql
 @@../ddl/PARAMETER_CONF_tbl.sql
+@@../ddl/PRIORITY_CONF_tbl.sql
 @@../ddl/COLUMN_TYPE_tbl.sql
 @@../ddl/DIMENSION_CONF_tbl.sql
 @@../ddl/INDEX_MAINT_CONF_tbl.sql
