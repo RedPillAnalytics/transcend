@@ -236,17 +236,6 @@ AS
       o_td.clear_app_info;
    END create_file;
 
--- log a message to the log_table
--- the preferred method for using the logging framework is to instantiate a TDTYPE object and use that
--- this is provided in situations where invoking an object is difficult--such as testing in SQLPLUS
--- real development pieces should use TDTYPE
-   PROCEDURE log_msg( p_msg log_table.msg%TYPE )
-   AS
-      o_td   tdtype := tdtype( p_action => SYS_CONTEXT( 'USERENV', 'ACTION' ));
-   BEGIN
-      o_td.log_msg( p_msg );
-   END log_msg;
-
    -- get the number of lines in a file
    FUNCTION get_numlines(
       p_dirname    IN   VARCHAR2,                       -- this is a directory object name
