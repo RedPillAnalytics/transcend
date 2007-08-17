@@ -17,6 +17,6 @@ CREATE TABLE log_table
 	 code NUMBER NOT NULL,
 	 call_stack VARCHAR2(1024),
 	 back_trace VARCHAR2(1024),
-	 oper_id number
+	 batch_id number
        )
 /

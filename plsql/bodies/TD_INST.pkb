@@ -1,7 +1,6 @@
 CREATE OR REPLACE PACKAGE BODY td_inst
 AS
    -- global variables placed in the package body because they should be accessed or set outside the package
-   g_package_name            VARCHAR2(30) := nvl($$plsql_unit,'NA');
    g_session_id	      	     NUMBER       := SYS_CONTEXT( 'USERENV', 'SESSIONID' );
    g_instance_name    	     VARCHAR(30)  := SYS_CONTEXT( 'USERENV', 'INSTANCE_NAME' );
    g_machine	      	     VARCHAR2(50) := SYS_CONTEXT( 'USERENV', 'HOST' )
@@ -10,27 +9,27 @@ AS
          				     || ']';
    g_dbuser	             VARCHAR2(30) := SYS_CONTEXT( 'USERENV', 'SESSION_USER' );
    g_osuser	      	     VARCHAR2(30) := SYS_CONTEXT( 'USERENV', 'OS_USER' );
-   g_client_info      	     VARCHAR2(30) := sys_context('USERENV','CLIENT_INFO');
+   g_client_info      	     VARCHAR2(30) := SYS_CONTEXT('USERENV','CLIENT_INFO');
    g_client_info_priority    NUMBER;
-   g_module           	     VARCHAR2(30) := sys_context('USERENV','MODULE');
-   g_module_priority 	     NUMBER;
-   g_action           	     VARCHAR2(30) := sys_context('USERENV','ACTION');
-   g_action_priority 	     NUMBER;
+   g_module           	     VARCHAR2(30) := SYS_CONTEXT('USERENV','MODULE');
+   g_module_priority 	     NUMBER	  := 1;
+   g_action           	     VARCHAR2(30) := SYS_CONTEXT('USERENV','ACTION');
+   g_action_priority 	     NUMBER	  := 1;
    g_batch_id	      	     NUMBER;
-   g_batch_id_priority 	     NUMBER;
+   g_batch_id_priority 	     NUMBER       := 1;
    g_registration     	     VARCHAR2(30) := 'appinfo';
-   g_registration_priority   NUMBER;
+   g_registration_priority   NUMBER	  := 1;
    g_logging_level    	     VARCHAR2(30) := 2;
-   g_logging_level_priority  NUMBER;
+   g_logging_level_priority  NUMBER	  := 1;
    g_runmode 	      	     VARCHAR2(10) := 'runtime';
-   g_runmode_priority 	     NUMBER;   
+   g_runmode_priority 	     NUMBER	  := 1;
 
    -- registers the application
    PROCEDURE register
    AS
    BEGIN
       CASE registration
-      WHEN 'NA'
+      WHEN 'noregister'
       THEN
       NULL;
       WHEN 'appinfo'
@@ -420,48 +419,5 @@ AS
       COMMIT;
    END log_cnt_msg;
 
-   -- set the default priorities
-   PROCEDURE set_priorities
-   AS
-      l_priority number;
-   BEGIN
-      BEGIN
-	 l_priority := td_control.get_priority($$plsql_unit);
-      EXCEPTION
-	 WHEN no_data_found
-	 THEN
-	 raise_application_error( get_err_cd( 'no_priority'),
-				  get_err_msg( 'no_priority')||': '||lower('$$plsql_unit'));
-      END;
-      
-      -- all the priorities will be set with a default value
-      g_client_info_priority := l_priority;
-      g_module_priority := l_priority;
-      g_action_priority := l_priority;
-      g_batch_id_priority := l_priority;
-      g_registration_priority := l_priority;
-      g_logging_level_priority := l_priority;
-      g_runmode_priority := l_priority;
-      
-   END set_priorities;
-   
-   -- return a boolean
-   -- tell us whether or not we have priority
-   FUNCTION have_runmode_priority ( p_attribute VARCHAR2 )
-     RETURN BOOLEAN
-   AS
-      l_my_priority NUMBER      := td_control.get_priority(lower($$plsql_unit));
-      l_runmode_priority NUMBER := td_inst.runmode_priority;
-   BEGIN
-      IF l_my_priority >= l_runmode_priority
-      THEN
-	 RETURN TRUE;
-      ELSE
-	 RETURN FALSE;
-      END IF;
-   END have_runmode_priority;
-
-   BEGIN
-      set_priorities;
 END td_inst;
 /
