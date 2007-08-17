@@ -9,12 +9,14 @@ CREATE OR REPLACE TYPE apptype AUTHID CURRENT_USER AS object(
    CONSTRUCTOR FUNCTION apptype(
       p_action        VARCHAR2 DEFAULT 'begin module',
       p_module        VARCHAR2 DEFAULT NULL,
-      p_client_info   VARCHAR2 DEFAULT NULL,
-      p_runmode       VARCHAR2 DEFAULT NULL
+      p_client_info   VARCHAR2 DEFAULT NULL
    )
       RETURN SELF AS RESULT,
+   MEMBER FUNCTION get_package_name
+      RETURN VARCHAR2,
    MEMBER PROCEDURE change_action( p_action VARCHAR2 ),
-   MEMBER PROCEDURE clear_app_info
+   MEMBER PROCEDURE clear_app_info,    
+   MEMBER PROCEDURE read_prev_info
 )
 NOT FINAL;
 /

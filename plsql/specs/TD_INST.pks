@@ -1,5 +1,7 @@
 CREATE OR REPLACE PACKAGE td_inst AUTHID CURRENT_USER
 AS
+   PROCEDURE register;
+
    FUNCTION runmode
       RETURN VARCHAR2;      
    

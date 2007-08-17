@@ -355,7 +355,7 @@ AS
                        instance_name, machine, dbuser, osuser,
                        code, call_stack,
                        back_trace,
-                       oper_id
+                       batch_id
                      )
               VALUES ( l_msg, g_client_info, g_module,
                        g_action, g_runmode, g_session_id, l_scn,
