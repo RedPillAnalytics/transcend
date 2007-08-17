@@ -20,7 +20,7 @@ AS
    g_batch_id_priority 	     NUMBER;
    g_registration     	     VARCHAR2(30) := 'appinfo';
    g_registration_priority   NUMBER;
-   g_logging_level    	     VARCHAR2(30) := 4;
+   g_logging_level    	     VARCHAR2(30) := 2;
    g_logging_level_priority  NUMBER;
    g_runmode 	      	     VARCHAR2(10) := 'runtime';
    g_runmode_priority 	     NUMBER;   
