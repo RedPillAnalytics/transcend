@@ -23,6 +23,11 @@ AS
       -- read previous app_info settings
       -- populate attributes with new app_info settings
       td_inst.client_info ( NVL( p_client_info,td_inst.client_info ) );
+
+      td_inst.log_msg( 'MODULE "' || td_inst.module || '" beginning in RUNMODE "' || td_inst.runmode || '"',
+                    4
+                  );
+      td_inst.log_msg( 'Inital ACTION attribute set to "' || td_inst.action || '"', 4 );
       
       RETURN;
    END apptype;
@@ -94,11 +99,24 @@ AS
 
       RETURN LOWER( l_name );
    END get_package_name;
+   
+   -- GET method for DEBUG mode
+   MEMBER FUNCTION is_debugmode
+      RETURN BOOLEAN
+   AS
+   BEGIN
+      RETURN CASE td_inst.runmode
+         WHEN 'debug'
+            THEN TRUE
+         ELSE FALSE
+      END;
+   END is_debugmode;
 
    MEMBER PROCEDURE change_action( p_action VARCHAR2 )
    AS
    BEGIN
       td_inst.action(p_action);
+      td_inst.log_msg( 'ACTION attribute changed to "' || td_inst.action || '"', 4 );
       td_inst.register;
    END change_action;
    MEMBER PROCEDURE clear_app_info
@@ -107,6 +125,8 @@ AS
       td_inst.action ( prev_action );
       td_inst.module ( prev_module );
       td_inst.client_info ( prev_client_info );
+      td_inst.log_msg( 'ACTION attribute changed to "' || td_inst.action || '"', 4 );
+      td_inst.log_msg( 'MODULE attribute changed to "' || td_inst.module || '"', 4 );
       td_inst.register;
    END clear_app_info;
    
@@ -123,5 +143,64 @@ AS
       prev_runmode := td_inst.runmode;
 
    END read_prev_info;
+   MEMBER FUNCTION is_registered
+      RETURN BOOLEAN
+   AS
+   BEGIN
+      RETURN CASE td_inst.registration
+         WHEN 'noregister'
+            THEN FALSE
+         ELSE TRUE
+      END;
+   END is_registered;
+
+   -- return a boolean
+   -- tell us whether or not we have priority
+   MEMBER FUNCTION have_runmode_priority ( p_attribute VARCHAR2 )
+     RETURN BOOLEAN
+   AS
+      l_my_priority NUMBER      := td_control.get_priority(lower($$plsql_unit));
+      l_current_priority NUMBER := td_inst.runmode_priority;
+   BEGIN
+      IF l_my_priority >= l_current_priority
+      THEN
+	 RETURN TRUE;
+      ELSE
+	 RETURN FALSE;
+      END IF;
+   END have_runmode_priority;
+
+   -- return a boolean
+   -- tell us whether or not we have priority
+   MEMBER FUNCTION have_registration_priority ( p_attribute VARCHAR2 )
+     RETURN BOOLEAN
+   AS
+      l_my_priority NUMBER      := td_control.get_priority(lower($$plsql_unit));
+      l_current_priority NUMBER := td_inst.runmode_priority;
+   BEGIN
+      IF l_my_priority >= l_current_priority
+      THEN
+	 RETURN TRUE;
+      ELSE
+	 RETURN FALSE;
+      END IF;
+   END have_registration_priority;
+
+   -- RETURN a boolean
+   -- tell us whether or not we have priority
+   MEMBER FUNCTION have_logging_priority ( p_attribute VARCHAR2 )
+     RETURN BOOLEAN
+   AS
+      l_my_priority NUMBER      := td_control.get_priority(lower($$plsql_unit));
+      l_current_priority NUMBER := td_inst.logging_level_priority;
+   BEGIN
+      IF l_my_priority >= l_current_priority
+      THEN
+	 RETURN TRUE;
+      ELSE
+	 RETURN FALSE;
+      END IF;
+   END have_logging_priority;
+
 END;
 /
