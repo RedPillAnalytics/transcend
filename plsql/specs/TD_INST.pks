@@ -94,7 +94,7 @@ AS
       p_oper_id   NUMBER DEFAULT NULL
    );
 
-   FUNCTION is_runmode_priority ( p_attribute VARCHAR2 )
+   FUNCTION have_runmode_priority ( p_attribute VARCHAR2 )
      RETURN BOOLEAN;
       
 END td_inst;
