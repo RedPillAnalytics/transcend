@@ -447,7 +447,7 @@ AS
    
    -- return a boolean
    -- tell us whether or not we have priority
-   FUNCTION is_runmode_priority ( p_attribute VARCHAR2 )
+   FUNCTION have_runmode_priority ( p_attribute VARCHAR2 )
      RETURN BOOLEAN
    AS
       l_my_priority NUMBER      := td_control.get_priority(lower($$plsql_unit));
@@ -459,7 +459,7 @@ AS
       ELSE
 	 RETURN FALSE;
       END IF;
-   END is_runmode_priority;
+   END have_runmode_priority;
 
    BEGIN
       set_priorities;
