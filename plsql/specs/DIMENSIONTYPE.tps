@@ -1,5 +1,4 @@
-CREATE OR REPLACE TYPE dimensiontype 
-UNDER basetype
+CREATE OR REPLACE TYPE dimensiontype AUTHID CURRENT_USER AS object
 ( owner	             VARCHAR2( 30 ),
   table_name  	     VARCHAR2( 30 ),
   source_owner	     VARCHAR2( 30 ),
