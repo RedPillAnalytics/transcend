@@ -17,7 +17,7 @@ AS
    AS
       o_td   tdtype := tdtype( p_module => 'start_map_control' );
    BEGIN
-      o_td.change_action( REGEXP_SUBSTR( o_td.whence, '\S+$', 1, 1, 'i' ));
+      o_td.change_action( REGEXP_SUBSTR( td_inst.whence, '\S+$', 1, 1, 'i' ));
       td_inst.batch_id( p_batch_id );
       td_inst.log_msg( 'Beginning OWB mapping' );
 
@@ -40,7 +40,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         o_td.log_err;
+         td_inst.log_err;
          RAISE;
    END start_map_control;
 
@@ -58,7 +58,7 @@ AS
    AS
       o_td   tdtype := tdtype( p_module => 'end_map_control' );
    BEGIN
-      o_td.change_action( REGEXP_SUBSTR( o_td.whence, '\S+$', 1, 1, 'i' ));
+      o_td.change_action( REGEXP_SUBSTR( td_inst.whence, '\S+$', 1, 1, 'i' ));
 
       CASE
          WHEN p_source_owner IS NOT NULL AND p_source_table IS NOT NULL
