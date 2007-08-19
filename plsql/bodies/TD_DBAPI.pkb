@@ -1046,7 +1046,7 @@ IS
       -- record the number of rows affected
       IF NOT o_td.is_debugmode
       THEN
-         o_td.log_cnt_msg( l_results );
+         td_inst.log_cnt_msg( l_results );
       END IF;
 
       o_td.clear_app_info;
@@ -1336,7 +1336,7 @@ IS
       -- record the number of rows affected
       IF NOT o_td.is_debugmode
       THEN
-         o_td.log_cnt_msg( l_results );
+         td_inst.log_cnt_msg( l_results );
       END IF;
 
       o_td.clear_app_info;
@@ -1705,7 +1705,7 @@ IS
                        l_part_position
                      );
 
-         o_td.log_cnt_msg( SQL%ROWCOUNT,
+         td_inst.log_cnt_msg( SQL%ROWCOUNT,
                            'Number of records inserted into PARTNAME table',
                            4
                          );
@@ -1747,14 +1747,13 @@ IS
                                || ') '
                                || 'ORDER By partition_position'
                );
-         o_td.log_cnt_msg( l_results, 'Number of records inserted into PARTNAME table', 4 );
+         td_inst.log_cnt_msg( l_results, 'Number of records inserted into PARTNAME table', 4 );
       END IF;
 
       o_td.clear_app_info;
    END pop_partname;
 
-   -- Provides functionality for setting local and non-local indexes to unusable based on parameters
-   -- Can also base which index partitions to mark as unuable based on the contents of another table
+   -- Provides functionality for setting local and non-local indexes to unusable based on parameters   -- Can also base which index partitions to mark as unuable based on the contents of another table
    -- There are two "magic" numbers that are required to make it work correctly.
    -- The defaults will quite often work.
    -- The simpliest way to find which magic numbers make this function work is to
