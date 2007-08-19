@@ -268,7 +268,7 @@ IS
    EXCEPTION
       WHEN OTHERS
       THEN
-         o_td.log_err;
+         td_inst.log_err;
          RAISE;
    END build_indexes;
 
@@ -527,7 +527,7 @@ IS
    EXCEPTION
       WHEN OTHERS
       THEN
-         o_td.log_err;
+         td_inst.log_err;
          RAISE;
    END build_constraints;
 
@@ -676,7 +676,7 @@ IS
    EXCEPTION
       WHEN OTHERS
       THEN
-         o_td.log_err;
+         td_inst.log_err;
          RAISE;
    END enable_constraints;
 
@@ -825,7 +825,7 @@ IS
    EXCEPTION
       WHEN OTHERS
       THEN
-         o_td.log_err;
+         td_inst.log_err;
          RAISE;
    END disable_constraints;
 
@@ -1053,7 +1053,7 @@ IS
    EXCEPTION
       WHEN OTHERS
       THEN
-         o_td.log_err;
+         td_inst.log_err;
          RAISE;
    END insert_table;
 
@@ -1343,7 +1343,7 @@ IS
    EXCEPTION
       WHEN OTHERS
       THEN
-         o_td.log_err;
+         td_inst.log_err;
          RAISE;
    END merge_table;
 
@@ -1462,7 +1462,7 @@ IS
    EXCEPTION
       WHEN OTHERS
       THEN
-         o_td.log_err;
+         td_inst.log_err;
          RAISE;
    END load_tables;
 
@@ -1653,7 +1653,7 @@ IS
    EXCEPTION
       WHEN OTHERS
       THEN
-         o_td.log_err;
+         td_inst.log_err;
          RAISE;
    END exchange_partition;
 
@@ -1971,7 +1971,7 @@ IS
    EXCEPTION
       WHEN OTHERS
       THEN
-         o_td.log_err;
+         td_inst.log_err;
          RAISE;
    END unusable_indexes;
 
@@ -2088,7 +2088,7 @@ IS
    EXCEPTION
       WHEN OTHERS
       THEN
-         o_td.log_err;
+         td_inst.log_err;
          RAISE;
    END usable_indexes;
 
@@ -2267,7 +2267,7 @@ IS
    EXCEPTION
       WHEN OTHERS
       THEN
-         o_td.log_err;
+         td_inst.log_err;
          RAISE;
    END update_stats;
 END td_dbapi;
