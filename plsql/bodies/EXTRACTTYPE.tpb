@@ -11,19 +11,17 @@ AS
       l_detail_id   NUMBER;
       l_message     notify_conf.MESSAGE%TYPE;
       l_results     NUMBER;
-      o_td          tdtype       := tdtype( p_module       => 'process');
+      o_td          tdtype                     := tdtype( p_module => 'process' );
    BEGIN
       td_inst.log_msg( 'Processing extract "' || filehub_name || '"' );
       o_td.change_action( 'Configure NLS formats' );
       -- set date and timestamp NLS formats
       l_results :=
-         td_sql.exec_sql( p_sql          => dateformat_ddl
-                          p_msg          => 'nls_date_format DDL: '
-                        );
+             td_sql.exec_sql( p_sql      => dateformat_ddl,
+                              p_msg      => 'nls_date_format DDL: ' );
       l_results :=
-         td_sql.exec_sql( p_sql          => tsformat_ddl
-                          p_msg          => 'nls_timestamp_format DDL: '
-                        );
+          td_sql.exec_sql( p_sql      => tsformat_ddl,
+                           p_msg      => 'nls_timestamp_format DDL: ' );
       o_td.change_action( 'Extract data' );
       -- extract data to arch location first
       l_numlines :=
@@ -36,23 +34,23 @@ AS
                                  p_headers        => headers
                                );
       td_inst.log_msg(    l_numlines
-                    || ' '
-                    || CASE l_numlines
-                          WHEN 1
-                             THEN 'row'
-                          ELSE 'rows'
-                       END
-                    || ' extracted to '
-                    || arch_filepath
-                  );
+                       || ' '
+                       || CASE l_numlines
+                             WHEN 1
+                                THEN 'row'
+                             ELSE 'rows'
+                          END
+                       || ' extracted to '
+                       || arch_filepath
+                     );
       l_file_dt := SYSDATE;
       -- copy the file to the target location
-      td_core.copy_file( p_srcfile      => arch_filepath,
-                         p_dstfile      => filepath
-                       );
-      td_inst.log_msg( 'Archive file ' || arch_filepath || ' copied to destination '
-                    || filepath
-                  );
+      td_core.copy_file( p_srcfile => arch_filepath, p_dstfile => filepath );
+      td_inst.log_msg(    'Archive file '
+                       || arch_filepath
+                       || ' copied to destination '
+                       || filepath
+                     );
 
       -- get file attributes
       IF o_td.is_debugmode
