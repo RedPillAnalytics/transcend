@@ -1,4 +1,4 @@
-CREATE OR REPLACE TYPE notifytype UNDER basetype(
+CREATE OR REPLACE TYPE notifytype AUTHID CURRENT_USER AS object(
    notify_id        NUMBER,
    notify_enabled   VARCHAR2( 3 ),
    action           VARCHAR2( 32 ),
