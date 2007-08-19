@@ -4,7 +4,7 @@ DROP TABLE log_table
 CREATE TABLE log_table
        ( entry_ts TIMESTAMP (6) DEFAULT systimestamp NOT NULL,
 	 msg VARCHAR2(2000) NOT NULL,
-	 client_info VARCHAR2(64) NOT NULL,
+	 client_info VARCHAR2(64),
 	 module VARCHAR2(48) NOT NULL,
 	 action VARCHAR2(32) NOT NULL,
 	 runmode VARCHAR2(10) NOT NULL,
