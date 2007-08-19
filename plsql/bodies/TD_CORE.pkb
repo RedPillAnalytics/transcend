@@ -230,7 +230,7 @@ AS
    BEGIN
       IF o_td.is_debugmode
       THEN
-         td_inst.log_msg( o_td.module || ' returning 0 because of DEBUG mode' );
+         td_inst.log_msg( td_inst.module || ' returning 0 because of DEBUG mode' );
          o_td.clear_app_info;
          RETURN 0;
       ELSE
