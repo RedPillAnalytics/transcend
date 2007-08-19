@@ -2,8 +2,7 @@ CREATE OR REPLACE VIEW feed_ot
 OF feedtype
 WITH object identifier (filehub_id)
 as
-SELECT cast('runtime' AS VARCHAR2(10)) runmode,
-       filehub_id,
+SELECT filehub_id,
        filehub_name,
        filehub_group,
        filehub_type,
