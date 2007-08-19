@@ -3,12 +3,12 @@ AS
    -- use EXECUTE IMMEDIATE to execute a SQL statement
    -- uses AUTONOMOUS_TRANSACTION, so this will NOT execute within the current transaction
    -- excellent for DDL that where the commit incurred by the DDL will not affect the current transaction
-   FUNCTION exec_auto( p_sql VARCHAR2, p_runmode VARCHAR2 DEFAULT NULL )
+   FUNCTION exec_auto( p_sql VARCHAR2 )
       RETURN NUMBER
    AS
       PRAGMA AUTONOMOUS_TRANSACTION;
       l_results   NUMBER;
-      o_td        tdtype := tdtype( p_module => 'exec_auto', p_runmode => p_runmode );
+      o_td        tdtype := tdtype( p_module => 'exec_auto' );
    BEGIN
       IF NOT o_td.is_debugmode
       THEN
@@ -25,27 +25,26 @@ AS
    -- use EXECUTE IMMEDIATE to execute a SQL statement
    -- no AUTONOMOUS_TRANSACTION, so this will execute within the current transaction
    FUNCTION exec_sql(
-      p_sql       VARCHAR2,
-      p_auto      VARCHAR2 DEFAULT 'no',
-      p_msg       VARCHAR2 DEFAULT NULL,
-      p_runmode   VARCHAR2 DEFAULT NULL
+      p_sql    VARCHAR2,
+      p_auto   VARCHAR2 DEFAULT 'no',
+      p_msg    VARCHAR2 DEFAULT NULL
    )
       RETURN NUMBER
    AS
       l_results   NUMBER;
-      o_td        tdtype := tdtype( p_module => 'exec_auto', p_runmode => p_runmode );
+      o_td        tdtype := tdtype( p_module => 'exec_auto' );
    BEGIN
-      o_td.log_msg( CASE
-                       WHEN p_msg IS NULL
-                          THEN 'SQL: ' || p_sql
-                       ELSE p_msg
-                    END, 3 );
+      td_inst.log_msg( CASE
+                          WHEN p_msg IS NULL
+                             THEN 'SQL: ' || p_sql
+                          ELSE p_msg
+                       END, 3 );
 
       IF NOT o_td.is_debugmode
       THEN
          IF td_ext.is_true( p_auto )
          THEN
-            l_results := exec_auto( p_sql => p_sql, p_runmode => o_td.runmode );
+            l_results := exec_auto( p_sql => p_sql );
          ELSE
             EXECUTE IMMEDIATE p_sql;
 
@@ -100,16 +99,16 @@ AS
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
-            raise_application_error( td_ext.get_err_cd( 'no_tab' ),
-                                     td_ext.get_err_msg( 'no_tab' ) || ': ' || l_tab_name
+            raise_application_error( td_inst.get_err_cd( 'no_tab' ),
+                                     td_inst.get_err_msg( 'no_tab' ) || ': ' || l_tab_name
                                    );
       END;
 
       IF l_partitioned = 'yes' AND p_partname IS NULL AND p_compressed IS NOT NULL
       THEN
          raise_application_error
-                        ( td_ext.get_err_cd( 'parms_not_compatible' ),
-                             td_ext.get_err_msg( 'parms_not_compatible' )
+                        ( td_inst.get_err_cd( 'parms_not_compatible' ),
+                             td_inst.get_err_msg( 'parms_not_compatible' )
                           || ': '
                           || 'P_COMPRESSED requires P_PARTNAME when the table is partitioned'
                         );
@@ -119,8 +118,8 @@ AS
       THEN
          IF l_partitioned = 'no'
          THEN
-            raise_application_error( td_ext.get_err_cd( 'not_partitioned' ),
-                                        td_ext.get_err_msg( 'not_partitioned' )
+            raise_application_error( td_inst.get_err_cd( 'not_partitioned' ),
+                                        td_inst.get_err_msg( 'not_partitioned' )
                                      || ': '
                                      || l_tab_name
                                    );
@@ -144,8 +143,8 @@ AS
          EXCEPTION
             WHEN NO_DATA_FOUND
             THEN
-               raise_application_error( td_ext.get_err_cd( 'no_part' ),
-                                           td_ext.get_err_msg( 'no_part' )
+               raise_application_error( td_inst.get_err_cd( 'no_part' ),
+                                           td_inst.get_err_msg( 'no_part' )
                                         || ': '
                                         || l_part_name
                                       );
@@ -156,33 +155,34 @@ AS
          WHEN td_ext.is_true( p_partitioned, TRUE )
               AND NOT td_ext.is_true( l_partitioned )
          THEN
-            raise_application_error( td_ext.get_err_cd( 'not_partitioned' ),
-                                        td_ext.get_err_msg( 'not_partitioned' )
+            raise_application_error( td_inst.get_err_cd( 'not_partitioned' ),
+                                        td_inst.get_err_msg( 'not_partitioned' )
                                      || ': '
                                      || l_tab_name
                                    );
          WHEN NOT td_ext.is_true( p_partitioned, TRUE )
               AND td_ext.is_true( l_partitioned )
          THEN
-            raise_application_error( td_ext.get_err_cd( 'partitioned' ),
-                                        td_ext.get_err_msg( 'partitioned' )
+            raise_application_error( td_inst.get_err_cd( 'partitioned' ),
+                                        td_inst.get_err_msg( 'partitioned' )
                                      || ': '
                                      || l_tab_name
                                    );
          WHEN td_ext.is_true( p_iot, TRUE ) AND NOT td_ext.is_true( l_iot )
          THEN
-            raise_application_error( td_ext.get_err_cd( 'not_iot' ),
-                                     td_ext.get_err_msg( 'not_iot' ) || ': ' || l_tab_name
+            raise_application_error( td_inst.get_err_cd( 'not_iot' ),
+                                     td_inst.get_err_msg( 'not_iot' ) || ': '
+                                     || l_tab_name
                                    );
          WHEN NOT td_ext.is_true( p_iot, TRUE ) AND td_ext.is_true( l_iot )
          THEN
-            raise_application_error( td_ext.get_err_cd( 'iot' ),
-                                     td_ext.get_err_msg( 'iot' ) || ': ' || l_tab_name
+            raise_application_error( td_inst.get_err_cd( 'iot' ),
+                                     td_inst.get_err_msg( 'iot' ) || ': ' || l_tab_name
                                    );
          WHEN td_ext.is_true( p_compressed, TRUE ) AND NOT td_ext.is_true( l_compressed )
          THEN
-            raise_application_error( td_ext.get_err_cd( 'not_compressed' ),
-                                        td_ext.get_err_msg( 'not_compressed' )
+            raise_application_error( td_inst.get_err_cd( 'not_compressed' ),
+                                        td_inst.get_err_msg( 'not_compressed' )
                                      || ': '
                                      || CASE
                                            WHEN p_partname IS NULL
@@ -192,8 +192,8 @@ AS
                                    );
          WHEN NOT td_ext.is_true( p_compressed, TRUE ) AND td_ext.is_true( l_compressed )
          THEN
-            raise_application_error( td_ext.get_err_cd( 'compressed' ),
-                                        td_ext.get_err_msg( 'compressed' )
+            raise_application_error( td_inst.get_err_cd( 'compressed' ),
+                                        td_inst.get_err_msg( 'compressed' )
                                      || ': '
                                      || CASE
                                            WHEN p_partname IS NULL
@@ -214,29 +214,31 @@ AS
       p_object_type   VARCHAR2 DEFAULT NULL
    )
    AS
-      l_obj_name         VARCHAR2( 61 )     := UPPER( p_owner ) || '.'
-      || UPPER( p_object );
-      l_object_type all_objects.object_type%type;
+      l_obj_name      VARCHAR2( 61 )       := UPPER( p_owner ) || '.'
+                                              || UPPER( p_object );
+      l_object_type   all_objects.object_type%TYPE;
    BEGIN
       BEGIN
          SELECT DISTINCT object_type
-           INTO l_object_type
-           FROM all_objects
-          WHERE owner = UPPER( p_owner ) AND object_name = UPPER( p_object )
-	    AND REGEXP_LIKE(object_type,p_object_type,'i');
+                    INTO l_object_type
+                    FROM all_objects
+                   WHERE owner = UPPER( p_owner )
+                     AND object_name = UPPER( p_object )
+                     AND REGEXP_LIKE( object_type, p_object_type, 'i' );
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
-            raise_application_error( td_ext.get_err_cd( 'no_or_wrong_object' ),
-                                     td_ext.get_err_msg( 'no_or_wrong_object' ) || ': ' || l_obj_name
+            raise_application_error( td_inst.get_err_cd( 'no_or_wrong_object' ),
+                                        td_inst.get_err_msg( 'no_or_wrong_object' )
+                                     || ': '
+                                     || l_obj_name
                                    );
-         WHEN too_many_rows
+         WHEN TOO_MANY_ROWS
          THEN
-            raise_application_error( td_ext.get_err_cd( 'too_many_objects' ),
-                                     td_ext.get_err_msg( 'too_many_objects' )
+            raise_application_error( td_inst.get_err_cd( 'too_many_objects' ),
+                                     td_inst.get_err_msg( 'too_many_objects' )
                                    );
       END;
-      
    END check_object;
 END td_sql;
 /

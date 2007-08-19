@@ -11,20 +11,17 @@ AS
       l_detail_id   NUMBER;
       l_message     notify_conf.MESSAGE%TYPE;
       l_results     NUMBER;
-      o_td          tdtype       := tdtype( p_module       => 'process',
-                                            p_runmode      => runmode );
+      o_td          tdtype       := tdtype( p_module       => 'process');
    BEGIN
-      o_td.log_msg( 'Processing extract "' || filehub_name || '"' );
+      td_inst.log_msg( 'Processing extract "' || filehub_name || '"' );
       o_td.change_action( 'Configure NLS formats' );
       -- set date and timestamp NLS formats
       l_results :=
-         td_sql.exec_sql( p_sql          => dateformat_ddl,
-                          p_runmode      => runmode,
+         td_sql.exec_sql( p_sql          => dateformat_ddl
                           p_msg          => 'nls_date_format DDL: '
                         );
       l_results :=
-         td_sql.exec_sql( p_sql          => tsformat_ddl,
-                          p_runmode      => runmode,
+         td_sql.exec_sql( p_sql          => tsformat_ddl
                           p_msg          => 'nls_timestamp_format DDL: '
                         );
       o_td.change_action( 'Extract data' );
@@ -36,10 +33,9 @@ AS
                                  p_filename       => arch_filename,
                                  p_delimiter      => delimiter,
                                  p_quotechar      => quotechar,
-                                 p_headers        => headers,
-                                 p_runmode        => SELF.runmode
+                                 p_headers        => headers
                                );
-      o_td.log_msg(    l_numlines
+      td_inst.log_msg(    l_numlines
                     || ' '
                     || CASE l_numlines
                           WHEN 1
@@ -52,18 +48,17 @@ AS
       l_file_dt := SYSDATE;
       -- copy the file to the target location
       td_core.copy_file( p_srcfile      => arch_filepath,
-                         p_dstfile      => filepath,
-                         p_runmode      => SELF.runmode
+                         p_dstfile      => filepath
                        );
-      o_td.log_msg( 'Archive file ' || arch_filepath || ' copied to destination '
+      td_inst.log_msg( 'Archive file ' || arch_filepath || ' copied to destination '
                     || filepath
                   );
 
       -- get file attributes
-      IF SELF.is_debugmode
+      IF o_td.is_debugmode
       THEN
          l_num_bytes := 0;
-         o_td.log_msg( 'Reporting 0 size file in debug mode' );
+         td_inst.log_msg( 'Reporting 0 size file in debug mode' );
       ELSE
          UTL_FILE.fgetattr( DIRECTORY, filename, l_exists, l_num_bytes, l_blocksize );
       END IF;

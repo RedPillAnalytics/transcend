@@ -1,17 +1,30 @@
 CREATE OR REPLACE PACKAGE BODY td_control
 IS
+   -- begins debug mode
+   PROCEDURE start_debug
+   AS
+   BEGIN
+      td_inst.runmode( 'debug' );
+   END start_debug;
+
+   -- begins debug mode
+   PROCEDURE stop_debug
+   AS
+   BEGIN
+      td_inst.runmode( 'debug' );
+   END stop_debug;
+
 -- provide an accessor and get a priority
-   FUNCTION get_priority(
-      p_accessor    VARCHAR2
-   )
+   FUNCTION get_priority( p_accessor VARCHAR2 )
       RETURN NUMBER
    AS
-      l_priority NUMBER;
+      l_priority   NUMBER;
    BEGIN
       SELECT priority
-	INTO l_priority
-	FROM priority_conf
-       WHERE accessor = lower(p_accessor);
+        INTO l_priority
+        FROM priority_conf
+       WHERE accessor = LOWER( p_accessor );
+
       RETURN l_priority;
    END get_priority;
 
@@ -131,9 +144,8 @@ IS
                      );
       END IF;
    END set_session_parameter;
-   
-   PROCEDURE set_priority( p_accessor VARCHAR2, 
-			   p_priority NUMBER )
+
+   PROCEDURE set_priority( p_accessor VARCHAR2, p_priority NUMBER )
    IS
    BEGIN
       UPDATE priority_conf
@@ -151,7 +163,6 @@ IS
                      );
       END IF;
    END set_priority;
-   
 
    PROCEDURE clear_log(
       p_runmode      VARCHAR2 DEFAULT NULL,

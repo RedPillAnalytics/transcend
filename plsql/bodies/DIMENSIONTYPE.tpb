@@ -27,8 +27,8 @@ as
                      o_td.change_action( 'location file missing' );
                      o_td.send( p_module_id => SELF.filehub_id );
                      raise_application_error
-                                            ( td_ext.get_err_cd( 'location_file_missing' ),
-                                              td_ext.get_err_msg( 'location_file_missing' )
+                                            ( td_inst.get_err_cd( 'location_file_missing' ),
+                                              td_inst.get_err_msg( 'location_file_missing' )
                                             );
                   ELSE
                      o_td.log_msg( 'Unknown data cartridge error' );
@@ -44,8 +44,8 @@ as
                o_td.change_action( 'reject limit exceeded' );
                -- notify if reject limit is exceeded
                o_td.send( p_module_id => SELF.filehub_id );
-               raise_application_error( td_ext.get_err_cd( 'reject_limit_exceeded' ),
-                                        td_ext.get_err_msg( 'reject_limit_exceeded' )
+               raise_application_error( td_inst.get_err_cd( 'reject_limit_exceeded' ),
+                                        td_inst.get_err_msg( 'reject_limit_exceeded' )
                                       );
             END IF;
          EXCEPTION
@@ -71,8 +71,8 @@ as
    EXCEPTION
       WHEN e_no_table
       THEN
-         raise_application_error( td_ext.get_err_cd( 'no_tab' ),
-                                     td_ext.get_err_msg( 'no_tab' )
+         raise_application_error( td_inst.get_err_cd( 'no_tab' ),
+                                     td_inst.get_err_msg( 'no_tab' )
                                   || ': '
                                   || SELF.object_owner
                                   || '.'

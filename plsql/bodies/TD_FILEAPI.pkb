@@ -37,15 +37,13 @@ IS
    PROCEDURE process_files(
       p_filehub_group   VARCHAR2,
       p_filehub_name    VARCHAR2 DEFAULT NULL,
-      p_keep_source     VARCHAR2 DEFAULT 'no',
-      p_runmode         VARCHAR2 DEFAULT NULL
+      p_keep_source     VARCHAR2 DEFAULT 'no'
    )
    IS
       l_rows      BOOLEAN     := FALSE;                         -- TO catch empty cursors
       o_extract   extracttype;
       o_feed      feedtype;
-      o_td        tdtype  := tdtype( p_module       => 'process_file',
-                                     p_runmode      => p_runmode );
+      o_td        tdtype      := tdtype( p_module => 'process_file' );
    BEGIN
       FOR c_fh_conf IN ( SELECT  filehub_id, filehub_type
                             FROM filehub_conf
@@ -68,7 +66,6 @@ IS
                  FROM extract_ot t
                 WHERE t.filehub_id = c_fh_conf.filehub_id;
 
-               o_extract.runmode := o_td.runmode;
                o_extract.process;
             WHEN 'feed'
             THEN
@@ -77,7 +74,6 @@ IS
                  FROM feed_ot t
                 WHERE t.filehub_id = c_fh_conf.filehub_id;
 
-               o_feed.runmode := o_td.runmode;
                o_feed.process( p_keep_source );
             ELSE
                NULL;
@@ -90,8 +86,8 @@ IS
       -- no matching filehub entries are found
       IF NOT l_rows
       THEN
-         raise_application_error( td_ext.get_err_cd( 'incorrect_parameters' ),
-                                  td_ext.get_err_msg( 'incorrect_parameters' )
+         raise_application_error( td_inst.get_err_cd( 'incorrect_parameters' ),
+                                  td_inst.get_err_msg( 'incorrect_parameters' )
                                 );
       END IF;
 

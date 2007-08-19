@@ -4,11 +4,11 @@ AS
    AS
       e_smtp_error   EXCEPTION;
       PRAGMA EXCEPTION_INIT (e_smtp_error, -29279);
-      o_app          apptype    := apptype (p_module => 'send', p_runmode => SELF.runmode);
+      o_app          apptype    := apptype (p_module => 'send');
    BEGIN
       IF td_ext.is_true (notify_enabled)
       THEN
-         IF NOT SELF.is_debugmode
+         IF NOT o_app.is_debugmode
          THEN
             BEGIN
                UTL_MAIL.send (sender          => sender,
@@ -19,12 +19,12 @@ AS
             EXCEPTION
                WHEN e_smtp_error
                THEN
-                  o_app.log_msg ('The following SMTP error occured:' || SQLERRM);
+                  td_inst.log_msg ('The following SMTP error occured:' || SQLERRM);
             END;
          END IF;
 
-         o_app.log_msg ('Email sent to: ' || recipients);
-         o_app.log_msg (   'Email Information:'
+         td_inst.log_msg ('Email sent to: ' || recipients);
+         td_inst.log_msg (   'Email Information:'
                         || CHR (10)
                         || 'Sender: '
                         || sender

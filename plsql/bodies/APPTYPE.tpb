@@ -13,6 +13,8 @@ AS
       read_prev_info;
       -- first we need to populate the module attribute, because it helps us determine parameter values
       td_inst.module(LOWER( CASE
+			    WHEN REGEXP_LIKE(get_package_name,'anonymous block','i') AND p_module IS NOT null
+			    THEN p_module
 			    WHEN p_module IS NULL
 			    THEN get_package_name
 			    ELSE get_package_name || '.' || p_module

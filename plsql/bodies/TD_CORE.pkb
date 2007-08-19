@@ -1,14 +1,10 @@
 CREATE OR REPLACE PACKAGE BODY td_core
 AS
    -- procedure executes the host_cmd function and raises an exception with the return code
-   PROCEDURE host_cmd(
-      p_cmd       VARCHAR2,
-      p_stdin     VARCHAR2 DEFAULT ' ',
-      p_runmode   VARCHAR2 DEFAULT NULL
-   )
+   PROCEDURE host_cmd( p_cmd VARCHAR2, p_stdin VARCHAR2 DEFAULT ' ' )
    AS
       l_retval   NUMBER;
-      o_td       tdtype := tdtype( p_module => 'host_cmd', p_runmode => p_runmode );
+      o_td       tdtype := tdtype( p_module => 'host_cmd' );
    BEGIN
       DBMS_JAVA.set_output( 1000000 );
 
@@ -25,7 +21,7 @@ AS
          END IF;
       END IF;
 
-      o_td.log_msg( 'Host command: ' || p_cmd, 3 );
+      td_inst.log_msg( 'Host command: ' || p_cmd, 3 );
       o_td.clear_app_info;
    EXCEPTION
       WHEN OTHERS
@@ -35,14 +31,10 @@ AS
    END host_cmd;
 
    -- procedure executes the copy_file function and raises an exception with the return code
-   PROCEDURE copy_file(
-      p_srcfile   VARCHAR2,
-      p_dstfile   VARCHAR2,
-      p_runmode   VARCHAR2 DEFAULT NULL
-   )
+   PROCEDURE copy_file( p_srcfile VARCHAR2, p_dstfile VARCHAR2 )
    AS
       l_retval   NUMBER;
-      o_td       tdtype := tdtype( p_module => 'copy_file', p_runmode => p_runmode );
+      o_td       tdtype := tdtype( p_module => 'copy_file' );
    BEGIN
       DBMS_JAVA.set_output( 1000000 );
 
@@ -62,7 +54,7 @@ AS
          END IF;
       END IF;
 
-      o_td.log_msg( 'File ' || p_srcfile || ' copied to ' || p_dstfile, 3 );
+      td_inst.log_msg( 'File ' || p_srcfile || ' copied to ' || p_dstfile, 3 );
       o_td.clear_app_info;
    END copy_file;
 
@@ -140,8 +132,8 @@ AS
    BEGIN
       IF NOT table_exists( UPPER( p_owner ), UPPER( p_table ))
       THEN
-         raise_application_error( td_ext.get_err_cd( 'no_tab' ),
-                                     td_ext.get_err_msg( 'no_tab' )
+         raise_application_error( td_inst.get_err_cd( 'no_tab' ),
+                                     td_inst.get_err_msg( 'no_tab' )
                                   || ': '
                                   || p_owner
                                   || '.'
@@ -188,16 +180,11 @@ AS
    END object_exists;
 
    -- uses UTL_FILE to remove an OS level file
-   PROCEDURE delete_file(
-      p_directory   VARCHAR2,
-      p_filename    VARCHAR2,
-      p_runmode     VARCHAR2 DEFAULT NULL
-   )
+   PROCEDURE delete_file( p_directory VARCHAR2, p_filename VARCHAR2 )
    AS
       l_retval     NUMBER;
       l_filepath   VARCHAR2( 100 );
-      o_td         tdtype  := tdtype( p_module       => 'delete_file',
-                                      p_runmode      => p_runmode );
+      o_td         tdtype          := tdtype( p_module => 'delete_file' );
    BEGIN
       l_filepath := get_dir_path( p_directory ) || '/' || p_filename;
 
@@ -206,20 +193,16 @@ AS
          UTL_FILE.fremove( p_directory, p_filename );
       END IF;
 
-      o_td.log_msg( 'File ' || l_filepath || ' deleted', 3 );
+      td_inst.log_msg( 'File ' || l_filepath || ' deleted', 3 );
       o_td.clear_app_info;
    EXCEPTION
       WHEN UTL_FILE.invalid_operation
       THEN
-         o_td.log_msg( l_filepath || ' could not be deleted, or does not exist' );
+         td_inst.log_msg( l_filepath || ' could not be deleted, or does not exist' );
    END delete_file;
 
    -- uses UTL_FILE to "touch" a file
-   PROCEDURE create_file(
-      p_directory   VARCHAR2,
-      p_filename    VARCHAR2,
-      p_runmode     VARCHAR2 DEFAULT NULL
-   )
+   PROCEDURE create_file( p_directory VARCHAR2, p_filename VARCHAR2 )
    AS
       l_fh        UTL_FILE.file_type;
       l_dirpath   VARCHAR2( 100 );
@@ -232,27 +215,22 @@ AS
          l_fh := UTL_FILE.fopen( p_directory, p_filename, 'W' );
       END IF;
 
-      o_td.log_msg( 'File ' || l_dirpath || ' created', 3 );
+      td_inst.log_msg( 'File ' || l_dirpath || ' created', 3 );
       o_td.clear_app_info;
    END create_file;
 
    -- get the number of lines in a file
-   FUNCTION get_numlines(
-      p_dirname    IN   VARCHAR2,                       -- this is a directory object name
-      p_filename   IN   VARCHAR2,                                  -- the name of the file
-      p_runmode         VARCHAR2 DEFAULT NULL
-   )                                                                         -- debug mode
-      RETURN NUMBER                                                     -- number of lines
+   FUNCTION get_numlines( p_dirname IN VARCHAR2, p_filename IN VARCHAR2 )
+      RETURN NUMBER
    AS
       l_fh     UTL_FILE.file_type;
       l_line   VARCHAR2( 2000 );
       l_cnt    NUMBER             := 0;
-      o_td     tdtype     := tdtype( p_module       => 'get_numlines',
-                                     p_runmode      => p_runmode );
+      o_td     tdtype             := tdtype( p_module => 'get_numlines' );
    BEGIN
       IF o_td.is_debugmode
       THEN
-         o_td.log_msg( o_td.module || ' returning 0 because of DEBUG mode' );
+         td_inst.log_msg( o_td.module || ' returning 0 because of DEBUG mode' );
          o_td.clear_app_info;
          RETURN 0;
       ELSE
@@ -276,11 +254,7 @@ AS
    -- a function used to unzip a file regardless of which library was used to zip it
    -- currently contains functionality for the following libraries: gzip, zip, compress, and bzip2
    -- function returns what the name should be after the unzip process
-   FUNCTION unzip_file(
-      p_dirpath    VARCHAR2,
-      p_filename   VARCHAR2,
-      p_runmode    VARCHAR2 DEFAULT NULL
-   )
+   FUNCTION unzip_file( p_dirpath VARCHAR2, p_filename VARCHAR2 )
       RETURN VARCHAR2
    AS
       l_compressed     BOOLEAN         := TRUE;
@@ -293,32 +267,32 @@ AS
       l_file_exists    BOOLEAN;
       l_file_size      NUMBER;
       l_blocksize      NUMBER;
-      o_td             tdtype
-                            := tdtype( p_module       => 'unzip_file',
-                                       p_runmode      => p_runmode );
+      o_td             tdtype          := tdtype( p_module => 'unzip_file' );
    BEGIN
       l_filebase := REGEXP_REPLACE( p_filename, '\.[^\.]+$', NULL, 1, 1, 'i' );
       l_filesuf := REGEXP_SUBSTR( p_filename, '[^\.]+$' );
       l_filebasepath := p_dirpath || '/' || l_filebase;
-      o_td.log_msg( l_filepath || ' checked for compression using standard libraries', 3 );
+      td_inst.log_msg( l_filepath || ' checked for compression using standard libraries',
+                       3
+                     );
 
       CASE l_filesuf
          WHEN 'gz'
          THEN
-            host_cmd( 'gzip -df ' || l_filepath, p_runmode => o_td.runmode );
-            o_td.log_msg( l_filepath || ' gunzipped', 3 );
+            host_cmd( 'gzip -df ' || l_filepath );
+            td_inst.log_msg( l_filepath || ' gunzipped', 3 );
          WHEN 'Z'
          THEN
-            host_cmd( 'uncompress ' || l_filepath, p_runmode => o_td.runmode );
-            o_td.log_msg( l_filepath || ' uncompressed', 3 );
+            host_cmd( 'uncompress ' || l_filepath );
+            td_inst.log_msg( l_filepath || ' uncompressed', 3 );
          WHEN 'bz2'
          THEN
-            host_cmd( 'bunzip2 ' || l_filepath, p_runmode => o_td.runmode );
-            o_td.log_msg( l_filepath || ' bunzipped', 3 );
+            host_cmd( 'bunzip2 ' || l_filepath );
+            td_inst.log_msg( l_filepath || ' bunzipped', 3 );
          WHEN 'zip'
          THEN
-            host_cmd( 'unzip ' || l_filepath, p_runmode => o_td.runmode );
-            o_td.log_msg( l_filepath || ' unzipped', 3 );
+            host_cmd( 'unzip ' || l_filepath );
+            td_inst.log_msg( l_filepath || ' unzipped', 3 );
          ELSE
             -- this is the only case where the file wasn't compressed
             l_compressed := FALSE;
@@ -335,7 +309,7 @@ AS
 
       IF o_td.is_debugmode
       THEN
-         o_td.log_msg( 'File returned by UNZIP_FILE: ' || l_return );
+         td_inst.log_msg( 'File returned by UNZIP_FILE: ' || l_return );
       ELSE
          o_td.change_action( 'Check for extracted file' );
          -- check and make sure the unzip process worked
@@ -349,8 +323,8 @@ AS
 
          IF NOT l_file_exists
          THEN
-            raise_application_error( td_ext.get_err_cd( 'file_not_found' ),
-                                     td_ext.get_err_msg( 'file_not_found' )
+            raise_application_error( td_inst.get_err_cd( 'file_not_found' ),
+                                     td_inst.get_err_msg( 'file_not_found' )
                                    );
          END IF;
       END IF;
@@ -362,12 +336,7 @@ AS
    -- a function used to decrypt a file regardless of which method was used to encrypt it
    -- currently contains functionality for the following encryption methods: gpg
    -- function returns what the name should be after the decryption process
-   FUNCTION decrypt_file(
-      p_dirpath      VARCHAR2,
-      p_filename     VARCHAR2,
-      p_passphrase   VARCHAR2,
-      p_runmode      VARCHAR2 DEFAULT NULL
-   )
+   FUNCTION decrypt_file( p_dirpath VARCHAR2, p_filename VARCHAR2, p_passphrase VARCHAR2 )
       RETURN VARCHAR2
    AS
       l_encrypted      BOOLEAN         := TRUE;
@@ -380,9 +349,7 @@ AS
       l_file_exists    BOOLEAN;
       l_file_size      NUMBER;
       l_blocksize      NUMBER;
-      o_td             tdtype
-                          := tdtype( p_module       => 'decrypt_file',
-                                     p_runmode      => p_runmode );
+      o_td             tdtype          := tdtype( p_module => 'decrypt_file' );
    BEGIN
       l_filebase := REGEXP_REPLACE( p_filename, '\.[^\.]+$', NULL, 1, 1, 'i' );
       l_filesuf := REGEXP_SUBSTR( p_filename, '[^\.]+$' );
@@ -395,8 +362,7 @@ AS
                       || l_filepath
                       || ' '
                       || l_filebasepath,
-                      p_passphrase,
-                      p_runmode      => o_td.runmode
+                      p_passphrase
                     );
          ELSE
             -- this is the only case where the extension wasn't recognized
@@ -414,7 +380,7 @@ AS
 
       IF o_td.is_debugmode
       THEN
-         o_td.log_msg( 'File returned by DECRYPT_FILE: ' || l_return );
+         td_inst.log_msg( 'File returned by DECRYPT_FILE: ' || l_return );
       ELSE
          o_td.change_action( 'Check for decrypted file' );
          -- check and make sure the unzip process worked
@@ -445,8 +411,7 @@ AS
       p_filename    VARCHAR2,
       p_delimiter   VARCHAR2 DEFAULT '|',
       p_quotechar   VARCHAR2 DEFAULT '',
-      p_append      VARCHAR2 DEFAULT 'no',
-      p_runmode     VARCHAR2 DEFAULT NULL
+      p_append      VARCHAR2 DEFAULT 'no'
    )
       RETURN NUMBER
    AS
@@ -467,9 +432,7 @@ AS
       l_blocksize     NUMBER;
       e_no_var        EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_var, -1007 );
-      o_td            tdtype
-                         := tdtype( p_module       => 'extract_query',
-                                    p_runmode      => p_runmode );
+      o_td            tdtype             := tdtype( p_module => 'extract_query' );
    BEGIN
       l_output := UTL_FILE.fopen( p_dirname, p_filename, l_mode, 32767 );
       DBMS_SQL.parse( l_thecursor, p_query, DBMS_SQL.native );
@@ -530,17 +493,14 @@ AS
       p_delimiter   VARCHAR2 DEFAULT '|',
       p_quotechar   VARCHAR2 DEFAULT '',
       p_headers     VARCHAR2 DEFAULT 'yes',
-      p_append      VARCHAR2 DEFAULT 'no',
-      p_runmode     VARCHAR2 DEFAULT NULL
+      p_append      VARCHAR2 DEFAULT 'no'
    )
       RETURN NUMBER
    IS
       l_cnt           NUMBER           := 0;
       l_head_sql      VARCHAR( 1000 );
       l_extract_sql   VARCHAR2( 1000 );
-      o_td            tdtype
-                        := tdtype( p_module       => 'extract_object',
-                                   p_runmode      => p_runmode );
+      o_td            tdtype           := tdtype( p_module => 'extract_object' );
    BEGIN
       -- check that the source object exists and is something we can select from
       td_sql.check_object( p_owner            => p_owner,
@@ -563,8 +523,8 @@ AS
          || UPPER( p_owner )
          || ''' order by column_id)';
       l_extract_sql := 'select * from ' || p_owner || '.' || p_object;
-      o_td.log_msg( 'Headers query: ' || l_head_sql, 3 );
-      o_td.log_msg( 'Extract query: ' || l_extract_sql, 3 );
+      td_inst.log_msg( 'Headers query: ' || l_head_sql, 3 );
+      td_inst.log_msg( 'Extract query: ' || l_extract_sql, 3 );
 
       IF NOT o_td.is_debugmode
       THEN
@@ -577,8 +537,7 @@ AS
                               p_filename       => p_filename,
                               p_delimiter      => p_delimiter,
                               p_quotechar      => NULL,
-                              p_append         => p_append,
-                              p_runmode        => p_runmode
+                              p_append         => p_append
                             );
          END IF;
 
@@ -590,8 +549,7 @@ AS
                              p_filename       => p_filename,
                              p_delimiter      => p_delimiter,
                              p_quotechar      => p_quotechar,
-                             p_append         => p_append,
-                             p_runmode        => p_runmode
+                             p_append         => p_append
                            );
       END IF;
 

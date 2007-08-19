@@ -12,17 +12,15 @@ AS
       PRAGMA EXCEPTION_INIT( e_no_table, -942 );
       e_no_files         EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_files, -1756 );
-      o_td               tdtype
-                      := tdtype( p_module       => 'audit_ext_tab',
-                                 p_runmode      => SELF.runmode );
+      o_td               tdtype          := tdtype( p_module => 'audit_ext_tab' );
    BEGIN
       -- type object which handles logging and application registration for instrumentation purposes
       -- defaults to registering with DBMS_APPLICATION_INFO
       o_td.change_action( 'Get count from table' );
       l_sql := 'SELECT count(*) FROM ' || SELF.object_owner || '.' || SELF.object_name;
-      o_td.log_msg( 'Count SQL: ' || l_sql, 3 );
+      td_inst.log_msg( 'Count SQL: ' || l_sql, 3 );
 
-      IF NOT SELF.is_debugmode
+      IF NOT o_td.is_debugmode
       THEN
          BEGIN
             EXECUTE IMMEDIATE l_sql
@@ -37,11 +35,11 @@ AS
                      o_td.change_action( 'location file missing' );
                      o_td.send( p_module_id => SELF.filehub_id );
                      raise_application_error
-                                            ( td_ext.get_err_cd( 'location_file_missing' ),
-                                              td_ext.get_err_msg( 'location_file_missing' )
-                                            );
+                                           ( td_inst.get_err_cd( 'location_file_missing' ),
+                                             td_inst.get_err_msg( 'location_file_missing' )
+                                           );
                   ELSE
-                     o_td.log_msg( 'Unknown data cartridge error' );
+                     td_inst.log_msg( 'Unknown data cartridge error' );
                END CASE;
          END;
 
@@ -54,14 +52,14 @@ AS
                o_td.change_action( 'reject limit exceeded' );
                -- notify if reject limit is exceeded
                o_td.send( p_module_id => SELF.filehub_id );
-               raise_application_error( td_ext.get_err_cd( 'reject_limit_exceeded' ),
-                                        td_ext.get_err_msg( 'reject_limit_exceeded' )
+               raise_application_error( td_inst.get_err_cd( 'reject_limit_exceeded' ),
+                                        td_inst.get_err_msg( 'reject_limit_exceeded' )
                                       );
             END IF;
          EXCEPTION
             WHEN ZERO_DIVIDE
             THEN
-               o_td.log_msg( 'External table location is an empty file' );
+               td_inst.log_msg( 'External table location is an empty file' );
          END;
 
          INSERT INTO filehub_obj_detail
@@ -81,8 +79,8 @@ AS
    EXCEPTION
       WHEN e_no_table
       THEN
-         raise_application_error( td_ext.get_err_cd( 'no_tab' ),
-                                     td_ext.get_err_msg( 'no_tab' )
+         raise_application_error( td_inst.get_err_cd( 'no_tab' ),
+                                     td_inst.get_err_msg( 'no_tab' )
                                   || ': '
                                   || SELF.object_owner
                                   || '.'
@@ -105,11 +103,9 @@ AS
       l_results        NUMBER;
       e_no_files       EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_files, -1756 );
-      o_td             tdtype
-                            := tdtype( p_module       => 'process',
-                                       p_runmode      => SELF.runmode );
+      o_td             tdtype                     := tdtype( p_module => 'process' );
    BEGIN
-      o_td.log_msg( 'Processing feed "' || filehub_name || '"' );
+      td_inst.log_msg( 'Processing feed "' || filehub_name || '"' );
       o_td.change_action( 'Evaluate source directory' );
 
       -- first we remove all current files in the external table
@@ -123,12 +119,12 @@ AS
                          ORDER BY LOCATION )
       LOOP
          l_rows_delete := TRUE;
-         td_core.delete_file( c_location.DIRECTORY, c_location.LOCATION, runmode );
+         td_core.delete_file( c_location.DIRECTORY, c_location.LOCATION );
       END LOOP;
 
       IF l_rows_delete
       THEN
-         o_td.log_msg( 'Previous external table location files removed' );
+         td_inst.log_msg( 'Previous external table location files removed' );
       END IF;
 
       -- now we need to see all the source files in the source directory that match the regular expression
@@ -297,9 +293,8 @@ AS
          l_numlines := 0;
          -- copy file to the archive location
          o_td.change_action( 'Copy archivefile' );
-         td_core.copy_file( c_dir_list.source_filepath, c_dir_list.arch_filepath,
-                            runmode );
-         o_td.log_msg( 'Archive file ' || c_dir_list.arch_filepath || ' created' );
+         td_core.copy_file( c_dir_list.source_filepath, c_dir_list.arch_filepath );
+         td_inst.log_msg( 'Archive file ' || c_dir_list.arch_filepath || ' created' );
          -- copy the file to the external table
          o_td.change_action( 'Copy external table files' );
 
@@ -315,44 +310,36 @@ AS
             l_files_url := c_dir_list.files_url;
             -- first move the file to the target destination without changing the name
             -- because the file might be zipped or encrypted
-            td_core.copy_file( c_dir_list.arch_filepath,
-                               c_dir_list.pre_mv_filepath,
-                               runmode
-                             );
+            td_core.copy_file( c_dir_list.arch_filepath, c_dir_list.pre_mv_filepath );
             -- decrypt the file if it's encrypted
             -- currently only supports gpg
             -- decrypt_file will return the decrypted filename
             -- IF the file isn't a recognized encrypted file type, it just returns the name passed
             l_filepath :=
-               td_core.decrypt_file( dirpath,
-                                     c_dir_list.source_filename,
-                                     SELF.passphrase,
-                                     runmode
-                                   );
+               td_core.decrypt_file( dirpath, c_dir_list.source_filename,
+                                     SELF.passphrase );
             -- unzip the file if it's zipped
             -- currently will unzip, or gunzip, or bunzip2 or uncompress
             -- unzip_file will return the unzipped filename
             -- IF the file isn't a recognized zip archive file, it just returns the name passed
-            l_filepath :=
-                        td_core.unzip_file( dirpath, c_dir_list.source_filename, runmode );
+            l_filepath := td_core.unzip_file( dirpath, c_dir_list.source_filename );
                  -- now move the file to the expected name
             -- do this with a copy/delete
-            td_core.copy_file( l_filepath, c_dir_list.filepath, runmode );
-            td_core.delete_file( DIRECTORY, l_filepath, runmode );
-            o_td.log_msg(    'Source file '
-                          || c_dir_list.source_filepath
-                          || ' moved to destination '
-                          || c_dir_list.filepath
-                        );
+            td_core.copy_file( l_filepath, c_dir_list.filepath );
+            td_core.delete_file( DIRECTORY, l_filepath );
+            td_inst.log_msg(    'Source file '
+                             || c_dir_list.source_filepath
+                             || ' moved to destination '
+                             || c_dir_list.filepath
+                           );
             -- get the number of lines in the file now that it is decrypted and uncompressed
-            l_numlines :=
-                      td_core.get_numlines( SELF.DIRECTORY, c_dir_list.filename, runmode );
+            l_numlines := td_core.get_numlines( SELF.DIRECTORY, c_dir_list.filename );
             -- get a total count of all the lines in all the files making up the external table
             l_sum_numlines := l_sum_numlines + l_numlines;
          END IF;
 
          -- WRITE an audit record for the file that was just archived
-         IF NOT SELF.is_debugmode
+         IF NOT o_td.is_debugmode
          THEN
             o_td.change_action( 'Audit feed' );
             SELF.audit_file( p_source_filepath      => c_dir_list.source_filepath,
@@ -375,7 +362,7 @@ AS
 
          IF NOT td_ext.is_true( p_keep_source )
          THEN
-            td_core.delete_file( source_directory, c_dir_list.source_filename, runmode );
+            td_core.delete_file( source_directory, c_dir_list.source_filename );
          END IF;
       END LOOP;
 
@@ -385,8 +372,8 @@ AS
       CASE
          WHEN NOT l_rows_dirlist AND required = 'Y'
          THEN
-            raise_application_error( td_ext.get_err_cd( 'no_files_found' ),
-                                     td_ext.get_err_msg( 'no_files_found' )
+            raise_application_error( td_inst.get_err_cd( 'no_files_found' ),
+                                     td_inst.get_err_msg( 'no_files_found' )
                                    );
          -- there were no matching files for this configuration
          -- however, the REQUIRED attribute is N
@@ -396,7 +383,7 @@ AS
          -- an external table with a zero-byte file gives "no rows returned"
       WHEN NOT l_rows_dirlist AND required = 'N'
          THEN
-            o_td.log_msg( 'No files found... but none are required' );
+            td_inst.log_msg( 'No files found... but none are required' );
             o_td.change_action( 'Empty previous files' );
 
             FOR c_location IN ( SELECT DIRECTORY, LOCATION
@@ -404,7 +391,7 @@ AS
                                 WHERE owner = UPPER( object_owner )
                                   AND table_name = UPPER( object_name ))
             LOOP
-               td_core.create_file( c_location.DIRECTORY, c_location.LOCATION, runmode );
+               td_core.create_file( c_location.DIRECTORY, c_location.LOCATION );
             END LOOP;
          WHEN l_rows_dirlist AND LOWER( source_policy ) = 'all'
          -- matching files found, so ignore
@@ -413,22 +400,18 @@ AS
             o_td.change_action( 'Alter external table' );
 
             BEGIN
-               l_results :=
-                  td_sql.exec_sql( p_sql          => l_ext_tab_ddl,
-                                   p_runmode      => SELF.runmode,
-                                   p_auto         => 'yes'
-                                 );
-               o_td.log_msg(    'External table '
-                             || object_owner
-                             || '.'
-                             || object_name
-                             || ' altered'
-                           );
+               l_results := td_sql.exec_sql( p_sql => l_ext_tab_ddl, p_auto => 'yes' );
+               td_inst.log_msg(    'External table '
+                                || object_owner
+                                || '.'
+                                || object_name
+                                || ' altered'
+                              );
             EXCEPTION
                WHEN e_no_files
                THEN
-                  raise_application_error( td_ext.get_err_cd( 'no_ext_files' ),
-                                           td_ext.get_err_msg( 'no_ext_files' )
+                  raise_application_error( td_inst.get_err_cd( 'no_ext_files' ),
+                                           td_inst.get_err_msg( 'no_ext_files' )
                                          );
             END;
 

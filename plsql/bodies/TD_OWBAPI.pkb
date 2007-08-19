@@ -12,14 +12,14 @@ AS
       p_index_regexp    VARCHAR2 DEFAULT NULL,
       p_index_type      VARCHAR2 DEFAULT NULL,
       p_part_type       VARCHAR2 DEFAULT NULL,
-      p_oper_id         NUMBER DEFAULT NULL,
-      p_runmode         VARCHAR2 DEFAULT NULL
+      p_batch_id        NUMBER DEFAULT NULL
    )
    AS
-      o_td   tdtype := tdtype( p_module => 'start_map_control', p_runmode => p_runmode );
+      o_td   tdtype := tdtype( p_module => 'start_map_control' );
    BEGIN
       o_td.change_action( REGEXP_SUBSTR( o_td.whence, '\S+$', 1, 1, 'i' ));
-      o_td.log_msg( 'Beginning OWB mapping', p_oper_id => p_oper_id );
+      td_inst.batch_id( p_batch_id );
+      td_inst.log_msg( 'Beginning OWB mapping' );
 
       -- see whether or not to call UNUSABLE_INDEXES
       IF p_owner IS NOT NULL AND p_table IS NOT NULL
@@ -34,8 +34,7 @@ AS
                                     p_p_num              => NVL( p_p_num, 65535 ),
                                     p_index_regexp       => p_index_regexp,
                                     p_index_type         => p_index_type,
-                                    p_part_type          => p_part_type,
-                                    p_runmode            => o_td.runmode
+                                    p_part_type          => p_part_type
                                   );
       END IF;
    EXCEPTION
@@ -54,12 +53,10 @@ AS
       p_idx_tablespace   VARCHAR2 DEFAULT NULL,
       p_index_drop       VARCHAR2 DEFAULT NULL,
       p_handle_fkeys     VARCHAR2 DEFAULT NULL,
-      p_statistics       VARCHAR2 DEFAULT NULL,
-      p_oper_id          NUMBER DEFAULT NULL,
-      p_runmode          VARCHAR2 DEFAULT NULL
+      p_statistics       VARCHAR2 DEFAULT NULL
    )
    AS
-      o_td   tdtype := tdtype( p_module => 'end_map_control', p_runmode => p_runmode );
+      o_td   tdtype := tdtype( p_module => 'end_map_control' );
    BEGIN
       o_td.change_action( REGEXP_SUBSTR( o_td.whence, '\S+$', 1, 1, 'i' ));
 
@@ -77,17 +74,16 @@ AS
                                          p_handle_fkeys        => NVL( p_handle_fkeys,
                                                                        'yes'
                                                                      ),
-                                         p_statistics          => p_statistics,
-                                         p_runmode             => o_td.runmode
+                                         p_statistics          => p_statistics
                                        );
          WHEN p_owner IS NOT NULL AND p_table IS NOT NULL
          THEN
-            td_dbapi.usable_indexes( p_owner, p_table, p_runmode => o_td.runmode );
+            td_dbapi.usable_indexes( p_owner, p_table );
          ELSE
             NULL;
       END CASE;
 
-      o_td.log_msg( 'Ending OWB mapping', p_oper_id => p_oper_id );
+      td_inst.log_msg( 'Ending OWB mapping' );
       o_td.clear_app_info;
    END end_map_control;
 END td_owbapi;
