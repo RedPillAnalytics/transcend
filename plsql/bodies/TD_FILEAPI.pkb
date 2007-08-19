@@ -95,7 +95,7 @@ IS
    EXCEPTION
       WHEN OTHERS
       THEN
-         o_td.log_err;
+         td_inst.log_err;
          ROLLBACK;
          RAISE;
    END process_files;
