@@ -2,8 +2,7 @@ CREATE OR REPLACE VIEW dimension_ot
 OF dimensiontype
 WITH object identifier (owner, table_name)
 as
-SELECT cast('runtime' AS VARCHAR2(10)) runmode,
-       owner,
+SELECT owner,
        table_name,
        source_owner,
        source_object,
