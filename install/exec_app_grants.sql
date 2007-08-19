@@ -11,7 +11,7 @@ CREATE ROLE &app_schema_eag._app;
 -- grant execute on components to this role
 GRANT EXECUTE ON STRING_AGG_TYPE to &app_schema_eag._app;
 GRANT EXECUTE ON TD_EXT to &app_schema_eag._app;
-GRANT EXECUTE ON BASETYPE to &app_schema_eag._app;
+GRANT EXECUTE ON TD_INST to &app_schema_eag._app;
 GRANT EXECUTE ON APPTYPE to &app_schema_eag._app;
 GRANT EXECUTE ON NOTIFYTYPE to &app_schema_eag._app;
 GRANT EXECUTE ON EMAILTYPE to &app_schema_eag._app;
