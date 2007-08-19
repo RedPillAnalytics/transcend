@@ -24,8 +24,7 @@ AS
       p_idx_tablespace   VARCHAR2 DEFAULT NULL,
       p_index_drop       VARCHAR2 DEFAULT NULL,
       p_handle_fkeys     VARCHAR2 DEFAULT NULL,
-      p_statistics       VARCHAR2 DEFAULT NULL,
-      p_batch_id          NUMBER DEFAULT NULL
+      p_statistics       VARCHAR2 DEFAULT NULL
    );
 END td_owbapi;
 /
