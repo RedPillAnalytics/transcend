@@ -1,4 +1,4 @@
-CREATE OR REPLACE TYPE filetype UNDER basetype(
+CREATE OR REPLACE TYPE filetype AUTHID CURRENT_USER AS object(
    filehub_id       NUMBER,
    filehub_name     VARCHAR2( 100 ),
    filehub_group    VARCHAR2( 64 ),
