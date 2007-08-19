@@ -10,8 +10,7 @@ IS
    PROCEDURE process_files(
       p_filehub_group   VARCHAR2,
       p_filehub_name    VARCHAR2 DEFAULT NULL,
-      p_keep_source     VARCHAR2 DEFAULT 'no',
-      p_runmode         VARCHAR2 DEFAULT NULL
+      p_keep_source     VARCHAR2 DEFAULT 'no'
    );
 END td_fileapi;
 /

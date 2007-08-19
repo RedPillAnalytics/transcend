@@ -12,8 +12,7 @@ AS
       p_index_regexp    VARCHAR2 DEFAULT NULL,
       p_index_type      VARCHAR2 DEFAULT NULL,
       p_part_type       VARCHAR2 DEFAULT NULL,
-      p_oper_id         NUMBER DEFAULT NULL,
-      p_runmode         VARCHAR2 DEFAULT NULL
+      p_oper_id         NUMBER DEFAULT NULL
    );
 
    PROCEDURE end_map_control(
@@ -26,8 +25,7 @@ AS
       p_index_drop       VARCHAR2 DEFAULT NULL,
       p_handle_fkeys     VARCHAR2 DEFAULT NULL,
       p_statistics       VARCHAR2 DEFAULT NULL,
-      p_oper_id          NUMBER DEFAULT NULL,
-      p_runmode          VARCHAR2 DEFAULT NULL
+      p_oper_id          NUMBER DEFAULT NULL
    );
 END td_owbapi;
 /

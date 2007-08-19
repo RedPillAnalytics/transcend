@@ -35,53 +35,24 @@ AS
       RETURN BOOLEAN;
 
    -- procedure executes the copy_file function and translates the return code to an exception
-   PROCEDURE copy_file(
-      p_srcfile   VARCHAR2,
-      p_dstfile   VARCHAR2,
-      p_runmode   VARCHAR2 DEFAULT NULL
-   );
+   PROCEDURE copy_file( p_srcfile VARCHAR2, p_dstfile VARCHAR2 );
 
    -- procedure executes the delete_file function and translates the return code to an exception
-   PROCEDURE delete_file(
-      p_directory   VARCHAR2,
-      p_filename    VARCHAR2,
-      p_runmode     VARCHAR2 DEFAULT NULL
-   );
+   PROCEDURE delete_file( p_directory VARCHAR2, p_filename VARCHAR2 );
 
    -- procedure executes the create_file function and translates the return code to an exception
-   PROCEDURE create_file(
-      p_directory   VARCHAR2,
-      p_filename    VARCHAR2,
-      p_runmode     VARCHAR2 DEFAULT NULL
-   );
+   PROCEDURE create_file( p_directory VARCHAR2, p_filename VARCHAR2 );
 
    -- procedure executes the run_cmd function and raises an exception with the return code
-   PROCEDURE host_cmd(
-      p_cmd       VARCHAR2,
-      p_stdin     VARCHAR2 DEFAULT ' ',
-      p_runmode   VARCHAR2 DEFAULT NULL
-   );
+   PROCEDURE host_cmd( p_cmd VARCHAR2, p_stdin VARCHAR2 DEFAULT ' ' );
 
-   FUNCTION get_numlines(
-      p_dirname    IN   VARCHAR2,
-      p_filename   IN   VARCHAR2,
-      p_runmode         VARCHAR2 DEFAULT NULL
-   )
+   FUNCTION get_numlines( p_dirname IN VARCHAR2, p_filename IN VARCHAR2 )
       RETURN NUMBER;
 
-   FUNCTION decrypt_file(
-      p_dirpath      VARCHAR2,
-      p_filename     VARCHAR2,
-      p_passphrase   VARCHAR2,
-      p_runmode      VARCHAR2 DEFAULT NULL
-   )
+   FUNCTION decrypt_file( p_dirpath VARCHAR2, p_filename VARCHAR2, p_passphrase VARCHAR2 )
       RETURN VARCHAR2;
 
-   FUNCTION unzip_file(
-      p_dirpath    VARCHAR2,
-      p_filename   VARCHAR2,
-      p_runmode    VARCHAR2 DEFAULT NULL
-   )
+   FUNCTION unzip_file( p_dirpath VARCHAR2, p_filename VARCHAR2 )
       RETURN VARCHAR2;
 
    FUNCTION extract_query(
@@ -90,8 +61,7 @@ AS
       p_filename    VARCHAR2,
       p_delimiter   VARCHAR2 DEFAULT '|',
       p_quotechar   VARCHAR2 DEFAULT '',
-      p_append      VARCHAR2 DEFAULT 'no',
-      p_runmode     VARCHAR2 DEFAULT NULL
+      p_append      VARCHAR2 DEFAULT 'no'
    )
       RETURN NUMBER;
 
@@ -103,8 +73,7 @@ AS
       p_delimiter   VARCHAR2 DEFAULT '|',
       p_quotechar   VARCHAR2 DEFAULT '',
       p_headers     VARCHAR2 DEFAULT 'yes',
-      p_append      VARCHAR2 DEFAULT 'no',
-      p_runmode     VARCHAR2 DEFAULT NULL
+      p_append      VARCHAR2 DEFAULT 'no'
    )
       RETURN NUMBER;
 END td_core;
