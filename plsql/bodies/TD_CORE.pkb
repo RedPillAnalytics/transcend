@@ -26,7 +26,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         o_td.log_err;
+         td_inst.log_err;
          RAISE;
    END host_cmd;
 
