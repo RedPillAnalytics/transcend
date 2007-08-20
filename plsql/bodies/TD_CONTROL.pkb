@@ -117,25 +117,6 @@ IS
       END IF;
    END set_session_parameter;
 
-   PROCEDURE set_priority( p_accessor VARCHAR2, p_priority NUMBER )
-   IS
-   BEGIN
-      UPDATE priority_conf
-         SET priority = p_priority,
-             modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
-             modified_dt = SYSDATE
-       WHERE accessor = p_accessor;
-
-      IF SQL%ROWCOUNT = 0
-      THEN
-         INSERT INTO priority_conf
-                     ( accessor, priority
-                     )
-              VALUES ( p_accessor, p_priority
-                     );
-      END IF;
-   END set_priority;
-
    PROCEDURE clear_log(
       p_runmode      VARCHAR2 DEFAULT NULL,
       p_session_id   NUMBER DEFAULT SYS_CONTEXT( 'USERENV', 'SESSIONID' )
