@@ -1,25 +1,6 @@
 CREATE OR REPLACE PACKAGE BODY td_control
 IS
-   g_prev_runmode_priority NUMBER;
-
-   -- begins debug mode
-   PROCEDURE start_debug
-   AS
-   BEGIN
-      g_prev_runmode_priority := td_inst.runmode_priority;
-
-      td_inst.runmode( 'debug' );
-      td_inst.runmode_priority(get_priority($$plsql_unit));
-   END start_debug;
-
-   -- begins debug mode
-   PROCEDURE stop_debug
-   AS
-   BEGIN
-      td_inst.runmode( 'debug' );
-   END stop_debug;
-
--- provide an accessor and get a priority
+   -- provide an accessor and get a priority
    FUNCTION get_priority( p_accessor VARCHAR2 )
       RETURN NUMBER
    AS
