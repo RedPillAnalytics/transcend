@@ -53,6 +53,9 @@ AS
 
    FUNCTION get_err_msg( p_name VARCHAR2 )
       RETURN VARCHAR2;
+      
+   FUNCTION whence
+      RETURN VARCHAR2;
 
    PROCEDURE log_msg(
       p_msg      VARCHAR2,
