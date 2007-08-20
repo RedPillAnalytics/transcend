@@ -20,7 +20,7 @@ AS
       l_sql := 'SELECT count(*) FROM ' || SELF.object_owner || '.' || SELF.object_name;
       td_inst.log_msg( 'Count SQL: ' || l_sql, 3 );
 
-      IF NOT o_td.is_debugmode
+      IF NOT td_inst.is_debugmode
       THEN
          BEGIN
             EXECUTE IMMEDIATE l_sql
@@ -339,7 +339,7 @@ AS
          END IF;
 
          -- WRITE an audit record for the file that was just archived
-         IF NOT o_td.is_debugmode
+         IF NOT td_inst.is_debugmode
          THEN
             o_td.change_action( 'Audit feed' );
             SELF.audit_file( p_source_filepath      => c_dir_list.source_filepath,

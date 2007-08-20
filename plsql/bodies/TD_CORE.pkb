@@ -8,7 +8,7 @@ AS
    BEGIN
       DBMS_JAVA.set_output( 1000000 );
 
-      IF NOT o_td.is_debugmode
+      IF NOT td_inst.is_debugmode
       THEN
          l_retval := host_cmd( p_cmd, p_stdin );
 
@@ -38,7 +38,7 @@ AS
    BEGIN
       DBMS_JAVA.set_output( 1000000 );
 
-      IF NOT o_td.is_debugmode
+      IF NOT td_inst.is_debugmode
       THEN
          l_retval := copy_file( p_srcfile, p_dstfile );
 
@@ -188,7 +188,7 @@ AS
    BEGIN
       l_filepath := get_dir_path( p_directory ) || '/' || p_filename;
 
-      IF NOT o_td.is_debugmode
+      IF NOT td_inst.is_debugmode
       THEN
          UTL_FILE.fremove( p_directory, p_filename );
       END IF;
@@ -210,7 +210,7 @@ AS
    BEGIN
       l_dirpath := get_dir_path( p_directory ) || '/' || p_filename;
 
-      IF NOT o_td.is_debugmode
+      IF NOT td_inst.is_debugmode
       THEN
          l_fh := UTL_FILE.fopen( p_directory, p_filename, 'W' );
       END IF;
@@ -228,7 +228,7 @@ AS
       l_cnt    NUMBER             := 0;
       o_td     tdtype             := tdtype( p_module => 'get_numlines' );
    BEGIN
-      IF o_td.is_debugmode
+      IF td_inst.is_debugmode
       THEN
          td_inst.log_msg( td_inst.module || ' returning 0 because of DEBUG mode' );
          o_td.clear_app_info;
@@ -307,7 +307,7 @@ AS
          l_return := l_filepath;
       END IF;
 
-      IF o_td.is_debugmode
+      IF td_inst.is_debugmode
       THEN
          td_inst.log_msg( 'File returned by UNZIP_FILE: ' || l_return );
       ELSE
@@ -378,7 +378,7 @@ AS
          l_return := l_filepath;
       END IF;
 
-      IF o_td.is_debugmode
+      IF td_inst.is_debugmode
       THEN
          td_inst.log_msg( 'File returned by DECRYPT_FILE: ' || l_return );
       ELSE
@@ -462,7 +462,7 @@ AS
          LOOP
             DBMS_SQL.COLUMN_VALUE( l_thecursor, i, l_columnvalue );
 
-            IF NOT o_td.is_debugmode
+            IF NOT td_inst.is_debugmode
             THEN
                UTL_FILE.put( l_output,
                              l_delimiter || p_quotechar || l_columnvalue || p_quotechar
@@ -526,7 +526,7 @@ AS
       td_inst.log_msg( 'Headers query: ' || l_head_sql, 3 );
       td_inst.log_msg( 'Extract query: ' || l_extract_sql, 3 );
 
-      IF NOT o_td.is_debugmode
+      IF NOT td_inst.is_debugmode
       THEN
          IF td_ext.is_true( p_headers )
          THEN

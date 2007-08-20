@@ -53,7 +53,7 @@ AS
                      );
 
       -- get file attributes
-      IF o_td.is_debugmode
+      IF td_inst.is_debugmode
       THEN
          l_num_bytes := 0;
          td_inst.log_msg( 'Reporting 0 size file in debug mode' );

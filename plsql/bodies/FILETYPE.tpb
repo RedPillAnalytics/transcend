@@ -29,7 +29,7 @@ AS
       -- the job fails when size threshholds are not met
       o_td.change_action( 'Check file details' );
 
-      IF NOT o_td.is_debugmode AND LOWER( p_validate ) = 'yes'
+      IF NOT td_inst.is_debugmode AND LOWER( p_validate ) = 'yes'
       THEN
          o_td.change_action( 'validate file size' );
 

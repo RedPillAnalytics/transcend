@@ -1044,7 +1044,7 @@ IS
                    );
 
       -- record the number of rows affected
-      IF NOT o_td.is_debugmode
+      IF NOT td_inst.is_debugmode
       THEN
          td_inst.log_cnt_msg( l_results );
       END IF;
@@ -1334,7 +1334,7 @@ IS
       END;
 
       -- record the number of rows affected
-      IF NOT o_td.is_debugmode
+      IF NOT td_inst.is_debugmode
       THEN
          td_inst.log_cnt_msg( l_results );
       END IF;
@@ -1829,7 +1829,7 @@ IS
                             );
       END IF;
 
-      IF NOT o_td.is_debugmode
+      IF NOT td_inst.is_debugmode
       THEN
          td_inst.log_msg( 'Making specified indexes on ' || l_tab_name || ' unusable' );
       END IF;
@@ -1990,7 +1990,7 @@ IS
    BEGIN
       td_sql.check_table( p_owner => p_owner, p_table => p_table );
 
-      IF NOT o_td.is_debugmode
+      IF NOT td_inst.is_debugmode
       THEN
          td_inst.log_msg(    'Making unusable indexes on '
                           || p_owner
@@ -2190,7 +2190,7 @@ IS
                      );
       o_td.change_action( 'Gathering statistics' );
 
-      IF NOT o_td.is_debugmode
+      IF NOT td_inst.is_debugmode
       THEN
          IF p_source_owner IS NULL
          THEN

@@ -10,7 +10,7 @@ AS
       l_results   NUMBER;
       o_td        tdtype := tdtype( p_module => 'exec_auto' );
    BEGIN
-      IF NOT o_td.is_debugmode
+      IF NOT td_inst.is_debugmode
       THEN
          EXECUTE IMMEDIATE p_sql;
 
@@ -40,7 +40,7 @@ AS
                           ELSE p_msg
                        END, 3 );
 
-      IF NOT o_td.is_debugmode
+      IF NOT td_inst.is_debugmode
       THEN
          IF td_ext.is_true( p_auto )
          THEN
