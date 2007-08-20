@@ -1,6 +1,8 @@
 CREATE OR REPLACE PACKAGE BODY td_inst
 AS
-   -- global variables placed in the package body because they should be accessed or set outside the package
+-- global variables placed in the package body because they should be accessed or set outside the package
+
+-- variables for holding information about the current session
    g_session_id               NUMBER         := SYS_CONTEXT( 'USERENV', 'SESSIONID' );
    g_instance_name            VARCHAR( 30 )  := SYS_CONTEXT( 'USERENV', 'INSTANCE_NAME' );
    g_machine                  VARCHAR2( 50 )
@@ -10,23 +12,18 @@ AS
          || ']';
    g_dbuser                   VARCHAR2( 30 ) := SYS_CONTEXT( 'USERENV', 'SESSION_USER' );
    g_osuser                   VARCHAR2( 30 ) := SYS_CONTEXT( 'USERENV', 'OS_USER' );
+
+-- variables for holding information used to register an application with some other framework, such as DBMS_APPLCIATION_INFO
    g_client_info              VARCHAR2( 30 ) := SYS_CONTEXT( 'USERENV', 'CLIENT_INFO' );
-   g_client_info_priority     NUMBER;
    g_module                   VARCHAR2( 30 ) := SYS_CONTEXT( 'USERENV', 'MODULE' );
-   g_module_priority          NUMBER         := 1;
    g_action                   VARCHAR2( 30 ) := SYS_CONTEXT( 'USERENV', 'ACTION' );
-   g_action_priority          NUMBER         := 1;
    g_batch_id                 NUMBER;
-   g_batch_id_priority        NUMBER         := 1;
    g_registration             VARCHAR2( 30 ) := 'appinfo';
-   g_registration_priority    NUMBER         := 1;
    g_logging_level            VARCHAR2( 30 ) := 2;
-   g_logging_level_priority   NUMBER         := 1;
    g_runmode                  VARCHAR2( 10 ) := 'runtime';
-   g_runmode_priority         NUMBER         := 1;
 
    -- registers the application
-   PROCEDURE REGISTER
+   PROCEDURE register
    AS
    BEGIN
       CASE registration
@@ -39,11 +36,11 @@ AS
             DBMS_APPLICATION_INFO.set_client_info( g_client_info );
             DBMS_APPLICATION_INFO.set_module( g_module, g_action );
       END CASE;
-   END REGISTER;
+   END register;
 
    -- DEFAULT ACCESSOR METHODS
 
-   -- accessor methods for runmode and runmode_priority
+   -- accessor methods for runmode
    FUNCTION runmode
       RETURN VARCHAR2
    AS
@@ -57,20 +54,7 @@ AS
       g_runmode := p_runmode;
    END runmode;
 
-   FUNCTION runmode_priority
-      RETURN NUMBER
-   AS
-   BEGIN
-      RETURN g_runmode_priority;
-   END runmode_priority;
-
-   PROCEDURE runmode_priority( p_runmode_priority NUMBER )
-   AS
-   BEGIN
-      g_runmode_priority := p_runmode_priority;
-   END runmode_priority;
-
-   -- accessor methods for registration and registration_priority
+   -- accessor methods for registration
    FUNCTION registration
       RETURN VARCHAR2
    AS
@@ -84,20 +68,7 @@ AS
       g_registration := p_registration;
    END registration;
 
-   FUNCTION registration_priority
-      RETURN NUMBER
-   AS
-   BEGIN
-      RETURN g_registration_priority;
-   END registration_priority;
-
-   PROCEDURE registration_priority( p_registration_priority NUMBER )
-   AS
-   BEGIN
-      g_registration_priority := p_registration_priority;
-   END registration_priority;
-
-   -- accessor methods for logging_level and logging_level_priority
+   -- accessor methods for logging_level
    FUNCTION logging_level
       RETURN NUMBER
    AS
@@ -111,20 +82,7 @@ AS
       g_logging_level := p_logging_level;
    END logging_level;
 
-   FUNCTION logging_level_priority
-      RETURN NUMBER
-   AS
-   BEGIN
-      RETURN g_logging_level_priority;
-   END logging_level_priority;
-
-   PROCEDURE logging_level_priority( p_logging_level_priority NUMBER )
-   AS
-   BEGIN
-      g_logging_level_priority := p_logging_level_priority;
-   END logging_level_priority;
-
-   -- accessor methods for batch_id and batch_id_priority
+   -- accessor methods for batch_id and batch_id
    FUNCTION batch_id
       RETURN NUMBER
    AS
@@ -138,20 +96,7 @@ AS
       g_batch_id := p_batch_id;
    END batch_id;
 
-   FUNCTION batch_id_priority
-      RETURN NUMBER
-   AS
-   BEGIN
-      RETURN g_batch_id_priority;
-   END batch_id_priority;
-
-   PROCEDURE batch_id_priority( p_batch_id_priority NUMBER )
-   AS
-   BEGIN
-      g_batch_id_priority := p_batch_id_priority;
-   END batch_id_priority;
-
-   -- accessor methods for module and module priority
+   -- accessor methods for module
    FUNCTION module
       RETURN VARCHAR2
    AS
@@ -166,20 +111,7 @@ AS
       g_module := p_module;
    END module;
 
-   FUNCTION module_priority
-      RETURN NUMBER
-   AS
-   BEGIN
-      RETURN g_module_priority;
-   END module_priority;
-
-   PROCEDURE module_priority( p_module_priority NUMBER )
-   AS
-   BEGIN
-      g_module_priority := p_module_priority;
-   END module_priority;
-
-   -- accessor methods for action and action priority
+   -- accessor methods for action and action
    FUNCTION action
       RETURN VARCHAR2
    AS
@@ -194,20 +126,7 @@ AS
       g_action := p_action;
    END action;
 
-   FUNCTION action_priority
-      RETURN NUMBER
-   AS
-   BEGIN
-      RETURN g_action_priority;
-   END action_priority;
-
-   PROCEDURE action_priority( p_action_priority NUMBER )
-   AS
-   BEGIN
-      g_action_priority := p_action_priority;
-   END action_priority;
-
-   -- accessor methods for client_info and client_info priority
+   -- accessor methods for client_info
    FUNCTION client_info
       RETURN VARCHAR2
    AS
@@ -221,23 +140,37 @@ AS
    BEGIN
       g_client_info := p_client_info;
    END client_info;
+   
 
-   FUNCTION client_info_priority
-      RETURN NUMBER
+   -- SPECIALIZED ACCESSOR METHODS
+
+   -- get method for a Boolean to determine runmode
+   FUNCTION is_debugmode
+      RETURN BOOLEAN
    AS
    BEGIN
-      RETURN g_client_info_priority;
-   END client_info_priority;
+      RETURN CASE td_inst.runmode
+         WHEN 'debug'
+            THEN TRUE
+         ELSE FALSE
+      END;
+   END is_debugmode;
 
-   PROCEDURE client_info_priority( p_client_info_priority NUMBER )
+   -- get method for a Boolean to determine registration
+   FUNCTION is_registered
+      RETURN BOOLEAN
    AS
    BEGIN
-      g_client_info_priority := p_client_info_priority;
-   END client_info_priority;
+      RETURN CASE td_inst.registration
+         WHEN 'noregister'
+            THEN FALSE
+         ELSE TRUE
+      END;
+   END is_registered;
 
-   -- MODIFIED ACCESSOR METHODS
 
-   -- CUSTOM AMETHODS
+   -- CUSTOM METHODS
+
    -- used to return a distinct error message number by label
    FUNCTION get_err_cd( p_name VARCHAR2 )
       RETURN NUMBER
@@ -414,5 +347,20 @@ AS
              );
       COMMIT;
    END log_cnt_msg;
+   
+   -- begins debug mode
+   PROCEDURE start_debug
+   AS
+   BEGIN
+      td_inst.runmode( 'full debug' );
+   END start_debug;
+
+   -- begins debug mode
+   PROCEDURE stop_debug
+   AS
+   BEGIN
+      td_inst.runmode( 'runtime' );
+   END stop_debug;
+
 END td_inst;
 /
