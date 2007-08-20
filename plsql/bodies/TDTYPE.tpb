@@ -38,7 +38,7 @@ AS
       -- READ CONFIGURATION TABLES TO PULL VALUES
 
       -- get the runmode value
-      IF SELF.have_runmode_priority( $$plsql_unit )
+      IF NOT td_inst.is_full_debugmode
       THEN
          BEGIN
             SELECT LOWER( default_runmode )
@@ -68,67 +68,61 @@ AS
       END IF;
 
       -- get the registration value for this module
-      IF SELF.have_registration_priority( $$plsql_unit )
-      THEN
-         BEGIN
-            SELECT LOWER( registration )
-              INTO l_registration
-              FROM ( SELECT registration, parameter_level,
-                            MAX( parameter_level ) OVER( PARTITION BY 1 )
-                                                                      max_parameter_level
-                      FROM ( SELECT registration, module,
-                                    CASE
-                                       WHEN module = 'default'
-                                          THEN 1
-                                       ELSE 2
-                                    END parameter_level
-                              FROM registration_conf )
-                     WHERE ( module = td_inst.module OR module = 'default' ))
-             WHERE parameter_level = max_parameter_level;
-         EXCEPTION
-            WHEN NO_DATA_FOUND
-            THEN
-               raise_application_error( td_inst.get_err_cd( 'parm_not_configured' ),
-                                           td_inst.get_err_msg( 'parm_not_configured' )
-                                        || ': REGISTRATION'
-                                      );
-         END;
-      END IF;
+      BEGIN
+         SELECT LOWER( registration )
+           INTO l_registration
+           FROM ( SELECT registration, parameter_level,
+                         MAX( parameter_level ) OVER( PARTITION BY 1 )
+                         max_parameter_level
+                    FROM ( SELECT registration, module,
+                                  CASE
+                                  WHEN module = 'default'
+                                  THEN 1
+                                  ELSE 2
+                                  END parameter_level
+                             FROM registration_conf )
+                   WHERE ( module = td_inst.module OR module = 'default' ))
+          WHERE parameter_level = max_parameter_level;
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+         raise_application_error( td_inst.get_err_cd( 'parm_not_configured' ),
+                                  td_inst.get_err_msg( 'parm_not_configured' )
+                                  || ': REGISTRATION'
+                                );
+      END;
 
       -- get the logging level
-      IF SELF.have_logging_priority( $$plsql_unit )
-      THEN
-         BEGIN
-            SELECT LOWER( logging_level ), LOWER( debug_level )
-              INTO l_logging_level, l_debug_level
-              FROM ( SELECT logging_level, debug_level, parameter_level,
-                            MAX( parameter_level ) OVER( PARTITION BY 1 )
-                                                                      max_parameter_level
-                      FROM ( SELECT logging_level, debug_level, module,
-                                    CASE
-                                       WHEN module = 'default'
-                                          THEN 1
-                                       ELSE 2
-                                    END parameter_level
-                              FROM logging_conf )
-                     WHERE ( module = td_inst.module OR module = 'default' ))
-             WHERE parameter_level = max_parameter_level;
-         EXCEPTION
-            WHEN NO_DATA_FOUND
-            THEN
-               raise_application_error( td_inst.get_err_cd( 'parm_not_configured' ),
-                                           td_inst.get_err_msg( 'parm_not_configured' )
-                                        || ': LOGGING_LEVEL or DEBUG_LEVEL'
-                                      );
-         END;
+      BEGIN
+         SELECT LOWER( logging_level ), LOWER( debug_level )
+           INTO l_logging_level, l_debug_level
+           FROM ( SELECT logging_level, debug_level, parameter_level,
+                         MAX( parameter_level ) OVER( PARTITION BY 1 )
+                         max_parameter_level
+                    FROM ( SELECT logging_level, debug_level, module,
+                                  CASE
+                                  WHEN module = 'default'
+                                  THEN 1
+                                  ELSE 2
+                                  END parameter_level
+                             FROM logging_conf )
+                   WHERE ( module = td_inst.module OR module = 'default' ))
+          WHERE parameter_level = max_parameter_level;
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+         raise_application_error( td_inst.get_err_cd( 'parm_not_configured' ),
+                                  td_inst.get_err_msg( 'parm_not_configured' )
+                                  || ': LOGGING_LEVEL or DEBUG_LEVEL'
+                                );
+      END;
 
-         td_inst.logging_level( CASE
-                                   WHEN SELF.is_debugmode
-                                      THEN l_debug_level
-                                   ELSE l_logging_level
-                                END
-                              );
-      END IF;
+      td_inst.logging_level( CASE
+                             WHEN td_inst.is_debugmode
+                             THEN l_debug_level
+                             ELSE l_logging_level
+                             END
+                           );
 
       -- log module and action changes to a high logging level
       td_inst.log_msg(    'MODULE "'
@@ -150,7 +144,7 @@ AS
             FROM parameter_conf
            WHERE LOWER( module ) = td_inst.module )
       LOOP
-         IF SELF.is_debugmode
+         IF td_inst.is_debugmode
          THEN
             td_inst.log_msg( 'Session SQL: ' || c_params.DDL );
          ELSE
@@ -160,6 +154,7 @@ AS
 
       RETURN;
    END tdtype;
+
    MEMBER PROCEDURE send( p_module_id NUMBER, p_message VARCHAR2 DEFAULT NULL )
    AS
       l_notify_method   notify_conf.notify_method%TYPE;
