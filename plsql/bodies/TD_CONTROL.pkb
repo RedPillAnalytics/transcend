@@ -1,19 +1,5 @@
 CREATE OR REPLACE PACKAGE BODY td_control
 IS
-   -- provide an accessor and get a priority
-   FUNCTION get_priority( p_accessor VARCHAR2 )
-      RETURN NUMBER
-   AS
-      l_priority   NUMBER;
-   BEGIN
-      SELECT priority
-        INTO l_priority
-        FROM priority_conf
-       WHERE accessor = LOWER( p_accessor );
-
-      RETURN l_priority;
-   END get_priority;
-
    PROCEDURE set_logging_level(
       p_module          VARCHAR2 DEFAULT 'default',
       p_logging_level   NUMBER DEFAULT 2,
