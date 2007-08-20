@@ -25,7 +25,6 @@ DROP TYPE emailtype;
 DROP TYPE notifytype;
 DROP TYPE tdtype;
 DROP TYPE apptype;
-DROP TYPE insttype;
 
 --CREATE core pieces
 @../plsql/specs/STRING_AGG_TYPE.tps
@@ -33,8 +32,6 @@ DROP TYPE insttype;
 @../plsql/wrapped_bodies/STRAGG.plb
 @../plsql/specs/TD_EXT.pks
 @../plsql/wrapped_bodies/TD_EXT.plb
-@../plsql/specs/TD_INST.pks
-@../plsql/wrapped_bodies/TD_INST.plb
 
 --CREATE targeted types, packages and object views
 @../plsql/specs/APPTYPE.tps
