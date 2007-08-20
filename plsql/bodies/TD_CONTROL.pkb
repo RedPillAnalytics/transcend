@@ -1,10 +1,15 @@
 CREATE OR REPLACE PACKAGE BODY td_control
 IS
+   g_prev_runmode_priority NUMBER;
+
    -- begins debug mode
    PROCEDURE start_debug
    AS
    BEGIN
+      g_prev_runmode_priority := td_inst.runmode_priority;
+
       td_inst.runmode( 'debug' );
+      td_inst.runmode_priority(get_priority($$plsql_unit));
    END start_debug;
 
    -- begins debug mode
