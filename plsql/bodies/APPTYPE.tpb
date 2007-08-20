@@ -101,18 +101,6 @@ AS
 
       RETURN LOWER( l_name );
    END get_package_name;
-   
-   -- GET method for DEBUG mode
-   MEMBER FUNCTION is_debugmode
-      RETURN BOOLEAN
-   AS
-   BEGIN
-      RETURN CASE td_inst.runmode
-         WHEN 'debug'
-            THEN TRUE
-         ELSE FALSE
-      END;
-   END is_debugmode;
 
    MEMBER PROCEDURE change_action( p_action VARCHAR2 )
    AS
@@ -145,64 +133,6 @@ AS
       prev_runmode := td_inst.runmode;
 
    END read_prev_info;
-   MEMBER FUNCTION is_registered
-      RETURN BOOLEAN
-   AS
-   BEGIN
-      RETURN CASE td_inst.registration
-         WHEN 'noregister'
-            THEN FALSE
-         ELSE TRUE
-      END;
-   END is_registered;
-
-   -- return a boolean
-   -- tell us whether or not we have priority
-   MEMBER FUNCTION have_runmode_priority ( p_attribute VARCHAR2 )
-     RETURN BOOLEAN
-   AS
-      l_my_priority NUMBER      := td_control.get_priority(lower($$plsql_unit));
-      l_current_priority NUMBER := td_inst.runmode_priority;
-   BEGIN
-      IF l_my_priority >= l_current_priority
-      THEN
-	 RETURN TRUE;
-      ELSE
-	 RETURN FALSE;
-      END IF;
-   END have_runmode_priority;
-
-   -- return a boolean
-   -- tell us whether or not we have priority
-   MEMBER FUNCTION have_registration_priority ( p_attribute VARCHAR2 )
-     RETURN BOOLEAN
-   AS
-      l_my_priority NUMBER      := td_control.get_priority(lower($$plsql_unit));
-      l_current_priority NUMBER := td_inst.runmode_priority;
-   BEGIN
-      IF l_my_priority >= l_current_priority
-      THEN
-	 RETURN TRUE;
-      ELSE
-	 RETURN FALSE;
-      END IF;
-   END have_registration_priority;
-
-   -- RETURN a boolean
-   -- tell us whether or not we have priority
-   MEMBER FUNCTION have_logging_priority ( p_attribute VARCHAR2 )
-     RETURN BOOLEAN
-   AS
-      l_my_priority NUMBER      := td_control.get_priority(lower($$plsql_unit));
-      l_current_priority NUMBER := td_inst.logging_level_priority;
-   BEGIN
-      IF l_my_priority >= l_current_priority
-      THEN
-	 RETURN TRUE;
-      ELSE
-	 RETURN FALSE;
-      END IF;
-   END have_logging_priority;
 
 END;
 /
