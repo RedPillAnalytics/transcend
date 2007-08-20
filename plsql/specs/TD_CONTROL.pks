@@ -1,12 +1,5 @@
 CREATE OR REPLACE PACKAGE td_control AUTHID CURRENT_USER
 IS
-   PROCEDURE start_debug;
-
-   PROCEDURE stop_debug;
-
-   FUNCTION get_priority( p_accessor VARCHAR2 )
-      RETURN NUMBER;
-
    PROCEDURE set_logging_level(
       p_module          VARCHAR2 DEFAULT 'default',
       p_logging_level   NUMBER DEFAULT 2,
@@ -24,8 +17,6 @@ IS
    );
 
    PROCEDURE set_session_parameter( p_module VARCHAR2, p_name VARCHAR2, p_value VARCHAR2 );
-
-   PROCEDURE set_priority( p_accessor VARCHAR2, p_priority NUMBER );
 
    PROCEDURE clear_log(
       p_runmode      VARCHAR2 DEFAULT NULL,
