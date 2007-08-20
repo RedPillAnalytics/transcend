@@ -144,17 +144,29 @@ AS
 
    -- SPECIALIZED ACCESSOR METHODS
 
-   -- get method for a Boolean to determine runmode
+   -- return a Boolean determining runmode
    FUNCTION is_debugmode
       RETURN BOOLEAN
    AS
    BEGIN
-      RETURN CASE td_inst.runmode
-         WHEN 'debug'
+      RETURN CASE
+      WHEN REGEXP_LIKE(td_inst.runmode,'debug','i')
             THEN TRUE
          ELSE FALSE
       END;
    END is_debugmode;
+   
+   -- return a Boolean determing full debug mode
+   FUNCTION is_full_debugmode
+      RETURN BOOLEAN
+   AS
+   BEGIN
+      RETURN CASE td_inst.runmode
+        WHEN 'full debug'
+            THEN TRUE
+         ELSE FALSE
+      END;
+   END is_full_debugmode;
 
    -- get method for a Boolean to determine registration
    FUNCTION is_registered
