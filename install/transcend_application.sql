@@ -17,6 +17,7 @@ ALTER SESSION SET current_schema=&app_schema_ta;
 @../java/TdCore.jvs
 
 --DROP all types due to inheritance
+DROP TYPE dimensiontype;
 DROP TYPE feedtype;
 DROP TYPE extracttype;
 DROP TYPE filetype;
@@ -24,7 +25,7 @@ DROP TYPE emailtype;
 DROP TYPE notifytype;
 DROP TYPE tdtype;
 DROP TYPE apptype;
-DROP TYPE dimensiontype;
+DROP TYPE insttype;
 
 --CREATE core pieces
 @../plsql/specs/STRING_AGG_TYPE.tps
