@@ -8,7 +8,7 @@ AS
    BEGIN
       IF td_ext.is_true (notify_enabled)
       THEN
-         IF NOT o_app.is_debugmode
+         IF NOT td_inst.is_debugmode
          THEN
             BEGIN
                UTL_MAIL.send (sender          => sender,
