@@ -347,8 +347,8 @@ AS
                   ( client_info, module,
                     action, runmode, session_id, row_cnt
                   )
-           VALUES ( NVL( g_client_info, 'NA' ), NVL( g_module, 'NA' ),
-                    NVL( g_action, 'NA' ), g_runmode, g_session_id, p_count
+           VALUES ( g_client_info, g_module,
+                    g_action, g_runmode, g_session_id, p_count
                   );
 
       -- if a message was provided to this procedure, then write it to the log table
