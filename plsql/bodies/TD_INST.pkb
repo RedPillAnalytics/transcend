@@ -367,7 +367,7 @@ AS
       td_inst.runmode( 'full debug' );
    END start_debug;
 
-   -- begins debug mode
+   -- stops debug mode
    PROCEDURE stop_debug
    AS
    BEGIN
