@@ -244,18 +244,15 @@ AS
 
       RETURN l_line;
    END whence;
-
+   
    -- used to write a standard message to the LOG_TABLE
    PROCEDURE log_msg(
       p_msg      VARCHAR2,
-      p_level    NUMBER DEFAULT 2,
-      p_stdout   VARCHAR2 DEFAULT 'yes'
+      p_level    NUMBER DEFAULT 2
    )
-   -- P_MSG is simply the text that will be written to the LOG_TABLE
    AS
       PRAGMA AUTONOMOUS_TRANSACTION;
       l_whence   VARCHAR2( 1024 );
-      l_code     NUMBER               DEFAULT SQLCODE;
       l_msg      log_table.msg%TYPE;
       l_scn      NUMBER;
       e_no_tab   EXCEPTION;
@@ -288,7 +285,62 @@ AS
       END;
 
       -- check to see the logging level to see if the message should be written
-      IF logging_level >= p_level
+      IF g_logging_level >= p_level
+      THEN
+         -- write the record to the log table
+         INSERT INTO log_table
+                     ( msg, client_info, module, action, runmode,
+                       session_id, current_scn, instance_name, machine, dbuser,
+                       osuser, code, call_stack,
+                       back_trace,
+                       batch_id
+                     )
+              VALUES ( l_msg, g_client_info, g_module, g_action, g_runmode,
+                       g_session_id, l_scn, g_instance_name, g_machine, g_dbuser,
+                       g_osuser, 0, l_whence,
+                       null,
+                       g_batch_id
+                     );
+
+         COMMIT;
+
+         -- also output the message to the screen
+         -- the client can control whether or not they want to see this
+         -- in sqlplus, just SET SERVEROUTPUT ON or OFF
+         DBMS_OUTPUT.put_line( p_msg );
+      END IF;
+   END log_msg;   
+
+   -- writes error information to the log_table
+   PROCEDURE log_err
+   AS
+      PRAGMA AUTONOMOUS_TRANSACTION;
+      l_whence   VARCHAR2( 1024 );
+      l_code     NUMBER  := SQLCODE;
+      l_msg      log_table.msg%TYPE := SQLERRM;
+      l_scn      NUMBER;
+      e_no_tab   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_no_tab, -942 );
+   BEGIN
+      -- find out what called me
+      l_whence := whence;
+
+      -- using invokers rights model
+      -- some users won't have access to see the SCN
+      -- need to except this just in case
+      -- if cannot see the scn, then use a 0
+      BEGIN
+         SELECT current_scn
+           INTO l_scn
+           FROM v$database;
+      EXCEPTION
+         WHEN e_no_tab
+         THEN
+            l_scn := 0;
+      END;
+
+      -- check to see the logging level to see if the message should be written
+      IF g_logging_level >= 1
       THEN
          -- write the record to the log table
          INSERT INTO log_table
@@ -313,31 +365,13 @@ AS
 
          COMMIT;
 
-         -- also output the message to the screen
-         -- the client can control whether or not they want to see this
-         -- in sqlplus, just SET SERVEROUTPUT ON or OFF
-         -- by default, all messages are logged to STDOUT
-         -- this can be controlled per message with P_STDOUT, which defaults to 'yes'
-         IF td_ext.is_true( p_stdout )
-         THEN
-            DBMS_OUTPUT.put_line( p_msg );
-         END IF;
       END IF;
-   END log_msg;
-
-   PROCEDURE log_err
-   AS
-      l_msg   VARCHAR2( 1020 ) DEFAULT SQLERRM;
-   BEGIN
-      log_msg( l_msg, 1, 'no' );
    END log_err;
 
    PROCEDURE log_cnt_msg(
       p_count     NUMBER,
       p_msg       VARCHAR2 DEFAULT NULL,
-      p_level     NUMBER DEFAULT 2,
-      p_stdout    VARCHAR2 DEFAULT 'yes',
-      p_oper_id   NUMBER DEFAULT NULL
+      p_level     NUMBER DEFAULT 2
    )
    AS
       PRAGMA AUTONOMOUS_TRANSACTION;
@@ -354,8 +388,7 @@ AS
       -- if a message was provided to this procedure, then write it to the log table
       -- if not, then simply use the default message below
       log_msg( NVL( p_msg, 'Number of records selected/affected' ) || ': ' || p_count,
-               p_level,
-               p_stdout
+               p_level
              );
       COMMIT;
    END log_cnt_msg;
