@@ -72,5 +72,10 @@ AS
       p_stdout    VARCHAR2 DEFAULT 'yes',
       p_oper_id   NUMBER DEFAULT NULL
    );
+      
+   PROCEDURE start_debug;
+
+   PROCEDURE stop_debug;
+
 END td_inst;
 /
