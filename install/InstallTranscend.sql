@@ -27,4 +27,6 @@ ACCEPT app_schema_it char default 'TDREP' prompt 'Schema name for the Transcend 
 -- set application defaults
 @@td_rep_defaults &app_schema_it
 
+COMMIT;
+
 SPOOL off;
