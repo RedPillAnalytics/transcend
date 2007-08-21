@@ -1,6 +1,6 @@
 CREATE OR REPLACE PACKAGE BODY td_dbapi
 IS
-   PROCEDURE trunc_tab( p_owner IN VARCHAR2, p_table IN VARCHAR2 )
+   PROCEDURE trunc_tab( p_owner VARCHAR2, p_table VARCHAR2 )
    AS
       l_results   NUMBER;
       o_td        tdtype := tdtype( p_module => 'trunc_tab' );
