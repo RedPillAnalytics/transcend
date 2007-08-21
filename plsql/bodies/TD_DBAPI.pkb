@@ -1623,13 +1623,15 @@ IS
                            );
          WHEN OTHERS
          THEN
+	 -- first log the error
+	 -- provide a backtrace from this exception handler to the next
+	 td_inst.log_err;
+
             -- need to drop indexes if there is an exception
             -- this is for rerunability
             IF td_ext.is_true( p_index_drop )
             THEN
-	       -- first log the error
-	       -- provide a backtrace from this exception handler to the next
-	       td_inst.log_err;
+	       -- now record the reason for the index drops
 	       td_inst.log_msg('Dropping indexes for restartability');
                drop_indexes( p_owner => p_source_owner, p_table => p_source_table );
             END IF;
