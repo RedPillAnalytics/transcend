@@ -8,7 +8,6 @@ AS
    AS
       PRAGMA AUTONOMOUS_TRANSACTION;
       l_results   NUMBER;
-      o_td        tdtype := tdtype( p_module => 'exec_auto' );
    BEGIN
       IF NOT td_inst.is_debugmode
       THEN
@@ -18,7 +17,6 @@ AS
       END IF;
 
       COMMIT;
-      o_td.clear_app_info;
       RETURN l_results;
    END exec_auto;
 
@@ -32,7 +30,6 @@ AS
       RETURN NUMBER
    AS
       l_results   NUMBER;
-      o_td        tdtype := tdtype( p_module => 'exec_auto' );
    BEGIN
       td_inst.log_msg( CASE
                           WHEN p_msg IS NULL
@@ -52,7 +49,6 @@ AS
          END IF;
       END IF;
 
-      o_td.clear_app_info;
       RETURN l_results;
    END exec_sql;
 
