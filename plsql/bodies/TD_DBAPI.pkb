@@ -1,7 +1,11 @@
 CREATE OR REPLACE PACKAGE BODY td_dbapi
 IS
-   PROCEDURE trunc_tab( p_owner VARCHAR2, p_table VARCHAR2 )
-   AS
+   PROCEDURE trunc_tab( 
+      p_owner VARCHAR2, 
+      p_table VARCHAR2, 
+      p_reuse VARCHAR2 DEFAULT 'no'
+   )
+   IS
       l_results   NUMBER;
       o_td        tdtype := tdtype( p_module => 'trunc_tab' );
    BEGIN
@@ -9,7 +13,12 @@ IS
       -- raise an error if it doesn't
       td_sql.check_table( p_owner => p_owner, p_table => p_table );
       l_results :=
-         td_sql.exec_sql( p_sql       => 'truncate table ' || p_owner || '.' || p_table,
+         td_sql.exec_sql( p_sql       => 'truncate table ' || p_owner || '.' || p_table ||CASE 
+	                                                                                    WHEN td_ext.is_true(p_reuse) 
+											    THEN ' reuse storage' 
+											  ELSE 
+											    NULL 
+											  END,
                           p_auto      => 'yes'
                         );
       o_td.clear_app_info;
