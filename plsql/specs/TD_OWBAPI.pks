@@ -26,5 +26,12 @@ AS
       p_handle_fkeys     VARCHAR2 DEFAULT NULL,
       p_statistics       VARCHAR2 DEFAULT NULL
    );
+      
+   PROCEDURE run_process_flow(
+      p_flow_name       VARCHAR2,
+      p_flow_location   VARCHAR2,
+      p_rep_owner	VARCHAR2  
+   );
+
 END td_owbapi;
 /
