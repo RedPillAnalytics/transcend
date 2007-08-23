@@ -50,4 +50,4 @@ INSERT INTO err_cd (code,name,message) VALUES (-20033, 'compressed','The specifi
 INSERT INTO err_cd (code,name,message) VALUES (-20034, 'no_stats','The specified segment has no stored statistics');
 INSERT INTO err_cd (code,name,message) VALUES (-20035, 'no_or_wrong_object','The specified object does not exist or is of the wrong type');
 INSERT INTO err_cd (code,name,message) VALUES (-20036, 'too_many_objects','The specified parameters yield more than one object');
-INSERT INTO err_cd (code,name,message) VALUES (-20037, 'no_priority','The specified accessor has no priority configured for it');
+INSERT INTO err_cd (code,name,message) VALUES (-20037, 'owb_flow_err','An error was returned from the OWB Control Center');
