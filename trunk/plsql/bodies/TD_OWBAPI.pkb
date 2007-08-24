@@ -119,7 +119,6 @@ AS
 				     td_ext.get_err_msg('owb_flow_err'));
 	 END IF;
       END IF;
-      o_td.log_msg('The process flow completed successfully');
       l_results := td_sql.exec_sql('alter session set current_schema='||l_cur_schema,p_runmode=>p_runmode);
       o_td.clear_app_info;
    EXCEPTION
