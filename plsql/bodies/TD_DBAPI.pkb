@@ -1,10 +1,6 @@
 CREATE OR REPLACE PACKAGE BODY td_dbapi
 IS
-   PROCEDURE trunc_tab( 
-      p_owner VARCHAR2, 
-      p_table VARCHAR2, 
-      p_reuse VARCHAR2 DEFAULT 'no'
-   )
+   PROCEDURE trunc_tab( p_owner VARCHAR2, p_table VARCHAR2, p_reuse VARCHAR2 DEFAULT 'no' )
    IS
       l_results   NUMBER;
       o_td        tdtype := tdtype( p_module => 'trunc_tab' );
@@ -13,16 +9,126 @@ IS
       -- raise an error if it doesn't
       td_sql.check_table( p_owner => p_owner, p_table => p_table );
       l_results :=
-         td_sql.exec_sql( p_sql       => 'truncate table ' || p_owner || '.' || p_table ||CASE 
-	                                                                                    WHEN td_ext.is_true(p_reuse) 
-											    THEN ' reuse storage' 
-											  ELSE 
-											    NULL 
-											  END,
+         td_sql.exec_sql( p_sql       =>    'truncate table '
+                                         || p_owner
+                                         || '.'
+                                         || p_table
+                                         || CASE
+                                               WHEN td_ext.is_true( p_reuse )
+                                                  THEN ' reuse storage'
+                                               ELSE NULL
+                                            END,
                           p_auto      => 'yes'
                         );
       o_td.clear_app_info;
    END trunc_tab;
+
+   -- builds a new table based on a current one
+   PROCEDURE build_table(
+      p_source_owner   VARCHAR2,
+      p_source_table   VARCHAR2,
+      p_owner          VARCHAR2,
+      p_table          VARCHAR2,
+      p_tablespace     VARCHAR2 DEFAULT NULL,
+      p_partitioning   VARCHAR2 DEFAULT 'yes'
+   )
+   IS
+      l_ddl            LONG;
+      l_e_ddl          LONG;
+      l_idx_cnt        NUMBER                        := 0;
+      l_tab_name       VARCHAR2( 61 )                := p_owner || '.' || p_table;
+      l_src_name       VARCHAR2( 61 )          := p_source_owner || '.' || p_source_table;
+      l_part_type      VARCHAR2( 6 );
+      l_targ_part      all_tables.partitioned%TYPE;
+      l_results        NUMBER;
+      l_rows           BOOLEAN                       := FALSE;
+      e_dup_idx_name   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_dup_idx_name, -955 );
+      e_dup_col_list   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_dup_col_list, -1408 );
+      o_td             tdtype                      := tdtype( p_module      => 'build_table' );
+   BEGIN
+      -- confirm that the source table
+      -- raise an error if it doesn't
+      td_sql.check_table( p_owner => p_source_owner, p_table => p_source_table );
+      -- don't want any constraints pulled
+      DBMS_METADATA.set_transform_param( DBMS_METADATA.session_transform,
+                                         'CONSTRAINTS',
+                                         FALSE
+                                       );
+      DBMS_METADATA.set_transform_param( DBMS_METADATA.session_transform,
+                                         'REF_CONSTRAINTS',
+                                         FALSE
+                                       );
+      -- execute immediate doesn't like ";" on the end
+      DBMS_METADATA.set_transform_param( DBMS_METADATA.session_transform,
+                                         'SQLTERMINATOR',
+                                         FALSE
+                                       );
+      -- we need the segment attributes so things go where we want them to
+      DBMS_METADATA.set_transform_param( DBMS_METADATA.session_transform,
+                                         'SEGMENT_ATTRIBUTES',
+                                         TRUE
+                                       );
+      -- don't want all the other storage aspects though
+      DBMS_METADATA.set_transform_param( DBMS_METADATA.session_transform, 'STORAGE',
+                                         FALSE );
+      o_td.change_action( 'Extract DDL' );
+
+      -- select DDL into a variable
+      SELECT REGEXP_REPLACE
+                ( REGEXP_REPLACE
+                     ( REGEXP_REPLACE
+                          ( DBMS_METADATA.get_ddl( 'TABLE', table_name, owner ),
+                            CASE
+                               -- don't want partitioning
+                            WHEN td_ext.get_yn_ind( p_partitioning ) = 'no'
+                                  -- remove all partitioning
+                            THEN '(\(\s*partition.+\))[[:space:]]*|(partition by).+\)[[:space:]]*'
+                               ELSE NULL
+                            END,
+                            NULL,
+                            1,
+                            0,
+                            'in'
+                          ),
+                       '(\."?)(' || p_source_table || ')(\w*)("?)',
+                       '.' || p_table || '\3',
+                       1,
+                       0,
+                       'i'
+                     ),
+                  '(")?(' || p_source_owner || ')("?\.)',
+                  p_owner || '.',
+                  1,
+                  0,
+                  'i'
+                ) table_ddl
+        INTO l_ddl
+        FROM all_tables
+       WHERE owner = UPPER( p_source_owner ) AND table_name = UPPER( p_source_table );
+
+      -- if a tablespace is provided then replace that
+      IF p_tablespace IS NOT NULL
+      THEN
+         l_ddl :=
+            REGEXP_REPLACE( l_ddl,
+                            '(tablespace)(\s*)([^ ]+)([[:space:]]*)',
+                            '\1\2' || p_tablespace || '\4',
+                            1,
+                            0,
+                            'i'
+                          );
+      END IF;
+
+      l_results := td_sql.exec_sql( p_sql => l_ddl, p_auto => 'yes' );
+      o_td.clear_app_info;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         td_inst.log_err;
+         RAISE;
+   END build_table;
 
    -- builds the indexes from one table on another
    -- if both the source and target are partitioned tables, then the index DDL is left alone
@@ -280,201 +386,6 @@ IS
          td_inst.log_err;
          RAISE;
    END build_indexes;
-
-
-   -- builds a new table based on a current one
-   PROCEDURE build_table(
-      p_source_owner   VARCHAR2,
-      p_source_table   VARCHAR2,
-      p_owner          VARCHAR2 DEFAULT NULL,
-      p_table          VARCHAR2 DEFAULT NULL,
-      p_tablespace     VARCHAR2 DEFAULT NULL
-      p_partitioning   VARCHAR2 DEFAULT 'yes'
-   )
-   IS
-      l_ddl            LONG;
-      l_e_ddl          LONG;
-      l_idx_cnt        NUMBER                        := 0;
-      l_tab_name       VARCHAR2( 61 )                := p_owner || '.' || p_table;
-      l_src_name       VARCHAR2( 61 )          := p_source_owner || '.' || p_source_table;
-      l_part_type      VARCHAR2( 6 );
-      l_targ_part      all_tables.partitioned%TYPE;
-      l_results        NUMBER;
-      l_rows           BOOLEAN                       := FALSE;
-      e_dup_idx_name   EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_dup_idx_name, -955 );
-      e_dup_col_list   EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_dup_col_list, -1408 );
-      o_td             tdtype                    := tdtype( p_module      => 'build_table' );
-   BEGIN
-      -- confirm that the source table
-      -- raise an error if it doesn't
-      td_sql.check_table( p_owner => p_source_owner, p_table => p_source_table );
-      
-      -- don't want any constraints pulled
-      dbms_metadata.set_transform_param(dbms_metadata.session_transform,'CONSTRAINTS',FALSE);
-      dbms_metadata.set_transform_param(dbms_metadata.session_transform,'REF_CONSTRAINTS',FALSE);
-
-      -- execute immediate doesn't like ";" on the end
-      DBMS_METADATA.set_transform_param( DBMS_METADATA.session_transform,
-                                         'SQLTERMINATOR',
-                                         FALSE
-                                       );
-      -- we need the segment attributes so things go where we want them to
-      DBMS_METADATA.set_transform_param( DBMS_METADATA.session_transform,
-                                         'SEGMENT_ATTRIBUTES',
-                                         TRUE
-                                       );
-      -- don't want all the other storage aspects though
-      DBMS_METADATA.set_transform_param( DBMS_METADATA.session_transform, 'STORAGE',
-                                         FALSE );
-      o_td.change_action( 'Extract DDL' );
-
-      -- find out if the target table is partitioned so we know how to formulate the index ddl
-      SELECT partitioned
-        INTO l_targ_part
-        FROM all_tables
-       WHERE table_name = UPPER( p_table ) AND owner = UPPER( p_owner );
-      
-      -- select DDL into a variable
-	 SELECT    REGEXP_REPLACE                      
-                -- dbms_metadata pulls the metadata for the source object out of the dictionary
-                (    DBMS_METADATA.get_ddl( 'TABLE', table_name, owner ),
-                  CASE
-                  -- target is not partitioned but tablespace is provided
-                  WHEN l_targ_part = 'NO' AND p_tablespace IS NOT NULL
-                  -- strip out partitioned info and local keyword and tablespace clause
-                  THEN '(\(\s*partition.+\))|local|(tablespace)\s*[^ ]+'
-                  -- target is partitioned and tablespace is provided
-                  WHEN l_targ_part = 'YES' AND p_tablespace IS NOT NULL
-                  -- strip out partitioned info keeping local keyword and remove tablespace clause
-                  THEN '(\(\s*partition.+\))|(tablespace)\s*[^ ]+'
-                  ELSE NULL
-                  END,
-                  NULL,
-                  1,
-                  0,
-                  'in'
-                )
-                || CASE
-                -- if tablespace is provided, tack it on the end
-                WHEN p_tablespace IS NOT NULL
-                THEN ' TABLESPACE ' || p_tablespace
-                ELSE NULL
-                END table_ddl,
-	   INTO l_sql
-           FROM all_tables
-                -- use a CASE'd regular expression to determine whether to include global indexes
-          WHERE name = UPPER( p_source_table )
-            AND table_owner = UPPER( p_source_owner );
-		
-
-     LOOP
-         td_inst.log_msg( 'Source index: ' || c_indexes.index_name, 4 );
-         td_inst.log_msg( 'Renamed index: ' || c_indexes.idx_rename, 4 );
-         td_inst.log_msg( 'Exception renamed index: ' || c_indexes.idx_e_rename, 4 );
-         l_rows := TRUE;
-         o_td.change_action( 'Format index DDL' );
-         -- first remove any ALTER INDEX statements that may be included
-         -- this could occur if the indexes are in an unusable state, for instance
-         -- we don't care if they are unusable or not
-         l_ddl :=
-                REGEXP_REPLACE( c_indexes.index_ddl, '(alter index).+', NULL, 1, 0, 'i' );
-         -- replace the source table name with the target table name
-         -- if a " is found, then use it... otherwise don't
-         l_ddl :=
-            REGEXP_REPLACE( l_ddl,
-                            '(\."?)(' || p_source_table || ')(\w*)("?)',
-                            '.' || p_table || '\3',
-                            1,
-                            0,
-                            'i'
-                          );
-              -- replace the index owner with the target owner
-         -- if a " is found, then use it... otherwise don't
-         l_ddl :=
-            REGEXP_REPLACE( l_ddl,
-                            '(")?(' || c_indexes.owner || ')("?\.)',
-                            p_owner || '.',
-                            1,
-                            0,
-                            'i'
-                          );
-         -- though it's not necessary for EXECUTE IMMEDIATE, remove blank lines for looks
-         l_ddl := REGEXP_REPLACE( l_ddl, CHR( 10 ) || '[[:space:]]+' || CHR( 10 ), NULL );
-         -- and for looks, remove the last carriage return
-         l_ddl := REGEXP_REPLACE( l_ddl, '[[:space:]]*$', NULL );
-         o_td.change_action( 'Execute index DDL' );
-         l_e_ddl :=
-            REGEXP_REPLACE( l_ddl,
-                            '(\."?)(\w)+(")?( on)',
-                            '.' || c_indexes.idx_e_rename || ' \4',
-                            1,
-                            0,
-                            'i'
-                          );
-         td_inst.log_msg( 'Renamed DDL for exceptions: ' || l_e_ddl, 4 );
-
-         BEGIN
-            l_results := td_sql.exec_sql( p_sql => l_ddl, p_auto => 'yes' );
-            td_inst.log_msg( 'Index ' || c_indexes.idx_rename || ' built' );
-            l_idx_cnt := l_idx_cnt + 1;
-         EXCEPTION
-            -- if a duplicate column list of indexes already exist, log it, but continue
-            WHEN e_dup_col_list
-            THEN
-               td_inst.log_msg(    'Index comparable to '
-                                || c_indexes.index_name
-                                || ' already exists'
-                              );
-            -- if this index_name already exists, try to rename it to something else
-            WHEN e_dup_idx_name
-            THEN
-               td_inst.log_msg
-                         ( 'New index name being used because index name already exists',
-                           3
-                         );
-
-               BEGIN
-                  l_results := td_sql.exec_sql( p_sql => l_e_ddl, p_auto => 'yes' );
-                  td_inst.log_msg( 'Index ' || c_indexes.idx_e_rename || ' built' );
-                  l_idx_cnt := l_idx_cnt + 1;
-               EXCEPTION
-                  -- now the name is different, but check to see if the columns are already indexed
-                  WHEN e_dup_col_list
-                  THEN
-                     td_inst.log_msg(    'Index comparable to '
-                                      || c_indexes.index_name
-                                      || ' already exists'
-                                    );
-               END;
-         END;
-      END LOOP;
-
-      IF NOT l_rows
-      THEN
-         td_inst.log_msg( 'No matching indexes found on ' || l_src_name );
-      ELSE
-         td_inst.log_msg(    l_idx_cnt
-                          || ' index'
-                          || CASE
-                                WHEN l_idx_cnt = 1
-                                   THEN NULL
-                                ELSE 'es'
-                             END
-                          || ' built on '
-                          || l_tab_name
-                        );
-      END IF;
-
-      o_td.clear_app_info;
-   EXCEPTION
-      WHEN OTHERS
-      THEN
-         td_inst.log_err;
-         RAISE;
-   END build_table;
-
 
    -- builds the constraints from one table on another
    PROCEDURE build_constraints(
@@ -1827,16 +1738,16 @@ IS
                            );
          WHEN OTHERS
          THEN
-	 -- first log the error
-	 -- provide a backtrace from this exception handler to the next
-	 td_inst.log_err;
+            -- first log the error
+            -- provide a backtrace from this exception handler to the next
+            td_inst.log_err;
 
             -- need to drop indexes if there is an exception
             -- this is for rerunability
             IF td_ext.is_true( p_index_drop )
             THEN
-	       -- now record the reason for the index drops
-	       td_inst.log_msg('Dropping indexes for restartability');
+               -- now record the reason for the index drops
+               td_inst.log_msg( 'Dropping indexes for restartability' );
                drop_indexes( p_owner => p_source_owner, p_table => p_source_table );
             END IF;
 
@@ -1916,9 +1827,9 @@ IS
                      );
 
          td_inst.log_cnt_msg( SQL%ROWCOUNT,
-                           'Number of records inserted into PARTNAME table',
-                           4
-                         );
+                              'Number of records inserted into PARTNAME table',
+                              4
+                            );
       ELSE
          IF p_source_column IS NULL
          THEN
@@ -1957,7 +1868,10 @@ IS
                                || ') '
                                || 'ORDER By partition_position'
                );
-         td_inst.log_cnt_msg( l_results, 'Number of records inserted into PARTNAME table', 4 );
+         td_inst.log_cnt_msg( l_results,
+                              'Number of records inserted into PARTNAME table',
+                              4
+                            );
       END IF;
 
       o_td.clear_app_info;
