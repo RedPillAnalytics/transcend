@@ -1,9 +1,14 @@
 CREATE OR REPLACE PACKAGE td_dbapi AUTHID CURRENT_USER
 IS
-   PROCEDURE trunc_tab( 
-      p_owner VARCHAR2, 
-      p_table VARCHAR2, 
-      p_reuse VARCHAR2 DEFAULT 'no' 
+   PROCEDURE trunc_tab( p_owner VARCHAR2, p_table VARCHAR2, p_reuse VARCHAR2 DEFAULT 'no' );
+
+   PROCEDURE build_table(
+      p_source_owner   VARCHAR2,
+      p_source_table   VARCHAR2,
+      p_owner          VARCHAR2,
+      p_table          VARCHAR2,
+      p_tablespace     VARCHAR2 DEFAULT NULL,
+      p_partitioning   VARCHAR2 DEFAULT 'yes'
    );
 
    PROCEDURE build_indexes(
