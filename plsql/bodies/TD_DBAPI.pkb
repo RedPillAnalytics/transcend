@@ -1,9 +1,13 @@
 CREATE OR REPLACE PACKAGE BODY td_dbapi
 IS
-   PROCEDURE trunc_tab( p_owner VARCHAR2, p_table VARCHAR2, p_reuse VARCHAR2 DEFAULT 'no' )
+   PROCEDURE truncate_table(
+      p_owner   VARCHAR2,
+      p_table   VARCHAR2,
+      p_reuse   VARCHAR2 DEFAULT 'no'
+   )
    IS
       l_results   NUMBER;
-      o_td        tdtype := tdtype( p_module => 'trunc_tab' );
+      o_td        tdtype := tdtype( p_module => 'truncate_table' );
    BEGIN
       -- confirm that the table exists
       -- raise an error if it doesn't
@@ -21,7 +25,32 @@ IS
                           p_auto      => 'yes'
                         );
       o_td.clear_app_info;
-   END trunc_tab;
+   END truncate_table;
+
+   -- drop a table
+   PROCEDURE drop_table( p_owner VARCHAR2, p_table VARCHAR2, p_purge VARCHAR2
+            DEFAULT 'yes' )
+   IS
+      l_results   NUMBER;
+      o_td        tdtype := tdtype( p_module => 'truncate_table' );
+   BEGIN
+      -- confirm that the table exists
+      -- raise an error if it doesn't
+      td_sql.check_table( p_owner => p_owner, p_table => p_table );
+      l_results :=
+         td_sql.exec_sql( p_sql       =>    'drop table '
+                                         || p_owner
+                                         || '.'
+                                         || p_table
+                                         || CASE
+                                               WHEN td_ext.is_true( p_purge )
+                                                  THEN ' purge'
+                                               ELSE NULL
+                                            END,
+                          p_auto      => 'yes'
+                        );
+      o_td.clear_app_info;
+   END drop_table;
 
    -- builds a new table based on a current one
    PROCEDURE build_table(
@@ -1109,7 +1138,7 @@ IS
       IF td_ext.is_true( p_trunc )
       THEN
          -- truncate the target table
-         trunc_tab( p_owner, p_table );
+         truncate_table( p_owner, p_table );
       END IF;
 
       -- enable|disable parallel dml depending on the parameter for P_DIRECT
