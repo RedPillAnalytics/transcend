@@ -35,7 +35,7 @@ SELECT REGEXP_REPLACE
                          ( DBMS_METADATA.get_ddl( 'TABLE', table_name, owner ),
                            CASE
                               -- don't want partitioning
-                           WHEN td_ext.get_yn_ind(:p_partitioning) = 'no'
+                           WHEN td_ext.get_yn_ind( :p_partitioning ) = 'no'
                                  -- remove all partitioning
                            THEN '(\(\s*partition.+\))[[:space:]]*|(partition by).+\)[[:space:]]*'
                               ELSE NULL
