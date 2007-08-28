@@ -4,8 +4,10 @@ WITH object identifier (owner, table_name)
 as
 SELECT owner,
        table_name,
+       upper( owner||'.'||table_name ) full_table,
        source_owner,
        source_object,
+       upper( source_owner||'.'||source_object ) full_source,
        replace_method,
        'SELECT '||sel1||' from ('
        ||'SELECT '||sk||','||nk||','
