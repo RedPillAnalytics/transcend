@@ -7,9 +7,7 @@ CREATE OR REPLACE TYPE dimensiontype AUTHID CURRENT_USER AS object
   full_source 	     VARCHAR2( 61 ),
   replace_method     VARCHAR2( 10 ),
   select_statment    VARCHAR2(4000),
-  member PROCEDURE index_maint,
-  member PROCEDURE constraint_maint,
-  member PROCEDURE replace_data
+  member PROCEDURE load
 )
 ;
 /
