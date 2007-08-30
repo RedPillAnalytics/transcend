@@ -29,13 +29,5 @@ AS
       p_oper_id          NUMBER DEFAULT NULL,
       p_runmode          VARCHAR2 DEFAULT NULL
    );
-
-   PROCEDURE run_process_flow(
-      p_flow_name       VARCHAR2,
-      p_flow_location   VARCHAR2,
-      p_rep_owner	VARCHAR2,
-      p_runmode         VARCHAR2 DEFAULT NULL
-   );
-
 END td_owbapi;
 /
