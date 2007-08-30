@@ -24,7 +24,8 @@ SELECT owner,
        ||' order by '||nk||','||esd
        ||')'
        ||' where include=''Y''' load_sql
-  FROM (SELECT DISTINCT owner,
+  FROM (SELECT ROWNUM rn,
+	       owner,
 	       table_name,
 	       source_owner,
 	       source_object,
@@ -119,4 +120,5 @@ SELECT owner,
 		  FROM column_conf
 		  JOIN dimension_conf
 		       USING (owner,table_name)))
+ WHERE rn = 1
 /
