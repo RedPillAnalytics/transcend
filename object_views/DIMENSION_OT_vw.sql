@@ -8,8 +8,12 @@ SELECT owner,
        source_owner,
        source_object,
        upper( source_owner||'.'||source_object ) full_source,
+       staging_table,
+       full_stage,
        replace_method,
-       'SELECT '||sel1||' from ('
+       'insert /*+ APPEND */ into '
+       ||full_stage
+       ||' SELECT '||sel1||' from ('
        ||'SELECT '||sk||','||nk||','
        ||scd1_analytics||','
        ||scd2_list||','
@@ -19,11 +23,13 @@ SELECT owner,
        ||union_list
        ||' order by '||nk||','||esd
        ||')'
-       ||' where include=''Y''' select_statement
+       ||' where include=''Y''' load_sql
   FROM (SELECT DISTINCT owner,
 	       table_name,
 	       source_owner,
 	       source_object,
+	       staging_table,
+	       owner||'.'||staging_table full_stage,
 	       replace_method,
 	       sk,
 	       nk,
@@ -69,6 +75,7 @@ SELECT owner,
 		       sequence_owner,
 		       sequence_name,
 		       replace_method,
+		       'DIM$' || DBMS_RANDOM.STRING( 'X', 20 ) staging_table,
 		       (SELECT stragg(column_name)
 			  FROM column_conf ic
 			 WHERE ic.owner=owner
