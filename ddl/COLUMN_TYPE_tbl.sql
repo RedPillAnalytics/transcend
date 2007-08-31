@@ -1,7 +1,7 @@
-DROP TABLE column_type CASCADE CONSTRAINTS purge
+DROP TABLE column_type_list CASCADE CONSTRAINTS purge
 /
 
-CREATE TABLE column_type
+CREATE TABLE column_type_list
        ( column_type		VARCHAR2(30) NOT NULL,
 	 created_user	     	VARCHAR2(30) DEFAULT sys_context('USERENV','SESSION_USER') NOT NULL,
 	 created_dt	     	DATE DEFAULT SYSDATE NOT NULL,
@@ -10,28 +10,28 @@ CREATE TABLE column_type
        )
 /
 
-COMMENT ON TABLE column_type IS 'constraining table for the COLUMN_TYPE column in COLUMN_CONF';
+COMMENT ON TABLE column_type_list IS 'constraining table for the COLUMN_TYPE column in COLUMN_CONF';
 
-COMMENT ON COLUMN column_type.column_type IS 'column to constrain';
-COMMENT ON COLUMN column_type.created_user IS 'for auditing';
-COMMENT ON COLUMN column_type.created_dt IS 'for auditing';
-COMMENT ON COLUMN column_type.modified_user IS 'for auditing';
-COMMENT ON COLUMN column_type.modified_dt IS 'for auditing';
+COMMENT ON COLUMN column_type_list.column_type IS 'column to constrain';
+COMMENT ON COLUMN column_type_list.created_user IS 'for auditing';
+COMMENT ON COLUMN column_type_list.created_dt IS 'for auditing';
+COMMENT ON COLUMN column_type_list.modified_user IS 'for auditing';
+COMMENT ON COLUMN column_type_list.modified_dt IS 'for auditing';
 
-ALTER TABLE column_type 
+ALTER TABLE column_type_list 
       ADD (
-	    CONSTRAINT column_type_pk
+	    CONSTRAINT column_type_list_pk
 	    PRIMARY KEY
-	    ( column_type )
+	    ( column_type_list )
 	    USING INDEX
 	  )
 /
 
-INSERT INTO column_type (column_type) VALUES ('surrogate key');
-INSERT INTO column_type (column_type) VALUES ('natural key');
-INSERT INTO column_type (column_type) VALUES ('scd type 1');
-INSERT INTO column_type (column_type) VALUES ('scd type 2');
-INSERT INTO column_type (column_type) VALUES ('scd type 3');
-INSERT INTO column_type (column_type) VALUES ('effective start date');
-INSERT INTO column_type (column_type) VALUES ('effective end date');
-INSERT INTO column_type (column_type) VALUES ('current indicator');
+INSERT INTO column_type_list (column_type) VALUES ('surrogate key');
+INSERT INTO column_type_list (column_type) VALUES ('natural key');
+INSERT INTO column_type_list (column_type) VALUES ('scd type 1');
+INSERT INTO column_type_list (column_type) VALUES ('scd type 2');
+INSERT INTO column_type_list (column_type) VALUES ('scd type 3');
+INSERT INTO column_type_list (column_type) VALUES ('effective start date');
+INSERT INTO column_type_list (column_type) VALUES ('effective end date');
+INSERT INTO column_type_list (column_type) VALUES ('current indicator');
