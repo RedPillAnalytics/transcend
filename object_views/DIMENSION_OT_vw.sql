@@ -2,14 +2,17 @@ CREATE OR REPLACE VIEW dimension_ot
 OF dimensiontype
 WITH object identifier (owner, table_name)
 as
-SELECT owner,
+SELECT DISTINCT owner,
        table_name,
        upper( owner||'.'||table_name ) full_table,
        source_owner,
        source_object,
        upper( source_owner||'.'||source_object ) full_source,
+       staging_owner,
        staging_table,
-       full_stage,
+       upper( staging_owner||'.'||staging_table ) full_stage,
+       constant_staging,
+       direct_load,
        replace_method,
        'insert /*+ APPEND */ into '
        ||full_stage
@@ -29,8 +32,17 @@ SELECT owner,
 	       table_name,
 	       source_owner,
 	       source_object,
+	       staging_owner,
 	       staging_table,
-	       owner||'.'||staging_table full_stage,
+	       upper( staging_owner||'.'||staging_table ) full_stage,
+	       CASE
+	       WHEN staging_table IS NULL
+	       THEN
+	       'yes'
+	       ELSE
+	       'no'
+	       END constant_staging,
+	       direct_load,
 	       replace_method,
 	       sk,
 	       nk,
@@ -73,10 +85,12 @@ SELECT owner,
 		       column_name,
 		       source_object,
 		       source_owner,
+		       nvl(staging_owner,owner) staging_owner,
+		       nvl(staging_table,'TD$' || table_name) staging_table,
 		       sequence_owner,
 		       sequence_name,
+		       direct_load,
 		       replace_method,
-		       'DIM$' || DBMS_RANDOM.STRING( 'X', 20 ) staging_table,
 		       (SELECT stragg(column_name)
 			  FROM column_conf ic
 			 WHERE ic.owner=owner
@@ -120,5 +134,4 @@ SELECT owner,
 		  FROM column_conf
 		  JOIN dimension_conf
 		       USING (owner,table_name)))
- WHERE rn = 1
 /
