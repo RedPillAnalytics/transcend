@@ -2,12 +2,13 @@ CREATE OR REPLACE TYPE BODY dimensiontype
 AS
    MEMBER PROCEDURE LOAD
    IS
-      o_td         tdtype         := tdtype( p_module => 'index_maint' );
+      o_td         tdtype         := tdtype( p_module => 'load' );
       l_rows       BOOLEAN;
+
    BEGIN      
       
-      o_td.change_action('Create staging table');
       -- create a table to use to hold the staging results of the analytics statement
+      o_td.change_action('Create staging table');
       td_dbapi.build_table( p_source_owner      => owner,
                             p_source_table      => table_name,
                             p_owner             => owner,
@@ -20,7 +21,11 @@ AS
                                ELSE 'yes'
                             END
                           );
+      
+      -- now run the insert statement to load the staging table
       o_td.change_action('Load staging table');
+      
+      
 
       -- if the replace method is a partition exchange, then no index maintenance needs to be performed
       IF replace_method <> 'exchange'
