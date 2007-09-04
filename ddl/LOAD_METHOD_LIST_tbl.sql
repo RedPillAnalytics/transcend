@@ -11,9 +11,9 @@ CREATE TABLE load_method_list
        )
 /
 
-COMMENT ON TABLE load_method_list IS 'list or viable values for LOAD_METHOD';
+COMMENT ON TABLE load_method_list IS 'used for foreign keys to constrain the list of applicable values for LOAD_METHOD';
 
-COMMENT ON COLUMN load_method_list.load_method IS 'applicable values for load_method';
+COMMENT ON COLUMN load_method_list.load_method IS 'list of applicable values for LOAD_METHOD';
 COMMENT ON COLUMN load_method_list.created_user IS 'for auditing';
 COMMENT ON COLUMN load_method_list.created_dt IS 'for auditing';
 COMMENT ON COLUMN load_method_list.modified_user IS 'for auditing';
