@@ -1,0 +1,76 @@
+TRUNCATE TABLE tdinc.email_notify_conf;
+DELETE (SELECT * FROM tdinc.filehub_conf);
+DELETE (SELECT * FROM tdinc.notify_conf);
+
+INSERT INTO tdinc.email_notify_conf
+       VALUES ( tdinc.email_notify_conf_seq.nextval,
+		'no-reply@transcendentdat.com',
+		'stewartbryson@gmail.com,stewart.bryson@transcendentdata.com',
+		sys_context('USERENV','SESSION_USER'),
+		SYSDATE,
+		NULL,
+		NULL);
+
+INSERT INTO tdinc.notify_conf
+       VALUES ( tdinc.notify_conf_seq.nextval,
+		'email',
+		tdinc.email_notify_conf_seq.currval,
+		'test file ready for download',
+		'test file ready for download',
+		sys_context('USERENV','SESSION_USER'),
+		SYSDATE,
+		NULL,
+		NULL);
+
+INSERT INTO tdinc.filehub_conf
+       ( filehub_id, 
+	 filehub_name, 
+	 filehub_group, 
+	 filehub_type, 
+	 object_owner, 
+	 object_name, 
+	 directory, 
+	 filename, 
+	 arch_directory, 
+	 min_bytes, 
+	 max_bytes, 
+	 file_datestamp, 
+	 notify_id, 
+	 notify,
+	 baseurl, 
+	 source_directory, 
+	 source_regexp, 
+	 regexp_options, 
+	 source_policy, 
+	 required, 
+	 dateformat, 
+	 timestampformat, 
+	 delimiter, 
+	 quotechar, 
+	 headers)
+       VALUES
+       ( tdinc.filehub_conf_seq.nextval,
+	 'Test Extract',
+	 'Test Group',
+	 'extract',
+	 'tdinc',
+	 'filehub_conf',
+	 'EXTDATA',
+	 'filehub_conf.csv',
+	 'ARCHDATA',
+	 1,
+	 10000000,
+	 'mmddyyyyhhmiss',
+	 tdinc.notify_conf_seq.currval,
+	 'Y',
+	 'www.transcendentdata.com/extracts',
+	 NULL,
+	 NULL,
+	 NULL,
+	 NULL,
+	 NULL,
+	 'mmddyyyyhhmiss',
+	 'mmddyyyyhhmiss',
+	 ',',
+	 '"',
+	 'Y');
