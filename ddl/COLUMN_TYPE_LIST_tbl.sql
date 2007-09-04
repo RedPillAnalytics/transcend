@@ -22,7 +22,7 @@ ALTER TABLE column_type_list
       ADD (
 	    CONSTRAINT column_type_list_pk
 	    PRIMARY KEY
-	    ( column_type_list )
+	    ( column_type )
 	    USING INDEX
 	  )
 /
