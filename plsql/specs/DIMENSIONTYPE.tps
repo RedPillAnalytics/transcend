@@ -5,8 +5,11 @@ CREATE OR REPLACE TYPE dimensiontype AUTHID CURRENT_USER AS object
   source_owner	     VARCHAR2( 30 ),
   source_object      VARCHAR2( 30 ),
   full_source 	     VARCHAR2( 61 ),
+  staging_owner      VARCHAR2( 30 ),
   staging_table	     VARCHAR2( 30 ),
   full_stage	     VARCHAR2( 61 ),
+  constant_staging   VARCHAR2( 3 ),
+  direct_load	     VARCHAR2( 3 ),
   replace_method     VARCHAR2( 10 ),
   load_sql           VARCHAR2(4000),
   member PROCEDURE load
