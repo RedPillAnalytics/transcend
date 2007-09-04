@@ -37,7 +37,7 @@ ALTER TABLE column_conf
       ADD (
 	    CONSTRAINT column_conf_fk1
 	    FOREIGN KEY ( column_type )
-	    REFERENCES column_type  
+	    REFERENCES column_type_list
 	    ( column_type )
 	  )
 /
