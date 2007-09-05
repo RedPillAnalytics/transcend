@@ -177,8 +177,8 @@ IS
       l_ddl            LONG;
       l_e_ddl          LONG;
       l_idx_cnt        NUMBER                        := 0;
-      l_tab_name       VARCHAR2( 61 )                := p_owner || '.' || p_table;
-      l_src_name       VARCHAR2( 61 )          := p_source_owner || '.' || p_source_table;
+      l_tab_name       VARCHAR2( 61 )                := upper(p_owner || '.' || p_table);
+      l_src_name       VARCHAR2( 61 )          := upper(p_source_owner || '.' || p_source_table);
       l_part_type      VARCHAR2( 6 );
       l_targ_part      all_tables.partitioned%TYPE;
       l_results        NUMBER;
@@ -1626,8 +1626,8 @@ IS
       p_statmethod       VARCHAR2 DEFAULT NULL
    )
    IS
-      l_src_name       VARCHAR2( 61 )          := p_source_owner || '.' || p_source_table;
-      l_tab_name       VARCHAR2( 61 )                        := p_owner || '.' || p_table;
+      l_src_name       VARCHAR2( 61 )          := upper(p_source_owner || '.' || p_source_table);
+      l_tab_name       VARCHAR2( 61 )                        := upper(p_owner || '.' || p_table);
       l_target_owner   all_tab_partitions.table_name%TYPE       DEFAULT p_source_owner;
       l_rows           BOOLEAN                                  := FALSE;
       l_partname       all_tab_partitions.partition_name%TYPE;
@@ -1638,10 +1638,16 @@ IS
       l_cachedblk      NUMBER;
       l_cachehit       NUMBER;
       l_results        NUMBER;
+      l_build_cons     BOOLEAN := FALSE;
+      l_compress       BOOLEAN := FALSE;
+      l_dis_fkeys      BOOLEAN := FALSE;
+      l_retry_ddl      BOOLEAN := FALSE;
       e_no_stats       EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_stats, -20000 );
       e_compress       EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_compress, -14646 );
+      e_fkeys          EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_compress, -2266 );
       o_td             tdtype               := tdtype( p_module      => 'exchange_partition' );
    BEGIN
       o_td.change_action( 'Determine partition to use' );
@@ -1677,13 +1683,6 @@ IS
                      p_part_type         => 'local',
                      p_tablespace        => p_idx_tablespace
                    );
-      -- create unique constraints
-      build_constraints( p_owner                => p_source_owner,
-                         p_table                => p_source_table,
-                         p_source_owner         => p_owner,
-                         p_source_table         => p_table,
-                         p_constraint_type      => 'p|u'
-                       );
       -- handle statistics for the new partition
       update_stats( p_owner                => p_source_owner,
                     p_table                => p_source_table,
@@ -1708,65 +1707,54 @@ IS
                     p_cascade              => FALSE
                   );
 
-      -- disable any foreign keys on other tables that reference this table
-      IF td_ext.is_true( p_handle_fkeys )
-      THEN
-         o_td.change_action( 'Disable foreign keys' );
-         disable_constraints( p_owner      => p_owner,
-                              p_table      => p_table,
-                              p_basis      => 'reference'
-                            );
-      END IF;
-
       -- now exchange the table
       o_td.change_action( 'Exchange table' );
 
-      BEGIN
-         l_results :=
-            td_sql.exec_sql( p_sql       =>    'alter table '
-                                            || l_tab_name
-                                            || ' exchange partition '
-                                            || l_partname
-                                            || ' with table '
-                                            || l_src_name
-                                            || ' including indexes update global indexes',
+      LOOP
+	 l_retry_ddl := FALSE;
+	 BEGIN
+            l_results :=
+            td_sql.exec_sql( p_sql          =>    'alter table '
+                             || l_tab_name
+                             || ' exchange partition '
+                             || l_partname
+                             || ' with table '
+                             || l_src_name
+                             || ' including indexes without validation update global indexes',
                              p_auto      => 'yes'
                            );
-         td_inst.log_msg(    l_src_name
-                          || ' exchanged for partition '
-                          || l_partname
-                          || ' of table '
-                          || l_tab_name
-                        );
-      EXCEPTION
-         WHEN e_compress
-         THEN
-            -- need to compress the staging table
-            l_results :=
-               td_sql.exec_sql( p_sql       =>    'alter table '
-                                               || l_src_name
-                                               || ' move compress',
-                                p_auto      => 'yes'
-                              );
-            -- now, rerun the exchange
-            l_results :=
-               td_sql.exec_sql( p_sql       =>    'alter table '
-                                               || l_tab_name
-                                               || ' exchange partition '
-                                               || l_partname
-                                               || ' with table '
-                                               || l_src_name
-                                               || ' including indexes update global indexes',
-                                p_auto      => 'yes'
-                              );
             td_inst.log_msg(    l_src_name
                              || ' exchanged for partition '
                              || l_partname
                              || ' of table '
                              || l_tab_name
                            );
-         WHEN OTHERS
-         THEN
+	 EXCEPTION
+	    WHEN e_fkeys
+	    THEN
+	    -- disable foreign keys related to the table
+	    -- this will enable the exchange to occur
+	    o_td.change_action( 'Disable foreign keys' );
+	    l_dis_fkeys := TRUE;
+	    l_retry_ddl := TRUE;
+            disable_constraints( p_owner      => p_owner,
+            			 p_table      => p_table,
+                                 p_basis      => 'reference'
+                               );
+	    
+            WHEN e_compress
+            THEN
+            -- need to compress the staging table
+	    l_dis_fkeys := TRUE;
+	    l_retry_ddl := TRUE;
+            l_results :=
+            td_sql.exec_sql( p_sql       =>    'alter table '
+                             || l_src_name
+                             || ' move compress',
+                             p_auto      => 'yes'
+                           );
+            WHEN OTHERS
+            THEN
             -- first log the error
             -- provide a backtrace from this exception handler to the next
             td_inst.log_err;
@@ -1781,10 +1769,12 @@ IS
             END IF;
 
             RAISE;
-      END;
+	 END;
+	 EXIT WHEN NOT l_retry_ddl;
+      END LOOP;
 
       -- enable any foreign keys on other tables that reference this table
-      IF td_ext.is_true( p_handle_fkeys )
+      IF l_dis_fkeys
       THEN
          o_td.change_action( 'Enable foreign keys' );
          enable_constraints( p_owner      => p_owner,
