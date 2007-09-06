@@ -21,7 +21,8 @@ AS
    END exec_auto;
 
    -- use EXECUTE IMMEDIATE to execute a SQL statement
-   -- no AUTONOMOUS_TRANSACTION, so this will execute within the current transaction
+   -- this function is not compile with AUTONOMOUS_TRANSATION
+   -- if the P_AUTO flag of 'yes' is passed, then EXEC_AUTO is called
    FUNCTION exec_sql(
       p_sql    VARCHAR2,
       p_auto   VARCHAR2 DEFAULT 'no',
@@ -51,6 +52,22 @@ AS
 
       RETURN l_results;
    END exec_sql;
+
+   -- if I don't care about the number of results (DDL, for instance), just call this procedure
+   PROCEDURE exec_sql(
+      p_sql    VARCHAR2,
+      p_auto   VARCHAR2 DEFAULT 'no',
+      p_msg    VARCHAR2 DEFAULT NULL
+   )
+   AS
+      l_results   NUMBER;
+   BEGIN
+      -- simply call the procedure and discard the results
+      l_results := exec_sql( p_sql  => p_sql,
+			     p_auto => p_auto,
+			     p_msg  => p_msg );
+   END exec_sql;
+
 
    -- checks things about a table depending on the parameters passed
    -- raises an exception if the specified things are not true
