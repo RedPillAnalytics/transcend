@@ -1611,17 +1611,16 @@ IS
       p_partname         VARCHAR2 DEFAULT NULL,
       p_idx_tablespace   VARCHAR2 DEFAULT NULL,
       p_index_drop       VARCHAR2 DEFAULT 'yes',
-      p_handle_fkeys     VARCHAR2 DEFAULT 'yes',
-      p_statistics       VARCHAR2 DEFAULT NULL,
+      p_statistics       VARCHAR2 DEFAULT 'transfer',
       p_statpercent      NUMBER DEFAULT NULL,
       p_statdegree       NUMBER DEFAULT NULL,
       p_statmethod       VARCHAR2 DEFAULT NULL
    )
    IS
-      l_src_name       VARCHAR2( 61 )          := upper(p_source_owner || '.' || p_source_table);
-      l_tab_name       VARCHAR2( 61 )                        := upper(p_owner || '.' || p_table);
-      l_target_owner   all_tab_partitions.table_name%TYPE       DEFAULT p_source_owner;
-      l_rows           BOOLEAN                                  := FALSE;
+      l_src_name       VARCHAR2( 61 )                             := upper(p_source_owner || '.' || p_source_table);
+      l_tab_name       VARCHAR2( 61 )                        	  := upper(p_owner || '.' || p_table);
+      l_target_owner   all_tab_partitions.table_name%TYPE    	  := p_source_owner;
+      l_rows           BOOLEAN                               	  := FALSE;
       l_partname       all_tab_partitions.partition_name%TYPE;
       l_ddl            LONG;
       l_numrows        NUMBER;
@@ -1639,7 +1638,7 @@ IS
       e_compress       EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_compress, -14646 );
       e_fkeys          EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_compress, -2266 );
+      PRAGMA EXCEPTION_INIT( e_fkeys, -2266 );
       o_td             tdtype               := tdtype( p_module      => 'exchange_partition' );
    BEGIN
       o_td.change_action( 'Determine partition to use' );
@@ -1667,7 +1666,46 @@ IS
                       WHERE table_name = UPPER( p_table )
                         AND table_owner = UPPER( p_owner ));
 
-      -- build the indexes on the stage table just like the target table
+      -- we want to gather statistics
+      -- we gather statistics first before the indexes are built
+      -- the indexes will collect there own statistics when they are built
+      -- that is why we don't cascade
+      CASE
+      WHEN REGEXP_LIKE('gather',p_statistics,'i')
+      THEN
+	 update_stats( p_owner                => p_source_owner,
+                       p_table                => p_source_table,
+                       p_percent              => p_statpercent,
+                       p_degree               => p_statdegree,
+                       p_method               => p_statmethod,
+                       p_cascade              => FALSE );
+      -- we want to transfer the statistics from the current segment into the new segment
+      -- this is preferable if automatic stats are handling stats collection
+      -- and you want the load time not to suffer from statistics gathering
+      WHEN REGEXP_LIKE('transfer', p_statistics,'i')
+      THEN
+         update_stats( p_owner	              => p_source_owner,
+		       p_table		      => p_source_table,
+		       p_source_partname      => l_partname,
+		       p_source_owner	      => p_owner,
+		       p_source_table	      => p_table );
+      -- do nothing with stats
+      -- this is preferable if stats are gathered on the staging segment prior to being exchanged in
+      -- OWB can do this, for example
+      WHEN REGEXP_LIKE('ignore', p_statistics,'i')
+      THEN
+         NULL;
+      ELSE
+         raise_application_error( td_ext.get_err_cd( 'unrecognized_parm' ),
+                                  td_ext.get_err_msg( 'unrecognized_parm' )
+                                  || ' : '
+                                  || p_statistics
+                                );
+      END CASE;
+		       
+      -- now build the indexes
+      -- indexes will get fresh new statistics
+      -- that is why we didn't mess with these above
       build_indexes( p_owner             => p_source_owner,
                      p_table             => p_source_table,
                      p_source_owner      => p_owner,
@@ -1675,33 +1713,14 @@ IS
                      p_part_type         => 'local',
                      p_tablespace        => p_idx_tablespace
                    );
-      -- handle statistics for the new partition
-      update_stats( p_owner                => p_source_owner,
-                    p_table                => p_source_table,
-                    p_source_partname      => CASE
-                       WHEN REGEXP_LIKE( 'gather', p_statistics, 'i' )
-                          THEN NULL
-                       ELSE l_partname
-                    END,
-                    p_source_owner         => CASE
-                       WHEN REGEXP_LIKE( 'gather', p_statistics, 'i' )
-                          THEN NULL
-                       ELSE p_owner
-                    END,
-                    p_source_table         => CASE
-                       WHEN REGEXP_LIKE( 'gather', p_statistics, 'i' )
-                          THEN NULL
-                       ELSE p_table
-                    END,
-                    p_percent              => p_statpercent,
-                    p_degree               => p_statdegree,
-                    p_method               => p_statmethod,
-                    p_cascade              => FALSE
-                  );
-
+	 
       -- now exchange the table
       o_td.change_action( 'Exchange table' );
-
+      
+      -- have several exceptions that we want to handle when an exchange fails
+      -- so we are using an EXIT WHEN loop
+      -- if an exception that we handle is raised, then we want to rerun the exchange
+      -- will try the exchange multiple times until it either succeeds, or an unrecognized exception is raised
       LOOP
 	 l_retry_ddl := FALSE;
 	 BEGIN
@@ -1735,6 +1754,7 @@ IS
 	    
             WHEN e_compress
             THEN
+	    td_inst.log_msg(l_src_name||' compressed to facilitate exchange');
             -- need to compress the staging table
 	    l_compress := TRUE;
 	    l_retry_ddl := TRUE;
@@ -1757,6 +1777,15 @@ IS
                td_inst.log_msg( 'Dropping indexes for restartability' );
                drop_indexes( p_owner => p_source_owner, p_table => p_source_table );
             END IF;
+	    
+	    -- need to put the disabled foreign keys back if we disabled them
+	    IF l_dis_fkeys
+	    THEN
+               enable_constraints( p_owner      => p_owner,
+            			   p_table      => p_table,
+                                   p_basis      => 'reference'
+				  );
+	    END IF;       
 
             RAISE;
 	 END;
@@ -1808,7 +1837,7 @@ IS
       -- possible options: specify different index types
       p_part_type       VARCHAR2 DEFAULT NULL
    
-   -- when P_PART_NAME is specified, then whether to mark all global's as unusable
+   -- when P_PARTNAME is specified, then whether to mark all global's as unusable
    )
    IS
       l_tab_name   VARCHAR2( 61 )   := UPPER( p_owner ) || '.' || UPPER( p_table );
