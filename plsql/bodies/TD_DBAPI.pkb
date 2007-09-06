@@ -2042,7 +2042,8 @@ IS
 				    CASE
 				    WHEN ( p_source_object IS NOT NULL
 					   OR p_partname IS NOT NULL)
-				AND ( partitioned = 'YES')
+                                 	  AND ( partitioned = 'YES')
+		        	          AND partition_name IS null
 				    THEN 'N'
 				    ELSE 'Y'
 				    END include		 
