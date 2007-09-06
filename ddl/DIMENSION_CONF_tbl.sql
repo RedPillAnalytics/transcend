@@ -12,6 +12,7 @@ CREATE TABLE dimension_conf
 	 staging_table		VARCHAR2(30),
 	 direct_load		VARCHAR2(3) DEFAULT 'yes' NOT NULL,
 	 replace_method		VARCHAR2(10) DEFAULT 'rename' NOT NULL,
+	 statistics		VARCHAR2(10),
 	 created_user	     	VARCHAR2(30) DEFAULT sys_context('USERENV','SESSION_USER') NOT NULL,
 	 created_dt	     	DATE DEFAULT SYSDATE NOT NULL,
 	 modified_user  	VARCHAR2(30),
