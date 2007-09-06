@@ -556,5 +556,105 @@ AS
       o_td.clear_app_info;
       RETURN l_cnt;
    END extract_object;
+   
+   -- find records in p_source_table that match the values of the partitioned column in p_table
+   -- This procedure uses an undocumented database function called tbl$or$idx$part$num.
+   -- There are two "magic" numbers that are required to make it work correctly.
+   -- The defaults will quite often work.
+   -- The simpliest way to find which magic numbers make this function work is to
+   -- do a partition exchange on the target table and trace that statement.
+   PROCEDURE populate_partname(
+      p_owner           VARCHAR2,
+      p_table           VARCHAR2,
+      p_partname        VARCHAR2 DEFAULT NULL,
+      p_source_owner    VARCHAR2 DEFAULT NULL,
+      p_source_object   VARCHAR2 DEFAULT NULL,
+      p_source_column   VARCHAR2 DEFAULT NULL,
+      p_d_num           NUMBER DEFAULT 0,
+      p_p_num           NUMBER DEFAULT 65535
+   )
+   AS
+      l_dsql            LONG;
+      -- to catch empty cursors
+      l_source_column   all_part_key_columns.column_name%TYPE;
+      l_results         NUMBER;
+      o_td              tdtype                    := tdtype( p_module      => 'pop_partname' );
+      l_part_position   all_tab_partitions.partition_position%TYPE;
+      l_high_value      all_tab_partitions.high_value%TYPE;
+   BEGIN
+      td_sql.check_table( p_owner            => p_owner,
+                          p_table            => p_table,
+                          p_partname         => p_partname,
+                          p_partitioned      => 'yes'
+                        );
+
+      IF p_partname IS NOT NULL
+      THEN
+         SELECT partition_position, high_value
+           INTO l_part_position, l_high_value
+           FROM all_tab_partitions
+          WHERE table_owner = UPPER( p_owner )
+            AND table_name = UPPER( p_table )
+            AND partition_name = UPPER( p_partname );
+
+         INSERT INTO partname
+                     ( table_owner, table_name, partition_name,
+                       partition_position
+                     )
+              VALUES ( UPPER( p_owner ), UPPER( p_table ), UPPER( p_partname ),
+                       l_part_position
+                     );
+
+         td_inst.log_cnt_msg( SQL%ROWCOUNT,
+                              'Number of records inserted into PARTNAME table',
+                              4
+                            );
+      ELSE
+         IF p_source_column IS NULL
+         THEN
+            SELECT column_name
+              INTO l_source_column
+              FROM all_part_key_columns
+             WHERE NAME = UPPER( p_table ) AND owner = UPPER( p_owner );
+         ELSE
+            l_source_column := p_source_column;
+         END IF;
+
+         l_results :=
+            td_sql.exec_sql
+               ( p_sql      =>    'insert into partname (table_owner, table_name, partition_name, partition_position) '
+                               || ' SELECT table_owner, table_name, partition_name, partition_position'
+                               || '  FROM all_tab_partitions'
+                               || ' WHERE table_owner = '''
+                               || UPPER( p_owner )
+                               || ''' AND table_name = '''
+                               || UPPER( p_table )
+                               || ''' AND partition_position IN '
+                               || ' (SELECT DISTINCT tbl$or$idx$part$num("'
+                               || UPPER( p_owner )
+                               || '"."'
+                               || UPPER( p_table )
+                               || '", 0, '
+                               || p_d_num
+                               || ', '
+                               || p_p_num
+                               || ', "'
+                               || UPPER( l_source_column )
+                               || '")	 FROM '
+                               || UPPER( p_source_owner )
+                               || '.'
+                               || UPPER( p_source_object )
+                               || ') '
+                               || 'ORDER By partition_position'
+               );
+         td_inst.log_cnt_msg( l_results,
+                              'Number of records inserted into PARTNAME table',
+                              4
+                            );
+      END IF;
+
+      o_td.clear_app_info;
+   END populate_partname;
+
 END td_core;
 /
