@@ -12,7 +12,6 @@ IS
       -- confirm that the table exists
       -- raise an error if it doesn't
       td_sql.check_table( p_owner => p_owner, p_table => p_table );
-      l_results :=
          td_sql.exec_sql( p_sql       =>    'truncate table '
                                          || p_owner
                                          || '.'
@@ -37,7 +36,6 @@ IS
       -- confirm that the table exists
       -- raise an error if it doesn't
       td_sql.check_table( p_owner => p_owner, p_table => p_table );
-      l_results :=
          td_sql.exec_sql( p_sql       =>    'drop table '
                                          || p_owner
                                          || '.'
@@ -150,7 +148,7 @@ IS
                           );
       END IF;
 
-      l_results := td_sql.exec_sql( p_sql => l_ddl, p_auto => 'yes' );
+      td_sql.exec_sql( p_sql => l_ddl, p_auto => 'yes' );
       o_td.clear_app_info;
    EXCEPTION
       WHEN OTHERS
@@ -357,7 +355,7 @@ IS
          td_inst.log_msg( 'Renamed DDL for exceptions: ' || l_e_ddl, 4 );
 
          BEGIN
-            l_results := td_sql.exec_sql( p_sql => l_ddl, p_auto => 'yes' );
+            td_sql.exec_sql( p_sql => l_ddl, p_auto => 'yes' );
             td_inst.log_msg( 'Index ' || c_indexes.idx_rename || ' built' );
             l_idx_cnt := l_idx_cnt + 1;
          EXCEPTION
@@ -377,7 +375,7 @@ IS
                          );
 
                BEGIN
-                  l_results := td_sql.exec_sql( p_sql => l_e_ddl, p_auto => 'yes' );
+                  td_sql.exec_sql( p_sql => l_e_ddl, p_auto => 'yes' );
                   td_inst.log_msg( 'Index ' || c_indexes.idx_e_rename || ' built' );
                   l_idx_cnt := l_idx_cnt + 1;
                EXCEPTION
@@ -615,7 +613,7 @@ IS
          o_td.change_action( 'Execute constraint DDL' );
 
          BEGIN
-            l_results := td_sql.exec_sql( p_sql => l_ddl, p_auto => 'yes' );
+            td_sql.exec_sql( p_sql => l_ddl, p_auto => 'yes' );
             td_inst.log_msg( 'Constraint ' || c_constraints.con_rename || ' built' );
             l_con_cnt := l_con_cnt + 1;
          EXCEPTION
@@ -632,7 +630,6 @@ IS
                            );
             WHEN e_dup_con_name
             THEN
-               l_results :=
                   td_sql.exec_sql
                               ( p_sql       => REGEXP_REPLACE
                                                           ( l_ddl,
@@ -754,9 +751,8 @@ IS
          LOOP
             -- catch empty cursor sets
             l_rows := TRUE;
-            l_results :=
-                td_sql.exec_sql( p_sql       => c_constraints.constraint_ddl,
-                                 p_auto      => 'yes' );
+            td_sql.exec_sql( p_sql       => c_constraints.constraint_ddl,
+                             p_auto      => 'yes' );
             l_con_cnt := l_con_cnt + 1;
             td_inst.log_msg( c_constraints.msg );
          END LOOP;
@@ -794,7 +790,7 @@ IS
                                              AND constraint_type = 'P' ))
          LOOP
             l_rows := TRUE;
-            l_results := td_sql.exec_sql( p_sql => c_dis_for_keys.DDL, p_auto => 'yes' );
+            td_sql.exec_sql( p_sql => c_dis_for_keys.DDL, p_auto => 'yes' );
             l_con_cnt := l_con_cnt + 1;
             td_inst.log_msg( c_dis_for_keys.msg );
          END LOOP;
@@ -903,9 +899,8 @@ IS
          LOOP
             -- catch empty cursor sets
             l_rows := TRUE;
-            l_results :=
-                td_sql.exec_sql( p_sql       => c_constraints.constraint_ddl,
-                                 p_auto      => 'yes' );
+            td_sql.exec_sql( p_sql       => c_constraints.constraint_ddl,
+                             p_auto      => 'yes' );
             l_con_cnt := l_con_cnt + 1;
             td_inst.log_msg( c_constraints.msg );
          END LOOP;
@@ -943,7 +938,7 @@ IS
                                              AND constraint_type = 'P' ))
          LOOP
             l_rows := TRUE;
-            l_results := td_sql.exec_sql( p_sql => c_dis_for_keys.DDL, p_auto => 'yes' );
+            td_sql.exec_sql( p_sql => c_dis_for_keys.DDL, p_auto => 'yes' );
             l_con_cnt := l_con_cnt + 1;
             td_inst.log_msg( c_dis_for_keys.msg );
          END LOOP;
@@ -1006,8 +1001,8 @@ IS
          l_rows := TRUE;
 
          BEGIN
-            l_results := td_sql.exec_sql( p_sql       => c_indexes.index_ddl,
-                                          p_auto      => 'yes' );
+            td_sql.exec_sql( p_sql       => c_indexes.index_ddl,
+                             p_auto      => 'yes' );
             l_idx_cnt := l_idx_cnt + 1;
             td_inst.log_msg( 'Index ' || c_indexes.index_name || ' dropped' );
          EXCEPTION
@@ -1072,9 +1067,8 @@ IS
       LOOP
          -- catch empty cursor sets
          l_rows := TRUE;
-         l_results :=
-                td_sql.exec_sql( p_sql       => c_constraints.constraint_ddl,
-                                 p_auto      => 'yes' );
+         td_sql.exec_sql( p_sql       => c_constraints.constraint_ddl,
+                          p_auto      => 'yes' );
          l_con_cnt := l_con_cnt + 1;
          td_inst.log_msg( 'Constraint ' || c_constraints.constraint_name || ' dropped' );
       END LOOP;
@@ -1142,8 +1136,7 @@ IS
       END IF;
 
       -- enable|disable parallel dml depending on the parameter for P_DIRECT
-      l_results :=
-         td_sql.exec_sql(    'ALTER SESSION '
+      td_sql.exec_sql(    'ALTER SESSION '
                           || CASE
                                 WHEN REGEXP_LIKE( 'yes', p_direct, 'i' )
                                    THEN 'ENABLE'
@@ -1403,8 +1396,7 @@ IS
       BEGIN
          o_td.change_action( 'Issue MERGE statement' );
          -- ENABLE|DISABLE parallel dml depending on the value of P_DIRECT
-         l_results :=
-            td_sql.exec_sql( p_sql      =>    'ALTER SESSION '
+         td_sql.exec_sql( p_sql      =>    'ALTER SESSION '
                                            || CASE
                                                  WHEN REGEXP_LIKE( 'yes', p_direct, 'i' )
                                                     THEN 'ENABLE'
@@ -1713,7 +1705,6 @@ IS
       LOOP
 	 l_retry_ddl := FALSE;
 	 BEGIN
-            l_results :=
             td_sql.exec_sql( p_sql          =>    'alter table '
                              || l_tab_name
                              || ' exchange partition '
@@ -1745,9 +1736,8 @@ IS
             WHEN e_compress
             THEN
             -- need to compress the staging table
-	    l_dis_fkeys := TRUE;
+	    l_compress := TRUE;
 	    l_retry_ddl := TRUE;
-            l_results :=
             td_sql.exec_sql( p_sql       =>    'alter table '
                              || l_src_name
                              || ' move compress',
@@ -1982,7 +1972,7 @@ IS
       LOOP
          o_td.change_action( 'Execute index DDL' );
          l_rows := TRUE;
-         l_results := td_sql.exec_sql( p_sql => c_idx.DDL, p_auto => 'yes' );
+         td_sql.exec_sql( p_sql => c_idx.DDL, p_auto => 'yes' );
          l_pidx_cnt := c_idx.num_partitions;
          l_idx_cnt := c_idx.num_indexes;
       END LOOP;
@@ -2071,7 +2061,7 @@ IS
                             AND table_owner = UPPER( p_owner )
                        ORDER BY table_name, partition_position )
          LOOP
-            l_results := td_sql.exec_sql( p_sql => c_idx.DDL, p_auto => 'yes' );
+            td_sql.exec_sql( p_sql => c_idx.DDL, p_auto => 'yes' );
             l_cnt := l_cnt + 1;
          END LOOP;
 
@@ -2106,7 +2096,7 @@ IS
                      ORDER BY table_name )
       LOOP
          l_rows := TRUE;
-         l_results := td_sql.exec_sql( p_sql => c_gidx.DDL, p_auto => 'yes' );
+         td_sql.exec_sql( p_sql => c_gidx.DDL, p_auto => 'yes' );
          l_cnt := l_cnt + 1;
       END LOOP;
 
