@@ -6,6 +6,12 @@ AS
       p_msg    VARCHAR2 DEFAULT NULL
    )
       RETURN NUMBER;
+      
+   PROCEDURE exec_sql(
+      p_sql    VARCHAR2,
+      p_auto   VARCHAR2 DEFAULT 'no',
+      p_msg    VARCHAR2 DEFAULT NULL
+   );
 
    PROCEDURE check_table(
       p_owner         VARCHAR2,
