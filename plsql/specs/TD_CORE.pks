@@ -76,5 +76,17 @@ AS
       p_append      VARCHAR2 DEFAULT 'no'
    )
       RETURN NUMBER;
+      
+   PROCEDURE populate_partname(
+      p_owner           VARCHAR2,
+      p_table           VARCHAR2,
+      p_partname        VARCHAR2 DEFAULT NULL,
+      p_source_owner    VARCHAR2 DEFAULT NULL,
+      p_source_object   VARCHAR2 DEFAULT NULL,
+      p_source_column   VARCHAR2 DEFAULT NULL,
+      p_d_num           NUMBER DEFAULT 0,
+      p_p_num           NUMBER DEFAULT 65535
+   );
+
 END td_core;
 /
