@@ -1815,6 +1815,191 @@ IS
          td_inst.log_err;
          RAISE;
    END exchange_partition;
+   
+   
+   -- procedure to "swap" two tables using rename
+   PROCEDURE replace_table(
+      p_source_owner     VARCHAR2,
+      p_source_table     VARCHAR2,
+      p_table            VARCHAR2,
+      p_index_drop       VARCHAR2 DEFAULT 'yes',
+      p_statistics       VARCHAR2 DEFAULT 'transfer',
+      p_statpercent      NUMBER DEFAULT NULL,
+      p_statdegree       NUMBER DEFAULT NULL,
+      p_statmethod       VARCHAR2 DEFAULT NULL
+   )
+   IS
+      l_src_name       VARCHAR2( 61 )                             := upper(p_source_owner || '.' || p_source_table);
+      l_tab_name       VARCHAR2( 61 )                        	  := upper(p_source_owner || '.' || p_table);
+      l_target_owner   all_tab_partitions.table_name%TYPE    	  := p_source_owner;
+      l_rows           BOOLEAN                               	  := FALSE;
+      l_ddl            LONG;
+      l_numrows        NUMBER;
+      l_numblks        NUMBER;
+      l_avgrlen        NUMBER;
+      l_cachedblk      NUMBER;
+      l_cachehit       NUMBER;
+      l_results        NUMBER;
+      l_build_cons     BOOLEAN := FALSE;
+      l_compress       BOOLEAN := FALSE;
+      l_dis_fkeys      BOOLEAN := FALSE;
+      l_retry_ddl      BOOLEAN := FALSE;
+      e_no_stats       EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_no_stats, -20000 );
+      e_compress       EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_compress, -14646 );
+      e_fkeys          EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_fkeys, -2266 );
+      o_td             tdtype               := tdtype( p_module      => 'replace_table' );
+   BEGIN
+      o_td.change_action( 'Perform object checks' );
+      -- check to make sure the target table exists
+      td_sql.check_table( p_owner            => p_source_owner,
+                          p_table            => p_table
+                        );
+      -- check to make sure the source table exists
+      td_sql.check_table( p_owner            => p_source_owner,
+                          p_table            => p_source_table
+                        );
+
+
+      -- we want to gather statistics
+      -- we gather statistics first before the indexes are built
+      -- the indexes will collect there own statistics when they are built
+      -- that is why we don't cascade
+      CASE
+      WHEN REGEXP_LIKE('gather',p_statistics,'i')
+      THEN
+      -- if the table is partitioned, we need to transfer the partitions for each table
+	 update_stats( p_owner                => p_source_owner,
+                       p_table                => p_source_table,
+                       p_percent              => p_statpercent,
+                       p_degree               => p_statdegree,
+                       p_method               => p_statmethod,
+                       p_cascade              => FALSE );
+      -- we want to transfer the statistics from the current segment into the new segment
+      -- this is preferable if automatic stats are handling stats collection
+      -- and you want the load time not to suffer from statistics gathering
+      WHEN REGEXP_LIKE('transfer', p_statistics,'i')
+      THEN
+      -- stub
+      -- need to work out the best way to transfer stats
+      -- matters whether the table is partitioned or not
+      NULL;
+      -- do nothing with stats
+      -- this is preferable if stats are gathered on the staging segment prior to being exchanged in
+      -- OWB can do this, for example
+      WHEN REGEXP_LIKE('ignore', p_statistics,'i')
+      THEN
+         NULL;
+      ELSE
+         raise_application_error( td_ext.get_err_cd( 'unrecognized_parm' ),
+                                  td_ext.get_err_msg( 'unrecognized_parm' )
+                                  || ' : '
+                                  || p_statistics
+                                );
+      END CASE;
+		       
+      -- now build the indexes
+      -- indexes will get fresh new statistics
+      -- that is why we didn't mess with these above
+      build_indexes( p_owner             => p_source_owner,
+                     p_table             => p_source_table,
+                     p_source_owner      => p_source_owner,
+                     p_source_table      => p_table,
+                     p_part_type         => 'local'
+                   );
+	 
+      -- now exchange the table
+      o_td.change_action( 'Exchange table' );
+      
+      -- have several exceptions that we want to handle when an exchange fails
+      -- so we are using an EXIT WHEN loop
+      -- if an exception that we handle is raised, then we want to rerun the exchange
+      -- will try the exchange multiple times until it either succeeds, or an unrecognized exception is raised
+      LOOP
+	 l_retry_ddl := FALSE;
+	 BEGIN
+	    -- this will be the DDL statement to rename the table
+	    NULL;
+	    
+	 EXCEPTION
+	    WHEN e_fkeys
+	    THEN
+	    -- disable foreign keys related to the table
+	    -- this will enable the exchange to occur
+	    o_td.change_action( 'Disable foreign keys' );
+	    l_dis_fkeys := TRUE;
+	    l_retry_ddl := TRUE;
+            disable_constraints( p_owner      => p_source_owner,
+            			 p_table      => p_table,
+                                 p_basis      => 'reference'
+                               );
+	    
+            WHEN e_compress
+            THEN
+	    td_inst.log_msg(l_src_name||' compressed to facilitate exchange');
+            -- need to compress the staging table
+	    l_compress := TRUE;
+	    l_retry_ddl := TRUE;
+            td_sql.exec_sql( p_sql       =>    'alter table '
+                             || l_src_name
+                             || ' move compress',
+                             p_auto      => 'yes'
+                           );
+            WHEN OTHERS
+            THEN
+            -- first log the error
+            -- provide a backtrace from this exception handler to the next
+            td_inst.log_err;
+
+            -- need to drop indexes if there is an exception
+            -- this is for rerunability
+            IF td_ext.is_true( p_index_drop )
+            THEN
+               -- now record the reason for the index drops
+               td_inst.log_msg( 'Dropping indexes for restartability' );
+               drop_indexes( p_owner => p_source_owner, p_table => p_source_table );
+            END IF;
+	    
+	    -- need to put the disabled foreign keys back if we disabled them
+	    IF l_dis_fkeys
+	    THEN
+               enable_constraints( p_owner      => p_source_owner,
+            			   p_table      => p_table,
+                                   p_basis      => 'reference'
+				  );
+	    END IF;       
+
+            RAISE;
+	 END;
+	 EXIT WHEN NOT l_retry_ddl;
+      END LOOP;
+
+      -- enable any foreign keys on other tables that reference this table
+      IF l_dis_fkeys
+      THEN
+         o_td.change_action( 'Enable foreign keys' );
+         enable_constraints( p_owner      => p_source_owner,
+                             p_table      => p_table,
+                             p_basis      => 'reference'
+                           );
+      END IF;
+
+      -- drop the indexes on the stage table
+      IF td_ext.is_true( p_index_drop )
+      THEN
+         drop_indexes( p_owner => p_source_owner, p_table => p_source_table );
+      END IF;
+
+      o_td.clear_app_info;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         td_inst.log_err;
+         RAISE;
+   END replace_table;
+   
 
    -- Provides functionality for setting local and non-local indexes to unusable based on parameters   -- Can also base which index partitions to mark as unuable based on the contents of another table
    -- There are two "magic" numbers that are required to make it work correctly.
