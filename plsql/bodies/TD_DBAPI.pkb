@@ -2073,7 +2073,7 @@ IS
                         );
       END IF;
 
-      IF td_core.is_part_table( p_owner, p_table )
+      IF td_sql.is_part_table( p_owner, p_table )
       THEN
          -- rebuild local indexes first
          FOR c_idx IN ( SELECT  table_name, partition_position,
@@ -2133,7 +2133,7 @@ IS
       THEN
          td_inst.log_msg(    l_cnt
                           || CASE
-                                WHEN td_core.is_part_table( p_owner, p_table )
+                                WHEN td_sql.is_part_table( p_owner, p_table )
                                    THEN ' global'
                                 ELSE NULL
                              END
@@ -2148,7 +2148,7 @@ IS
       ELSE
          td_inst.log_msg(    'No matching unusable '
                           || CASE
-                                WHEN td_core.is_part_table( p_owner, p_table )
+                                WHEN td_sql.is_part_table( p_owner, p_table )
                                    THEN 'global '
                                 ELSE NULL
                              END
