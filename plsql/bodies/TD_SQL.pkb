@@ -253,5 +253,127 @@ AS
                                    );
       END;
    END check_object;
+   
+   -- used to get the path associated with a directory location
+   FUNCTION get_dir_path( p_dirname VARCHAR2 )
+      RETURN VARCHAR2
+   AS
+      l_path   all_directories.directory_path%TYPE;
+   BEGIN
+      SELECT directory_path
+        INTO l_path
+        FROM all_directories
+       WHERE directory_name = UPPER( p_dirname );
+
+      RETURN l_path;
+   EXCEPTION
+      WHEN NO_DATA_FOUND
+      THEN
+         raise_application_error( -20010, 'Directory object does not exist' );
+   END get_dir_path;
+
+   -- used to get a directory name associated with a directory path
+   -- this assumes that there is a one-to-one of directory names to directory paths
+   -- that is not required with oracle... there can be multiple directory objects pointing to the same directory
+   FUNCTION get_dir_name( p_dir_path VARCHAR2 )
+      RETURN VARCHAR2
+   AS
+      l_dirname   all_directories.directory_name%TYPE;
+   BEGIN
+      SELECT directory_name
+        INTO l_dirname
+        FROM all_directories
+       WHERE directory_path = p_dir_path;
+
+      RETURN l_dirname;
+   EXCEPTION
+      WHEN NO_DATA_FOUND
+      THEN
+         raise_application_error( -20011,
+                                  'No directory object defined for the specified path'
+                                );
+      WHEN TOO_MANY_ROWS
+      THEN
+         raise_application_error
+                        ( -20012,
+                          'More than one directory object defined for the specified path'
+                        );
+   END get_dir_name;
+
+   -- returns a boolean
+   -- does a check to see if a table exists
+   FUNCTION table_exists( p_owner VARCHAR2, p_table VARCHAR2 )
+      RETURN BOOLEAN
+   AS
+      l_table   dba_tables.table_name%TYPE;
+   BEGIN
+      SELECT table_name
+        INTO l_table
+        FROM dba_tables
+       WHERE owner = UPPER( p_owner ) AND table_name = UPPER( p_table );
+
+      RETURN TRUE;
+   EXCEPTION
+      WHEN NO_DATA_FOUND
+      THEN
+         RETURN FALSE;
+   END table_exists;
+
+   -- returns a boolean
+   -- does a check to see if table is partitioned
+   FUNCTION is_part_table( p_owner VARCHAR2, p_table VARCHAR2 )
+      RETURN BOOLEAN
+   AS
+      l_partitioned   dba_tables.partitioned%TYPE;
+   BEGIN
+      IF NOT table_exists( UPPER( p_owner ), UPPER( p_table ))
+      THEN
+         raise_application_error( td_inst.get_err_cd( 'no_tab' ),
+                                     td_inst.get_err_msg( 'no_tab' )
+                                  || ': '
+                                  || p_owner
+                                  || '.'
+                                  || p_table
+                                );
+      END IF;
+
+      SELECT partitioned
+        INTO l_partitioned
+        FROM dba_tables
+       WHERE owner = UPPER( p_owner ) AND table_name = UPPER( p_table );
+
+      CASE
+         WHEN td_ext.is_true( l_partitioned )
+         THEN
+            RETURN TRUE;
+         WHEN NOT td_ext.is_true( l_partitioned )
+         THEN
+            RETURN FALSE;
+      END CASE;
+   EXCEPTION
+      WHEN NO_DATA_FOUND
+      THEN
+         RETURN FALSE;
+   END is_part_table;
+
+   -- returns a boolean
+   -- does a check to see if a object exists
+   FUNCTION object_exists( p_owner VARCHAR2, p_object VARCHAR2 )
+      RETURN BOOLEAN
+   AS
+      l_object   dba_objects.object_name%TYPE;
+   BEGIN
+      SELECT DISTINCT object_name
+                 INTO l_object
+                 FROM dba_objects
+                WHERE owner = UPPER( p_owner ) AND object_name = UPPER( p_object );
+
+      RETURN TRUE;
+   EXCEPTION
+      WHEN NO_DATA_FOUND
+      THEN
+         RETURN FALSE;
+   END object_exists;
+
 END td_sql;
 /
