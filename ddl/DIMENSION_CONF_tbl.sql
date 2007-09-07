@@ -55,6 +55,7 @@ ALTER TABLE dimension_conf
 /
 
 -- constraint ensures business logic regarding replace_method
+-- ensures that tables are in the same schema when the 'rename' method of replacement is used
 ALTER TABLE dimension_conf
       ADD CONSTRAINT replace_method_ck
       CHECK ( upper(staging_owner) = CASE WHEN replace_method = 'rename' THEN upper(owner) ELSE staging_owner end )
