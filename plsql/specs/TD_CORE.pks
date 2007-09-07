@@ -19,21 +19,6 @@ AS
       LANGUAGE JAVA
       NAME 'TdCore.hostCmd(java.lang.String, java.lang.String) return integer';
 
-   FUNCTION get_dir_path( p_dirname VARCHAR2 )
-      RETURN VARCHAR2;
-
-   FUNCTION get_dir_name( p_dir_path VARCHAR2 )
-      RETURN VARCHAR2;
-
-   FUNCTION table_exists( p_owner VARCHAR2, p_table VARCHAR2 )
-      RETURN BOOLEAN;
-
-   FUNCTION is_part_table( p_owner VARCHAR2, p_table VARCHAR2 )
-      RETURN BOOLEAN;
-
-   FUNCTION object_exists( p_owner VARCHAR2, p_object VARCHAR2 )
-      RETURN BOOLEAN;
-
    -- procedure executes the copy_file function and translates the return code to an exception
    PROCEDURE copy_file( p_srcfile VARCHAR2, p_dstfile VARCHAR2 );
 
