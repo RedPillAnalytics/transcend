@@ -27,5 +27,21 @@ AS
       p_object        VARCHAR2,
       p_object_type   VARCHAR2 DEFAULT NULL
    );
+      
+   FUNCTION get_dir_path( p_dirname VARCHAR2 )
+      RETURN VARCHAR2;
+
+   FUNCTION get_dir_name( p_dir_path VARCHAR2 )
+      RETURN VARCHAR2;
+
+   FUNCTION table_exists( p_owner VARCHAR2, p_table VARCHAR2 )
+      RETURN BOOLEAN;
+
+   FUNCTION is_part_table( p_owner VARCHAR2, p_table VARCHAR2 )
+      RETURN BOOLEAN;
+
+   FUNCTION object_exists( p_owner VARCHAR2, p_object VARCHAR2 )
+      RETURN BOOLEAN;
+
 END td_sql;
 /
