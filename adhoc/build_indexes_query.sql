@@ -30,7 +30,9 @@ EXEC :l_targ_part := 'NO';
 
 SET termout on
 
-SELECT CASE REPLACE
+-- this case statement uses GENERIC_IDX column to determine the final index name
+-- if we are using a generic name, then perform the replace
+SELECT CASE generic_idx
           WHEN 'Y'
              THEN REGEXP_REPLACE( index_ddl,
                                   '(\."?)(\w)+(")?( on)',
@@ -41,10 +43,13 @@ SELECT CASE REPLACE
                                 )
           ELSE index_ddl
        END index_ddl,
+       -- this column was added for the REPLACE_TABLE procedure
+       -- in that procedure, after cloning the indexes, the table is renamed
+       -- we have to rename the indexes back to their original names
           ' alter index '
        || owner
        || '.'
-       || CASE REPLACE
+       || CASE generic_idx
              WHEN 'Y'
                 THEN idx_exists_rename
              ELSE idx_rename
@@ -54,8 +59,7 @@ SELECT CASE REPLACE
        object_name, idx_rename
   FROM ( SELECT
                 -- IF idx_rename already exists (constructed below), then we will try to rename the index to something generic
-                -- this name will only be used when an exception is raised
-                -- this index is shown in debug mode
+                -- this name will only be used when idx_rename name already exists
                 UPPER(    :p_table
                        || '_'
                        || idx_ext
@@ -86,15 +90,22 @@ SELECT CASE REPLACE
                        ) index_ddl,
                 table_owner, table_name, ind.owner, index_name, idx_rename, partitioned,
                 uniqueness, idx_ext, index_type,
+		-- this case expression determines whether to use the standard renamed index name
+		-- or whether to use the generic index name based on table name
+		-- below we are right joining with USER_OBJECTS to see if the standard name is already used
+		-- if we match, then we need to use the generic index name
                 CASE
                    WHEN ao.object_name IS NULL
                       THEN 'N'
                    ELSE 'Y'
-                END REPLACE, object_name
+                END generic_idx, object_name
           FROM ( SELECT    REGEXP_REPLACE
                               
                               -- dbms_metadata pulls the metadata for the source object out of the dictionary
                            (    DBMS_METADATA.get_ddl( 'INDEX', index_name, owner ),
+			      -- this CASE expression determines whether to strip partitioning information and tablespace information
+			      -- tablespace desisions are based on the P_TABLESPACE parameter
+			      -- partitioning decisions are based on the structure of the target table
                                 CASE
                                    -- target is not partitioned and no tablespace provided
                                 WHEN :l_targ_part = 'NO' AND :p_tablespace IS NULL
@@ -116,7 +127,8 @@ SELECT CASE REPLACE
                                 'in'
                               )
                         || CASE
-                              -- IF tablespace is provided, tack it on the end
+                              -- if P_TABLESPACE is provided, then previous tablespace information was stripped (above)
+			      -- now we can just tack the new tablespace information on the end
                            WHEN :p_tablespace IS NOT NULL
                                  THEN ' TABLESPACE ' || :p_tablespace
                               ELSE NULL
@@ -124,7 +136,7 @@ SELECT CASE REPLACE
                         table_owner, table_name, owner, index_name,
                         
                         -- this is the index name that will be used in the first attempt
-                        -- this index name is shown in debug mode
+                        -- basically, all cases of the previous table name are replaced with the new table name
                         UPPER( REGEXP_REPLACE( index_name,
                                                '(")?' || :p_source_table || '(")?',
                                                :p_table,
@@ -135,6 +147,9 @@ SELECT CASE REPLACE
                              ) idx_rename,
                         CASE
                            -- construct index extensions for the different index types
+			   -- this will be used to construct generic index names
+			   -- if the index name that we attempt to use first is already taken
+			   -- then we'll construct generic index names based on table name and type
                         WHEN index_type = 'BITMAP'
                               THEN 'BMI'
                            WHEN REGEXP_LIKE( index_type, '^function', 'i' )
@@ -145,7 +160,10 @@ SELECT CASE REPLACE
                         END idx_ext,
                         partitioned, uniqueness, index_type
                   FROM all_indexes ai
-                 -- USE a CASE'd regular expression to determine whether to include global indexes
+                   -- USE an NVL'd regular expression to determine the partition types to worked on
+		   -- when a regexp matching 'global' is passed, then do only global
+		   -- when a regexp matching 'local' is passed, then do only local
+		   -- when nothing is passed, it's a wildcard, so do all
                 WHERE  REGEXP_LIKE( partitioned,
                                     CASE
                                        WHEN REGEXP_LIKE( 'global', :p_part_type, 'i' )
@@ -158,10 +176,13 @@ SELECT CASE REPLACE
                                   )
                    AND table_name = UPPER( :p_source_table )
                    AND table_owner = UPPER( :p_source_owner )
-                   -- USE an NVL'd regular expression to determine specific indexes to work on
+                   -- USE an NVL'd regular expression to determine the specific indexes to work on
+		   -- when nothing is passed for P_INDEX_TYPE, then that is the same as passing a wildcard
                    AND REGEXP_LIKE( index_name, NVL( :p_index_regexp, '.' ), 'i' )
                    -- USE an NVL'd regular expression to determine the index types to worked on
+		   -- when nothing is passed for P_INDEX_TYPE, then that is the same as passing a wildcard
                    AND REGEXP_LIKE( index_type, '^' || NVL( :p_index_type, '.' ), 'i' )
+		   -- do not include IOT's
                    AND index_name NOT IN(
                           SELECT index_name
                             FROM all_tables dt JOIN all_constraints di
