@@ -371,16 +371,7 @@ IS
                               AND REGEXP_LIKE( index_name, NVL( p_index_regexp, '.' ), 'i' )
                               -- USE an NVL'd regular expression to determine the index types to worked on
            		   -- when nothing is passed for P_INDEX_TYPE, then that is the same as passing a wildcard
-                              AND REGEXP_LIKE( index_type, '^' || NVL( p_index_type, '.' ), 'i' )
-           		   -- do not include IOT's
-                              AND index_name NOT IN(
-                                     SELECT index_name
-                                       FROM all_tables dt JOIN all_constraints di
-                                            USING( owner, table_name )
-                                      WHERE iot_type IS NOT NULL
-                                        AND constraint_type = 'P'
-                                        AND table_name <> UPPER( p_source_table )
-                                        AND owner <> UPPER( p_source_owner ))) ind
+                              AND REGEXP_LIKE( index_type, '^' || NVL( p_index_type, '.' ), 'i' )) ind
                           LEFT JOIN
                           all_objects ao
                           ON ao.object_name = ind.idx_rename AND ao.owner = UPPER( p_owner )
