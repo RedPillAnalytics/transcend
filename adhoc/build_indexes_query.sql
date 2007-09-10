@@ -1,4 +1,6 @@
 SET termout off
+COLUMN index_ddl format a130
+COLUMN rename_statment format a150
 
 VAR p_table VARCHAR2(30)
 VAR p_tablespace VARCHAR2(30)
@@ -16,8 +18,8 @@ VAR l_targ_part VARCHAR2(30)
 
 EXEC :p_tablespace := NULL;
 EXEC :p_constraint_regexp := NULL;
-EXEC :p_owner := 'whstage';
-EXEC :p_table := 'customer_scd';
+EXEC :p_owner := 'whdata';
+EXEC :p_table := 'td$customer_dim';
 EXEC :p_source_owner := 'whdata';
 EXEC :p_source_table := 'customer_dim';
 EXEC :p_constraint_type := NULL;
@@ -56,7 +58,9 @@ SELECT CASE generic_idx
           END
        || ' rename to '
        || index_name rename_statment,
-       object_name, idx_rename
+       idx_rename, idx_exists_rename, table_owner, 
+       table_name, owner, index_name, idx_rename,
+       partitioned, uniqueness, index_type
   FROM ( SELECT
                 -- IF idx_rename already exists (constructed below), then we will try to rename the index to something generic
                 -- this name will only be used when idx_rename name already exists
