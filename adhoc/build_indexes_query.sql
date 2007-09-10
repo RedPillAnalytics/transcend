@@ -2,6 +2,7 @@ SET termout off
 COLUMN index_ddl format a130
 COLUMN rename_statment format a150
 COLUMN idx_rename format a30
+COLUMN idx_rename_adj format a30
 
 VAR p_table VARCHAR2(30)
 VAR p_tablespace VARCHAR2(30)
@@ -20,7 +21,7 @@ VAR l_targ_part VARCHAR2(30)
 EXEC :p_tablespace := NULL;
 EXEC :p_constraint_regexp := NULL;
 EXEC :p_owner := 'whstage';
-EXEC :p_table := 'td$customer_dim';
+EXEC :p_table := 'customer_activity_fact_table';
 EXEC :p_source_owner := 'whdata';
 EXEC :p_source_table := 'customer_dim';
 EXEC :p_constraint_type := NULL;
@@ -39,7 +40,7 @@ SELECT CASE generic_idx
           WHEN 'Y'
              THEN REGEXP_REPLACE( index_ddl,
                                   '(\."?)(\w)+(")?( on)',
-                                  '.' || idx_exists_rename || ' \4',
+                                  '.' || idx_rename_adj || ' \4',
                                   1,
                                   0,
                                   'i'
@@ -54,23 +55,23 @@ SELECT CASE generic_idx
        || '.'
        || CASE generic_idx
              WHEN 'Y'
-                THEN idx_exists_rename
+                THEN idx_rename_adj
              ELSE idx_rename
           END
        || ' rename to '
        || index_name rename_statment,
-       idx_rename, idx_exists_rename, table_owner, 
-       table_name, owner, index_name, idx_rename,
-       partitioned, uniqueness, index_type
-  FROM ( SELECT
-                -- IF idx_rename already exists (constructed below), then we will try to rename the index to something generic
+       idx_rename, idx_rename_adj, table_owner, 
+       table_name, owner, index_name
+       partitioned, uniqueness, index_type, generic_idx
+  FROM ( SELECT 
+		-- IF idx_rename already exists (constructed below), then we will try to rename the index to something generic
                 -- this name will only be used when idx_rename name already exists
-                UPPER(    :p_table
+                UPPER( substr( :p_table, 1, 24)
                        || '_'
                        || idx_ext
                        -- rank function gives us the index number by specific index extension (formulated below)
-                       || RANK( ) OVER( PARTITION BY idx_ext ORDER BY index_name )
-                     ) idx_exists_rename,
+                       || RANK( ) OVER ( PARTITION BY idx_ext ORDER BY index_name )
+                     ) idx_rename_adj,
                 REGEXP_REPLACE
                        ( REGEXP_REPLACE( REGEXP_REPLACE( index_ddl,
                                                          '(alter index).+',
@@ -100,10 +101,12 @@ SELECT CASE generic_idx
 		-- below we are right joining with USER_OBJECTS to see if the standard name is already used
 		-- if we match, then we need to use the generic index name
                 CASE
-                   WHEN ao.object_name IS NULL
+                   WHEN ( ao.object_name IS NULL
+			  AND length(  idx_rename ) < 31 )
                       THEN 'N'
                    ELSE 'Y'
-                END generic_idx, object_name
+                END generic_idx, 
+		object_name
           FROM ( SELECT    REGEXP_REPLACE
                               
                               -- dbms_metadata pulls the metadata for the source object out of the dictionary
@@ -163,8 +166,7 @@ SELECT CASE generic_idx
                               THEN 'UK'
                            ELSE 'IK'
                         END idx_ext,
-                        partitioned, uniqueness, index_type,
-			length(:p_table) tab_length
+                        partitioned, uniqueness, index_type
                   FROM all_indexes ai
                    -- USE an NVL'd regular expression to determine the partition types to worked on
 		   -- when a regexp matching 'global' is passed, then do only global
