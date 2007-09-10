@@ -1,5 +1,4 @@
 SET termout off
-COLUMN CON_E_RENAME format a30
 
 VAR p_table VARCHAR2(30)
 VAR p_tablespace VARCHAR2(30)
@@ -35,7 +34,7 @@ SELECT CASE REPLACE
           WHEN 'Y'
              THEN REGEXP_REPLACE( index_ddl,
                                   '(\."?)(\w)+(")?( on)',
-                                  '.' || idx_e_rename || ' \4',
+                                  '.' || idx_exists_rename || ' \4',
                                   1,
                                   0,
                                   'i'
@@ -47,7 +46,7 @@ SELECT CASE REPLACE
        || '.'
        || CASE REPLACE
              WHEN 'Y'
-                THEN idx_e_rename
+                THEN idx_exists_rename
              ELSE idx_rename
           END
        || ' rename to '
@@ -59,10 +58,10 @@ SELECT CASE REPLACE
                 -- this index is shown in debug mode
                 UPPER(    :p_table
                        || '_'
-                       || idx_e_ext
+                       || idx_ext
                        -- rank function gives us the index number by specific index extension (formulated below)
-                       || RANK( ) OVER( PARTITION BY idx_e_ext ORDER BY index_name )
-                     ) idx_e_rename,
+                       || RANK( ) OVER( PARTITION BY idx_ext ORDER BY index_name )
+                     ) idx_exists_rename,
                 REGEXP_REPLACE
                        ( REGEXP_REPLACE( REGEXP_REPLACE( index_ddl,
                                                          '(alter index).+',
@@ -86,7 +85,7 @@ SELECT CASE REPLACE
                          'i'
                        ) index_ddl,
                 table_owner, table_name, ind.owner, index_name, idx_rename, partitioned,
-                uniqueness, idx_e_ext, index_type,
+                uniqueness, idx_ext, index_type,
                 CASE
                    WHEN ao.object_name IS NULL
                       THEN 'N'
@@ -135,7 +134,7 @@ SELECT CASE REPLACE
                                              )
                              ) idx_rename,
                         CASE
-                           -- devise generic index extensions for the different types
+                           -- construct index extensions for the different index types
                         WHEN index_type = 'BITMAP'
                               THEN 'BMI'
                            WHEN REGEXP_LIKE( index_type, '^function', 'i' )
@@ -143,7 +142,7 @@ SELECT CASE REPLACE
                            WHEN uniqueness = 'UNIQUE'
                               THEN 'UK'
                            ELSE 'IK'
-                        END idx_e_ext,
+                        END idx_ext,
                         partitioned, uniqueness, index_type
                   FROM all_indexes ai
                  -- USE a CASE'd regular expression to determine whether to include global indexes
