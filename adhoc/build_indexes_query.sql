@@ -4,6 +4,13 @@ COLUMN rename_statment format a150
 COLUMN idx_rename format a30
 COLUMN idx_rename_adj format a30
 
+
+EXEC DBMS_METADATA.set_transform_param( DBMS_METADATA.session_transform,'SQLTERMINATOR',FALSE);
+      -- we need the segment attributes so things go where we want them to
+EXEC DBMS_METADATA.set_transform_param( DBMS_METADATA.session_transform,'SEGMENT_ATTRIBUTES',TRUE);
+      -- don't want all the other storage aspects though
+EXEC DBMS_METADATA.set_transform_param( DBMS_METADATA.session_transform, 'STORAGE',FALSE );
+
 VAR p_table VARCHAR2(30)
 VAR p_tablespace VARCHAR2(30)
 VAR p_source_table VARCHAR2(30)
@@ -18,10 +25,10 @@ VAR p_owner VARCHAR2(30)
 VAR p_table VARCHAR2(30)
 VAR l_targ_part VARCHAR2(30)
 
-EXEC :p_tablespace := NULL;
+EXEC :p_tablespace := null;
 EXEC :p_constraint_regexp := NULL;
 EXEC :p_owner := 'whstage';
-EXEC :p_table := 'customer_activity_fact_table';
+EXEC :p_table := 'customer_scd';
 EXEC :p_source_owner := 'whdata';
 EXEC :p_source_table := 'customer_dim';
 EXEC :p_constraint_type := NULL;
@@ -29,8 +36,7 @@ EXEC :p_seg_attributes := 'no';
 EXEC :p_part_type := NULL;
 EXEC :p_index_type := NULL;
 EXEC :p_index_regexp := NULL;
-EXEC :p_handle_fkeys := 'yes';
-EXEC :l_targ_part := 'NO';
+EXEC :l_targ_part := 'YES';
 
 SET termout on
 
@@ -114,22 +120,25 @@ SELECT CASE generic_idx
 			      -- this CASE expression determines whether to strip partitioning information and tablespace information
 			      -- tablespace desisions are based on the P_TABLESPACE parameter
 			      -- partitioning decisions are based on the structure of the target table
-                                CASE
+                                '\s*'||
+				CASE
                                    -- target is not partitioned and no tablespace provided
                                 WHEN :l_targ_part = 'NO' AND :p_tablespace IS NULL
                                       -- remove all partitioning and the local keyword
-                                THEN '(\(\s*partition.+\))|local[[:space:]]*'
+                                THEN '(\(\s*partition.+\))|local'
                                    -- target is not partitioned but tablespace is provided
                                 WHEN :l_targ_part = 'NO' AND :p_tablespace IS NOT NULL
                                       -- strip out partitioned info and local keyword and tablespace clause
-                                THEN '(\(\s*partition.+\))|local|(tablespace)\s*[^ ]+[[:space:]]*'
+                                THEN '(\(\s*partition.+\))|local|(tablespace)\s*\S+'
                                    -- target is partitioned and tablespace is provided
                                 WHEN :l_targ_part = 'YES' AND :p_tablespace IS NOT NULL
                                       -- strip out partitioned info keeping local keyword and remove tablespace clause
-                                THEN '(\(\s*partition.+\))|(tablespace)\s*[^ ]+[[:space:]]*'
-                                   ELSE NULL
-                                END,
-                                NULL,
+                                THEN '(\(\s*partition.+\))|(tablespace)\s*\S+'
+                                WHEN :l_targ_part = 'YES' AND :p_tablespace IS NULL
+                                      -- strip out partitioned info keeping local keyword and tablespace clause
+                                THEN '(\(\s*partition.+\))'                                
+                                END||'\s*',
+                                ' ',
                                 1,
                                 0,
                                 'in'
