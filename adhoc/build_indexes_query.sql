@@ -1,6 +1,7 @@
 SET termout off
 COLUMN index_ddl format a130
 COLUMN rename_statment format a150
+COLUMN idx_rename format a30
 
 VAR p_table VARCHAR2(30)
 VAR p_tablespace VARCHAR2(30)
@@ -18,7 +19,7 @@ VAR l_targ_part VARCHAR2(30)
 
 EXEC :p_tablespace := NULL;
 EXEC :p_constraint_regexp := NULL;
-EXEC :p_owner := 'whdata';
+EXEC :p_owner := 'whstage';
 EXEC :p_table := 'td$customer_dim';
 EXEC :p_source_owner := 'whdata';
 EXEC :p_source_table := 'customer_dim';
@@ -155,14 +156,15 @@ SELECT CASE generic_idx
 			   -- if the index name that we attempt to use first is already taken
 			   -- then we'll construct generic index names based on table name and type
                         WHEN index_type = 'BITMAP'
-                              THEN 'BMI'
+                              THEN 'BI'
                            WHEN REGEXP_LIKE( index_type, '^function', 'i' )
-                              THEN 'FNC'
+                              THEN 'FI'
                            WHEN uniqueness = 'UNIQUE'
                               THEN 'UK'
                            ELSE 'IK'
                         END idx_ext,
-                        partitioned, uniqueness, index_type
+                        partitioned, uniqueness, index_type,
+			length(:p_table) tab_length
                   FROM all_indexes ai
                    -- USE an NVL'd regular expression to determine the partition types to worked on
 		   -- when a regexp matching 'global' is passed, then do only global
@@ -185,16 +187,7 @@ SELECT CASE generic_idx
                    AND REGEXP_LIKE( index_name, NVL( :p_index_regexp, '.' ), 'i' )
                    -- USE an NVL'd regular expression to determine the index types to worked on
 		   -- when nothing is passed for P_INDEX_TYPE, then that is the same as passing a wildcard
-                   AND REGEXP_LIKE( index_type, '^' || NVL( :p_index_type, '.' ), 'i' )
-		   -- do not include IOT's
-                   AND index_name NOT IN(
-                          SELECT index_name
-                            FROM all_tables dt JOIN all_constraints di
-                                 USING( owner, table_name )
-                           WHERE iot_type IS NOT NULL
-                             AND constraint_type = 'P'
-                             AND table_name <> UPPER( :p_source_table )
-                             AND owner <> UPPER( :p_source_owner ))) ind
+                   AND REGEXP_LIKE( index_type, '^' || NVL( :p_index_type, '.' ), 'i' )) ind
                LEFT JOIN
                all_objects ao
                ON ao.object_name = ind.idx_rename AND ao.owner = UPPER( :p_owner )
