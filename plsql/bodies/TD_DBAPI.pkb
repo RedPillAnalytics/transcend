@@ -2504,7 +2504,12 @@ IS
             END IF;
          ELSE
             o_td.change_action( 'Transfer stats' );
-
+	    
+	    -- this need to be modified to include a loop through all the partitions
+	    -- this would only be required if both source and target tables are partitioned
+	    -- and no partition information was specified.
+	    -- should handle "partition mismatch" exceptions and just log the fact
+	    -- statistics errors shouldn't kill a process
             BEGIN
                DBMS_STATS.get_table_stats( UPPER( p_source_owner ),
                                            UPPER( p_source_table ),
