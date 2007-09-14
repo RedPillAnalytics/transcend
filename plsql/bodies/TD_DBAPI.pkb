@@ -1955,47 +1955,27 @@ AS
       td_sql.check_table( p_owner            => p_source_owner,
                           p_table            => p_source_table
                         );
-
-
-      -- we want to gather statistics
-      -- both the source and target tables are partitioned
-      CASE
-      WHEN REGEXP_LIKE('gather',p_statistics,'i') 
-      AND td_sql.is_part_table( p_owner => p_source_owner,
-				p_table => p_source_table )
-      AND td_sql.is_part_table( p_owner => p_source_owner,
-				p_table => p_table )
+      
+      -- do something with statistics on the new table
+      -- if p_statistics is 'ignore', then do nothing
+      IF REGEXP_LIKE( 'ignore', p_statistics, 'i')
       THEN
-      -- if the table is partitioned, we need to transfer the partitions for each table
+	 NULL;
+      ELSE 
+	 -- otherwise, we will either gather or transfer statistics
+	 -- this depends on the value of p_statistics
 	 update_stats( p_owner                => p_source_owner,
-                       p_table                => p_source_table,
+                       p_table                => p_table,
+		       p_source_owner         => CASE WHEN REGEXP_LIKE('gather',p_statistics,'i') THEN null
+		       WHEN REGEXP_LIKE('transfer', p_statistics,'i') THEN p_source_owner END,
+		       p_source_table         => CASE WHEN REGEXP_LIKE('gather',p_statistics,'i') THEN null
+		       WHEN REGEXP_LIKE('transfer', p_statistics,'i') THEN p_table END,
                        p_percent              => p_statpercent,
                        p_degree               => p_statdegree,
                        p_method               => p_statmethod,
                        p_cascade              => FALSE );
-      -- we want to transfer the statistics from the current segment into the new segment
-      -- this is preferable if automatic stats are handling stats collection
-      -- and you want the load time not to suffer from statistics gathering
-      WHEN REGEXP_LIKE('transfer', p_statistics,'i')
-      THEN
-      -- stub
-      -- need to work out the best way to transfer stats
-      -- matters whether the table is partitioned or not
-      NULL;
-      -- do nothing with stats
-      -- this is preferable if stats are gathered on the staging segment prior to being exchanged in
-      -- OWB can do this, for example
-      WHEN REGEXP_LIKE('ignore', p_statistics,'i')
-      THEN
-         NULL;
-      ELSE
-         raise_application_error( td_ext.get_err_cd( 'unrecognized_parm' ),
-                                  td_ext.get_err_msg( 'unrecognized_parm' )
-                                  || ' : '
-                                  || p_statistics
-                                );
-      END CASE;
-		       
+      END IF;
+
       -- now build the indexes
       -- indexes will get fresh new statistics
       -- that is why we didn't mess with these above
