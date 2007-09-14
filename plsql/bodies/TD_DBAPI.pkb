@@ -65,8 +65,8 @@ AS
       l_ddl            LONG;
       l_e_ddl          LONG;
       l_idx_cnt        NUMBER                        := 0;
-      l_tab_name       VARCHAR2( 61 )                := p_owner || '.' || p_table;
-      l_src_name       VARCHAR2( 61 )          := p_source_owner || '.' || p_source_table;
+      l_tab_name       VARCHAR2( 61 )    := upper( p_owner || '.' || p_table );
+      l_src_name       VARCHAR2( 61 )    := upper( p_source_owner || '.' || p_source_table );
       l_part_type      VARCHAR2( 6 );
       l_targ_part      all_tables.partitioned%TYPE;
       l_results        NUMBER;
@@ -151,6 +151,7 @@ AS
       END IF;
 
       td_sql.exec_sql( p_sql => l_ddl, p_auto => 'yes' );
+      td_inst.log_msg( 'Table '||l_tab_name||' created');
       o_td.clear_app_info;
       
       -- if you want the records as well
@@ -163,7 +164,7 @@ AS
       END IF;
       
       -- if you also want statistics
-      IF td_ext.is_true( p_rows )
+      IF td_ext.is_true( p_statistics )
       THEN
 	 update_stats( p_source_owner => p_source_owner,
 		       p_source_table => p_source_table,
@@ -1196,8 +1197,8 @@ AS
       p_reject_limit    VARCHAR2 DEFAULT 'unlimited'
    )
    IS
-      l_src_name   VARCHAR2( 61 ) := p_source_owner || '.' || p_source_object;
-      l_trg_name   VARCHAR2( 61 ) := p_owner || '.' || p_table;
+      l_src_name   VARCHAR2( 61 ) := upper( p_source_owner || '.' || p_source_object );
+      l_trg_name   VARCHAR2( 61 ) := upper( p_owner || '.' || p_table );
       l_results    NUMBER;
       o_td         tdtype
          := tdtype( p_module      => 'insert_table',
@@ -1274,7 +1275,8 @@ AS
       -- record the number of rows affected
       IF NOT td_inst.is_debugmode
       THEN
-         td_inst.log_cnt_msg( l_results );
+         td_inst.log_cnt_msg( p_count => l_results,
+			      p_msg   => 'Number of records inserted into '||l_trg_name );
       END IF;
 
       o_td.clear_app_info;
@@ -1563,8 +1565,9 @@ AS
       -- record the number of rows affected
       IF NOT td_inst.is_debugmode
       THEN
-         td_inst.log_cnt_msg( l_results );
-      END IF;
+         td_inst.log_cnt_msg( p_count => l_results,
+			      p_msg   => 'Number of records merged into '||l_trg_name );
+      END IF;      
 
       o_td.clear_app_info;
    EXCEPTION
