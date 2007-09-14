@@ -57,7 +57,9 @@ AS
       p_owner          VARCHAR2,
       p_table          VARCHAR2,
       p_tablespace     VARCHAR2 DEFAULT NULL,
-      p_partitioning   VARCHAR2 DEFAULT 'yes'
+      p_partitioning   VARCHAR2 DEFAULT 'yes',
+      p_rows	   VARCHAR2 DEFAULT 'no',
+      p_statistics	   VARCHAR2 DEFAULT 'no'
    )
    IS
       l_ddl            LONG;
@@ -111,7 +113,7 @@ AS
                                -- don't want partitioning
                             WHEN td_ext.get_yn_ind( p_partitioning ) = 'no'
                                   -- remove all partitioning
-                            THEN '(\(\s*partition.+\))[[:space:]]*|(partition by).+\)[[:space:]]*'
+                            THEN '(\(\s*partition.+\))\s*|(partition by).+\)\s*'
                                ELSE NULL
                             END,
                             NULL,
@@ -150,6 +152,25 @@ AS
 
       td_sql.exec_sql( p_sql => l_ddl, p_auto => 'yes' );
       o_td.clear_app_info;
+      
+      -- if you want the records as well
+      IF td_ext.is_true( p_rows )
+      THEN
+	 insert_table( p_source_owner  => p_source_owner,
+		       p_source_object => p_source_table,
+		       p_owner 	       => p_owner,
+		       p_table	       => p_table );
+      END IF;
+      
+      -- if you also want statistics
+      IF td_ext.is_true( p_rows )
+      THEN
+	 update_stats( p_source_owner => p_source_owner,
+		       p_source_table => p_source_table,
+		       p_owner 	      => p_owner,
+		       p_table	      => p_table );
+      END IF;
+
    EXCEPTION
       WHEN OTHERS
       THEN
@@ -1937,9 +1958,9 @@ AS
       -- both the source and target tables are partitioned
       CASE
       WHEN REGEXP_LIKE('gather',p_statistics,'i') 
-      AND td_ext.is_part_table( p_owner => p_source_owner,
+      AND td_sql.is_part_table( p_owner => p_source_owner,
 				p_table => p_source_table )
-      AND td_ext.is_part_table( p_owner => p_owner,
+      AND td_sql.is_part_table( p_owner => p_source_owner,
 				p_table => p_table )
       THEN
       -- if the table is partitioned, we need to transfer the partitions for each table
@@ -2601,7 +2622,7 @@ AS
                WHEN e_no_stats
                THEN
                td_inst.log_msg(    'No '||CASE WHEN p_source_partname IS NULL THEN 'table' ELSE 'partition' END||' level statistics exist on segment '
-                                || UPPER( p_source_owner || '.' || p_source_table|| CASE WHEN p_source_partname IS NULL THEN NULL ELSE  || ':' ||p_source_partname )
+                                || UPPER( p_source_owner || '.' || p_source_table|| CASE WHEN p_source_partname IS NULL THEN NULL ELSE  ':' ||p_source_partname end )
                                  );
             END;
 	    
@@ -2623,7 +2644,7 @@ AS
 				   AND table_name = upper ( p_table ))
 	       LOOP
 		  l_rows := TRUE;
-		  BEGIN;
+		  BEGIN
 		     DBMS_STATS.get_table_stats( UPPER( p_source_owner ),
 						 UPPER( p_source_table ),
 						 UPPER( c_parts.partition_name ),
