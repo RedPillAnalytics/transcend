@@ -51,3 +51,4 @@ INSERT INTO err_cd (code,name,message) VALUES (-20034, 'no_stats','The specified
 INSERT INTO err_cd (code,name,message) VALUES (-20035, 'no_or_wrong_object','The specified object does not exist or is of the wrong type');
 INSERT INTO err_cd (code,name,message) VALUES (-20036, 'too_many_objects','The specified parameters yield more than one object');
 INSERT INTO err_cd (code,name,message) VALUES (-20037, 'owb_flow_err','An error was returned from the OWB Control Center');
+INSERT INTO err_cd (code,name,message) VALUES (-20038, 'parm_not_supported','The specified parameter is not supported');

@@ -25,15 +25,15 @@ ALTER SESSION SET current_schema=&rep_schema_tr;
 @@../ddl/LOG_TABLE_tbl.sql
 @@../ddl/NOTIFY_CONF_tbl.sql
 @@../ddl/PARTNAME_tbl.sql
+@@../ddl/BUILD_INDEXES_tbl.sql
 @@../ddl/REGISTRATION_CONF_tbl.sql
 @@../ddl/RUNMODE_CONF_tbl.sql
 @@../ddl/PARAMETER_CONF_tbl.sql
-@@../ddl/PRIORITY_CONF_tbl.sql
-@@../ddl/COLUMN_TYPE_tbl.sql
+@@../ddl/COLUMN_TYPE_LIST_tbl.sql
 @@../ddl/DIMENSION_CONF_tbl.sql
-@@../ddl/INDEX_MAINT_CONF_tbl.sql
-@@../ddl/CONSTRAINT_MAINT_CONF_tbl.sql
 @@../ddl/COLUMN_CONF_tbl.sql
+@@../ddl/REPLACE_METHOD_LIST_tbl.sql
+
 
 -- set default tablespace back
 -- it was only changed if the user already existed

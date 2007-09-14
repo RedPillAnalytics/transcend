@@ -27,14 +27,14 @@ BEGIN
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..LOG_TABLE for &schema_rs..LOG_TABLE';
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..NOTIFY_CONF for &schema_rs..NOTIFY_CONF';
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..PARTNAME for &schema_rs..PARTNAME';
+      EXECUTE IMMEDIATE 'create or replace synonym &user_rs..BUILD_INDEXES for &schema_rs..BUILD_INDEXES';
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..REGISTRATION_CONF for &schema_rs..REGISTRATION_CONF';
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..RUNMODE_CONF for &schema_rs..RUNMODE_CONF';
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..PARAMETER_CONF for &schema_rs..PARAMETER_CONF';
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..COLUMN_CONF for &schema_rs..COLUMN_CONF';
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..DIMENSION_CONF for &schema_rs..DIMENSION_CONF';
-      EXECUTE IMMEDIATE 'create or replace synonym &user_rs..PRIORITY_CONF for &schema_rs..PRIORITY_CONF';
-      EXECUTE IMMEDIATE 'create or replace synonym &user_rs..INDEX_MAINT_CONF for &schema_rs..INDEX_MAINT_CONF';
-      EXECUTE IMMEDIATE 'create or replace synonym &user_rs..CONSTRAINT_MAINT_CONF for &schema_rs..CONSTRAINT_MAINT_CONF';
+      EXECUTE IMMEDIATE 'create or replace synonym &user_rs..COLUMN_TYPE_LIST for &schema_rs..COLUMN_TYPE_LIST';
+      EXECUTE IMMEDIATE 'create or replace synonym &user_rs..REPLACE_METHOD_LIST for &schema_rs..REPLACE_METHOD_LIST';
       -- sequences
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..FILEHUB_CONF_SEQ for &schema_rs..FILEHUB_CONF_SEQ';
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..FILEHUB_DETAIL_SEQ for &schema_rs..FILEHUB_DETAIL_SEQ';

@@ -1,6 +1,6 @@
 SET termout off
 COLUMN index_ddl format a130
-COLUMN rename_statment format a150
+COLUMN rename_ddl format a150
 COLUMN idx_rename format a30
 COLUMN idx_rename_adj format a30
 
@@ -25,7 +25,7 @@ VAR p_owner VARCHAR2(30)
 VAR p_table VARCHAR2(30)
 VAR l_targ_part VARCHAR2(30)
 
-EXEC :p_tablespace := null;
+EXEC :p_tablespace := 'dwdata';
 EXEC :p_constraint_regexp := NULL;
 EXEC :p_owner := 'whstage';
 EXEC :p_table := 'customer_scd';
@@ -42,7 +42,18 @@ SET termout on
 
 -- this case statement uses GENERIC_IDX column to determine the final index name
 -- if we are using a generic name, then perform the replace
-SELECT CASE generic_idx
+SELECT upper( p_owner ) index_owner,
+       CASE generic_idx
+       WHEN 'Y'
+       THEN idx_rename_adj
+       ELSE idx_rename
+       END index_name,
+       owner source_owner,
+       index_name source_index,
+       partitioned,
+       uniqueness,
+       index_type,
+       CASE generic_idx
           WHEN 'Y'
              THEN REGEXP_REPLACE( index_ddl,
                                   '(\."?)(\w)+(")?( on)',
@@ -65,14 +76,11 @@ SELECT CASE generic_idx
              ELSE idx_rename
           END
        || ' rename to '
-       || index_name rename_statment,
-       idx_rename, idx_rename_adj, table_owner, 
-       table_name, owner, index_name
-       partitioned, uniqueness, index_type, generic_idx
+       || index_name rename_ddl
   FROM ( SELECT 
 		-- IF idx_rename already exists (constructed below), then we will try to rename the index to something generic
                 -- this name will only be used when idx_rename name already exists
-                UPPER( substr( :p_table, 1, 24)
+                UPPER( substr( p_table, 1, 24)
                        || '_'
                        || idx_ext
                        -- rank function gives us the index number by specific index extension (formulated below)
@@ -87,15 +95,15 @@ SELECT CASE generic_idx
                                                          'i'
                                                        ),
                                             '(\."?)('
-                                         || UPPER( :p_source_table )
+                                         || UPPER( p_source_table )
                                          || ')(\w*)("?)',
-                                         '.' || UPPER( :p_table ) || '\3',
+                                         '.' || UPPER( p_table ) || '\3',
                                          1,
                                          0,
                                          'i'
                                        ),
                          '(")?(' || ind.owner || ')("?\.)',
-                         UPPER( :p_owner ) || '.',
+                         UPPER( p_owner ) || '.',
                          1,
                          0,
                          'i'
@@ -123,18 +131,18 @@ SELECT CASE generic_idx
                                 '\s*'||
 				CASE
                                    -- target is not partitioned and no tablespace provided
-                                WHEN :l_targ_part = 'NO' AND :p_tablespace IS NULL
+                                WHEN :l_targ_part = 'NO' AND p_tablespace IS NULL
                                       -- remove all partitioning and the local keyword
                                 THEN '(\(\s*partition.+\))|local'
                                    -- target is not partitioned but tablespace is provided
-                                WHEN :l_targ_part = 'NO' AND :p_tablespace IS NOT NULL
+                                WHEN :l_targ_part = 'NO' AND p_tablespace IS NOT NULL
                                       -- strip out partitioned info and local keyword and tablespace clause
                                 THEN '(\(\s*partition.+\))|local|(tablespace)\s*\S+'
                                    -- target is partitioned and tablespace is provided
-                                WHEN :l_targ_part = 'YES' AND :p_tablespace IS NOT NULL
+                                WHEN :l_targ_part = 'YES' AND p_tablespace IS NOT NULL
                                       -- strip out partitioned info keeping local keyword and remove tablespace clause
                                 THEN '(\(\s*partition.+\))|(tablespace)\s*\S+'
-                                WHEN :l_targ_part = 'YES' AND :p_tablespace IS NULL
+                                WHEN :l_targ_part = 'YES' AND p_tablespace IS NULL
                                       -- strip out partitioned info keeping local keyword and tablespace clause
                                 THEN '(\(\s*partition.+\))'                                
                                 END||'\s*',
@@ -144,19 +152,24 @@ SELECT CASE generic_idx
                                 'in'
                               )
                         || CASE
+			-- if 'default' is passed, then use the users default tablespace
+			-- a non-null value for p_tablespace already stripped all tablespace information above
+			-- now just need to not put in the 'TABLESPACE' information here
+			   WHEN lower( p_tablespace ) = 'default'
+			         THEN NULL
                               -- if P_TABLESPACE is provided, then previous tablespace information was stripped (above)
 			      -- now we can just tack the new tablespace information on the end
-                           WHEN :p_tablespace IS NOT NULL
-                                 THEN ' TABLESPACE ' || :p_tablespace
-                              ELSE NULL
+                           WHEN p_tablespace IS NOT NULL
+                                 THEN ' TABLESPACE ' || p_tablespace
+                           ELSE NULL
                            END index_ddl,
                         table_owner, table_name, owner, index_name,
                         
                         -- this is the index name that will be used in the first attempt
                         -- basically, all cases of the previous table name are replaced with the new table name
                         UPPER( REGEXP_REPLACE( index_name,
-                                               '(")?' || :p_source_table || '(")?',
-                                               :p_table,
+                                               '(")?' || p_source_table || '(")?',
+                                               p_table,
                                                1,
                                                0,
                                                'i'
@@ -183,23 +196,23 @@ SELECT CASE generic_idx
 		   -- when nothing is passed, it's a wildcard, so do all
                 WHERE  REGEXP_LIKE( partitioned,
                                     CASE
-                                       WHEN REGEXP_LIKE( 'global', :p_part_type, 'i' )
+                                       WHEN REGEXP_LIKE( 'global', p_part_type, 'i' )
                                           THEN 'NO'
-                                       WHEN REGEXP_LIKE( 'local', :p_part_type, 'i' )
+                                       WHEN REGEXP_LIKE( 'local', p_part_type, 'i' )
                                           THEN 'YES'
                                        ELSE '.'
                                     END,
                                     'i'
                                   )
-                   AND table_name = UPPER( :p_source_table )
-                   AND table_owner = UPPER( :p_source_owner )
+                   AND table_name = UPPER( p_source_table )
+                   AND table_owner = UPPER( p_source_owner )
                    -- USE an NVL'd regular expression to determine the specific indexes to work on
 		   -- when nothing is passed for P_INDEX_TYPE, then that is the same as passing a wildcard
-                   AND REGEXP_LIKE( index_name, NVL( :p_index_regexp, '.' ), 'i' )
+                   AND REGEXP_LIKE( index_name, NVL( p_index_regexp, '.' ), 'i' )
                    -- USE an NVL'd regular expression to determine the index types to worked on
 		   -- when nothing is passed for P_INDEX_TYPE, then that is the same as passing a wildcard
-                   AND REGEXP_LIKE( index_type, '^' || NVL( :p_index_type, '.' ), 'i' )) ind
+                   AND REGEXP_LIKE( index_type, '^' || NVL( p_index_type, '.' ), 'i' )) ind
                LEFT JOIN
                all_objects ao
-               ON ao.object_name = ind.idx_rename AND ao.owner = UPPER( :p_owner )
+               ON ao.object_name = ind.idx_rename AND ao.owner = UPPER( p_owner )
          WHERE subobject_name IS NULL )

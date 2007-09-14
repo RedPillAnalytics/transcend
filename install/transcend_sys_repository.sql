@@ -11,6 +11,7 @@ DEFINE tablespace_tsr = &2
 -- give the rep schema a quota on the tablespace
 ALTER USER &sys_schema_tsr QUOTA 50M ON &tablespace_tsr;
 
+SET termout off
 -- set the correct schema
 ALTER SESSION SET current_schema=&sys_schema_tsr;
 
@@ -20,3 +21,5 @@ ALTER SESSION SET current_schema=&sys_schema_tsr;
 @@../ddl/USERS_tbl.sql
 
 ALTER SESSION SET current_schema=&_USER;
+
+SET termout on
