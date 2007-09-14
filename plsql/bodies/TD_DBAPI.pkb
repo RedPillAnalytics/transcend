@@ -2519,11 +2519,18 @@ AS
                        || UPPER( p_table )
                      );
       o_td.change_action( 'Gathering statistics' );
-
+      
+      -- check to see if we are in debug mode
       IF NOT td_inst.is_debugmode
       THEN
+	 -- check to see if source owner is null
+	 -- if source owner is null, then we know we aren't transferring statistics
+	 -- so we need to gather them
          IF p_source_owner IS NULL
          THEN
+	    -- check to see if the table name is null
+	    -- if it is, then we are not gathering stats on a particular table, but instead a whole schema
+	    -- in that case, we need to call GATHER_SCHEMA_STATS instead of GATHER_TABLE_STATS
             IF p_table IS NULL
             THEN
                DBMS_STATS.gather_schema_stats
@@ -2542,6 +2549,8 @@ AS
                                                                ),
                                    options               => p_options
                                  );
+	       -- if the table name is not null, then we are only collecting stats on a particular table
+	       -- will call GATHER_TABLE_STATS as opposed to GATHER_SCHEMA_STATS
             ELSE
                DBMS_STATS.gather_table_stats
                                   ( ownname               => p_owner,
@@ -2560,9 +2569,15 @@ AS
                                                                 )
                                   );
             END IF;
+	 -- if the source owner isn't null, then we know we are transferring statistics
+	 -- we will use GET_TABLE_STATS and PUT_TABLE_STATS
          ELSE
             o_td.change_action( 'Transfer stats' );
-
+	    
+	    -- this will either take partition level statistics and import into a table
+	    -- or, it will take table level statistics and import it into a partition
+	    -- or, it will take table level statistics and import it into a table.
+	    -- all of this depends on whether P_PARTNAME and P_SOURCE_PARTNAME are defined or not
             BEGIN
                DBMS_STATS.get_table_stats( UPPER( p_source_owner ),
                                            UPPER( p_source_table ),
@@ -2573,8 +2588,8 @@ AS
                                            cachedblk      => l_cachedblk,
                                            cachehit       => l_cachehit
                                          );
-               DBMS_STATS.set_table_stats( UPPER( p_source_owner ),
-                                           UPPER( p_source_table ),
+               DBMS_STATS.set_table_stats( UPPER( p_owner ),
+                                           UPPER( p_table ),
                                            UPPER( p_partname ),
                                            numrows        => l_numrows,
                                            numblks        => l_numblks,
@@ -2585,10 +2600,58 @@ AS
             EXCEPTION
                WHEN e_no_stats
                THEN
-                  td_inst.log_msg(    'No statistics exist on segment '
-                                   || UPPER( p_source_owner || '.' || p_source_table )
+               td_inst.log_msg(    'No '||CASE WHEN p_source_partname IS NULL THEN 'table' ELSE 'partition' END||' level statistics exist on segment '
+                                || UPPER( p_source_owner || '.' || p_source_table|| CASE WHEN p_source_partname IS NULL THEN NULL ELSE  || ':' ||p_source_partname )
                                  );
             END;
+	    
+	    -- the only situation not covered above is when both tables are partitioned 
+	    -- and neither P_PARTNAME or P_SOURCE_PARTNAME was specified
+	    -- the above call will handle table level statistics
+	    -- now we need to handle partition-to-partition transfers
+	    IF ( td_sql.is_part_table( p_owner => p_source_owner,
+				      p_table => p_source_table) 
+		 AND td_sql.is_part_table( p_owner => p_owner,
+					   p_table => p_table ))
+	    THEN
+	       -- we are assuming that there are the same number of partitions and each one has the same name
+	       -- if this is not the case, then this procedure is not for you
+	       -- there would be no way of mapping one partition to another in this procedure
+	       FOR c_parts IN ( SELECT partition_name
+				  FROM all_tab_partitions
+				 WHERE table_owner = upper( p_owner )
+				   AND table_name = upper ( p_table ))
+	       LOOP
+		  l_rows := TRUE;
+		  BEGIN;
+		     DBMS_STATS.get_table_stats( UPPER( p_source_owner ),
+						 UPPER( p_source_table ),
+						 UPPER( c_parts.partition_name ),
+						 numrows        => l_numrows,
+						 numblks        => l_numblks,
+						 avgrlen        => l_avgrlen,
+						 cachedblk      => l_cachedblk,
+						 cachehit       => l_cachehit
+                                               );
+		     DBMS_STATS.set_table_stats( UPPER( p_owner ),
+						 UPPER( p_table ),
+						 UPPER( c_parts.partition_name ),
+						 numrows        => l_numrows,
+						 numblks        => l_numblks,
+						 avgrlen        => l_avgrlen,
+						 cachedblk      => l_cachedblk,
+						 cachehit       => l_cachehit
+                                               );
+		  EXCEPTION
+		     WHEN e_no_stats
+		     THEN
+		     td_inst.log_msg(    'No partition level statistics exist on segment '
+                                      || UPPER( p_source_owner || '.' || p_source_table || ':' ||c_parts.partition_name )
+                                    );
+
+		  END;
+	       END LOOP;
+	    END IF;
          END IF;
       END IF;
 
