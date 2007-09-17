@@ -9,6 +9,7 @@ VAR p_owner VARCHAR2(30)
 VAR p_table VARCHAR2(30)
 var l_tab_name VARCHAR2(61)
 var p_basis VARCHAR2(10)
+var p_maint_type VARCHAR2(10)
 
 EXEC :p_owner := 'whdata';
 EXEC :p_table := 'customer_dim';
@@ -16,6 +17,7 @@ EXEC :p_constraint_type := NULL;
 EXEC :p_constraint_regexp := NULL;
 EXEC :l_tab_name := upper ( :p_owner||'.'|| :p_table );
 EXEC :p_basis := 'table';
+EXEC :p_maint_type := 'disable';
 
 SET termout on
 
@@ -49,7 +51,12 @@ SELECT *
 	   FROM all_constraints
 	  WHERE table_name = UPPER( :p_table )
 	    AND owner = UPPER( :p_owner )
-	    AND status = 'ENABLED'
+	    AND status = CASE
+	    	WHEN REGEXP_LIKE( 'disable', :p_maint_type,'i')
+			     THEN 'ENABLED'
+		WHEN REGEXP_LIKE( 'enable', :p_maint_type,'i')
+			     THEN 'DISABLED'
+      			     END
 	    AND REGEXP_LIKE( constraint_name,
 			     NVL( :p_constraint_regexp, '.' ),
 			     'i'
@@ -93,7 +100,12 @@ SELECT *
 		END include
 	   FROM all_constraints
 	  WHERE constraint_type = 'R'
-	    AND status = 'ENABLED'
+	    AND status = CASE
+	    	WHEN REGEXP_LIKE( 'disable', :p_maint_type,'i')
+			     THEN 'ENABLED'
+		WHEN REGEXP_LIKE( 'enable', :p_maint_type,'i')
+			     THEN 'DISABLED'
+      			     END
 	    AND REGEXP_LIKE( constraint_name,
 			     NVL( :p_constraint_regexp, '.' ),
 			     'i'
