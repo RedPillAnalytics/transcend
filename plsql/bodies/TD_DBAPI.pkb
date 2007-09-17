@@ -52,14 +52,14 @@ AS
 
    -- builds a new table based on a current one
    PROCEDURE build_table(
-      p_source_owner   VARCHAR2,
-      p_source_table   VARCHAR2,
       p_owner          VARCHAR2,
       p_table          VARCHAR2,
+      p_source_owner   VARCHAR2,
+      p_source_table   VARCHAR2,
       p_tablespace     VARCHAR2 DEFAULT NULL,
       p_partitioning   VARCHAR2 DEFAULT 'yes',
-      p_rows	   VARCHAR2 DEFAULT 'no',
-      p_statistics	   VARCHAR2 DEFAULT 'no'
+      p_rows	       VARCHAR2 DEFAULT 'no',
+      p_statistics     VARCHAR2 DEFAULT 'no'
    )
    IS
       l_ddl            LONG;
@@ -184,10 +184,10 @@ AS
    -- if the source is partitioned and the target is not, then all local indexes are created as non-local
    -- if P_TABLESPACE is provided, then that tablespace name is used, regardless of the DDL that is pulled
    PROCEDURE build_indexes(
-      p_source_owner   VARCHAR2,
-      p_source_table   VARCHAR2,
       p_owner          VARCHAR2,
       p_table          VARCHAR2,
+      p_source_owner   VARCHAR2,
+      p_source_table   VARCHAR2,
       p_index_regexp   VARCHAR2 DEFAULT NULL,
       p_index_type     VARCHAR2 DEFAULT NULL,
       p_part_type      VARCHAR2 DEFAULT NULL,
@@ -508,10 +508,10 @@ AS
 
    -- builds the constraints from one table on another
    PROCEDURE build_constraints(
-      p_source_owner        VARCHAR2,
-      p_source_table        VARCHAR2,
       p_owner               VARCHAR2,
       p_table               VARCHAR2,
+      p_source_owner        VARCHAR2,
+      p_source_table        VARCHAR2,
       p_constraint_type     VARCHAR2 DEFAULT NULL,
       p_constraint_regexp   VARCHAR2 DEFAULT NULL,
       p_seg_attributes      VARCHAR2 DEFAULT 'no',
@@ -763,6 +763,224 @@ AS
          td_inst.log_err;
          RAISE;
    END build_constraints;
+   
+   -- disables constraints related to a particular table
+   PROCEDURE constraint_maint(
+      p_owner               VARCHAR2,
+      p_table               VARCHAR2,
+      p_maint_type	    VARCHAR2,
+      p_constraint_type     VARCHAR2 DEFAULT NULL,
+      p_constraint_regexp   VARCHAR2 DEFAULT NULL,
+      p_basis               VARCHAR2 DEFAULT 'table'
+   )
+   IS
+      l_con_cnt    NUMBER         := 0;
+      l_tab_name   VARCHAR2( 61 ) := UPPER( p_owner || '.' || p_table );
+      l_rows       BOOLEAN        := FALSE;
+      e_iot_shc    EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_iot_shc, -25188 );
+      o_td         tdtype         := tdtype( p_module => 'constraint_maint' );
+   BEGIN
+      td_inst.log_msg( CASE
+	    		     WHEN REGEXP_LIKE( 'disable',p_maint_type,'i')
+			     THEN 'Disabling'
+			     WHEN REGEXP_LIKE( 'enable',p_maint_type,'i')
+			     THEN 'Enabling'
+      		       END ||' constraints related to ' || l_tab_name );
+
+      -- P_CONSTRAINT_TYPE only relates to constraints based on the table, not the reference
+      IF REGEXP_LIKE( 'reference|all', p_basis, 'i' ) AND p_constraint_type IS NOT NULL
+      THEN
+         td_inst.log_msg
+            ( 'A value provided in P_CONSTRAINT_TYPE is ignored for constraints based on references'
+            );
+      END IF;
+
+      -- confirm that the table exists
+      -- raise an error if it doesn't
+      td_sql.check_table( p_owner => p_owner, p_table => p_table );
+
+      -- disable both table and reference constraints for this particular table
+      o_td.change_action( 'Constraint maintenance' );
+
+      FOR c_constraints IN ( SELECT *
+			       FROM ( SELECT owner table_owner,
+					     table_name,
+					     constraint_name,
+					     'alter table '
+					     || l_tab_name
+					     || ' disable constraint '
+					     || constraint_name disable_ddl,
+					     'Constraint '
+					     || constraint_name
+					     || ' disabled on '
+					     || l_tab_name disable_msg,
+					     'alter table '
+					     || l_tab_name
+					     || ' enable constraint '
+					     || constraint_name enable_ddl,
+					     'Constraint '
+					     || constraint_name
+					     || ' enabled on '
+					     || l_tab_name enable_msg,
+					     CASE
+					     WHEN REGEXP_LIKE( 'table|all', p_basis, 'i' )
+					     THEN 'Y' 
+					     ELSE 'N'
+					     END include
+					FROM all_constraints
+				       WHERE table_name = UPPER( p_table )
+					 AND owner = UPPER( p_owner )
+					 AND status = CASE
+	    				     WHEN REGEXP_LIKE( 'disable', p_maint_type,'i')
+					     THEN 'ENABLED'
+					     WHEN REGEXP_LIKE( 'enable', p_maint_type,'i')
+					     THEN 'DISABLED'
+      					     END
+					 AND REGEXP_LIKE( constraint_name,
+							  NVL( p_constraint_regexp, '.' ),
+							  'i'
+							)
+					 AND REGEXP_LIKE( constraint_type,
+							  NVL( p_constraint_type, '.' ),
+							  'i'
+							)
+					     UNION
+				      SELECT owner table_owner,
+					     table_name,
+					     constraint_name,
+					     'alter table '
+					     || owner
+					     || '.'
+					     || table_name
+					     || ' disable constraint '
+					     || constraint_name disable_ddl,
+					     'Constraint '
+					     || constraint_name
+					     || ' disabled on '
+					     || owner
+					     || '.'
+					     || table_name disable_msg,
+					     'alter table '
+					     || owner
+					     || '.'
+					     || table_name
+					     || ' enable constraint '
+					     || constraint_name enable_ddl,
+					     'Constraint '
+					     || constraint_name
+					     || ' enabled on '
+					     || owner
+					     || '.'
+					     || table_name enable_msg,
+					     CASE
+					     WHEN REGEXP_LIKE( 'reference|all', p_basis, 'i' )
+					     THEN 'Y' 
+					     ELSE 'N'
+					     END include
+					FROM all_constraints
+				       WHERE constraint_type = 'R'
+					 AND status = CASE
+	    				     WHEN REGEXP_LIKE( 'disable', p_maint_type,'i')
+					     THEN 'ENABLED'
+					     WHEN REGEXP_LIKE( 'enable', p_maint_type,'i')
+					     THEN 'DISABLED'
+      					     END
+					 AND REGEXP_LIKE( constraint_name,
+							  NVL( p_constraint_regexp, '.' ),
+							  'i'
+							)
+					 AND r_constraint_name IN(
+								   SELECT constraint_name
+								     FROM all_constraints
+								    WHERE table_name = UPPER( p_table )
+								      AND owner = UPPER( p_owner )
+								      AND constraint_type = 'P' ))
+			      WHERE include='Y')
+      LOOP
+         -- catch empty cursor sets
+         l_rows := TRUE;
+	 BEGIN
+            td_sql.exec_sql( p_sql       => CASE
+	    		     WHEN REGEXP_LIKE( 'disable',p_maint_type,'i')
+			     THEN c_constraints.disable_ddl
+			     WHEN REGEXP_LIKE( 'enable',p_maint_type,'i')
+			     THEN c_constraints.enable_ddl
+      			     END,     
+                             p_auto      => 'yes' );
+	    -- insert records into a GTT
+	    -- this allows a call to ENABLE_CONSTRAINTS without parameters to only work on those that were previously disabled
+	    IF REGEXP_LIKE( 'disable',p_maint_type,'i')
+	    THEN
+
+	       INSERT INTO constraint_maint
+		      ( table_owner,
+			table_name,
+			constraint_name,
+			disable_ddl,
+			disable_msg,
+			enable_ddl,
+			enable_msg )
+		      VALUES
+		      ( c_constraints.table_owner,
+			c_constraints.table_name,
+			c_constraints.constraint_name,
+			c_constraints.disable_ddl,
+			c_constraints.disable_msg,
+			c_constraints.enable_ddl,
+			c_constraints.enable_msg );
+	    END IF;
+            td_inst.log_msg( CASE
+	    		     WHEN REGEXP_LIKE( 'disable',p_maint_type,'i')
+			     THEN c_constraints.disable_msg
+			     WHEN REGEXP_LIKE( 'enable',p_maint_type,'i')
+			     THEN c_constraints.enable_msg
+      			     END );
+
+            l_con_cnt := l_con_cnt + 1;
+	 EXCEPTION
+	    WHEN e_iot_shc
+	    THEN
+	    td_inst.log_msg( 'Constraint '||c_constraints.constraint_name||' is the primary key for either an IOT or a sorted hash cluster' );
+	 END;
+      END LOOP;
+
+      IF NOT l_rows
+      THEN
+         td_inst.log_msg( 'No matching '
+			  ||CASE 
+	    		      WHEN REGEXP_LIKE( 'disable',p_maint_type,'i')
+			      THEN 'enabled '
+			      WHEN REGEXP_LIKE( 'enable',p_maint_type,'i')
+			      THEN 'disabled '
+      			    END
+			  ||' constraints found.' );
+      ELSE
+         td_inst.log_msg(    l_con_cnt
+                          || ' constraint '
+                          || CASE
+                                WHEN l_con_cnt = 1
+                                   THEN NULL
+                                ELSE 's'
+                             END
+                          || CASE
+	    		     WHEN REGEXP_LIKE( 'disable',p_maint_type,'i')
+			     THEN 'disabled'
+			     WHEN REGEXP_LIKE( 'enable',p_maint_type,'i')
+			     THEN 'enabled'
+      			  END
+			  ||' on or related to '
+                          || l_tab_name
+                        );
+      END IF;
+
+      o_td.clear_app_info;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         td_inst.log_err;
+         RAISE;
+   END constraint_maint;
 
    -- enables constraints related to a particular table
    PROCEDURE enable_constraints(
@@ -964,18 +1182,25 @@ AS
 
       IF l_tab_cons
       THEN
-         FOR c_constraints IN ( SELECT    'alter table '
-                                       || owner
-                                       || '.'
-                                       || table_name
+         FOR c_constraints IN ( SELECT owner table_owner,
+				       table_name,
+				       constraint_name,
+				          'alter table '
+                                       || l_tab_name
                                        || ' disable constraint '
-                                       || constraint_name constraint_ddl,
+                                       || constraint_name disable_ddl,
                                           'Constraint '
                                        || constraint_name
                                        || ' disabled on '
-                                       || owner
-                                       || '.'
-                                       || table_name msg
+                                       || l_tab_name disable_msg,
+				           'alter table '
+                                       || l_tab_name
+                                       || ' enable constraint '
+                                       || constraint_name enable_ddl,
+                                          'Constraint '
+                                       || constraint_name
+                                       || ' disabled on '
+                                       || l_tab_name enable_msg
                                  FROM all_constraints
                                 WHERE table_name = UPPER( p_table )
                                   AND owner = UPPER( p_owner )
@@ -991,10 +1216,11 @@ AS
          LOOP
             -- catch empty cursor sets
             l_rows := TRUE;
-            td_sql.exec_sql( p_sql       => c_constraints.constraint_ddl,
+            td_sql.exec_sql( p_sql       => c_constraints.disable_ddl,
                              p_auto      => 'yes' );
+
             l_con_cnt := l_con_cnt + 1;
-            td_inst.log_msg( c_constraints.msg );
+            td_inst.log_msg( c_constraints.disable_msg );
          END LOOP;
       END IF;
 
@@ -1003,18 +1229,33 @@ AS
 
       IF l_ref_cons
       THEN
-         FOR c_dis_for_keys IN ( SELECT    'alter table '
+         FOR c_dis_for_keys IN ( SELECT owner table_owner,
+					table_name,
+					constraint_name,
+					   'alter table '
                                         || owner
                                         || '.'
                                         || table_name
                                         || ' disable constraint '
-                                        || constraint_name DDL,
+                                        || constraint_name disable_ddl,
                                            'Constraint '
                                         || constraint_name
                                         || ' disabled on '
                                         || owner
                                         || '.'
-                                        || table_name msg
+                                        || table_name disable_msg,
+					   'alter table '
+                                        || owner
+                                        || '.'
+                                        || table_name
+                                        || ' enable constraint '
+                                        || constraint_name enable_ddl,
+                                           'Constraint '
+                                        || constraint_name
+                                        || ' enabled on '
+                                        || owner
+                                        || '.'
+                                        || table_name enable_msg
                                   FROM all_constraints
                                  WHERE constraint_type = 'R'
                                    AND status = 'ENABLED'
@@ -1030,9 +1271,11 @@ AS
                                              AND constraint_type = 'P' ))
          LOOP
             l_rows := TRUE;
-            td_sql.exec_sql( p_sql => c_dis_for_keys.DDL, p_auto => 'yes' );
+            td_sql.exec_sql( p_sql => c_dis_for_keys.disable_ddl, p_auto => 'yes' );
+	    -- insert records into a GTT
+	    -- this allows a call to ENABLE_CONSTRAINTS to only work on those that were previously disabled
             l_con_cnt := l_con_cnt + 1;
-            td_inst.log_msg( c_dis_for_keys.msg );
+            td_inst.log_msg( c_dis_for_keys.disable_msg );
          END LOOP;
       END IF;
 
@@ -1059,6 +1302,7 @@ AS
          td_inst.log_err;
          RAISE;
    END disable_constraints;
+   
 
    -- drop particular indexes from a table
    PROCEDURE drop_indexes(
@@ -1186,13 +1430,13 @@ AS
 
    -- structures an insert or insert append statement from the source to the target provided
    PROCEDURE insert_table(
-      p_source_owner    VARCHAR2,
-      p_source_object   VARCHAR2,
       p_owner           VARCHAR2,
       p_table           VARCHAR2,
+      p_source_owner    VARCHAR2,
+      p_source_object   VARCHAR2,
       p_trunc           VARCHAR2 DEFAULT 'no',
       p_direct          VARCHAR2 DEFAULT 'yes',
-      p_degree          NUMBER DEFAULT NULL,
+      p_degree          NUMBER   DEFAULT NULL,
       p_log_table       VARCHAR2 DEFAULT NULL,
       p_reject_limit    VARCHAR2 DEFAULT 'unlimited'
    )
@@ -1289,13 +1533,13 @@ AS
 
    -- structures a merge statement between two tables that have the same table
    PROCEDURE merge_table(
-      p_source_owner    VARCHAR2,
-      p_source_object   VARCHAR2,
       p_owner           VARCHAR2,
       p_table           VARCHAR2,
+      p_source_owner    VARCHAR2,
+      p_source_object   VARCHAR2,
       p_columns         VARCHAR2 DEFAULT NULL,
       p_direct          VARCHAR2 DEFAULT 'yes',
-      p_degree          NUMBER DEFAULT NULL,
+      p_degree          NUMBER   DEFAULT NULL,
       p_log_table       VARCHAR2 DEFAULT NULL,
       p_reject_limit    VARCHAR2 DEFAULT 'unlimited'
    )
@@ -1579,15 +1823,15 @@ AS
 
    -- queries the dictionary based on regular expressions and loads tables using either the load_tab method or the merge_tab method
    PROCEDURE load_tables(
+      p_owner           VARCHAR2,
       p_source_owner    VARCHAR2,
       p_source_regexp   VARCHAR2,
-      p_owner           VARCHAR2 DEFAULT NULL,
       p_suffix          VARCHAR2 DEFAULT NULL,
       p_merge           VARCHAR2 DEFAULT 'no',
       p_part_tabs       VARCHAR2 DEFAULT 'yes',
       p_trunc           VARCHAR2 DEFAULT 'no',
       p_direct          VARCHAR2 DEFAULT 'yes',
-      p_degree          NUMBER DEFAULT NULL,
+      p_degree          NUMBER   DEFAULT NULL,
       p_commit          VARCHAR2 DEFAULT 'yes'
    )
    IS
@@ -1624,7 +1868,7 @@ AS
                                             'i'
                                           )
                            AND o.owner = UPPER( p_source_owner )
-                           AND t.owner = UPPER( NVL( p_owner, p_source_owner ))
+                           AND t.owner = UPPER( p_owner)
                            AND o.object_type IN( 'TABLE', 'VIEW', 'SYNONYM' )
                            AND object_name <>
                                           CASE
@@ -1698,16 +1942,16 @@ AS
 
    -- procedure to exchange a partitioned table with a non-partitioned table
    PROCEDURE exchange_partition(
-      p_source_owner     VARCHAR2,
-      p_source_table     VARCHAR2,
       p_owner            VARCHAR2,
       p_table            VARCHAR2,
+      p_source_owner     VARCHAR2,
+      p_source_table     VARCHAR2,
       p_partname         VARCHAR2 DEFAULT NULL,
       p_idx_tablespace   VARCHAR2 DEFAULT NULL,
       p_index_drop       VARCHAR2 DEFAULT 'yes',
       p_statistics       VARCHAR2 DEFAULT 'transfer',
-      p_statpercent      NUMBER DEFAULT NULL,
-      p_statdegree       NUMBER DEFAULT NULL,
+      p_statpercent      NUMBER   DEFAULT NULL,
+      p_statdegree       NUMBER   DEFAULT NULL,
       p_statmethod       VARCHAR2 DEFAULT NULL
    )
    IS
@@ -1772,7 +2016,7 @@ AS
                        p_percent              => p_statpercent,
                        p_degree               => p_statdegree,
                        p_method               => p_statmethod,
-                       p_cascade              => FALSE );
+                       p_cascade              => 'no' );
       -- we want to transfer the statistics from the current segment into the new segment
       -- this is preferable if automatic stats are handling stats collection
       -- and you want the load time not to suffer from statistics gathering
@@ -1962,95 +2206,40 @@ AS
       THEN
 	 NULL;
       ELSE 
+
 	 -- otherwise, we will either gather or transfer statistics
 	 -- this depends on the value of p_statistics
+	 -- will be building indexes later, which gather their own statistics
+	 -- so P_CASCADE is fales
 	 update_stats( p_owner                => p_source_owner,
                        p_table                => p_table,
-		       p_source_owner         => CASE WHEN REGEXP_LIKE('gather',p_statistics,'i') THEN null
-		       WHEN REGEXP_LIKE('transfer', p_statistics,'i') THEN p_source_owner END,
-		       p_source_table         => CASE WHEN REGEXP_LIKE('gather',p_statistics,'i') THEN null
-		       WHEN REGEXP_LIKE('transfer', p_statistics,'i') THEN p_table END,
+		       p_source_owner         => CASE WHEN REGEXP_LIKE('gather',p_statistics,'i') 
+		       			      	      THEN null
+		                                      WHEN REGEXP_LIKE('transfer', p_statistics,'i') 
+                                                      THEN p_source_owner 
+						 END,
+		       p_source_table         => CASE WHEN REGEXP_LIKE('gather',p_statistics,'i') 
+		       			      	      THEN NULL
+		                                      WHEN REGEXP_LIKE('transfer', p_statistics,'i') 
+						      THEN p_table 
+						 END,
                        p_percent              => p_statpercent,
                        p_degree               => p_statdegree,
                        p_method               => p_statmethod,
-                       p_cascade              => FALSE );
+                       p_cascade              => 'no' );
       END IF;
 
       -- now build the indexes
-      -- indexes will get fresh new statistics
-      -- that is why we didn't mess with these above
       build_indexes( p_owner             => p_source_owner,
                      p_table             => p_source_table,
                      p_source_owner      => p_source_owner,
-                     p_source_table      => p_table,
-                     p_part_type         => 'local'
+                     p_source_table      => p_table
                    );
 	 
-      -- now exchange the table
-      o_td.change_action( 'Exchange table' );
+      -- now replace the table
+      -- using a table rename for this
+      o_td.change_action( 'Rename tables' );
       
-      -- have several exceptions that we want to handle when an exchange fails
-      -- so we are using an EXIT WHEN loop
-      -- if an exception that we handle is raised, then we want to rerun the exchange
-      -- will try the exchange multiple times until it either succeeds, or an unrecognized exception is raised
-      LOOP
-	 l_retry_ddl := FALSE;
-	 BEGIN
-	    -- this will be the DDL statement to rename the table
-	    NULL;
-	    
-	 EXCEPTION
-	    WHEN e_fkeys
-	    THEN
-	    -- disable foreign keys related to the table
-	    -- this will enable the exchange to occur
-	    o_td.change_action( 'Disable foreign keys' );
-	    l_dis_fkeys := TRUE;
-	    l_retry_ddl := TRUE;
-            disable_constraints( p_owner      => p_source_owner,
-            			 p_table      => p_table,
-                                 p_basis      => 'reference'
-                               );
-	    
-            WHEN e_compress
-            THEN
-	    td_inst.log_msg(l_src_name||' compressed to facilitate exchange');
-            -- need to compress the staging table
-	    l_compress := TRUE;
-	    l_retry_ddl := TRUE;
-            td_sql.exec_sql( p_sql       =>    'alter table '
-                             || l_src_name
-                             || ' move compress',
-                             p_auto      => 'yes'
-                           );
-            WHEN OTHERS
-            THEN
-            -- first log the error
-            -- provide a backtrace from this exception handler to the next
-            td_inst.log_err;
-
-            -- need to drop indexes if there is an exception
-            -- this is for rerunability
-            IF td_ext.is_true( p_index_drop )
-            THEN
-               -- now record the reason for the index drops
-               td_inst.log_msg( 'Dropping indexes for restartability' );
-               drop_indexes( p_owner => p_source_owner, p_table => p_source_table );
-            END IF;
-	    
-	    -- need to put the disabled foreign keys back if we disabled them
-	    IF l_dis_fkeys
-	    THEN
-               enable_constraints( p_owner      => p_source_owner,
-            			   p_table      => p_table,
-                                   p_basis      => 'reference'
-				  );
-	    END IF;       
-
-            RAISE;
-	 END;
-	 EXIT WHEN NOT l_retry_ddl;
-      END LOOP;
 
       -- enable any foreign keys on other tables that reference this table
       IF l_dis_fkeys
@@ -2077,28 +2266,24 @@ AS
    END replace_table;
    
 
-   -- Provides functionality for setting local and non-local indexes to unusable based on parameters   -- Can also base which index partitions to mark as unuable based on the contents of another table
+   -- Provides functionality for setting local and non-local indexes to unusable based on parameters   
+   -- Can also base which index partitions to mark as unuable based on the contents of another table
    -- There are two "magic" numbers that are required to make it work correctly.
    -- The defaults will quite often work.
    -- The simpliest way to find which magic numbers make this function work is to
    -- do a partition exchange on the target table and trace that statement.
    PROCEDURE unusable_indexes(
-      p_owner           VARCHAR2,             -- owner of table for the indexes to work on
-      p_table           VARCHAR2,                       -- table to operate on indexes for
+      p_owner           VARCHAR2,
+      p_table           VARCHAR2,
       p_partname        VARCHAR2 DEFAULT NULL,
-      -- partition to mark indexes on (if specified)
       p_source_owner    VARCHAR2 DEFAULT NULL,
       p_source_object   VARCHAR2 DEFAULT NULL,
       p_source_column   VARCHAR2 DEFAULT NULL,
-      p_d_num           NUMBER DEFAULT 0,
-      -- first magic number from unpublished
-      p_p_num           NUMBER DEFAULT 65535,
+      p_d_num           NUMBER   DEFAULT 0,
+      p_p_num           NUMBER   DEFAULT 65535,
       p_index_regexp    VARCHAR2 DEFAULT NULL,
       p_index_type      VARCHAR2 DEFAULT NULL,
-      -- possible options: specify different index types
-      p_part_type       VARCHAR2 DEFAULT NULL
-   
-   -- when P_PARTNAME is specified, then whether to mark all global's as unusable
+      p_part_type       VARCHAR2 DEFAULT NULL   
    )
    IS
       l_tab_name   VARCHAR2( 61 )   := UPPER( p_owner ) || '.' || UPPER( p_table );
@@ -2432,11 +2617,11 @@ AS
       p_source_owner      VARCHAR2 DEFAULT NULL,
       p_source_table      VARCHAR2 DEFAULT NULL,
       p_source_partname   VARCHAR2 DEFAULT NULL,
-      p_percent           NUMBER DEFAULT NULL,
-      p_degree            NUMBER DEFAULT NULL,
+      p_percent           NUMBER   DEFAULT NULL,
+      p_degree            NUMBER   DEFAULT NULL,
       p_method            VARCHAR2 DEFAULT 'FOR ALL COLUMNS SIZE AUTO',
       p_granularity       VARCHAR2 DEFAULT 'AUTO',
-      p_cascade           BOOLEAN DEFAULT NULL,
+      p_cascade           VARCHAR2 DEFAULT NULL,
       p_options           VARCHAR2 DEFAULT 'GATHER AUTO'
    )
    IS
@@ -2548,7 +2733,7 @@ AS
                                                                  DBMS_STATS.auto_degree
                                                                ),
                                    granularity           => p_granularity,
-                                   CASCADE               => NVL( p_cascade,
+                                   CASCADE               => NVL( td_ext.is_true(p_cascade),
                                                                  DBMS_STATS.auto_cascade
                                                                ),
                                    options               => p_options
@@ -2568,7 +2753,7 @@ AS
                                                                   DBMS_STATS.auto_degree
                                                                 ),
                                     granularity           => p_granularity,
-                                    CASCADE               => NVL( p_cascade,
+                                    CASCADE               => NVL( td_ext.is_true(p_cascade),
                                                                   DBMS_STATS.auto_cascade
                                                                 )
                                   );
