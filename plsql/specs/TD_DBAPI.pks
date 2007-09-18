@@ -60,6 +60,8 @@ IS
       p_constraint_regexp   VARCHAR2 DEFAULT NULL,
       p_basis               VARCHAR2 DEFAULT 'table'
    );
+      
+   PROCEDURE enable_constraints;
 
    PROCEDURE drop_indexes(
       p_owner          VARCHAR2,
