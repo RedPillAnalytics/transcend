@@ -19,7 +19,7 @@ IS
       p_source_table   VARCHAR2,
       p_tablespace     VARCHAR2 DEFAULT NULL,
       p_partitioning   VARCHAR2 DEFAULT 'yes',
-      p_rows	       VARCHAR2 DEFAULT 'no',
+      p_rows           VARCHAR2 DEFAULT 'no',
       p_statistics     VARCHAR2 DEFAULT 'no'
    );
 
@@ -31,7 +31,8 @@ IS
       p_index_regexp   VARCHAR2 DEFAULT NULL,
       p_index_type     VARCHAR2 DEFAULT NULL,
       p_part_type      VARCHAR2 DEFAULT NULL,
-      p_tablespace     VARCHAR2 DEFAULT NULL
+      p_tablespace     VARCHAR2 DEFAULT NULL,
+      p_partname       VARCHAR2 DEFAULT NULL
    );
 
    PROCEDURE build_constraints(
@@ -44,7 +45,7 @@ IS
       p_seg_attributes      VARCHAR2 DEFAULT 'no',
       p_tablespace          VARCHAR2 DEFAULT NULL
    );
-      
+
    PROCEDURE disable_constraints(
       p_owner               VARCHAR2,
       p_table               VARCHAR2,
@@ -60,7 +61,7 @@ IS
       p_constraint_regexp   VARCHAR2 DEFAULT NULL,
       p_basis               VARCHAR2 DEFAULT 'table'
    );
-      
+
    PROCEDURE enable_constraints;
 
    PROCEDURE drop_indexes(
@@ -84,7 +85,7 @@ IS
       p_source_object   VARCHAR2,
       p_trunc           VARCHAR2 DEFAULT 'no',
       p_direct          VARCHAR2 DEFAULT 'yes',
-      p_degree          NUMBER   DEFAULT NULL,
+      p_degree          NUMBER DEFAULT NULL,
       p_log_table       VARCHAR2 DEFAULT NULL,
       p_reject_limit    VARCHAR2 DEFAULT 'unlimited'
    );
@@ -96,7 +97,7 @@ IS
       p_source_object   VARCHAR2,
       p_columns         VARCHAR2 DEFAULT NULL,
       p_direct          VARCHAR2 DEFAULT 'yes',
-      p_degree          NUMBER   DEFAULT NULL,
+      p_degree          NUMBER DEFAULT NULL,
       p_log_table       VARCHAR2 DEFAULT NULL,
       p_reject_limit    VARCHAR2 DEFAULT 'unlimited'
    );
@@ -110,7 +111,7 @@ IS
       p_part_tabs       VARCHAR2 DEFAULT 'yes',
       p_trunc           VARCHAR2 DEFAULT 'no',
       p_direct          VARCHAR2 DEFAULT 'yes',
-      p_degree          NUMBER   DEFAULT NULL,
+      p_degree          NUMBER DEFAULT NULL,
       p_commit          VARCHAR2 DEFAULT 'yes'
    );
 
@@ -123,8 +124,8 @@ IS
       p_idx_tablespace   VARCHAR2 DEFAULT NULL,
       p_index_drop       VARCHAR2 DEFAULT 'yes',
       p_statistics       VARCHAR2 DEFAULT 'transfer',
-      p_statpercent      NUMBER   DEFAULT NULL,
-      p_statdegree       NUMBER   DEFAULT NULL,
+      p_statpercent      NUMBER DEFAULT NULL,
+      p_statdegree       NUMBER DEFAULT NULL,
       p_statmethod       VARCHAR2 DEFAULT NULL
    );
 
@@ -135,8 +136,8 @@ IS
       p_source_owner    VARCHAR2 DEFAULT NULL,
       p_source_object   VARCHAR2 DEFAULT NULL,
       p_source_column   VARCHAR2 DEFAULT NULL,
-      p_d_num           NUMBER   DEFAULT 0,
-      p_p_num           NUMBER   DEFAULT 65535,
+      p_d_num           NUMBER DEFAULT 0,
+      p_p_num           NUMBER DEFAULT 65535,
       p_index_regexp    VARCHAR2 DEFAULT NULL,
       p_index_type      VARCHAR2 DEFAULT NULL,
       p_part_type       VARCHAR2 DEFAULT NULL
@@ -151,8 +152,8 @@ IS
       p_source_owner      VARCHAR2 DEFAULT NULL,
       p_source_table      VARCHAR2 DEFAULT NULL,
       p_source_partname   VARCHAR2 DEFAULT NULL,
-      p_percent           NUMBER   DEFAULT NULL,
-      p_degree            NUMBER   DEFAULT NULL,
+      p_percent           NUMBER DEFAULT NULL,
+      p_degree            NUMBER DEFAULT NULL,
       p_method            VARCHAR2 DEFAULT 'FOR ALL COLUMNS SIZE AUTO',
       p_granularity       VARCHAR2 DEFAULT 'AUTO',
       p_cascade           VARCHAR2 DEFAULT NULL,
