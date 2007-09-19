@@ -427,12 +427,12 @@ AS
                                            THEN ' TABLESPACE ' || p_tablespace
                                         WHEN p_partname IS NOT NULL
                                            THEN    ' TABLESPACE '
-                                                || ( SELECT tablespace_name
-                                                      FROM all_ind_partitions
-                                                     WHERE index_name = ai.index_name
-                                                       AND index_owner = ai.owner
-                                                       AND partition_position =
-                                                                           l_part_position )
+                                                || nvl( ai.tablespace_name,( SELECT tablespace_name
+                                                                               FROM all_ind_partitions
+                                                                              WHERE index_name = ai.index_name
+                                                                                AND index_owner = ai.owner
+                                                                                AND partition_position =
+                                                                           l_part_position ))
                                         ELSE NULL
                                      END index_ddl,
                                   table_owner, table_name, owner, index_name,
