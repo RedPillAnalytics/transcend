@@ -192,23 +192,26 @@ AS
       p_index_regexp   VARCHAR2 DEFAULT NULL,
       p_index_type     VARCHAR2 DEFAULT NULL,
       p_part_type      VARCHAR2 DEFAULT NULL,
-      p_tablespace     VARCHAR2 DEFAULT NULL
+      p_tablespace     VARCHAR2 DEFAULT NULL,
+      p_partname       VARCHAR2 DEFAULT NULL
    )
    IS
-      l_ddl            LONG;
-      l_e_ddl          LONG;
-      l_idx_cnt        NUMBER                        := 0;
-      l_tab_name       VARCHAR2( 61 )               := UPPER( p_owner || '.' || p_table );
-      l_src_name       VARCHAR2( 61 ) := UPPER( p_source_owner || '.' || p_source_table );
-      l_part_type      VARCHAR2( 6 );
-      l_targ_part      all_tables.partitioned%TYPE;
-      l_results        NUMBER;
-      l_rows           BOOLEAN                       := FALSE;
-      e_dup_idx_name   EXCEPTION;
+      l_ddl             LONG;
+      l_e_ddl           LONG;
+      l_idx_cnt         NUMBER                                       := 0;
+      l_tab_name        VARCHAR2( 61 )              := UPPER( p_owner || '.' || p_table );
+      l_src_name        VARCHAR2( 61 )
+                                      := UPPER( p_source_owner || '.' || p_source_table );
+      l_part_type       VARCHAR2( 6 );
+      l_targ_part       all_tables.partitioned%TYPE;
+      l_part_position   all_tab_partitions.partition_position%TYPE;
+      l_results         NUMBER;
+      l_rows            BOOLEAN                                      := FALSE;
+      e_dup_idx_name    EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_idx_name, -955 );
-      e_dup_col_list   EXCEPTION;
+      e_dup_col_list    EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_col_list, -1408 );
-      o_td             tdtype                    := tdtype( p_module      => 'build_indexes' );
+      o_td              tdtype                   := tdtype( p_module      => 'build_indexes' );
    BEGIN
       -- confirm that parameters are compatible
       -- go ahead and write a CASE statement so adding more later is easier
@@ -216,13 +219,13 @@ AS
          WHEN     td_sql.is_part_table( p_owner      => p_source_owner,
                                         p_table      => p_source_table
                                       )
-              AND ( p_tablespace IS NULL )
+              AND ( ( p_tablespace IS NULL ) AND( p_partname IS NULL ))
          THEN
             raise_application_error
-                   ( td_inst.get_err_cd( 'parm_not_supported' ),
-                        td_inst.get_err_msg( 'parm_not_supported' )
-                     || ': Not specifiying P_TABLESPACE when the source table is partitioned'
-                   );
+               ( td_inst.get_err_cd( 'parm_not_supported' ),
+                    td_inst.get_err_msg( 'parm_not_supported' )
+                 || ': Either P_TABLESPACE or P_PARTNAME is required when source table is partitioned'
+               );
          ELSE
             NULL;
       END CASE;
@@ -232,7 +235,10 @@ AS
       td_sql.check_table( p_owner => p_owner, p_table => p_table );
       -- confirm that the source table
       -- raise an error if it doesn't
-      td_sql.check_table( p_owner => p_source_owner, p_table => p_source_table );
+      td_sql.check_table( p_owner         => p_source_owner,
+                          p_table         => p_source_table,
+                          p_partname      => p_partname
+                        );
       -- execute immediate doesn't like ";" on the end
       DBMS_METADATA.set_transform_param( DBMS_METADATA.session_transform,
                                          'SQLTERMINATOR',
@@ -253,6 +259,17 @@ AS
         INTO l_targ_part
         FROM all_tables
        WHERE table_name = UPPER( p_table ) AND owner = UPPER( p_owner );
+
+      -- if P_PARTNAME is specified, then I need the partition position is required
+      IF p_partname IS NOT NULL
+      THEN
+         SELECT partition_position
+           INTO l_part_position
+           FROM all_tab_partitions
+          WHERE table_name = UPPER( p_source_table )
+            AND table_owner = UPPER( p_source_owner )
+            AND partition_name = UPPER( p_partname );
+      END IF;
 
       td_inst.log_msg( 'Building indexes on ' || l_tab_name );
 
@@ -293,6 +310,7 @@ AS
                     END
                  || ' rename to '
                  || index_name rename_ddl,
+                    
                     -- this column was added for the REPLACE_TABLE procedure
                     -- in that procedure, after cloning the indexes, the table is renamed
                     -- we have to rename the indexes back to their original names
@@ -306,7 +324,6 @@ AS
                     END
                  || ' renamed to '
                  || index_name rename_msg
-
             FROM ( SELECT
                           -- IF idx_rename already exists (constructed below), then we will try to rename the index to something generic
                           -- this name will only be used when idx_rename name already exists
@@ -369,20 +386,26 @@ AS
                                                 -- target is not partitioned and no tablespace provided
                                              WHEN l_targ_part = 'NO'
                                              AND p_tablespace IS NULL
+                                             AND p_partname IS NULL
                                                    -- remove all partitioning and the local keyword
                                              THEN '(\(\s*partition.+\))|local'
                                                 -- target is not partitioned but tablespace is provided
                                              WHEN l_targ_part = 'NO'
-                                             AND p_tablespace IS NOT NULL
+                                             AND (    p_tablespace IS NOT NULL
+                                                   OR p_partname IS NOT NULL
+                                                 )
                                                    -- strip out partitioned info and local keyword and tablespace clause
                                              THEN '(\(\s*partition.+\))|local|(tablespace)\s*\S+'
                                                 -- target is partitioned and tablespace is provided
                                              WHEN l_targ_part = 'YES'
-                                             AND p_tablespace IS NOT NULL
+                                             AND (    p_tablespace IS NOT NULL
+                                                   OR p_partname IS NOT NULL
+                                                 )
                                                    -- strip out partitioned info keeping local keyword and remove tablespace clause
                                              THEN '(\(\s*partition.+\))|(tablespace)\s*\S+'
                                                 WHEN l_targ_part = 'YES'
                                                 AND p_tablespace IS NULL
+                                                AND p_partname IS NULL
                                                    -- strip out partitioned info keeping local keyword and tablespace clause
                                              THEN '(\(\s*partition.+\))'
                                              END
@@ -402,6 +425,14 @@ AS
                                         -- now we can just tack the new tablespace information on the end
                                      WHEN p_tablespace IS NOT NULL
                                            THEN ' TABLESPACE ' || p_tablespace
+                                        WHEN p_partname IS NOT NULL
+                                           THEN    ' TABLESPACE '
+                                                || ( SELECT tablespace_name
+                                                      FROM all_ind_partitions
+                                                     WHERE index_name = ai.index_name
+                                                       AND index_owner = ai.owner
+                                                       AND partition_position =
+                                                                           l_part_position )
                                         ELSE NULL
                                      END index_ddl,
                                   table_owner, table_name, owner, index_name,
@@ -434,7 +465,7 @@ AS
                                      ELSE 'IK'
                                   END idx_ext,
                                   partitioned, uniqueness, index_type
-                             FROM all_indexes ai
+                            FROM all_indexes ai
                            -- USE an NVL'd regular expression to determine the partition types to worked on
                            -- when a regexp matching 'global' is passed, then do only global
                            -- when a regexp matching 'local' is passed, then do only local
@@ -492,12 +523,14 @@ AS
                         ( index_owner, index_name,
                           source_owner, source_index,
                           partitioned, uniqueness,
-                          index_type, index_ddl, rename_ddl, rename_msg
+                          index_type, index_ddl,
+                          rename_ddl, rename_msg
                         )
                  VALUES ( c_indexes.index_owner, c_indexes.index_name,
                           c_indexes.source_owner, c_indexes.source_index,
                           c_indexes.partitioned, c_indexes.uniqueness,
-                          c_indexes.index_type, c_indexes.index_ddl, c_indexes.rename_ddl, c_indexes.rename_msg
+                          c_indexes.index_type, c_indexes.index_ddl,
+                          c_indexes.rename_ddl, c_indexes.rename_msg
                         );
          EXCEPTION
             -- if a duplicate column list of indexes already exist, log it, but continue
@@ -533,7 +566,7 @@ AS
          td_inst.log_err;
          RAISE;
    END build_indexes;
-   
+
    -- renames cloned indexes on a particular table back to their original names
    PROCEDURE rename_indexes
    IS
@@ -541,8 +574,7 @@ AS
       l_rows      BOOLEAN := FALSE;
       o_td        tdtype  := tdtype( p_module => 'rename_indexes' );
    BEGIN
-      td_inst.log_msg
-      ( 'Renaming indexes previously cloned' );
+      td_inst.log_msg( 'Renaming indexes previously cloned' );
 
       FOR c_idxs IN ( SELECT *
                        FROM build_indexes )
@@ -579,7 +611,6 @@ AS
          td_inst.log_err;
          RAISE;
    END rename_indexes;
-   
 
    -- builds the constraints from one table on another
    PROCEDURE build_constraints(
@@ -1126,8 +1157,7 @@ AS
       l_rows      BOOLEAN := FALSE;
       o_td        tdtype  := tdtype( p_module => 'enable_constraints' );
    BEGIN
-      td_inst.log_msg
-              ( 'Enabling constraints disabled previously' );
+      td_inst.log_msg( 'Enabling constraints disabled previously' );
 
       FOR c_cons IN ( SELECT *
                        FROM constraint_maint )
