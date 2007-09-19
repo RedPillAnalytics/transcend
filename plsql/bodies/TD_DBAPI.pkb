@@ -292,7 +292,21 @@ AS
                        ELSE idx_rename
                     END
                  || ' rename to '
-                 || index_name rename_ddl
+                 || index_name rename_ddl,
+                    -- this column was added for the REPLACE_TABLE procedure
+                    -- in that procedure, after cloning the indexes, the table is renamed
+                    -- we have to rename the indexes back to their original names
+                    'Index '
+                 || owner
+                 || '.'
+                 || CASE generic_idx
+                       WHEN 'Y'
+                          THEN idx_rename_adj
+                       ELSE idx_rename
+                    END
+                 || ' renamed to '
+                 || index_name rename_msg
+
             FROM ( SELECT
                           -- IF idx_rename already exists (constructed below), then we will try to rename the index to something generic
                           -- this name will only be used when idx_rename name already exists
@@ -420,7 +434,7 @@ AS
                                      ELSE 'IK'
                                   END idx_ext,
                                   partitioned, uniqueness, index_type
-                            FROM all_indexes ai
+                             FROM all_indexes ai
                            -- USE an NVL'd regular expression to determine the partition types to worked on
                            -- when a regexp matching 'global' is passed, then do only global
                            -- when a regexp matching 'local' is passed, then do only local
@@ -478,12 +492,12 @@ AS
                         ( index_owner, index_name,
                           source_owner, source_index,
                           partitioned, uniqueness,
-                          index_type, index_ddl, rename_ddl
+                          index_type, index_ddl, rename_ddl, rename_msg
                         )
                  VALUES ( c_indexes.index_owner, c_indexes.index_name,
                           c_indexes.source_owner, c_indexes.source_index,
                           c_indexes.partitioned, c_indexes.uniqueness,
-                          c_indexes.index_type, c_indexes.index_ddl, c_indexes.rename_ddl
+                          c_indexes.index_type, c_indexes.index_ddl, c_indexes.rename_ddl, c_indexes.rename_msg
                         );
          EXCEPTION
             -- if a duplicate column list of indexes already exist, log it, but continue
@@ -519,6 +533,53 @@ AS
          td_inst.log_err;
          RAISE;
    END build_indexes;
+   
+   -- renames cloned indexes on a particular table back to their original names
+   PROCEDURE rename_indexes
+   IS
+      l_idx_cnt   NUMBER  := 0;
+      l_rows      BOOLEAN := FALSE;
+      o_td        tdtype  := tdtype( p_module => 'rename_indexes' );
+   BEGIN
+      td_inst.log_msg
+      ( 'Renaming indexes previously cloned' );
+
+      FOR c_idxs IN ( SELECT *
+                       FROM build_indexes )
+      LOOP
+         BEGIN
+            l_rows := TRUE;
+            td_sql.exec_sql( p_sql => c_idxs.rename_ddl, p_auto => 'yes' );
+            td_inst.log_msg( c_idxs.rename_msg );
+            l_idx_cnt := l_idx_cnt + 1;
+         END;
+      END LOOP;
+
+      IF NOT l_rows
+      THEN
+         td_inst.log_msg( 'No previously cloned indexes identified' );
+      ELSE
+         td_inst.log_msg(    l_idx_cnt
+                          || ' index'
+                          || CASE
+                                WHEN l_idx_cnt = 1
+                                   THEN NULL
+                                ELSE 'es'
+                             END
+                          || ' renamed'
+                        );
+      END IF;
+
+      -- commit is required to clear out the contents of the global temporary table
+      COMMIT;
+      o_td.clear_app_info;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         td_inst.log_err;
+         RAISE;
+   END rename_indexes;
+   
 
    -- builds the constraints from one table on another
    PROCEDURE build_constraints(
@@ -1923,10 +1984,7 @@ AS
                -- need to put the disabled foreign keys back if we disabled them
                IF l_dis_fkeys
                THEN
-                  enable_constraints( p_owner      => p_owner,
-                                      p_table      => p_table,
-                                      p_basis      => 'reference'
-                                    );
+                  enable_constraints;
                END IF;
 
                RAISE;
@@ -2041,16 +2099,6 @@ AS
       -- now replace the table
       -- using a table rename for this
       o_td.change_action( 'Rename tables' );
-
-      -- enable any foreign keys on other tables that reference this table
-      IF l_dis_fkeys
-      THEN
-         o_td.change_action( 'Enable foreign keys' );
-         enable_constraints( p_owner      => p_source_owner,
-                             p_table      => p_table,
-                             p_basis      => 'reference'
-                           );
-      END IF;
 
       -- drop the indexes on the stage table
       IF td_ext.is_true( p_index_drop )
