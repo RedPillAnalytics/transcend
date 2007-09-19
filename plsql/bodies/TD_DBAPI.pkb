@@ -226,6 +226,13 @@ AS
                     td_inst.get_err_msg( 'parm_not_supported' )
                  || ': Either P_TABLESPACE or P_PARTNAME is required when source table is partitioned'
                );
+         WHEN p_tablespace IS NOT NULL AND p_partname IS NOT null
+         THEN
+            raise_application_error
+               ( td_inst.get_err_cd( 'parms_not_compatible' ),
+                    td_inst.get_err_msg( 'parms_not_compatible' )
+                 || ': P_TABLESPACE and P_PARTNAME'
+               );
          ELSE
             NULL;
       END CASE;
@@ -424,7 +431,7 @@ AS
                                         -- if P_TABLESPACE is provided, then previous tablespace information was stripped (above)
                                         -- now we can just tack the new tablespace information on the end
                                      WHEN p_tablespace IS NOT NULL
-                                           THEN ' TABLESPACE ' || p_tablespace
+                                           THEN ' TABLESPACE ' || UPPER( p_tablespace )
                                         WHEN p_partname IS NOT NULL
                                            THEN    ' TABLESPACE '
                                                 || nvl( ai.tablespace_name,( SELECT tablespace_name
