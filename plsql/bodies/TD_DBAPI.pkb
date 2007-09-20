@@ -1847,7 +1847,7 @@ AS
       p_source_owner     VARCHAR2,
       p_source_table     VARCHAR2,
       p_partname         VARCHAR2 DEFAULT NULL,
-      p_idx_tablespace   VARCHAR2 DEFAULT NULL,
+      p_index_space      VARCHAR2 DEFAULT NULL,
       p_index_drop       VARCHAR2 DEFAULT 'yes',
       p_statistics       VARCHAR2 DEFAULT 'transfer',
       p_statpercent      NUMBER DEFAULT NULL,
@@ -1951,9 +1951,9 @@ AS
                      p_source_owner      => p_owner,
                      p_source_table      => p_table,
                      p_part_type         => 'local',
-                     p_tablespace        => p_idx_tablespace,
+                     p_tablespace        => p_index_space,
 		     p_partname		 => CASE
-		     			      WHEN p_idx_tablespace IS NOT NULL
+		     			      WHEN p_index_space IS NOT NULL
 					      THEN NULL
 					      ELSE l_partname
 					    END
