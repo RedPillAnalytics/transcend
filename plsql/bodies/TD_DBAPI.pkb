@@ -1211,7 +1211,7 @@ AS
    )
    IS
       l_rows       BOOLEAN        := FALSE;
-      l_tab_name   VARCHAR2( 61 ) := p_owner || '.' || p_table;
+      l_tab_name   VARCHAR2( 61 ) := UPPER( p_owner || '.' || p_table );
       l_idx_cnt    NUMBER         := 0;
       l_results    NUMBER;
       e_pk_idx     EXCEPTION;
@@ -1951,7 +1951,12 @@ AS
                      p_source_owner      => p_owner,
                      p_source_table      => p_table,
                      p_part_type         => 'local',
-                     p_tablespace        => p_idx_tablespace
+                     p_tablespace        => p_idx_tablespace,
+		     p_partname		 => CASE
+		     			      WHEN p_idx_tablespace IS NOT NULL
+					      THEN NULL
+					      ELSE l_partname
+					    END
                    );
       -- now exchange the table
       o_td.change_action( 'Exchange table' );
