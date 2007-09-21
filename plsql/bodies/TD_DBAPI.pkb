@@ -59,7 +59,7 @@ AS
       p_tablespace     VARCHAR2 DEFAULT NULL,
       p_partitioning   VARCHAR2 DEFAULT 'yes',
       p_rows           VARCHAR2 DEFAULT 'no',
-      p_statistics     VARCHAR2 DEFAULT 'no'
+      p_statistics     VARCHAR2 DEFAULT 'ignore'
    )
    IS
       l_ddl            LONG;
@@ -164,15 +164,40 @@ AS
                      );
       END IF;
 
-      -- if you also want statistics
-      IF td_ext.is_true( p_statistics )
-      THEN
-         update_stats( p_source_owner      => p_source_owner,
-                       p_source_table      => p_source_table,
-                       p_owner             => p_owner,
-                       p_table             => p_table
-                     );
-      END IF;
+      -- we want to gather statistics
+      -- we gather statistics first before the indexes are built
+      -- the indexes will collect there own statistics when they are built
+      -- that is why we don't cascade
+      CASE
+         WHEN REGEXP_LIKE( 'gather', p_statistics, 'i' )
+         THEN
+            update_stats( p_owner        => p_owner,
+                          p_table        => p_table
+                        );
+         -- we want to transfer the statistics from the current segment into the new segment
+         -- this is preferable if automatic stats are handling stats collection
+         -- and you want the load time not to suffer from statistics gathering
+      WHEN REGEXP_LIKE( 'transfer', p_statistics, 'i' )
+         THEN
+            update_stats( p_owner                => p_owner,
+                          p_table                => p_table,
+                          p_source_owner         => p_owner,
+                          p_source_table         => p_source_table
+                        );
+         -- do nothing with stats
+         -- this is preferable if stats are gathered on the staging segment prior to being exchanged in
+         -- OWB can do this, for example
+      WHEN REGEXP_LIKE( 'ignore', p_statistics, 'i' )
+         THEN
+            NULL;
+         ELSE
+            raise_application_error( td_ext.get_err_cd( 'unrecognized_parm' ),
+                                        td_ext.get_err_msg( 'unrecognized_parm' )
+                                     || ' : '
+                                     || p_statistics
+                                   );
+      END CASE;
+
    EXCEPTION
       WHEN OTHERS
       THEN
@@ -1861,11 +1886,6 @@ AS
       l_rows           BOOLEAN                                  := FALSE;
       l_partname       all_tab_partitions.partition_name%TYPE;
       l_ddl            LONG;
-      l_numrows        NUMBER;
-      l_numblks        NUMBER;
-      l_avgrlen        NUMBER;
-      l_cachedblk      NUMBER;
-      l_cachehit       NUMBER;
       l_results        NUMBER;
       l_build_cons     BOOLEAN                                  := FALSE;
       l_compress       BOOLEAN                                  := FALSE;
@@ -2061,31 +2081,20 @@ AS
 
    -- procedure to "swap" two tables using rename
    PROCEDURE replace_table(
-      p_source_owner   VARCHAR2,
-      p_source_table   VARCHAR2,
+      p_owner          VARCHAR2,
       p_table          VARCHAR2,
+      p_source_table   VARCHAR2,
+      p_tablespace     VARCHAR2 DEFAULT NULL,
       p_index_drop     VARCHAR2 DEFAULT 'yes',
-      p_statistics     VARCHAR2 DEFAULT 'transfer',
-      p_statpercent    NUMBER DEFAULT NULL,
-      p_statdegree     NUMBER DEFAULT NULL,
-      p_statmethod     VARCHAR2 DEFAULT NULL
+      p_statistics     VARCHAR2 DEFAULT 'transfer'
    )
    IS
-      l_src_name       VARCHAR2( 61 ) := UPPER( p_source_owner || '.' || p_source_table );
-      l_tab_name       VARCHAR2( 61 )        := UPPER( p_source_owner || '.' || p_table );
-      l_target_owner   all_tab_partitions.table_name%TYPE   := p_source_owner;
+      l_src_name       VARCHAR2( 61 ) := UPPER( p_owner || '.' || p_source_table );
+      l_tab_name       VARCHAR2( 61 ) := UPPER( p_owner || '.' || p_table );
+      l_tab_rn         VARCHAR2( 30 ) := UPPER('td$'||substr(p_table,1,25)||'_rn' );
+      l_ren_name       VARCHAR2( 61 ) := upper( p_owner || '.' || l_tab_rn );
       l_rows           BOOLEAN                              := FALSE;
       l_ddl            LONG;
-      l_numrows        NUMBER;
-      l_numblks        NUMBER;
-      l_avgrlen        NUMBER;
-      l_cachedblk      NUMBER;
-      l_cachehit       NUMBER;
-      l_results        NUMBER;
-      l_build_cons     BOOLEAN                              := FALSE;
-      l_compress       BOOLEAN                              := FALSE;
-      l_dis_fkeys      BOOLEAN                              := FALSE;
-      l_retry_ddl      BOOLEAN                              := FALSE;
       e_no_stats       EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_stats, -20000 );
       e_compress       EXCEPTION;
@@ -2096,9 +2105,9 @@ AS
    BEGIN
       o_td.change_action( 'Perform object checks' );
       -- check to make sure the target table exists
-      td_sql.check_table( p_owner => p_source_owner, p_table => p_table );
+      td_sql.check_table( p_owner => p_owner, p_table => p_table );
       -- check to make sure the source table exists
-      td_sql.check_table( p_owner => p_source_owner, p_table => p_source_table );
+      td_sql.check_table( p_owner => p_owner, p_table => p_source_table );
 
       -- do something with statistics on the new table
       -- if p_statistics is 'ignore', then do nothing
@@ -2111,13 +2120,13 @@ AS
          -- will be building indexes later, which gather their own statistics
          -- so P_CASCADE is fales
          update_stats
-                 ( p_owner             => p_source_owner,
+                 ( p_owner             => p_owner,
                    p_table             => p_table,
                    p_source_owner      => CASE
                       WHEN REGEXP_LIKE( 'gather', p_statistics, 'i' )
                          THEN NULL
                       WHEN REGEXP_LIKE( 'transfer', p_statistics, 'i' )
-                         THEN p_source_owner
+                         THEN p_owner
                    END,
                    p_source_table      => CASE
                       WHEN REGEXP_LIKE( 'gather', p_statistics, 'i' )
@@ -2125,27 +2134,43 @@ AS
                       WHEN REGEXP_LIKE( 'transfer', p_statistics, 'i' )
                          THEN p_table
                    END,
-                   p_percent           => p_statpercent,
-                   p_degree            => p_statdegree,
-                   p_method            => p_statmethod,
                    p_cascade           => 'no'
                  );
       END IF;
-
-      -- now build the indexes
-      build_indexes( p_owner             => p_source_owner,
+      
+      -- build the indexes
+      build_indexes( p_owner             => p_owner,
                      p_table             => p_source_table,
-                     p_source_owner      => p_source_owner,
-                     p_source_table      => p_table
+                     p_source_owner      => p_owner,
+                     p_source_table      => p_table,
+		     p_tablespace	 => p_tablespace
                    );
+
+      -- build the constraints
+      build_constraints( p_owner             => p_owner,
+			 p_table             => p_source_table,
+			 p_source_owner      => p_owner,
+			 p_source_table      => p_table,
+			 p_tablespace	     => p_tablespace
+                       );
+
       -- now replace the table
       -- using a table rename for this
       o_td.change_action( 'Rename tables' );
+      -- first name the current table to another name
+      td_sql.exec_sql( p_sql => 'alter table '||l_tab_name||' rename to '||l_tab_rn,
+		       p_auto => 'yes' );
+      -- now rename to source table to the target table
+      td_sql.exec_sql( p_sql => 'alter table '||l_src_name||' rename to '||p_table,
+		       p_auto => 'yes' );
+      -- now rename to previous target table to the source table name
+      td_sql.exec_sql( p_sql => 'alter table '||l_ren_name||' rename to '||p_source_table,
+		       p_auto => 'yes' );
 
       -- drop the indexes on the stage table
       IF td_ext.is_true( p_index_drop )
       THEN
-         drop_indexes( p_owner => p_source_owner, p_table => p_source_table );
+         drop_indexes( p_owner => p_owner, p_table => p_source_table );
       END IF;
 
       o_td.clear_app_info;
@@ -2626,7 +2651,7 @@ AS
                                    granularity           => p_granularity,
                                    CASCADE               => NVL
                                                                ( td_ext.is_true
-                                                                               ( p_cascade ),
+                                                                               ( p_cascade,TRUE ),
                                                                  DBMS_STATS.auto_cascade
                                                                ),
                                    options               => p_options
@@ -2648,7 +2673,7 @@ AS
                                     granularity           => p_granularity,
                                     CASCADE               => NVL
                                                                 ( td_ext.is_true
-                                                                               ( p_cascade ),
+                                                                               ( p_cascade,TRUE ),
                                                                   DBMS_STATS.auto_cascade
                                                                 )
                                   );
