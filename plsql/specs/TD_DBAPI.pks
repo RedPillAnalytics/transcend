@@ -20,7 +20,7 @@ IS
       p_tablespace     VARCHAR2 DEFAULT NULL,
       p_partitioning   VARCHAR2 DEFAULT 'yes',
       p_rows           VARCHAR2 DEFAULT 'no',
-      p_statistics     VARCHAR2 DEFAULT 'no'
+      p_statistics     VARCHAR2 DEFAULT 'ignore'
    );
 
    PROCEDURE build_indexes(
@@ -127,6 +127,15 @@ IS
       p_statpercent      NUMBER DEFAULT NULL,
       p_statdegree       NUMBER DEFAULT NULL,
       p_statmethod       VARCHAR2 DEFAULT NULL
+   );
+ 
+   PROCEDURE replace_table(
+      p_owner          VARCHAR2,
+      p_table          VARCHAR2,
+      p_source_table   VARCHAR2,
+      p_tablespace     VARCHAR2 DEFAULT NULL,
+      p_index_drop     VARCHAR2 DEFAULT 'yes',
+      p_statistics     VARCHAR2 DEFAULT 'transfer'
    );
 
    PROCEDURE unusable_indexes(
