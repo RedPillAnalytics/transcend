@@ -50,7 +50,7 @@ AS
       p_source_owner     VARCHAR2 DEFAULT NULL,
       p_source_table     VARCHAR2 DEFAULT NULL,
       p_partname         VARCHAR2 DEFAULT NULL,
-      p_idx_tablespace   VARCHAR2 DEFAULT NULL,
+      p_index_space      VARCHAR2 DEFAULT NULL,
       p_index_drop       VARCHAR2 DEFAULT NULL,
       p_statistics       VARCHAR2 DEFAULT NULL
    )
@@ -67,7 +67,7 @@ AS
                                          p_owner               => p_owner,
                                          p_table               => p_table,
                                          p_partname            => p_partname,
-                                         p_idx_tablespace      => p_idx_tablespace,
+                                         p_index_space         => p_index_space,
                                          p_index_drop          => NVL( p_index_drop,
                                                                        'yes' ),
                                          p_statistics          => p_statistics
