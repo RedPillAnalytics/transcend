@@ -2547,6 +2547,7 @@ AS
       l_cachedblk   NUMBER;
       l_cachehit    NUMBER;
       l_results     NUMBER;
+      l_statid	    VARCHAR2(30) := 'TD$'||sys_context('USERENV','SESSIONID')||to_date(SYSDATE,'yyyymmdd_hhmiss');
       e_no_stats    EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_stats, -20000 );
       l_rows        BOOLEAN   := FALSE;                         -- to catch empty cursors
@@ -2688,100 +2689,24 @@ AS
             -- or, it will take table level statistics and import it into a table.
             -- all of this depends on whether P_PARTNAME and P_SOURCE_PARTNAME are defined or not
             BEGIN
-               DBMS_STATS.get_table_stats( UPPER( p_source_owner ),
-                                           UPPER( p_source_table ),
-                                           UPPER( p_source_partname ),
-                                           numrows        => l_numrows,
-                                           numblks        => l_numblks,
-                                           avgrlen        => l_avgrlen,
-                                           cachedblk      => l_cachedblk,
-                                           cachehit       => l_cachehit
-                                         );
-               DBMS_STATS.set_table_stats( UPPER( p_owner ),
-                                           UPPER( p_table ),
-                                           UPPER( p_partname ),
-                                           numrows        => l_numrows,
-                                           numblks        => l_numblks,
-                                           avgrlen        => l_avgrlen,
-                                           cachedblk      => l_cachedblk,
-                                           cachehit       => l_cachehit
-                                         );
-            EXCEPTION
-               WHEN e_no_stats
-               THEN
-                  td_inst.log_msg(    'No '
-                                   || CASE
-                                         WHEN p_source_partname IS NULL
-                                            THEN 'table'
-                                         ELSE 'partition'
-                                      END
-                                   || ' level statistics exist on segment '
-                                   || UPPER(    p_source_owner
-                                             || '.'
-                                             || p_source_table
-                                             || CASE
-                                                   WHEN p_source_partname IS NULL
-                                                      THEN NULL
-                                                   ELSE ':' || p_source_partname
-                                                END
-                                           )
-                                 );
-            END;
-
-            -- the only situation not covered above is when both tables are partitioned
-            -- and neither P_PARTNAME or P_SOURCE_PARTNAME was specified
-            -- the above call will handle table level statistics
-            -- now we need to handle partition-to-partition transfers
-            IF (     td_sql.is_part_table( p_owner      => p_source_owner,
-                                           p_table      => p_source_table
-                                         )
-                 AND td_sql.is_part_table( p_owner => p_owner, p_table => p_table )
-               )
-            THEN
-               -- we are assuming that there are the same number of partitions and each one has the same name
-               -- if this is not the case, then this procedure is not for you
-               -- there would be no way of mapping one partition to another in this procedure
-               FOR c_parts IN ( SELECT partition_name
-                                 FROM all_tab_partitions
-                                WHERE table_owner = UPPER( p_owner )
-                                  AND table_name = UPPER( p_table ))
-               LOOP
-                  l_rows := TRUE;
-
-                  BEGIN
-                     DBMS_STATS.get_table_stats( UPPER( p_source_owner ),
-                                                 UPPER( p_source_table ),
-                                                 UPPER( c_parts.partition_name ),
-                                                 numrows        => l_numrows,
-                                                 numblks        => l_numblks,
-                                                 avgrlen        => l_avgrlen,
-                                                 cachedblk      => l_cachedblk,
-                                                 cachehit       => l_cachehit
-                                               );
-                     DBMS_STATS.set_table_stats( UPPER( p_owner ),
-                                                 UPPER( p_table ),
-                                                 UPPER( c_parts.partition_name ),
-                                                 numrows        => l_numrows,
-                                                 numblks        => l_numblks,
-                                                 avgrlen        => l_avgrlen,
-                                                 cachedblk      => l_cachedblk,
-                                                 cachehit       => l_cachehit
-                                               );
-                  EXCEPTION
-                     WHEN e_no_stats
-                     THEN
-                        td_inst.log_msg
-                                    (    'No partition level statistics exist on segment '
-                                      || UPPER(    p_source_owner
-                                                || '.'
-                                                || p_source_table
-                                                || ':'
-                                                || c_parts.partition_name
-                                              )
-                                    );
-                  END;
-               END LOOP;
-            END IF;
+	       dbms_stats.export_table_stats( ownname   => p_source_owner,
+					      tabname 	=> p_source_table,
+					      partname 	=> p_source_partname,
+					      stattab 	=> 'OPT_STATS',
+					      statid  	=> l_statid );
+	       
+	       -- now, update the table name in the stats table to the new table name
+	       UPDATE opt_stats
+		  SET c1 = upper(p_table)
+		WHERE statid = l_statid;
+	       
+	       -- now import the statistics
+	       dbms_stats.import_table_stats( ownname   => p_owner,
+					      tabname 	=> p_table,
+					      partname 	=> p_partname,
+					      stattab 	=> 'OPT_STATS',
+					      statid  	=> l_statid );
+	    END;
          END IF;
       END IF;
 
