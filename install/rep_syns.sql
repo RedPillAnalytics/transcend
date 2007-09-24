@@ -35,6 +35,7 @@ BEGIN
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..DIMENSION_CONF for &schema_rs..DIMENSION_CONF';
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..COLUMN_TYPE_LIST for &schema_rs..COLUMN_TYPE_LIST';
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..REPLACE_METHOD_LIST for &schema_rs..REPLACE_METHOD_LIST';
+      EXECUTE IMMEDIATE 'create or replace synonym &user_rs..OPT_STATS for &schema_rs..OPT_STATS';
       -- sequences
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..FILEHUB_CONF_SEQ for &schema_rs..FILEHUB_CONF_SEQ';
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..FILEHUB_DETAIL_SEQ for &schema_rs..FILEHUB_DETAIL_SEQ';

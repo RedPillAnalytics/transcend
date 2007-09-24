@@ -14,6 +14,9 @@ ALTER USER &rep_schema_tr QUOTA 50M ON &tablespace_tr;
 -- set the correct schema
 ALTER SESSION SET current_schema=&rep_schema_tr;
 
+-- create a statistics table to be used by the framework
+exec dbms_stats.create_stat_table('&rep_schema_tr','OPT_STATS');
+
 -- create Transcend repository tables
 @@../ddl/DIR_LIST_tbl.sql
 @@../ddl/COUNT_TABLE_tbl.sql
