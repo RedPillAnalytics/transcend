@@ -327,7 +327,7 @@ AS
                                             'i'
                                           )
                     ELSE index_ddl
-                 END index_ddl,
+                       END index_ddl,
                     
                     -- this column was added for the REPLACE_TABLE procedure
                     -- in that procedure, after cloning the indexes, the table is renamed
@@ -402,47 +402,51 @@ AS
                              ELSE 'Y'
                           END generic_idx,
                           object_name
-                    FROM ( SELECT    REGEXP_REPLACE
+                     FROM ( SELECT    REGEXP_REPLACE
                                         
                                         -- dbms_metadata pulls the metadata for the source object out of the dictionary
-                                     (    DBMS_METADATA.get_ddl( 'INDEX',
+                                   (    DBMS_METADATA.get_ddl( 'INDEX',
                                                                  index_name,
                                                                  owner
-                                                               ),
+								  ),
                                              
                                              -- this CASE expression determines whether to strip partitioning information and tablespace information
                                              -- tablespace desisions are based on the P_TABLESPACE parameter
                                              -- partitioning decisions are based on the structure of the target table
                                              '\s*'
                                           || CASE
-                                                -- target is not partitioned and no tablespace provided
+                                       -- target is not partitioned and neither P_TABLESPACE or P_PARTNAME are provided
                                              WHEN l_targ_part = 'NO'
                                              AND p_tablespace IS NULL
                                              AND p_partname IS NULL
                                                    -- remove all partitioning and the local keyword
                                              THEN '(\(\s*partition.+\))|local'
-                                                -- target is not partitioned but tablespace is provided
+                                       -- target is not partitioned but P_TABLESPACE or P_PARTNAME is provided
                                              WHEN l_targ_part = 'NO'
                                              AND (    p_tablespace IS NOT NULL
                                                    OR p_partname IS NOT NULL
                                                  )
                                                    -- strip out partitioned info and local keyword and tablespace clause
                                              THEN '(\(\s*partition.+\))|local|(tablespace)\s*\S+'
-                                                -- target is partitioned and tablespace is provided
+                                       -- target is partitioned and P_TABLESPACE or P_PARTNAME is provided
                                              WHEN l_targ_part = 'YES'
                                              AND (    p_tablespace IS NOT NULL
                                                    OR p_partname IS NOT NULL
                                                  )
                                                    -- strip out partitioned info keeping local keyword and remove tablespace clause
-                                             THEN '(\(\s*partition.+\))|(tablespace)\s*\S+'
+                                       THEN '(\(\s*partition.+\))|(tablespace)\s*\S+'
+				       -- target is partitioned
+				       -- P_TABLESPACE is null
+				       -- P_PARTNAME is null
                                                 WHEN l_targ_part = 'YES'
                                                 AND p_tablespace IS NULL
                                                 AND p_partname IS NULL
-                                                   -- strip out partitioned info keeping local keyword and tablespace clause
-                                             THEN '(\(\s*partition.+\))'
+                                       -- leave partitioning and tablespace information as it is
+				       -- this implies a one-to-one mapping of partitioned names from source to target
+                                       THEN ' '
                                              END
                                           || '\s*',
-                                          ' ',
+                                       ' ',
                                           1,
                                           0,
                                           'in'
@@ -466,7 +470,7 @@ AS
                                                                                 AND partition_position =
                                                                            l_part_position ))
                                         ELSE NULL
-                                     END index_ddl,
+					    END index_ddl,
                                   table_owner, table_name, owner, index_name,
                                   
                                   -- this is the index name that will be used in the first attempt
@@ -561,8 +565,8 @@ AS
                  VALUES ( c_indexes.index_owner, c_indexes.index_name,
                           c_indexes.source_owner, c_indexes.source_index,
                           c_indexes.partitioned, c_indexes.uniqueness,
-                          c_indexes.index_type, c_indexes.index_ddl,
-                          c_indexes.rename_ddl, c_indexes.rename_msg
+                          c_indexes.index_type, substr(c_indexes.index_ddl,1,3998)||'>>',
+                          c_indexes.rename_ddl, substr(c_indexes.rename_msg,1,3998)||'>>'
                         );
          EXCEPTION
             -- if a duplicate column list of indexes already exist, log it, but continue
@@ -2547,7 +2551,7 @@ AS
       l_cachedblk   NUMBER;
       l_cachehit    NUMBER;
       l_results     NUMBER;
-      l_statid	    VARCHAR2(30) := 'TD$'||sys_context('USERENV','SESSIONID')||to_date(SYSDATE,'yyyymmdd_hhmiss');
+      l_statid	    VARCHAR2(30) := 'TD$'||sys_context('USERENV','SESSIONID')||to_char(SYSDATE,'yyyymmdd_hhmiss');
       e_no_stats    EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_stats, -20000 );
       l_rows        BOOLEAN   := FALSE;                         -- to catch empty cursors
@@ -2692,6 +2696,7 @@ AS
 	       dbms_stats.export_table_stats( ownname   => p_source_owner,
 					      tabname 	=> p_source_table,
 					      partname 	=> p_source_partname,
+					      statown 	=> USER,
 					      stattab 	=> 'OPT_STATS',
 					      statid  	=> l_statid );
 	       
@@ -2700,12 +2705,34 @@ AS
 		  SET c1 = upper(p_table)
 		WHERE statid = l_statid;
 	       
+	       CASE 
+	       -- if the source table is partitioned
+	       when td_sql.is_part_table( p_owner => p_source_owner,
+					  p_table => p_source_table )
+	       -- and the target table is not partitioned
+	       AND NOT td_sql.is_part_table( p_owner => p_owner,
+					     p_table => p_table )
+	       -- then delete the partition level information from the stats table
+	       THEN
+	       DELETE FROM opt_stats
+		WHERE statid=l_statid
+		  AND ( c2 IS NOT NULL OR c3 IS NOT NULL );
+	       ELSE
+	       NULL;
+	    END CASE;
+	       
 	       -- now import the statistics
 	       dbms_stats.import_table_stats( ownname   => p_owner,
 					      tabname 	=> p_table,
 					      partname 	=> p_partname,
+					      statown	=> USER,
 					      stattab 	=> 'OPT_STATS',
 					      statid  	=> l_statid );
+	       
+	       -- now, delete these records from the stats table
+	       DELETE FROM opt_stats
+		WHERE statid=l_statid;
+	       COMMIT;
 	    END;
          END IF;
       END IF;
