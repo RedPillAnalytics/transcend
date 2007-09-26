@@ -1,5 +1,7 @@
 CREATE OR REPLACE PACKAGE td_core AUTHID CURRENT_USER
 AS
+   TYPE t_split IS TABLE OF VARCHAR2(32767);
+
    PROCEDURE get_dir_list( p_directory IN VARCHAR2 )
    AS
       LANGUAGE JAVA
@@ -72,6 +74,12 @@ AS
       p_d_num           NUMBER DEFAULT 0,
       p_p_num           NUMBER DEFAULT 65535
    );
+      
+   FUNCTION split(
+      p_text      VARCHAR2,
+      p_delimiter VARCHAR2 default ','
+   ) 
+      RETURN t_split PIPELINED;
 
 END td_core;
 /
