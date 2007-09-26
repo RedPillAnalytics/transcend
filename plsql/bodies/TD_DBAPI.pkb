@@ -1370,55 +1370,66 @@ AS
       o_td.change_action( 'Extract grants' );
 
       td_inst.log_msg( 'Granting privileges on ' || l_obj_name );
+      
+      -- we need the sql terminator now because it will be our split character later
+      DBMS_METADATA.set_transform_param( DBMS_METADATA.session_transform,'SQLTERMINATOR',TRUE);
 
       -- create a cursor containing the DDL from the target indexes
       BEGIN
-	 FOR c_obj_grants IN
-	    (SELECT *
-	       FROM ( SELECT ( REGEXP_REPLACE( 
-					       REGEXP_REPLACE( 
-							       DBMS_METADATA.get_dependent_ddl( 'OBJECT_GRANT',
-												object_name,
-												owner
-											      ),
-							       '(\."?)('
-							       || UPPER( p_source_object )
-							       || ')(\w*)("?)',
-							       '.' || UPPER( p_object ) || '\3',
-							       1,
-							       0,
-							       'i'
-							     ),
-					       '(")?(' || upper( p_source_owner ) || ')("?\.)',
-					       UPPER( p_owner ) || '.',
-					       1,
-					       0,
-					       'i'
-					     )) ddl,
-			     owner object_owner, 
-			     object_name
-			FROM all_objects ao
-		       WHERE object_name = UPPER( p_source_object )
-			 AND owner = UPPER( p_source_owner )
-			 AND subobject_name IS NULL )
-		    -- USE an NVL'd regular expression to determine the specific indexes to work on
-		    -- when nothing is passed for p_INDEX_TYPE, then that is the same as passing a wildcard
-	      WHERE REGEXP_LIKE( ddl, NVL( p_grant_regexp, '.' ), 'i' ))
-	 LOOP
-            l_rows := TRUE;
-            o_td.change_action( 'Execute grants' );
-
-            td_sql.exec_sql( p_sql => c_obj_grants.ddl, p_auto => 'yes' );
-            l_grant_cnt := l_grant_cnt + 1;
-	 END LOOP;
+	 -- need to remove the last sql terminator because it's a splitter between statements
+	 -- also remove all the extract spaces and carriage returns
+	 SELECT regexp_replace(regexp_replace(ddl,' *\s+ +',null),';\s*$',null)
+	   INTO l_ddl
+	   FROM ( SELECT ( REGEXP_REPLACE( 
+					   REGEXP_REPLACE( 
+							   DBMS_METADATA.get_dependent_ddl( 'OBJECT_GRANT',
+											    object_name,
+											    owner
+											  ),
+							   '(\."?)('
+							   || UPPER( p_source_object )
+							   || ')(\w*)("?)',
+							   '.' || UPPER( p_object ) || '\3',
+							   1,
+							   0,
+							   'i'
+							 ),
+					   '(")?(' || upper( p_source_owner ) || ')("?\.)',
+					   UPPER( p_owner ) || '.',
+					   1,
+					   0,
+					   'i'
+					 )) ddl,
+			 owner object_owner, 
+			 object_name
+		    FROM all_objects ao
+		   WHERE object_name = UPPER( p_source_object )
+		     AND owner = UPPER( p_source_owner )
+		     AND subobject_name IS NULL )
+		-- USE an NVL'd regular expression to determine the specific indexes to work on
+		-- when nothing is passed for p_INDEX_TYPE, then that is the same as passing a wildcard
+	  WHERE REGEXP_LIKE( ddl, NVL( p_grant_regexp, '.' ), 'i' );
       EXCEPTION
          -- if a duplicate column list of indexes already exist, log it, but continue
       WHEN e_no_grants
          THEN
          td_inst.log_msg( l_none_msg );
       END;
+      
+      -- now, parse the string to work on the different values in it
+      o_td.change_action( 'Execute grants' );
 
+      FOR c_grants IN
+	 (SELECT *
+	    FROM TABLE(td_core.split(l_ddl,';')))
+      LOOP
+         l_rows := TRUE;
 
+         td_sql.exec_sql( p_sql => c_grants.column_value, p_auto => 'yes' );
+         l_grant_cnt := l_grant_cnt + 1;
+
+      END LOOP;
+      
       IF NOT l_rows
       THEN
          td_inst.log_msg( l_none_msg );
