@@ -534,6 +534,33 @@ AS
 
       o_td.clear_app_info;
    END populate_partname;
+   
+   -- function takes a text string and a delimiter and parses the string
+   -- should only be used as a pipelined table function
+   FUNCTION split
+      (
+	p_text      VARCHAR2,
+	p_delimiter VARCHAR2 := ','
+      ) 
+      RETURN t_split PIPELINED
+   IS
+      l_idx    pls_integer;
+      l_list   VARCHAR2(32767) := p_text;
+      l_value  VARCHAR2(32767);
+   BEGIN
+      LOOP
+	 l_idx := instr(l_list,p_delimiter);
+	 IF l_idx > 0 THEN
+            pipe ROW(substr(l_list,1,l_idx-1));
+            l_list := substr(l_list,l_idx+length(p_delimiter));
 
+	 ELSE
+            pipe ROW(l_list);
+            EXIT;
+	 END IF;
+      END LOOP;
+      RETURN;
+   END split;
+   
 END td_core;
 /
