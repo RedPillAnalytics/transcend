@@ -238,16 +238,6 @@ AS
       -- confirm that parameters are compatible
       -- go ahead and write a CASE statement so adding more later is easier
       CASE
-         WHEN     td_sql.is_part_table( p_owner      => p_source_owner,
-                                        p_table      => p_source_table
-                                      )
-              AND ( ( p_tablespace IS NULL ) AND( p_partname IS NULL ))
-         THEN
-            raise_application_error
-               ( td_inst.get_err_cd( 'parm_not_supported' ),
-                    td_inst.get_err_msg( 'parm_not_supported' )
-                 || ': Either P_TABLESPACE or P_PARTNAME is required when source table is partitioned'
-               );
          WHEN p_tablespace IS NOT NULL AND p_partname IS NOT NULL
          THEN
             raise_application_error( td_inst.get_err_cd( 'parms_not_compatible' ),
@@ -405,43 +395,40 @@ AS
                                                                  index_name,
                                                                  owner
                                                                ),
-                                             
-                                             -- this CASE expression determines whether to strip partitioning information and tablespace information
-                                             -- tablespace desisions are based on the P_TABLESPACE parameter
-                                             -- partitioning decisions are based on the structure of the target table
-                                             '\s*'
-                                          || CASE
-                                                -- target is not partitioned and neither P_TABLESPACE or P_PARTNAME are provided
-                                             WHEN l_targ_part = 'NO'
-                                             AND p_tablespace IS NULL
-                                             AND p_partname IS NULL
-                                                   -- remove all partitioning and the local keyword
-                                             THEN '(\(\s*partition.+\))|local'
-                                                -- target is not partitioned but P_TABLESPACE or P_PARTNAME is provided
-                                             WHEN l_targ_part = 'NO'
-                                             AND (    p_tablespace IS NOT NULL
-                                                   OR p_partname IS NOT NULL
-                                                 )
-                                                   -- strip out partitioned info and local keyword and tablespace clause
-                                             THEN '(\(\s*partition.+\))|local|(tablespace)\s*\S+'
-                                                -- target is partitioned and P_TABLESPACE or P_PARTNAME is provided
-                                             WHEN l_targ_part = 'YES'
-                                             AND (    p_tablespace IS NOT NULL
-                                                   OR p_partname IS NOT NULL
-                                                 )
-                                                   -- strip out partitioned info keeping local keyword and remove tablespace clause
-                                             THEN '(\(\s*partition.+\))|(tablespace)\s*\S+'
-                                                -- target is partitioned
-                                                -- P_TABLESPACE is null
-                                                -- P_PARTNAME is null
-                                             WHEN l_targ_part = 'YES'
-                                             AND p_tablespace IS NULL
-                                             AND p_partname IS NULL
+                                          -- this CASE expression determines whether to strip partitioning information and tablespace information
+                                          -- tablespace desisions are based on the P_TABLESPACE parameter
+                                          -- partitioning decisions are based on the structure of the target table
+                                          CASE
+                                             -- target is not partitioned and neither P_TABLESPACE or P_PARTNAME are provided
+                                          WHEN l_targ_part = 'NO'
+                                          AND p_tablespace IS NULL
+                                          AND p_partname IS NULL
+                                                -- remove all partitioning and the local keyword
+                                          THEN '\s*(\(\s*partition.+\))|local\s*'
+                                             -- target is not partitioned but P_TABLESPACE or P_PARTNAME is provided
+                                          WHEN l_targ_part = 'NO'
+                                          AND (    p_tablespace IS NOT NULL
+                                                OR p_partname IS NOT NULL
+                                              )
+                                                -- strip out partitioned info and local keyword and tablespace clause
+                                          THEN '\s*(\(\s*partition.+\))|local|(tablespace)\s*\S+\s*'
+                                             -- target is partitioned and P_TABLESPACE or P_PARTNAME is provided
+                                          WHEN l_targ_part = 'YES'
+                                          AND (    p_tablespace IS NOT NULL
+                                                OR p_partname IS NOT NULL
+                                              )
+                                                -- strip out partitioned info keeping local keyword and remove tablespace clause
+                                          THEN '\s*(\(\s*partition.+\))|(tablespace)\s*\S+\s*'
+                                             -- target is partitioned
+                                             -- P_TABLESPACE is null
+                                             -- P_PARTNAME is null
+                                          WHEN l_targ_part = 'YES'
+                                          AND p_tablespace IS NULL
+                                          AND p_partname IS NULL
                                                 -- leave partitioning and tablespace information as it is
                                                 -- this implies a one-to-one mapping of partitioned names from source to target
-                                             THEN ' '
-                                             END
-                                          || '\s*',
+                                          THEN NULL
+                                          END,
                                           ' ',
                                           1,
                                           0,
