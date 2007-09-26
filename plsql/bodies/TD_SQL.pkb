@@ -229,15 +229,15 @@ AS
    AS
       l_obj_name      VARCHAR2( 61 )       := UPPER( p_owner ) || '.'
                                               || UPPER( p_object );
-      l_object_type   all_objects.object_type%TYPE;
+      l_object_name   all_objects.object_name%TYPE;
    BEGIN
       BEGIN
-         SELECT DISTINCT object_type
-                    INTO l_object_type
+         SELECT DISTINCT object_name
+                    INTO l_object_name
                     FROM all_objects
                    WHERE owner = UPPER( p_owner )
                      AND object_name = UPPER( p_object )
-                     AND REGEXP_LIKE( object_type, p_object_type, 'i' );
+	             AND REGEXP_LIKE( object_type, NVL( p_object_type, '.' ), 'i' );
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
