@@ -9,9 +9,9 @@ CREATE global TEMPORARY TABLE build_indexes
   partitioned VARCHAR2(3),
   uniqueness VARCHAR2(10),
   index_type VARCHAR2(20),
-  index_ddl VARCHAR2(2000),
-  rename_ddl VARCHAR2(2000),
-  rename_msg VARCHAR2(2000)
+  index_ddl VARCHAR2(4000),
+  rename_ddl VARCHAR2(4000),
+  rename_msg VARCHAR2(4000)
 )
 ON COMMIT DELETE ROWS
 /
