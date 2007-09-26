@@ -171,18 +171,16 @@ AS
       CASE
          WHEN REGEXP_LIKE( 'gather', p_statistics, 'i' )
          THEN
-            update_stats( p_owner        => p_owner,
-                          p_table        => p_table
-                        );
+            update_stats( p_owner => p_owner, p_table => p_table );
          -- we want to transfer the statistics from the current segment into the new segment
          -- this is preferable if automatic stats are handling stats collection
          -- and you want the load time not to suffer from statistics gathering
       WHEN REGEXP_LIKE( 'transfer', p_statistics, 'i' )
          THEN
-            update_stats( p_owner                => p_owner,
-                          p_table                => p_table,
-                          p_source_owner         => p_owner,
-                          p_source_table         => p_source_table
+            update_stats( p_owner             => p_owner,
+                          p_table             => p_table,
+                          p_source_owner      => p_owner,
+                          p_source_table      => p_source_table
                         );
          -- do nothing with stats
          -- this is preferable if stats are gathered on the staging segment prior to being exchanged in
@@ -197,7 +195,6 @@ AS
                                      || p_statistics
                                    );
       END CASE;
-
    EXCEPTION
       WHEN OTHERS
       THEN
@@ -251,13 +248,12 @@ AS
                     td_inst.get_err_msg( 'parm_not_supported' )
                  || ': Either P_TABLESPACE or P_PARTNAME is required when source table is partitioned'
                );
-         WHEN p_tablespace IS NOT NULL AND p_partname IS NOT null
+         WHEN p_tablespace IS NOT NULL AND p_partname IS NOT NULL
          THEN
-            raise_application_error
-               ( td_inst.get_err_cd( 'parms_not_compatible' ),
-                    td_inst.get_err_msg( 'parms_not_compatible' )
-                 || ': P_TABLESPACE and P_PARTNAME'
-               );
+            raise_application_error( td_inst.get_err_cd( 'parms_not_compatible' ),
+                                        td_inst.get_err_msg( 'parms_not_compatible' )
+                                     || ': P_TABLESPACE and P_PARTNAME'
+                                   );
          ELSE
             NULL;
       END CASE;
@@ -327,7 +323,7 @@ AS
                                             'i'
                                           )
                     ELSE index_ddl
-                       END index_ddl,
+                 END index_ddl,
                     
                     -- this column was added for the REPLACE_TABLE procedure
                     -- in that procedure, after cloning the indexes, the table is renamed
@@ -402,51 +398,51 @@ AS
                              ELSE 'Y'
                           END generic_idx,
                           object_name
-                     FROM ( SELECT    REGEXP_REPLACE
+                    FROM ( SELECT    REGEXP_REPLACE
                                         
                                         -- dbms_metadata pulls the metadata for the source object out of the dictionary
-                                   (    DBMS_METADATA.get_ddl( 'INDEX',
+                                     (    DBMS_METADATA.get_ddl( 'INDEX',
                                                                  index_name,
                                                                  owner
-								  ),
+                                                               ),
                                              
                                              -- this CASE expression determines whether to strip partitioning information and tablespace information
                                              -- tablespace desisions are based on the P_TABLESPACE parameter
                                              -- partitioning decisions are based on the structure of the target table
                                              '\s*'
                                           || CASE
-                                       -- target is not partitioned and neither P_TABLESPACE or P_PARTNAME are provided
+                                                -- target is not partitioned and neither P_TABLESPACE or P_PARTNAME are provided
                                              WHEN l_targ_part = 'NO'
                                              AND p_tablespace IS NULL
                                              AND p_partname IS NULL
                                                    -- remove all partitioning and the local keyword
                                              THEN '(\(\s*partition.+\))|local'
-                                       -- target is not partitioned but P_TABLESPACE or P_PARTNAME is provided
+                                                -- target is not partitioned but P_TABLESPACE or P_PARTNAME is provided
                                              WHEN l_targ_part = 'NO'
                                              AND (    p_tablespace IS NOT NULL
                                                    OR p_partname IS NOT NULL
                                                  )
                                                    -- strip out partitioned info and local keyword and tablespace clause
                                              THEN '(\(\s*partition.+\))|local|(tablespace)\s*\S+'
-                                       -- target is partitioned and P_TABLESPACE or P_PARTNAME is provided
+                                                -- target is partitioned and P_TABLESPACE or P_PARTNAME is provided
                                              WHEN l_targ_part = 'YES'
                                              AND (    p_tablespace IS NOT NULL
                                                    OR p_partname IS NOT NULL
                                                  )
                                                    -- strip out partitioned info keeping local keyword and remove tablespace clause
-                                       THEN '(\(\s*partition.+\))|(tablespace)\s*\S+'
-				       -- target is partitioned
-				       -- P_TABLESPACE is null
-				       -- P_PARTNAME is null
-                                                WHEN l_targ_part = 'YES'
-                                                AND p_tablespace IS NULL
-                                                AND p_partname IS NULL
-                                       -- leave partitioning and tablespace information as it is
-				       -- this implies a one-to-one mapping of partitioned names from source to target
-                                       THEN ' '
+                                             THEN '(\(\s*partition.+\))|(tablespace)\s*\S+'
+                                                -- target is partitioned
+                                                -- P_TABLESPACE is null
+                                                -- P_PARTNAME is null
+                                             WHEN l_targ_part = 'YES'
+                                             AND p_tablespace IS NULL
+                                             AND p_partname IS NULL
+                                                -- leave partitioning and tablespace information as it is
+                                                -- this implies a one-to-one mapping of partitioned names from source to target
+                                             THEN ' '
                                              END
                                           || '\s*',
-                                       ' ',
+                                          ' ',
                                           1,
                                           0,
                                           'in'
@@ -463,14 +459,16 @@ AS
                                            THEN ' TABLESPACE ' || UPPER( p_tablespace )
                                         WHEN p_partname IS NOT NULL
                                            THEN    ' TABLESPACE '
-                                                || nvl( ai.tablespace_name,( SELECT tablespace_name
-                                                                               FROM all_ind_partitions
-                                                                              WHERE index_name = ai.index_name
-                                                                                AND index_owner = ai.owner
-                                                                                AND partition_position =
-                                                                           l_part_position ))
+                                                || NVL( ai.tablespace_name,
+                                                        ( SELECT tablespace_name
+                                                           FROM all_ind_partitions
+                                                          WHERE index_name = ai.index_name
+                                                            AND index_owner = ai.owner
+                                                            AND partition_position =
+                                                                           l_part_position )
+                                                      )
                                         ELSE NULL
-					    END index_ddl,
+                                     END index_ddl,
                                   table_owner, table_name, owner, index_name,
                                   
                                   -- this is the index name that will be used in the first attempt
@@ -559,14 +557,18 @@ AS
                         ( index_owner, index_name,
                           source_owner, source_index,
                           partitioned, uniqueness,
-                          index_type, index_ddl,
-                          rename_ddl, rename_msg
+                          index_type,
+                          index_ddl,
+                          rename_ddl,
+                          rename_msg
                         )
                  VALUES ( c_indexes.index_owner, c_indexes.index_name,
                           c_indexes.source_owner, c_indexes.source_index,
                           c_indexes.partitioned, c_indexes.uniqueness,
-                          c_indexes.index_type, substr(c_indexes.index_ddl,1,3998)||'>>',
-                          c_indexes.rename_ddl, substr(c_indexes.rename_msg,1,3998)||'>>'
+                          c_indexes.index_type,
+                          SUBSTR( c_indexes.index_ddl, 1, 3998 ) || '>>',
+                          c_indexes.rename_ddl,
+                          SUBSTR( c_indexes.rename_msg, 1, 3998 ) || '>>'
                         );
          EXCEPTION
             -- if a duplicate column list of indexes already exist, log it, but continue
@@ -1871,17 +1873,17 @@ AS
 
    -- procedure to exchange a partitioned table with a non-partitioned table
    PROCEDURE exchange_partition(
-      p_owner            VARCHAR2,
-      p_table            VARCHAR2,
-      p_source_owner     VARCHAR2,
-      p_source_table     VARCHAR2,
-      p_partname         VARCHAR2 DEFAULT NULL,
-      p_index_space      VARCHAR2 DEFAULT NULL,
-      p_index_drop       VARCHAR2 DEFAULT 'yes',
-      p_statistics       VARCHAR2 DEFAULT 'transfer',
-      p_statpercent      NUMBER DEFAULT NULL,
-      p_statdegree       NUMBER DEFAULT NULL,
-      p_statmethod       VARCHAR2 DEFAULT NULL
+      p_owner          VARCHAR2,
+      p_table          VARCHAR2,
+      p_source_owner   VARCHAR2,
+      p_source_table   VARCHAR2,
+      p_partname       VARCHAR2 DEFAULT NULL,
+      p_index_space    VARCHAR2 DEFAULT NULL,
+      p_index_drop     VARCHAR2 DEFAULT 'yes',
+      p_statistics     VARCHAR2 DEFAULT 'transfer',
+      p_statpercent    NUMBER DEFAULT NULL,
+      p_statdegree     NUMBER DEFAULT NULL,
+      p_statmethod     VARCHAR2 DEFAULT NULL
    )
    IS
       l_src_name       VARCHAR2( 61 ) := UPPER( p_source_owner || '.' || p_source_table );
@@ -1976,11 +1978,11 @@ AS
                      p_source_table      => p_table,
                      p_part_type         => 'local',
                      p_tablespace        => p_index_space,
-		     p_partname		 => CASE
-		     			      WHEN p_index_space IS NOT NULL
-					      THEN NULL
-					      ELSE l_partname
-					    END
+                     p_partname          => CASE
+                        WHEN p_index_space IS NOT NULL
+                           THEN NULL
+                        ELSE l_partname
+                     END
                    );
       -- now exchange the table
       o_td.change_action( 'Exchange table' );
@@ -2093,19 +2095,19 @@ AS
       p_statistics     VARCHAR2 DEFAULT 'transfer'
    )
    IS
-      l_src_name       VARCHAR2( 61 ) := UPPER( p_owner || '.' || p_source_table );
-      l_tab_name       VARCHAR2( 61 ) := UPPER( p_owner || '.' || p_table );
-      l_tab_rn         VARCHAR2( 30 ) := UPPER('td$'||substr(p_table,1,25)||'_rn' );
-      l_ren_name       VARCHAR2( 61 ) := upper( p_owner || '.' || l_tab_rn );
-      l_rows           BOOLEAN                              := FALSE;
-      l_ddl            LONG;
-      e_no_stats       EXCEPTION;
+      l_src_name   VARCHAR2( 61 ) := UPPER( p_owner || '.' || p_source_table );
+      l_tab_name   VARCHAR2( 61 ) := UPPER( p_owner || '.' || p_table );
+      l_tab_rn     VARCHAR2( 30 ) := UPPER( 'td$' || SUBSTR( p_table, 1, 25 ) || '_rn' );
+      l_ren_name   VARCHAR2( 61 ) := UPPER( p_owner || '.' || l_tab_rn );
+      l_rows       BOOLEAN        := FALSE;
+      l_ddl        LONG;
+      e_no_stats   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_stats, -20000 );
-      e_compress       EXCEPTION;
+      e_compress   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_compress, -14646 );
-      e_fkeys          EXCEPTION;
+      e_fkeys      EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_fkeys, -2266 );
-      o_td             tdtype                    := tdtype( p_module      => 'replace_table' );
+      o_td         tdtype         := tdtype( p_module => 'replace_table' );
    BEGIN
       o_td.change_action( 'Perform object checks' );
       -- check to make sure the target table exists
@@ -2123,53 +2125,62 @@ AS
          -- this depends on the value of p_statistics
          -- will be building indexes later, which gather their own statistics
          -- so P_CASCADE is fales
-         update_stats
-                 ( p_owner             => p_owner,
-                   p_table             => p_table,
-                   p_source_owner      => CASE
-                      WHEN REGEXP_LIKE( 'gather', p_statistics, 'i' )
-                         THEN NULL
-                      WHEN REGEXP_LIKE( 'transfer', p_statistics, 'i' )
-                         THEN p_owner
-                   END,
-                   p_source_table      => CASE
-                      WHEN REGEXP_LIKE( 'gather', p_statistics, 'i' )
-                         THEN NULL
-                      WHEN REGEXP_LIKE( 'transfer', p_statistics, 'i' )
-                         THEN p_table
-                   END,
-                   p_cascade           => 'no'
-                 );
+         update_stats( p_owner             => p_owner,
+                       p_table             => p_table,
+                       p_source_owner      => CASE
+                          WHEN REGEXP_LIKE( 'gather', p_statistics, 'i' )
+                             THEN NULL
+                          WHEN REGEXP_LIKE( 'transfer', p_statistics, 'i' )
+                             THEN p_owner
+                       END,
+                       p_source_table      => CASE
+                          WHEN REGEXP_LIKE( 'gather', p_statistics, 'i' )
+                             THEN NULL
+                          WHEN REGEXP_LIKE( 'transfer', p_statistics, 'i' )
+                             THEN p_table
+                       END,
+                       p_cascade           => 'no'
+                     );
       END IF;
-      
+
       -- build the indexes
       build_indexes( p_owner             => p_owner,
                      p_table             => p_source_table,
                      p_source_owner      => p_owner,
                      p_source_table      => p_table,
-		     p_tablespace	 => p_tablespace
+                     p_tablespace        => p_tablespace
                    );
-
       -- build the constraints
       build_constraints( p_owner             => p_owner,
-			 p_table             => p_source_table,
-			 p_source_owner      => p_owner,
-			 p_source_table      => p_table,
-			 p_tablespace	     => p_tablespace
+                         p_table             => p_source_table,
+                         p_source_owner      => p_owner,
+                         p_source_table      => p_table,
+                         p_tablespace        => p_tablespace
                        );
-
       -- now replace the table
       -- using a table rename for this
       o_td.change_action( 'Rename tables' );
       -- first name the current table to another name
-      td_sql.exec_sql( p_sql => 'alter table '||l_tab_name||' rename to '||l_tab_rn,
-		       p_auto => 'yes' );
+      td_sql.exec_sql( p_sql       =>    'alter table '
+                                      || l_tab_name
+                                      || ' rename to '
+                                      || l_tab_rn,
+                       p_auto      => 'yes'
+                     );
       -- now rename to source table to the target table
-      td_sql.exec_sql( p_sql => 'alter table '||l_src_name||' rename to '||p_table,
-		       p_auto => 'yes' );
+      td_sql.exec_sql( p_sql       =>    'alter table '
+                                      || l_src_name
+                                      || ' rename to '
+                                      || p_table,
+                       p_auto      => 'yes'
+                     );
       -- now rename to previous target table to the source table name
-      td_sql.exec_sql( p_sql => 'alter table '||l_ren_name||' rename to '||p_source_table,
-		       p_auto => 'yes' );
+      td_sql.exec_sql( p_sql       =>    'alter table '
+                                      || l_ren_name
+                                      || ' rename to '
+                                      || p_source_table,
+                       p_auto      => 'yes'
+                     );
 
       -- drop the indexes on the stage table
       IF td_ext.is_true( p_index_drop )
@@ -2551,11 +2562,14 @@ AS
       l_cachedblk   NUMBER;
       l_cachehit    NUMBER;
       l_results     NUMBER;
-      l_statid	    VARCHAR2(30) := 'TD$'||sys_context('USERENV','SESSIONID')||to_char(SYSDATE,'yyyymmdd_hhmiss');
+      l_statid      VARCHAR2( 30 )
+         :=    'TD$'
+            || SYS_CONTEXT( 'USERENV', 'SESSIONID' )
+            || TO_CHAR( SYSDATE, 'yyyymmdd_hhmiss' );
       e_no_stats    EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_stats, -20000 );
-      l_rows        BOOLEAN   := FALSE;                         -- to catch empty cursors
-      o_td          tdtype    := tdtype( p_module => 'update_stats' );
+      l_rows        BOOLEAN        := FALSE;                     -- to catch empty cursors
+      o_td          tdtype         := tdtype( p_module => 'update_stats' );
    BEGIN
       -- check all the parameter requirements
       CASE
@@ -2656,7 +2670,9 @@ AS
                                    granularity           => p_granularity,
                                    CASCADE               => NVL
                                                                ( td_ext.is_true
-                                                                               ( p_cascade,TRUE ),
+                                                                              ( p_cascade,
+                                                                                TRUE
+                                                                              ),
                                                                  DBMS_STATS.auto_cascade
                                                                ),
                                    options               => p_options
@@ -2678,7 +2694,9 @@ AS
                                     granularity           => p_granularity,
                                     CASCADE               => NVL
                                                                 ( td_ext.is_true
-                                                                               ( p_cascade,TRUE ),
+                                                                              ( p_cascade,
+                                                                                TRUE
+                                                                              ),
                                                                   DBMS_STATS.auto_cascade
                                                                 )
                                   );
@@ -2693,47 +2711,51 @@ AS
             -- or, it will take table level statistics and import it into a table.
             -- all of this depends on whether P_PARTNAME and P_SOURCE_PARTNAME are defined or not
             BEGIN
-	       dbms_stats.export_table_stats( ownname   => p_source_owner,
-					      tabname 	=> p_source_table,
-					      partname 	=> p_source_partname,
-					      statown 	=> USER,
-					      stattab 	=> 'OPT_STATS',
-					      statid  	=> l_statid );
-	       
-	       -- now, update the table name in the stats table to the new table name
-	       UPDATE opt_stats
-		  SET c1 = upper(p_table)
-		WHERE statid = l_statid;
-	       
-	       CASE 
-	       -- if the source table is partitioned
-	       when td_sql.is_part_table( p_owner => p_source_owner,
-					  p_table => p_source_table )
-	       -- and the target table is not partitioned
-	       AND NOT td_sql.is_part_table( p_owner => p_owner,
-					     p_table => p_table )
-	       -- then delete the partition level information from the stats table
-	       THEN
-	       DELETE FROM opt_stats
-		WHERE statid=l_statid
-		  AND ( c2 IS NOT NULL OR c3 IS NOT NULL );
-	       ELSE
-	       NULL;
-	    END CASE;
-	       
-	       -- now import the statistics
-	       dbms_stats.import_table_stats( ownname   => p_owner,
-					      tabname 	=> p_table,
-					      partname 	=> p_partname,
-					      statown	=> USER,
-					      stattab 	=> 'OPT_STATS',
-					      statid  	=> l_statid );
-	       
-	       -- now, delete these records from the stats table
-	       DELETE FROM opt_stats
-		WHERE statid=l_statid;
-	       COMMIT;
-	    END;
+               DBMS_STATS.export_table_stats( ownname       => p_source_owner,
+                                              tabname       => p_source_table,
+                                              partname      => p_source_partname,
+                                              statown       => USER,
+                                              stattab       => 'OPT_STATS',
+                                              statid        => l_statid
+                                            );
+
+               -- now, update the table name in the stats table to the new table name
+               UPDATE opt_stats
+                  SET c1 = UPPER( p_table )
+                WHERE statid = l_statid;
+
+               CASE
+                  -- if the source table is partitioned
+               WHEN     td_sql.is_part_table( p_owner      => p_source_owner,
+                                              p_table      => p_source_table
+                                            )
+                    -- and the target table is not partitioned
+                    AND NOT td_sql.is_part_table( p_owner      => p_owner,
+                                                  p_table      => p_table )
+                  -- then delete the partition level information from the stats table
+               THEN
+                     DELETE FROM opt_stats
+                           WHERE statid = l_statid
+                             AND ( c2 IS NOT NULL OR c3 IS NOT NULL );
+                  ELSE
+                     NULL;
+               END CASE;
+
+               -- now import the statistics
+               DBMS_STATS.import_table_stats( ownname       => p_owner,
+                                              tabname       => p_table,
+                                              partname      => p_partname,
+                                              statown       => USER,
+                                              stattab       => 'OPT_STATS',
+                                              statid        => l_statid
+                                            );
+
+               -- now, delete these records from the stats table
+               DELETE FROM opt_stats
+                     WHERE statid = l_statid;
+
+               COMMIT;
+            END;
          END IF;
       END IF;
 
