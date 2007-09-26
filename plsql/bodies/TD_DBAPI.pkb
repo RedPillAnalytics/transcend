@@ -2255,6 +2255,13 @@ AS
                          p_source_table      => p_table,
                          p_tablespace        => p_tablespace
                        );
+      -- grant privileges
+      object_grants( p_owner             => p_owner,
+                     p_object            => p_source_table,
+                     p_source_owner      => p_owner,
+                     p_source_object     => p_table
+                   );
+
       -- now replace the table
       -- using a table rename for this
       o_td.change_action( 'Rename tables' );
