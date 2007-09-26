@@ -6,7 +6,6 @@ AS
       p_reuse   VARCHAR2 DEFAULT 'no'
    )
    IS
-      l_results   NUMBER;
       o_td        tdtype := tdtype( p_module => 'truncate_table' );
    BEGIN
       -- confirm that the table exists
@@ -30,7 +29,6 @@ AS
    PROCEDURE drop_table( p_owner VARCHAR2, p_table VARCHAR2, p_purge VARCHAR2
             DEFAULT 'yes' )
    IS
-      l_results   NUMBER;
       o_td        tdtype := tdtype( p_module => 'truncate_table' );
    BEGIN
       -- confirm that the table exists
@@ -63,13 +61,11 @@ AS
    )
    IS
       l_ddl            LONG;
-      l_e_ddl          LONG;
       l_idx_cnt        NUMBER                        := 0;
       l_tab_name       VARCHAR2( 61 )               := UPPER( p_owner || '.' || p_table );
       l_src_name       VARCHAR2( 61 ) := UPPER( p_source_owner || '.' || p_source_table );
       l_part_type      VARCHAR2( 6 );
       l_targ_part      all_tables.partitioned%TYPE;
-      l_results        NUMBER;
       l_rows           BOOLEAN                       := FALSE;
       e_dup_idx_name   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_idx_name, -955 );
@@ -219,7 +215,6 @@ AS
    )
    IS
       l_ddl             LONG;
-      l_e_ddl           LONG;
       l_idx_cnt         NUMBER                                       := 0;
       l_tab_name        VARCHAR2( 61 )              := UPPER( p_owner || '.' || p_table );
       l_src_name        VARCHAR2( 61 )
@@ -227,7 +222,6 @@ AS
       l_part_type       VARCHAR2( 6 );
       l_targ_part       all_tables.partitioned%TYPE;
       l_part_position   all_tab_partitions.partition_position%TYPE;
-      l_results         NUMBER;
       l_rows            BOOLEAN                                      := FALSE;
       e_dup_idx_name    EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_idx_name, -955 );
@@ -654,7 +648,6 @@ AS
       l_con_cnt        NUMBER                        := 0;
       l_tab_name       VARCHAR2( 61 )                := p_owner || '.' || p_table;
       l_src_name       VARCHAR2( 61 )          := p_source_owner || '.' || p_source_table;
-      l_results        NUMBER;
       l_rows           BOOLEAN                       := FALSE;
       e_dup_con_name   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_con_name, -2264 );
@@ -1231,7 +1224,6 @@ AS
       l_rows       BOOLEAN        := FALSE;
       l_tab_name   VARCHAR2( 61 ) := UPPER( p_owner || '.' || p_table );
       l_idx_cnt    NUMBER         := 0;
-      l_results    NUMBER;
       e_pk_idx     EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_pk_idx, -2429 );
       o_td         tdtype         := tdtype( p_module => 'drop_indexes' );
@@ -1292,7 +1284,6 @@ AS
    IS
       l_con_cnt    NUMBER         := 0;
       l_tab_name   VARCHAR2( 61 ) := p_owner || '.' || p_table;
-      l_results    NUMBER;
       l_rows       BOOLEAN        := FALSE;
       o_td         tdtype         := tdtype( p_module => 'drop_constraints' );
    BEGIN
@@ -1341,6 +1332,117 @@ AS
 
       o_td.clear_app_info;
    END drop_constraints;
+   
+   
+   -- extracts grants for a particular object from the dictionary and applies those grants to another object
+   PROCEDURE object_grants(
+      p_owner          VARCHAR2,
+      p_object         VARCHAR2,
+      p_source_owner   VARCHAR2,
+      p_source_object  VARCHAR2,
+      p_grant_regexp   VARCHAR2 DEFAULT NULL
+   )
+   IS
+      l_ddl             LONG;
+      l_grant_cnt       NUMBER          := 0;
+      l_obj_name        VARCHAR2( 61 )  := UPPER( p_owner || '.' || p_object );
+      l_src_name        VARCHAR2( 61 )  := UPPER( p_source_owner || '.' || p_source_object );
+      l_none_msg	VARCHAR2( 100 ) := 'No matching object privileges found on '||l_src_name;
+      l_rows            BOOLEAN         := FALSE;
+      e_no_grants       EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_no_grants, -31608 );
+      o_td              tdtype           := tdtype( p_module => 'object_grants' );
+   BEGIN
+      -- confirm that the target table exists
+      -- raise an error if it doesn't
+      td_sql.check_object( p_owner => p_owner, 
+      			   p_object => p_object );
+      -- confirm that the source table
+      -- raise an error if it doesn't
+      td_sql.check_object( p_owner         => p_source_owner,
+                           p_object        => p_source_object
+                        );
+      -- execute immediate doesn't like ";" on the end
+      DBMS_METADATA.set_transform_param( DBMS_METADATA.session_transform,
+                                         'SQLTERMINATOR',
+                                         FALSE
+                                       );
+      o_td.change_action( 'Extract grants' );
+
+      td_inst.log_msg( 'Granting privileges on ' || l_obj_name );
+
+      -- create a cursor containing the DDL from the target indexes
+      BEGIN
+	 FOR c_obj_grants IN
+	    (SELECT *
+	       FROM ( SELECT ( REGEXP_REPLACE( 
+					       REGEXP_REPLACE( 
+							       DBMS_METADATA.get_dependent_ddl( 'OBJECT_GRANT',
+												object_name,
+												owner
+											      ),
+							       '(\."?)('
+							       || UPPER( p_source_object )
+							       || ')(\w*)("?)',
+							       '.' || UPPER( p_object ) || '\3',
+							       1,
+							       0,
+							       'i'
+							     ),
+					       '(")?(' || upper( p_source_owner ) || ')("?\.)',
+					       UPPER( p_owner ) || '.',
+					       1,
+					       0,
+					       'i'
+					     )) ddl,
+			     owner object_owner, 
+			     object_name
+			FROM all_objects ao
+		       WHERE object_name = UPPER( p_source_object )
+			 AND owner = UPPER( p_source_owner )
+			 AND subobject_name IS NULL )
+		    -- USE an NVL'd regular expression to determine the specific indexes to work on
+		    -- when nothing is passed for p_INDEX_TYPE, then that is the same as passing a wildcard
+	      WHERE REGEXP_LIKE( ddl, NVL( p_grant_regexp, '.' ), 'i' ))
+	 LOOP
+            l_rows := TRUE;
+            o_td.change_action( 'Execute grants' );
+
+            td_sql.exec_sql( p_sql => c_obj_grants.ddl, p_auto => 'yes' );
+            l_grant_cnt := l_grant_cnt + 1;
+	 END LOOP;
+      EXCEPTION
+         -- if a duplicate column list of indexes already exist, log it, but continue
+      WHEN e_no_grants
+         THEN
+         td_inst.log_msg( l_none_msg );
+      END;
+
+
+      IF NOT l_rows
+      THEN
+         td_inst.log_msg( l_none_msg );
+      ELSE
+         td_inst.log_msg(    l_grant_cnt
+                          || ' privilege'
+                          || CASE
+                                WHEN l_grant_cnt = 1
+                                   THEN NULL
+                                ELSE 's'
+                             END
+                          || ' granted on '
+                          || l_obj_name
+                        );
+      END IF;
+
+      o_td.clear_app_info;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         td_inst.log_err;
+         RAISE;
+   END object_grants;
+   
 
    -- structures an insert or insert append statement from the source to the target provided
    PROCEDURE insert_table(
@@ -1753,7 +1855,6 @@ AS
       p_commit          VARCHAR2 DEFAULT 'yes'
    )
    IS
-      l_results   NUMBER;
       l_rows      BOOLEAN := FALSE;
       o_td        tdtype  := tdtype( p_module => 'load_tables' );
    BEGIN
@@ -1879,7 +1980,6 @@ AS
       l_rows           BOOLEAN                                  := FALSE;
       l_partname       all_tab_partitions.partition_name%TYPE;
       l_ddl            LONG;
-      l_results        NUMBER;
       l_build_cons     BOOLEAN                                  := FALSE;
       l_compress       BOOLEAN                                  := FALSE;
       l_dis_fkeys      BOOLEAN                                  := FALSE;
@@ -2211,7 +2311,6 @@ AS
       l_ddl        VARCHAR2( 2000 );
       l_pidx_cnt   NUMBER;
       l_idx_cnt    NUMBER;
-      l_results    NUMBER;
       l_rows       BOOLEAN          DEFAULT FALSE;
       o_td         tdtype           := tdtype( p_module => 'unusable_indexes' );
    BEGIN
@@ -2418,7 +2517,6 @@ AS
    )
    IS
       l_ddl       VARCHAR2( 2000 );
-      l_results   NUMBER;
       l_rows      BOOLEAN          := FALSE;                    -- to catch empty cursors
       l_cnt       NUMBER           := 0;
       o_td        tdtype
@@ -2548,7 +2646,6 @@ AS
       l_avgrlen     NUMBER;
       l_cachedblk   NUMBER;
       l_cachehit    NUMBER;
-      l_results     NUMBER;
       l_statid      VARCHAR2( 30 )
          :=    'TD$'
             || SYS_CONTEXT( 'USERENV', 'SESSIONID' )
