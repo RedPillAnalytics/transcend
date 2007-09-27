@@ -6,7 +6,7 @@ AS
       p_reuse   VARCHAR2 DEFAULT 'no'
    )
    IS
-      o_td        tdtype := tdtype( p_module => 'truncate_table' );
+      o_td   tdtype := tdtype( p_module => 'truncate_table' );
    BEGIN
       -- confirm that the table exists
       -- raise an error if it doesn't
@@ -29,7 +29,7 @@ AS
    PROCEDURE drop_table( p_owner VARCHAR2, p_table VARCHAR2, p_purge VARCHAR2
             DEFAULT 'yes' )
    IS
-      o_td        tdtype := tdtype( p_module => 'truncate_table' );
+      o_td   tdtype := tdtype( p_module => 'truncate_table' );
    BEGIN
       -- confirm that the table exists
       -- raise an error if it doesn't
@@ -649,12 +649,15 @@ AS
       l_tab_name       VARCHAR2( 61 )                := p_owner || '.' || p_table;
       l_src_name       VARCHAR2( 61 )          := p_source_owner || '.' || p_source_table;
       l_rows           BOOLEAN                       := FALSE;
+      l_retry_ddl      BOOLEAN                       := FALSE;
       e_dup_con_name   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_con_name, -2264 );
       e_dup_not_null   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_not_null, -1442 );
       e_dup_pk         EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_pk, -2260 );
+      e_dup_fk         EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_dup_fk, -2275 );
       o_td             tdtype                := tdtype( p_module      => 'build_constraints' );
    BEGIN
       -- confirm that the target table exists
@@ -828,40 +831,56 @@ AS
          l_ddl := REGEXP_REPLACE( l_ddl, '[[:space:]]*$', NULL );
          o_td.change_action( 'Execute constraint DDL' );
 
-         BEGIN
-            td_sql.exec_sql( p_sql => l_ddl, p_auto => 'yes' );
-            td_inst.log_msg( 'Constraint ' || c_constraints.con_rename || ' built' );
-            l_con_cnt := l_con_cnt + 1;
-         EXCEPTION
-            WHEN e_dup_pk
-            THEN
-               td_inst.log_msg(    'Primary key constraint already exists on table '
-                                || l_tab_name
-                              );
-            WHEN e_dup_not_null
-            THEN
-               td_inst.log_msg
+         -- have several exceptions that we want to handle when building constraint fails
+           -- so we are using an EXIT WHEN loop
+           -- if an exception that we handle is raised, then we want to rerun the DDL
+           -- will try the DDL multiple times until it either succeeds, or an unrecognized exception is raised
+         LOOP
+            l_retry_ddl := FALSE;
+
+            BEGIN
+               td_sql.exec_sql( p_sql => l_ddl, p_auto => 'yes' );
+               td_inst.log_msg( 'Constraint ' || c_constraints.con_rename || ' built' );
+            EXCEPTION
+               WHEN e_dup_pk
+               THEN
+                  td_inst.log_msg(    'Primary key constraint already exists on table '
+                                   || l_tab_name
+                                 );
+               WHEN e_dup_fk
+               THEN
+                  td_inst.log_msg(    'Constraint comparable to '
+                                   || c_constraints.constraint_name
+                                   || ' already exists on table '
+                                   || l_tab_name
+                                 );
+               WHEN e_dup_not_null
+               THEN
+                  td_inst.log_msg
                            (    'Referenced not null constraint already exists on table '
                              || l_tab_name
                            );
-            WHEN e_dup_con_name
-            THEN
-               td_sql.exec_sql
-                              ( p_sql       => REGEXP_REPLACE
-                                                          ( l_ddl,
-                                                            '(constraint "?)(\w+)("?)',
-                                                               '\1'
-                                                            || c_constraints.con_e_rename
-                                                            || '\3 \4',
-                                                            1,
-                                                            0,
-                                                            'i'
-                                                          ),
-                                p_auto      => 'yes'
-                              );
-               td_inst.log_msg( 'Constraint ' || c_constraints.con_e_rename || ' built' );
-               l_con_cnt := l_con_cnt + 1;
-         END;
+               WHEN e_dup_con_name
+               THEN
+                  l_ddl :=
+                     REGEXP_REPLACE( l_ddl,
+                                     '(constraint "?)(\w+)("?)',
+                                     '\1' || c_constraints.con_e_rename || '\3 \4',
+                                     1,
+                                     0,
+                                     'i'
+                                   );
+                  l_retry_ddl := TRUE;
+               WHEN OTHERS
+               THEN
+                  -- first log the error
+                  -- provide a backtrace from this exception handler to the next
+                  td_inst.log_err;
+                  RAISE;
+            END;
+
+            EXIT WHEN NOT l_retry_ddl;
+         END LOOP;
       END LOOP;
 
       IF NOT l_rows
@@ -1332,104 +1351,99 @@ AS
 
       o_td.clear_app_info;
    END drop_constraints;
-   
-   
+
    -- extracts grants for a particular object from the dictionary and applies those grants to another object
    PROCEDURE object_grants(
-      p_owner          VARCHAR2,
-      p_object         VARCHAR2,
-      p_source_owner   VARCHAR2,
-      p_source_object  VARCHAR2,
-      p_grant_regexp   VARCHAR2 DEFAULT NULL
+      p_owner           VARCHAR2,
+      p_object          VARCHAR2,
+      p_source_owner    VARCHAR2,
+      p_source_object   VARCHAR2,
+      p_grant_regexp    VARCHAR2 DEFAULT NULL
    )
    IS
-      l_ddl             LONG;
-      l_grant_cnt       NUMBER          := 0;
-      l_obj_name        VARCHAR2( 61 )  := UPPER( p_owner || '.' || p_object );
-      l_src_name        VARCHAR2( 61 )  := UPPER( p_source_owner || '.' || p_source_object );
-      l_none_msg	VARCHAR2( 100 ) := 'No matching object privileges found on '||l_src_name;
-      l_rows            BOOLEAN         := FALSE;
-      e_no_grants       EXCEPTION;
+      l_ddl         LONG;
+      l_grant_cnt   NUMBER          := 0;
+      l_obj_name    VARCHAR2( 61 )  := UPPER( p_owner || '.' || p_object );
+      l_src_name    VARCHAR2( 61 )  := UPPER( p_source_owner || '.' || p_source_object );
+      l_none_msg    VARCHAR2( 100 )
+                               := 'No matching object privileges found on ' || l_src_name;
+      l_rows        BOOLEAN         := FALSE;
+      e_no_grants   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_grants, -31608 );
-      o_td              tdtype           := tdtype( p_module => 'object_grants' );
+      o_td          tdtype          := tdtype( p_module => 'object_grants' );
    BEGIN
       -- confirm that the target table exists
       -- raise an error if it doesn't
-      td_sql.check_object( p_owner => p_owner, 
-      			   p_object => p_object );
+      td_sql.check_object( p_owner => p_owner, p_object => p_object );
       -- confirm that the source table
       -- raise an error if it doesn't
-      td_sql.check_object( p_owner         => p_source_owner,
-                           p_object        => p_source_object
-                        );
+      td_sql.check_object( p_owner => p_source_owner, p_object => p_source_object );
       -- execute immediate doesn't like ";" on the end
       DBMS_METADATA.set_transform_param( DBMS_METADATA.session_transform,
                                          'SQLTERMINATOR',
                                          FALSE
                                        );
       o_td.change_action( 'Extract grants' );
-
       td_inst.log_msg( 'Granting privileges on ' || l_obj_name );
-      
       -- we need the sql terminator now because it will be our split character later
-      DBMS_METADATA.set_transform_param( DBMS_METADATA.session_transform,'SQLTERMINATOR',TRUE);
+      DBMS_METADATA.set_transform_param( DBMS_METADATA.session_transform,
+                                         'SQLTERMINATOR',
+                                         TRUE
+                                       );
 
       -- create a cursor containing the DDL from the target indexes
       BEGIN
-	 -- need to remove the last sql terminator because it's a splitter between statements
-	 -- also remove all the extract spaces and carriage returns
-	 SELECT regexp_replace(regexp_replace(ddl,' *\s+ +',null),';\s*$',null)
-	   INTO l_ddl
-	   FROM ( SELECT ( REGEXP_REPLACE( 
-					   REGEXP_REPLACE( 
-							   DBMS_METADATA.get_dependent_ddl( 'OBJECT_GRANT',
-											    object_name,
-											    owner
-											  ),
-							   '(\."?)('
-							   || UPPER( p_source_object )
-							   || ')(\w*)("?)',
-							   '.' || UPPER( p_object ) || '\3',
-							   1,
-							   0,
-							   'i'
-							 ),
-					   '(")?(' || upper( p_source_owner ) || ')("?\.)',
-					   UPPER( p_owner ) || '.',
-					   1,
-					   0,
-					   'i'
-					 )) ddl,
-			 owner object_owner, 
-			 object_name
-		    FROM all_objects ao
-		   WHERE object_name = UPPER( p_source_object )
-		     AND owner = UPPER( p_source_owner )
-		     AND subobject_name IS NULL )
-		-- USE an NVL'd regular expression to determine the specific indexes to work on
-		-- when nothing is passed for p_INDEX_TYPE, then that is the same as passing a wildcard
-	  WHERE REGEXP_LIKE( ddl, NVL( p_grant_regexp, '.' ), 'i' );
+         -- need to remove the last sql terminator because it's a splitter between statements
+         -- also remove all the extract spaces and carriage returns
+         SELECT REGEXP_REPLACE( REGEXP_REPLACE( DDL, ' *\s+ +', NULL ), ';\s*$', NULL )
+           INTO l_ddl
+           FROM ( SELECT ( REGEXP_REPLACE
+                              ( REGEXP_REPLACE
+                                      ( DBMS_METADATA.get_dependent_ddl( 'OBJECT_GRANT',
+                                                                         object_name,
+                                                                         owner
+                                                                       ),
+                                           '(\."?)('
+                                        || UPPER( p_source_object )
+                                        || ')(\w*)("?)',
+                                        '.' || UPPER( p_object ) || '\3',
+                                        1,
+                                        0,
+                                        'i'
+                                      ),
+                                '(")?(' || UPPER( p_source_owner ) || ')("?\.)',
+                                UPPER( p_owner ) || '.',
+                                1,
+                                0,
+                                'i'
+                              )
+                         ) DDL,
+                         owner object_owner, object_name
+                   FROM all_objects ao
+                  WHERE object_name = UPPER( p_source_object )
+                    AND owner = UPPER( p_source_owner )
+                    AND subobject_name IS NULL )
+          -- USE an NVL'd regular expression to determine the specific indexes to work on
+          -- when nothing is passed for p_INDEX_TYPE, then that is the same as passing a wildcard
+         WHERE  REGEXP_LIKE( DDL, NVL( p_grant_regexp, '.' ), 'i' );
       EXCEPTION
          -- if a duplicate column list of indexes already exist, log it, but continue
-      WHEN e_no_grants
+         WHEN e_no_grants
          THEN
-         td_inst.log_msg( l_none_msg );
+            td_inst.log_msg( l_none_msg );
       END;
-      
+
       -- now, parse the string to work on the different values in it
       o_td.change_action( 'Execute grants' );
 
-      FOR c_grants IN
-	 (SELECT *
-	    FROM TABLE(td_core.split(l_ddl,';')))
+      FOR c_grants IN ( SELECT *
+                         FROM TABLE( td_core.SPLIT( l_ddl, ';' )))
       LOOP
          l_rows := TRUE;
-
-         td_sql.exec_sql( p_sql => c_grants.column_value, p_auto => 'yes' );
+         td_sql.exec_sql( p_sql => c_grants.COLUMN_VALUE, p_auto => 'yes' );
          l_grant_cnt := l_grant_cnt + 1;
-
       END LOOP;
-      
+
       IF NOT l_rows
       THEN
          td_inst.log_msg( l_none_msg );
@@ -1453,7 +1467,6 @@ AS
          td_inst.log_err;
          RAISE;
    END object_grants;
-   
 
    -- structures an insert or insert append statement from the source to the target provided
    PROCEDURE insert_table(
@@ -1866,8 +1879,8 @@ AS
       p_commit          VARCHAR2 DEFAULT 'yes'
    )
    IS
-      l_rows      BOOLEAN := FALSE;
-      o_td        tdtype  := tdtype( p_module => 'load_tables' );
+      l_rows   BOOLEAN := FALSE;
+      o_td     tdtype  := tdtype( p_module => 'load_tables' );
    BEGIN
       td_inst.log_msg( 'Loading matching objects from the ' || p_source_owner
                        || ' schema.'
@@ -2256,12 +2269,11 @@ AS
                          p_tablespace        => p_tablespace
                        );
       -- grant privileges
-      object_grants( p_owner             => p_owner,
-                     p_object            => p_source_table,
-                     p_source_owner      => p_owner,
-                     p_source_object     => p_table
+      object_grants( p_owner              => p_owner,
+                     p_object             => p_source_table,
+                     p_source_owner       => p_owner,
+                     p_source_object      => p_table
                    );
-
       -- now replace the table
       -- using a table rename for this
       o_td.change_action( 'Rename tables' );
@@ -2276,14 +2288,14 @@ AS
       td_sql.exec_sql( p_sql       =>    'alter table '
                                       || l_src_name
                                       || ' rename to '
-                                      || p_table,
+                                      || UPPER( p_table ),
                        p_auto      => 'yes'
                      );
       -- now rename to previous target table to the source table name
       td_sql.exec_sql( p_sql       =>    'alter table '
                                       || l_ren_name
                                       || ' rename to '
-                                      || p_source_table,
+                                      || UPPER( p_source_table ),
                        p_auto      => 'yes'
                      );
 
@@ -2534,10 +2546,10 @@ AS
       p_table   VARCHAR2                                -- table to operate on indexes for
    )
    IS
-      l_ddl       VARCHAR2( 2000 );
-      l_rows      BOOLEAN          := FALSE;                    -- to catch empty cursors
-      l_cnt       NUMBER           := 0;
-      o_td        tdtype
+      l_ddl    VARCHAR2( 2000 );
+      l_rows   BOOLEAN          := FALSE;                       -- to catch empty cursors
+      l_cnt    NUMBER           := 0;
+      o_td     tdtype
                  := tdtype( p_module      => 'usable_indexes',
                             p_action      => 'Rebuild indexes' );
    BEGIN
