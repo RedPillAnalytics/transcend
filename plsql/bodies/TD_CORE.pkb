@@ -499,7 +499,8 @@ AS
          ELSE
             l_source_column := p_source_column;
          END IF;
-
+	 
+	 td_inst.set_action('insert into td_ddl_gtt');
          l_results :=
             td_sql.exec_sql
                ( p_sql      =>    'insert into td_ddl_gtt (table_owner, table_name, partition_name, partition_position) '
