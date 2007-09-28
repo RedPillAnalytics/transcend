@@ -2541,7 +2541,7 @@ AS
                                           ON ai.index_name = aip.index_name
                                         AND ai.owner = aip.index_owner
                                     WHERE ai.table_name = UPPER( p_table )
-                                       AND ai.table_owner = UPPER( p_owner )
+                                       AND ai.table_owner = UPPER( p_owner ))
                             WHERE REGEXP_LIKE( index_type, '^' || p_index_type, 'i' )
                               AND REGEXP_LIKE( partitioned,
                                                CASE
