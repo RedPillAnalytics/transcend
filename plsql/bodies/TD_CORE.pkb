@@ -454,10 +454,11 @@ AS
    )
    AS
       l_dsql            LONG;
+      l_num_msg		VARCHAR2(100) := 'Number of records inserted into TD_DDL_GTT table';
       -- to catch empty cursors
       l_source_column   all_part_key_columns.column_name%TYPE;
       l_results         NUMBER;
-      o_td              tdtype                    := tdtype( p_module      => 'pop_partname' );
+      o_td              tdtype                    := tdtype( p_module      => 'populate_partname' );
       l_part_position   all_tab_partitions.partition_position%TYPE;
       l_high_value      all_tab_partitions.high_value%TYPE;
    BEGIN
@@ -477,15 +478,15 @@ AS
             AND partition_name = UPPER( p_partname );
 
          INSERT INTO partname
-                     ( table_owner, table_name, partition_name,
-                       partition_position
+                ( module, action, table_owner, table_name, 
+		  partition_name, partition_position
                      )
-              VALUES ( UPPER( p_owner ), UPPER( p_table ), UPPER( p_partname ),
-                       l_part_position
+		VALUES ( td_inst.module, td_inst.action, UPPER( p_owner ), 
+			 UPPER( p_table ), UPPER( p_partname ), l_part_position
                      );
 
          td_inst.log_cnt_msg( SQL%ROWCOUNT,
-                              'Number of records inserted into PARTNAME table',
+                              l_num_msg,
                               4
                             );
       ELSE
@@ -501,7 +502,7 @@ AS
 
          l_results :=
             td_sql.exec_sql
-               ( p_sql      =>    'insert into partname (table_owner, table_name, partition_name, partition_position) '
+               ( p_sql      =>    'insert into td_ddl_gtt (table_owner, table_name, partition_name, partition_position) '
                                || ' SELECT table_owner, table_name, partition_name, partition_position'
                                || '  FROM all_tab_partitions'
                                || ' WHERE table_owner = '''
@@ -527,7 +528,7 @@ AS
                                || 'ORDER By partition_position'
                );
          td_inst.log_cnt_msg( l_results,
-                              'Number of records inserted into PARTNAME table',
+                              l_num_msg,
                               4
                             );
       END IF;
