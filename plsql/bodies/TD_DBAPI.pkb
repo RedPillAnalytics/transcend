@@ -533,20 +533,17 @@ AS
             td_sql.exec_sql( p_sql => l_ddl, p_auto => 'yes' );
             td_inst.log_msg( 'Index ' || c_indexes.index_name || ' built' );
             l_idx_cnt := l_idx_cnt + 1;
-
-            INSERT INTO build_indexes
+	    
+            o_td.change_action( 'insert into td_build_idx_gtt' );
+            INSERT INTO td_build_idx_gtt
                         ( index_owner, index_name,
-                          source_owner, source_index,
-                          partitioned, uniqueness,
-                          index_type,
-                          index_ddl,
+                          src_index_owner, src_index_name,
+                          create_ddl,
                           rename_ddl,
                           rename_msg
                         )
                  VALUES ( c_indexes.index_owner, c_indexes.index_name,
                           c_indexes.source_owner, c_indexes.source_index,
-                          c_indexes.partitioned, c_indexes.uniqueness,
-                          c_indexes.index_type,
                           SUBSTR( c_indexes.index_ddl, 1, 3998 ) || '>>',
                           c_indexes.rename_ddl,
                           SUBSTR( c_indexes.rename_msg, 1, 3998 ) || '>>'
@@ -597,7 +594,7 @@ AS
       td_inst.log_msg( 'Renaming indexes previously cloned' );
 
       FOR c_idxs IN ( SELECT *
-                       FROM build_indexes )
+			FROM td_build_idx_gtt )
       LOOP
          BEGIN
             l_rows := TRUE;
@@ -1127,7 +1124,8 @@ AS
             -- this allows a call to ENABLE_CONSTRAINTS without parameters to only work on those that were previously disabled
             IF REGEXP_LIKE( 'disable', p_maint_type, 'i' )
             THEN
-               INSERT INTO constraint_maint
+	       o_td.change_action('insert into td_con_maint_gtt');
+               INSERT INTO td_con_maint_gtt
                            ( table_owner, table_name,
                              constraint_name, disable_ddl,
                              disable_msg, enable_ddl,
@@ -1269,7 +1267,7 @@ AS
       td_inst.log_msg( 'Enabling constraints disabled previously' );
 
       FOR c_cons IN ( SELECT *
-                       FROM constraint_maint )
+			FROM td_con_maint_gtt )
       LOOP
          BEGIN
             l_rows := TRUE;
@@ -2537,13 +2535,13 @@ AS
                                                  THEN 'N'
                                               ELSE 'Y'
                                            END include
-                                     FROM partname JOIN all_ind_partitions aip
+                                     FROM td_part_gtt JOIN all_ind_partitions aip
                                           USING( partition_name )
                                           RIGHT JOIN all_indexes ai
                                           ON ai.index_name = aip.index_name
                                         AND ai.owner = aip.index_owner
                                     WHERE ai.table_name = UPPER( p_table )
-                                      AND ai.table_owner = UPPER( p_owner ))
+                                       AND ai.table_owner = UPPER( p_owner )
                             WHERE REGEXP_LIKE( index_type, '^' || p_index_type, 'i' )
                               AND REGEXP_LIKE( partitioned,
                                                CASE

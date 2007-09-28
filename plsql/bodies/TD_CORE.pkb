@@ -454,7 +454,7 @@ AS
    )
    AS
       l_dsql            LONG;
-      l_num_msg		VARCHAR2(100) := 'Number of records inserted into TD_DDL_GTT table';
+      l_num_msg		VARCHAR2(100) := 'Number of records inserted into TD_PART_GTT table';
       -- to catch empty cursors
       l_source_column   all_part_key_columns.column_name%TYPE;
       l_results         NUMBER;
@@ -500,10 +500,10 @@ AS
             l_source_column := p_source_column;
          END IF;
 	 
-         o_td.change_action( 'insert into td_ddl_gtt' );
+         o_td.change_action( 'insert into td_part_gtt' );
          l_results :=
             td_sql.exec_sql
-               ( p_sql      =>    'insert into td_ddl_gtt (table_owner, table_name, partition_name, partition_position) '
+               ( p_sql      =>    'insert into td_part_gtt (table_owner, table_name, partition_name, partition_position) '
                                || ' SELECT table_owner, table_name, partition_name, partition_position'
                                || '  FROM all_tab_partitions'
                                || ' WHERE table_owner = '''
