@@ -1153,10 +1153,11 @@ AS
             WHEN e_iot_shc
             THEN
                td_inst.log_msg
-                       (    'Constraint '
-                         || c_constraints.constraint_name
-                         || ' is the primary key for either an IOT or a sorted hash cluster'
-                       );
+                      (    'Constraint '
+                        || c_constraints.constraint_name
+                        || ' is the primary key for either an IOT or a sorted hash cluster',
+                        3
+                      );
          END;
       END LOOP;
 
@@ -1501,7 +1502,7 @@ AS
          -- if a duplicate column list of indexes already exist, log it, but continue
          WHEN e_no_grants
          THEN
-            td_inst.log_msg( l_none_msg );
+            td_inst.log_msg( l_none_msg, 3 );
       END;
 
       -- now, parse the string to work on the different values in it
@@ -2207,7 +2208,7 @@ AS
                                   );
             WHEN e_compress
             THEN
-               td_inst.log_msg( l_src_name || ' compressed to facilitate exchange' );
+               td_inst.log_msg( l_src_name || ' compressed to facilitate exchange', 3 );
                -- need to compress the staging table
                l_compress := TRUE;
                l_retry_ddl := TRUE;
