@@ -477,11 +477,11 @@ AS
             AND table_name = UPPER( p_table )
             AND partition_name = UPPER( p_partname );
 
-         INSERT INTO partname
-                ( module, action, table_owner, table_name, 
+         INSERT INTO td_part_gtt
+                ( table_owner, table_name, 
 		  partition_name, partition_position
                      )
-		VALUES ( td_inst.module, td_inst.action, UPPER( p_owner ), 
+		VALUES ( UPPER( p_owner ), 
 			 UPPER( p_table ), UPPER( p_partname ), l_part_position
                      );
 
