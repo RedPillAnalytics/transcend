@@ -2370,13 +2370,18 @@ AS
                                       || UPPER( p_source_table ),
                        p_auto      => 'yes'
                      );
-
+      
       -- drop the indexes on the stage table
       IF td_ext.is_true( p_index_drop )
       THEN
          drop_indexes( p_owner => p_owner, p_table => p_source_table );
       END IF;
-
+      
+      -- rename the indexes
+      rename_indexes;
+      -- clear out temporary table holding index statements
+      COMMIT;
+      
       o_td.clear_app_info;
    EXCEPTION
       WHEN OTHERS
