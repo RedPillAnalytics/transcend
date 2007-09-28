@@ -26,8 +26,9 @@ BEGIN
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..LOGGING_CONF for &schema_rs..LOGGING_CONF';
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..LOG_TABLE for &schema_rs..LOG_TABLE';
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..NOTIFY_CONF for &schema_rs..NOTIFY_CONF';
-      EXECUTE IMMEDIATE 'create or replace synonym &user_rs..PARTNAME for &schema_rs..PARTNAME';
-      EXECUTE IMMEDIATE 'create or replace synonym &user_rs..BUILD_INDEXES for &schema_rs..BUILD_INDEXES';
+      EXECUTE IMMEDIATE 'create or replace synonym &user_rs..TD_PART_GTT for &schema_rs..TD_PART_GTT';
+      EXECUTE IMMEDIATE 'create or replace synonym &user_rs..TD_BUILD_IDX_GTT for &schema_rs..TD_BUILD_IDX_GTT';
+      EXECUTE IMMEDIATE 'create or replace synonym &user_rs..TD_CON_MAINT_GTT for &schema_rs..TD_CON_MAINT_GTT';
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..REGISTRATION_CONF for &schema_rs..REGISTRATION_CONF';
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..RUNMODE_CONF for &schema_rs..RUNMODE_CONF';
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..PARAMETER_CONF for &schema_rs..PARAMETER_CONF';
