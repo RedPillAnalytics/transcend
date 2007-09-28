@@ -557,7 +557,8 @@ AS
             THEN
                td_inst.log_msg(    'Index comparable to '
                                 || c_indexes.source_index
-                                || ' already exists'
+                                || ' already exists',
+                                3
                               );
          END;
       END LOOP;
@@ -644,33 +645,32 @@ AS
       p_partname            VARCHAR2 DEFAULT NULL
    )
    IS
-      l_targ_part      all_tables.partitioned%TYPE;
+      l_targ_part       all_tables.partitioned%TYPE;
       l_part_position   all_tab_partitions.partition_position%TYPE;
-      l_ddl            LONG;
-      l_con_cnt        NUMBER                        := 0;
-      l_tab_name       VARCHAR2( 61 )                := p_owner || '.' || p_table;
-      l_src_name       VARCHAR2( 61 )          := p_source_owner || '.' || p_source_table;
-      l_rows           BOOLEAN                       := FALSE;
-      l_retry_ddl      BOOLEAN                       := FALSE;
-      e_dup_con_name   EXCEPTION;
+      l_con_cnt         NUMBER                                       := 0;
+      l_tab_name        VARCHAR2( 61 )                       := p_owner || '.' || p_table;
+      l_src_name        VARCHAR2( 61 )         := p_source_owner || '.' || p_source_table;
+      l_rows            BOOLEAN                                      := FALSE;
+      l_retry_ddl       BOOLEAN                                      := FALSE;
+      e_dup_con_name    EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_con_name, -2264 );
-      e_dup_not_null   EXCEPTION;
+      e_dup_not_null    EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_not_null, -1442 );
-      e_dup_pk         EXCEPTION;
+      e_dup_pk          EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_pk, -2260 );
-      e_dup_fk         EXCEPTION;
+      e_dup_fk          EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_fk, -2275 );
-      o_td             tdtype                := tdtype( p_module      => 'build_constraints' );
+      o_td              tdtype               := tdtype( p_module      => 'build_constraints' );
    BEGIN
       -- confirm that the target table exists
       -- raise an error if it doesn't
       td_sql.check_table( p_owner => p_owner, p_table => p_table );
       -- confirm that the source table
       -- raise an error if it doesn't
-      td_sql.check_table( p_owner => p_source_owner, 
-			  p_table => p_source_table,
-			  p_partname => p_partname );
-
+      td_sql.check_table( p_owner         => p_source_owner,
+                          p_table         => p_source_table,
+                          p_partname      => p_partname
+                        );
       -- execute immediate doesn't like ";" on the end
       DBMS_METADATA.set_transform_param( DBMS_METADATA.session_transform,
                                          'SQLTERMINATOR',
@@ -693,7 +693,7 @@ AS
         INTO l_targ_part
         FROM all_tables
        WHERE table_name = UPPER( p_table ) AND owner = UPPER( p_owner );
-      
+
       -- if P_PARTNAME is specified, then I need the partition position is required
       IF p_partname IS NOT NULL
       THEN
@@ -709,251 +709,249 @@ AS
       td_inst.log_msg( 'Adding constraints on ' || l_tab_name );
 
       FOR c_constraints IN
-         ( SELECT 
-       upper( p_owner ) constraint_owner,
-       CASE generic_con
-       WHEN 'Y'
-       THEN con_rename_adj
-       ELSE con_rename
-       END constraint_name, owner source_owner, constraint_name source_constraint,
-       constraint_type, index_owner, index_name,
-       CASE generic_con
-       WHEN 'Y'
-       THEN regexp_replace( constraint_ddl,
-                            '(\."?)(\w)+(")?( on)',
-                            '.' || con_rename_adj || ' \4',
-                            1,
-                            0,
-                            'i'
-                          )
-       ELSE constraint_ddl
-       END constraint_ddl,
-       
-       -- this column was added for the REPLACE_TABLE procedure
-       -- IN that procedure, after cloning the indexes, the table is renamed
-       -- we have to rename the indexes back to their original names
-       ' alter constraint '
-       || owner
-       || '.'
-       || CASE generic_con
-       WHEN 'Y'
-       THEN con_rename_adj
-       ELSE con_rename
-       END
-       || ' rename to '
-       || constraint_name rename_ddl,
-       
-       -- this column was added for the REPLACE_TABLE procedure
-       -- IN that procedure, after cloning the indexes, the table is renamed
-       -- we have to rename the indexes back to their original names
-       'Constraint '
-       || owner
-       || '.'
-       || CASE generic_con
-       WHEN 'Y'
-       THEN con_rename_adj
-       ELSE con_rename
-       END
-       || ' renamed to '
-       || constraint_name rename_msg
-  FROM ( SELECT
-                -- IF con_rename already exists (constructed below), then we will try to rename the index to something generic
-                -- this name will only be used when con_rename name already exists
-                upper
-                (    substr( p_table, 1, 24 )
-                  || '_'
-                  || con_ext
-                  -- rank function gives us the index number by specific index extension (formulated below)
-                  || rank( ) OVER( partition BY con_ext ORDER BY constraint_name )
-                ) con_rename_adj,
-                regexp_replace
-                ( regexp_replace( regexp_replace( constraint_ddl,
-                                                  '(alter constraint).+',
-                                                  NULL,
-                                                  1,
-                                                  0,
-                                                  'i'
-                                                ),
-                                  '(\.|constraint +)("?)('
-                                  || upper( p_source_table )
-                                  || ')(\w*)("?)',
-                                  '\1' || upper( p_table ) || '\4',
-                                  1,
-                                  0,
-                                  'i'
-                                ),
-                  '(")?(' || con.owner || ')("?\.)',
-                  upper( p_owner ) || '.',
-                  1,
-                  0,
-                  'i'
-                ) constraint_ddl,
-                con.owner, table_name, constraint_name, con_rename,
-                index_owner, index_name, con_ext, constraint_type,
-                
-                -- this case expression determines whether to use the standard renamed index name
-                -- OR whether to use the generic index name based on table name
-                -- below we are right joining with USER_OBJECTS to see if the standard name is already used
-                -- IF we match, then we need to use the generic index name
-                CASE
-                WHEN( ao.object_name IS NULL AND length( con_rename ) < 31
-                    )
-                THEN 'N'
-                ELSE 'Y'
-                END generic_con,
-                object_name
-           FROM ( SELECT    regexp_replace
-                         
-                         -- dbms_metadata pulls the metadata for the source object out of the dictionary
-                         (    dbms_metadata.get_ddl( CASE constraint_type
-						     WHEN 'R'
-						     THEN 'REF_CONSTRAINT'
-						     ELSE 'CONSTRAINT'
-						     END,
-						     constraint_name,
-						     ac.owner
-                                                   ),
-                           -- this CASE expression determines whether to strip partitioning information and tablespace information
-                           -- TABLESPACE desisions are based on the p_TABLESPACE parameter
-                           -- partitioning decisions are based on the structure of the target table
-                           CASE
-                           -- target is not partitioned and neither p_TABLESPACE or p_PARTNAME are provided
-                           WHEN l_targ_part = 'NO'
-                           AND p_tablespace IS NULL
-                           AND p_partname IS NULL
-                           -- remove all partitioning and the local keyword
-                           THEN '\s*(\(\s*partition.+\))|local\s*'
-                           -- target is not partitioned but p_TABLESPACE or p_PARTNAME is provided
-                           WHEN l_targ_part = 'NO'
-                           AND (    p_tablespace IS NOT NULL
-                                 OR p_partname IS NOT NULL
-                               )
-                           -- strip out partitioned info and local keyword and tablespace clause
-                           THEN '\s*(\(\s*partition.+\))|local|(tablespace)\s*\S+\s*'
-                           -- target is partitioned and p_TABLESPACE or p_PARTNAME is provided
-                           WHEN l_targ_part = 'YES'
-                           AND (    p_tablespace IS NOT NULL
-                                 OR p_partname IS NOT NULL
-                               )
-                           -- strip out partitioned info keeping local keyword and remove tablespace clause
-                           THEN '\s*(\(\s*partition.+\))|(tablespace)\s*\S+\s*'
-                           -- target is partitioned
-                           -- p_tablespace IS NULL
-                           -- p_partname IS NULL
-                           WHEN l_targ_part = 'YES'
-                           AND p_tablespace IS NULL
-                           AND p_partname IS NULL
-                           -- leave partitioning and tablespace information as it is
-                           -- this implies a one-to-one mapping of partitioned names from source to target
-                           THEN NULL
-                           END,
-                           ' ',
-                           1,
-                           0,
-                           'in'
-                         )
-                         || CASE
-                         -- IF 'default' is passed, then use the users default tablespace
-                         -- a non-null value for p_tablespace already stripped all tablespace information above
-                         -- now just need to not put in the 'TABLESPACE' information here
-                         WHEN lower( p_tablespace ) = 'default'
-                         THEN NULL
-                         -- IF p_TABLESPACE is provided, then previous tablespace information was stripped (above)
-                         -- now we can just tack the new tablespace information on the end
-                         WHEN p_tablespace IS NOT NULL
-                         THEN ' TABLESPACE ' || upper( p_tablespace )
-                         WHEN p_partname IS NOT NULL
-                         THEN    ' TABLESPACE '
-                         || nvl( ai.tablespace_name,
-                                 ( SELECT tablespace_name
-                                     FROM all_ind_partitions
-                                    WHERE index_name = ac.index_name
-                                      AND index_owner = ac.owner
-                                      AND partition_position =
-                                          l_part_position )
-                               )
-                         ELSE NULL
-                         END constraint_ddl,
-                         ac.owner, ac.table_name, ac.constraint_name, ac.index_owner, ac.index_name,
-                         
-                         -- this is the constraint name that will be used if it doesn't already exist
-                         -- basically, all cases of the previous table name are replaced with the new table name
-                         upper( regexp_replace( constraint_name,
-                                                '(")?' || p_source_table
-                                                || '(")?',
-                                                p_table,
-                                                1,
-                                                0,
-                                                'i'
+         ( SELECT UPPER( p_owner ) constraint_owner,
+                  CASE generic_con
+                     WHEN 'Y'
+                        THEN con_rename_adj
+                     ELSE con_rename
+                  END constraint_name,
+                  owner source_owner, constraint_name source_constraint, constraint_type,
+                  index_owner, index_name,
+                  CASE generic_con
+                     WHEN 'Y'
+                        THEN REGEXP_REPLACE( constraint_ddl,
+                                             '(\."?)(\w)+(")?( on)',
+                                             '.' || con_rename_adj || ' \4',
+                                             1,
+                                             0,
+                                             'i'
+                                           )
+                     ELSE constraint_ddl
+                  END constraint_ddl,
+                     
+                     -- this column was added for the REPLACE_TABLE procedure
+                     -- IN that procedure, after cloning the indexes, the table is renamed
+                     -- we have to rename the indexes back to their original names
+                     ' alter constraint '
+                  || owner
+                  || '.'
+                  || CASE generic_con
+                        WHEN 'Y'
+                           THEN con_rename_adj
+                        ELSE con_rename
+                     END
+                  || ' rename to '
+                  || constraint_name rename_ddl,
+                     
+                     -- this column was added for the REPLACE_TABLE procedure
+                     -- IN that procedure, after cloning the indexes, the table is renamed
+                     -- we have to rename the indexes back to their original names
+                     'Constraint '
+                  || owner
+                  || '.'
+                  || CASE generic_con
+                        WHEN 'Y'
+                           THEN con_rename_adj
+                        ELSE con_rename
+                     END
+                  || ' renamed to '
+                  || constraint_name rename_msg
+            FROM ( SELECT
+                          -- IF con_rename already exists (constructed below), then we will try to rename the index to something generic
+                          -- this name will only be used when con_rename name already exists
+                          UPPER
+                             (    SUBSTR( p_table, 1, 24 )
+                               || '_'
+                               || con_ext
+                               -- rank function gives us the index number by specific index extension (formulated below)
+                               || RANK( ) OVER( PARTITION BY con_ext ORDER BY constraint_name )
+                             ) con_rename_adj,
+                          REGEXP_REPLACE
+                             ( REGEXP_REPLACE( REGEXP_REPLACE( constraint_ddl,
+                                                               '(alter constraint).+',
+                                                               NULL,
+                                                               1,
+                                                               0,
+                                                               'i'
+                                                             ),
+                                                  '(\.|constraint +)("?)('
+                                               || UPPER( p_source_table )
+                                               || ')(\w*)("?)',
+                                               '\1' || UPPER( p_table ) || '\4',
+                                               1,
+                                               0,
+                                               'i'
+                                             ),
+                               '(")?(' || con.owner || ')("?\.)',
+                               UPPER( p_owner ) || '.',
+                               1,
+                               0,
+                               'i'
+                             ) constraint_ddl,
+                          con.owner, table_name, constraint_name, con_rename, index_owner,
+                          index_name, con_ext, constraint_type,
+                          
+                          -- this case expression determines whether to use the standard renamed index name
+                          -- OR whether to use the generic index name based on table name
+                          -- below we are right joining with USER_OBJECTS to see if the standard name is already used
+                          -- IF we match, then we need to use the generic index name
+                          CASE
+                             WHEN( ao.object_name IS NULL AND LENGTH( con_rename ) < 31
+                                 )
+                                THEN 'N'
+                             ELSE 'Y'
+                          END generic_con,
+                          object_name
+                    FROM ( SELECT    REGEXP_REPLACE
+                                        
+                                        -- dbms_metadata pulls the metadata for the source object out of the dictionary
+                                     (    DBMS_METADATA.get_ddl
+                                                         ( CASE constraint_type
+                                                              WHEN 'R'
+                                                                 THEN 'REF_CONSTRAINT'
+                                                              ELSE 'CONSTRAINT'
+                                                           END,
+                                                           constraint_name,
+                                                           ac.owner
+                                                         ),
+                                          -- this CASE expression determines whether to strip partitioning information and tablespace information
+                                          -- TABLESPACE desisions are based on the p_TABLESPACE parameter
+                                          -- partitioning decisions are based on the structure of the target table
+                                          CASE
+                                             -- target is not partitioned and neither p_TABLESPACE or p_PARTNAME are provided
+                                          WHEN l_targ_part = 'NO'
+                                          AND p_tablespace IS NULL
+                                          AND p_partname IS NULL
+                                                -- remove all partitioning and the local keyword
+                                          THEN '\s*(\(\s*partition.+\))|local\s*'
+                                             -- target is not partitioned but p_TABLESPACE or p_PARTNAME is provided
+                                          WHEN l_targ_part = 'NO'
+                                          AND (    p_tablespace IS NOT NULL
+                                                OR p_partname IS NOT NULL
                                               )
-                              ) con_rename,
-			 CASE constraint_type
-			 -- devise a specific constraint extention based on information about it
-			 WHEN 'R'
-			 THEN 'F'
-			 ELSE constraint_type || 'K'
-			 END con_ext,
-                         constraint_type
-		    FROM all_constraints ac
-		    left JOIN all_indexes ai
-			 ON ac.index_owner = ai.owner
-		     AND ac.index_name = ai.index_name
-		   WHERE ac.table_name = upper( p_source_table )
-		     AND ac.owner = upper( p_source_owner )
-		     AND REGEXP_LIKE( constraint_name,
-				      nvl( p_constraint_regexp, '.' ),
-				      'i'
-				    )
-		     AND REGEXP_LIKE( constraint_type, nvl( p_constraint_type, '.' ), 'i' )) con
-	   left JOIN
-		all_objects ao
-		ON ao.object_name = con.con_rename
-	    AND ao.owner = upper( p_owner )
-	    AND object_type='INDEX' ))
+                                                -- strip out partitioned info and local keyword and tablespace clause
+                                          THEN '\s*(\(\s*partition.+\))|local|(tablespace)\s*\S+\s*'
+                                             -- target is partitioned and p_TABLESPACE or p_PARTNAME is provided
+                                          WHEN l_targ_part = 'YES'
+                                          AND (    p_tablespace IS NOT NULL
+                                                OR p_partname IS NOT NULL
+                                              )
+                                                -- strip out partitioned info keeping local keyword and remove tablespace clause
+                                          THEN '\s*(\(\s*partition.+\))|(tablespace)\s*\S+\s*'
+                                             -- target is partitioned
+                                             -- p_tablespace IS NULL
+                                             -- p_partname IS NULL
+                                          WHEN l_targ_part = 'YES'
+                                          AND p_tablespace IS NULL
+                                          AND p_partname IS NULL
+                                                -- leave partitioning and tablespace information as it is
+                                                -- this implies a one-to-one mapping of partitioned names from source to target
+                                          THEN NULL
+                                          END,
+                                          ' ',
+                                          1,
+                                          0,
+                                          'in'
+                                        )
+                                  || CASE
+                                        -- IF 'default' is passed, then use the users default tablespace
+                                        -- a non-null value for p_tablespace already stripped all tablespace information above
+                                        -- now just need to not put in the 'TABLESPACE' information here
+                                     WHEN LOWER( p_tablespace ) = 'default'
+                                           THEN NULL
+                                        -- IF p_TABLESPACE is provided, then previous tablespace information was stripped (above)
+                                        -- now we can just tack the new tablespace information on the end
+                                     WHEN p_tablespace IS NOT NULL
+                                           THEN ' TABLESPACE ' || UPPER( p_tablespace )
+                                        WHEN p_partname IS NOT NULL
+                                           THEN    ' TABLESPACE '
+                                                || NVL( ai.tablespace_name,
+                                                        ( SELECT tablespace_name
+                                                           FROM all_ind_partitions
+                                                          WHERE index_name = ac.index_name
+                                                            AND index_owner = ac.owner
+                                                            AND partition_position =
+                                                                           l_part_position )
+                                                      )
+                                        ELSE NULL
+                                     END constraint_ddl,
+                                  ac.owner, ac.table_name, ac.constraint_name,
+                                  ac.index_owner, ac.index_name,
+                                  
+                                  -- this is the constraint name that will be used if it doesn't already exist
+                                  -- basically, all cases of the previous table name are replaced with the new table name
+                                  UPPER( REGEXP_REPLACE( constraint_name,
+                                                         '(")?' || p_source_table
+                                                         || '(")?',
+                                                         p_table,
+                                                         1,
+                                                         0,
+                                                         'i'
+                                                       )
+                                       ) con_rename,
+                                  CASE constraint_type
+                                     -- devise a specific constraint extention based on information about it
+                                  WHEN 'R'
+                                        THEN 'F'
+                                     ELSE constraint_type || 'K'
+                                  END con_ext,
+                                  constraint_type
+                            FROM all_constraints ac LEFT JOIN all_indexes ai
+                                 ON ac.index_owner = ai.owner
+                               AND ac.index_name = ai.index_name
+                           WHERE ac.table_name = UPPER( p_source_table )
+                             AND ac.owner = UPPER( p_source_owner )
+                             AND REGEXP_LIKE( constraint_name,
+                                              NVL( p_constraint_regexp, '.' ),
+                                              'i'
+                                            )
+                             AND REGEXP_LIKE( constraint_type,
+                                              NVL( p_constraint_type, '.' ),
+                                              'i'
+                                            )) con
+                         LEFT JOIN
+                         all_objects ao
+                         ON ao.object_name = con.con_rename
+                       AND ao.owner = UPPER( p_owner )
+                       AND object_type = 'INDEX'
+                         ))
       LOOP
          -- catch empty cursor sets
          l_rows := TRUE;
-         o_td.change_action( 'Execute constraint DDL' );
 
-         -- have several exceptions that we want to handle when building constraint fails
-           -- so we are using an EXIT WHEN loop
-           -- if an exception that we handle is raised, then we want to rerun the DDL
-           -- will try the DDL multiple times until it either succeeds, or an unrecognized exception is raised
-         LOOP
-            l_retry_ddl := FALSE;
-
-            BEGIN
-               td_sql.exec_sql( p_sql => l_ddl, p_auto => 'yes' );
-               td_inst.log_msg( 'Constraint ' || c_constraints.constraint_name || ' built' );
-            EXCEPTION
-               WHEN e_dup_pk
-               THEN
-                  td_inst.log_msg(    'Primary key constraint already exists on table '
-                                   || l_tab_name
-                                 );
-               WHEN e_dup_fk
-               THEN
-                  td_inst.log_msg(    'Constraint comparable to '
-                                   || c_constraints.constraint_name
-                                   || ' already exists on table '
-                                   || l_tab_name
-                                 );
-               WHEN e_dup_not_null
-               THEN
-                  td_inst.log_msg
-                           (    'Referenced not null constraint already exists on table '
-                             || l_tab_name
-                           );
-               WHEN OTHERS
-               THEN
-                  -- first log the error
-                  -- provide a backtrace from this exception handler to the next
-                  td_inst.log_err;
-                  RAISE;
-            END;
-
-            EXIT WHEN NOT l_retry_ddl;
-         END LOOP;
+         BEGIN
+            td_sql.exec_sql( p_sql => c_constraints.constraint_ddl, p_auto => 'yes' );
+            td_inst.log_msg( 'Constraint ' || c_constraints.constraint_name || ' built' );
+            l_con_cnt := l_con_cnt + 1;
+         EXCEPTION
+            WHEN e_dup_pk
+            THEN
+               td_inst.log_msg(    'Primary key constraint already exists on table '
+                                || l_tab_name,
+                                3
+                              );
+            WHEN e_dup_fk
+            THEN
+               td_inst.log_msg(    'Constraint comparable to '
+                                || c_constraints.constraint_name
+                                || ' already exists on table '
+                                || l_tab_name,
+                                3
+                              );
+            WHEN e_dup_not_null
+            THEN
+               td_inst.log_msg
+                          (    'Referenced not null constraint already exists on table '
+                            || l_tab_name,
+                            3
+                          );
+            WHEN OTHERS
+            THEN
+               -- first log the error
+               -- provide a backtrace from this exception handler to the next
+               td_inst.log_err;
+               RAISE;
+         END;
       END LOOP;
 
       IF NOT l_rows
