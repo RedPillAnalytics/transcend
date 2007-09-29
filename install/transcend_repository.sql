@@ -29,6 +29,7 @@ exec dbms_stats.create_stat_table('&rep_schema_tr','OPT_STATS');
 @@../ddl/NOTIFY_CONF_tbl.sql
 @@../ddl/TD_PART_GTT_tbl.sql
 @@../ddl/TD_BUILD_IDX_GTT_tbl.sql
+@@../ddl/TD_BUILD_CON_GTT_tbl.sql
 @@../ddl/TD_CON_MAINT_GTT_tbl.sql
 @@../ddl/REGISTRATION_CONF_tbl.sql
 @@../ddl/RUNMODE_CONF_tbl.sql
