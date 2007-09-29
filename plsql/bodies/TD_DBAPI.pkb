@@ -645,8 +645,8 @@ AS
       l_targ_part       all_tables.partitioned%TYPE;
       l_part_position   all_tab_partitions.partition_position%TYPE;
       l_con_cnt         NUMBER                                       := 0;
-      l_tab_name        VARCHAR2( 61 )                       := p_owner || '.' || p_table;
-      l_src_name        VARCHAR2( 61 )         := p_source_owner || '.' || p_source_table;
+      l_tab_name        VARCHAR2( 61 )                       := upper(p_owner || '.' || p_table);
+      l_src_name        VARCHAR2( 61 )         := upper(p_source_owner || '.' || p_source_table);
       l_rows            BOOLEAN                                      := FALSE;
       l_retry_ddl       BOOLEAN                                      := FALSE;
       e_dup_con_name    EXCEPTION;
@@ -712,7 +712,7 @@ AS
                         THEN con_rename_adj
                      ELSE con_rename
                   END constraint_name,
-                  owner source_owner, constraint_name source_constraint, constraint_type,
+                  owner source_owner, table_name, constraint_name source_constraint, constraint_type,
                   index_owner, index_name,
                   CASE generic_con
                      WHEN 'Y'
@@ -754,13 +754,13 @@ AS
                   || ' renamed to '
                   || constraint_name rename_msg
             FROM ( SELECT
-                          -- IF con_rename already exists (constructed below), then we will try to rename the index to something generic
+                          -- IF con_rename already exists (constructed below), then we will try to rename the constraint to something generic
                           -- this name will only be used when con_rename name already exists
                           UPPER
                              (    SUBSTR( p_table, 1, 24 )
                                || '_'
                                || con_ext
-                               -- rank function gives us the index number by specific index extension (formulated below)
+                               -- rank function gives us the constraint number by specific constraint extension (formulated below)
                                || RANK( ) OVER( PARTITION BY con_ext ORDER BY constraint_name )
                              ) con_rename_adj,
                           REGEXP_REPLACE
@@ -788,10 +788,10 @@ AS
                           con.owner, table_name, constraint_name, con_rename, index_owner,
                           index_name, con_ext, constraint_type,
                           
-                          -- this case expression determines whether to use the standard renamed index name
-                          -- OR whether to use the generic index name based on table name
+                          -- this case expression determines whether to use the standard renamed constraint name
+                          -- OR whether to use the generic constraint name based on table name
                           -- below we are right joining with USER_OBJECTS to see if the standard name is already used
-                          -- IF we match, then we need to use the generic index name
+                          -- IF we match, then we need to use the generic constraint name
                           CASE
                              WHEN( ao.object_name IS NULL AND LENGTH( con_rename ) < 31
                                  )
@@ -812,7 +812,7 @@ AS
                                                            ac.owner
                                                          ),
                                           -- this CASE expression determines whether to strip partitioning information and tablespace information
-                                          -- TABLESPACE desisions are based on the p_TABLESPACE parameter
+                                          -- TABLESPACE desisions are based on the P_TABLESPACE parameter
                                           -- partitioning decisions are based on the structure of the target table
                                           CASE
                                              -- target is not partitioned and neither p_TABLESPACE or p_PARTNAME are provided
@@ -918,8 +918,24 @@ AS
 
          BEGIN
             td_sql.exec_sql( p_sql => c_constraints.constraint_ddl, p_auto => 'yes' );
-            td_inst.log_msg( 'Constraint ' || c_constraints.constraint_name || ' built' );
+            td_inst.log_msg( 'Constraint ' || c_constraints.constraint_name || ' built',3 );
             l_con_cnt := l_con_cnt + 1;
+            o_td.change_action( 'insert into td_build_idx_gtt' );
+
+            INSERT INTO td_build_con_gtt
+                   ( table_owner, table_name, constraint_name,
+                     src_constraint_name, index_name, index_owner,
+                     create_ddl, create_msg,
+                     rename_ddl, rename_msg
+                        )
+                 VALUES ( c_constraints.source_owner, c_constraints.table_name,
+                          c_constraints.constraint_name, c_constraints.source_constraint,
+			  index_name, index_owner,
+                          SUBSTR( c_constraints.index_ddl, 1, 3998 ) || '>>',
+                          c_constraints.rename_ddl, NULL,
+                          SUBSTR( c_constraints.rename_msg, 1, 3998 ) || '>>'
+                        );
+
          EXCEPTION
             WHEN e_dup_pk
             THEN
@@ -949,6 +965,8 @@ AS
                td_inst.log_err;
                RAISE;
          END;
+	 
+	 
       END LOOP;
 
       IF NOT l_rows
