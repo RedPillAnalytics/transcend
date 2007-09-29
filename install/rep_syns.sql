@@ -28,6 +28,7 @@ BEGIN
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..NOTIFY_CONF for &schema_rs..NOTIFY_CONF';
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..TD_PART_GTT for &schema_rs..TD_PART_GTT';
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..TD_BUILD_IDX_GTT for &schema_rs..TD_BUILD_IDX_GTT';
+      EXECUTE IMMEDIATE 'create or replace synonym &user_rs..TD_BUILD_CON_GTT for &schema_rs..TD_BUILD_CON_GTT';
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..TD_CON_MAINT_GTT for &schema_rs..TD_CON_MAINT_GTT';
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..REGISTRATION_CONF for &schema_rs..REGISTRATION_CONF';
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..RUNMODE_CONF for &schema_rs..RUNMODE_CONF';
