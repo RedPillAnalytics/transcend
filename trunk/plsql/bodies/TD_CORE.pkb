@@ -601,7 +601,13 @@ AS
                              p_filename       => p_filename,
                              p_delimiter      => p_delimiter,
                              p_quotechar      => p_quotechar,
-                             p_append         => p_append,
+                             p_append         => CASE
+			     		           WHEN td_ext.is_true( p_headers )
+						   THEN
+						     'yes'
+						   ELSE
+						     p_append
+						   END,
                              p_runmode        => p_runmode
                            );
       END IF;
