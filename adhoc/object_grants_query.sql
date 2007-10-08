@@ -11,10 +11,8 @@ EXEC :p_source_object := 'ar_transaction_fact';
 EXEC :p_grant_regexp := NULL;
 
 
-SELECT *
-  FROM ( SELECT ( REGEXP_REPLACE( 
-				  REGEXP_REPLACE( 
-						  DBMS_METADATA.get_dependent_ddl( 'OBJECT_GRANT',
+SELECT ddl
+  FROM ( SELECT ( REGEXP_REPLACE( REGEXP_REPLACE( DBMS_METADATA.get_dependent_ddl( 'OBJECT_GRANT',
 									 object_name,
 									 owner
 								       ),
