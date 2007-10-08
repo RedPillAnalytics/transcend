@@ -53,6 +53,9 @@ AS
 				   p_table	  => table_name,
 				   p_partname	  => l_partname,
 				   p_statistics	  => statistics);
+   WHEN 'replace'
+      THEN
+      NULL;
    END;
 
    END LOAD;
