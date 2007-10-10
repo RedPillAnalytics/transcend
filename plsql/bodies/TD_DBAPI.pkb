@@ -1229,6 +1229,7 @@ AS
                         p_constraint_regexp      => p_constraint_regexp,
                         p_basis                  => p_basis
                       );
+      COMMIT;
       o_td.clear_app_info;
    EXCEPTION
       WHEN OTHERS
@@ -1258,6 +1259,7 @@ AS
                         p_constraint_regexp      => p_constraint_regexp,
                         p_basis                  => p_basis
                       );
+      COMMIT;
       o_td.clear_app_info;
    EXCEPTION
       WHEN OTHERS
@@ -2180,10 +2182,11 @@ AS
                o_td.change_action( 'Disable foreign keys' );
                l_dis_fkeys := TRUE;
                l_retry_ddl := TRUE;
-               disable_constraints( p_owner      => p_owner,
-                                    p_table      => p_table,
-                                    p_basis      => 'reference'
-                                  );
+               constraint_maint( p_owner      => p_owner,
+                                 p_table      => p_table,
+				 p_maint_type             => 'disable',  
+				 p_basis      => 'reference'
+                                );
             WHEN e_compress
             THEN
                td_inst.log_msg( l_src_name || ' compressed to facilitate exchange', 3 );
