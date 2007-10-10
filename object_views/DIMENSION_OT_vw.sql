@@ -23,7 +23,7 @@ SELECT DISTINCT owner,
        ||full_stage
        ||' SELECT '||sel1||' from ('
        ||'SELECT '||sk||','||nk||','
-       ||scd1_analytics||','
+       ||scd1_analytics
        ||scd2_list||','
        ||esd||','
        ||include_list
@@ -60,7 +60,7 @@ SELECT DISTINCT owner,
 	       ||esd||',' 
 	       || 'nvl( lead('||esd||') OVER ( partition BY '||nk||' ORDER BY '||esd||'), to_date(''12/31/9999'',''mm/dd/yyyy'')) '||eed||',' 
 	       || ' CASE MAX('||esd||') OVER (partition BY '||nk||') WHEN '||esd||' THEN ''Y'' ELSE ''N'' END '||ci sel1,
-	       (SELECT stragg('last_value('||column_name||') over (partition by '||nk||' order by '||esd||' ROWS BETWEEN unbounded preceding AND unbounded following) '||column_name) OVER ( partition BY column_type)
+	       (SELECT stragg('last_value('||column_name||') over (partition by '||nk||' order by '||esd||' ROWS BETWEEN unbounded preceding AND unbounded following) '||column_name) OVER ( partition BY column_type)||','
 		  FROM column_conf ic
 		 WHERE ic.owner=owner
 		   AND ic.table_name=table_name
