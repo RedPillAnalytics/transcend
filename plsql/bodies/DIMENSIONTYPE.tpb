@@ -51,12 +51,17 @@ AS
 				   p_source_table => staging_table,
 				   p_owner	  => owner,
 				   p_table	  => table_name,
-				   p_partname	  => l_partname,
-				   p_statistics	  => statistics);
+				   p_statistics	  => 'transfer' );
    WHEN 'replace'
       THEN
+      td_dbapi.replace_table( p_owner        => owner,
+			      p_table        => table_name,
+			      p_source_table => staging_table,
+			      p_statistics   => 'transfer' );
+   ELSE
       NULL;
-   END;
+   END case;
+      
 
    END LOAD;
 END;
