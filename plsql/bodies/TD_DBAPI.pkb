@@ -2182,11 +2182,11 @@ AS
                o_td.change_action( 'Disable foreign keys' );
                l_dis_fkeys := TRUE;
                l_retry_ddl := TRUE;
-               constraint_maint( p_owner      => p_owner,
-                                 p_table      => p_table,
-				 p_maint_type             => 'disable',  
-				 p_basis      => 'reference'
-                                );
+               constraint_maint( p_owner           => p_owner,
+                                 p_table           => p_table,
+                                 p_maint_type      => 'disable',
+                                 p_basis           => 'reference'
+                               );
             WHEN e_compress
             THEN
                td_inst.log_msg( l_src_name || ' compressed to facilitate exchange', 3 );
