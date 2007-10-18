@@ -91,6 +91,10 @@ AS
                                   || ': REGISTRATION'
                                 );
       END;
+      -- set the registration value
+      td_inst.registration( l_registration );
+      -- now register the application
+      td_inst.register;
 
       -- get the logging level
       BEGIN
