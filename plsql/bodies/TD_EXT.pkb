@@ -52,6 +52,31 @@ AS
                                    );
       END CASE;
    END get_yn_ind;
+   
+   -- function takes a text string and a delimiter and parses the string
+   -- should only be used as a pipelined table function
+   FUNCTION split( p_text VARCHAR2, p_delimiter VARCHAR2 := ',' )
+      RETURN t_split PIPELINED
+   IS
+      l_idx     PLS_INTEGER;
+      l_list    VARCHAR2( 32767 ) := p_text;
+      l_value   VARCHAR2( 32767 );
+   BEGIN
+      LOOP
+         l_idx := INSTR( l_list, p_delimiter );
+
+         IF l_idx > 0
+         THEN
+            PIPE ROW( SUBSTR( l_list, 1, l_idx - 1 ));
+            l_list := SUBSTR( l_list, l_idx + LENGTH( p_delimiter ));
+         ELSE
+            PIPE ROW( l_list );
+            EXIT;
+         END IF;
+      END LOOP;
+
+      RETURN;
+   END split;
 
    FUNCTION get_err_cd( p_name VARCHAR2 )
       RETURN NUMBER
