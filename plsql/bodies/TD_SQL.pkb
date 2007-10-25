@@ -63,11 +63,8 @@ AS
       l_results   NUMBER;
    BEGIN
       -- simply call the procedure and discard the results
-      l_results := exec_sql( p_sql  => p_sql,
-			     p_auto => p_auto,
-			     p_msg  => p_msg );
+      l_results := exec_sql( p_sql => p_sql, p_auto => p_auto, p_msg => p_msg );
    END exec_sql;
-
 
    -- checks things about a table depending on the parameters passed
    -- raises an exception if the specified things are not true
@@ -237,7 +234,7 @@ AS
                     FROM all_objects
                    WHERE owner = UPPER( p_owner )
                      AND object_name = UPPER( p_object )
-	             AND REGEXP_LIKE( object_type, NVL( p_object_type, '.' ), 'i' );
+                     AND REGEXP_LIKE( object_type, NVL( p_object_type, '.' ), 'i' );
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
@@ -253,7 +250,7 @@ AS
                                    );
       END;
    END check_object;
-   
+
    -- used to get the path associated with a directory location
    FUNCTION get_dir_path( p_dirname VARCHAR2 )
       RETURN VARCHAR2
@@ -374,6 +371,5 @@ AS
       THEN
          RETURN FALSE;
    END object_exists;
-
 END td_sql;
 /
