@@ -12,6 +12,12 @@ AS
       p_auto   VARCHAR2 DEFAULT 'no',
       p_msg    VARCHAR2 DEFAULT NULL
    );
+      
+   FUNCTION split(
+      p_text      VARCHAR2,
+      p_delimiter VARCHAR2 default ','
+   ) 
+      RETURN t_split PIPELINED;      
 
    PROCEDURE check_table(
       p_owner         VARCHAR2,
