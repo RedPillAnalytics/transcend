@@ -16,13 +16,14 @@ GRANT EXECUTE ON APPTYPE to &app_schema_eag._app;
 GRANT EXECUTE ON NOTIFYTYPE to &app_schema_eag._app;
 GRANT EXECUTE ON EMAILTYPE to &app_schema_eag._app;
 GRANT EXECUTE ON TDTYPE to &app_schema_eag._app;
-GRANT EXECUTE ON TD_CORE to &app_schema_eag._app;
+GRANT EXECUTE ON TD_HOST to &app_schema_eag._app;
 GRANT EXECUTE ON TD_SQL to &app_schema_eag._app;
 GRANT EXECUTE ON FILETYPE to &app_schema_eag._app;
 GRANT EXECUTE ON EXTRACTTYPE to &app_schema_eag._app;
 GRANT EXECUTE ON FEEDTYPE to &app_schema_eag._app;
-GRANT EXECUTE ON TD_DBAPI to &app_schema_eag._app;
-GRANT EXECUTE ON TD_FILEAPI to &app_schema_eag._app;
+GRANT EXECUTE ON TD_DDL to &app_schema_eag._app;
+GRANT EXECUTE ON TD_ETL to &app_schema_eag._app;
+GRANT EXECUTE ON TD_FILES to &app_schema_eag._app;
 GRANT EXECUTE ON TD_CONTROL to &app_schema_eag._app;
 GRANT EXECUTE ON TD_OWBAPI to &app_schema_eag._app;
 
