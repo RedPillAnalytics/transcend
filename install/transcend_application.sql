@@ -17,14 +17,14 @@ ALTER SESSION SET current_schema=&app_schema_ta;
 @../java/TdCore.jvs
 
 --DROP all types due to inheritance
-DROP _OT dimension_ot;
-DROP _OT feed_ot;
-DROP _OT extract_ot;
-DROP _OT file_ot;
-DROP _OT email_ot;
-DROP _OT notify_ot;
-DROP _OT td_ot;
-DROP _OT app_ot;
+DROP TYPE dimension_ot;
+DROP TYPE feed_ot;
+DROP TYPE extract_ot;
+DROP TYPE file_ot;
+DROP TYPE email_ot;
+DROP TYPE notify_ot;
+DROP TYPE td_ot;
+DROP TYPE app_ot;
 
 --CREATE core pieces
 @../plsql/specs/STRING_AGG_OT.tps
