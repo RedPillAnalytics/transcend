@@ -47,9 +47,10 @@ AS
    BEGIN
       td_ddl.build_table( p_owner             => p_owner,
                           p_table             => p_table,
-                          p_source_owner      => p_souce_owner,
+                          p_source_owner      => p_source_owner,
+                          p_source_table      => p_source_table,
                           p_tablespace        => p_tablespace,
-                          p_partition         => p_partitioning,
+                          p_partitioning      => p_partitioning,
                           p_rows              => p_rows,
                           p_statistics        => p_statistics
                         );
@@ -168,33 +169,6 @@ AS
          td_inst.log_err;
          RAISE;
    END build_constraints;
-
-   -- disables constraints related to a particular table
-   PROCEDURE constraint_maint(
-      p_owner               VARCHAR2,
-      p_table               VARCHAR2,
-      p_maint_type          VARCHAR2,
-      p_constraint_type     VARCHAR2 DEFAULT NULL,
-      p_constraint_regexp   VARCHAR2 DEFAULT NULL,
-      p_basis               VARCHAR2 DEFAULT 'table'
-   )
-   IS
-      o_td   tdtype := tdtype( p_module => 'constraint_maint' );
-   BEGIN
-      td_ddl.constraint_maint( p_owner                  => p_owner,
-                               p_table                  => p_table,
-                               p_maint_type             => p_maint_type,
-                               p_constraint_type        => p_constraint_type,
-                               p_constraint_regexp      => p_constraint_regexp,
-                               p_basis                  => p_basis
-                             );
-      o_td.clear_app_info;
-   EXCEPTION
-      WHEN OTHERS
-      THEN
-         td_inst.log_err;
-         RAISE;
-   END constraint_maint;
 
    -- disables constraints related to a particular table
    -- P_OWNER and P_TABLE are required for this procedure
