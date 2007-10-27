@@ -1,5 +1,5 @@
 CREATE OR REPLACE VIEW extract_ov
-OF extracttype
+OF extract_ot
 WITH object identifier (filehub_id)
 as
 SELECT filehub_id,
