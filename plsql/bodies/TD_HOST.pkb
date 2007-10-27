@@ -4,7 +4,7 @@ AS
    PROCEDURE host_cmd( p_cmd VARCHAR2, p_stdin VARCHAR2 DEFAULT ' ' )
    AS
       l_retval   NUMBER;
-      o_td       evolve_ot := evolve_ot( p_module => 'host_cmd' );
+      o_ev       evolve_ot := evolve_ot( p_module => 'host_cmd' );
    BEGIN
       DBMS_JAVA.set_output( 1000000 );
 
@@ -22,7 +22,7 @@ AS
       END IF;
 
       td_inst.log_msg( 'Host command: ' || p_cmd, 3 );
-      o_td.clear_app_info;
+      o_ev.clear_app_info;
    EXCEPTION
       WHEN OTHERS
       THEN
@@ -34,7 +34,7 @@ AS
    PROCEDURE copy_file( p_srcfile VARCHAR2, p_dstfile VARCHAR2 )
    AS
       l_retval   NUMBER;
-      o_td       evolve_ot := evolve_ot( p_module => 'copy_file' );
+      o_ev       evolve_ot := evolve_ot( p_module => 'copy_file' );
    BEGIN
       DBMS_JAVA.set_output( 1000000 );
 
@@ -55,7 +55,7 @@ AS
       END IF;
 
       td_inst.log_msg( 'File ' || p_srcfile || ' copied to ' || p_dstfile, 3 );
-      o_td.clear_app_info;
+      o_ev.clear_app_info;
    END copy_file;
 
    -- uses UTL_FILE to remove an OS level file
@@ -63,7 +63,7 @@ AS
    AS
       l_retval     NUMBER;
       l_filepath   VARCHAR2( 100 );
-      o_td         evolve_ot          := evolve_ot( p_module => 'delete_file' );
+      o_ev         evolve_ot          := evolve_ot( p_module => 'delete_file' );
    BEGIN
       l_filepath := td_sql.get_dir_path( p_directory ) || '/' || p_filename;
 
@@ -73,7 +73,7 @@ AS
       END IF;
 
       td_inst.log_msg( 'File ' || l_filepath || ' deleted', 3 );
-      o_td.clear_app_info;
+      o_ev.clear_app_info;
    EXCEPTION
       WHEN UTL_FILE.invalid_operation
       THEN
@@ -85,7 +85,7 @@ AS
    AS
       l_fh        UTL_FILE.file_type;
       l_dirpath   VARCHAR2( 100 );
-      o_td        evolve_ot             := evolve_ot( p_module => 'create_file' );
+      o_ev        evolve_ot             := evolve_ot( p_module => 'create_file' );
    BEGIN
       l_dirpath := td_sql.get_dir_path( p_directory ) || '/' || p_filename;
 
@@ -95,7 +95,7 @@ AS
       END IF;
 
       td_inst.log_msg( 'File ' || l_dirpath || ' created', 3 );
-      o_td.clear_app_info;
+      o_ev.clear_app_info;
    END create_file;
 
    -- get the number of lines in a file
@@ -105,12 +105,12 @@ AS
       l_fh     UTL_FILE.file_type;
       l_line   VARCHAR2( 2000 );
       l_cnt    NUMBER             := 0;
-      o_td     evolve_ot             := evolve_ot( p_module => 'get_numlines' );
+      o_ev     evolve_ot             := evolve_ot( p_module => 'get_numlines' );
    BEGIN
       IF td_inst.is_debugmode
       THEN
          td_inst.log_msg( td_inst.module || ' returning 0 because of DEBUG mode' );
-         o_td.clear_app_info;
+         o_ev.clear_app_info;
          RETURN 0;
       ELSE
          BEGIN
@@ -124,7 +124,7 @@ AS
             WHEN NO_DATA_FOUND
             THEN
                UTL_FILE.fclose( l_fh );
-               o_td.clear_app_info;
+               o_ev.clear_app_info;
                RETURN l_cnt;
          END;
       END IF;
@@ -146,7 +146,7 @@ AS
       l_file_exists    BOOLEAN;
       l_file_size      NUMBER;
       l_blocksize      NUMBER;
-      o_td             evolve_ot          := evolve_ot( p_module => 'unzip_file' );
+      o_ev             evolve_ot          := evolve_ot( p_module => 'unzip_file' );
    BEGIN
       l_filebase := REGEXP_REPLACE( p_filename, '\.[^\.]+$', NULL, 1, 1, 'i' );
       l_filesuf := REGEXP_SUBSTR( p_filename, '[^\.]+$' );
@@ -190,7 +190,7 @@ AS
       THEN
          td_inst.log_msg( 'File returned by UNZIP_FILE: ' || l_return );
       ELSE
-         o_td.change_action( 'Check for extracted file' );
+         o_ev.change_action( 'Check for extracted file' );
          -- check and make sure the unzip process worked
          -- do this by checking to see if the expected file exists
          UTL_FILE.fgetattr( td_sql.get_dir_name( p_dirpath ),
@@ -208,7 +208,7 @@ AS
          END IF;
       END IF;
 
-      o_td.clear_app_info;
+      o_ev.clear_app_info;
       RETURN l_return;
    END unzip_file;
 
@@ -228,7 +228,7 @@ AS
       l_file_exists    BOOLEAN;
       l_file_size      NUMBER;
       l_blocksize      NUMBER;
-      o_td             evolve_ot          := evolve_ot( p_module => 'decrypt_file' );
+      o_ev             evolve_ot          := evolve_ot( p_module => 'decrypt_file' );
    BEGIN
       l_filebase := REGEXP_REPLACE( p_filename, '\.[^\.]+$', NULL, 1, 1, 'i' );
       l_filesuf := REGEXP_SUBSTR( p_filename, '[^\.]+$' );
@@ -261,7 +261,7 @@ AS
       THEN
          td_inst.log_msg( 'File returned by DECRYPT_FILE: ' || l_return );
       ELSE
-         o_td.change_action( 'Check for decrypted file' );
+         o_ev.change_action( 'Check for decrypted file' );
          -- check and make sure the unzip process worked
          -- do this by checking to see if the expected file exists
          UTL_FILE.fgetattr( td_sql.get_dir_name( p_dirpath ),
@@ -277,7 +277,7 @@ AS
          END IF;
       END IF;
 
-      o_td.clear_app_info;
+      o_ev.clear_app_info;
       RETURN l_return;
    END decrypt_file;
 
@@ -311,11 +311,11 @@ AS
       l_blocksize     NUMBER;
       e_no_var        EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_var, -1007 );
-      o_td            evolve_ot             := evolve_ot( p_module => 'extract_query' );
+      o_ev            evolve_ot             := evolve_ot( p_module => 'extract_query' );
    BEGIN
       l_output := UTL_FILE.fopen( p_dirname, p_filename, l_mode, 32767 );
       DBMS_SQL.parse( l_thecursor, p_query, DBMS_SQL.native );
-      o_td.change_action( 'Open Cursor to define columns' );
+      o_ev.change_action( 'Open Cursor to define columns' );
 
       FOR i IN 1 .. 255
       LOOP
@@ -331,7 +331,7 @@ AS
 
       DBMS_SQL.define_column( l_thecursor, 1, l_columnvalue, 2000 );
       l_status := DBMS_SQL.EXECUTE( l_thecursor );
-      o_td.change_action( 'Open Cursor to pull back records' );
+      o_ev.change_action( 'Open Cursor to pull back records' );
 
       LOOP
          EXIT WHEN( DBMS_SQL.fetch_rows( l_thecursor ) <= 0 );
@@ -355,10 +355,10 @@ AS
          l_cnt := l_cnt + 1;
       END LOOP;
 
-      o_td.change_action( 'Close cursor and handles' );
+      o_ev.change_action( 'Close cursor and handles' );
       DBMS_SQL.close_cursor( l_thecursor );
       UTL_FILE.fclose( l_output );
-      o_td.clear_app_info;
+      o_ev.clear_app_info;
       RETURN l_cnt;
    END extract_query;
 
@@ -379,7 +379,7 @@ AS
       l_cnt           NUMBER           := 0;
       l_head_sql      VARCHAR( 1000 );
       l_extract_sql   VARCHAR2( 1000 );
-      o_td            evolve_ot           := evolve_ot( p_module => 'extract_object' );
+      o_ev            evolve_ot           := evolve_ot( p_module => 'extract_object' );
    BEGIN
       -- check that the source object exists and is something we can select from
       td_sql.check_object( p_owner            => p_owner,
@@ -409,7 +409,7 @@ AS
       THEN
          IF td_ext.is_true( p_headers )
          THEN
-            o_td.change_action( 'Extract headers to file' );
+            o_ev.change_action( 'Extract headers to file' );
             l_cnt :=
                extract_query( p_query          => l_head_sql,
                               p_dirname        => p_dirname,
@@ -420,7 +420,7 @@ AS
                             );
          END IF;
 
-         o_td.change_action( 'Extract data to file' );
+         o_ev.change_action( 'Extract data to file' );
          l_cnt :=
               l_cnt
             + extract_query( p_query          => l_extract_sql,
@@ -436,7 +436,7 @@ AS
                            );
       END IF;
 
-      o_td.clear_app_info;
+      o_ev.clear_app_info;
       RETURN l_cnt;
    END extract_object;
 END td_host;
