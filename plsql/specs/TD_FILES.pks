@@ -6,6 +6,7 @@ IS
       p_rej_limit       NUMBER DEFAULT 20
    )
       RETURN VARCHAR2;
+
    PROCEDURE extract_object(
       p_owner       VARCHAR2,
       p_object      VARCHAR2,
