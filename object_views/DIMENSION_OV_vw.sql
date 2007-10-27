@@ -1,5 +1,5 @@
 CREATE OR REPLACE VIEW dimension_ov
-OF dimensiontype
+OF dimension_ot
 WITH object identifier (owner, table_name)
 as
 SELECT DISTINCT owner,
