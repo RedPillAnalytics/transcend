@@ -1,6 +1,5 @@
 CREATE OR REPLACE PACKAGE td_ext AUTHID CURRENT_USER
 AS
-
    TYPE t_split IS TABLE OF VARCHAR2( 32767 );
 
    FUNCTION is_true( p_parm VARCHAR2, p_allownulls BOOLEAN DEFAULT FALSE )
@@ -9,11 +8,8 @@ AS
    FUNCTION get_yn_ind( p_parm VARCHAR2 )
       RETURN VARCHAR2;
 
-   FUNCTION split(
-      p_text      VARCHAR2,
-      p_delimiter VARCHAR2 default ','
-   ) 
-      RETURN t_split PIPELINED;      
+   FUNCTION SPLIT( p_text VARCHAR2, p_delimiter VARCHAR2 DEFAULT ',' )
+      RETURN t_split PIPELINED;
 
    FUNCTION get_err_cd( p_name VARCHAR2 )
       RETURN NUMBER;
