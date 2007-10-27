@@ -23,7 +23,7 @@ AS
       -- to catch empty cursors
       l_source_column   all_part_key_columns.column_name%TYPE;
       l_results         NUMBER;
-      o_td              evolve_ot               := evolve_ot( p_module      => 'populate_partname' );
+      o_ev              evolve_ot               := evolve_ot( p_module      => 'populate_partname' );
       l_part_position   all_tab_partitions.partition_position%TYPE;
       l_high_value      all_tab_partitions.high_value%TYPE;
    BEGIN
@@ -62,7 +62,7 @@ AS
             l_source_column := p_source_column;
          END IF;
 
-         o_td.change_action( 'insert into td_part_gtt' );
+         o_ev.change_action( 'insert into td_part_gtt' );
          l_results :=
             td_sql.exec_sql
                ( p_sql      =>    'insert into td_part_gtt (table_owner, table_name, partition_name, partition_position) '
@@ -93,7 +93,7 @@ AS
          td_inst.log_cnt_msg( l_results, l_num_msg, 4 );
       END IF;
 
-      o_td.clear_app_info;
+      o_ev.clear_app_info;
    END populate_partname;
 
    PROCEDURE truncate_table(
@@ -103,7 +103,7 @@ AS
    )
    IS
       l_tab_name   VARCHAR2( 61 ) := UPPER( p_owner || '.' || p_table );
-      o_td         evolve_ot         := evolve_ot( p_module => 'truncate_table' );
+      o_ev         evolve_ot         := evolve_ot( p_module => 'truncate_table' );
    BEGIN
       -- confirm that the table exists
       -- raise an error if it doesn't
@@ -120,7 +120,7 @@ AS
                        p_auto      => 'yes'
                      );
       td_inst.log_msg( l_tab_name || ' truncated' );
-      o_td.clear_app_info;
+      o_ev.clear_app_info;
    END truncate_table;
 
    -- drop a table
@@ -128,7 +128,7 @@ AS
             DEFAULT 'yes' )
    IS
       l_tab_name   VARCHAR2( 61 ) := UPPER( p_owner || '.' || p_table );
-      o_td         evolve_ot         := evolve_ot( p_module => 'truncate_table' );
+      o_ev         evolve_ot         := evolve_ot( p_module => 'truncate_table' );
    BEGIN
       -- confirm that the table exists
       -- raise an error if it doesn't
@@ -145,7 +145,7 @@ AS
                        p_auto      => 'yes'
                      );
       td_inst.log_msg( l_tab_name || ' dropped' );
-      o_td.clear_app_info;
+      o_ev.clear_app_info;
    END drop_table;
 
    -- builds a new table based on a current one
@@ -171,7 +171,7 @@ AS
       PRAGMA EXCEPTION_INIT( e_dup_idx_name, -955 );
       e_dup_col_list   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_col_list, -1408 );
-      o_td             evolve_ot                      := evolve_ot( p_module      => 'build_table' );
+      o_ev             evolve_ot                      := evolve_ot( p_module      => 'build_table' );
    BEGIN
       -- confirm that the source table
       -- raise an error if it doesn't
@@ -198,7 +198,7 @@ AS
       -- don't want all the other storage aspects though
       DBMS_METADATA.set_transform_param( DBMS_METADATA.session_transform, 'STORAGE',
                                          FALSE );
-      o_td.change_action( 'Extract DDL' );
+      o_ev.change_action( 'Extract DDL' );
 
       -- select DDL into a variable
       SELECT REGEXP_REPLACE
@@ -291,7 +291,7 @@ AS
                                    );
       END CASE;
 
-      o_td.clear_app_info;
+      o_ev.clear_app_info;
    END build_table;
 
    -- builds the indexes from one table on another
@@ -323,7 +323,7 @@ AS
       PRAGMA EXCEPTION_INIT( e_dup_idx_name, -955 );
       e_dup_col_list    EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_col_list, -1408 );
-      o_td              evolve_ot                   := evolve_ot( p_module      => 'build_indexes' );
+      o_ev              evolve_ot                   := evolve_ot( p_module      => 'build_indexes' );
    BEGIN
       -- confirm that parameters are compatible
       -- go ahead and write a CASE statement so adding more later is easier
@@ -360,7 +360,7 @@ AS
       -- don't want all the other storage aspects though
       DBMS_METADATA.set_transform_param( DBMS_METADATA.session_transform, 'STORAGE',
                                          FALSE );
-      o_td.change_action( 'Build indexes' );
+      o_ev.change_action( 'Build indexes' );
 
       -- find out if the target table is partitioned so we know how to formulate the index ddl
       SELECT partitioned
@@ -618,14 +618,14 @@ AS
                    WHERE subobject_name IS NULL ))
       LOOP
          l_rows := TRUE;
-         o_td.change_action( 'Format index DDL' );
-         o_td.change_action( 'Execute index DDL' );
+         o_ev.change_action( 'Format index DDL' );
+         o_ev.change_action( 'Execute index DDL' );
 
          BEGIN
             td_sql.exec_sql( p_sql => c_indexes.index_ddl, p_auto => 'yes' );
             td_inst.log_msg( 'Index ' || c_indexes.index_name || ' built', 3 );
             l_idx_cnt := l_idx_cnt + 1;
-            o_td.change_action( 'insert into td_build_idx_gtt' );
+            o_ev.change_action( 'insert into td_build_idx_gtt' );
 
             INSERT INTO td_build_idx_gtt
                         ( index_owner, index_name,
@@ -668,7 +668,7 @@ AS
                         );
       END IF;
 
-      o_td.clear_app_info;
+      o_ev.clear_app_info;
    END build_indexes;
 
    -- renames cloned indexes on a particular table back to their original names
@@ -676,7 +676,7 @@ AS
    IS
       l_idx_cnt   NUMBER  := 0;
       l_rows      BOOLEAN := FALSE;
-      o_td        evolve_ot  := evolve_ot( p_module => 'rename_indexes' );
+      o_ev        evolve_ot  := evolve_ot( p_module => 'rename_indexes' );
    BEGIN
       FOR c_idxs IN ( SELECT *
                        FROM td_build_idx_gtt )
@@ -706,7 +706,7 @@ AS
 
       -- commit is required to clear out the contents of the global temporary table
       COMMIT;
-      o_td.clear_app_info;
+      o_ev.clear_app_info;
    END rename_indexes;
 
    -- builds the constraints from one table on another
@@ -738,7 +738,7 @@ AS
       PRAGMA EXCEPTION_INIT( e_dup_pk, -2260 );
       e_dup_fk          EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_fk, -2275 );
-      o_td              evolve_ot               := evolve_ot( p_module      => 'build_constraints' );
+      o_ev              evolve_ot               := evolve_ot( p_module      => 'build_constraints' );
    BEGIN
       -- confirm that the target table exists
       -- raise an error if it doesn't
@@ -783,7 +783,7 @@ AS
             AND partition_name = UPPER( p_partname );
       END IF;
 
-      o_td.change_action( 'Build constraints' );
+      o_ev.change_action( 'Build constraints' );
 
       FOR c_constraints IN
          ( SELECT UPPER( p_owner ) constraint_owner,
@@ -1002,7 +1002,7 @@ AS
                              3
                            );
             l_con_cnt := l_con_cnt + 1;
-            o_td.change_action( 'insert into td_build_idx_gtt' );
+            o_ev.change_action( 'insert into td_build_idx_gtt' );
 
             INSERT INTO td_build_con_gtt
                         ( table_owner, table_name,
@@ -1066,7 +1066,7 @@ AS
                         );
       END IF;
 
-      o_td.clear_app_info;
+      o_ev.clear_app_info;
    END build_constraints;
 
    -- disables constraints related to a particular table
@@ -1084,7 +1084,7 @@ AS
       l_rows       BOOLEAN        := FALSE;
       e_iot_shc    EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_iot_shc, -25188 );
-      o_td         evolve_ot         := evolve_ot( p_module => 'constraint_maint' );
+      o_ev         evolve_ot         := evolve_ot( p_module => 'constraint_maint' );
    BEGIN
       -- P_CONSTRAINT_TYPE only relates to constraints based on the table, not the reference
       IF REGEXP_LIKE( 'reference|all', p_basis, 'i' ) AND p_constraint_type IS NOT NULL
@@ -1098,7 +1098,7 @@ AS
       -- raise an error if it doesn't
       td_sql.check_table( p_owner => p_owner, p_table => p_table );
       -- disable both table and reference constraints for this particular table
-      o_td.change_action( 'Constraint maintenance' );
+      o_ev.change_action( 'Constraint maintenance' );
 
       FOR c_constraints IN
          ( SELECT *
@@ -1209,7 +1209,7 @@ AS
             -- this allows a call to ENABLE_CONSTRAINTS without parameters to only work on those that were previously disabled
             IF REGEXP_LIKE( 'disable', p_maint_type, 'i' )
             THEN
-               o_td.change_action( 'insert into td_con_maint_gtt' );
+               o_ev.change_action( 'insert into td_con_maint_gtt' );
 
                INSERT INTO td_con_maint_gtt
                            ( table_owner, table_name,
@@ -1277,7 +1277,7 @@ AS
                         );
       END IF;
 
-      o_td.clear_app_info;
+      o_ev.clear_app_info;
    END constraint_maint;
 
    -- enables constraints related to a particular table
@@ -1286,7 +1286,7 @@ AS
    IS
       l_con_cnt   NUMBER  := 0;
       l_rows      BOOLEAN := FALSE;
-      o_td        evolve_ot  := evolve_ot( p_module => 'enable_constraints' );
+      o_ev        evolve_ot  := evolve_ot( p_module => 'enable_constraints' );
    BEGIN
       td_inst.log_msg( 'Enabling constraints disabled previously' );
 
@@ -1318,7 +1318,7 @@ AS
 
       -- commit is required to clear out the contents of the global temporary table
       COMMIT;
-      o_td.clear_app_info;
+      o_ev.clear_app_info;
    END enable_constraints;
 
    -- drop particular indexes from a table
@@ -1334,7 +1334,7 @@ AS
       l_idx_cnt    NUMBER         := 0;
       e_pk_idx     EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_pk_idx, -2429 );
-      o_td         evolve_ot         := evolve_ot( p_module => 'drop_indexes' );
+      o_ev         evolve_ot         := evolve_ot( p_module => 'drop_indexes' );
    BEGIN
       FOR c_indexes IN ( SELECT 'drop index ' || owner || '.' || index_name index_ddl,
                                 index_name, table_name, owner,
@@ -1377,7 +1377,7 @@ AS
                         );
       END IF;
 
-      o_td.clear_app_info;
+      o_ev.clear_app_info;
    END drop_indexes;
 
    -- drop particular constraints from a table
@@ -1391,7 +1391,7 @@ AS
       l_con_cnt    NUMBER         := 0;
       l_tab_name   VARCHAR2( 61 ) := p_owner || '.' || p_table;
       l_rows       BOOLEAN        := FALSE;
-      o_td         evolve_ot         := evolve_ot( p_module => 'drop_constraints' );
+      o_ev         evolve_ot         := evolve_ot( p_module => 'drop_constraints' );
    BEGIN
       -- drop constraints
       FOR c_constraints IN ( SELECT    'alter table '
@@ -1437,7 +1437,7 @@ AS
                         );
       END IF;
 
-      o_td.clear_app_info;
+      o_ev.clear_app_info;
    END drop_constraints;
 
    -- extracts grants for a particular object from the dictionary and applies those grants to another object
@@ -1458,7 +1458,7 @@ AS
       l_rows        BOOLEAN         := FALSE;
       e_no_grants   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_grants, -31608 );
-      o_td          evolve_ot          := evolve_ot( p_module => 'object_grants' );
+      o_ev          evolve_ot          := evolve_ot( p_module => 'object_grants' );
    BEGIN
       -- confirm that the target table exists
       -- raise an error if it doesn't
@@ -1471,7 +1471,7 @@ AS
                                          'SQLTERMINATOR',
                                          FALSE
                                        );
-      o_td.change_action( 'Extract grants' );
+      o_ev.change_action( 'Extract grants' );
       -- we need the sql terminator now because it will be our split character later
       DBMS_METADATA.set_transform_param( DBMS_METADATA.session_transform,
                                          'SQLTERMINATOR',
@@ -1521,7 +1521,7 @@ AS
       END;
 
       -- now, parse the string to work on the different values in it
-      o_td.change_action( 'Execute grants' );
+      o_ev.change_action( 'Execute grants' );
 
       FOR c_grants IN ( SELECT *
                          FROM TABLE( td_ext.SPLIT( l_ddl, ';' )))
@@ -1547,7 +1547,7 @@ AS
                         );
       END IF;
 
-      o_td.clear_app_info;
+      o_ev.clear_app_info;
    END object_grants;
 
    -- structures an insert or insert append statement from the source to the target provided
@@ -1566,7 +1566,7 @@ AS
       l_src_name   VARCHAR2( 61 ) := UPPER( p_source_owner || '.' || p_source_object );
       l_trg_name   VARCHAR2( 61 ) := UPPER( p_owner || '.' || p_table );
       l_results    NUMBER;
-      o_td         evolve_ot
+      o_ev         evolve_ot
          := evolve_ot( p_module      => 'insert_table',
                     p_action      => 'Check existence of objects' );
    BEGIN
@@ -1644,7 +1644,7 @@ AS
                             );
       END IF;
 
-      o_td.clear_app_info;
+      o_ev.clear_app_info;
    END insert_table;
 
    -- structures a merge statement between two tables that have the same table
@@ -1669,7 +1669,7 @@ AS
       l_results         NUMBER;
       e_no_on_columns   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_on_columns, -936 );
-      o_td              evolve_ot
+      o_ev              evolve_ot
          := evolve_ot( p_module      => 'merge_table',
                     p_action      => 'Check existence of objects' );
    BEGIN
@@ -1690,7 +1690,7 @@ AS
             );
       END IF;
 
-      o_td.change_action( 'Construct MERGE ON clause' );
+      o_ev.change_action( 'Construct MERGE ON clause' );
 
       -- use the columns provided in P_COLUMNS.
       -- if that is left null, then choose the columns in the primary key of the target table
@@ -1757,7 +1757,7 @@ AS
                     AND dc.constraint_type IN( 'P', 'U' ));
       END IF;
 
-      o_td.change_action( 'Construct MERGE update clause' );
+      o_ev.change_action( 'Construct MERGE update clause' );
 
       IF p_columns IS NOT NULL
       THEN
@@ -1823,7 +1823,7 @@ AS
                          GROUP BY column_name ));
       END IF;
 
-      o_td.change_action( 'Construnct MERGE insert clause' );
+      o_ev.change_action( 'Construnct MERGE insert clause' );
 
       SELECT   REGEXP_REPLACE( '(' || stragg( 'target.' || column_name ) || ') ',
                                ',',
@@ -1834,11 +1834,11 @@ AS
          WHERE table_name = UPPER( p_table ) AND owner = UPPER( p_owner )
       ORDER BY column_name;
 
-      o_td.change_action( 'Construct MERGE values clause' );
+      o_ev.change_action( 'Construct MERGE values clause' );
       l_values := REGEXP_REPLACE( l_insert, 'target.', 'source.' );
 
       BEGIN
-         o_td.change_action( 'Issue MERGE statement' );
+         o_ev.change_action( 'Issue MERGE statement' );
          -- ENABLE|DISABLE parallel dml depending on the value of P_DIRECT
          td_sql.exec_sql( p_sql      =>    'ALTER SESSION '
                                         || CASE
@@ -1919,7 +1919,7 @@ AS
                             );
       END IF;
 
-      o_td.clear_app_info;
+      o_ev.clear_app_info;
    END merge_table;
 
    -- queries the dictionary based on regular expressions and loads tables using either the load_tab method or the merge_tab method
@@ -1937,7 +1937,7 @@ AS
    )
    IS
       l_rows   BOOLEAN := FALSE;
-      o_td     evolve_ot  := evolve_ot( p_module => 'load_tables' );
+      o_ev     evolve_ot  := evolve_ot( p_module => 'load_tables' );
    BEGIN
       -- dynamic cursor contains source and target objects
       FOR c_objects IN ( SELECT o.owner src_owner, object_name src, t.owner targ_owner,
@@ -2019,7 +2019,7 @@ AS
                                 );
       END IF;
 
-      o_td.clear_app_info;
+      o_ev.clear_app_info;
    END load_tables;
 
    -- procedure to exchange a partitioned table with a non-partitioned table
@@ -2053,9 +2053,9 @@ AS
       PRAGMA EXCEPTION_INIT( e_compress, -14646 );
       e_fkeys          EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_fkeys, -2266 );
-      o_td             evolve_ot               := evolve_ot( p_module      => 'exchange_partition' );
+      o_ev             evolve_ot               := evolve_ot( p_module      => 'exchange_partition' );
    BEGIN
-      o_td.change_action( 'Determine partition to use' );
+      o_ev.change_action( 'Determine partition to use' );
       -- check to make sure the target table exists, is partitioned, and the partition name exists
       td_sql.check_table( p_owner            => p_owner,
                           p_table            => p_table,
@@ -2135,7 +2135,7 @@ AS
                      END
                    );
       -- now exchange the table
-      o_td.change_action( 'Exchange table' );
+      o_ev.change_action( 'Exchange table' );
 
       -- have several exceptions that we want to handle when an exchange fails
       -- so we are using an EXIT WHEN loop
@@ -2166,7 +2166,7 @@ AS
             THEN
                -- disable foreign keys related to the table
                -- this will enable the exchange to occur
-               o_td.change_action( 'Disable foreign keys' );
+               o_ev.change_action( 'Disable foreign keys' );
                l_dis_fkeys := TRUE;
                l_retry_ddl := TRUE;
                constraint_maint( p_owner           => p_owner,
@@ -2215,7 +2215,7 @@ AS
       -- enable any foreign keys on other tables that reference this table
       IF l_dis_fkeys
       THEN
-         o_td.change_action( 'Enable foreign keys' );
+         o_ev.change_action( 'Enable foreign keys' );
          constraint_maint( p_owner           => p_owner,
                            p_table           => p_table,
                            p_maint_type      => 'enable',
@@ -2229,7 +2229,7 @@ AS
          drop_indexes( p_owner => p_source_owner, p_table => p_source_table );
       END IF;
 
-      o_td.clear_app_info;
+      o_ev.clear_app_info;
    END exchange_partition;
 
    -- procedure to "swap" two tables using rename
@@ -2254,9 +2254,9 @@ AS
       PRAGMA EXCEPTION_INIT( e_compress, -14646 );
       e_fkeys      EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_fkeys, -2266 );
-      o_td         evolve_ot         := evolve_ot( p_module => 'replace_table' );
+      o_ev         evolve_ot         := evolve_ot( p_module => 'replace_table' );
    BEGIN
-      o_td.change_action( 'Perform object checks' );
+      o_ev.change_action( 'Perform object checks' );
       -- check to make sure the target table exists
       td_sql.check_table( p_owner => p_owner, p_table => p_table );
       -- check to make sure the source table exists
@@ -2312,7 +2312,7 @@ AS
                    );
       -- now replace the table
       -- using a table rename for this
-      o_td.change_action( 'Rename tables' );
+      o_ev.change_action( 'Rename tables' );
       -- first name the current table to another name
       td_sql.exec_sql( p_sql       =>    'alter table '
                                       || l_tab_name
@@ -2345,7 +2345,7 @@ AS
       rename_indexes;
       -- clear out temporary table holding index statements
       COMMIT;
-      o_td.clear_app_info;
+      o_ev.clear_app_info;
    END replace_table;
 
    -- Provides functionality for setting local and non-local indexes to unusable based on parameters
@@ -2377,7 +2377,7 @@ AS
       l_pidx_cnt   NUMBER;
       l_idx_cnt    NUMBER;
       l_rows       BOOLEAN          DEFAULT FALSE;
-      o_td         evolve_ot           := evolve_ot( p_module => 'unusable_indexes' );
+      o_ev         evolve_ot           := evolve_ot( p_module => 'unusable_indexes' );
    BEGIN
       CASE
          WHEN     p_partname IS NOT NULL
@@ -2419,7 +2419,7 @@ AS
                             );
       END IF;
 
-      o_td.change_action( 'Populate PARTNAME table' );
+      o_ev.change_action( 'Populate PARTNAME table' );
 
       IF p_partname IS NOT NULL OR p_source_object IS NOT NULL
       THEN
@@ -2439,7 +2439,7 @@ AS
       -- this cursor will contain all the ALTER INDEX statements necessary to mark indexes unusable
       -- the contents of the cursor depends very much on the parameters specified
       -- also depends on the contents of the PARTNAME global temporary table
-      o_td.change_action( 'Calculate indexes to affect' );
+      o_ev.change_action( 'Calculate indexes to affect' );
 
       FOR c_idx IN
          ( SELECT *
@@ -2522,7 +2522,7 @@ AS
                          ORDER BY idx_ddl_type, partition_position )
            WHERE status IN( 'VALID', 'USABLE', 'N/A' ))
       LOOP
-         o_td.change_action( 'Execute index DDL' );
+         o_ev.change_action( 'Execute index DDL' );
          l_rows := TRUE;
          td_sql.exec_sql( p_sql => c_idx.DDL, p_auto => 'yes' );
          l_pidx_cnt := c_idx.num_partitions;
@@ -2562,7 +2562,7 @@ AS
 
       -- commit needed to clear the contents of the global temporary table
       COMMIT;
-      o_td.clear_app_info;
+      o_ev.clear_app_info;
    END unusable_indexes;
 
    -- rebuilds all unusable index segments on a particular table
@@ -2574,7 +2574,7 @@ AS
       l_ddl    VARCHAR2( 2000 );
       l_rows   BOOLEAN          := FALSE;                       -- to catch empty cursors
       l_cnt    NUMBER           := 0;
-      o_td     evolve_ot
+      o_ev     evolve_ot
                  := evolve_ot( p_module      => 'usable_indexes',
                             p_action      => 'Rebuild indexes' );
    BEGIN
@@ -2663,7 +2663,7 @@ AS
                         );
       END IF;
 
-      o_td.clear_app_info;
+      o_ev.clear_app_info;
    END usable_indexes;
 
    PROCEDURE update_stats(
@@ -2693,7 +2693,7 @@ AS
       e_no_stats    EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_stats, -20000 );
       l_rows        BOOLEAN        := FALSE;                     -- to catch empty cursors
-      o_td          evolve_ot         := evolve_ot( p_module => 'update_stats' );
+      o_ev          evolve_ot         := evolve_ot( p_module => 'update_stats' );
    BEGIN
       -- check all the parameter requirements
       CASE
@@ -2742,7 +2742,7 @@ AS
                            );
       END IF;
 
-      o_td.change_action( 'Gathering statistics' );
+      o_ev.change_action( 'Gathering statistics' );
 
       -- check to see if we are in debug mode
       IF NOT td_inst.is_debugmode
@@ -2804,7 +2804,7 @@ AS
          -- if the source owner isn't null, then we know we are transferring statistics
          -- we will use GET_TABLE_STATS and PUT_TABLE_STATS
          ELSE
-            o_td.change_action( 'Transfer stats' );
+            o_ev.change_action( 'Transfer stats' );
 
             -- this will either take partition level statistics and import into a table
             -- or, it will take table level statistics and import it into a partition
@@ -2892,7 +2892,7 @@ AS
                        || UPPER( p_table )
                      );
       COMMIT;
-      o_td.clear_app_info;
+      o_ev.clear_app_info;
    END update_stats;
 END td_ddl;
 /
