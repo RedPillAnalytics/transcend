@@ -1,0 +1,35 @@
+CREATE OR REPLACE TYPE BODY file_ot wrapped 
+a000000
+b2
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+e
+9de 39c
+P0q8P2nyTnj+ZPEFCoUCkUjWPQYwg9crDyCDfC+agk8GGeEJRugA4mPxoctLXVdYhkubkWsq
+BVC0yJ4ToBCSkL3bG1KTSYFrSTUG2XNOVbvPPArhOOyw1c40MTzJvwRLwKamM5w43+lEApe2
+WdUC3eWJ9oKG4Qcz2sxScZRZlg5jbF76rCa/UtVei43yUB/N2VTUYy28X9hlgkzeVroP22sv
+lmw2nOoU2Jm3Jx/RGlmM+LyRrLrcqiTIBl9c5oTSmBmAKziRtezP80M5nNLdAdGnEcCyu0lI
+fxTrk0Er4TjAW7OSwWqLcH6X7wRVVB1ebscpk6u3rq2AatPXx61G47W0sdBbSwiW5SahzILR
+SoNJO+vW2dON6Af/2hUdfbNL7+Awq8RWtUzCdFUn4pvl4x0zDpSzNtgEe43QNYIqgM1/0fwc
+3zGnAEBhvC5Ww4Wp1IXBzADVrIQgjGw/BAw0sdJz6b9ohBKKKqFoRCO0UQfStFsyiqX9g58f
+vTUEbA8erppK18sogTjtMbkQdAiIWubi3LKvWtBCoSnsK8fm0TKdWTVdLMyyc9+Ir9sqNveH
+DvWvRITODRlIHDwHRfTgnTpe+KghzM7XP3g3X1VPb9+exEXt1sTcuyX+MRD0ZTLNgCphpH3F
+P/ydp46GbES6jqxJR2B+aSZu3xDcGJWWLVnmK4yGJkK0zUefc86Vue9xsxwy8AFDepHNrdTk
+zsyJkF1V5tQBTvl70w21vBlID1bMF/a1kBas80+QiME93YA7Z+iKM4W1ViTyo394HdDYF9da
+qkhME1SxyT3rXvyB10kYk6LRVYfyrB85ZpuTUXXwZJBtaxKijMXVqBWrc7oCwYpPSVJ91LN9
++EnStxicH/MPLa3X1hhz+PqTCCa3qo7bGzsgGeRE4D4k1g==
+
+/
