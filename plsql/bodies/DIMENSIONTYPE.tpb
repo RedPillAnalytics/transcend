@@ -21,18 +21,18 @@ AS
       ELSE
          -- otherwise, create the table
          o_td.change_action( 'Create staging table' );
-         td_dbapi.build_table( p_source_owner      => owner,
-                               p_source_table      => table_name,
-                               p_owner             => owner,
-                               p_table             => staging_table,
-                               -- if the data will be replaced in using an exchange, then need the table to not be partitioned
-                               -- everything else can be created just like the source table
-                               p_partitioning      => CASE replace_method
-                                  WHEN 'exchange'
-                                     THEN 'no'
-                                  ELSE 'yes'
-                               END
-                             );
+         td_ddl.build_table( p_source_owner      => owner,
+                             p_source_table      => table_name,
+                             p_owner             => owner,
+                             p_table             => staging_table,
+                             -- if the data will be replaced in using an exchange, then need the table to not be partitioned
+                             -- everything else can be created just like the source table
+                             p_partitioning      => CASE replace_method
+                                WHEN 'exchange'
+                                   THEN 'no'
+                                ELSE 'yes'
+                             END
+                           );
       END IF;
 
       -- now run the insert statement to load the staging table
@@ -44,19 +44,19 @@ AS
       CASE replace_method
          WHEN 'exchange'
          THEN
-            td_dbapi.exchange_partition( p_source_owner      => staging_owner,
-                                         p_source_table      => staging_table,
-                                         p_owner             => owner,
-                                         p_table             => table_name,
-                                         p_statistics        => 'transfer'
-                                       );
+            td_ddl.exchange_partition( p_source_owner      => staging_owner,
+                                       p_source_table      => staging_table,
+                                       p_owner             => owner,
+                                       p_table             => table_name,
+                                       p_statistics        => 'transfer'
+                                     );
          WHEN 'replace'
          THEN
-            td_dbapi.replace_table( p_owner             => owner,
-                                    p_table             => table_name,
-                                    p_source_table      => staging_table,
-                                    p_statistics        => 'transfer'
-                                  );
+            td_ddl.replace_table( p_owner             => owner,
+                                  p_table             => table_name,
+                                  p_source_table      => staging_table,
+                                  p_statistics        => 'transfer'
+                                );
          ELSE
             NULL;
       END CASE;
