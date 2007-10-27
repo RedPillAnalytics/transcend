@@ -1,86 +1,5 @@
-CREATE OR REPLACE PACKAGE BODY td_dbapi
+CREATE OR REPLACE PACKAGE BODY td_ddl
 AS
-   -- modified FROM tom kyte's "dump_csv":
-   -- 1. allow a quote CHARACTER
-   -- 2. allow FOR a FILE TO be appended TO
-   FUNCTION extract_query(
-      p_query       VARCHAR2,
-      p_dirname     VARCHAR2,
-      p_filename    VARCHAR2,
-      p_delimiter   VARCHAR2 DEFAULT '|',
-      p_quotechar   VARCHAR2 DEFAULT '',
-      p_append      VARCHAR2 DEFAULT 'no'
-   )
-      RETURN NUMBER
-   AS
-      l_output        UTL_FILE.file_type;
-      l_thecursor     INTEGER            DEFAULT DBMS_SQL.open_cursor;
-      l_columnvalue   VARCHAR2( 2000 );
-      l_status        INTEGER;
-      l_colcnt        NUMBER             DEFAULT 0;
-      l_delimiter     VARCHAR2( 5 )      DEFAULT '';
-      l_cnt           NUMBER             DEFAULT 0;
-      l_mode          VARCHAR2( 1 )      := CASE LOWER( p_append )
-         WHEN 'yes'
-            THEN 'a'
-         ELSE 'w'
-      END;
-      l_exists        BOOLEAN;
-      l_length        NUMBER;
-      l_blocksize     NUMBER;
-      e_no_var        EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_no_var, -1007 );
-      o_td            tdtype             := tdtype( p_module => 'extract_query' );
-   BEGIN
-      l_output := UTL_FILE.fopen( p_dirname, p_filename, l_mode, 32767 );
-      DBMS_SQL.parse( l_thecursor, p_query, DBMS_SQL.native );
-      o_td.change_action( 'Open Cursor to define columns' );
-
-      FOR i IN 1 .. 255
-      LOOP
-         BEGIN
-            DBMS_SQL.define_column( l_thecursor, i, l_columnvalue, 2000 );
-            l_colcnt := i;
-         EXCEPTION
-            WHEN e_no_var
-            THEN
-               EXIT;
-         END;
-      END LOOP;
-
-      DBMS_SQL.define_column( l_thecursor, 1, l_columnvalue, 2000 );
-      l_status := DBMS_SQL.EXECUTE( l_thecursor );
-      o_td.change_action( 'Open Cursor to pull back records' );
-
-      LOOP
-         EXIT WHEN( DBMS_SQL.fetch_rows( l_thecursor ) <= 0 );
-         l_delimiter := '';
-
-         FOR i IN 1 .. l_colcnt
-         LOOP
-            DBMS_SQL.COLUMN_VALUE( l_thecursor, i, l_columnvalue );
-
-            IF NOT td_inst.is_debugmode
-            THEN
-               UTL_FILE.put( l_output,
-                             l_delimiter || p_quotechar || l_columnvalue || p_quotechar
-                           );
-            END IF;
-
-            l_delimiter := p_delimiter;
-         END LOOP;
-
-         UTL_FILE.new_line( l_output );
-         l_cnt := l_cnt + 1;
-      END LOOP;
-
-      o_td.change_action( 'Close cursor and handles' );
-      DBMS_SQL.close_cursor( l_thecursor );
-      UTL_FILE.fclose( l_output );
-      o_td.clear_app_info;
-      RETURN l_cnt;
-   END extract_query;
-   
    -- find records in p_source_table that match the values of the partitioned column in p_table
    -- This procedure uses an undocumented database function called tbl$or$idx$part$num.
    -- There are two "magic" numbers that are required to make it work correctly.
@@ -99,11 +18,12 @@ AS
    )
    AS
       l_dsql            LONG;
-      l_num_msg		VARCHAR2(100) := 'Number of records inserted into TD_PART_GTT table';
+      l_num_msg         VARCHAR2( 100 )
+                                   := 'Number of records inserted into TD_PART_GTT table';
       -- to catch empty cursors
       l_source_column   all_part_key_columns.column_name%TYPE;
       l_results         NUMBER;
-      o_td              tdtype                    := tdtype( p_module      => 'populate_partname' );
+      o_td              tdtype               := tdtype( p_module      => 'populate_partname' );
       l_part_position   all_tab_partitions.partition_position%TYPE;
       l_high_value      all_tab_partitions.high_value%TYPE;
    BEGIN
@@ -123,17 +43,14 @@ AS
             AND partition_name = UPPER( p_partname );
 
          INSERT INTO td_part_gtt
-                ( table_owner, table_name, 
-		  partition_name, partition_position
+                     ( table_owner, table_name, partition_name,
+                       partition_position
                      )
-		VALUES ( UPPER( p_owner ), 
-			 UPPER( p_table ), UPPER( p_partname ), l_part_position
+              VALUES ( UPPER( p_owner ), UPPER( p_table ), UPPER( p_partname ),
+                       l_part_position
                      );
 
-         td_inst.log_cnt_msg( SQL%ROWCOUNT,
-                              l_num_msg,
-                              4
-                            );
+         td_inst.log_cnt_msg( SQL%ROWCOUNT, l_num_msg, 4 );
       ELSE
          IF p_source_column IS NULL
          THEN
@@ -144,7 +61,7 @@ AS
          ELSE
             l_source_column := p_source_column;
          END IF;
-	 
+
          o_td.change_action( 'insert into td_part_gtt' );
          l_results :=
             td_sql.exec_sql
@@ -173,10 +90,7 @@ AS
                                || ') '
                                || 'ORDER By partition_position'
                );
-         td_inst.log_cnt_msg( l_results,
-                              l_num_msg,
-                              4
-                            );
+         td_inst.log_cnt_msg( l_results, l_num_msg, 4 );
       END IF;
 
       o_td.clear_app_info;
@@ -375,7 +289,8 @@ AS
                                      || ' : '
                                      || p_statistics
                                    );
-   END CASE;
+      END CASE;
+
       o_td.clear_app_info;
    END build_table;
 
@@ -1128,8 +1043,8 @@ AS
                           );
             WHEN OTHERS
             THEN
-               -- first log the error
-            -- provide a backtrace from this exception handler to the next exception
+                  -- first log the error
+               -- provide a backtrace from this exception handler to the next exception
                td_inst.log_err;
                RAISE;
          END;
@@ -2272,8 +2187,8 @@ AS
                               );
             WHEN OTHERS
             THEN
-               -- first log the error
-            -- provide a backtrace from this exception handler to the next exception
+                  -- first log the error
+               -- provide a backtrace from this exception handler to the next exception
                td_inst.log_err;
 
                -- need to drop indexes if there is an exception
@@ -2978,5 +2893,5 @@ AS
       COMMIT;
       o_td.clear_app_info;
    END update_stats;
-END td_dbapi;
+END td_ddl;
 /
