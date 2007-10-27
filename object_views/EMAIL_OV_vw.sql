@@ -1,5 +1,5 @@
 CREATE OR REPLACE VIEW email_ov
-OF emailtype
+OF email_ot
 WITH object identifier (notify_id)
 as
 SELECT notify_id,
