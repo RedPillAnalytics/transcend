@@ -2216,10 +2216,11 @@ AS
       IF l_dis_fkeys
       THEN
          o_td.change_action( 'Enable foreign keys' );
-         enable_constraints( p_owner      => p_owner,
-                             p_table      => p_table,
-                             p_basis      => 'reference'
-                           );
+         constraint_maint( p_owner           => p_owner,
+                           p_table           => p_table,
+                           p_maint_type      => 'enable',
+                           p_basis           => 'reference'
+                         );
       END IF;
 
       -- drop the indexes on the stage table
@@ -2424,15 +2425,15 @@ AS
       THEN
          -- populate a global temporary table with the indexes to work on
          -- this is a requirement because the dynamic SQL needed to use the tbl$or$idx$part$num function
-         td_core.populate_partname( p_owner              => p_owner,
-                                    p_table              => p_table,
-                                    p_partname           => p_partname,
-                                    p_source_owner       => p_source_owner,
-                                    p_source_object      => p_source_object,
-                                    p_source_column      => p_source_column,
-                                    p_d_num              => p_d_num,
-                                    p_p_num              => p_p_num
-                                  );
+         populate_partname( p_owner              => p_owner,
+                            p_table              => p_table,
+                            p_partname           => p_partname,
+                            p_source_owner       => p_source_owner,
+                            p_source_object      => p_source_object,
+                            p_source_column      => p_source_column,
+                            p_d_num              => p_d_num,
+                            p_p_num              => p_p_num
+                          );
       END IF;
 
       -- this cursor will contain all the ALTER INDEX statements necessary to mark indexes unusable
