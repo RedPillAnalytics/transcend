@@ -79,8 +79,8 @@ IS
    )
    IS
       l_rows      BOOLEAN     := FALSE;                         -- TO catch empty cursors
-      o_extract   extracttype;
-      o_feed      feedtype;
+      o_extract   extract_ot;
+      o_feed      feed_ot;
       o_ev        evolve_ot      := evolve_ot( p_module => 'process_file' );
    BEGIN
       FOR c_fh_conf IN ( SELECT  filehub_id, filehub_type
