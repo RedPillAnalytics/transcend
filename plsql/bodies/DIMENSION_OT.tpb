@@ -1,8 +1,8 @@
-CREATE OR REPLACE TYPE BODY dimensiontype
+CREATE OR REPLACE TYPE BODY dimension_ot
 AS
    MEMBER PROCEDURE LOAD
    IS
-      o_td     tdtype  := tdtype( p_module => 'load' );
+      o_td     evolve_ot  := evolve_ot( p_module => 'load' );
       l_rows   BOOLEAN;
    BEGIN
       -- check to see if the dimension table exists

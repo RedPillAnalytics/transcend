@@ -4,7 +4,7 @@ AS
    PROCEDURE host_cmd( p_cmd VARCHAR2, p_stdin VARCHAR2 DEFAULT ' ' )
    AS
       l_retval   NUMBER;
-      o_td       tdtype := tdtype( p_module => 'host_cmd' );
+      o_td       evolve_ot := evolve_ot( p_module => 'host_cmd' );
    BEGIN
       DBMS_JAVA.set_output( 1000000 );
 
@@ -34,7 +34,7 @@ AS
    PROCEDURE copy_file( p_srcfile VARCHAR2, p_dstfile VARCHAR2 )
    AS
       l_retval   NUMBER;
-      o_td       tdtype := tdtype( p_module => 'copy_file' );
+      o_td       evolve_ot := evolve_ot( p_module => 'copy_file' );
    BEGIN
       DBMS_JAVA.set_output( 1000000 );
 
@@ -63,7 +63,7 @@ AS
    AS
       l_retval     NUMBER;
       l_filepath   VARCHAR2( 100 );
-      o_td         tdtype          := tdtype( p_module => 'delete_file' );
+      o_td         evolve_ot          := evolve_ot( p_module => 'delete_file' );
    BEGIN
       l_filepath := td_sql.get_dir_path( p_directory ) || '/' || p_filename;
 
@@ -85,7 +85,7 @@ AS
    AS
       l_fh        UTL_FILE.file_type;
       l_dirpath   VARCHAR2( 100 );
-      o_td        tdtype             := tdtype( p_module => 'create_file' );
+      o_td        evolve_ot             := evolve_ot( p_module => 'create_file' );
    BEGIN
       l_dirpath := td_sql.get_dir_path( p_directory ) || '/' || p_filename;
 
@@ -105,7 +105,7 @@ AS
       l_fh     UTL_FILE.file_type;
       l_line   VARCHAR2( 2000 );
       l_cnt    NUMBER             := 0;
-      o_td     tdtype             := tdtype( p_module => 'get_numlines' );
+      o_td     evolve_ot             := evolve_ot( p_module => 'get_numlines' );
    BEGIN
       IF td_inst.is_debugmode
       THEN
@@ -146,7 +146,7 @@ AS
       l_file_exists    BOOLEAN;
       l_file_size      NUMBER;
       l_blocksize      NUMBER;
-      o_td             tdtype          := tdtype( p_module => 'unzip_file' );
+      o_td             evolve_ot          := evolve_ot( p_module => 'unzip_file' );
    BEGIN
       l_filebase := REGEXP_REPLACE( p_filename, '\.[^\.]+$', NULL, 1, 1, 'i' );
       l_filesuf := REGEXP_SUBSTR( p_filename, '[^\.]+$' );
@@ -228,7 +228,7 @@ AS
       l_file_exists    BOOLEAN;
       l_file_size      NUMBER;
       l_blocksize      NUMBER;
-      o_td             tdtype          := tdtype( p_module => 'decrypt_file' );
+      o_td             evolve_ot          := evolve_ot( p_module => 'decrypt_file' );
    BEGIN
       l_filebase := REGEXP_REPLACE( p_filename, '\.[^\.]+$', NULL, 1, 1, 'i' );
       l_filesuf := REGEXP_SUBSTR( p_filename, '[^\.]+$' );
@@ -311,7 +311,7 @@ AS
       l_blocksize     NUMBER;
       e_no_var        EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_var, -1007 );
-      o_td            tdtype             := tdtype( p_module => 'extract_query' );
+      o_td            evolve_ot             := evolve_ot( p_module => 'extract_query' );
    BEGIN
       l_output := UTL_FILE.fopen( p_dirname, p_filename, l_mode, 32767 );
       DBMS_SQL.parse( l_thecursor, p_query, DBMS_SQL.native );
@@ -379,7 +379,7 @@ AS
       l_cnt           NUMBER           := 0;
       l_head_sql      VARCHAR( 1000 );
       l_extract_sql   VARCHAR2( 1000 );
-      o_td            tdtype           := tdtype( p_module => 'extract_object' );
+      o_td            evolve_ot           := evolve_ot( p_module => 'extract_object' );
    BEGIN
       -- check that the source object exists and is something we can select from
       td_sql.check_object( p_owner            => p_owner,

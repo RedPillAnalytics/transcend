@@ -1,4 +1,4 @@
-CREATE OR REPLACE TYPE BODY extracttype
+CREATE OR REPLACE TYPE BODY extract_ot
 AS
    -- extract data to a text file, and then peform other functions as defined in the configuration table
    MEMBER PROCEDURE process
@@ -11,7 +11,7 @@ AS
       l_detail_id   NUMBER;
       l_message     notify_conf.MESSAGE%TYPE;
       l_results     NUMBER;
-      o_td          tdtype                     := tdtype( p_module => 'process' );
+      o_td          evolve_ot                     := evolve_ot( p_module => 'process' );
    BEGIN
       td_inst.log_msg( 'Processing extract "' || filehub_name || '"' );
       o_td.change_action( 'Configure NLS formats' );

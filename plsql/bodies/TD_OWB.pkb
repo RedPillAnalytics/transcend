@@ -15,7 +15,7 @@ AS
       p_batch_id        NUMBER DEFAULT NULL
    )
    AS
-      o_td   tdtype := tdtype( p_module => 'start_map_control' );
+      o_td   evolve_ot := evolve_ot( p_module => 'start_map_control' );
    BEGIN
       o_td.change_action( REGEXP_SUBSTR( td_inst.whence, '\S+$', 1, 1, 'i' ));
       td_inst.batch_id( p_batch_id );
@@ -55,7 +55,7 @@ AS
       p_statistics     VARCHAR2 DEFAULT NULL
    )
    AS
-      o_td   tdtype := tdtype( p_module => 'end_map_control' );
+      o_td   evolve_ot := evolve_ot( p_module => 'end_map_control' );
    BEGIN
       o_td.change_action( REGEXP_SUBSTR( td_inst.whence, '\S+$', 1, 1, 'i' ));
 

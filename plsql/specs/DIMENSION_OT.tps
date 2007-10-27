@@ -1,4 +1,4 @@
-CREATE OR REPLACE TYPE dimensiontype AUTHID CURRENT_USER AS object
+CREATE OR REPLACE TYPE dimension_ot AUTHID CURRENT_USER AS object
 ( owner	             VARCHAR2( 30 ),
   table_name  	     VARCHAR2( 30 ),
   full_table	     VARCHAR2( 61 ),

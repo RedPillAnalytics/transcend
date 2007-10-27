@@ -1,4 +1,4 @@
-CREATE OR REPLACE TYPE BODY filetype
+CREATE OR REPLACE TYPE BODY file_ot
 AS
    -- store audit information about the feed or extract
    MEMBER PROCEDURE audit_file(
@@ -11,7 +11,7 @@ AS
       p_validate          VARCHAR2 DEFAULT 'yes'
    )
    AS
-      o_td   tdtype := tdtype( p_module => 'audit_file' );
+      o_td   evolve_ot := evolve_ot( p_module => 'audit_file' );
    BEGIN
       o_td.change_action( 'Insert FILEHUB_DETAIL' );
 
@@ -57,7 +57,7 @@ AS
       p_validate    VARCHAR2 DEFAULT 'yes'
    )
    AS
-      o_td   tdtype := tdtype( p_module => 'audit_file' );
+      o_td   evolve_ot := evolve_ot( p_module => 'audit_file' );
    BEGIN
       o_td.change_action( 'Insert FILE_DTL' );
       audit_file( p_filepath             => SELF.filepath,

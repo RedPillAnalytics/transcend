@@ -1,4 +1,4 @@
-CREATE OR REPLACE TYPE extracttype UNDER filetype(
+CREATE OR REPLACE TYPE extract_ot UNDER file_ot(
    dateformat_ddl   VARCHAR2( 250 ),
    tsformat_ddl     VARCHAR2( 250 ),
    delimiter        VARCHAR2( 1 ),

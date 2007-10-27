@@ -23,7 +23,7 @@ AS
       -- to catch empty cursors
       l_source_column   all_part_key_columns.column_name%TYPE;
       l_results         NUMBER;
-      o_td              tdtype               := tdtype( p_module      => 'populate_partname' );
+      o_td              evolve_ot               := evolve_ot( p_module      => 'populate_partname' );
       l_part_position   all_tab_partitions.partition_position%TYPE;
       l_high_value      all_tab_partitions.high_value%TYPE;
    BEGIN
@@ -103,7 +103,7 @@ AS
    )
    IS
       l_tab_name   VARCHAR2( 61 ) := UPPER( p_owner || '.' || p_table );
-      o_td         tdtype         := tdtype( p_module => 'truncate_table' );
+      o_td         evolve_ot         := evolve_ot( p_module => 'truncate_table' );
    BEGIN
       -- confirm that the table exists
       -- raise an error if it doesn't
@@ -128,7 +128,7 @@ AS
             DEFAULT 'yes' )
    IS
       l_tab_name   VARCHAR2( 61 ) := UPPER( p_owner || '.' || p_table );
-      o_td         tdtype         := tdtype( p_module => 'truncate_table' );
+      o_td         evolve_ot         := evolve_ot( p_module => 'truncate_table' );
    BEGIN
       -- confirm that the table exists
       -- raise an error if it doesn't
@@ -171,7 +171,7 @@ AS
       PRAGMA EXCEPTION_INIT( e_dup_idx_name, -955 );
       e_dup_col_list   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_col_list, -1408 );
-      o_td             tdtype                      := tdtype( p_module      => 'build_table' );
+      o_td             evolve_ot                      := evolve_ot( p_module      => 'build_table' );
    BEGIN
       -- confirm that the source table
       -- raise an error if it doesn't
@@ -323,7 +323,7 @@ AS
       PRAGMA EXCEPTION_INIT( e_dup_idx_name, -955 );
       e_dup_col_list    EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_col_list, -1408 );
-      o_td              tdtype                   := tdtype( p_module      => 'build_indexes' );
+      o_td              evolve_ot                   := evolve_ot( p_module      => 'build_indexes' );
    BEGIN
       -- confirm that parameters are compatible
       -- go ahead and write a CASE statement so adding more later is easier
@@ -676,7 +676,7 @@ AS
    IS
       l_idx_cnt   NUMBER  := 0;
       l_rows      BOOLEAN := FALSE;
-      o_td        tdtype  := tdtype( p_module => 'rename_indexes' );
+      o_td        evolve_ot  := evolve_ot( p_module => 'rename_indexes' );
    BEGIN
       FOR c_idxs IN ( SELECT *
                        FROM td_build_idx_gtt )
@@ -738,7 +738,7 @@ AS
       PRAGMA EXCEPTION_INIT( e_dup_pk, -2260 );
       e_dup_fk          EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_fk, -2275 );
-      o_td              tdtype               := tdtype( p_module      => 'build_constraints' );
+      o_td              evolve_ot               := evolve_ot( p_module      => 'build_constraints' );
    BEGIN
       -- confirm that the target table exists
       -- raise an error if it doesn't
@@ -1084,7 +1084,7 @@ AS
       l_rows       BOOLEAN        := FALSE;
       e_iot_shc    EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_iot_shc, -25188 );
-      o_td         tdtype         := tdtype( p_module => 'constraint_maint' );
+      o_td         evolve_ot         := evolve_ot( p_module => 'constraint_maint' );
    BEGIN
       -- P_CONSTRAINT_TYPE only relates to constraints based on the table, not the reference
       IF REGEXP_LIKE( 'reference|all', p_basis, 'i' ) AND p_constraint_type IS NOT NULL
@@ -1286,7 +1286,7 @@ AS
    IS
       l_con_cnt   NUMBER  := 0;
       l_rows      BOOLEAN := FALSE;
-      o_td        tdtype  := tdtype( p_module => 'enable_constraints' );
+      o_td        evolve_ot  := evolve_ot( p_module => 'enable_constraints' );
    BEGIN
       td_inst.log_msg( 'Enabling constraints disabled previously' );
 
@@ -1334,7 +1334,7 @@ AS
       l_idx_cnt    NUMBER         := 0;
       e_pk_idx     EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_pk_idx, -2429 );
-      o_td         tdtype         := tdtype( p_module => 'drop_indexes' );
+      o_td         evolve_ot         := evolve_ot( p_module => 'drop_indexes' );
    BEGIN
       FOR c_indexes IN ( SELECT 'drop index ' || owner || '.' || index_name index_ddl,
                                 index_name, table_name, owner,
@@ -1391,7 +1391,7 @@ AS
       l_con_cnt    NUMBER         := 0;
       l_tab_name   VARCHAR2( 61 ) := p_owner || '.' || p_table;
       l_rows       BOOLEAN        := FALSE;
-      o_td         tdtype         := tdtype( p_module => 'drop_constraints' );
+      o_td         evolve_ot         := evolve_ot( p_module => 'drop_constraints' );
    BEGIN
       -- drop constraints
       FOR c_constraints IN ( SELECT    'alter table '
@@ -1458,7 +1458,7 @@ AS
       l_rows        BOOLEAN         := FALSE;
       e_no_grants   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_grants, -31608 );
-      o_td          tdtype          := tdtype( p_module => 'object_grants' );
+      o_td          evolve_ot          := evolve_ot( p_module => 'object_grants' );
    BEGIN
       -- confirm that the target table exists
       -- raise an error if it doesn't
@@ -1566,8 +1566,8 @@ AS
       l_src_name   VARCHAR2( 61 ) := UPPER( p_source_owner || '.' || p_source_object );
       l_trg_name   VARCHAR2( 61 ) := UPPER( p_owner || '.' || p_table );
       l_results    NUMBER;
-      o_td         tdtype
-         := tdtype( p_module      => 'insert_table',
+      o_td         evolve_ot
+         := evolve_ot( p_module      => 'insert_table',
                     p_action      => 'Check existence of objects' );
    BEGIN
       -- check information about the table
@@ -1669,8 +1669,8 @@ AS
       l_results         NUMBER;
       e_no_on_columns   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_on_columns, -936 );
-      o_td              tdtype
-         := tdtype( p_module      => 'merge_table',
+      o_td              evolve_ot
+         := evolve_ot( p_module      => 'merge_table',
                     p_action      => 'Check existence of objects' );
    BEGIN
       -- check information about the table
@@ -1937,7 +1937,7 @@ AS
    )
    IS
       l_rows   BOOLEAN := FALSE;
-      o_td     tdtype  := tdtype( p_module => 'load_tables' );
+      o_td     evolve_ot  := evolve_ot( p_module => 'load_tables' );
    BEGIN
       -- dynamic cursor contains source and target objects
       FOR c_objects IN ( SELECT o.owner src_owner, object_name src, t.owner targ_owner,
@@ -2053,7 +2053,7 @@ AS
       PRAGMA EXCEPTION_INIT( e_compress, -14646 );
       e_fkeys          EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_fkeys, -2266 );
-      o_td             tdtype               := tdtype( p_module      => 'exchange_partition' );
+      o_td             evolve_ot               := evolve_ot( p_module      => 'exchange_partition' );
    BEGIN
       o_td.change_action( 'Determine partition to use' );
       -- check to make sure the target table exists, is partitioned, and the partition name exists
@@ -2254,7 +2254,7 @@ AS
       PRAGMA EXCEPTION_INIT( e_compress, -14646 );
       e_fkeys      EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_fkeys, -2266 );
-      o_td         tdtype         := tdtype( p_module => 'replace_table' );
+      o_td         evolve_ot         := evolve_ot( p_module => 'replace_table' );
    BEGIN
       o_td.change_action( 'Perform object checks' );
       -- check to make sure the target table exists
@@ -2377,7 +2377,7 @@ AS
       l_pidx_cnt   NUMBER;
       l_idx_cnt    NUMBER;
       l_rows       BOOLEAN          DEFAULT FALSE;
-      o_td         tdtype           := tdtype( p_module => 'unusable_indexes' );
+      o_td         evolve_ot           := evolve_ot( p_module => 'unusable_indexes' );
    BEGIN
       CASE
          WHEN     p_partname IS NOT NULL
@@ -2574,8 +2574,8 @@ AS
       l_ddl    VARCHAR2( 2000 );
       l_rows   BOOLEAN          := FALSE;                       -- to catch empty cursors
       l_cnt    NUMBER           := 0;
-      o_td     tdtype
-                 := tdtype( p_module      => 'usable_indexes',
+      o_td     evolve_ot
+                 := evolve_ot( p_module      => 'usable_indexes',
                             p_action      => 'Rebuild indexes' );
    BEGIN
       td_sql.check_table( p_owner => p_owner, p_table => p_table );
@@ -2693,7 +2693,7 @@ AS
       e_no_stats    EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_stats, -20000 );
       l_rows        BOOLEAN        := FALSE;                     -- to catch empty cursors
-      o_td          tdtype         := tdtype( p_module => 'update_stats' );
+      o_td          evolve_ot         := evolve_ot( p_module => 'update_stats' );
    BEGIN
       -- check all the parameter requirements
       CASE

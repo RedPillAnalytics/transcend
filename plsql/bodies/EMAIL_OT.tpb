@@ -1,10 +1,10 @@
-CREATE OR REPLACE TYPE BODY emailtype
+CREATE OR REPLACE TYPE BODY email_ot
 AS
    MEMBER PROCEDURE send
    AS
       e_smtp_error   EXCEPTION;
       PRAGMA EXCEPTION_INIT (e_smtp_error, -29279);
-      o_app          apptype    := apptype (p_module => 'send');
+      o_app          app_ot    := app_ot (p_module => 'send');
    BEGIN
       IF td_ext.is_true (notify_enabled)
       THEN

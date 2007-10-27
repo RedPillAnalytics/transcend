@@ -1,6 +1,6 @@
-CREATE OR REPLACE TYPE BODY tdtype
+CREATE OR REPLACE TYPE BODY evolve_ot
 AS
-   CONSTRUCTOR FUNCTION tdtype(
+   CONSTRUCTOR FUNCTION evolve_ot(
       p_action        VARCHAR2 DEFAULT 'begin module',
       p_module        VARCHAR2 DEFAULT NULL,
       p_client_info   VARCHAR2 DEFAULT NULL
@@ -157,13 +157,13 @@ AS
       END LOOP;
 
       RETURN;
-   END tdtype;
+   END evolve_ot;
 
    MEMBER PROCEDURE send( p_module_id NUMBER, p_message VARCHAR2 DEFAULT NULL )
    AS
       l_notify_method   notify_conf.notify_method%TYPE;
       l_notify_id       notify_conf.notify_id%TYPE;
-      o_email           emailtype;
+      o_email           email_ot;
    BEGIN
       SELECT notify_method, notify_id
         INTO l_notify_method, l_notify_id

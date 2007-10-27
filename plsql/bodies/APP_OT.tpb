@@ -1,6 +1,6 @@
-CREATE OR REPLACE TYPE BODY apptype
+CREATE OR REPLACE TYPE BODY app_ot
 AS
-   CONSTRUCTOR FUNCTION apptype(
+   CONSTRUCTOR FUNCTION app_ot(
       p_action        VARCHAR2 DEFAULT 'begin module',
       p_module        VARCHAR2 DEFAULT NULL,
       p_client_info   VARCHAR2 DEFAULT NULL
@@ -32,7 +32,7 @@ AS
       td_inst.log_msg( 'Inital ACTION attribute set to "' || td_inst.action || '"', 4 );
       
       RETURN;
-   END apptype;
+   END app_ot;
    MEMBER FUNCTION get_package_name
       RETURN VARCHAR2
    AS

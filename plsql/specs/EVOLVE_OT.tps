@@ -1,5 +1,5 @@
-CREATE OR REPLACE TYPE tdtype UNDER apptype(
-   CONSTRUCTOR FUNCTION tdtype(
+CREATE OR REPLACE TYPE evolve_ot UNDER app_ot(
+   CONSTRUCTOR FUNCTION evolve_ot(
       p_action        VARCHAR2 DEFAULT 'begin module',
       p_module        VARCHAR2 DEFAULT NULL,
       p_client_info   VARCHAR2 DEFAULT NULL

@@ -1,4 +1,4 @@
-CREATE OR REPLACE TYPE BODY feedtype
+CREATE OR REPLACE TYPE BODY feed_ot
 AS
 -- audits information about external tables after the file(s) have been put in place
    MEMBER PROCEDURE audit_ext_tab( p_num_lines NUMBER )
@@ -12,7 +12,7 @@ AS
       PRAGMA EXCEPTION_INIT( e_no_table, -942 );
       e_no_files         EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_files, -1756 );
-      o_td               tdtype          := tdtype( p_module => 'audit_ext_tab' );
+      o_td               evolve_ot          := evolve_ot( p_module => 'audit_ext_tab' );
    BEGIN
       -- type object which handles logging and application registration for instrumentation purposes
       -- defaults to registering with DBMS_APPLICATION_INFO
@@ -103,7 +103,7 @@ AS
       l_results        NUMBER;
       e_no_files       EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_files, -1756 );
-      o_td             tdtype                     := tdtype( p_module => 'process' );
+      o_td             evolve_ot                     := evolve_ot( p_module => 'process' );
    BEGIN
       td_inst.log_msg( 'Processing feed "' || filehub_name || '"' );
       o_td.change_action( 'Evaluate source directory' );
