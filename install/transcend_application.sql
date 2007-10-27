@@ -23,7 +23,7 @@ DROP TYPE extract_ot;
 DROP TYPE file_ot;
 DROP TYPE email_ot;
 DROP TYPE notify_ot;
-DROP TYPE td_ot;
+DROP TYPE evolve_ot;
 DROP TYPE app_ot;
 
 --CREATE core pieces
