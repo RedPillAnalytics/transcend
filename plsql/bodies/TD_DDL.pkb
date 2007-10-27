@@ -1524,7 +1524,7 @@ AS
       o_td.change_action( 'Execute grants' );
 
       FOR c_grants IN ( SELECT *
-                         FROM TABLE( td_core.SPLIT( l_ddl, ';' )))
+                         FROM TABLE( td_ext.SPLIT( l_ddl, ';' )))
       LOOP
          l_rows := TRUE;
          td_sql.exec_sql( p_sql => c_grants.COLUMN_VALUE, p_auto => 'yes' );
