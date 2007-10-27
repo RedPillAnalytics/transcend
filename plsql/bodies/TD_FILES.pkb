@@ -101,7 +101,7 @@ IS
             THEN
                SELECT VALUE( t )
                  INTO o_extract
-                 FROM extract_ot t
+                 FROM extract_ov t
                 WHERE t.filehub_id = c_fh_conf.filehub_id;
 
                o_extract.process;
@@ -109,7 +109,7 @@ IS
             THEN
                SELECT VALUE( t )
                  INTO o_feed
-                 FROM feed_ot t
+                 FROM feed_ov t
                 WHERE t.filehub_id = c_fh_conf.filehub_id;
 
                o_feed.process( p_keep_source );
