@@ -34,10 +34,10 @@ exec dbms_stats.create_stat_table('&rep_schema_tr','OPT_STATS');
 @@../ddl/REGISTRATION_CONF_tbl.sql
 @@../ddl/RUNMODE_CONF_tbl.sql
 @@../ddl/PARAMETER_CONF_tbl.sql
+@@../ddl/REPLACE_METHOD_LIST_tbl.sql
 @@../ddl/COLUMN_TYPE_LIST_tbl.sql
 @@../ddl/DIMENSION_CONF_tbl.sql
 @@../ddl/COLUMN_CONF_tbl.sql
-@@../ddl/REPLACE_METHOD_LIST_tbl.sql
 
 
 -- set default tablespace back
