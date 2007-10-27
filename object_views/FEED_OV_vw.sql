@@ -1,5 +1,5 @@
 CREATE OR REPLACE VIEW feed_ov
-OF feedtype
+OF feed_ot
 WITH object identifier (filehub_id)
 as
 SELECT filehub_id,
