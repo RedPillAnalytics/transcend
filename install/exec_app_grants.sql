@@ -28,6 +28,6 @@ GRANT EXECUTE ON TD_CONTROL to &app_schema_eag._app;
 GRANT EXECUTE ON TD_OWBAPI to &app_schema_eag._app;
 
 -- grant select on the object views to this role
-GRANT SELECT ON EMAIL_OT to &app_schema_eag._app;
-GRANT SELECT ON EXTRACT_OT to &app_schema_eag._app;
-GRANT SELECT ON FEED_OT to &app_schema_eag._app;
+GRANT SELECT ON EMAIL_OV to &app_schema_eag._app;
+GRANT SELECT ON EXTRACT_OV to &app_schema_eag._app;
+GRANT SELECT ON FEED_OV to &app_schema_eag._app;
