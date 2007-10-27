@@ -1,4 +1,4 @@
-CREATE OR REPLACE VIEW dimension_ot
+CREATE OR REPLACE VIEW dimension_ov
 OF dimensiontype
 WITH object identifier (owner, table_name)
 as

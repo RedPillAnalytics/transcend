@@ -1,4 +1,4 @@
-CREATE OR REPLACE VIEW email_ot 
+CREATE OR REPLACE VIEW email_ov
 OF emailtype
 WITH object identifier (notify_id)
 as

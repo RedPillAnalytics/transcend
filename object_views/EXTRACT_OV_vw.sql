@@ -1,4 +1,4 @@
-CREATE OR REPLACE VIEW extract_ot 
+CREATE OR REPLACE VIEW extract_ov
 OF extracttype
 WITH object identifier (filehub_id)
 as

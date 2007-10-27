@@ -1,4 +1,4 @@
-CREATE OR REPLACE VIEW feed_ot 
+CREATE OR REPLACE VIEW feed_ov
 OF feedtype
 WITH object identifier (filehub_id)
 as
