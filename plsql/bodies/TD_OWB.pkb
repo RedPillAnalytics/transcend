@@ -15,9 +15,9 @@ AS
       p_batch_id        NUMBER DEFAULT NULL
    )
    AS
-      o_td   evolve_ot := evolve_ot( p_module => 'start_map_control' );
+      o_ev   evolve_ot := evolve_ot( p_module => 'start_map_control' );
    BEGIN
-      o_td.change_action( REGEXP_SUBSTR( td_inst.whence, '\S+$', 1, 1, 'i' ));
+      o_ev.change_action( REGEXP_SUBSTR( td_inst.whence, '\S+$', 1, 1, 'i' ));
       td_inst.batch_id( p_batch_id );
       td_inst.log_msg( 'Beginning OWB mapping' );
 
@@ -55,9 +55,9 @@ AS
       p_statistics     VARCHAR2 DEFAULT NULL
    )
    AS
-      o_td   evolve_ot := evolve_ot( p_module => 'end_map_control' );
+      o_ev   evolve_ot := evolve_ot( p_module => 'end_map_control' );
    BEGIN
-      o_td.change_action( REGEXP_SUBSTR( td_inst.whence, '\S+$', 1, 1, 'i' ));
+      o_ev.change_action( REGEXP_SUBSTR( td_inst.whence, '\S+$', 1, 1, 'i' ));
 
       CASE
          WHEN p_source_owner IS NOT NULL AND p_source_table IS NOT NULL
@@ -79,7 +79,7 @@ AS
       END CASE;
 
       td_inst.log_msg( 'Ending OWB mapping' );
-      o_td.clear_app_info;
+      o_ev.clear_app_info;
    END end_map_control;
 END td_owbapi;
 /
