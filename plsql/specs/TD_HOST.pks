@@ -1,6 +1,6 @@
-CREATE OR REPLACE PACKAGE td_core AUTHID CURRENT_USER
+CREATE OR REPLACE PACKAGE td_host AUTHID CURRENT_USER
 AS
-   TYPE t_split IS TABLE OF VARCHAR2(32767);
+   TYPE t_split IS TABLE OF VARCHAR2( 32767 );
 
    PROCEDURE get_dir_list( p_directory IN VARCHAR2 )
    AS
@@ -42,5 +42,26 @@ AS
    FUNCTION unzip_file( p_dirpath VARCHAR2, p_filename VARCHAR2 )
       RETURN VARCHAR2;
 
-END td_core;
+   FUNCTION extract_query(
+      p_query       VARCHAR2,
+      p_dirname     VARCHAR2,
+      p_filename    VARCHAR2,
+      p_delimiter   VARCHAR2 DEFAULT '|',
+      p_quotechar   VARCHAR2 DEFAULT '',
+      p_append      VARCHAR2 DEFAULT 'no'
+   )
+      RETURN NUMBER;
+
+   FUNCTION extract_object(
+      p_owner       VARCHAR2,
+      p_object      VARCHAR2,
+      p_dirname     VARCHAR2,
+      p_filename    VARCHAR2,
+      p_delimiter   VARCHAR2 DEFAULT '|',
+      p_quotechar   VARCHAR2 DEFAULT '',
+      p_headers     VARCHAR2 DEFAULT 'yes',
+      p_append      VARCHAR2 DEFAULT 'no'
+   )
+      RETURN NUMBER;
+END td_host;
 /
