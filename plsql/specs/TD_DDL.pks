@@ -1,26 +1,5 @@
-CREATE OR REPLACE PACKAGE td_dbapi AUTHID CURRENT_USER
+CREATE OR REPLACE PACKAGE td_ddl AUTHID CURRENT_USER
 IS
-   FUNCTION extract_query(
-      p_query       VARCHAR2,
-      p_dirname     VARCHAR2,
-      p_filename    VARCHAR2,
-      p_delimiter   VARCHAR2 DEFAULT '|',
-      p_quotechar   VARCHAR2 DEFAULT '',
-      p_append      VARCHAR2 DEFAULT 'no'
-   )
-      RETURN NUMBER;
-
-   PROCEDURE populate_partname(
-      p_owner           VARCHAR2,
-      p_table           VARCHAR2,
-      p_partname        VARCHAR2 DEFAULT NULL,
-      p_source_owner    VARCHAR2 DEFAULT NULL,
-      p_source_object   VARCHAR2 DEFAULT NULL,
-      p_source_column   VARCHAR2 DEFAULT NULL,
-      p_d_num           NUMBER DEFAULT 0,
-      p_p_num           NUMBER DEFAULT 65535
-   );
-
    PROCEDURE truncate_table(
       p_owner   VARCHAR2,
       p_table   VARCHAR2,
@@ -67,8 +46,6 @@ IS
       p_tablespace          VARCHAR2 DEFAULT NULL,
       p_partname            VARCHAR2 DEFAULT NULL
    );
-
-   PROCEDURE enable_constraints;
 
    PROCEDURE drop_indexes(
       p_owner          VARCHAR2,
@@ -182,5 +159,5 @@ IS
       p_cascade           VARCHAR2 DEFAULT NULL,
       p_options           VARCHAR2 DEFAULT 'GATHER AUTO'
    );
-END td_dbapi;
+END td_ddl;
 /
