@@ -60,13 +60,13 @@ IS
       p_constraint_type     VARCHAR2 DEFAULT NULL,
       p_constraint_regexp   VARCHAR2 DEFAULT NULL
    );
-      
+
    PROCEDURE object_grants(
-      p_owner          VARCHAR2,
-      p_object         VARCHAR2,
-      p_source_owner   VARCHAR2,
-      p_source_object  VARCHAR2,
-      p_grant_regexp   VARCHAR2 DEFAULT NULL
+      p_owner           VARCHAR2,
+      p_object          VARCHAR2,
+      p_source_owner    VARCHAR2,
+      p_source_object   VARCHAR2,
+      p_grant_regexp    VARCHAR2 DEFAULT NULL
    );
 
    PROCEDURE insert_table(
@@ -107,19 +107,19 @@ IS
    );
 
    PROCEDURE exchange_partition(
-      p_owner            VARCHAR2,
-      p_table            VARCHAR2,
-      p_source_owner     VARCHAR2,
-      p_source_table     VARCHAR2,
-      p_partname         VARCHAR2 DEFAULT NULL,
-      p_index_space      VARCHAR2 DEFAULT NULL,
-      p_index_drop       VARCHAR2 DEFAULT 'yes',
-      p_statistics       VARCHAR2 DEFAULT 'transfer',
-      p_statpercent      NUMBER DEFAULT NULL,
-      p_statdegree       NUMBER DEFAULT NULL,
-      p_statmethod       VARCHAR2 DEFAULT NULL
+      p_owner          VARCHAR2,
+      p_table          VARCHAR2,
+      p_source_owner   VARCHAR2,
+      p_source_table   VARCHAR2,
+      p_partname       VARCHAR2 DEFAULT NULL,
+      p_index_space    VARCHAR2 DEFAULT NULL,
+      p_index_drop     VARCHAR2 DEFAULT 'yes',
+      p_statistics     VARCHAR2 DEFAULT 'transfer',
+      p_statpercent    NUMBER DEFAULT NULL,
+      p_statdegree     NUMBER DEFAULT NULL,
+      p_statmethod     VARCHAR2 DEFAULT NULL
    );
- 
+
    PROCEDURE replace_table(
       p_owner          VARCHAR2,
       p_table          VARCHAR2,
