@@ -9,18 +9,18 @@ DROP ROLE &app_schema_eag._app;
 CREATE ROLE &app_schema_eag._app;
 
 -- grant execute on components to this role
-GRANT EXECUTE ON STRING_AGG_TYPE to &app_schema_eag._app;
+GRANT EXECUTE ON STRING_AGG_OT to &app_schema_eag._app;
 GRANT EXECUTE ON TD_EXT to &app_schema_eag._app;
 GRANT EXECUTE ON TD_INST to &app_schema_eag._app;
-GRANT EXECUTE ON APPTYPE to &app_schema_eag._app;
-GRANT EXECUTE ON NOTIFYTYPE to &app_schema_eag._app;
-GRANT EXECUTE ON EMAILTYPE to &app_schema_eag._app;
-GRANT EXECUTE ON TDTYPE to &app_schema_eag._app;
+GRANT EXECUTE ON APP_OT to &app_schema_eag._app;
+GRANT EXECUTE ON NOTIFY_OT to &app_schema_eag._app;
+GRANT EXECUTE ON EMAIL_OT to &app_schema_eag._app;
+GRANT EXECUTE ON EVOLVE_OT to &app_schema_eag._app;
 GRANT EXECUTE ON TD_HOST to &app_schema_eag._app;
 GRANT EXECUTE ON TD_SQL to &app_schema_eag._app;
-GRANT EXECUTE ON FILETYPE to &app_schema_eag._app;
-GRANT EXECUTE ON EXTRACTTYPE to &app_schema_eag._app;
-GRANT EXECUTE ON FEEDTYPE to &app_schema_eag._app;
+GRANT EXECUTE ON FILE_OT to &app_schema_eag._app;
+GRANT EXECUTE ON EXTRACT_OT to &app_schema_eag._app;
+GRANT EXECUTE ON FEED_OT to &app_schema_eag._app;
 GRANT EXECUTE ON TD_DDL to &app_schema_eag._app;
 GRANT EXECUTE ON TD_ETL to &app_schema_eag._app;
 GRANT EXECUTE ON TD_FILES to &app_schema_eag._app;
