@@ -2,7 +2,7 @@ CREATE OR REPLACE TYPE BODY dimension_ot
 AS
    MEMBER PROCEDURE LOAD
    IS
-      o_td     evolve_ot  := evolve_ot( p_module => 'load' );
+      o_ev     evolve_ot  := evolve_ot( p_module => 'load' );
       l_rows   BOOLEAN;
    BEGIN
       -- check to see if the dimension table exists
@@ -20,7 +20,7 @@ AS
          td_sql.check_table( p_owner => staging_owner, p_table => staging_table );
       ELSE
          -- otherwise, create the table
-         o_td.change_action( 'Create staging table' );
+         o_ev.change_action( 'Create staging table' );
          td_ddl.build_table( p_source_owner      => owner,
                              p_source_table      => table_name,
                              p_owner             => owner,
@@ -36,10 +36,10 @@ AS
       END IF;
 
       -- now run the insert statement to load the staging table
-      o_td.change_action( 'Load staging table' );
+      o_ev.change_action( 'Load staging table' );
       td_sql.exec_sql( load_sql );
       -- perform the replace method
-      o_td.change_action( 'Load staging table' );
+      o_ev.change_action( 'Load staging table' );
 
       CASE replace_method
          WHEN 'exchange'
