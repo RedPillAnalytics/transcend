@@ -57,10 +57,10 @@ DROP _OT app_ot;
 @../object_views/EXTRACT_OT_vw.sql
 @../plsql/specs/FEED_OT.tps
 @../plsql/wrapped_bodies/FEED_OT.plb
-@../object_views/FEED_OT_vw.sql
+@../object_views/FEED_OV_vw.sql
 @../plsql/specs/DIMENSION_OT.tps
---@../plsql/wrapped_bodies/DIMENSION_OT.plb
-@../object_views/DIMENSION_OT_vw.sql
+@../plsql/wrapped_bodies/DIMENSION_OT.plb
+@../object_views/DIMENSION_OV_vw.sql
 
 --CREATE callable packages
 @../plsql/specs/TD_ETL.pks
