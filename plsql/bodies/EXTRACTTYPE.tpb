@@ -25,7 +25,7 @@ AS
       o_td.change_action( 'Extract data' );
       -- extract data to arch location first
       l_numlines :=
-         td_core.extract_object( p_owner          => object_owner,
+         td_host.extract_object( p_owner          => object_owner,
                                  p_object         => object_name,
                                  p_dirname        => arch_directory,
                                  p_filename       => arch_filename,
@@ -45,7 +45,7 @@ AS
                      );
       l_file_dt := SYSDATE;
       -- copy the file to the target location
-      td_core.copy_file( p_srcfile => arch_filepath, p_dstfile => filepath );
+      td_host.copy_file( p_srcfile => arch_filepath, p_dstfile => filepath );
       td_inst.log_msg(    'Archive file '
                        || arch_filepath
                        || ' copied to destination '
