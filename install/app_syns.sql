@@ -16,9 +16,9 @@ BEGIN
       EXECUTE IMMEDIATE 'create or replace synonym &syn_schema_as..td_control for &obj_schema_as..td_control';
       EXECUTE IMMEDIATE 'create or replace synonym &syn_schema_as..td_inst for &obj_schema_as..td_inst';
       EXECUTE IMMEDIATE 'create or replace synonym &syn_schema_as..stragg for &obj_schema_as..stragg';
-      EXECUTE IMMEDIATE 'create or replace synonym &syn_schema_as..feed_ot for &obj_schema_as..feed_ot';
-      EXECUTE IMMEDIATE 'create or replace synonym &syn_schema_as..extract_ot for &obj_schema_as..extract_ot';
-      EXECUTE IMMEDIATE 'create or replace synonym &syn_schema_as..email_ot for &obj_schema_as..email_ot';
+      EXECUTE IMMEDIATE 'create or replace synonym &syn_schema_as..feed_ov for &obj_schema_as..feed_ov';
+      EXECUTE IMMEDIATE 'create or replace synonym &syn_schema_as..extract_ov for &obj_schema_as..extract_ov';
+      EXECUTE IMMEDIATE 'create or replace synonym &syn_schema_as..email_ov for &obj_schema_as..email_ov';
    END IF;
       
 END;
