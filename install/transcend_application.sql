@@ -69,8 +69,8 @@ DROP TYPE app_ot;
 @../plsql/wrapped_bodies/TD_FILES.plb
 @../plsql/specs/TD_CONTROL.pks
 @../plsql/wrapped_bodies/TD_CONTROL.plb
-@../plsql/specs/TD_OWBAPI.pks
-@../plsql/wrapped_bodies/TD_OWBAPI.plb
+@../plsql/specs/TD_OWB.pks
+@../plsql/wrapped_bodies/TD_OWB.plb
 
 -- create role to execute this application
 -- grant all the needed privileges to the role
