@@ -6,18 +6,12 @@ AS
       p_msg    VARCHAR2 DEFAULT NULL
    )
       RETURN NUMBER;
-      
+
    PROCEDURE exec_sql(
       p_sql    VARCHAR2,
       p_auto   VARCHAR2 DEFAULT 'no',
       p_msg    VARCHAR2 DEFAULT NULL
    );
-      
-   FUNCTION split(
-      p_text      VARCHAR2,
-      p_delimiter VARCHAR2 default ','
-   ) 
-      RETURN t_split PIPELINED;      
 
    PROCEDURE check_table(
       p_owner         VARCHAR2,
@@ -33,7 +27,7 @@ AS
       p_object        VARCHAR2,
       p_object_type   VARCHAR2 DEFAULT NULL
    );
-      
+
    FUNCTION get_dir_path( p_dirname VARCHAR2 )
       RETURN VARCHAR2;
 
@@ -48,6 +42,5 @@ AS
 
    FUNCTION object_exists( p_owner VARCHAR2, p_object VARCHAR2 )
       RETURN BOOLEAN;
-
 END td_sql;
 /
