@@ -58,6 +58,15 @@ IS
       p_partname            VARCHAR2 DEFAULT NULL
    );
 
+   PROCEDURE constraint_maint(
+      p_owner               VARCHAR2,
+      p_table               VARCHAR2,
+      p_maint_type          VARCHAR2,
+      p_constraint_type     VARCHAR2 DEFAULT NULL,
+      p_constraint_regexp   VARCHAR2 DEFAULT NULL,
+      p_basis               VARCHAR2 DEFAULT 'table'
+   );
+
    PROCEDURE drop_indexes(
       p_owner          VARCHAR2,
       p_table          VARCHAR2,
