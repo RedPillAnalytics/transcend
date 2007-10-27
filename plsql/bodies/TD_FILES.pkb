@@ -10,7 +10,7 @@ IS
    IS
       l_pct_diff   NUMBER;
       l_rej_ind    VARCHAR2( 1 );
-      o_td         evolve_ot        := evolve_ot( p_module => 'calc_rej_ind' );
+      o_ev         evolve_ot        := evolve_ot( p_module => 'calc_rej_ind' );
    BEGIN
       SELECT percent_diff
         INTO l_pct_diff
@@ -29,7 +29,7 @@ IS
          RETURN 'Y';
       END IF;
 
-      o_td.clear_app_info;
+      o_ev.clear_app_info;
    EXCEPTION
       WHEN OTHERS
       THEN
@@ -51,7 +51,7 @@ IS
    )
    IS
       l_cnt   NUMBER;
-      o_td    evolve_ot := evolve_ot( p_module => 'extract_object' );
+      o_ev    evolve_ot := evolve_ot( p_module => 'extract_object' );
    BEGIN
       l_cnt :=
          td_host.extract_object( p_owner          => p_owner,
@@ -81,7 +81,7 @@ IS
       l_rows      BOOLEAN     := FALSE;                         -- TO catch empty cursors
       o_extract   extracttype;
       o_feed      feedtype;
-      o_td        evolve_ot      := evolve_ot( p_module => 'process_file' );
+      o_ev        evolve_ot      := evolve_ot( p_module => 'process_file' );
    BEGIN
       FOR c_fh_conf IN ( SELECT  filehub_id, filehub_type
                             FROM filehub_conf
@@ -129,7 +129,7 @@ IS
                                 );
       END IF;
 
-      o_td.clear_app_info;
+      o_ev.clear_app_info;
    EXCEPTION
       WHEN OTHERS
       THEN
