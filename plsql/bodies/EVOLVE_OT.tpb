@@ -193,7 +193,7 @@ AS
          THEN
             SELECT VALUE( t )
               INTO o_email
-              FROM email_ot t
+              FROM email_ov t
              WHERE t.notify_id = l_notify_id;
 
             o_email.MESSAGE :=
