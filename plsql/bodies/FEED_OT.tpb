@@ -12,11 +12,11 @@ AS
       PRAGMA EXCEPTION_INIT( e_no_table, -942 );
       e_no_files         EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_files, -1756 );
-      o_td               evolve_ot          := evolve_ot( p_module => 'audit_ext_tab' );
+      o_ev               evolve_ot          := evolve_ot( p_module => 'audit_ext_tab' );
    BEGIN
       -- type object which handles logging and application registration for instrumentation purposes
       -- defaults to registering with DBMS_APPLICATION_INFO
-      o_td.change_action( 'Get count from table' );
+      o_ev.change_action( 'Get count from table' );
       l_sql := 'SELECT count(*) FROM ' || SELF.object_owner || '.' || SELF.object_name;
       td_inst.log_msg( 'Count SQL: ' || l_sql, 3 );
 
@@ -32,8 +32,8 @@ AS
                CASE REGEXP_SUBSTR( SQLERRM, '^KUP-[[:digit:]]{5}', 1, 1, 'im' )
                   WHEN 'KUP-04040'
                   THEN
-                     o_td.change_action( 'location file missing' );
-                     o_td.send( p_module_id => SELF.filehub_id );
+                     o_ev.change_action( 'location file missing' );
+                     o_ev.send( p_module_id => SELF.filehub_id );
                      raise_application_error
                                            ( td_inst.get_err_cd( 'location_file_missing' ),
                                              td_inst.get_err_msg( 'location_file_missing' )
@@ -49,9 +49,9 @@ AS
 
             IF l_pct_miss > reject_limit
             THEN
-               o_td.change_action( 'reject limit exceeded' );
+               o_ev.change_action( 'reject limit exceeded' );
                -- notify if reject limit is exceeded
-               o_td.send( p_module_id => SELF.filehub_id );
+               o_ev.send( p_module_id => SELF.filehub_id );
                raise_application_error( td_inst.get_err_cd( 'reject_limit_exceeded' ),
                                         td_inst.get_err_msg( 'reject_limit_exceeded' )
                                       );
@@ -75,7 +75,7 @@ AS
                      );
       END IF;
 
-      o_td.clear_app_info;
+      o_ev.clear_app_info;
    EXCEPTION
       WHEN e_no_table
       THEN
@@ -103,10 +103,10 @@ AS
       l_results        NUMBER;
       e_no_files       EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_files, -1756 );
-      o_td             evolve_ot                     := evolve_ot( p_module => 'process' );
+      o_ev             evolve_ot                     := evolve_ot( p_module => 'process' );
    BEGIN
       td_inst.log_msg( 'Processing feed "' || filehub_name || '"' );
-      o_td.change_action( 'Evaluate source directory' );
+      o_ev.change_action( 'Evaluate source directory' );
 
       -- first we remove all current files in the external table
       -- we don't want the possiblity of data for a previous run getting loaded in
@@ -292,11 +292,11 @@ AS
          -- reset variables used in the cursor
          l_numlines := 0;
          -- copy file to the archive location
-         o_td.change_action( 'Copy archivefile' );
+         o_ev.change_action( 'Copy archivefile' );
          td_host.copy_file( c_dir_list.source_filepath, c_dir_list.arch_filepath );
          td_inst.log_msg( 'Archive file ' || c_dir_list.arch_filepath || ' created' );
          -- copy the file to the external table
-         o_td.change_action( 'Copy external table files' );
+         o_ev.change_action( 'Copy external table files' );
 
          IF c_dir_list.ext_tab_ind = 'Y'
          THEN
@@ -341,7 +341,7 @@ AS
          -- WRITE an audit record for the file that was just archived
          IF NOT td_inst.is_debugmode
          THEN
-            o_td.change_action( 'Audit feed' );
+            o_ev.change_action( 'Audit feed' );
             SELF.audit_file( p_source_filepath      => c_dir_list.source_filepath,
                              p_arch_filepath        => c_dir_list.arch_filepath,
                              p_filepath             => c_dir_list.filepath,
@@ -358,7 +358,7 @@ AS
 
          -- IF we get this far, then we need to delete the source files
          -- this step is ignored if p_keep_source = 'yes'
-         o_td.change_action( 'Delete source files' );
+         o_ev.change_action( 'Delete source files' );
 
          IF NOT td_ext.is_true( p_keep_source )
          THEN
@@ -367,7 +367,7 @@ AS
       END LOOP;
 
       -- check to see if the cursor was empty
-      o_td.change_action( 'Check for matching files' );
+      o_ev.change_action( 'Check for matching files' );
 
       CASE
          WHEN NOT l_rows_dirlist AND required = 'Y'
@@ -384,7 +384,7 @@ AS
       WHEN NOT l_rows_dirlist AND required = 'N'
          THEN
             td_inst.log_msg( 'No files found... but none are required' );
-            o_td.change_action( 'Empty previous files' );
+            o_ev.change_action( 'Empty previous files' );
 
             FOR c_location IN ( SELECT DIRECTORY, LOCATION
                                  FROM dba_external_locations
@@ -397,7 +397,7 @@ AS
          -- matching files found, so ignore
                   -- alter the external table to contain all the files
       THEN
-            o_td.change_action( 'Alter external table' );
+            o_ev.change_action( 'Alter external table' );
 
             BEGIN
                l_results := td_sql.exec_sql( p_sql => l_ext_tab_ddl, p_auto => 'yes' );
@@ -416,12 +416,12 @@ AS
             END;
 
             -- audit the external table
-            o_td.change_action( 'Audit external table' );
+            o_ev.change_action( 'Audit external table' );
             SELF.audit_ext_tab( p_num_lines => l_sum_numlines );
       END CASE;
 
       -- notify about successful arrival of feed
-      o_td.change_action( 'Notify success' );
+      o_ev.change_action( 'Notify success' );
       l_message :=
             'The file'
          || CASE
@@ -448,8 +448,8 @@ AS
             || 'The file is too large for some desktop applications, such as Microsoft Excel, to open.';
       END IF;
 
-      o_td.send( p_module_id => filehub_id );
-      o_td.clear_app_info;
+      o_ev.send( p_module_id => filehub_id );
+      o_ev.clear_app_info;
    END process;
 END;
 /
