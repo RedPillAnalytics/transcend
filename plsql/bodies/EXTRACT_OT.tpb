@@ -11,10 +11,10 @@ AS
       l_detail_id   NUMBER;
       l_message     notify_conf.MESSAGE%TYPE;
       l_results     NUMBER;
-      o_td          evolve_ot                     := evolve_ot( p_module => 'process' );
+      o_ev          evolve_ot                     := evolve_ot( p_module => 'process' );
    BEGIN
       td_inst.log_msg( 'Processing extract "' || filehub_name || '"' );
-      o_td.change_action( 'Configure NLS formats' );
+      o_ev.change_action( 'Configure NLS formats' );
       -- set date and timestamp NLS formats
       l_results :=
              td_sql.exec_sql( p_sql      => dateformat_ddl,
@@ -22,7 +22,7 @@ AS
       l_results :=
           td_sql.exec_sql( p_sql      => tsformat_ddl,
                            p_msg      => 'nls_timestamp_format DDL: ' );
-      o_td.change_action( 'Extract data' );
+      o_ev.change_action( 'Extract data' );
       -- extract data to arch location first
       l_numlines :=
          td_host.extract_object( p_owner          => object_owner,
@@ -62,13 +62,13 @@ AS
       END IF;
 
       -- audit the file
-      o_td.change_action( 'Audit extract file' );
+      o_ev.change_action( 'Audit extract file' );
       SELF.audit_file( p_num_bytes      => l_num_bytes,
                        p_num_lines      => l_numlines,
                        p_file_dt        => l_file_dt
                      );
       -- send the notification if configured
-      o_td.change_action( 'Notify success' );
+      o_ev.change_action( 'Notify success' );
       l_message :=
                'The file can be downloaded at the following link:' || CHR( 10 )
                || file_url;
@@ -82,8 +82,8 @@ AS
             || 'The file is too large for some desktop applications, such as Microsoft Excel, to open.';
       END IF;
 
-      o_td.send( p_module_id => filehub_id, p_message => l_message );
-      o_td.clear_app_info;
+      o_ev.send( p_module_id => filehub_id, p_message => l_message );
+      o_ev.clear_app_info;
    END process;
 END;
 /
