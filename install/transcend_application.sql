@@ -46,8 +46,10 @@ DROP TYPE apptype;
 @../plsql/wrapped_bodies/TDTYPE.plb
 @../plsql/specs/TD_SQL.pks
 @../plsql/wrapped_bodies/TD_SQL.plb
-@../plsql/specs/TD_CORE.pks
-@../plsql/wrapped_bodies/TD_CORE.plb
+@../plsql/specs/TD_HOST.pks
+@../plsql/wrapped_bodies/TD_HOST.plb
+@../plsql/specs/TD_DDL.pks
+@../plsql/wrapped_bodies/TD_DDL.plb
 @../plsql/specs/FILETYPE.tps
 @../plsql/wrapped_bodies/FILETYPE.plb
 @../plsql/specs/EXTRACTTYPE.tps
@@ -61,10 +63,10 @@ DROP TYPE apptype;
 @../object_views/DIMENSION_OT_vw.sql
 
 --CREATE callable packages
-@../plsql/specs/TD_DBAPI.pks
-@../plsql/wrapped_bodies/TD_DBAPI.plb
-@../plsql/specs/TD_FILEAPI.pks
-@../plsql/wrapped_bodies/TD_FILEAPI.plb
+@../plsql/specs/TD_ETL.pks
+@../plsql/wrapped_bodies/TD_ETL.plb
+@../plsql/specs/TD_FILES.pks
+@../plsql/wrapped_bodies/TD_FILES.plb
 @../plsql/specs/TD_CONTROL.pks
 @../plsql/wrapped_bodies/TD_CONTROL.plb
 @../plsql/specs/TD_OWBAPI.pks
