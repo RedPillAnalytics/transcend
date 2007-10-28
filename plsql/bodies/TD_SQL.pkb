@@ -9,12 +9,9 @@ AS
       PRAGMA AUTONOMOUS_TRANSACTION;
       l_results   NUMBER;
    BEGIN
-      IF NOT td_inst.is_debugmode
-      THEN
-         EXECUTE IMMEDIATE p_sql;
+      EXECUTE IMMEDIATE p_sql;
 
-         l_results := SQL%ROWCOUNT;
-      END IF;
+      l_results := SQL%ROWCOUNT;
 
       COMMIT;
       RETURN l_results;
