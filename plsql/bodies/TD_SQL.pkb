@@ -24,9 +24,10 @@ AS
    -- this function is not compile with AUTONOMOUS_TRANSATION
    -- if the P_AUTO flag of 'yes' is passed, then EXEC_AUTO is called
    FUNCTION exec_sql(
-      p_sql    VARCHAR2,
-      p_auto   VARCHAR2 DEFAULT 'no',
-      p_msg    VARCHAR2 DEFAULT NULL
+      p_sql              VARCHAR2,
+      p_auto             VARCHAR2 DEFAULT 'no',
+      p_msg              VARCHAR2 DEFAULT NULL,
+      p_override_debug   VARCHAR2 DEFAULT 'no'
    )
       RETURN NUMBER
    AS
@@ -38,7 +39,7 @@ AS
                           ELSE p_msg
                        END, 3 );
 
-      IF NOT td_inst.is_debugmode
+      IF NOT td_inst.is_debugmode OR NOT td_ext.is_true( p_override_debug )
       THEN
          IF td_ext.is_true( p_auto )
          THEN
@@ -55,9 +56,10 @@ AS
 
    -- if I don't care about the number of results (DDL, for instance), just call this procedure
    PROCEDURE exec_sql(
-      p_sql    VARCHAR2,
-      p_auto   VARCHAR2 DEFAULT 'no',
-      p_msg    VARCHAR2 DEFAULT NULL
+      p_sql              VARCHAR2,
+      p_auto             VARCHAR2 DEFAULT 'no',
+      p_msg              VARCHAR2 DEFAULT NULL,
+      p_override_debug   VARCHAR2 DEFAULT 'no'
    )
    AS
       l_results   NUMBER;
