@@ -109,7 +109,6 @@ AS
       -- confirm that the table exists
       -- raise an error if it doesn't
       td_sql.check_table( p_owner => p_owner, p_table => p_table );
-      td_inst.log_msg( 'Truncating table ' || l_tab_name, 3 );
       td_sql.exec_sql( p_sql       =>    'truncate table '
                                       || p_owner
                                       || '.'
@@ -2421,11 +2420,6 @@ AS
                               p_object           => p_source_object,
                               p_object_type      => 'table$|view'
                             );
-      END IF;
-
-      IF NOT td_inst.is_debugmode
-      THEN
-         td_inst.log_msg( 'Making specified indexes on ' || l_tab_name || ' unusable', 3 );
       END IF;
 
       o_ev.change_action( 'Populate PARTNAME table' );
