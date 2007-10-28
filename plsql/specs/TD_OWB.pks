@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE td_owbapi AUTHID CURRENT_USER
+CREATE OR REPLACE PACKAGE td_owb AUTHID CURRENT_USER
 AS
    PROCEDURE start_map_control(
       p_owner           VARCHAR2 DEFAULT NULL,
@@ -26,5 +26,5 @@ AS
       p_statistics       VARCHAR2 DEFAULT NULL
    );
 
-END td_owbapi;
+END td_owb;
 /
