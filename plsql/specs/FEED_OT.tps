@@ -6,8 +6,9 @@ CREATE OR REPLACE TYPE feed_ot UNDER file_ot(
    source_policy      VARCHAR2( 10 ),
    required           VARCHAR2( 8 ),
    reject_limit       NUMBER,
+   keep_source        VARCHAR2( 3 ),
    MEMBER PROCEDURE audit_ext_tab( p_num_lines NUMBER ),
-   MEMBER PROCEDURE process( p_keep_source VARCHAR2 DEFAULT 'no' )
+   MEMBER PROCEDURE process
 )
 ;
 /
