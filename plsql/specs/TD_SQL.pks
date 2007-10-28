@@ -1,16 +1,18 @@
 CREATE OR REPLACE PACKAGE td_sql AUTHID CURRENT_USER
 AS
    FUNCTION exec_sql(
-      p_sql    VARCHAR2,
-      p_auto   VARCHAR2 DEFAULT 'no',
-      p_msg    VARCHAR2 DEFAULT NULL
+      p_sql              VARCHAR2,
+      p_auto             VARCHAR2 DEFAULT 'no',
+      p_msg              VARCHAR2 DEFAULT NULL,
+      p_override_debug   VARCHAR2 DEFAULT 'no'
    )
       RETURN NUMBER;
 
    PROCEDURE exec_sql(
-      p_sql    VARCHAR2,
-      p_auto   VARCHAR2 DEFAULT 'no',
-      p_msg    VARCHAR2 DEFAULT NULL
+      p_sql              VARCHAR2,
+      p_auto             VARCHAR2 DEFAULT 'no',
+      p_msg              VARCHAR2 DEFAULT NULL,
+      p_override_debug   VARCHAR2 DEFAULT 'no'
    );
 
    PROCEDURE check_table(
