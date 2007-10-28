@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE BODY td_owbapi
+CREATE OR REPLACE PACKAGE BODY td_owb
 AS
    PROCEDURE start_map_control(
       p_owner           VARCHAR2 DEFAULT NULL,
@@ -81,5 +81,5 @@ AS
       td_inst.log_msg( 'Ending OWB mapping' );
       o_ev.clear_app_info;
    END end_map_control;
-END td_owbapi;
+END td_owb;
 /
