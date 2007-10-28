@@ -23,7 +23,7 @@ AS
       -- to catch empty cursors
       l_source_column   all_part_key_columns.column_name%TYPE;
       l_results         NUMBER;
-      o_ev              evolve_ot               := evolve_ot( p_module      => 'populate_partname' );
+      o_ev              evolve_ot         := evolve_ot( p_module      => 'populate_partname' );
       l_part_position   all_tab_partitions.partition_position%TYPE;
       l_high_value      all_tab_partitions.high_value%TYPE;
    BEGIN
@@ -65,30 +65,31 @@ AS
          o_ev.change_action( 'insert into td_part_gtt' );
          l_results :=
             td_sql.exec_sql
-               ( p_sql      =>    'insert into td_part_gtt (table_owner, table_name, partition_name, partition_position) '
-                               || ' SELECT table_owner, table_name, partition_name, partition_position'
-                               || '  FROM all_tab_partitions'
-                               || ' WHERE table_owner = '''
-                               || UPPER( p_owner )
-                               || ''' AND table_name = '''
-                               || UPPER( p_table )
-                               || ''' AND partition_position IN '
-                               || ' (SELECT DISTINCT tbl$or$idx$part$num("'
-                               || UPPER( p_owner )
-                               || '"."'
-                               || UPPER( p_table )
-                               || '", 0, '
-                               || p_d_num
-                               || ', '
-                               || p_p_num
-                               || ', "'
-                               || UPPER( l_source_column )
-                               || '")	 FROM '
-                               || UPPER( p_source_owner )
-                               || '.'
-                               || UPPER( p_source_object )
-                               || ') '
-                               || 'ORDER By partition_position'
+               ( p_sql                 =>    'insert into td_part_gtt (table_owner, table_name, partition_name, partition_position) '
+                                          || ' SELECT table_owner, table_name, partition_name, partition_position'
+                                          || '  FROM all_tab_partitions'
+                                          || ' WHERE table_owner = '''
+                                          || UPPER( p_owner )
+                                          || ''' AND table_name = '''
+                                          || UPPER( p_table )
+                                          || ''' AND partition_position IN '
+                                          || ' (SELECT DISTINCT tbl$or$idx$part$num("'
+                                          || UPPER( p_owner )
+                                          || '"."'
+                                          || UPPER( p_table )
+                                          || '", 0, '
+                                          || p_d_num
+                                          || ', '
+                                          || p_p_num
+                                          || ', "'
+                                          || UPPER( l_source_column )
+                                          || '")	 FROM '
+                                          || UPPER( p_source_owner )
+                                          || '.'
+                                          || UPPER( p_source_object )
+                                          || ') '
+                                          || 'ORDER By partition_position',
+                 p_override_debug      => 'yes'
                );
          td_inst.log_cnt_msg( l_results, l_num_msg, 4 );
       END IF;
@@ -103,11 +104,12 @@ AS
    )
    IS
       l_tab_name   VARCHAR2( 61 ) := UPPER( p_owner || '.' || p_table );
-      o_ev         evolve_ot         := evolve_ot( p_module => 'truncate_table' );
+      o_ev         evolve_ot      := evolve_ot( p_module => 'truncate_table' );
    BEGIN
       -- confirm that the table exists
       -- raise an error if it doesn't
       td_sql.check_table( p_owner => p_owner, p_table => p_table );
+      td_inst.log_msg( 'Truncating table ' || l_tab_name, 3 );
       td_sql.exec_sql( p_sql       =>    'truncate table '
                                       || p_owner
                                       || '.'
@@ -128,7 +130,7 @@ AS
             DEFAULT 'yes' )
    IS
       l_tab_name   VARCHAR2( 61 ) := UPPER( p_owner || '.' || p_table );
-      o_ev         evolve_ot         := evolve_ot( p_module => 'truncate_table' );
+      o_ev         evolve_ot      := evolve_ot( p_module => 'truncate_table' );
    BEGIN
       -- confirm that the table exists
       -- raise an error if it doesn't
@@ -171,7 +173,7 @@ AS
       PRAGMA EXCEPTION_INIT( e_dup_idx_name, -955 );
       e_dup_col_list   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_col_list, -1408 );
-      o_ev             evolve_ot                      := evolve_ot( p_module      => 'build_table' );
+      o_ev             evolve_ot                := evolve_ot( p_module      => 'build_table' );
    BEGIN
       -- confirm that the source table
       -- raise an error if it doesn't
@@ -323,7 +325,7 @@ AS
       PRAGMA EXCEPTION_INIT( e_dup_idx_name, -955 );
       e_dup_col_list    EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_col_list, -1408 );
-      o_ev              evolve_ot                   := evolve_ot( p_module      => 'build_indexes' );
+      o_ev              evolve_ot             := evolve_ot( p_module      => 'build_indexes' );
    BEGIN
       -- confirm that parameters are compatible
       -- go ahead and write a CASE statement so adding more later is easier
@@ -674,9 +676,9 @@ AS
    -- renames cloned indexes on a particular table back to their original names
    PROCEDURE rename_indexes
    IS
-      l_idx_cnt   NUMBER  := 0;
-      l_rows      BOOLEAN := FALSE;
-      o_ev        evolve_ot  := evolve_ot( p_module => 'rename_indexes' );
+      l_idx_cnt   NUMBER    := 0;
+      l_rows      BOOLEAN   := FALSE;
+      o_ev        evolve_ot := evolve_ot( p_module => 'rename_indexes' );
    BEGIN
       FOR c_idxs IN ( SELECT *
                        FROM td_build_idx_gtt )
@@ -738,7 +740,7 @@ AS
       PRAGMA EXCEPTION_INIT( e_dup_pk, -2260 );
       e_dup_fk          EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_fk, -2275 );
-      o_ev              evolve_ot               := evolve_ot( p_module      => 'build_constraints' );
+      o_ev              evolve_ot         := evolve_ot( p_module      => 'build_constraints' );
    BEGIN
       -- confirm that the target table exists
       -- raise an error if it doesn't
@@ -1084,7 +1086,7 @@ AS
       l_rows       BOOLEAN        := FALSE;
       e_iot_shc    EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_iot_shc, -25188 );
-      o_ev         evolve_ot         := evolve_ot( p_module => 'constraint_maint' );
+      o_ev         evolve_ot      := evolve_ot( p_module => 'constraint_maint' );
    BEGIN
       -- P_CONSTRAINT_TYPE only relates to constraints based on the table, not the reference
       IF REGEXP_LIKE( 'reference|all', p_basis, 'i' ) AND p_constraint_type IS NOT NULL
@@ -1284,9 +1286,9 @@ AS
    -- this procedure is used to just enable constraints disabled with the last call (in the current session) to DISABLE_CONSTRAINTS
    PROCEDURE enable_constraints
    IS
-      l_con_cnt   NUMBER  := 0;
-      l_rows      BOOLEAN := FALSE;
-      o_ev        evolve_ot  := evolve_ot( p_module => 'enable_constraints' );
+      l_con_cnt   NUMBER    := 0;
+      l_rows      BOOLEAN   := FALSE;
+      o_ev        evolve_ot := evolve_ot( p_module => 'enable_constraints' );
    BEGIN
       td_inst.log_msg( 'Enabling constraints disabled previously' );
 
@@ -1334,7 +1336,7 @@ AS
       l_idx_cnt    NUMBER         := 0;
       e_pk_idx     EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_pk_idx, -2429 );
-      o_ev         evolve_ot         := evolve_ot( p_module => 'drop_indexes' );
+      o_ev         evolve_ot      := evolve_ot( p_module => 'drop_indexes' );
    BEGIN
       FOR c_indexes IN ( SELECT 'drop index ' || owner || '.' || index_name index_ddl,
                                 index_name, table_name, owner,
@@ -1391,7 +1393,7 @@ AS
       l_con_cnt    NUMBER         := 0;
       l_tab_name   VARCHAR2( 61 ) := p_owner || '.' || p_table;
       l_rows       BOOLEAN        := FALSE;
-      o_ev         evolve_ot         := evolve_ot( p_module => 'drop_constraints' );
+      o_ev         evolve_ot      := evolve_ot( p_module => 'drop_constraints' );
    BEGIN
       -- drop constraints
       FOR c_constraints IN ( SELECT    'alter table '
@@ -1458,7 +1460,7 @@ AS
       l_rows        BOOLEAN         := FALSE;
       e_no_grants   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_grants, -31608 );
-      o_ev          evolve_ot          := evolve_ot( p_module => 'object_grants' );
+      o_ev          evolve_ot       := evolve_ot( p_module => 'object_grants' );
    BEGIN
       -- confirm that the target table exists
       -- raise an error if it doesn't
@@ -1568,7 +1570,8 @@ AS
       l_results    NUMBER;
       o_ev         evolve_ot
          := evolve_ot( p_module      => 'insert_table',
-                    p_action      => 'Check existence of objects' );
+                       p_action      => 'Check existence of objects'
+                     );
    BEGIN
       -- check information about the table
       td_sql.check_table( p_owner => p_owner, p_table => p_table );
@@ -1671,7 +1674,8 @@ AS
       PRAGMA EXCEPTION_INIT( e_no_on_columns, -936 );
       o_ev              evolve_ot
          := evolve_ot( p_module      => 'merge_table',
-                    p_action      => 'Check existence of objects' );
+                       p_action      => 'Check existence of objects'
+                     );
    BEGIN
       -- check information about the table
       td_sql.check_table( p_owner => p_owner, p_table => p_table );
@@ -1936,8 +1940,8 @@ AS
       p_commit          VARCHAR2 DEFAULT 'yes'
    )
    IS
-      l_rows   BOOLEAN := FALSE;
-      o_ev     evolve_ot  := evolve_ot( p_module => 'load_tables' );
+      l_rows   BOOLEAN   := FALSE;
+      o_ev     evolve_ot := evolve_ot( p_module => 'load_tables' );
    BEGIN
       -- dynamic cursor contains source and target objects
       FOR c_objects IN ( SELECT o.owner src_owner, object_name src, t.owner targ_owner,
@@ -2053,7 +2057,7 @@ AS
       PRAGMA EXCEPTION_INIT( e_compress, -14646 );
       e_fkeys          EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_fkeys, -2266 );
-      o_ev             evolve_ot               := evolve_ot( p_module      => 'exchange_partition' );
+      o_ev             evolve_ot         := evolve_ot( p_module      => 'exchange_partition' );
    BEGIN
       o_ev.change_action( 'Determine partition to use' );
       -- check to make sure the target table exists, is partitioned, and the partition name exists
@@ -2254,7 +2258,7 @@ AS
       PRAGMA EXCEPTION_INIT( e_compress, -14646 );
       e_fkeys      EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_fkeys, -2266 );
-      o_ev         evolve_ot         := evolve_ot( p_module => 'replace_table' );
+      o_ev         evolve_ot      := evolve_ot( p_module => 'replace_table' );
    BEGIN
       o_ev.change_action( 'Perform object checks' );
       -- check to make sure the target table exists
@@ -2377,7 +2381,7 @@ AS
       l_pidx_cnt   NUMBER;
       l_idx_cnt    NUMBER;
       l_rows       BOOLEAN          DEFAULT FALSE;
-      o_ev         evolve_ot           := evolve_ot( p_module => 'unusable_indexes' );
+      o_ev         evolve_ot        := evolve_ot( p_module => 'unusable_indexes' );
    BEGIN
       CASE
          WHEN     p_partname IS NOT NULL
@@ -2417,6 +2421,11 @@ AS
                               p_object           => p_source_object,
                               p_object_type      => 'table$|view'
                             );
+      END IF;
+
+      IF NOT td_inst.is_debugmode
+      THEN
+         td_inst.log_msg( 'Making specified indexes on ' || l_tab_name || ' unusable', 3 );
       END IF;
 
       o_ev.change_action( 'Populate PARTNAME table' );
@@ -2531,7 +2540,7 @@ AS
 
       IF l_rows
       THEN
-         IF l_idx_cnt > 0
+         IF l_idx_cnt > 0 OR l_pidx_cnt > 0
          THEN
             td_inst.log_msg(    l_idx_cnt
                              || ' index'
@@ -2540,24 +2549,20 @@ AS
                                       THEN NULL
                                    ELSE 'es'
                                 END
-                             || ' affected'
-                           );
-         END IF;
-
-         IF l_pidx_cnt > 0
-         THEN
-            td_inst.log_msg(    l_pidx_cnt
+                             || ' and '
+                             || l_pidx_cnt
                              || ' local index partition'
                              || CASE l_pidx_cnt
                                    WHEN 1
                                       THEN NULL
                                    ELSE 's'
                                 END
-                             || ' affected'
+                             || ' affected on table '
+                             || l_tab_name
                            );
          END IF;
       ELSE
-         td_inst.log_msg( 'No matching usable indexes found' );
+         td_inst.log_msg( 'No matching usable indexes found on ' || l_tab_name );
       END IF;
 
       -- commit needed to clear the contents of the global temporary table
@@ -2575,7 +2580,7 @@ AS
       l_rows   BOOLEAN          := FALSE;                       -- to catch empty cursors
       l_cnt    NUMBER           := 0;
       o_ev     evolve_ot
-                 := evolve_ot( p_module      => 'usable_indexes',
+              := evolve_ot( p_module      => 'usable_indexes',
                             p_action      => 'Rebuild indexes' );
    BEGIN
       td_sql.check_table( p_owner => p_owner, p_table => p_table );
@@ -2693,7 +2698,7 @@ AS
       e_no_stats    EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_stats, -20000 );
       l_rows        BOOLEAN        := FALSE;                     -- to catch empty cursors
-      o_ev          evolve_ot         := evolve_ot( p_module => 'update_stats' );
+      o_ev          evolve_ot      := evolve_ot( p_module => 'update_stats' );
    BEGIN
       -- check all the parameter requirements
       CASE
