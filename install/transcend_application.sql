@@ -41,7 +41,7 @@ DROP TYPE app_ot;
 @../plsql/specs/NOTIFY_OT.tps
 @../plsql/specs/EMAIL_OT.tps
 @../plsql/wrapped_bodies/EMAIL_OT.plb
-@../object_views/EMAIL_OT_vw.sql
+@../object_views/EMAIL_OV_vw.sql
 @../plsql/specs/EVOLVE_OT.tps
 @../plsql/wrapped_bodies/EVOLVE_OT.plb
 @../plsql/specs/TD_SQL.pks
@@ -54,7 +54,7 @@ DROP TYPE app_ot;
 @../plsql/wrapped_bodies/FILE_OT.plb
 @../plsql/specs/EXTRACT_OT.tps
 @../plsql/wrapped_bodies/EXTRACT_OT.plb
-@../object_views/EXTRACT_OT_vw.sql
+@../object_views/EXTRACT_OV_vw.sql
 @../plsql/specs/FEED_OT.tps
 @../plsql/wrapped_bodies/FEED_OT.plb
 @../object_views/FEED_OV_vw.sql
