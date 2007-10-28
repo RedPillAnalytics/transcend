@@ -2548,7 +2548,7 @@ AS
          THEN
             td_inst.log_msg(    l_pidx_cnt
                              || ' local index partition'
-                             || CASE l_idx_cnt
+                             || CASE l_pidx_cnt
                                    WHEN 1
                                       THEN NULL
                                    ELSE 's'
