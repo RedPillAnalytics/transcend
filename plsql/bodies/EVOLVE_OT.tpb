@@ -73,28 +73,29 @@ AS
            INTO l_registration
            FROM ( SELECT registration, parameter_level,
                          MAX( parameter_level ) OVER( PARTITION BY 1 )
-                         max_parameter_level
-                    FROM ( SELECT registration, module,
-                                  CASE
-                                  WHEN module = 'default'
-                                  THEN 1
-                                  ELSE 2
-                                  END parameter_level
-                             FROM registration_conf )
-                   WHERE ( module = td_inst.module OR module = 'default' ))
+                                                                      max_parameter_level
+                   FROM ( SELECT registration, module,
+                                 CASE
+                                    WHEN module = 'default'
+                                       THEN 1
+                                    ELSE 2
+                                 END parameter_level
+                           FROM registration_conf )
+                  WHERE ( module = td_inst.module OR module = 'default' ))
           WHERE parameter_level = max_parameter_level;
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
-         raise_application_error( td_inst.get_err_cd( 'parm_not_configured' ),
-                                  td_inst.get_err_msg( 'parm_not_configured' )
-                                  || ': REGISTRATION'
-                                );
+            raise_application_error( td_inst.get_err_cd( 'parm_not_configured' ),
+                                        td_inst.get_err_msg( 'parm_not_configured' )
+                                     || ': REGISTRATION'
+                                   );
       END;
+
       -- set the registration value
       td_inst.registration( l_registration );
       -- now register the application
-      td_inst.register;
+      td_inst.REGISTER;
 
       -- get the logging level
       BEGIN
@@ -102,32 +103,31 @@ AS
            INTO l_logging_level, l_debug_level
            FROM ( SELECT logging_level, debug_level, parameter_level,
                          MAX( parameter_level ) OVER( PARTITION BY 1 )
-                         max_parameter_level
-                    FROM ( SELECT logging_level, debug_level, module,
-                                  CASE
-                                  WHEN module = 'default'
-                                  THEN 1
-                                  ELSE 2
-                                  END parameter_level
-                             FROM logging_conf )
-                   WHERE ( module = td_inst.module OR module = 'default' ))
+                                                                      max_parameter_level
+                   FROM ( SELECT logging_level, debug_level, module,
+                                 CASE
+                                    WHEN module = 'default'
+                                       THEN 1
+                                    ELSE 2
+                                 END parameter_level
+                           FROM logging_conf )
+                  WHERE ( module = td_inst.module OR module = 'default' ))
           WHERE parameter_level = max_parameter_level;
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
-         raise_application_error( td_inst.get_err_cd( 'parm_not_configured' ),
-                                  td_inst.get_err_msg( 'parm_not_configured' )
-                                  || ': LOGGING_LEVEL or DEBUG_LEVEL'
-                                );
+            raise_application_error( td_inst.get_err_cd( 'parm_not_configured' ),
+                                        td_inst.get_err_msg( 'parm_not_configured' )
+                                     || ': LOGGING_LEVEL or DEBUG_LEVEL'
+                                   );
       END;
 
       td_inst.logging_level( CASE
-                             WHEN td_inst.is_debugmode
-                             THEN l_debug_level
-                             ELSE l_logging_level
+                                WHEN td_inst.is_debugmode
+                                   THEN l_debug_level
+                                ELSE l_logging_level
                              END
                            );
-
       -- log module and action changes to a high logging level
       td_inst.log_msg(    'MODULE "'
                        || td_inst.module
@@ -158,58 +158,39 @@ AS
 
       RETURN;
    END evolve_ot;
-
-   MEMBER PROCEDURE send( p_module_id NUMBER, p_message VARCHAR2 DEFAULT NULL )
+   MEMBER PROCEDURE send( p_label NUMBER, p_message VARCHAR2 DEFAULT NULL )
    AS
-      l_notify_method   notify_conf.notify_method%TYPE;
-      l_notify_id       notify_conf.notify_id%TYPE;
-      o_email           email_ot;
+      o_notify   notification_ot;
    BEGIN
-      SELECT notify_method, notify_id
-        INTO l_notify_method, l_notify_id
-        FROM ( SELECT notify_method, notify_id, parameter_level,
-                      MAX( parameter_level ) OVER( PARTITION BY 1 ) max_parameter_level
-                FROM ( SELECT notify_method, notify_id, module, module_id, action,
-                              CASE
-                                 WHEN action IS NULL
-                                      AND module_id IS NULL
-                                    THEN 1
-                                 WHEN action IS NULL
-                                 AND module_id IS NOT NULL
-                                    THEN 2
-                                 WHEN action IS NOT NULL AND module_id IS NULL
-                                    THEN 3
-                                 WHEN action IS NOT NULL AND module_id IS NOT NULL
-                                    THEN 4
-                              END parameter_level
-                        FROM notify_conf )
-               WHERE ( module = td_inst.module )
-                 AND ( action = td_inst.action OR action IS NULL )
-                 AND ( module_id = p_module_id OR module_id IS NULL ))
-       WHERE parameter_level = max_parameter_level;
-
-      CASE l_notify_method
-         WHEN 'email'
+      BEGIN
+         SELECT VALUE( t )
+           INTO o_notify
+           FROM notification_ov t
+          WHERE module = td_inst.module
+            AND action = td_inst.action
+            AND notification_label = p_label;
+      EXCEPTION
+         WHEN NO_DATA_FOUND
          THEN
-            SELECT VALUE( t )
-              INTO o_email
-              FROM email_ov t
-             WHERE t.notify_id = l_notify_id;
+            td_inst.log_msg(    'No notification configured for label '
+                             || p_label
+                             || ' with module '
+                             || td_inst.module
+                             || ' and action '
+                             || td_inst.action,
+                             4
+                           );
+      END;
 
-            o_email.MESSAGE :=
-               CASE p_message
-                  WHEN NULL
-                     THEN o_email.MESSAGE
-                  ELSE o_email.MESSAGE || CHR( 10 ) || CHR( 10 ) || p_message
-               END;
-            o_email.module := td_inst.module;
-            o_email.action := td_inst.action;
-            o_email.send;
-         ELSE
-            raise_application_error( td_inst.get_err_cd( 'notify_method_invalid' ),
-                                     td_inst.get_err_msg( 'notify_method_invalid' )
-                                   );
-      END CASE;
+      o_notify.MESSAGE :=
+         CASE p_message
+            WHEN NULL
+               THEN o_email.MESSAGE
+            ELSE o_email.MESSAGE || CHR( 10 ) || CHR( 10 ) || p_message
+         END;
+      o_email.module := td_inst.module;
+      o_email.action := td_inst.action;
+      o_email.send;
    EXCEPTION
       WHEN NO_DATA_FOUND
       THEN
