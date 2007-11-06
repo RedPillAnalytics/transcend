@@ -21,8 +21,7 @@ DROP TYPE dimension_ot;
 DROP TYPE feed_ot;
 DROP TYPE extract_ot;
 DROP TYPE file_ot;
-DROP TYPE email_ot;
-DROP TYPE notify_ot;
+DROP TYPE notification_ot;
 DROP TYPE evolve_ot;
 DROP TYPE app_ot;
 
@@ -38,10 +37,8 @@ DROP TYPE app_ot;
 --CREATE targeted _ots, packages and object views
 @../plsql/specs/APP_OT.tps
 @../plsql/wrapped_bodies/APP_OT.plb
-@../plsql/specs/NOTIFY_OT.tps
-@../plsql/specs/EMAIL_OT.tps
-@../plsql/wrapped_bodies/EMAIL_OT.plb
-@../object_views/EMAIL_OV_vw.sql
+@../plsql/specs/NOTIFICATION_OT.tps
+@../plsql/wrapped_bodies/NOTIFICATION_OT.plb
 @../plsql/specs/EVOLVE_OT.tps
 @../plsql/wrapped_bodies/EVOLVE_OT.plb
 @../plsql/specs/TD_SQL.pks
