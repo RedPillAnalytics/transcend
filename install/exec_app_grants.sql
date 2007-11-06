@@ -13,8 +13,7 @@ GRANT EXECUTE ON STRING_AGG_OT to &app_schema_eag._app;
 GRANT EXECUTE ON TD_EXT to &app_schema_eag._app;
 GRANT EXECUTE ON TD_INST to &app_schema_eag._app;
 GRANT EXECUTE ON APP_OT to &app_schema_eag._app;
-GRANT EXECUTE ON NOTIFY_OT to &app_schema_eag._app;
-GRANT EXECUTE ON EMAIL_OT to &app_schema_eag._app;
+GRANT EXECUTE ON NOTIFICATION_OT to &app_schema_eag._app;
 GRANT EXECUTE ON EVOLVE_OT to &app_schema_eag._app;
 GRANT EXECUTE ON TD_HOST to &app_schema_eag._app;
 GRANT EXECUTE ON TD_SQL to &app_schema_eag._app;
@@ -28,6 +27,6 @@ GRANT EXECUTE ON TD_CONTROL to &app_schema_eag._app;
 GRANT EXECUTE ON TD_OWB to &app_schema_eag._app;
 
 -- grant select on the object views to this role
-GRANT SELECT ON EMAIL_OV to &app_schema_eag._app;
+GRANT SELECT ON NOTIFICATION_OV to &app_schema_eag._app;
 GRANT SELECT ON EXTRACT_OV to &app_schema_eag._app;
 GRANT SELECT ON FEED_OV to &app_schema_eag._app;
