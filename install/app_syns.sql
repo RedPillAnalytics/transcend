@@ -18,7 +18,7 @@ BEGIN
       EXECUTE IMMEDIATE 'create or replace synonym &syn_schema_as..stragg for &obj_schema_as..stragg';
       EXECUTE IMMEDIATE 'create or replace synonym &syn_schema_as..feed_ov for &obj_schema_as..feed_ov';
       EXECUTE IMMEDIATE 'create or replace synonym &syn_schema_as..extract_ov for &obj_schema_as..extract_ov';
-      EXECUTE IMMEDIATE 'create or replace synonym &syn_schema_as..email_ov for &obj_schema_as..email_ov';
+      EXECUTE IMMEDIATE 'create or replace synonym &syn_schema_as..notification_ov for &obj_schema_as..notification_ov';
    END IF;
       
 END;
