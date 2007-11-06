@@ -38,10 +38,10 @@ GRANT SELECT ON logging_conf_seq TO &rep_schema_rg._adm;
 GRANT SELECT ON LOG_TABLE TO &rep_schema_rg._sel;
 GRANT SELECT,UPDATE,DELETE,INSERT ON LOG_TABLE TO &rep_schema_rg._adm;
 
-GRANT SELECT ON NOTIFY_CONF TO &rep_schema_rg._sel;
-GRANT SELECT,UPDATE,DELETE,INSERT ON NOTIFY_CONF TO &rep_schema_rg._adm;
-GRANT SELECT ON notify_conf_seq TO &rep_schema_rg._sel;
-GRANT SELECT ON notify_conf_seq TO &rep_schema_rg._adm;
+GRANT SELECT ON NOTIFICATION_CONF TO &rep_schema_rg._sel;
+GRANT SELECT,UPDATE,DELETE,INSERT ON NOTIFICATION_CONF TO &rep_schema_rg._adm;
+GRANT SELECT ON notification_conf_seq TO &rep_schema_rg._sel;
+GRANT SELECT ON notification_conf_seq TO &rep_schema_rg._adm;
 
 GRANT SELECT ON PARAMETER_CONF TO &rep_schema_rg._sel;
 GRANT SELECT,UPDATE,DELETE,INSERT ON PARAMETER_CONF TO &rep_schema_rg._adm;
