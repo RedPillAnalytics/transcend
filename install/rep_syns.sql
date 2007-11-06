@@ -25,7 +25,7 @@ BEGIN
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..FILEHUB_OBJ_DETAIL for &schema_rs..FILEHUB_OBJ_DETAIL';
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..LOGGING_CONF for &schema_rs..LOGGING_CONF';
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..LOG_TABLE for &schema_rs..LOG_TABLE';
-      EXECUTE IMMEDIATE 'create or replace synonym &user_rs..NOTIFY_CONF for &schema_rs..NOTIFY_CONF';
+      EXECUTE IMMEDIATE 'create or replace synonym &user_rs..NOTIFICATION_CONF for &schema_rs..NOTIFICATION_CONF';
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..TD_PART_GTT for &schema_rs..TD_PART_GTT';
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..TD_BUILD_IDX_GTT for &schema_rs..TD_BUILD_IDX_GTT';
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..TD_BUILD_CON_GTT for &schema_rs..TD_BUILD_CON_GTT';
@@ -43,7 +43,7 @@ BEGIN
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..FILEHUB_DETAIL_SEQ for &schema_rs..FILEHUB_DETAIL_SEQ';
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..FILEHUB_OBJ_DETAIL_SEQ for &schema_rs..FILEHUB_OBJ_DETAIL_SEQ';
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..LOGGING_CONF_SEQ for &schema_rs..LOGGING_CONF_SEQ';
-      EXECUTE IMMEDIATE 'create or replace synonym &user_rs..NOTIFY_CONF_SEQ for &schema_rs..NOTIFY_CONF_SEQ';
+      EXECUTE IMMEDIATE 'create or replace synonym &user_rs..NOTIFICATION_CONF_SEQ for &schema_rs..NOTIFICATION_CONF_SEQ';
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..REGISTRATION_CONF_SEQ for &schema_rs..REGISTRATION_CONF_SEQ';
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..RUNMODE_CONF_SEQ for &schema_rs..RUNMODE_CONF_SEQ';
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..PARAMETER_CONF_SEQ for &schema_rs..PARAMETER_CONF_SEQ';
