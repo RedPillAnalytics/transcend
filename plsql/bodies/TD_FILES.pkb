@@ -14,12 +14,12 @@ IS
    BEGIN
       SELECT percent_diff
         INTO l_pct_diff
-        FROM file_obj_detail
-       WHERE file_group = p_filehub_group
-         AND file_label = p_filehub_name
+        FROM files_obj_detail
+       WHERE file_group = p_file_group
+         AND file_label = p_file_name
          AND processed_ts =
                          ( SELECT MAX( processed_ts )
-                            FROM file_obj_detail
+                            FROM files_obj_detail
                            WHERE file_group = p_file_group AND file_label = p_file_label );
 
       IF l_pct_diff > p_rej_limit
@@ -117,7 +117,7 @@ IS
          COMMIT;
       END LOOP;
 
-      -- no matching filehub entries are found
+      -- no matching files entries are found
       IF NOT l_rows
       THEN
          raise_application_error( td_inst.get_err_cd( 'incorrect_parameters' ),
