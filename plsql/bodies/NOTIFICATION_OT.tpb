@@ -1,10 +1,17 @@
 CREATE OR REPLACE TYPE BODY notification_ot
 AS
+   CONSTRUCTOR FUNCTION notification_ot
+      RETURN SELF AS RESULT
+   AS
+   BEGIN
+      module := td_inst.module;
+      action := td_inst.action;
+   END;
+
    MEMBER PROCEDURE send( p_message VARCHAR2 DEFAULT NULL )
    AS
       e_smtp_error   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_smtp_error, -29279 );
-      o_app          app_ot    := app_ot( p_module => 'send' );
    BEGIN
       IF td_ext.is_true( notification_enabled )
       THEN
