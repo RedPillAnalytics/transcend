@@ -15,20 +15,14 @@ GRANT SELECT,UPDATE,DELETE,INSERT ON COUNT_TABLE TO &rep_schema_rg._adm;
 GRANT SELECT ON DIR_LIST TO &rep_schema_rg._sel;
 GRANT SELECT,UPDATE,DELETE,INSERT ON DIR_LIST TO &rep_schema_rg._adm;
 
-GRANT SELECT ON FILEHUB_CONF TO &rep_schema_rg._sel;
-GRANT SELECT,UPDATE,DELETE,INSERT ON FILEHUB_CONF TO &rep_schema_rg._adm;
-GRANT SELECT ON FILEHUB_CONF_SEQ TO &rep_schema_rg._sel;
-GRANT SELECT ON FILEHUB_CONF_SEQ TO &rep_schema_rg._adm;
+GRANT SELECT ON FILES_CONF TO &rep_schema_rg._sel;
+GRANT SELECT,UPDATE,DELETE,INSERT ON FILES_CONF TO &rep_schema_rg._adm;
 
-GRANT SELECT ON FILEHUB_DETAIL TO &rep_schema_rg._sel;
-GRANT SELECT,UPDATE,DELETE,INSERT ON FILEHUB_DETAIL TO &rep_schema_rg._adm;
-GRANT SELECT ON filehub_detail_seq TO &rep_schema_rg._sel;
-GRANT SELECT ON filehub_detail_seq TO &rep_schema_rg._adm;
+GRANT SELECT ON FILES_DETAIL TO &rep_schema_rg._sel;
+GRANT SELECT,UPDATE,DELETE,INSERT ON FILES_DETAIL TO &rep_schema_rg._adm;
 
-GRANT SELECT ON FILEHUB_OBJ_DETAIL TO &rep_schema_rg._sel;
-GRANT SELECT,UPDATE,DELETE,INSERT ON FILEHUB_OBJ_DETAIL TO &rep_schema_rg._adm;
-GRANT SELECT ON filehub_obj_detail_seq TO &rep_schema_rg._sel;
-GRANT SELECT ON filehub_obj_detail_seq TO &rep_schema_rg._adm;
+GRANT SELECT ON FILES_OBJ_DETAIL TO &rep_schema_rg._sel;
+GRANT SELECT,UPDATE,DELETE,INSERT ON FILES_OBJ_DETAIL TO &rep_schema_rg._adm;
 
 GRANT SELECT ON LOGGING_CONF TO &rep_schema_rg._sel;
 GRANT SELECT,UPDATE,DELETE,INSERT ON LOGGING_CONF TO &rep_schema_rg._adm;
