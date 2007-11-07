@@ -20,9 +20,13 @@ GRANT SELECT,UPDATE,DELETE,INSERT ON FILES_CONF TO &rep_schema_rg._adm;
 
 GRANT SELECT ON FILES_DETAIL TO &rep_schema_rg._sel;
 GRANT SELECT,UPDATE,DELETE,INSERT ON FILES_DETAIL TO &rep_schema_rg._adm;
+GRANT SELECT ON files_detail_seq TO &rep_schema_rg._sel;
+GRANT SELECT ON files_detail_seq TO &rep_schema_rg._adm;
 
 GRANT SELECT ON FILES_OBJ_DETAIL TO &rep_schema_rg._sel;
 GRANT SELECT,UPDATE,DELETE,INSERT ON FILES_OBJ_DETAIL TO &rep_schema_rg._adm;
+GRANT SELECT ON files_obj_detail_seq TO &rep_schema_rg._sel;
+GRANT SELECT ON files_obj_detail_seq TO &rep_schema_rg._adm;
 
 GRANT SELECT ON LOGGING_CONF TO &rep_schema_rg._sel;
 GRANT SELECT,UPDATE,DELETE,INSERT ON LOGGING_CONF TO &rep_schema_rg._adm;
