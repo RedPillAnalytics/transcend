@@ -40,8 +40,8 @@ BEGIN
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..REPLACE_METHOD_LIST for &schema_rs..REPLACE_METHOD_LIST';
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..OPT_STATS for &schema_rs..OPT_STATS';
       -- sequences
-      EXECUTE IMMEDIATE 'create or replace synonym &user_rs..FILES_DETAIL_SEQ for &schema_rs..FILEHUB_DETAIL_SEQ';
-      EXECUTE IMMEDIATE 'create or replace synonym &user_rs..FILES_OBJ_DETAIL_SEQ for &schema_rs..FILEHUB_OBJ_DETAIL_SEQ';
+      EXECUTE IMMEDIATE 'create or replace synonym &user_rs..FILES_DETAIL_SEQ for &schema_rs..FILES_DETAIL_SEQ';
+      EXECUTE IMMEDIATE 'create or replace synonym &user_rs..FILES_OBJ_DETAIL_SEQ for &schema_rs..FILES_OBJ_DETAIL_SEQ';
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..LOGGING_CONF_SEQ for &schema_rs..LOGGING_CONF_SEQ';
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..NOTIFICATION_CONF_SEQ for &schema_rs..NOTIFICATION_CONF_SEQ';
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..REGISTRATION_CONF_SEQ for &schema_rs..REGISTRATION_CONF_SEQ';
