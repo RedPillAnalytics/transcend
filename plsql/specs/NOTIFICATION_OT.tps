@@ -11,6 +11,8 @@ CREATE OR REPLACE TYPE notification_ot AS OBJECT(
    sender                  VARCHAR2( 1024 ),
    recipients              VARCHAR2( 2000 ),
    notification_required   VARCHAR2( 3 ),
+   CONSTRUCTOR FUNCTION notification_ot
+      RETURN SELF AS RESULT,
    MEMBER PROCEDURE send( p_message VARCHAR2 DEFAULT NULL )
 )
 NOT FINAL;
