@@ -20,6 +20,7 @@ CREATE TABLE files_conf
 	 regexp_options		VARCHAR2(10)    DEFAULT 'i',
 	 source_policy	        VARCHAR2(10) 	DEFAULT 'newest',
 	 required       	VARCHAR2(1) 	DEFAULT 'Y',
+	 delete_source 		VARCHAR2(3)     DEFAULT 'Y',
 	 reject_limit 		NUMBER,
 	 dateformat		VARCHAR2(30)   	DEFAULT 'mm/dd/yyyy hh:mi:ss am',
 	 timestampformat	VARCHAR2(30)   	DEFAULT 'mm/dd/yyyy hh:mi:ss:x:ff am',
