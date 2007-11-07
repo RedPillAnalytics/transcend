@@ -12,7 +12,7 @@ AS
       PRAGMA EXCEPTION_INIT( e_no_table, -942 );
       e_no_files         EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_files, -1756 );
-      o_ev               evolve_ot          := evolve_ot( p_module => 'audit_ext_tab' );
+      o_ev               evolve_ot       := evolve_ot( p_module => 'audit_ext_tab' );
    BEGIN
       -- type object which handles logging and application registration for instrumentation purposes
       -- defaults to registering with DBMS_APPLICATION_INFO
@@ -62,16 +62,14 @@ AS
                td_inst.log_msg( 'External table location is an empty file' );
          END;
 
-         INSERT INTO filehub_obj_detail
-                     ( filehub_obj_id, filehub_id,
-                       filehub_type, filehub_name, filehub_group,
-                       object_owner, object_name, num_rows, num_lines,
-                       percent_diff
+         INSERT INTO files_obj_detail
+                     ( files_obj_id, file_type, file_label,
+                       file_group, object_owner, object_name, num_rows,
+                       num_lines, percent_diff
                      )
-              VALUES ( filehub_obj_detail_seq.NEXTVAL, SELF.filehub_id,
-                       SELF.filehub_type, SELF.filehub_name, SELF.filehub_group,
-                       SELF.object_owner, SELF.object_name, l_num_rows, p_num_lines,
-                       l_pct_miss
+              VALUES ( files_obj_detail_seq.NEXTVAL, SELF.file_type, SELF.file_label,
+                       SELF.file_group, SELF.object_owner, SELF.object_name, l_num_rows,
+                       p_num_lines, l_pct_miss
                      );
       END IF;
 
@@ -103,9 +101,9 @@ AS
       l_results        NUMBER;
       e_no_files       EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_files, -1756 );
-      o_ev             evolve_ot                     := evolve_ot( p_module => 'process' );
+      o_ev             evolve_ot                  := evolve_ot( p_module => 'process' );
    BEGIN
-      td_inst.log_msg( 'Processing feed "' || filehub_name || '"' );
+      td_inst.log_msg( 'Processing feed "' || file_label || '"' );
       o_ev.change_action( 'Evaluate source directory' );
 
       -- first we remove all current files in the external table
@@ -196,19 +194,20 @@ AS
                    -- this constructs a STRAGGED list of URL's if multiple files exist
                              -- otherwise it's null
                    REGEXP_REPLACE
-                      ( STRAGG(    SELF.baseurl
-                             || '/'
-                             || CASE
-                                   WHEN ext_tab_ind = 'Y' AND ext_tab_type_cnt > 1
-                                      THEN REGEXP_REPLACE( SELF.filename,
-                                                           '\.',
-                                                           '_' || file_number || '.'
-                                                         )
-                                   WHEN ext_tab_ind = 'N'
-                                      THEN NULL
-                                   ELSE SELF.filename
-                                END
-                           ) OVER( PARTITION BY ext_tab_ind ),
+                      ( STRAGG
+                            (    SELF.baseurl
+                              || '/'
+                              || CASE
+                                    WHEN ext_tab_ind = 'Y' AND ext_tab_type_cnt > 1
+                                       THEN REGEXP_REPLACE( SELF.filename,
+                                                            '\.',
+                                                            '_' || file_number || '.'
+                                                          )
+                                    WHEN ext_tab_ind = 'N'
+                                       THEN NULL
+                                    ELSE SELF.filename
+                                 END
+                            ) OVER( PARTITION BY ext_tab_ind ),
                         ',',
                         CHR( 10 )
                       ) files_url
