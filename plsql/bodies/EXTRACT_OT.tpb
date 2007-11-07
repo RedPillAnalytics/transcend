@@ -11,9 +11,9 @@ AS
       l_detail_id   NUMBER;
       l_message     notify_conf.MESSAGE%TYPE;
       l_results     NUMBER;
-      o_ev          evolve_ot                     := evolve_ot( p_module => 'process' );
+      o_ev          evolve_ot                  := evolve_ot( p_module => 'process' );
    BEGIN
-      td_inst.log_msg( 'Processing extract "' || filehub_name || '"' );
+      td_inst.log_msg( 'Processing extract "' || file_label || '"' );
       o_ev.change_action( 'Configure NLS formats' );
       -- set date and timestamp NLS formats
       l_results :=
@@ -82,7 +82,7 @@ AS
             || 'The file is too large for some desktop applications, such as Microsoft Excel, to open.';
       END IF;
 
-      o_ev.send( p_module_id => filehub_id, p_message => l_message );
+      o_ev.send( p_label => file_label, p_message => l_message );
       o_ev.clear_app_info;
    END process;
 END;
