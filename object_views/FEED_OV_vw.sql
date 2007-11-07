@@ -1,11 +1,10 @@
 CREATE OR REPLACE VIEW feed_ov
 OF feed_ot
-WITH object identifier (filehub_id)
+WITH object identifier (file_label,file_group)
 as
-SELECT filehub_id,
-       filehub_name,
-       filehub_group,
-       filehub_type,
+SELECT file_label,
+       file_group,
+       file_type,
        object_owner,
        object_name,
        directory,
@@ -29,10 +28,9 @@ SELECT filehub_id,
        source_policy,
        required,
        reject_limit
-  FROM (SELECT filehub_id,
-               filehub_name,
-               filehub_group,
-               filehub_type,
+  FROM (SELECT file_label,
+               file_group,
+               file_type,
                object_owner,
                object_name,
                directory,
@@ -52,5 +50,5 @@ SELECT filehub_id,
 	       source_policy,
 	       required,
 	       reject_limit
-          FROM filehub_conf
-	 WHERE REGEXP_LIKE (filehub_type, '^feed$', 'i'));
+          FROM files_conf
+	 WHERE REGEXP_LIKE (file_type, '^feed$', 'i'));
