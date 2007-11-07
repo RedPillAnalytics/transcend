@@ -20,9 +20,9 @@ BEGIN
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..COUNT_TABLE for &schema_rs..COUNT_TABLE';
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..DIR_LIST for &schema_rs..DIR_LIST';
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..ERR_CD for &schema_rs..ERR_CD';
-      EXECUTE IMMEDIATE 'create or replace synonym &user_rs..FILEHUB_CONF for &schema_rs..FILEHUB_CONF';
-      EXECUTE IMMEDIATE 'create or replace synonym &user_rs..FILEHUB_DETAIL for &schema_rs..FILEHUB_DETAIL';
-      EXECUTE IMMEDIATE 'create or replace synonym &user_rs..FILEHUB_OBJ_DETAIL for &schema_rs..FILEHUB_OBJ_DETAIL';
+      EXECUTE IMMEDIATE 'create or replace synonym &user_rs..FILES_CONF for &schema_rs..FILES_CONF';
+      EXECUTE IMMEDIATE 'create or replace synonym &user_rs..FILES_DETAIL for &schema_rs..FILES_DETAIL';
+      EXECUTE IMMEDIATE 'create or replace synonym &user_rs..FILES_OBJ_DETAIL for &schema_rs..FILES_OBJ_DETAIL';
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..LOGGING_CONF for &schema_rs..LOGGING_CONF';
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..LOG_TABLE for &schema_rs..LOG_TABLE';
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..NOTIFICATION_CONF for &schema_rs..NOTIFICATION_CONF';
@@ -40,9 +40,6 @@ BEGIN
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..REPLACE_METHOD_LIST for &schema_rs..REPLACE_METHOD_LIST';
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..OPT_STATS for &schema_rs..OPT_STATS';
       -- sequences
-      EXECUTE IMMEDIATE 'create or replace synonym &user_rs..FILEHUB_CONF_SEQ for &schema_rs..FILEHUB_CONF_SEQ';
-      EXECUTE IMMEDIATE 'create or replace synonym &user_rs..FILEHUB_DETAIL_SEQ for &schema_rs..FILEHUB_DETAIL_SEQ';
-      EXECUTE IMMEDIATE 'create or replace synonym &user_rs..FILEHUB_OBJ_DETAIL_SEQ for &schema_rs..FILEHUB_OBJ_DETAIL_SEQ';
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..LOGGING_CONF_SEQ for &schema_rs..LOGGING_CONF_SEQ';
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..NOTIFICATION_CONF_SEQ for &schema_rs..NOTIFICATION_CONF_SEQ';
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..REGISTRATION_CONF_SEQ for &schema_rs..REGISTRATION_CONF_SEQ';
