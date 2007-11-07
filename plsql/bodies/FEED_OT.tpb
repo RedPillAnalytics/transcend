@@ -33,7 +33,7 @@ AS
                   WHEN 'KUP-04040'
                   THEN
                      o_ev.change_action( 'location file missing' );
-                     o_ev.send( p_module_id => SELF.filehub_id );
+                     o_ev.send( p_label => self.file_label );
                      raise_application_error
                                            ( td_inst.get_err_cd( 'location_file_missing' ),
                                              td_inst.get_err_msg( 'location_file_missing' )
@@ -51,7 +51,7 @@ AS
             THEN
                o_ev.change_action( 'reject limit exceeded' );
                -- notify if reject limit is exceeded
-               o_ev.send( p_module_id => SELF.filehub_id );
+               o_ev.send( p_label => self.file_label );
                raise_application_error( td_inst.get_err_cd( 'reject_limit_exceeded' ),
                                         td_inst.get_err_msg( 'reject_limit_exceeded' )
                                       );
@@ -63,7 +63,7 @@ AS
          END;
 
          INSERT INTO files_obj_detail
-                     ( files_obj_id, file_type, file_label,
+                     ( file_obj_detail_id, file_type, file_label,
                        file_group, object_owner, object_name, num_rows,
                        num_lines, percent_diff
                      )
@@ -85,7 +85,7 @@ AS
                                   || SELF.object_name
                                 );
    END audit_ext_tab;
-   MEMBER PROCEDURE process( p_keep_source VARCHAR2 DEFAULT 'no' )
+   MEMBER PROCEDURE process
    IS
       l_rows_dirlist   BOOLEAN                    := FALSE;     -- TO catch empty cursors
       l_rows_delete    BOOLEAN                    := FALSE;
@@ -97,7 +97,7 @@ AS
       l_ext_file_cnt   NUMBER;
       l_ext_tab_ddl    VARCHAR2( 2000 );
       l_files_url      VARCHAR2( 1000 );
-      l_message        notify_conf.MESSAGE%TYPE;
+      l_message        notification_events.MESSAGE1%TYPE;
       l_results        NUMBER;
       e_no_files       EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_files, -1756 );
@@ -356,10 +356,10 @@ AS
          END IF;
 
          -- IF we get this far, then we need to delete the source files
-         -- this step is ignored if p_keep_source = 'yes'
+         -- this step is ignored if delete_source = 'no'
          o_ev.change_action( 'Delete source files' );
 
-         IF NOT td_ext.is_true( p_keep_source )
+         IF td_ext.is_true( delete_source )
          THEN
             td_host.delete_file( source_directory, c_dir_list.source_filename );
          END IF;
@@ -447,7 +447,7 @@ AS
             || 'The file is too large for some desktop applications, such as Microsoft Excel, to open.';
       END IF;
 
-      o_ev.send( p_module_id => filehub_id );
+      o_ev.send( p_label => self.file_label );
       o_ev.clear_app_info;
    END process;
 END;
