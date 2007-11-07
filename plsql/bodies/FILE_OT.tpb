@@ -7,8 +7,7 @@ AS
       p_arch_filepath     VARCHAR2,
       p_num_bytes         NUMBER,
       p_num_lines         NUMBER,
-      p_file_dt           DATE,
-      p_validate          VARCHAR2 DEFAULT 'yes'
+      p_file_dt           DATE
    )
    AS
       o_ev   evolve_ot := evolve_ot( p_module => 'audit_file' );
@@ -29,7 +28,7 @@ AS
       -- the job fails when size threshholds are not met
       o_ev.change_action( 'Check file details' );
 
-      IF NOT td_inst.is_debugmode AND td_ext.is_true( p_validate )
+      IF NOT td_inst.is_debugmode
       THEN
          o_ev.change_action( 'validate file size' );
 
@@ -53,8 +52,7 @@ AS
    MEMBER PROCEDURE audit_file(
       p_num_bytes   NUMBER,
       p_num_lines   NUMBER,
-      p_file_dt     DATE,
-      p_validate    VARCHAR2 DEFAULT 'yes'
+      p_file_dt     DATE
    )
    AS
       o_ev   evolve_ot := evolve_ot( p_module => 'audit_file' );
