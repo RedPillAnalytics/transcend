@@ -182,15 +182,7 @@ AS
                            );
       END;
 
-      o_notify.MESSAGE :=
-         CASE p_message
-            WHEN NULL
-               THEN o_email.MESSAGE
-            ELSE o_email.MESSAGE || CHR( 10 ) || CHR( 10 ) || p_message
-         END;
-      o_email.module := td_inst.module;
-      o_email.action := td_inst.action;
-      o_email.send;
+      o_notify.send(p_message => p_message);
    EXCEPTION
       WHEN NO_DATA_FOUND
       THEN
