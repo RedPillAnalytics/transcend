@@ -13,35 +13,35 @@ AS
    AS
       o_ev   evolve_ot := evolve_ot( p_module => 'audit_file' );
    BEGIN
-      o_ev.change_action( 'Insert FILEHUB_DETAIL' );
+      o_ev.change_action( 'Insert file detail' );
 
       -- INSERT into the FILE_DETAIL table to record the movement
-      INSERT INTO filehub_detail
-                  ( filehub_detail_id, filehub_id, filehub_name, filehub_group,
-                    filehub_type, source_filepath, target_filepath, arch_filepath,
+      INSERT INTO files_detail
+                  ( file_detail_id, file_label, file_group,
+                    file_type, source_filepath, target_filepath, arch_filepath,
                     num_bytes, num_lines, file_dt
                   )
-           VALUES ( filehub_detail_seq.NEXTVAL, filehub_id, filehub_name, filehub_group,
-                    filehub_type, p_source_filepath, p_filepath, p_arch_filepath,
+           VALUES ( filehub_detail_seq.NEXTVAL, file_label, file_group,
+                    file_type, p_source_filepath, p_filepath, p_arch_filepath,
                     p_num_bytes, p_num_lines, p_file_dt
                   );
 
       -- the job fails when size threshholds are not met
       o_ev.change_action( 'Check file details' );
 
-      IF NOT td_inst.is_debugmode AND LOWER( p_validate ) = 'yes'
+      IF NOT td_inst.is_debugmode AND td_ext.is_true( p_validate )
       THEN
          o_ev.change_action( 'validate file size' );
 
          IF p_num_bytes >= max_bytes AND max_bytes <> 0
          THEN
-            o_ev.send( p_module_id => filehub_id );
+            o_ev.send( p_label => file_label );
             raise_application_error( td_inst.get_err_cd( 'file_too_large' ),
                                      td_inst.get_err_msg( 'file_too_large' )
                                    );
          ELSIF p_num_bytes < min_bytes
          THEN
-            o_ev.send( p_module_id => filehub_id );
+            o_ev.send( p_label => file_label );
             raise_application_error( td_inst.get_err_cd( 'file_too_small' ),
                                      td_inst.get_err_msg( 'file_too_small' )
                                    );
