@@ -21,7 +21,7 @@ AS
                     file_type, source_filepath, target_filepath, arch_filepath,
                     num_bytes, num_lines, file_dt
                   )
-           VALUES ( filehub_detail_seq.NEXTVAL, file_label, file_group,
+           VALUES ( file_detail_seq.NEXTVAL, file_label, file_group,
                     file_type, p_source_filepath, p_filepath, p_arch_filepath,
                     p_num_bytes, p_num_lines, p_file_dt
                   );
