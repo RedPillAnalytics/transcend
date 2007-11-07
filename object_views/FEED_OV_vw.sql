@@ -27,6 +27,7 @@ SELECT file_label,
        regexp_options,
        source_policy,
        required,
+       delete_source,
        reject_limit
   FROM (SELECT file_label,
                file_group,
@@ -49,6 +50,7 @@ SELECT file_label,
 	       regexp_options,
 	       source_policy,
 	       required,
+	       delete_source,
 	       reject_limit
           FROM files_conf
 	 WHERE REGEXP_LIKE (file_type, '^feed$', 'i'));
