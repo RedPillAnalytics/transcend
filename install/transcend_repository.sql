@@ -21,9 +21,9 @@ exec dbms_stats.create_stat_table('&rep_schema_tr','OPT_STATS');
 @@../ddl/DIR_LIST_tbl.sql
 @@../ddl/COUNT_TABLE_tbl.sql
 @@../ddl/ERR_CD_tbl.sql
-@@../ddl/FILEHUB_CONF_tbl.sql
-@@../ddl/FILEHUB_DETAIL_tbl.sql
-@@../ddl/FILEHUB_OBJ_DETAIL_tbl.sql
+@@../ddl/FILES_CONF_tbl.sql
+@@../ddl/FILES_DETAIL_tbl.sql
+@@../ddl/FILES_OBJ_DETAIL_tbl.sql
 @@../ddl/LOGGING_CONF_tbl.sql
 @@../ddl/LOG_TABLE_tbl.sql
 @@../ddl/NOTIFICATION_CONF_tbl.sql
