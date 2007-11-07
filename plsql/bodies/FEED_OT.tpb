@@ -346,12 +346,7 @@ AS
                              p_filepath             => c_dir_list.filepath,
                              p_num_bytes            => c_dir_list.file_size,
                              p_num_lines            => l_numlines,
-                             p_file_dt              => c_dir_list.file_dt,
-                             p_validate             => CASE c_dir_list.ext_tab_ind
-                                WHEN 'Y'
-                                   THEN 'yes'
-                                ELSE 'no'
-                             END
+                             p_file_dt              => c_dir_list.file_dt
                            );
          END IF;
 
