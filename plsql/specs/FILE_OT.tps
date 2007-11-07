@@ -24,14 +24,12 @@ CREATE OR REPLACE TYPE file_ot AUTHID CURRENT_USER AS object(
       p_arch_filepath     VARCHAR2,
       p_num_bytes         NUMBER,
       p_num_lines         NUMBER,
-      p_file_dt           DATE,
-      p_validate          VARCHAR2 DEFAULT 'yes'
+      p_file_dt           DATE
    ),
    MEMBER PROCEDURE audit_file(
       p_num_bytes   NUMBER,
       p_num_lines   NUMBER,
-      p_file_dt     DATE,
-      p_validate    VARCHAR2 DEFAULT 'yes'
+      p_file_dt     DATE
    )
 )
 NOT FINAL;
