@@ -10,7 +10,7 @@ AS
       p_file_dt           DATE
    )
    AS
-      o_ev   evolve_ot := evolve_ot( p_module => 'audit_file' );
+      o_ev   evolve_ot := evolve_ot( p_module => 'audit file' );
    BEGIN
       o_ev.change_action( 'Insert file detail' );
 
@@ -26,11 +26,9 @@ AS
                   );
 
       -- the job fails when size threshholds are not met
-      o_ev.change_action( 'Check file details' );
-
       IF NOT td_inst.is_debugmode
       THEN
-         o_ev.change_action( 'validate file size' );
+         o_ev.change_action( 'validate file threshholds' );
 
          IF p_num_bytes >= max_bytes AND max_bytes <> 0
          THEN
