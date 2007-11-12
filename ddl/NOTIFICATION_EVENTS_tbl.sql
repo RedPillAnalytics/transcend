@@ -6,7 +6,6 @@ CREATE TABLE notification_events
 	 action    	     VARCHAR2(32) NOT NULL,
 	 subject             VARCHAR2(100) NOT NULL,
 	 message             VARCHAR2(2000) NOT NULL,
-	 sender              VARCHAR2(1024),
 	 created_user        VARCHAR2(30) DEFAULT SYS_CONTEXT('USERENV','SESSION_USER') NOT NULL,
 	 created_dt   	     DATE DEFAULT SYSDATE NOT NULL,
 	 modified_user       VARCHAR2(30),
