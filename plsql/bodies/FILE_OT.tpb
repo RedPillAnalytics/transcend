@@ -10,7 +10,7 @@ AS
       p_file_dt           DATE
    )
    AS
-      o_ev   evolve_ot := evolve_ot( p_module => 'audit file' );
+      o_ev   evolve_ot := evolve_ot( p_module => 'audit_file' );
    BEGIN
       o_ev.change_action( 'Insert file detail' );
 
@@ -28,16 +28,17 @@ AS
       -- the job fails when size threshholds are not met
       IF NOT td_inst.is_debugmode
       THEN
-         o_ev.change_action( 'validate file threshholds' );
 
          IF p_num_bytes >= max_bytes AND max_bytes <> 0
          THEN
+	    o_ev.change_action( 'file too large');
             o_ev.send( p_label => file_label );
             raise_application_error( td_inst.get_err_cd( 'file_too_large' ),
                                      td_inst.get_err_msg( 'file_too_large' )
                                    );
          ELSIF p_num_bytes < min_bytes
          THEN
+	    o_ev.change_action( 'file too small');
             o_ev.send( p_label => file_label );
             raise_application_error( td_inst.get_err_cd( 'file_too_small' ),
                                      td_inst.get_err_msg( 'file_too_small' )
