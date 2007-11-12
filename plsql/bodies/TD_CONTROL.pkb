@@ -23,7 +23,7 @@ IS
                      );
       END IF;
    END set_logging_level;
-
+   
    PROCEDURE set_runmode(
       p_module            VARCHAR2 DEFAULT 'default',
       p_default_runmode   VARCHAR2 DEFAULT 'runtime'
@@ -68,6 +68,34 @@ IS
       END IF;
    END set_registration;
 
+   PROCEDURE add_notification_event(
+      p_module		VARCHAR2,
+      p_action 		VARCHAR2,
+      p_subject		VARCHAR2,
+      p_message         VARCHAR2,
+      p_sender          VARCHAR2
+   )
+   IS
+   BEGIN
+      UPDATE notification_event
+         SET subject = p_subject,
+             message = p_message,
+	     sender  = p_sender,
+             modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
+             modified_dt = SYSDATE
+       WHERE module = p_module
+	 AND action = p_action;
+
+      IF SQL%ROWCOUNT = 0
+      THEN
+         INSERT INTO logging_conf
+                     ( module, action, subject, message, sender
+                     )
+              VALUES ( p_module, p_action, p_subject, p_message, p_sender
+                     );
+      END IF;
+   END add_notification_event;
+   
    PROCEDURE set_session_parameter( p_module VARCHAR2, p_name VARCHAR2, p_value VARCHAR2 )
    IS
       l_parameter   v$parameter.NAME%TYPE;
