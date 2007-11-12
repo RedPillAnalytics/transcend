@@ -16,7 +16,7 @@ IS
         INTO l_pct_diff
         FROM files_obj_detail
        WHERE file_group = p_file_group
-         AND file_label = p_file_name
+         AND file_label = p_file_label
          AND processed_ts =
                          ( SELECT MAX( processed_ts )
                             FROM files_obj_detail
@@ -108,7 +108,7 @@ IS
                  FROM feed_ov t
                 WHERE t.file_label = c_fh_conf.file_label AND t.file_group = p_file_group;
 
-               o_feed.process( p_keep_source );
+               o_feed.process;
             ELSE
                NULL;
          END CASE;
