@@ -16,6 +16,14 @@ IS
       p_registration   VARCHAR2 DEFAULT 'appinfo'
    );
 
+   PROCEDURE add_notification_event(
+      p_module		VARCHAR2,
+      p_action 		VARCHAR2,
+      p_subject		VARCHAR2,
+      p_message         VARCHAR2,
+      p_sender          VARCHAR2
+   );
+
    PROCEDURE set_session_parameter( p_module VARCHAR2, p_name VARCHAR2, p_value VARCHAR2 );
 
    PROCEDURE clear_log(
