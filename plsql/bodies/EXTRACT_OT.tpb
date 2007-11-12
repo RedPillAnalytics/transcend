@@ -9,7 +9,7 @@ AS
       l_exists      BOOLEAN                    DEFAULT FALSE;
       l_file_dt     DATE;
       l_detail_id   NUMBER;
-      l_message     notification_events.MESSAGE1%TYPE;
+      l_message     notification_events.MESSAGE%TYPE;
       l_results     NUMBER;
       o_ev          evolve_ot                  := evolve_ot( p_module => 'process' );
    BEGIN
