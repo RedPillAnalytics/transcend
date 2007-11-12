@@ -38,8 +38,6 @@ GRANT SELECT,UPDATE,DELETE,INSERT ON LOG_TABLE TO &rep_schema_rg._adm;
 
 GRANT SELECT ON NOTIFICATION_CONF TO &rep_schema_rg._sel;
 GRANT SELECT,UPDATE,DELETE,INSERT ON NOTIFICATION_CONF TO &rep_schema_rg._adm;
-GRANT SELECT ON notification_conf_seq TO &rep_schema_rg._sel;
-GRANT SELECT ON notification_conf_seq TO &rep_schema_rg._adm;
 
 GRANT SELECT ON NOTIFICATION_EVENTS TO &rep_schema_rg._sel;
 GRANT SELECT,UPDATE,DELETE,INSERT ON NOTIFICATION_EVENTS TO &rep_schema_rg._adm;
