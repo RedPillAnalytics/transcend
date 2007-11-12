@@ -24,7 +24,7 @@ AS
                      UTL_MAIL.send( sender          => sender,
                                     recipients      => recipients,
                                     subject         => subject,
-                                    MESSAGE         => NVL( p_message, message1 ),
+                                    MESSAGE         => NVL( p_message, message ),
                                     mime_type       => 'text/html'
                                   );
                      td_inst.log_msg( 'Email sent to: ' || recipients );
