@@ -21,7 +21,7 @@ ALTER TABLE notification_conf ADD
       (
 	CONSTRAINT notification_conf_pk
 	PRIMARY KEY
-	( notification_label,module,action )
+	( label,module,action )
 	USING INDEX
       )
 /
