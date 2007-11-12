@@ -97,7 +97,7 @@ AS
       l_ext_file_cnt   NUMBER;
       l_ext_tab_ddl    VARCHAR2( 2000 );
       l_files_url      VARCHAR2( 1000 );
-      l_message        notification_events.MESSAGE1%TYPE;
+      l_message        notification_events.MESSAGE%TYPE;
       l_results        NUMBER;
       e_no_files       EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_files, -1756 );
