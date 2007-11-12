@@ -9,9 +9,7 @@ SELECT notification_label,
        notification_enabled,
        notification_required,
        subject,
-       message1,
-       message2,
-       message3,
+       message,
        sender,
        recipients
   FROM notification_conf
