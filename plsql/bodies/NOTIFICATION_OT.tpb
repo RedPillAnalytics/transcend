@@ -13,11 +13,11 @@ AS
       e_smtp_error   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_smtp_error, -29279 );
    BEGIN
-      IF td_ext.is_true( notification_enabled )
+      IF td_ext.is_true( enabled )
       THEN
          IF NOT td_inst.is_debugmode
          THEN
-            CASE notification_method
+            CASE method
                WHEN 'email'
                THEN
                   BEGIN
@@ -46,7 +46,7 @@ AS
                   EXCEPTION
                      WHEN e_smtp_error
                      THEN
-                        IF td_ext.is_true( notification_required )
+                        IF td_ext.is_true( required )
                         THEN
                            raise_application_error
                                                ( td_inst.get_err_cd( 'utl_mail_error' ),
