@@ -72,15 +72,13 @@ IS
       p_module		VARCHAR2,
       p_action 		VARCHAR2,
       p_subject		VARCHAR2,
-      p_message         VARCHAR2,
-      p_sender          VARCHAR2
+      p_message         VARCHAR2
    )
    IS
    BEGIN
       UPDATE notification_events
          SET subject = p_subject,
              message = p_message,
-	     sender  = p_sender,
              modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
              modified_dt = SYSDATE
        WHERE module = p_module
@@ -95,6 +93,40 @@ IS
                      );
       END IF;
    END add_notification_event;
+
+   PROCEDURE add_notification(
+      p_label		VARCHAR2,
+      p_module		VARCHAR2,
+      p_action 		VARCHAR2,
+      p_method		VARCHAR2,
+      p_enabled         VARCHAR2,
+      p_required        VARCHAR2,
+      p_sender		VARCHAR2,
+      p_recipients	varchar2   
+   )
+   IS
+   BEGIN
+      UPDATE notification_events
+         SET method = p_method,
+             enabled = p_enabled,
+	     required = p_required,
+	     sender  = p_sender,
+	     recipients = p_recipients,
+             modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
+             modified_dt = SYSDATE
+       WHERE module = p_module
+	 AND action = p_action;
+
+      IF SQL%ROWCOUNT = 0
+      THEN
+         INSERT INTO notification_events
+                     ( label, module, action, method, enabled, required, sender, recipients
+                     )
+              VALUES ( p_label, p_module, p_action, p_method, p_enabled, p_required, p_sender, p_recipients
+                     );
+      END IF;
+   END add_notification;
+
    
    PROCEDURE set_session_parameter( p_module VARCHAR2, p_name VARCHAR2, p_value VARCHAR2 )
    IS
