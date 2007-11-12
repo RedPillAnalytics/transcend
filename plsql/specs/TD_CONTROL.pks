@@ -20,8 +20,18 @@ IS
       p_module		VARCHAR2,
       p_action 		VARCHAR2,
       p_subject		VARCHAR2,
-      p_message         VARCHAR2,
-      p_sender          VARCHAR2
+      p_message         VARCHAR2
+   );
+
+   PROCEDURE add_notification(
+      p_label		VARCHAR2,
+      p_module		VARCHAR2,
+      p_action 		VARCHAR2,
+      p_method		VARCHAR2,
+      p_enabled         VARCHAR2,
+      p_required        VARCHAR2,
+      p_sender		VARCHAR2,
+      p_recipients	VARCHAR2
    );
 
    PROCEDURE set_session_parameter( p_module VARCHAR2, p_name VARCHAR2, p_value VARCHAR2 );
