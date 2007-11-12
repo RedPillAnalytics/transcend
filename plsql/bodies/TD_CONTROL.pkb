@@ -77,7 +77,7 @@ IS
    )
    IS
    BEGIN
-      UPDATE notification_event
+      UPDATE notification_events
          SET subject = p_subject,
              message = p_message,
 	     sender  = p_sender,
@@ -88,7 +88,7 @@ IS
 
       IF SQL%ROWCOUNT = 0
       THEN
-         INSERT INTO logging_conf
+         INSERT INTO notification_events
                      ( module, action, subject, message, sender
                      )
               VALUES ( p_module, p_action, p_subject, p_message, p_sender
