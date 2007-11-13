@@ -168,7 +168,7 @@ AS
            FROM notification_ov t
           WHERE module = td_inst.module
             AND action = td_inst.action
-            AND notification_label = p_label;
+            AND label = p_label;
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
