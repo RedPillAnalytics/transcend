@@ -1,7 +1,8 @@
 CREATE OR REPLACE PACKAGE BODY td_control
 IS
    PROCEDURE check_module(
-      p_module		VARCHAR2
+      p_module		VARCHAR2,
+      p_allow_default	BOOLEAN DEFAULT false
    )
    IS
       l_package_name all_arguments.package_name%type;
@@ -15,9 +16,14 @@ IS
       EXCEPTION
 	 WHEN no_data_found
 	 THEN
+	 IF p_module = 'default'
+	 THEN
+	    NULL;
+	 ELSE
 	   raise_application_error( td_inst.get_err_cd( 'no_module' ),
                                     td_inst.get_err_msg( 'no_module' ) || ': ' || p_module
                                   );
+	 END IF;
 	 WHEN too_many_rows
 	 THEN
 	   NULL;
@@ -34,6 +40,8 @@ IS
    )
    IS
    BEGIN
+      check_module( p_module=> p_module,
+		    p_allow_default => TRUE );
       UPDATE logging_conf
          SET logging_level = p_logging_level,
              debug_level = p_debug_level,
@@ -57,6 +65,9 @@ IS
    )
    IS
    BEGIN
+      check_module( p_module=> p_module,
+		    p_allow_default => TRUE );
+
       UPDATE runmode_conf
          SET default_runmode = p_default_runmode,
              modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
@@ -79,6 +90,9 @@ IS
    )
    IS
    BEGIN
+      check_module( p_module=> p_module,
+		    p_allow_default => TRUE );
+
       UPDATE registration_conf
          SET registration = p_registration,
              modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
@@ -105,7 +119,7 @@ IS
       l_package_name all_arguments.package_name%type;
    BEGIN
       -- check to make sure the module is an existing package
-      check_module(p_module);      
+      check_module( p_module => p_module);      
 
       UPDATE notification_events
          SET subject = p_subject,
@@ -137,6 +151,8 @@ IS
    )
    IS
    BEGIN
+      check_module( p_module => p_module);      
+
       UPDATE notification_conf
          SET method = p_method,
              enabled = p_enabled,
@@ -158,7 +174,6 @@ IS
       END IF;
    END add_notification;
 
-   
    PROCEDURE set_session_parameter( p_module VARCHAR2, p_name VARCHAR2, p_value VARCHAR2 )
    IS
       l_parameter   v$parameter.NAME%TYPE;
