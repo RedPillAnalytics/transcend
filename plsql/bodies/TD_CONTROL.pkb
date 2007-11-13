@@ -1,5 +1,32 @@
 CREATE OR REPLACE PACKAGE BODY td_control
 IS
+   PROCEDURE check_module(
+      p_module		VARCHAR2
+   )
+   IS
+      l_package_name all_arguments.package_name%type;
+   BEGIN
+      
+      BEGIN
+	 SELECT package_name
+	   INTO l_package_name
+	   FROM all_arguments
+	  WHERE lower(p_module) = lower(package_name||'.'||object_name);
+      EXCEPTION
+	 WHEN no_data_found
+	 THEN
+	   raise_application_error( td_inst.get_err_cd( 'no_module' ),
+                                    td_inst.get_err_msg( 'no_module' ) || ': ' || p_module
+                                  );
+	 WHEN too_many_rows
+	 THEN
+	   NULL;
+      END;
+	 
+      td_inst.log_msg('Check for package name '||l_package_name||' succeeded',4);
+
+   END check_module;
+
    PROCEDURE set_logging_level(
       p_module          VARCHAR2 DEFAULT 'default',
       p_logging_level   NUMBER DEFAULT 2,
@@ -13,7 +40,7 @@ IS
              modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
              modified_dt = SYSDATE
        WHERE module = p_module;
-
+      
       IF SQL%ROWCOUNT = 0
       THEN
          INSERT INTO logging_conf
@@ -75,21 +102,25 @@ IS
       p_message         VARCHAR2
    )
    IS
+      l_package_name all_arguments.package_name%type;
    BEGIN
+      -- check to make sure the module is an existing package
+      check_module(p_module);      
+
       UPDATE notification_events
          SET subject = p_subject,
              message = p_message,
              modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
              modified_dt = SYSDATE
-       WHERE module = p_module
-	 AND action = p_action;
+       WHERE module = lower(p_module)
+	 AND action = lower(p_action);
 
       IF SQL%ROWCOUNT = 0
       THEN
          INSERT INTO notification_events
                      ( module, action, subject, message
                      )
-              VALUES ( p_module, p_action, p_subject, p_message
+              VALUES ( lower(p_module), lower(p_action), p_subject, p_message
                      );
       END IF;
    END add_notification_event;
