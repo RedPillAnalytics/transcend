@@ -106,7 +106,7 @@ IS
    )
    IS
    BEGIN
-      UPDATE notification_events
+      UPDATE notification_conf
          SET method = p_method,
              enabled = p_enabled,
 	     required = p_required,
@@ -119,7 +119,7 @@ IS
 
       IF SQL%ROWCOUNT = 0
       THEN
-         INSERT INTO notification_events
+         INSERT INTO notification_conf
                      ( label, module, action, method, enabled, required, sender, recipients
                      )
               VALUES ( p_label, p_module, p_action, p_method, p_enabled, p_required, p_sender, p_recipients
