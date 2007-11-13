@@ -87,9 +87,9 @@ IS
       IF SQL%ROWCOUNT = 0
       THEN
          INSERT INTO notification_events
-                     ( module, action, subject, message, sender
+                     ( module, action, subject, message
                      )
-              VALUES ( p_module, p_action, p_subject, p_message, p_sender
+              VALUES ( p_module, p_action, p_subject, p_message
                      );
       END IF;
    END add_notification_event;
