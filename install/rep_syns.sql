@@ -19,7 +19,7 @@ BEGIN
       -- tables
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..COUNT_TABLE for &schema_rs..COUNT_TABLE';
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..DIR_LIST for &schema_rs..DIR_LIST';
-      EXECUTE IMMEDIATE 'create or replace synonym &user_rs..ERR_CD for &schema_rs..ERR_CD';
+      EXECUTE IMMEDIATE 'create or replace synonym &user_rs..ERROR_CONF for &schema_rs..ERROR_CONF';
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..FILES_CONF for &schema_rs..FILES_CONF';
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..FILES_DETAIL for &schema_rs..FILES_DETAIL';
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..FILES_OBJ_DETAIL for &schema_rs..FILES_OBJ_DETAIL';
