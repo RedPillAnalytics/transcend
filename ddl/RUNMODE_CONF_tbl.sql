@@ -1,12 +1,8 @@
 DROP TABLE runmode_conf CASCADE CONSTRAINTS purge
 /
 
-DROP SEQUENCE runmode_conf_seq
-/
-
 CREATE TABLE runmode_conf
-       ( runmode_id	  NUMBER NOT NULL,
-	 default_runmode  VARCHAR2(10) not NULL,
+       ( default_runmode  VARCHAR2(10) not NULL,
 	 module 	  VARCHAR2(48),
 	 created_user     VARCHAR2(30) DEFAULT sys_context('USERENV','SESSION_USER') NOT NULL,
 	 created_dt       DATE DEFAULT SYSDATE NOT NULL,
@@ -18,9 +14,6 @@ CREATE TABLE runmode_conf
 ALTER TABLE runmode_conf ADD (
   CONSTRAINT runmode_conf_pk
  PRIMARY KEY
- (runmode_id)
+ (module)
     USING INDEX)
-/
-
-CREATE SEQUENCE runmode_conf_seq
 /
