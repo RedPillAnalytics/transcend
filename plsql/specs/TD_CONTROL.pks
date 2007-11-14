@@ -3,24 +3,28 @@ IS
    PROCEDURE set_logging_level(
       p_module          VARCHAR2 DEFAULT 'default',
       p_logging_level   NUMBER DEFAULT 2,
-      p_debug_level     NUMBER DEFAULT 4
+      p_debug_level     NUMBER DEFAULT 4,
+      p_mode		VARCHAR2 DEFAULT 'upsert'
    );
 
    PROCEDURE set_runmode(
       p_module            VARCHAR2 DEFAULT 'default',
-      p_default_runmode   VARCHAR2 DEFAULT 'runtime'
+      p_default_runmode   VARCHAR2 DEFAULT 'runtime',
+      p_mode		  VARCHAR2 DEFAULT 'upsert'
    );
 
    PROCEDURE set_registration(
-      p_module         VARCHAR2 DEFAULT 'default',
-      p_registration   VARCHAR2 DEFAULT 'appinfo'
+      p_module            VARCHAR2 DEFAULT 'default',
+      p_registration      VARCHAR2 DEFAULT 'appinfo',
+      p_mode		  VARCHAR2 DEFAULT 'upsert'
    );
 
    PROCEDURE set_notification_event(
       p_module		VARCHAR2,
       p_action 		VARCHAR2,
       p_subject		VARCHAR2,
-      p_message         VARCHAR2
+      p_message         VARCHAR2,
+      p_mode		VARCHAR2 DEFAULT 'upsert'
    );
 
    PROCEDURE set_notification(
