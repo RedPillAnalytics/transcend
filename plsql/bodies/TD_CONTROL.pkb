@@ -116,7 +116,6 @@ IS
       p_message         VARCHAR2
    )
    IS
-      l_package_name all_arguments.package_name%type;
    BEGIN
       -- check to make sure the module is an existing package
       check_module( p_module => p_module);      
