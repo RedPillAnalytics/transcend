@@ -11,10 +11,5 @@ AS
    FUNCTION SPLIT( p_text VARCHAR2, p_delimiter VARCHAR2 DEFAULT ',' )
       RETURN t_split PIPELINED;
 
-   FUNCTION get_err_cd( p_name VARCHAR2 )
-      RETURN NUMBER;
-
-   FUNCTION get_err_msg( p_name VARCHAR2 )
-      RETURN VARCHAR2;
 END td_ext;
 /
