@@ -16,14 +16,14 @@ IS
       p_registration   VARCHAR2 DEFAULT 'appinfo'
    );
 
-   PROCEDURE add_notification_event(
+   PROCEDURE set_notification_event(
       p_module		VARCHAR2,
       p_action 		VARCHAR2,
       p_subject		VARCHAR2,
       p_message         VARCHAR2
    );
 
-   PROCEDURE add_notification(
+   PROCEDURE set_notification(
       p_label		VARCHAR2,
       p_module		VARCHAR2,
       p_action 		VARCHAR2,
