@@ -39,6 +39,7 @@ DROP TYPE app_ot;
 @../plsql/wrapped_bodies/APP_OT.plb
 @../plsql/specs/NOTIFICATION_OT.tps
 @../plsql/wrapped_bodies/NOTIFICATION_OT.plb
+@../object_views/NOTIFICATION_OV_vw.sql
 @../plsql/specs/EVOLVE_OT.tps
 @../plsql/wrapped_bodies/EVOLVE_OT.plb
 @../plsql/specs/TD_SQL.pks
