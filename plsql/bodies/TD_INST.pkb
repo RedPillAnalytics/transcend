@@ -187,12 +187,17 @@ AS
    FUNCTION get_err_cd( p_name VARCHAR2 )
       RETURN NUMBER
    AS
-      l_code   err_cd.code%TYPE;
+      l_code   error_conf.code%TYPE;
    BEGIN
-      SELECT code
-        INTO l_code
-        FROM err_cd
-       WHERE NAME = p_name;
+      BEGIN
+	 SELECT code
+           INTO l_code
+           FROM error_conf
+	  WHERE NAME = p_name;
+      EXCEPTION
+	 WHEN no_data_found
+	 THEN raise_application_error(-20001,'An invalid error name was invoked');
+      END;
 
       RETURN l_code;
    END get_err_cd;
@@ -201,12 +206,17 @@ AS
    FUNCTION get_err_msg( p_name VARCHAR2 )
       RETURN VARCHAR2
    AS
-      l_msg   err_cd.MESSAGE%TYPE;
+      l_msg   error_conf.MESSAGE%TYPE;
    BEGIN
-      SELECT MESSAGE
-        INTO l_msg
-        FROM err_cd
-       WHERE NAME = p_name;
+      BEGIN
+	 SELECT message
+           INTO l_msg
+           FROM error_conf
+	  WHERE NAME = p_name;
+      EXCEPTION
+	 WHEN no_data_found
+	 THEN raise_application_error(-20001,'An invalid error name was invoked');
+      END;
 
       RETURN l_msg;
    END get_err_msg;
