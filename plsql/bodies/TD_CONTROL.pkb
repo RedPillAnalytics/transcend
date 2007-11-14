@@ -1,36 +1,33 @@
 CREATE OR REPLACE PACKAGE BODY td_control
 IS
-   PROCEDURE check_module(
-      p_module		VARCHAR2,
-      p_allow_default	BOOLEAN DEFAULT false
-   )
+   PROCEDURE check_module( p_module VARCHAR2, p_allow_default BOOLEAN DEFAULT FALSE )
    IS
-      l_package_name all_arguments.package_name%type;
+      l_package_name   all_arguments.package_name%TYPE;
    BEGIN
-      
       BEGIN
-	 SELECT package_name
-	   INTO l_package_name
-	   FROM all_arguments
-	  WHERE lower(p_module) = lower(package_name||'.'||object_name);
+         SELECT package_name
+           INTO l_package_name
+           FROM all_arguments
+          WHERE LOWER( p_module ) = LOWER( package_name || '.' || object_name );
       EXCEPTION
-	 WHEN no_data_found
-	 THEN
-	 IF p_module = 'default'
-	 THEN
-	    NULL;
-	 ELSE
-	   raise_application_error( td_inst.get_err_cd( 'no_module' ),
-                                    td_inst.get_err_msg( 'no_module' ) || ': ' || p_module
-                                  );
-	 END IF;
-	 WHEN too_many_rows
-	 THEN
-	   NULL;
+         WHEN NO_DATA_FOUND
+         THEN
+            IF p_module = 'default' AND p_allow_default
+            THEN
+               NULL;
+            ELSE
+               raise_application_error( td_inst.get_err_cd( 'no_module' ),
+                                           td_inst.get_err_msg( 'no_module' )
+                                        || ': '
+                                        || p_module
+                                      );
+            END IF;
+         WHEN TOO_MANY_ROWS
+         THEN
+            NULL;
       END;
-	 
-      td_inst.log_msg('Check for package name '||l_package_name||' succeeded',4);
 
+      td_inst.log_msg( 'Check for package name ' || l_package_name || ' succeeded', 4 );
    END check_module;
 
    PROCEDURE set_logging_level(
@@ -40,15 +37,15 @@ IS
    )
    IS
    BEGIN
-      check_module( p_module=> p_module,
-		    p_allow_default => TRUE );
+      check_module( p_module => p_module, p_allow_default => TRUE );
+
       UPDATE logging_conf
          SET logging_level = p_logging_level,
              debug_level = p_debug_level,
              modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
              modified_dt = SYSDATE
        WHERE module = p_module;
-      
+
       IF SQL%ROWCOUNT = 0
       THEN
          INSERT INTO logging_conf
@@ -58,15 +55,14 @@ IS
                      );
       END IF;
    END set_logging_level;
-   
+
    PROCEDURE set_runmode(
       p_module            VARCHAR2 DEFAULT 'default',
       p_default_runmode   VARCHAR2 DEFAULT 'runtime'
    )
    IS
    BEGIN
-      check_module( p_module=> p_module,
-		    p_allow_default => TRUE );
+      check_module( p_module => p_module, p_allow_default => TRUE );
 
       UPDATE runmode_conf
          SET default_runmode = p_default_runmode,
@@ -90,8 +86,7 @@ IS
    )
    IS
    BEGIN
-      check_module( p_module=> p_module,
-		    p_allow_default => TRUE );
+      check_module( p_module => p_module, p_allow_default => TRUE );
 
       UPDATE registration_conf
          SET registration = p_registration,
@@ -109,69 +104,69 @@ IS
       END IF;
    END set_registration;
 
-   PROCEDURE add_notification_event(
-      p_module		VARCHAR2,
-      p_action 		VARCHAR2,
-      p_subject		VARCHAR2,
-      p_message         VARCHAR2
+   PROCEDURE set_notification_event(
+      p_module    VARCHAR2,
+      p_action    VARCHAR2,
+      p_subject   VARCHAR2,
+      p_message   VARCHAR2
    )
    IS
    BEGIN
       -- check to make sure the module is an existing package
-      check_module( p_module => p_module);      
+      check_module( p_module => p_module );
 
       UPDATE notification_events
          SET subject = p_subject,
-             message = p_message,
+             MESSAGE = p_message,
              modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
              modified_dt = SYSDATE
-       WHERE module = lower(p_module)
-	 AND action = lower(p_action);
+       WHERE module = LOWER( p_module ) AND action = LOWER( p_action );
 
       IF SQL%ROWCOUNT = 0
       THEN
          INSERT INTO notification_events
-                     ( module, action, subject, message
+                     ( module, action, subject, MESSAGE
                      )
-              VALUES ( lower(p_module), lower(p_action), p_subject, p_message
+              VALUES ( LOWER( p_module ), LOWER( p_action ), p_subject, p_message
                      );
       END IF;
-   END add_notification_event;
+   END set_notification_event;
 
-   PROCEDURE add_notification(
-      p_label		VARCHAR2,
-      p_module		VARCHAR2,
-      p_action 		VARCHAR2,
-      p_method		VARCHAR2,
-      p_enabled         VARCHAR2,
-      p_required        VARCHAR2,
-      p_sender		VARCHAR2,
-      p_recipients	varchar2   
+   PROCEDURE set_notification(
+      p_label        VARCHAR2,
+      p_module       VARCHAR2,
+      p_action       VARCHAR2,
+      p_method       VARCHAR2,
+      p_enabled      VARCHAR2,
+      p_required     VARCHAR2,
+      p_sender       VARCHAR2,
+      p_recipients   VARCHAR2
    )
    IS
    BEGIN
-      check_module( p_module => p_module);      
+      check_module( p_module => p_module );
 
       UPDATE notification_conf
          SET method = p_method,
              enabled = p_enabled,
-	     required = p_required,
-	     sender  = p_sender,
-	     recipients = p_recipients,
+             required = p_required,
+             sender = p_sender,
+             recipients = p_recipients,
              modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
              modified_dt = SYSDATE
-       WHERE module = p_module
-	 AND action = p_action;
+       WHERE module = p_module AND action = p_action;
 
       IF SQL%ROWCOUNT = 0
       THEN
          INSERT INTO notification_conf
-                     ( label, module, action, method, enabled, required, sender, recipients
+                     ( label, module, action, method, enabled, required,
+                       sender, recipients
                      )
-              VALUES ( p_label, p_module, p_action, p_method, p_enabled, p_required, p_sender, p_recipients
+              VALUES ( p_label, p_module, p_action, p_method, p_enabled, p_required,
+                       p_sender, p_recipients
                      );
       END IF;
-   END add_notification;
+   END set_notification;
 
    PROCEDURE set_session_parameter( p_module VARCHAR2, p_name VARCHAR2, p_value VARCHAR2 )
    IS
