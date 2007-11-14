@@ -33,103 +33,154 @@ IS
    PROCEDURE set_logging_level(
       p_module          VARCHAR2 DEFAULT 'default',
       p_logging_level   NUMBER DEFAULT 2,
-      p_debug_level     NUMBER DEFAULT 4
+      p_debug_level     NUMBER DEFAULT 4,
+      p_mode		VARCHAR2 DEFAULT 'upsert'
    )
    IS
    BEGIN
       check_module( p_module => p_module, p_allow_default => TRUE );
-
-      UPDATE logging_conf
-         SET logging_level = p_logging_level,
-             debug_level = p_debug_level,
-             modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
-             modified_dt = SYSDATE
-       WHERE module = p_module;
-
-      IF SQL%ROWCOUNT = 0
+      
+      -- this is the default method... update if it exists or insert it
+      IF lower(p_mode) IN ('upsert','update')
+      THEN
+	 UPDATE logging_conf
+            SET logging_level = p_logging_level,
+		debug_level = p_debug_level,
+		modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
+		modified_dt = SYSDATE
+	  WHERE module = lower(p_module);
+      END IF;
+      
+      -- if the update was unsuccessful above, or an insert it specifically requested, then do an insert
+      IF SQL%ROWCOUNT = 0 OR lower(p_mode) = 'insert'
       THEN
          INSERT INTO logging_conf
-                     ( logging_id, logging_level, debug_level, module
+                     ( logging_level, debug_level, module
                      )
-              VALUES ( logging_conf_seq.NEXTVAL, p_logging_level, p_debug_level, p_module
+              VALUES ( p_logging_level, p_debug_level, lower(p_module)
                      );
       END IF;
+      
+      -- if a delete is specifically requested, then do a delete
+      IF lower(p_mode) = 'delete'
+      THEN
+	 DELETE FROM logging_conf WHERE module = lower(p_module);
+      END IF;
+
    END set_logging_level;
 
    PROCEDURE set_runmode(
       p_module            VARCHAR2 DEFAULT 'default',
-      p_default_runmode   VARCHAR2 DEFAULT 'runtime'
+      p_default_runmode   VARCHAR2 DEFAULT 'runtime',
+      p_mode		  VARCHAR2 DEFAULT 'upsert'
    )
    IS
    BEGIN
       check_module( p_module => p_module, p_allow_default => TRUE );
-
-      UPDATE runmode_conf
-         SET default_runmode = p_default_runmode,
-             modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
-             modified_dt = SYSDATE
-       WHERE module = p_module;
-
-      IF SQL%ROWCOUNT = 0
+      
+      -- this is the default method... update if it exists or insert it
+      IF lower(p_mode) IN ('upsert','update')
+      THEN
+	 UPDATE runmode_conf
+            SET default_runmode = lower(p_default_runmode),
+		modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
+		modified_dt = SYSDATE
+	  WHERE module = lower(p_module);
+      END IF;
+      
+      -- if the update was unsuccessful above, or an insert it specifically requested, then do an insert
+      IF SQL%ROWCOUNT = 0 OR lower(p_mode) = 'insert'
       THEN
          INSERT INTO runmode_conf
-                     ( runmode_id, default_runmode, module
+                     ( default_runmode, module
                      )
-              VALUES ( runmode_conf_seq.NEXTVAL, p_default_runmode, p_module
+              VALUES ( lower(p_default_runmode), lower(p_module)
                      );
       END IF;
+      
+      -- if a delete is specifically requested, then do a delete
+      IF lower(p_mode) = 'delete'
+      THEN
+	 DELETE FROM runmode_conf WHERE module = lower(p_module);
+      END IF;
+
    END set_runmode;
 
    PROCEDURE set_registration(
-      p_module         VARCHAR2 DEFAULT 'default',
-      p_registration   VARCHAR2 DEFAULT 'appinfo'
+      p_module            VARCHAR2 DEFAULT 'default',
+      p_registration      VARCHAR2 DEFAULT 'appinfo',
+      p_mode		  VARCHAR2 DEFAULT 'upsert'
    )
    IS
    BEGIN
       check_module( p_module => p_module, p_allow_default => TRUE );
-
-      UPDATE registration_conf
-         SET registration = p_registration,
-             modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
-             modified_dt = SYSDATE
-       WHERE module = p_module;
-
-      IF SQL%ROWCOUNT = 0
+      
+      -- this is the default method... update if it exists or insert it
+      IF lower(p_mode) IN ('upsert','update')
+      THEN
+	 UPDATE registration_conf
+            SET registration = lower(p_registration),
+		modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
+		modified_dt = SYSDATE
+	  WHERE module = lower(p_module);
+      END IF;
+      
+      -- if the update was unsuccessful above, or an insert it specifically requested, then do an insert
+      IF SQL%ROWCOUNT = 0 OR lower(p_mode) = 'insert'
       THEN
          INSERT INTO registration_conf
-                     ( registration_id, registration, module
+                     ( registration, module
                      )
-              VALUES ( registration_conf_seq.NEXTVAL, p_registration, p_module
+              VALUES ( lower(p_registration), lower(p_module)
                      );
       END IF;
-   END set_registration;
+      
+      -- if a delete is specifically requested, then do a delete
+      IF lower(p_mode) = 'delete'
+      THEN
+	 DELETE FROM registration_conf WHERE module = lower(p_module);
+      END IF;
 
+   END set_registration;
+   
    PROCEDURE set_notification_event(
-      p_module    VARCHAR2,
-      p_action    VARCHAR2,
-      p_subject   VARCHAR2,
-      p_message   VARCHAR2
+      p_module		VARCHAR2,
+      p_action 		VARCHAR2,
+      p_subject		VARCHAR2,
+      p_message         VARCHAR2,
+      p_mode		VARCHAR2 DEFAULT 'upsert'
    )
    IS
    BEGIN
-      -- check to make sure the module is an existing package
-      check_module( p_module => p_module );
-
-      UPDATE notification_events
-         SET subject = p_subject,
-             MESSAGE = p_message,
-             modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
-             modified_dt = SYSDATE
-       WHERE module = LOWER( p_module ) AND action = LOWER( p_action );
-
-      IF SQL%ROWCOUNT = 0
+      check_module( p_module => p_module, p_allow_default => TRUE );
+      
+      -- this is the default method... update if it exists or insert it
+      IF lower(p_mode) IN ('upsert','update')
       THEN
-         INSERT INTO notification_events
-                     ( module, action, subject, MESSAGE
+	 UPDATE notification_event_conf
+            SET subject = p_subject,
+		message = p_message
+		modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
+		modified_dt = SYSDATE
+	  WHERE module = lower(p_module) AND action = lower(p_action);
+      END IF;
+      
+      -- if the update was unsuccessful above, or an insert it specifically requested, then do an insert
+      IF SQL%ROWCOUNT = 0 OR lower(p_mode) = 'insert'
+      THEN
+         INSERT INTO notification_event_conf
+                     ( module, action, subject, message
                      )
-              VALUES ( LOWER( p_module ), LOWER( p_action ), p_subject, p_message
+              VALUES ( lower(p_module), lower(p_action), p_subject, p_message
                      );
       END IF;
+      
+      -- if a delete is specifically requested, then do a delete
+      IF lower(p_mode) = 'delete'
+      THEN
+	 DELETE FROM notification_event WHERE module = lower(p_module) AND action = lower (p_action);
+      END IF;
+
    END set_notification_event;
 
    PROCEDURE set_notification(
