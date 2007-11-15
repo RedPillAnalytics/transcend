@@ -23,3 +23,5 @@ ALTER TABLE parameter_conf ADD (
 
 -- make sure that 'default' is not added here
 ALTER TABLE parameter_conf ADD CONSTRAINT parameter_conf_ck1 CHECK (lower(value) <> 'default');
+ALTER TABLE parameter_conf ADD CONSTRAINT parameter_conf_ck2 CHECK (value=lower(value));
+ALTER TABLE parameter_conf ADD CONSTRAINT parameter_conf_ck3 CHECK (module=lower(module));
