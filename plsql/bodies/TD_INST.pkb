@@ -220,6 +220,17 @@ AS
 
       RETURN l_msg;
    END get_err_msg;
+   
+   
+   -- writes error information to the log_table
+   PROCEDURE raise_err ( p_name VARCHAR2,
+			 p_add_msg VARCHAR2 DEFAULT null )
+   AS
+   BEGIN
+      raise_application_error( get_err_cd( p_name),
+			       get_err_msg( p_name )||CASE WHEN p_add_msg IS NULL THEN NULL ELSE ': '||p_add_msg end
+			     );
+   END raise_err;
 
    -- OTHER PROGRAM UNITS
 
