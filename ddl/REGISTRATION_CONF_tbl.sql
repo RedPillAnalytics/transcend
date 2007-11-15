@@ -17,3 +17,6 @@ ALTER TABLE registration_conf ADD (
  (module)
     USING INDEX)
 /
+
+ALTER TABLE registration_conf ADD CONSTRAINT registration_conf_ck1 CHECK (module=lower(module));
+ALTER TABLE registration_conf ADD CONSTRAINT registration_conf_ck2 CHECK (registration=lower(registration));
