@@ -157,9 +157,9 @@ IS
       -- this is the default method... update if it exists or insert it
       IF lower(p_mode) IN ('upsert','update')
       THEN
-	 UPDATE notification_event_conf
+	 UPDATE notification_events
             SET subject = p_subject,
-		message = p_message
+		message = p_message,
 		modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
 		modified_dt = SYSDATE
 	  WHERE module = lower(p_module) AND action = lower(p_action);
@@ -168,7 +168,7 @@ IS
       -- if the update was unsuccessful above, or an insert it specifically requested, then do an insert
       IF SQL%ROWCOUNT = 0 OR lower(p_mode) = 'insert'
       THEN
-         INSERT INTO notification_event_conf
+         INSERT INTO notification_events
                      ( module, action, subject, message
                      )
               VALUES ( lower(p_module), lower(p_action), p_subject, p_message
@@ -178,7 +178,7 @@ IS
       -- if a delete is specifically requested, then do a delete
       IF lower(p_mode) = 'delete'
       THEN
-	 DELETE FROM notification_event WHERE module = lower(p_module) AND action = lower (p_action);
+	 DELETE FROM notification_events WHERE module = lower(p_module) AND action = lower (p_action);
       END IF;
 
    END set_notification_event;
@@ -191,38 +191,58 @@ IS
       p_enabled      VARCHAR2,
       p_required     VARCHAR2,
       p_sender       VARCHAR2,
-      p_recipients   VARCHAR2
+      p_recipients   VARCHAR2,
+      p_mode	     VARCHAR2 DEFAULT 'upsert'
    )
    IS
    BEGIN
-      check_module( p_module => p_module );
-
-      UPDATE notification_conf
-         SET method = p_method,
-             enabled = p_enabled,
-             required = p_required,
-             sender = p_sender,
-             recipients = p_recipients,
-             modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
-             modified_dt = SYSDATE
-       WHERE module = p_module AND action = p_action;
-
-      IF SQL%ROWCOUNT = 0
+      check_module( p_module => p_module, p_allow_default => TRUE );
+      
+      -- this is the default method... update if it exists or insert it
+      IF lower(p_mode) IN ('upsert','update')
+      THEN
+	 UPDATE notification_conf
+            SET method	      = p_method,
+		enabled       = p_enabled,
+		required      = p_required,
+		sender 	      = p_sender,
+		recipients    = p_recipients,
+		modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
+		modified_dt   = SYSDATE
+	  WHERE module = lower(p_module) AND action = lower(p_action);
+      END IF;
+      
+      -- if the update was unsuccessful above, or an insert it specifically requested, then do an insert
+      IF SQL%ROWCOUNT = 0 OR lower(p_mode) = 'insert'
       THEN
          INSERT INTO notification_conf
                      ( label, module, action, method, enabled, required,
                        sender, recipients
                      )
-              VALUES ( p_label, p_module, p_action, p_method, p_enabled, p_required,
-                       p_sender, p_recipients
+              VALUES ( lower(p_label), lower(p_module), lower(p_action), lower(p_method), lower(p_enabled), lower(p_required),
+                       lower(p_sender), lower(p_recipients)
                      );
       END IF;
+      
+      -- if a delete is specifically requested, then do a delete
+      IF lower(p_mode) = 'delete'
+      THEN
+	 DELETE FROM notification_events WHERE module = lower(p_module) AND action = lower (p_action);
+      END IF;
+
    END set_notification;
 
-   PROCEDURE set_session_parameter( p_module VARCHAR2, p_name VARCHAR2, p_value VARCHAR2 )
+   PROCEDURE set_session_parameter(
+      p_module       VARCHAR2,
+      p_name         VARCHAR2,
+      p_value        VARCHAR2,
+      p_mode	     VARCHAR2 DEFAULT 'upsert'
+   )
    IS
       l_parameter   v$parameter.NAME%TYPE;
    BEGIN
+      check_module( p_module => p_module, p_allow_default => TRUE );
+
       BEGIN
          SELECT NAME
            INTO l_parameter
@@ -242,30 +262,42 @@ IS
                                       );
             END IF;
       END;
-
-      IF REGEXP_LIKE( p_name, 'disable|enable', 'i' )
+      
+      -- this is the default method... update if it exists or insert it
+      IF lower(p_mode) IN ('upsert','update')
       THEN
-         UPDATE parameter_conf
-            SET NAME = p_name,
-                modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
-                modified_dt = SYSDATE
-          WHERE module = p_module AND VALUE = p_value;
-      ELSE
-         UPDATE parameter_conf
-            SET VALUE = p_value,
-                modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
-                modified_dt = SYSDATE
-          WHERE module = p_module AND NAME = p_name;
+	 IF REGEXP_LIKE( p_name, 'disable|enable', 'i' )
+	 THEN
+            UPDATE parameter_conf
+               SET NAME = lower(p_name),
+                   modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
+                   modified_dt = SYSDATE
+             WHERE module = lower(p_module) AND VALUE = lower(p_value);
+	 ELSE
+            UPDATE parameter_conf
+               SET VALUE = lower(p_value),
+                   modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
+                   modified_dt = SYSDATE
+             WHERE module = lower(p_module) AND NAME = lower(p_name);
+	 END IF;
       END IF;
-
-      IF SQL%ROWCOUNT = 0
+      
+      -- if the update was unsuccessful above, or an insert it specifically requested, then do an insert
+      IF SQL%ROWCOUNT = 0 OR lower(p_mode) = 'insert'
       THEN
          INSERT INTO parameter_conf
-                     ( parameter_id, NAME, VALUE, module
+                     ( NAME, VALUE, module
                      )
-              VALUES ( parameter_conf_seq.NEXTVAL, p_name, p_value, p_module
+              VALUES ( lower(p_name), lower(p_value), lower(p_module)
                      );
       END IF;
+      
+      -- if a delete is specifically requested, then do a delete
+      IF lower(p_mode) = 'delete'
+      THEN
+	 DELETE FROM parameter_conf WHERE module = lower(p_module) AND name = lower (p_name);
+      END IF;
+
    END set_session_parameter;
 
    PROCEDURE clear_log(
