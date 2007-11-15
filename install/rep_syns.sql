@@ -42,9 +42,6 @@ BEGIN
       -- sequences
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..FILES_DETAIL_SEQ for &schema_rs..FILES_DETAIL_SEQ';
       EXECUTE IMMEDIATE 'create or replace synonym &user_rs..FILES_OBJ_DETAIL_SEQ for &schema_rs..FILES_OBJ_DETAIL_SEQ';
-      EXECUTE IMMEDIATE 'create or replace synonym &user_rs..LOGGING_CONF_SEQ for &schema_rs..LOGGING_CONF_SEQ';
-      EXECUTE IMMEDIATE 'create or replace synonym &user_rs..RUNMODE_CONF_SEQ for &schema_rs..RUNMODE_CONF_SEQ';
-      EXECUTE IMMEDIATE 'create or replace synonym &user_rs..PARAMETER_CONF_SEQ for &schema_rs..PARAMETER_CONF_SEQ';
    END IF;
 EXCEPTION
 WHEN e_obj_exists
