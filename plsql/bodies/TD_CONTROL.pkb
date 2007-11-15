@@ -2,7 +2,7 @@ CREATE OR REPLACE PACKAGE BODY td_control
 IS
    PROCEDURE check_module( p_module VARCHAR2, p_allow_default BOOLEAN DEFAULT FALSE )
    IS
-      l_package_name   all_arguments.package_name%TYPE;
+      l_package_name   all_arguments.package_name%TYPE := p_module;
    BEGIN
       BEGIN
          SELECT package_name
@@ -27,7 +27,7 @@ IS
             NULL;
       END;
 
-      td_inst.log_msg( 'Check for package name ' || l_package_name || ' succeeded', 4 );
+      td_inst.log_msg( 'Check for module name "' || l_package_name || '" succeeded', 4 );
    END check_module;
 
    PROCEDURE set_logging_level(
@@ -37,6 +37,8 @@ IS
       p_mode		VARCHAR2 DEFAULT 'upsert'
    )
    IS
+      e_dup_conf   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_dup_conf, -1 );
    BEGIN
       check_module( p_module => p_module, p_allow_default => TRUE );
       
@@ -52,7 +54,7 @@ IS
       END IF;
       
       -- if the update was unsuccessful above, or an insert it specifically requested, then do an insert
-      IF SQL%ROWCOUNT = 0 OR lower(p_mode) = 'insert'
+      IF (SQL%ROWCOUNT = 0 AND lower(p_mode) = 'upsert') OR lower(p_mode) = 'insert'
       THEN
          INSERT INTO logging_conf
                      ( logging_level, debug_level, module
@@ -75,6 +77,8 @@ IS
       p_mode		  VARCHAR2 DEFAULT 'upsert'
    )
    IS
+      e_dup_conf   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_dup_conf, -1 );
    BEGIN
       check_module( p_module => p_module, p_allow_default => TRUE );
       
@@ -89,7 +93,7 @@ IS
       END IF;
       
       -- if the update was unsuccessful above, or an insert it specifically requested, then do an insert
-      IF SQL%ROWCOUNT = 0 OR lower(p_mode) = 'insert'
+      IF (SQL%ROWCOUNT = 0 AND lower(p_mode) = 'upsert') OR lower(p_mode) = 'insert'
       THEN
          INSERT INTO runmode_conf
                      ( default_runmode, module
@@ -112,6 +116,8 @@ IS
       p_mode		  VARCHAR2 DEFAULT 'upsert'
    )
    IS
+      e_dup_conf   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_dup_conf, -1 );
    BEGIN
       check_module( p_module => p_module, p_allow_default => TRUE );
       
@@ -126,13 +132,18 @@ IS
       END IF;
       
       -- if the update was unsuccessful above, or an insert it specifically requested, then do an insert
-      IF SQL%ROWCOUNT = 0 OR lower(p_mode) = 'insert'
+      IF (SQL%ROWCOUNT = 0 AND lower(p_mode) = 'upsert') OR lower(p_mode) = 'insert'
       THEN
-         INSERT INTO registration_conf
-                     ( registration, module
-                     )
-              VALUES ( lower(p_registration), lower(p_module)
-                     );
+	 BEGIN
+            INSERT INTO registration_conf
+                   ( registration, module
+                   )
+		   VALUES ( lower(p_registration), lower(p_module)
+			  );
+	 EXCEPTION
+	    WHEN e_dup_conf
+	    THEN td_inst.raise_err('dup_conf');
+	 END;
       END IF;
       
       -- if a delete is specifically requested, then do a delete
@@ -140,6 +151,19 @@ IS
       THEN
 	 DELETE FROM registration_conf WHERE module = lower(p_module);
       END IF;
+
+      -- if we still have not affected any records, then there's a problem      
+      IF sql%rowcount = 0
+      THEN
+	 td_inst.raise_err('conf_not_affected');
+      END IF;
+
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         td_inst.log_err;
+         RAISE;
+
 
    END set_registration;
    
@@ -151,6 +175,8 @@ IS
       p_mode		VARCHAR2 DEFAULT 'upsert'
    )
    IS
+      e_dup_conf   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_dup_conf, -1 );
    BEGIN
       check_module( p_module => p_module, p_allow_default => TRUE );
       
@@ -166,8 +192,9 @@ IS
       END IF;
       
       -- if the update was unsuccessful above, or an insert it specifically requested, then do an insert
-      IF SQL%ROWCOUNT = 0 OR lower(p_mode) = 'insert'
+      IF (SQL%ROWCOUNT = 0 AND lower(p_mode) = 'upsert') OR lower(p_mode) = 'insert'
       THEN
+	 td_inst.log_msg('Update was unsuccessful or insert was specified',5);
          INSERT INTO notification_events
                      ( module, action, subject, message
                      )
@@ -195,6 +222,8 @@ IS
       p_mode	     VARCHAR2 DEFAULT 'upsert'
    )
    IS
+      e_dup_conf   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_dup_conf, -1 );
    BEGIN
       check_module( p_module => p_module, p_allow_default => TRUE );
       
@@ -213,7 +242,7 @@ IS
       END IF;
       
       -- if the update was unsuccessful above, or an insert it specifically requested, then do an insert
-      IF SQL%ROWCOUNT = 0 OR lower(p_mode) = 'insert'
+      IF (SQL%ROWCOUNT = 0 AND lower(p_mode) = 'upsert') OR lower(p_mode) = 'insert'
       THEN
          INSERT INTO notification_conf
                      ( label, module, action, method, enabled, required,
@@ -240,6 +269,8 @@ IS
    )
    IS
       l_parameter   v$parameter.NAME%TYPE;
+      e_dup_conf   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_dup_conf, -1 );
    BEGIN
       check_module( p_module => p_module, p_allow_default => TRUE );
 
@@ -283,7 +314,7 @@ IS
       END IF;
       
       -- if the update was unsuccessful above, or an insert it specifically requested, then do an insert
-      IF SQL%ROWCOUNT = 0 OR lower(p_mode) = 'insert'
+      IF (SQL%ROWCOUNT = 0 AND lower(p_mode) = 'upsert') OR lower(p_mode) = 'insert'
       THEN
          INSERT INTO parameter_conf
                      ( NAME, VALUE, module
