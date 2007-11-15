@@ -54,5 +54,7 @@ INSERT INTO error_conf (code,name,message) VALUES (-20035, 'no_or_wrong_object',
 INSERT INTO error_conf (code,name,message) VALUES (-20036, 'too_many_objects','The specified parameters yield more than one object');
 INSERT INTO error_conf (code,name,message) VALUES (-20037, 'owb_flow_err','An error was returned from the OWB Control Center');
 INSERT INTO error_conf (code,name,message) VALUES (-20038, 'parm_not_supported','The specified parameter is not supported');
+INSERT INTO error_conf (code,name,message) VALUES (-20039, 'conf_not_affected','This action affected no repository configurations');
+INSERT INTO error_conf (code,name,message) VALUES (-20040, 'dup_conf','An attempt was made to add a duplicate configuration');
 
 ALTER TABLE error_conf ADD CONSTRAINT error_conf_ck1 CHECK (name=lower(name));
