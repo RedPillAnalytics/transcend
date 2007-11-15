@@ -30,8 +30,6 @@ GRANT SELECT ON files_obj_detail_seq TO &rep_schema_rg._adm;
 
 GRANT SELECT ON LOGGING_CONF TO &rep_schema_rg._sel;
 GRANT SELECT,UPDATE,DELETE,INSERT ON LOGGING_CONF TO &rep_schema_rg._adm;
-GRANT SELECT ON logging_conf_seq TO &rep_schema_rg._sel;
-GRANT SELECT ON logging_conf_seq TO &rep_schema_rg._adm;
 
 GRANT SELECT ON LOG_TABLE TO &rep_schema_rg._sel;
 GRANT SELECT,UPDATE,DELETE,INSERT ON LOG_TABLE TO &rep_schema_rg._adm;
@@ -41,13 +39,9 @@ GRANT SELECT,UPDATE,DELETE,INSERT ON NOTIFICATION_CONF TO &rep_schema_rg._adm;
 
 GRANT SELECT ON NOTIFICATION_EVENTS TO &rep_schema_rg._sel;
 GRANT SELECT,UPDATE,DELETE,INSERT ON NOTIFICATION_EVENTS TO &rep_schema_rg._adm;
-GRANT SELECT ON notification_events_seq TO &rep_schema_rg._sel;
-GRANT SELECT ON notification_events_seq TO &rep_schema_rg._adm;
 
 GRANT SELECT ON PARAMETER_CONF TO &rep_schema_rg._sel;
 GRANT SELECT,UPDATE,DELETE,INSERT ON PARAMETER_CONF TO &rep_schema_rg._adm;
-GRANT SELECT ON PARAMETER_CONF_SEQ TO &rep_schema_rg._sel;
-GRANT SELECT ON PARAMETER_CONF_SEQ TO &rep_schema_rg._adm;
 
 GRANT SELECT ON TD_PART_GTT TO &rep_schema_rg._sel;
 GRANT SELECT,UPDATE,DELETE,INSERT ON TD_PART_GTT TO &rep_schema_rg._adm;
@@ -75,13 +69,9 @@ GRANT SELECT,UPDATE,DELETE,INSERT ON REPLACE_METHOD_LIST TO &rep_schema_rg._adm;
 
 GRANT SELECT ON REGISTRATION_CONF TO &rep_schema_rg._sel;
 GRANT SELECT,UPDATE,DELETE,INSERT ON REGISTRATION_CONF TO &rep_schema_rg._adm;
-GRANT SELECT ON REGISTRATION_CONF_SEQ TO &rep_schema_rg._sel;
-GRANT SELECT ON REGISTRATION_CONF_SEQ TO &rep_schema_rg._adm;
 
 GRANT SELECT ON RUNMODE_CONF TO &rep_schema_rg._sel;
 GRANT SELECT,UPDATE,DELETE,INSERT ON RUNMODE_CONF TO &rep_schema_rg._adm;
-GRANT SELECT ON RUNMODE_CONF_SEQ TO &rep_schema_rg._sel;
-GRANT SELECT ON RUNMODE_CONF_SEQ TO &rep_schema_rg._adm;
 
 GRANT SELECT ON ERROR_CONF TO &rep_schema_rg._sel;
 GRANT SELECT,UPDATE,DELETE,INSERT ON ERROR_CONF TO &rep_schema_rg._adm;
