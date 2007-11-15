@@ -16,18 +16,14 @@ IS
             THEN
                NULL;
             ELSE
-               raise_application_error( td_inst.get_err_cd( 'no_module' ),
-                                           td_inst.get_err_msg( 'no_module' )
-                                        || ': '
-                                        || p_module
-                                      );
+	       td_inst.raise_err('no_module',p_module);
             END IF;
          WHEN TOO_MANY_ROWS
          THEN
             NULL;
       END;
 
-      td_inst.log_msg( 'Check for module name "' || l_package_name || '" succeeded', 4 );
+      td_inst.log_msg( 'Check for module name "' || l_package_name || '" succeeded', 5 );
    END check_module;
 
    PROCEDURE set_logging_level(
@@ -56,17 +52,29 @@ IS
       -- if the update was unsuccessful above, or an insert it specifically requested, then do an insert
       IF (SQL%ROWCOUNT = 0 AND lower(p_mode) = 'upsert') OR lower(p_mode) = 'insert'
       THEN
-         INSERT INTO logging_conf
-                     ( logging_level, debug_level, module
-                     )
-              VALUES ( p_logging_level, p_debug_level, lower(p_module)
-                     );
+	 BEGIN
+            INSERT INTO logging_conf
+                   ( logging_level, debug_level, module
+                   )
+		   VALUES ( p_logging_level, p_debug_level, lower(p_module)
+			  );
+	 EXCEPTION
+	    WHEN e_dup_conf
+	    THEN td_inst.raise_err('dup_conf');
+	 END;
+
       END IF;
       
       -- if a delete is specifically requested, then do a delete
       IF lower(p_mode) = 'delete'
       THEN
 	 DELETE FROM logging_conf WHERE module = lower(p_module);
+      END IF;
+      
+      -- if we still have not affected any records, then there's a problem      
+      IF sql%rowcount = 0
+      THEN
+	 td_inst.raise_err('conf_not_affected');
       END IF;
 
    END set_logging_level;
@@ -95,11 +103,17 @@ IS
       -- if the update was unsuccessful above, or an insert it specifically requested, then do an insert
       IF (SQL%ROWCOUNT = 0 AND lower(p_mode) = 'upsert') OR lower(p_mode) = 'insert'
       THEN
-         INSERT INTO runmode_conf
-                     ( default_runmode, module
-                     )
-              VALUES ( lower(p_default_runmode), lower(p_module)
-                     );
+	 BEGIN
+            INSERT INTO runmode_conf
+                   ( default_runmode, module
+                   )
+		   VALUES ( lower(p_default_runmode), lower(p_module)
+			  );
+	 EXCEPTION
+	    WHEN e_dup_conf
+	    THEN td_inst.raise_err('dup_conf');
+	 END;
+
       END IF;
       
       -- if a delete is specifically requested, then do a delete
@@ -107,6 +121,13 @@ IS
       THEN
 	 DELETE FROM runmode_conf WHERE module = lower(p_module);
       END IF;
+      
+      -- if we still have not affected any records, then there's a problem      
+      IF sql%rowcount = 0
+      THEN
+	 td_inst.raise_err('conf_not_affected');
+      END IF;
+
 
    END set_runmode;
 
@@ -195,17 +216,30 @@ IS
       IF (SQL%ROWCOUNT = 0 AND lower(p_mode) = 'upsert') OR lower(p_mode) = 'insert'
       THEN
 	 td_inst.log_msg('Update was unsuccessful or insert was specified',5);
-         INSERT INTO notification_events
-                     ( module, action, subject, message
-                     )
-              VALUES ( lower(p_module), lower(p_action), p_subject, p_message
-                     );
+
+	 BEGIN
+            INSERT INTO notification_events
+                   ( module, action, subject, message
+                   )
+		   VALUES ( lower(p_module), lower(p_action), p_subject, p_message
+			  );
+	 EXCEPTION
+	    WHEN e_dup_conf
+	    THEN td_inst.raise_err('dup_conf');
+	 END;
+
       END IF;
       
       -- if a delete is specifically requested, then do a delete
       IF lower(p_mode) = 'delete'
       THEN
 	 DELETE FROM notification_events WHERE module = lower(p_module) AND action = lower (p_action);
+      END IF;
+      
+      -- if we still have not affected any records, then there's a problem      
+      IF sql%rowcount = 0
+      THEN
+	 td_inst.raise_err('conf_not_affected');
       END IF;
 
    END set_notification_event;
@@ -244,19 +278,31 @@ IS
       -- if the update was unsuccessful above, or an insert it specifically requested, then do an insert
       IF (SQL%ROWCOUNT = 0 AND lower(p_mode) = 'upsert') OR lower(p_mode) = 'insert'
       THEN
-         INSERT INTO notification_conf
-                     ( label, module, action, method, enabled, required,
-                       sender, recipients
-                     )
-              VALUES ( lower(p_label), lower(p_module), lower(p_action), lower(p_method), lower(p_enabled), lower(p_required),
-                       lower(p_sender), lower(p_recipients)
-                     );
+	 BEGIN
+            INSERT INTO notification_conf
+                   ( label, module, action, method, enabled, required,
+                     sender, recipients
+                   )
+		   VALUES ( lower(p_label), lower(p_module), lower(p_action), lower(p_method), lower(p_enabled), lower(p_required),
+			    lower(p_sender), lower(p_recipients)
+			  );
+	 EXCEPTION
+	    WHEN e_dup_conf
+	    THEN td_inst.raise_err('dup_conf');
+	 END;
+
       END IF;
       
       -- if a delete is specifically requested, then do a delete
       IF lower(p_mode) = 'delete'
       THEN
 	 DELETE FROM notification_events WHERE module = lower(p_module) AND action = lower (p_action);
+      END IF;
+      
+      -- if we still have not affected any records, then there's a problem      
+      IF sql%rowcount = 0
+      THEN
+	 td_inst.raise_err('conf_not_affected');
       END IF;
 
    END set_notification;
@@ -286,11 +332,7 @@ IS
             THEN
                NULL;
             ELSE
-               raise_application_error( td_inst.get_err_cd( 'no_session_parm' ),
-                                           td_inst.get_err_msg( 'no_session_parm' )
-                                        || ': '
-                                        || p_name
-                                      );
+	       td_inst.raise_err( 'no_session_parm',p_name);
             END IF;
       END;
       
@@ -316,17 +358,29 @@ IS
       -- if the update was unsuccessful above, or an insert it specifically requested, then do an insert
       IF (SQL%ROWCOUNT = 0 AND lower(p_mode) = 'upsert') OR lower(p_mode) = 'insert'
       THEN
-         INSERT INTO parameter_conf
-                     ( NAME, VALUE, module
-                     )
-              VALUES ( lower(p_name), lower(p_value), lower(p_module)
-                     );
+	 BEGIN
+            INSERT INTO parameter_conf
+                   ( NAME, VALUE, module
+                   )
+		   VALUES ( lower(p_name), lower(p_value), lower(p_module)
+			  );
+	 EXCEPTION
+	    WHEN e_dup_conf
+	    THEN td_inst.raise_err('dup_conf');
+	 END;
+
       END IF;
       
       -- if a delete is specifically requested, then do a delete
       IF lower(p_mode) = 'delete'
       THEN
 	 DELETE FROM parameter_conf WHERE module = lower(p_module) AND name = lower (p_name);
+      END IF;
+      
+      -- if we still have not affected any records, then there's a problem      
+      IF sql%rowcount = 0
+      THEN
+	 td_inst.raise_err('conf_not_affected');
       END IF;
 
    END set_session_parameter;
