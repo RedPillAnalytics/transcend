@@ -28,17 +28,23 @@ IS
    );
 
    PROCEDURE set_notification(
-      p_label		VARCHAR2,
-      p_module		VARCHAR2,
-      p_action 		VARCHAR2,
-      p_method		VARCHAR2,
-      p_enabled         VARCHAR2,
-      p_required        VARCHAR2,
-      p_sender		VARCHAR2,
-      p_recipients	VARCHAR2
+      p_label        VARCHAR2,
+      p_module       VARCHAR2,
+      p_action       VARCHAR2,
+      p_method       VARCHAR2,
+      p_enabled      VARCHAR2,
+      p_required     VARCHAR2,
+      p_sender       VARCHAR2,
+      p_recipients   VARCHAR2,
+      p_mode	     VARCHAR2 DEFAULT 'upsert'
    );
 
-   PROCEDURE set_session_parameter( p_module VARCHAR2, p_name VARCHAR2, p_value VARCHAR2 );
+   PROCEDURE set_session_parameter(
+      p_module       VARCHAR2,
+      p_name         VARCHAR2,
+      p_value        VARCHAR2,
+      p_mode	     VARCHAR2 DEFAULT 'upsert'
+   );
 
    PROCEDURE clear_log(
       p_runmode      VARCHAR2 DEFAULT NULL,
