@@ -7,6 +7,7 @@ CREATE TABLE log_table
 	 client_info VARCHAR2(64),
 	 module VARCHAR2(48),
 	 action VARCHAR2(32),
+	 service_name VARCHAR2(64),
 	 runmode VARCHAR2(10) NOT NULL,
 	 session_id NUMBER NOT NULL,
 	 current_scn NUMBER NOT NULL,
