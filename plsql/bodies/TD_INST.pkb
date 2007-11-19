@@ -3,6 +3,7 @@ AS
 -- global variables placed in the package body because they should be accessed or set outside the package
 
 -- variables for holding information about the current session
+   g_service_name             VARCHAR2(64)   := SYS_CONTEXT( 'USERENV', 'SERVICE_NAME' );
    g_session_id               NUMBER         := SYS_CONTEXT( 'USERENV', 'SESSIONID' );
    g_instance_name            VARCHAR( 30 )  := SYS_CONTEXT( 'USERENV', 'INSTANCE_NAME' );
    g_machine                  VARCHAR2( 50 )
@@ -310,13 +311,13 @@ AS
       THEN
          -- write the record to the log table
          INSERT INTO log_table
-                     ( msg, client_info, module, action, runmode,
+                     ( msg, client_info, module, action, service_name, runmode,
                        session_id, current_scn, instance_name, machine, dbuser,
                        osuser, code, call_stack,
                        back_trace,
                        batch_id
                      )
-              VALUES ( l_msg, g_client_info, g_module, g_action, g_runmode,
+              VALUES ( l_msg, g_client_info, g_module, g_action, g_service_name, g_runmode,
                        g_session_id, l_scn, g_instance_name, g_machine, g_dbuser,
                        g_osuser, 0, l_whence,
                        null,
@@ -365,13 +366,13 @@ AS
       THEN
          -- write the record to the log table
          INSERT INTO log_table
-                     ( msg, client_info, module, action, runmode,
+                     ( msg, client_info, module, action, service_name, runmode,
                        session_id, current_scn, instance_name, machine, dbuser,
                        osuser, code, call_stack,
                        back_trace,
                        batch_id
                      )
-              VALUES ( l_msg, g_client_info, g_module, g_action, g_runmode,
+              VALUES ( l_msg, g_client_info, g_module, g_action, g_service_name, g_runmode,
                        g_session_id, l_scn, g_instance_name, g_machine, g_dbuser,
                        g_osuser, l_code, l_whence,
                        REGEXP_REPLACE( SUBSTR( DBMS_UTILITY.format_error_backtrace,
