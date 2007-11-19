@@ -20,11 +20,7 @@ AS
             THEN
                RETURN NULL;
             ELSE
-               raise_application_error( get_err_cd( 'unrecognized_parm' ),
-                                           get_err_msg( 'unrecognized_parm' )
-                                        || ' : '
-                                        || p_parm
-                                      );
+	       td_inst.raise_err('unrecognized_parm',p_parm);
             END IF;
       END CASE;
    END is_true;
@@ -47,9 +43,7 @@ AS
          THEN
             RETURN 'no';
          ELSE
-            raise_application_error( get_err_cd( 'unrecognized_parm' ),
-                                     get_err_msg( 'unrecognized_parm' ) || ' : ' || p_parm
-                                   );
+	    td_inst.raise_err('unrecognized_parm',p_parm);
       END CASE;
    END get_yn_ind;
    
