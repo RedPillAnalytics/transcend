@@ -19,4 +19,4 @@ ALTER TABLE logging_conf ADD (
     USING INDEX)
 /
 
-ALTER TABLE runmode_conf ADD CONSTRAINT runmode_conf_ck1 CHECK (module=lower(module));
+ALTER TABLE logging_conf ADD CONSTRAINT logging_conf_ck1 CHECK (module=lower(module));
