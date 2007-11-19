@@ -285,11 +285,7 @@ AS
          THEN
             NULL;
          ELSE
-            raise_application_error( td_ext.get_err_cd( 'unrecognized_parm' ),
-                                        td_ext.get_err_msg( 'unrecognized_parm' )
-                                     || ' : '
-                                     || p_statistics
-                                   );
+	    td_inst.raise_err('unrecognized_parm',p_statistics);
       END CASE;
 
       o_ev.clear_app_info;
@@ -331,10 +327,7 @@ AS
       CASE
          WHEN p_tablespace IS NOT NULL AND p_partname IS NOT NULL
          THEN
-            raise_application_error( td_inst.get_err_cd( 'parms_not_compatible' ),
-                                        td_inst.get_err_msg( 'parms_not_compatible' )
-                                     || ': P_TABLESPACE and P_PARTNAME'
-                                   );
+	    td_inst.raise_err('parms_not_compatible','P_TABLESPACE and P_PARTNAME');
          ELSE
             NULL;
       END CASE;
@@ -1908,9 +1901,7 @@ AS
          -- ON columns not specified correctly
          WHEN e_no_on_columns
          THEN
-            raise_application_error( td_inst.get_err_cd( 'on_clause_missing' ),
-                                     td_inst.get_err_msg( 'on_clause_missing' )
-                                   );
+	    td_inst.raise_err('on_clause_missing');
       END;
 
       -- record the number of rows affected
@@ -2017,9 +2008,7 @@ AS
 
       IF NOT l_rows
       THEN
-         raise_application_error( td_inst.get_err_cd( 'incorrect_parameters' ),
-                                  td_inst.get_err_msg( 'incorrect_parameters' )
-                                );
+         td_inst.raise_err('incorrect_parameters');
       END IF;
 
       o_ev.clear_app_info;
@@ -2115,11 +2104,7 @@ AS
          THEN
             NULL;
          ELSE
-            raise_application_error( td_ext.get_err_cd( 'unrecognized_parm' ),
-                                        td_ext.get_err_msg( 'unrecognized_parm' )
-                                     || ' : '
-                                     || p_statistics
-                                   );
+  	    td_inst.raise_err('unrecognized_parm',p_statistics);
       END CASE;
 
       -- now build the indexes
@@ -2386,23 +2371,13 @@ AS
          WHEN     p_partname IS NOT NULL
               AND ( p_source_owner IS NOT NULL OR p_source_object IS NOT NULL )
          THEN
-            raise_application_error
-                            ( td_inst.get_err_cd( 'parms_not_compatible' ),
-                                 td_inst.get_err_msg( 'parms_not_compatible' )
-                              || ': P_PARTNAME with either P_SOURCE_OWNER or P_SOURCE_OBJECT'
-                            );
+	    td_inst.raise_err( 'parms_not_compatible','P_PARTNAME with either P_SOURCE_OWNER or P_SOURCE_OBJECT' );
          WHEN p_source_owner IS NOT NULL AND p_source_object IS NULL
          THEN
-            raise_application_error( td_inst.get_err_cd( 'parms_not_compatible' ),
-                                        td_inst.get_err_msg( 'parms_not_compatible' )
-                                     || ': P_SOURCE_OWNER without P_SOURCE_OBJECT'
-                                   );
+	    td_inst.raise_err( 'parms_not_compatible','P_SOURCE_OWNER without P_SOURCE_OBJECT' );
          WHEN p_source_owner IS NULL AND p_source_object IS NOT NULL
          THEN
-            raise_application_error( td_inst.get_err_cd( 'parms_not_compatible' ),
-                                        td_inst.get_err_msg( 'parms_not_compatible' )
-                                     || ': P_SOURCE_OBJECT without P_SOURCE_OWNER'
-                                   );
+	    td_inst.raise_err( 'parms_not_compatible','P_SOURCE_OBJECT without P_SOURCE_OWNEW' );
          ELSE
             NULL;
       END CASE;
@@ -2699,25 +2674,14 @@ AS
          WHEN    p_source_owner IS NOT NULL AND p_source_table IS NULL
               OR ( p_source_owner IS NULL AND p_source_table IS NOT NULL )
          THEN
-            raise_application_error
-                           ( td_inst.get_err_cd( 'parms_not_compatible' ),
-                                td_inst.get_err_msg( 'parms_not_compatible' )
-                             || ': P_SOURCE_OWNER and P_SOURCE_OBJECT are mutually inclusive'
-                           );
+	    td_inst.raise_err('parms_not_compatible','P_SOURCE_OWNER and P_SOURCE_OBJECT are mutually inclusive');
          WHEN     p_source_partname IS NOT NULL
               AND ( p_source_owner IS NULL OR p_source_table IS NULL )
          THEN
-            raise_application_error
-                       ( td_inst.get_err_cd( 'parms_not_compatible' ),
-                            td_inst.get_err_msg( 'parms_not_compatible' )
-                         || ': P_SOURCE_PARTNAME requires P_SOURCE_OWNER and P_SOURCE_OBJECT'
-                       );
+	    td_inst.raise_err('parms_not_compatible','P_SOURCE_PARTNAME requires P_SOURCE_OWNER and P_SOURCE_OBJECT');
          WHEN p_partname IS NOT NULL AND( p_owner IS NULL OR p_table IS NULL )
          THEN
-            raise_application_error( td_inst.get_err_cd( 'parms_not_compatible' ),
-                                        td_inst.get_err_msg( 'parms_not_compatible' )
-                                     || ': P_PARTNAME requires P_OWNER and P_OBJECT'
-                                   );
+	    td_inst.raise_err('parms_not_compatible','P_PARTNAME requires P_OWNER and P_OBJECT');
          ELSE
             NULL;
       END CASE;
