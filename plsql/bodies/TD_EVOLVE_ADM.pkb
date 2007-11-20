@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE BODY td_control
+CREATE OR REPLACE PACKAGE BODY td_evolve_adm
 IS
    PROCEDURE check_module( p_module VARCHAR2, p_allow_default BOOLEAN DEFAULT FALSE )
    IS
@@ -395,5 +395,5 @@ IS
             WHERE session_id = p_session_id
               AND REGEXP_LIKE( runmode, NVL( p_runmode, '.' ), 'i' );
    END clear_log;
-END td_control;
+END td_evolve_adm;
 /
