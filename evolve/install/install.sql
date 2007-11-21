@@ -55,4 +55,22 @@ ALTER SESSION SET current_schema=tdsys;
 @@../ddl/APPLICATIONS_tbl.sql
 @@../ddl/USERS_tbl.sql
 
-EXEC td_evolve_install.create_user('&rep_user','&tablespace');
+-- create repository user
+EXEC tdsys.td_install.create_user('&rep_user','&tablespace');
+
+-- create stats table
+EXEC tdsys.td_install.create_stats_table('&rep_user','&tablespace');
+
+-- create Evolve repository tables
+@@../ddl/DIR_LIST_tbl.sql
+@@../ddl/COUNT_TABLE_tbl.sql
+@@../ddl/ERROR_CONF_tbl.sql
+@@../ddl/LOGGING_CONF_tbl.sql
+@@../ddl/LOG_TABLE_tbl.sql
+@@../ddl/NOTIFICATION_CONF_tbl.sql
+@@../ddl/NOTIFICATION_EVENTS_tbl.sql
+@@../ddl/REGISTRATION_CONF_tbl.sql
+@@../ddl/RUNMODE_CONF_tbl.sql
+@@../ddl/PARAMETER_CONF_tbl.sql
+
+EXEC td_sys.td_install.reset_default_tablespace('&rep_user');

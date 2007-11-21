@@ -1,6 +1,6 @@
 CREATE OR REPLACE PACKAGE BODY td_evolve_install
 IS
-   g_old_tbspace all_users.tablespace_name;
+   g_tablespace all_users.tablespace_name;
 
    PROCEDURE create_user(
       p_user        VARCHAR2 DEFAULT 'TDSYS',
@@ -40,7 +40,7 @@ IS
    END create_user;
 
    PROCEDURE create_stats_table(
-      p_owner  VARCHAR2 DEFAULT 'TDSYS'
+      p_owner  VARCHAR2 DEFAULT 'TDSYS',
       p_table  VARCHAR2 DEFAULT 'OPT_STATS'
    ) 
    IS
@@ -55,6 +55,17 @@ IS
 	   dbms_output.put_line('Statistics table already exists');
       END;      
    END create_stats_table;
+
+   PROCEDURE reset_default_tablespace(
+      p_owner  VARCHAR2 DEFAULT 'TDSYS'
+   ) 
+   IS
+   BEGIN
+      IF g_tablespace IS NOT null
+      THEN
+	 EXECUTE IMMEDIATE 'alter user '||p_owner||' default tablespace '||g_tablespace;
+      END IF;
+   END reset_default_tablespace;
    
 END td_evolve_install;
 /
