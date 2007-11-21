@@ -40,7 +40,7 @@ IS
    END create_user;
 
    PROCEDURE create_stats_table(
-      p_owner  VARCHAR2 DEFAULT,
+      p_owner  VARCHAR2 DEFAULT 'TDSYS'
       p_table  VARCHAR2 DEFAULT 'OPT_STATS'
    ) 
    IS
