@@ -54,3 +54,33 @@ EXEC tdsys.td_install.build_evolve_repo( p_schema => '&rep_schema', p_tablespace
 
 -- create the Evolve application
 EXEC tdsys.td_install.build_evolve_app( p_schema => '&app_schema', p_repository => '&rep_schema');
+
+-- now install the Evolve code
+-- first drop the types
+EXEC tdsys.td_install.drop_evolve_types;
+
+--CREATE core pieces
+@../plsql/specs/STRING_AGG_OT.tps
+@../plsql/wrapped_bodies/STRING_AGG_OT.plb
+@../plsql/wrapped_bodies/STRAGG.plb
+@../plsql/specs/TD_EXT.pks
+@../plsql/wrapped_bodies/TD_EXT.plb
+@../plsql/specs/TD_INST.pks
+@../plsql/wrapped_bodies/TD_INST.plb
+
+--CREATE targeted types, packages and object views
+@../plsql/specs/APP_OT.tps
+@../plsql/wrapped_bodies/APP_OT.plb
+@../plsql/specs/NOTIFICATION_OT.tps
+@../plsql/wrapped_bodies/NOTIFICATION_OT.plb
+@../object_views/NOTIFICATION_OV_vw.sql
+@../plsql/specs/EVOLVE_OT.tps
+@../plsql/wrapped_bodies/EVOLVE_OT.plb
+@../plsql/specs/TD_SQL.pks
+@../plsql/wrapped_bodies/TD_SQL.plb
+@../plsql/specs/TD_HOST.pks
+@../plsql/wrapped_bodies/TD_HOST.plb
+
+--CREATE callable packages
+@../plsql/specs/TD_EVOLVE_ADM.pks
+@../plsql/wrapped_bodies/TD_EVOLVE_ADM.plb
