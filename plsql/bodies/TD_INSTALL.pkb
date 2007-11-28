@@ -1268,9 +1268,9 @@ IS
 
    END build_transcend_repo;
    
-   PROCEDURE create_evolve_rep_user(
+   PROCEDURE build_evolve_rep_syns(
       p_user        VARCHAR2,
-      p_schema      VARCHAR2
+      p_schema  VARCHAR2
    ) 
    IS
       e_tab_exists   EXCEPTION;
@@ -1278,13 +1278,10 @@ IS
       e_same_name   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_same_name, -1471 );
    BEGIN
-      -- create the user if it doesn't already exist
-      create_user( p_user => p_user );
-      
       -- create the synonyms
       BEGIN
 	 BEGIN
-	    EXECUTE IMMEDIATE 'create or replace synonym COUNT_TABLE for '||p_schema||'.COUNT_TABLE';
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.COUNT_TABLE for '||p_schema||'.COUNT_TABLE';
 	 EXCEPTION
 	    WHEN e_same_name
 	    THEN
@@ -1292,7 +1289,7 @@ IS
 	 END;
 
 	 BEGIN
-	    EXECUTE IMMEDIATE 'create or replace synonym DIR_LIST for '||p_schema||'.DIR_LIST';
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.DIR_LIST for '||p_schema||'.DIR_LIST';
 	 EXCEPTION
 	    WHEN e_same_name
 	    THEN
@@ -1300,7 +1297,7 @@ IS
 	 END;
 
 	 BEGIN
-	    EXECUTE IMMEDIATE 'create or replace synonym ERROR_CONF for '||p_schema||'.ERROR_CONF';
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.ERROR_CONF for '||p_schema||'.ERROR_CONF';
 	 EXCEPTION
 	    WHEN e_same_name
 	    THEN
@@ -1308,7 +1305,7 @@ IS
 	 END;
 
 	 BEGIN
-	    EXECUTE IMMEDIATE 'create or replace synonym LOGGING_CONF for '||p_schema||'.LOGGING_CONF';
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.LOGGING_CONF for '||p_schema||'.LOGGING_CONF';
 	 EXCEPTION
 	    WHEN e_same_name
 	    THEN
@@ -1316,7 +1313,7 @@ IS
 	 END;
 
 	 BEGIN
-	    EXECUTE IMMEDIATE 'create or replace synonym LOG_TABLE for '||p_schema||'.LOG_TABLE';
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.LOG_TABLE for '||p_schema||'.LOG_TABLE';
 	 EXCEPTION
 	    WHEN e_same_name
 	    THEN
@@ -1324,7 +1321,7 @@ IS
 	 END;
 
 	 BEGIN
-	    EXECUTE IMMEDIATE 'create or replace synonym NOTIFICATION_CONF for '||p_schema||'.NOTIFICATION_CONF';
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.NOTIFICATION_CONF for '||p_schema||'.NOTIFICATION_CONF';
 	 EXCEPTION
 	    WHEN e_same_name
 	    THEN
@@ -1332,7 +1329,7 @@ IS
 	 END;
 
 	 BEGIN
-	    EXECUTE IMMEDIATE 'create or replace synonym NOTIFICATION_EVENTS for '||p_schema||'.NOTIFICATION_EVENTS';
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.NOTIFICATION_EVENTS for '||p_schema||'.NOTIFICATION_EVENTS';
 	 EXCEPTION
 	    WHEN e_same_name
 	    THEN
@@ -1340,7 +1337,7 @@ IS
 	 END;
 
 	 BEGIN
-	    EXECUTE IMMEDIATE 'create or replace synonym REGISTRATION_CONF for '||p_schema||'.REGISTRATION_CONF';
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.REGISTRATION_CONF for '||p_schema||'.REGISTRATION_CONF';
 	 EXCEPTION
 	    WHEN e_same_name
 	    THEN
@@ -1348,7 +1345,7 @@ IS
 	 END;
 
 	 BEGIN
-	    EXECUTE IMMEDIATE 'create or replace synonym RUNMODE_CONF for '||p_schema||'.RUNMODE_CONF';
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.RUNMODE_CONF for '||p_schema||'.RUNMODE_CONF';
 	 EXCEPTION
 	    WHEN e_same_name
 	    THEN
@@ -1356,32 +1353,78 @@ IS
 	 END;
 
 	 BEGIN
-	    EXECUTE IMMEDIATE 'create or replace synonym PARAMETER_CONF for '||p_schema||'.PARAMETER_CONF';
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.PARAMETER_CONF for '||p_schema||'.PARAMETER_CONF';
 	 EXCEPTION
 	    WHEN e_same_name
 	    THEN
 	    NULL;
 	 END;
       END;
+   END build_evolve_rep_syns;
 
-      -- if the default tablespace was changed, then put it back
-      reset_default_tablespace;
-      
-      -- set current_schema back to &_USER
-      reset_current_schema;
-   EXCEPTION
-   WHEN others
-      THEN
-      -- if the default tablespace was changed, then put it back
-      reset_default_tablespace;
-      
-      -- set current_schema back to &_USER
-      reset_current_schema;
-      RAISE;      
+   PROCEDURE build_evolve_app_syns(
+      p_user        VARCHAR2,
+      p_schema  VARCHAR2
+   ) 
+   IS
+      e_tab_exists   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_tab_exists, -955 );
+      e_same_name   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_same_name, -1471 );
+   BEGIN
+      -- create the synonyms
+      BEGIN
+	 BEGIN
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.TD_EXT for '||p_schema||'.TD_EXT';
+	 EXCEPTION
+	    WHEN e_same_name
+	    THEN
+	    NULL;
+	 END;
 
-   END create_evolve_rep_user;
+	 BEGIN
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.TD_HOST for '||p_schema||'.TD_HOST';
+	 EXCEPTION
+	    WHEN e_same_name
+	    THEN
+	    NULL;
+	 END;
+
+	 BEGIN
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.TD_EVOLVE_ADM for '||p_schema||'.TD_EVOLVE_ADM';
+	 EXCEPTION
+	    WHEN e_same_name
+	    THEN
+	    NULL;
+	 END;
+
+	 BEGIN
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.TD_INST for '||p_schema||'.TD_INST';
+	 EXCEPTION
+	    WHEN e_same_name
+	    THEN
+	    NULL;
+	 END;
+
+	 BEGIN
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.STRAGG for '||p_schema||'.STRAGG';
+	 EXCEPTION
+	    WHEN e_same_name
+	    THEN
+	    NULL;
+	 END;
+
+	 BEGIN
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.NOTIFICATION_OV for '||p_schema||'.NOTIFICATION_OV';
+	 EXCEPTION
+	    WHEN e_same_name
+	    THEN
+	    NULL;
+	 END;
+      END;
+   END build_evolve_app_syns;
    
-   PROCEDURE create_transcend_rep_user(
+   PROCEDURE build_transcend_rep_syns(
       p_user     VARCHAR2,
       p_schema   VARCHAR2
    ) 
@@ -1391,14 +1434,10 @@ IS
       e_same_name   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_same_name, -1471 );
    BEGIN
-      -- need an evolve rep user first
-      create_evolve_rep_user( p_user   => p_user,
-			      p_schema => p_schema );
-      
       -- create the synonyms
       BEGIN
 	 BEGIN
-	    EXECUTE IMMEDIATE 'create or replace synonym FILES_CONF for '||p_schema||'.FILES_CONF';
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.FILES_CONF for '||p_schema||'.FILES_CONF';
 	 EXCEPTION
 	    WHEN e_same_name
 	    THEN
@@ -1406,7 +1445,7 @@ IS
 	 END;
 
 	 BEGIN
-	    EXECUTE IMMEDIATE 'create or replace synonym FILES_DETAIL for '||p_schema||'.FILES_DETAIL';
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.FILES_DETAIL for '||p_schema||'.FILES_DETAIL';
 	 EXCEPTION
 	    WHEN e_same_name
 	    THEN
@@ -1414,7 +1453,7 @@ IS
 	 END;
 
 	 BEGIN
-	    EXECUTE IMMEDIATE 'create or replace synonym FILES_OBJ_DETAIL for '||p_schema||'.FILES_OBJ_DETAIL';
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.FILES_OBJ_DETAIL for '||p_schema||'.FILES_OBJ_DETAIL';
 	 EXCEPTION
 	    WHEN e_same_name
 	    THEN
@@ -1422,7 +1461,7 @@ IS
 	 END;
 
 	 BEGIN
-	    EXECUTE IMMEDIATE 'create or replace synonym TD_PART_GTT for '||p_schema||'.TD_PART_GTT';
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.TD_PART_GTT for '||p_schema||'.TD_PART_GTT';
 	 EXCEPTION
 	    WHEN e_same_name
 	    THEN
@@ -1430,7 +1469,7 @@ IS
 	 END;
 
 	 BEGIN
-	    EXECUTE IMMEDIATE 'create or replace synonym TD_BUILD_IDX_GTT for '||p_schema||'.TD_BUILD_IDX_GTT';
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.TD_BUILD_IDX_GTT for '||p_schema||'.TD_BUILD_IDX_GTT';
 	 EXCEPTION
 	    WHEN e_same_name
 	    THEN
@@ -1438,7 +1477,7 @@ IS
 	 END;
 
 	 BEGIN
-	    EXECUTE IMMEDIATE 'create or replace synonym TD_BUILD_CON_GTT for '||p_schema||'.TD_BUILD_CON_GTT';
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.TD_BUILD_CON_GTT for '||p_schema||'.TD_BUILD_CON_GTT';
 	 EXCEPTION
 	    WHEN e_same_name
 	    THEN
@@ -1446,7 +1485,7 @@ IS
 	 END;
 
 	 BEGIN
-	    EXECUTE IMMEDIATE 'create or replace synonym TD_CON_MAINT_GTT for '||p_schema||'.TD_CON_MAINT_GTT';
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.TD_CON_MAINT_GTT for '||p_schema||'.TD_CON_MAINT_GTT';
 	 EXCEPTION
 	    WHEN e_same_name
 	    THEN
@@ -1454,7 +1493,7 @@ IS
 	 END;
 
 	 BEGIN
-	    EXECUTE IMMEDIATE 'create or replace synonym COLUMN_CONF for '||p_schema||'.COLUMN_CONF';
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.COLUMN_CONF for '||p_schema||'.COLUMN_CONF';
 	 EXCEPTION
 	    WHEN e_same_name
 	    THEN
@@ -1462,7 +1501,7 @@ IS
 	 END;
 
 	 BEGIN
-	    EXECUTE IMMEDIATE 'create or replace synonym DIMENSION_CONF for '||p_schema||'.DIMENSION_CONF';
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.DIMENSION_CONF for '||p_schema||'.DIMENSION_CONF';
 	 EXCEPTION
 	    WHEN e_same_name
 	    THEN
@@ -1470,7 +1509,7 @@ IS
 	 END;
 
 	 BEGIN
-	    EXECUTE IMMEDIATE 'create or replace synonym COLUMN_TYPE_LIST for '||p_schema||'.COLUMN_TYPE_LIST';
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.COLUMN_TYPE_LIST for '||p_schema||'.COLUMN_TYPE_LIST';
 	 EXCEPTION
 	    WHEN e_same_name
 	    THEN
@@ -1478,7 +1517,7 @@ IS
 	 END;
 
 	 BEGIN
-	    EXECUTE IMMEDIATE 'create or replace synonym REPLACE_METHOD_LIST for '||p_schema||'.REPLACE_METHOD_LIST';
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.REPLACE_METHOD_LIST for '||p_schema||'.REPLACE_METHOD_LIST';
 	 EXCEPTION
 	    WHEN e_same_name
 	    THEN
@@ -1486,16 +1525,16 @@ IS
 	 END;
 
 	 BEGIN
-	    EXECUTE IMMEDIATE 'create or replace synonym OPT_STATS for '||p_schema||'.OPT_STATS';
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.OPT_STATS for '||p_schema||'.OPT_STATS';
 	 EXCEPTION
 	    WHEN e_same_name
 	    THEN
 	    NULL;
 	 END;
 
-	 -- create the synonyms for the sequences
+	 -- create the synonyms for the sequences in the repository
 	 BEGIN
-	    EXECUTE IMMEDIATE 'create or replace synonym FILES_DETAIL_SEQ for '||p_schema||'.FILES_DETAIL_SEQ';
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.FILES_DETAIL_SEQ for '||p_schema||'.FILES_DETAIL_SEQ';
 	 EXCEPTION
 	    WHEN e_same_name
 	    THEN
@@ -1503,30 +1542,76 @@ IS
 	 END;
 
 	 BEGIN
-	    EXECUTE IMMEDIATE 'create or replace synonym FILES_OBJ_DETAIL_SEQ for '||p_schema||'.FILES_OBJ_DETAIL_SEQ';
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.FILES_OBJ_DETAIL_SEQ for '||p_schema||'.FILES_OBJ_DETAIL_SEQ';
 	 EXCEPTION
 	    WHEN e_same_name
 	    THEN
 	    NULL;
 	 END;
       END;
- 
-      -- if the default tablespace was changed, then put it back
-      reset_default_tablespace;
-      
-      -- set current_schema back to &_USER
-      reset_current_schema;
-   EXCEPTION
-   WHEN others
-      THEN
-      -- if the default tablespace was changed, then put it back
-      reset_default_tablespace;
-      
-      -- set current_schema back to &_USER
-      reset_current_schema;
-      RAISE;      
+   END build_transcend_rep_syns;
 
-   END create_transcend_rep_user;
+   PROCEDURE build_transcend_app_syns(
+      p_user        VARCHAR2,
+      p_schema  VARCHAR2
+   ) 
+   IS
+      e_tab_exists   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_tab_exists, -955 );
+      e_same_name   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_same_name, -1471 );
+   BEGIN
+      -- create the synonyms
+      BEGIN
+	 BEGIN
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.TD_FILES for '||p_schema||'.TD_FILES';
+	 EXCEPTION
+	    WHEN e_same_name
+	    THEN
+	    NULL;
+	 END;
+
+	 BEGIN
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.TD_DDL for '||p_schema||'.TD_DDL';
+	 EXCEPTION
+	    WHEN e_same_name
+	    THEN
+	    NULL;
+	 END;
+
+	 BEGIN
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.TD_ETL for '||p_schema||'.TD_ETL';
+	 EXCEPTION
+	    WHEN e_same_name
+	    THEN
+	    NULL;
+	 END;
+
+	 BEGIN
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.TD_OWB for '||p_schema||'.TD_OWB';
+	 EXCEPTION
+	    WHEN e_same_name
+	    THEN
+	    NULL;
+	 END;
+
+	 BEGIN
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.FEED_OV for '||p_schema||'.FEED_OV';
+	 EXCEPTION
+	    WHEN e_same_name
+	    THEN
+	    NULL;
+	 END;
+
+	 BEGIN
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.EXTRACT_OV for '||p_schema||'.EXTRACT_OV';
+	 EXCEPTION
+	    WHEN e_same_name
+	    THEN
+	    NULL;
+	 END;
+      END;
+   END build_transcend_app_syns;
 
 BEGIN
    SELECT sys_context('USERENV','CURRENT_SCHEMA')
