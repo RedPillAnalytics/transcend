@@ -22,55 +22,28 @@ DECLARE
    PRAGMA EXCEPTION_INIT( e_no_tbspace, -959 );
 BEGIN
    BEGIN
-      EXECUTE IMMEDIATE 'CREATE USER tdsys identified by no2tdsys default tablespace &tablespace';
+      EXECUTE IMMEDIATE 'CREATE USER tdsys identified by no2tdsys';
    EXCEPTION
       WHEN e_user_exists
       THEN
-      -- get the current default tablespace of the repository user
-      SELECT default_tablespace
-	INTO :old_tbspace
-	FROM dba_users
-       WHERE username=upper('&rep_schema');
-      EXECUTE IMMEDIATE 'alter user &rep_schema default tablespace &tablespace';
-      WHEN e_no_tbspace
-      THEN
-      raise_application_error(-20001,'Tablespace &tablespace does not exist');
+        NULL;
    END;
 END;
 /
 
--- install the installation assistance package
-@../plsql/specs/TD_EVOLVE_INSTALL.pks
-@../plsql/wrapped_bodies/TD_EVOLVE_INSTALL.plb
+-- needed to interact with users and their tablespaces
+GRANT SELECT ANY dictionary TO tdsys;
 
--- give the rep schema a quota on the tablespace
-ALTER USER tdsys QUOTA 50M ON &tablespace;
-
-SET termout off
--- set the correct schema
 ALTER SESSION SET current_schema=tdsys;
 
--- create Transcend sys_repository tables
-@@../ddl/REPOSITORIES_tbl.sql
-@@../ddl/APPLICATIONS_tbl.sql
-@@../ddl/USERS_tbl.sql
+-- install the installation package
+@../plsql/specs/TD_INSTALL.pks
+@../plsql/wrapped_bodies/TD_INSTALL.plb
 
--- create repository user
-EXEC tdsys.td_install.create_user('&rep_user','&tablespace');
+SET termout off
 
--- create stats table
-EXEC tdsys.td_install.create_stats_table('&rep_user','&tablespace');
+-- build the system repository
+EXEC tdsys.td_install.build_sys_repo( p_tablespace => '&tablespace' );
 
--- create Evolve repository tables
-@@../ddl/DIR_LIST_tbl.sql
-@@../ddl/COUNT_TABLE_tbl.sql
-@@../ddl/ERROR_CONF_tbl.sql
-@@../ddl/LOGGING_CONF_tbl.sql
-@@../ddl/LOG_TABLE_tbl.sql
-@@../ddl/NOTIFICATION_CONF_tbl.sql
-@@../ddl/NOTIFICATION_EVENTS_tbl.sql
-@@../ddl/REGISTRATION_CONF_tbl.sql
-@@../ddl/RUNMODE_CONF_tbl.sql
-@@../ddl/PARAMETER_CONF_tbl.sql
-
-EXEC td_sys.td_install.reset_default_tablespace('&rep_user');
+-- create the Evolve repository
+EXEC tdsys.td_install.build_repo( p_owner => '&rep_user', p_tablespace => '&tablespace');
