@@ -1896,7 +1896,6 @@ IS
 	 THEN
 	 NULL;
       END;
-
 	 
    END drop_evolve_types;
 
