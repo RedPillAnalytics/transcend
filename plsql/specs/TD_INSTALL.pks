@@ -29,6 +29,10 @@ IS
       p_repository   VARCHAR2 DEFAULT 'TDSYS',
       p_drop	     BOOLEAN  DEFAULT FALSE
    );
-      
+
+   PROCEDURE drop_evolve_types;
+
+   PROCEDURE drop_transcend_types;
+     
 END td_install;
 /
