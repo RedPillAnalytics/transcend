@@ -2,6 +2,7 @@ CREATE OR REPLACE PACKAGE BODY td_install
 IS
    g_user	dba_users.username%TYPE;
    g_tablespace dba_users.default_tablespace%TYPE;
+   g_current_schema dba_users.username%TYPE;
 
    PROCEDURE create_user(
       p_user        VARCHAR2 DEFAULT 'TDSYS',
@@ -29,7 +30,7 @@ IS
 
 	 WHEN e_no_tbspace
 	 THEN
-	   raise_application_error(-20001,'Tablespace '||p_tablespace||' does not exist');
+   	   raise_application_error(-20001,'Tablespace '||p_tablespace||' does not exist');
       END;
       
       -- gieve the user a quote
@@ -54,12 +55,160 @@ IS
    PROCEDURE reset_current_schema
    IS
    BEGIN
-      EXECUTE IMMEDIATE 'alter session set current_schema=&_USER';
+      EXECUTE IMMEDIATE 'alter session set current_schema='||g_current_schema;
    END reset_current_schema;
+
+   PROCEDURE grant_evolve_privs(
+      p_schema   VARCHAR2 DEFAULT 'TDSYS',
+      p_drop     BOOLEAN  DEFAULT FALSE    
+   ) 
+   IS
+      l_sel_role VARCHAR2(30) := p_schema||'_sel';
+      l_adm_role VARCHAR2(30) := p_schema||'_adm';
+      e_obj_exists   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_obj_exists, -955 );
+      e_role_exists   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_role_exists, -1921 );
+      e_no_role   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_no_role, -1919 );
+      e_no_obj   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_no_obj, -942 );
+   BEGIN
+      
+      -- this will drop the roles before beginning
+      IF p_drop
+      THEN
+	 BEGIN
+	    EXECUTE IMMEDIATE 'DROP role '||l_sel_role;
+	 EXCEPTION
+	    WHEN e_no_role
+	    THEN
+	    NULL;
+	 END;
+	 
+	 BEGIN
+	    EXECUTE IMMEDIATE 'DROP role '||l_adm_role;
+	 EXCEPTION
+	    WHEN e_no_role
+	    THEN
+	    NULL;
+	 END;
+	 
+      END IF;
+
+	 BEGIN
+	    EXECUTE IMMEDIATE 'CREATE ROLE '||l_sel_role;
+	 EXCEPTION
+	    WHEN e_role_exists
+	    THEN
+	      NULL;
+	 END;
+
+	 BEGIN
+	    EXECUTE IMMEDIATE 'CREATE ROLE '||l_adm_role;
+	 EXCEPTION
+	    WHEN e_role_exists
+	    THEN
+	      NULL;
+	 END;
+	 
+	 BEGIN
+	    EXECUTE IMMEDIATE 'GRANT SELECT ON COUNT_TABLE TO '||l_sel_role;
+	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON COUNT_TABLE TO '||l_adm_role;
+
+	    EXECUTE IMMEDIATE 'GRANT SELECT ON DIR_LIST TO '||l_sel_role;
+	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON DIR_LIST TO '||l_adm_role;
+
+	    EXECUTE IMMEDIATE 'GRANT SELECT ON LOGGING_CONF TO '||l_sel_role;
+	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON LOGGING_CONF TO '||l_adm_role;
+
+	    EXECUTE IMMEDIATE 'GRANT SELECT ON LOG_TABLE TO '||l_sel_role;
+	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON LOG_TABLE TO '||l_adm_role;
+
+	    EXECUTE IMMEDIATE 'GRANT SELECT ON NOTIFICATION_CONF TO '||l_sel_role;
+	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON NOTIFICATION_CONF TO '||l_adm_role;
+
+	    EXECUTE IMMEDIATE 'GRANT SELECT ON NOTIFICATION_EVENTS TO '||l_sel_role;
+	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON NOTIFICATION_EVENTS TO '||l_adm_role;
+
+	    EXECUTE IMMEDIATE 'GRANT SELECT ON PARAMETER_CONF TO '||l_sel_role;
+	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON PARAMETER_CONF TO '||l_adm_role;
+
+	    EXECUTE IMMEDIATE 'GRANT SELECT ON REGISTRATION_CONF TO '||l_sel_role;
+	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON REGISTRATION_CONF TO '||l_adm_role;
+
+	    EXECUTE IMMEDIATE 'GRANT SELECT ON RUNMODE_CONF TO '||l_sel_role;
+	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON RUNMODE_CONF TO '||l_adm_role;
+
+	    EXECUTE IMMEDIATE 'GRANT SELECT ON ERROR_CONF TO '||l_sel_role;
+	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON ERROR_CONF TO '||l_adm_role;	
+	
+      EXCEPTION
+	 WHEN e_no_obj
+	    THEN
+	    raise_application_error(-20004,'Some repository objects do not exist.');
+      END;
+
+   END grant_evolve_privs;
+ 
+   PROCEDURE grant_transcend_privs(
+      p_schema   VARCHAR2 DEFAULT 'TDSYS'  
+   ) 
+   IS
+      l_sel_role VARCHAR2(30) := p_schema||'_sel';
+      l_adm_role VARCHAR2(30) := p_schema||'_adm';
+      e_no_role	 EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_no_role, -1917 );
+   BEGIN
+      BEGIN
+	    EXECUTE IMMEDIATE 'GRANT SELECT ON FILES_CONF TO '||l_sel_role;
+	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON FILES_CONF TO '||l_adm_role;
+
+	    EXECUTE IMMEDIATE 'GRANT SELECT ON FILES_DETAIL TO '||l_sel_role;
+	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON FILES_DETAIL TO '||l_adm_role;
+	    EXECUTE IMMEDIATE 'GRANT SELECT ON files_detail_seq TO '||l_sel_role;
+	    EXECUTE IMMEDIATE 'GRANT SELECT ON files_detail_seq TO '||l_adm_role;
+
+	    EXECUTE IMMEDIATE 'GRANT SELECT ON FILES_OBJ_DETAIL TO '||l_sel_role;
+	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON FILES_OBJ_DETAIL TO '||l_adm_role;
+	    EXECUTE IMMEDIATE 'GRANT SELECT ON files_obj_detail_seq TO '||l_sel_role;
+	    EXECUTE IMMEDIATE 'GRANT SELECT ON files_obj_detail_seq TO '||l_adm_role;
+
+	    EXECUTE IMMEDIATE 'GRANT SELECT ON TD_PART_GTT TO '||l_sel_role;
+	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON TD_PART_GTT TO '||l_adm_role;
+
+	    EXECUTE IMMEDIATE 'GRANT SELECT ON TD_BUILD_IDX_GTT TO '||l_sel_role;
+	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON TD_BUILD_IDX_GTT TO '||l_adm_role;
+
+	    EXECUTE IMMEDIATE 'GRANT SELECT ON TD_BUILD_CON_GTT TO '||l_sel_role;
+	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON TD_BUILD_CON_GTT TO '||l_adm_role;
+
+	    EXECUTE IMMEDIATE 'GRANT SELECT ON TD_CON_MAINT_GTT TO '||l_sel_role;
+	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON TD_CON_MAINT_GTT TO '||l_adm_role;
+
+	    EXECUTE IMMEDIATE 'GRANT SELECT ON DIMENSION_CONF TO '||l_sel_role;
+	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON DIMENSION_CONF TO '||l_adm_role;
+
+	    EXECUTE IMMEDIATE 'GRANT SELECT ON COLUMN_CONF TO '||l_sel_role;
+	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON COLUMN_CONF TO '||l_adm_role;
+
+	    EXECUTE IMMEDIATE 'GRANT SELECT ON COLUMN_TYPE_LIST TO '||l_sel_role;
+	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON COLUMN_TYPE_LIST TO '||l_adm_role;
+
+	    EXECUTE IMMEDIATE 'GRANT SELECT ON REPLACE_METHOD_LIST TO '||l_sel_role;
+	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON REPLACE_METHOD_LIST TO '||l_adm_role;
+
+      EXCEPTION
+	 WHEN e_no_role
+	 THEN
+	    raise_application_error(-20005,'The specified schema roles '||l_sel_role||' '||l_adm_role||' do not exist.');
+      END;
+
+   END grant_transcend_privs;
    
 
    PROCEDURE build_sys_repo(
-      p_owner       VARCHAR2 DEFAULT 'TDSYS',
+      p_schema      VARCHAR2 DEFAULT 'TDSYS',
       p_tablespace  VARCHAR2 DEFAULT 'TDSYS',
       p_drop	    BOOLEAN  DEFAULT FALSE
    ) 
@@ -73,7 +222,7 @@ IS
       -- create the user if it doesn't already exist
       -- if it does, then simply change the default tablespace for that user
       -- alter session to become that user      
-      create_user( p_owner, p_tablespace );
+      create_user( p_schema, p_tablespace );
       
       -- this will drop all the tables before beginning
       IF p_drop
@@ -192,7 +341,7 @@ IS
       EXCEPTION
 	 WHEN e_tab_exists
 	 THEN
-	 dbms_output.put_line('Repository tables exist. If you want to drop all repository tables, then specifiy a value of TRUE for P_DROP');
+	 raise_application_error(-20003,'Repository tables exist. If you want to drop all repository tables, then specifiy a value of TRUE for P_DROP');
       END;
       
       -- if the default tablespace was changed, then put it back
@@ -200,12 +349,20 @@ IS
       
       -- set current_schema back to &_USER
       reset_current_schema;
+   EXCEPTION
+   WHEN others
+      THEN
+      -- if the default tablespace was changed, then put it back
+      reset_default_tablespace;
+      
+      -- set current_schema back to &_USER
+      reset_current_schema;
+      RAISE;      
 
    END build_sys_repo;
 
-
    PROCEDURE build_evolve_repo(
-      p_owner       VARCHAR2 DEFAULT 'TDSYS',
+      p_schema       VARCHAR2 DEFAULT 'TDSYS',
       p_tablespace  VARCHAR2 DEFAULT 'TDSYS',
       p_drop	    BOOLEAN  DEFAULT FALSE
    ) 
@@ -218,7 +375,7 @@ IS
       -- create the user if it doesn't already exist
       -- if it does, then simply change the default tablespace for that user
       -- alter session to become that user      
-      create_user( p_owner, p_tablespace );
+      create_user( p_schema, p_tablespace );
       
       
       -- this will drop all the tables before beginning
@@ -580,22 +737,49 @@ IS
 
 	 EXECUTE IMMEDIATE 
 	 q'|ALTER TABLE parameter_conf ADD CONSTRAINT parameter_conf_ck3 CHECK (module=lower(module))|';
+	 
+	 -- grant the privileges to the repository tables to the roles
+	 grant_evolve_privs( p_schema, p_drop );
+	 
+	 -- write application tracking record
+	 BEGIN
+	    EXECUTE IMMEDIATE 	    
+	    q'|INSERT INTO tdsys.repositories
+	    ( repository_name)
+	    VALUES
+	    ( upper(':v_schema'))|'
+	    USING p_schema;
+	 EXCEPTION
+	    WHEN dup_val_on_index
+	    THEN
+	    NULL;
+	 END;
+
       EXCEPTION
 	 WHEN e_tab_exists
 	 THEN
-	 dbms_output.put_line('Repository tables exist. If you want to drop all repository tables, then specifiy a value of TRUE for P_DROP');
+	 raise_application_error(-20003,'Repository tables exist. If you want to drop all repository tables, then specifiy a value of TRUE for P_DROP');
       END;
-
+      
       -- if the default tablespace was changed, then put it back
       reset_default_tablespace;
       
       -- set current_schema back to &_USER
       reset_current_schema;
+   EXCEPTION
+   WHEN others
+      THEN
+      -- if the default tablespace was changed, then put it back
+      reset_default_tablespace;
+      
+      -- set current_schema back to &_USER
+      reset_current_schema;
+      RAISE;      
 
    END build_evolve_repo;
 
    PROCEDURE build_transcend_repo(
-      p_owner       VARCHAR2 DEFAULT 'TDSYS',
+      p_schema      VARCHAR2 DEFAULT 'TDSYS',
       p_tablespace  VARCHAR2 DEFAULT 'TDSYS',
       p_drop	    BOOLEAN  DEFAULT FALSE
    ) 
@@ -606,12 +790,19 @@ IS
       PRAGMA EXCEPTION_INIT( e_stat_tab_exists, -20002 );
       e_no_tab   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_tab, -942 );
+      e_no_seq   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_no_seq, -2289 );
    BEGIN
+      BEGIN
+	 build_evolve_repo( p_schema     => p_schema,
+			    p_tablespace => p_tablespace,
+			    p_drop	 => p_drop );
+      END;
       
       -- create the user if it doesn't already exist
       -- if it does, then simply change the default tablespace for that user
       -- alter session to become that user      
-      create_user( p_owner, p_tablespace );
+      create_user( p_schema, p_tablespace );
       
       -- this will drop all the tables before beginning
       IF p_drop
@@ -715,7 +906,7 @@ IS
 	 BEGIN
 	    EXECUTE IMMEDIATE q'|DROP sequence files_detail_seq|';
 	 EXCEPTION
-	    WHEN e_no_tab
+	    WHEN e_no_seq
 	    THEN
 	    NULL;
 	 END;
@@ -723,7 +914,7 @@ IS
 	 BEGIN
 	    EXECUTE IMMEDIATE q'|DROP sequence files_obj_detail_seq|';
 	 EXCEPTION
-	    WHEN e_no_tab
+	    WHEN e_no_seq
 	    THEN
 	    NULL;
 	 END;
@@ -733,7 +924,7 @@ IS
 
       BEGIN
 	 -- create the statitics table
-	 DBMS_STATS.CREATE_STAT_TABLE( p_owner, 'OPT_STATS' );
+	 DBMS_STATS.CREATE_STAT_TABLE( p_schema, 'OPT_STATS' );
 
 	 -- FILES_CONF table
 	 EXECUTE IMMEDIATE 
@@ -963,21 +1154,21 @@ IS
 	 EXECUTE IMMEDIATE 
 	 q'|CREATE TABLE dimension_conf
 	 ( 
-	   owner			VARCHAR2(30) NOT NULL,
+	   owner		VARCHAR2(30) NOT NULL,
 	   table_name		VARCHAR2(30) NOT NULL,
 	   source_owner		VARCHAR2(30) NOT NULL,
-	   source_object		VARCHAR2(30) NOT NULL,
+	   source_object	VARCHAR2(30) NOT NULL,
 	   sequence_owner  	VARCHAR2(30) NOT NULL,
-	   sequence_name  	        VARCHAR2(30) NOT NULL,
-	   staging_owner		VARCHAR2(30),
-	   staging_table		VARCHAR2(30),
+	   sequence_name  	VARCHAR2(30) NOT NULL,
+	   staging_owner	VARCHAR2(30),
+	   staging_table	VARCHAR2(30),
 	   direct_load		VARCHAR2(3) DEFAULT 'yes' NOT NULL,
-	   replace_method		VARCHAR2(10) DEFAULT 'rename' NOT NULL,
+	   replace_method	VARCHAR2(10) DEFAULT 'rename' NOT NULL,
 	   statistics		VARCHAR2(10),
 	   created_user	     	VARCHAR2(30) DEFAULT sys_context('USERENV','SESSION_USER') NOT NULL,
 	   created_dt	     	DATE DEFAULT SYSDATE NOT NULL,
-	   modified_user  		VARCHAR2(30),
-	   modified_dt    		DATE
+	   modified_user  	VARCHAR2(30),
+	   modified_dt    	DATE
 	 )|';
 	 
 	 EXECUTE IMMEDIATE 
@@ -999,9 +1190,10 @@ IS
 	 )|';
 
 	 EXECUTE IMMEDIATE 
-	 q'|ALTER TABLE dimension_conf
-	 ADD CONSTRAINT replace_method_ck
-	 CHECK ( upper(staging_owner) = CASE WHEN replace_method = 'rename' THEN upper(owner) ELSE staging_owner end )|';
+	 q'|ALTER TABLE dimension_conf ADD 
+	 ( CONSTRAINT replace_method_ck
+	   CHECK ( upper(staging_owner) = CASE WHEN replace_method = 'rename' THEN upper(owner) ELSE staging_owner end )
+	 )|';
 
 	 -- COLUMN_CONF table
 	 EXECUTE IMMEDIATE
@@ -1043,22 +1235,47 @@ IS
 	   REFERENCES dimension_conf  
 	   ( owner, table_name )
 	 )|';
-      EXCEPTION
-      WHEN e_tab_exists
-	 THEN
-	   dbms_output.put_line('Repository tables exist. If you want to drop all repository tables, then specifiy a value of TRUE for P_DROP');
-      WHEN e_stat_tab_exists
-	 THEN
-	   dbms_output.put_line('Repository tables exist. If you want to drop all repository tables, then specifiy a value of TRUE for P_DROP');
-      END;
+	 
+	 -- grant the privileges to the repository tables to the roles
+	 grant_transcend_privs( p_schema ); 
      
+      EXCEPTION
+      WHEN e_tab_exists OR e_stat_tab_exists
+      THEN
+	 raise_application_error(-20003,'Repository tables exist. If you want to drop all repository tables, then specifiy a value of TRUE for P_DROP');
+      END;
+ 
       -- if the default tablespace was changed, then put it back
       reset_default_tablespace;
       
       -- set current_schema back to &_USER
       reset_current_schema;
+   EXCEPTION
+   WHEN others
+      THEN
+      -- if the default tablespace was changed, then put it back
+      reset_default_tablespace;
+      
+      -- set current_schema back to &_USER
+      reset_current_schema;
+      RAISE;      
 
    END build_transcend_repo;
-   
+   BEGIN
+      SELECT sys_context('USERENV','CURRENT_SCHEMA')
+	INTO g_current_schema
+	FROM dual;
+   EXCEPTION
+   WHEN others
+      THEN
+      -- if the default tablespace was changed, then put it back
+      reset_default_tablespace;
+      
+      -- set current_schema back to &_USER
+      reset_current_schema;
+      RAISE;      
+
 END td_install;
 /
+
+SHOW errors
