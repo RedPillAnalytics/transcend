@@ -49,7 +49,7 @@ END;
 EXEC tdsys.td_install.build_sys_repo( p_schema=> 'tdsys', p_tablespace => '&tablespace' );
 
 -- create the Evolve repository
-EXEC tdsys.td_install.build_evolve_repo( p_schema => '&rep_user', p_tablespace => '&tablespace');
+EXEC tdsys.td_install.build_evolve_repo( p_schema => '&rep_schema', p_tablespace => '&tablespace');
 
 -- create the Evolve application
-EXEC tdsys.td_install.build_evolve_repo( p_schema => '&app_user', p_repository => '&rep_schema');
+EXEC tdsys.td_install.build_evolve_repo( p_schema => '&app_schema', p_repository => '&rep_schema');
