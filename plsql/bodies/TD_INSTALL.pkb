@@ -1866,6 +1866,33 @@ IS
       grant_transcend_rep_privs( p_schema );
 	 
    END build_transcend_app;
+   
+   PROCEDURE drop_evolve_types
+   IS
+      e_tab_exists   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_tab_exists, -955 );
+   BEGIN
+
+      EXECUTE IMMEDIATE 'DROP TYPE notification_ot';
+      EXECUTE IMMEDIATE 'DROP TYPE evolve_ot';
+      EXECUTE IMMEDIATE 'DROP TYPE app_ot';
+	 
+   END drop_evolve_types;
+
+   PROCEDURE drop_transcend_types
+   IS
+      e_tab_exists   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_tab_exists, -955 );
+      e_no_tab   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_no_tab, -942 );
+   BEGIN
+
+      EXECUTE IMMEDIATE 'DROP TYPE dimension_ot';
+      EXECUTE IMMEDIATE 'DROP TYPE feed_ot';
+      EXECUTE IMMEDIATE 'DROP TYPE extract_ot';
+      EXECUTE IMMEDIATE 'DROP TYPE file_ot';
+	 
+   END drop_transcend_types;
 
 BEGIN
    SELECT sys_context('USERENV','CURRENT_SCHEMA')
