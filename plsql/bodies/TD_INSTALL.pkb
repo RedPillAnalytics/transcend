@@ -25,22 +25,31 @@ IS
       EXCEPTION
 	 WHEN e_user_exists
 	 THEN
-	   g_user := p_user;
-	 -- get the current default tablespace of the repository user
-	   SELECT default_tablespace
-	     INTO g_tablespace
-	     FROM dba_users
-	    WHERE username=upper(p_user);
-	 
-	   EXECUTE IMMEDIATE 'alter user '||p_user||' default tablespace '||p_tablespace;
+	    IF p_tablespace IS NOT NULL
+	    THEN
+
+	       g_user := p_user;
+	       -- get the current default tablespace of the repository user
+	       SELECT default_tablespace
+		 INTO g_tablespace
+		 FROM dba_users
+		WHERE username=upper(p_user);
+	       
+	       EXECUTE IMMEDIATE 'alter user '||p_user||' default tablespace '||p_tablespace;
+	    ELSE
+	       NULL;
+	    END IF;
 
 	 WHEN e_no_tbspace
 	 THEN
    	   raise_application_error(-20001,'Tablespace '||p_tablespace||' does not exist');
       END;
       
-      -- gieve the user a quote
-      EXECUTE IMMEDIATE 'ALTER USER '||p_user||' QUOTA 50M ON '||p_tablespace;
+      IF p_tablespace IS NOT NULL
+      THEN
+	 -- gieve the user a quote
+	 EXECUTE IMMEDIATE 'ALTER USER '||p_user||' QUOTA 50M ON '||p_tablespace;
+      END IF;
       
       -- set the session to that user
       EXECUTE IMMEDIATE 'ALTER SESSION SET current_schema='||p_user;
@@ -64,7 +73,7 @@ IS
       EXECUTE IMMEDIATE 'alter session set current_schema='||g_current_schema;
    END reset_current_schema;
 
-   PROCEDURE grant_evolve_privs(
+   PROCEDURE grant_evolve_rep_privs(
       p_schema   VARCHAR2 DEFAULT 'TDSYS',
       p_drop     BOOLEAN  DEFAULT FALSE    
    ) 
@@ -155,9 +164,9 @@ IS
 	    raise_application_error(-20004,'Some repository objects do not exist.');
       END;
 
-   END grant_evolve_privs;
+   END grant_evolve_rep_privs;
  
-   PROCEDURE grant_transcend_privs(
+   PROCEDURE grant_transcend_rep_privs(
       p_schema   VARCHAR2 DEFAULT 'TDSYS'  
    ) 
    IS
@@ -210,7 +219,7 @@ IS
 	    raise_application_error(-20005,'The specified schema roles '||l_sel_role||' '||l_adm_role||' do not exist.');
       END;
 
-   END grant_transcend_privs;
+   END grant_transcend_rep_privs;
    
 
    PROCEDURE build_sys_repo(
@@ -353,7 +362,7 @@ IS
       -- if the default tablespace was changed, then put it back
       reset_default_tablespace;
       
-      -- set current_schema back to &_USER
+      -- set current_schema back to where it started
       reset_current_schema;
    EXCEPTION
    WHEN others
@@ -361,7 +370,7 @@ IS
       -- if the default tablespace was changed, then put it back
       reset_default_tablespace;
       
-      -- set current_schema back to &_USER
+      -- set current_schema back to where it started
       reset_current_schema;
       RAISE;      
 
@@ -745,7 +754,7 @@ IS
 	 q'|ALTER TABLE parameter_conf ADD CONSTRAINT parameter_conf_ck3 CHECK (module=lower(module))|';
 	 
 	 -- grant the privileges to the repository tables to the roles
-	 grant_evolve_privs( p_schema, p_drop );
+	 grant_evolve_rep_privs( p_schema, p_drop );
 	 
 	 -- write application tracking record
 	 BEGIN
@@ -770,7 +779,7 @@ IS
       -- if the default tablespace was changed, then put it back
       reset_default_tablespace;
       
-      -- set current_schema back to &_USER
+      -- set current_schema back to where it started
       reset_current_schema;
    EXCEPTION
    WHEN others
@@ -778,7 +787,7 @@ IS
       -- if the default tablespace was changed, then put it back
       reset_default_tablespace;
       
-      -- set current_schema back to &_USER
+      -- set current_schema back to where it started
       reset_current_schema;
       RAISE;      
 
@@ -1243,7 +1252,7 @@ IS
 	 )|';
 	 
 	 -- grant the privileges to the repository tables to the roles
-	 grant_transcend_privs( p_schema ); 
+	 grant_transcend_rep_privs( p_schema ); 
      
       EXCEPTION
       WHEN e_tab_exists OR e_stat_tab_exists
@@ -1254,7 +1263,7 @@ IS
       -- if the default tablespace was changed, then put it back
       reset_default_tablespace;
       
-      -- set current_schema back to &_USER
+      -- set current_schema back to where it started
       reset_current_schema;
    EXCEPTION
    WHEN others
@@ -1262,7 +1271,7 @@ IS
       -- if the default tablespace was changed, then put it back
       reset_default_tablespace;
       
-      -- set current_schema back to &_USER
+      -- set current_schema back to where it started
       reset_current_schema;
       RAISE;      
 
@@ -1436,118 +1445,116 @@ IS
    BEGIN
       -- create the synonyms
       BEGIN
-	 BEGIN
-	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.FILES_CONF for '||p_schema||'.FILES_CONF';
-	 EXCEPTION
-	    WHEN e_same_name
-	    THEN
-	    NULL;
-	 END;
+	 EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.FILES_CONF for '||p_schema||'.FILES_CONF';
+      EXCEPTION
+	 WHEN e_same_name
+	 THEN
+	 NULL;
+      END;
 
-	 BEGIN
-	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.FILES_DETAIL for '||p_schema||'.FILES_DETAIL';
-	 EXCEPTION
-	    WHEN e_same_name
-	    THEN
-	    NULL;
-	 END;
+      BEGIN
+	 EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.FILES_DETAIL for '||p_schema||'.FILES_DETAIL';
+      EXCEPTION
+	 WHEN e_same_name
+	 THEN
+	 NULL;
+      END;
 
-	 BEGIN
-	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.FILES_OBJ_DETAIL for '||p_schema||'.FILES_OBJ_DETAIL';
-	 EXCEPTION
-	    WHEN e_same_name
-	    THEN
-	    NULL;
-	 END;
+      BEGIN
+	 EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.FILES_OBJ_DETAIL for '||p_schema||'.FILES_OBJ_DETAIL';
+      EXCEPTION
+	 WHEN e_same_name
+	 THEN
+	 NULL;
+      END;
 
-	 BEGIN
-	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.TD_PART_GTT for '||p_schema||'.TD_PART_GTT';
-	 EXCEPTION
-	    WHEN e_same_name
-	    THEN
-	    NULL;
-	 END;
+      BEGIN
+	 EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.TD_PART_GTT for '||p_schema||'.TD_PART_GTT';
+      EXCEPTION
+	 WHEN e_same_name
+	 THEN
+	 NULL;
+      END;
 
-	 BEGIN
-	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.TD_BUILD_IDX_GTT for '||p_schema||'.TD_BUILD_IDX_GTT';
-	 EXCEPTION
-	    WHEN e_same_name
-	    THEN
-	    NULL;
-	 END;
+      BEGIN
+	 EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.TD_BUILD_IDX_GTT for '||p_schema||'.TD_BUILD_IDX_GTT';
+      EXCEPTION
+	 WHEN e_same_name
+	 THEN
+	 NULL;
+      END;
 
-	 BEGIN
-	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.TD_BUILD_CON_GTT for '||p_schema||'.TD_BUILD_CON_GTT';
-	 EXCEPTION
-	    WHEN e_same_name
-	    THEN
-	    NULL;
-	 END;
+      BEGIN
+	 EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.TD_BUILD_CON_GTT for '||p_schema||'.TD_BUILD_CON_GTT';
+      EXCEPTION
+	 WHEN e_same_name
+	 THEN
+	 NULL;
+      END;
 
-	 BEGIN
-	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.TD_CON_MAINT_GTT for '||p_schema||'.TD_CON_MAINT_GTT';
-	 EXCEPTION
-	    WHEN e_same_name
-	    THEN
-	    NULL;
-	 END;
+      BEGIN
+	 EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.TD_CON_MAINT_GTT for '||p_schema||'.TD_CON_MAINT_GTT';
+      EXCEPTION
+	 WHEN e_same_name
+	 THEN
+	 NULL;
+      END;
 
-	 BEGIN
-	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.COLUMN_CONF for '||p_schema||'.COLUMN_CONF';
-	 EXCEPTION
-	    WHEN e_same_name
-	    THEN
-	    NULL;
-	 END;
+      BEGIN
+	 EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.COLUMN_CONF for '||p_schema||'.COLUMN_CONF';
+      EXCEPTION
+	 WHEN e_same_name
+	 THEN
+	 NULL;
+      END;
 
-	 BEGIN
-	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.DIMENSION_CONF for '||p_schema||'.DIMENSION_CONF';
-	 EXCEPTION
-	    WHEN e_same_name
-	    THEN
-	    NULL;
-	 END;
+      BEGIN
+	 EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.DIMENSION_CONF for '||p_schema||'.DIMENSION_CONF';
+      EXCEPTION
+	 WHEN e_same_name
+	 THEN
+	 NULL;
+      END;
 
-	 BEGIN
-	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.COLUMN_TYPE_LIST for '||p_schema||'.COLUMN_TYPE_LIST';
-	 EXCEPTION
-	    WHEN e_same_name
-	    THEN
-	    NULL;
-	 END;
+      BEGIN
+	 EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.COLUMN_TYPE_LIST for '||p_schema||'.COLUMN_TYPE_LIST';
+      EXCEPTION
+	 WHEN e_same_name
+	 THEN
+	 NULL;
+      END;
 
-	 BEGIN
-	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.REPLACE_METHOD_LIST for '||p_schema||'.REPLACE_METHOD_LIST';
-	 EXCEPTION
-	    WHEN e_same_name
-	    THEN
-	    NULL;
-	 END;
+      BEGIN
+	 EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.REPLACE_METHOD_LIST for '||p_schema||'.REPLACE_METHOD_LIST';
+      EXCEPTION
+	 WHEN e_same_name
+	 THEN
+	 NULL;
+      END;
 
-	 BEGIN
-	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.OPT_STATS for '||p_schema||'.OPT_STATS';
-	 EXCEPTION
-	    WHEN e_same_name
-	    THEN
-	    NULL;
-	 END;
+      BEGIN
+	 EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.OPT_STATS for '||p_schema||'.OPT_STATS';
+      EXCEPTION
+	 WHEN e_same_name
+	 THEN
+	 NULL;
+      END;
 
-	 -- create the synonyms for the sequences in the repository
-	 BEGIN
-	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.FILES_DETAIL_SEQ for '||p_schema||'.FILES_DETAIL_SEQ';
-	 EXCEPTION
-	    WHEN e_same_name
-	    THEN
-	    NULL;
-	 END;
+      -- create the synonyms for the sequences in the repository
+      BEGIN
+	 EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.FILES_DETAIL_SEQ for '||p_schema||'.FILES_DETAIL_SEQ';
+      EXCEPTION
+	 WHEN e_same_name
+	 THEN
+	 NULL;
+      END;
 
-	 BEGIN
-	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.FILES_OBJ_DETAIL_SEQ for '||p_schema||'.FILES_OBJ_DETAIL_SEQ';
-	 EXCEPTION
-	    WHEN e_same_name
-	    THEN
-	    NULL;
-	 END;
+      BEGIN
+	 EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.FILES_OBJ_DETAIL_SEQ for '||p_schema||'.FILES_OBJ_DETAIL_SEQ';
+      EXCEPTION
+	 WHEN e_same_name
+	 THEN
+	 NULL;
       END;
    END build_transcend_rep_syns;
 
@@ -1563,55 +1570,294 @@ IS
    BEGIN
       -- create the synonyms
       BEGIN
-	 BEGIN
-	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.TD_FILES for '||p_schema||'.TD_FILES';
-	 EXCEPTION
-	    WHEN e_same_name
-	    THEN
-	    NULL;
-	 END;
+	 EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.TD_FILES for '||p_schema||'.TD_FILES';
+      EXCEPTION
+	 WHEN e_same_name
+	 THEN
+	 NULL;
+      END;
 
-	 BEGIN
-	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.TD_DDL for '||p_schema||'.TD_DDL';
-	 EXCEPTION
-	    WHEN e_same_name
-	    THEN
-	    NULL;
-	 END;
+      BEGIN
+	 EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.TD_DDL for '||p_schema||'.TD_DDL';
+      EXCEPTION
+	 WHEN e_same_name
+	 THEN
+	 NULL;
+      END;
 
-	 BEGIN
-	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.TD_ETL for '||p_schema||'.TD_ETL';
-	 EXCEPTION
-	    WHEN e_same_name
-	    THEN
-	    NULL;
-	 END;
+      BEGIN
+	 EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.TD_ETL for '||p_schema||'.TD_ETL';
+      EXCEPTION
+	 WHEN e_same_name
+	 THEN
+	 NULL;
+      END;
 
-	 BEGIN
-	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.TD_OWB for '||p_schema||'.TD_OWB';
-	 EXCEPTION
-	    WHEN e_same_name
-	    THEN
-	    NULL;
-	 END;
+      BEGIN
+	 EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.TD_OWB for '||p_schema||'.TD_OWB';
+      EXCEPTION
+	 WHEN e_same_name
+	 THEN
+	 NULL;
+      END;
 
-	 BEGIN
-	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.FEED_OV for '||p_schema||'.FEED_OV';
-	 EXCEPTION
-	    WHEN e_same_name
-	    THEN
-	    NULL;
-	 END;
+      BEGIN
+	 EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.FEED_OV for '||p_schema||'.FEED_OV';
+      EXCEPTION
+	 WHEN e_same_name
+	 THEN
+	 NULL;
+      END;
 
-	 BEGIN
-	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.EXTRACT_OV for '||p_schema||'.EXTRACT_OV';
-	 EXCEPTION
-	    WHEN e_same_name
-	    THEN
-	    NULL;
-	 END;
+      BEGIN
+	 EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.EXTRACT_OV for '||p_schema||'.EXTRACT_OV';
+      EXCEPTION
+	 WHEN e_same_name
+	 THEN
+	 NULL;
       END;
    END build_transcend_app_syns;
+
+   PROCEDURE grant_evolve_sys_privs(
+      p_schema   VARCHAR2 DEFAULT 'TDSYS',
+      p_drop     BOOLEAN  DEFAULT FALSE    
+   ) 
+   IS
+      l_sys_role VARCHAR2(30)  := p_schema||'_sys';
+      l_app_role VARCHAR2(30)  := p_schema||'_app';
+      l_java_role VARCHAR2(30) := p_schema||'_java';
+      e_obj_exists   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_obj_exists, -955 );
+      e_role_exists   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_role_exists, -1921 );
+      e_no_role   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_no_role, -1919 );
+      e_no_obj   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_no_obj, -942 );
+   BEGIN      
+      -- this will drop the roles before beginning
+      IF p_drop
+      THEN
+	 BEGIN
+	    EXECUTE IMMEDIATE 'DROP role '||l_sys_role;
+	 EXCEPTION
+	    WHEN e_no_role
+	    THEN
+	    NULL;
+	 END;
+	 
+	 BEGIN
+	    EXECUTE IMMEDIATE 'DROP role '||l_app_role;
+	 EXCEPTION
+	    WHEN e_no_role
+	    THEN
+	    NULL;
+	 END;
+
+	 BEGIN
+	    EXECUTE IMMEDIATE 'DROP role '||l_java_role;
+	 EXCEPTION
+	    WHEN e_no_role
+	    THEN
+	    NULL;
+	 END;
+	 
+      END IF;
+
+      BEGIN
+	 EXECUTE IMMEDIATE 'CREATE ROLE '||l_sys_role;
+      EXCEPTION
+	 WHEN e_role_exists
+	 THEN
+	 NULL;
+      END;
+
+      BEGIN
+	 EXECUTE IMMEDIATE 'CREATE ROLE '||l_app_role;
+      EXCEPTION
+	 WHEN e_role_exists
+	 THEN
+	 NULL;
+      END;
+
+      BEGIN
+	 EXECUTE IMMEDIATE 'CREATE ROLE '||l_java_role;
+      EXCEPTION
+	 WHEN e_role_exists
+	 THEN
+	 NULL;
+      END;
+	 
+      -- for each system privilege, grant it to the application owner and the _SYS role	    
+      EXECUTE IMMEDIATE 'GRANT CONNECT TO '||l_sys_role;
+      EXECUTE IMMEDIATE 'GRANT CONNECT TO '||p_schema;
+      EXECUTE IMMEDIATE 'GRANT RESOURCE TO '||l_sys_role;
+      EXECUTE IMMEDIATE 'GRANT RESOURCE TO '||p_schema;
+      EXECUTE IMMEDIATE 'GRANT ALTER SESSION TO '||l_sys_role;
+      EXECUTE IMMEDIATE 'GRANT ALTER SESSION TO '||p_schema;
+      EXECUTE IMMEDIATE 'GRANT SELECT ANY DICTIONARY TO '||l_sys_role;
+      EXECUTE IMMEDIATE 'GRANT SELECT ANY DICTIONARY TO '||p_schema;
+      
+      -- grant permissions on UTL_MAIL
+      -- if the package doesn't exist, or the user doesn't have access to see it, then fail
+      BEGIN
+
+	 EXECUTE IMMEDIATE 'GRANT EXECUTE ON sys.utl_mail TO '||l_sys_role;
+	 EXECUTE IMMEDIATE 'GRANT EXECUTE ON sys.utl_mail TO '||p_schema;
+	 
+      EXCEPTION
+	 WHEN e_no_obj
+	 THEN
+	 raise_application_error(-20007, 'Either package UTL_MAIL does not exist, or the installing user do not have privileges to grant access on it.');
+      END;
+
+      -- grant java specific privilege to the _JAVA role
+      dbms_java.set_output(1000000);
+      dbms_java.grant_permission( upper(l_java_role), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'execute' );
+      dbms_java.grant_permission( upper(l_java_role), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'read' );
+      dbms_java.grant_permission( upper(l_java_role), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'write' );
+      dbms_java.grant_permission( upper(l_java_role), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'delete' );
+      dbms_java.grant_permission( upper(l_java_role), 'SYS:java.lang.RuntimePermission', 'writeFileDescriptor', '' );
+      dbms_java.grant_permission( upper(l_java_role), 'SYS:java.lang.RuntimePermission', 'readFileDescriptor','' );
+      
+      -- grant the _JAVA role to the app owner and the _APP role
+      EXECUTE IMMEDIATE 'GRANT '||l_java_role||' TO '||l_sys_role;
+      EXECUTE IMMEDIATE 'GRANT '||l_java_role||' TO '||p_schema;
+   EXCEPTION
+   WHEN others
+      THEN
+	 -- set current_schema back to where it started
+      reset_current_schema;
+      RAISE;      
+
+   END grant_evolve_sys_privs;
+   
+   PROCEDURE grant_transcend_sys_privs(
+      p_schema   VARCHAR2 DEFAULT 'TDSYS'
+   ) 
+   IS
+      l_sys_role VARCHAR2(30)  := p_schema||'_sys';
+      l_app_role VARCHAR2(30)  := p_schema||'_app';
+      l_java_role VARCHAR2(30) := p_schema||'_java';
+      e_obj_exists   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_obj_exists, -955 );
+      e_role_exists   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_role_exists, -1921 );
+      e_no_role   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_no_role, -1919 );
+      e_no_obj   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_no_obj, -942 );
+   BEGIN
+	 BEGIN
+	    -- for each system privilege, grant it to the application owner and the _SYS role
+	    EXECUTE IMMEDIATE 'GRANT ALTER ANY TABLE TO '||p_schema||'_sys';
+	    EXECUTE IMMEDIATE 'GRANT ALTER ANY TABLE TO '||p_schema;
+	    EXECUTE IMMEDIATE 'GRANT INSERT ANY TABLE TO '||p_schema||'_sys';
+	    EXECUTE IMMEDIATE 'GRANT INSERT ANY TABLE TO '||p_schema;
+	    EXECUTE IMMEDIATE 'GRANT SELECT ANY dictionary TO '||p_schema||'_sys';
+	    EXECUTE IMMEDIATE 'GRANT SELECT ANY dictionary TO '||p_schema;
+	    EXECUTE IMMEDIATE 'GRANT SELECT ANY TABLE TO '||p_schema||'_sys';
+	    EXECUTE IMMEDIATE 'GRANT SELECT ANY TABLE TO '||p_schema;
+	    EXECUTE IMMEDIATE 'GRANT SELECT ANY SEQUENCE TO '||p_schema||'_sys';
+	    EXECUTE IMMEDIATE 'GRANT SELECT ANY SEQUENCE TO '||p_schema;
+	    EXECUTE IMMEDIATE 'GRANT UPDATE ANY TABLE TO '||p_schema||'_sys';
+	    EXECUTE IMMEDIATE 'GRANT UPDATE ANY TABLE TO '||p_schema;
+	    EXECUTE IMMEDIATE 'GRANT DELETE ANY TABLE TO '||p_schema||'_sys';
+	    EXECUTE IMMEDIATE 'GRANT DELETE ANY TABLE TO '||p_schema;
+	    EXECUTE IMMEDIATE 'GRANT ALTER ANY INDEX TO '||p_schema||'_sys';
+	    EXECUTE IMMEDIATE 'GRANT ALTER ANY INDEX TO '||p_schema;
+	    EXECUTE IMMEDIATE 'GRANT CREATE ANY INDEX TO '||p_schema||'_sys';
+	    EXECUTE IMMEDIATE 'GRANT CREATE ANY INDEX TO '||p_schema;
+	    EXECUTE IMMEDIATE 'GRANT DROP ANY INDEX TO '||p_schema||'_sys';
+	    EXECUTE IMMEDIATE 'GRANT DROP ANY INDEX TO '||p_schema;
+	    EXECUTE IMMEDIATE 'GRANT DROP ANY TABLE TO '||p_schema||'_sys';
+	    EXECUTE IMMEDIATE 'GRANT DROP ANY TABLE TO '||p_schema;
+	    EXECUTE IMMEDIATE 'GRANT ANALYZE ANY TO '||p_schema||'_sys';
+	    EXECUTE IMMEDIATE 'GRANT ANALYZE ANY TO '||p_schema;
+	    
+      EXCEPTION
+	 WHEN e_no_obj
+	    THEN
+	    raise_application_error(-20004,'Some repository objects do not exist.');
+      END;
+
+   END grant_transcend_sys_privs;
+   
+   PROCEDURE build_evolve_app(
+      p_schema       VARCHAR2 DEFAULT 'TDSYS',
+      p_repository   VARCHAR2 DEFAULT 'TDSYS',
+      p_drop	     BOOLEAN  DEFAULT FALSE
+   ) 
+   IS
+      e_tab_exists   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_tab_exists, -955 );
+      e_no_tab   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_no_tab, -942 );
+   BEGIN
+      -- create the user if it doesn't already exist
+      -- alter session to become that user      
+      create_user( p_schema );
+      
+      -- create the synonyms to the repository
+      build_evolve_rep_syns( p_user   => p_schema,
+			     p_schema => p_repository );
+      
+      -- grant application privileges to the roles
+      grant_evolve_sys_privs( p_schema => p_schema );
+      	 
+      -- grant the privileges to the repository tables to the roles
+      grant_evolve_rep_privs( p_schema, p_drop );
+	 
+	 -- write application tracking record
+      EXECUTE IMMEDIATE 	    
+      q'|UPDATE tdsys.applications
+      SET repository_name = upper(:v_rep_schema),
+      modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
+      modified_dt = SYSDATE
+      WHERE application_name=upper(:v_app_schema);|'
+      USING p_repository, p_schema;
+      
+      IF SQL%ROWCOUNT = 0
+      THEN
+	 EXECUTE IMMEDIATE
+	 q'|INSERT INTO tdsys.applications
+	 ( application_name,
+	   repository_name)
+	 VALUES
+	 ( upper(:v_app_schema),
+	   upper(:v_rep_schema))|'
+	 USING p_schema, p_repository;
+      END IF;
+   END build_evolve_app;
+   
+   PROCEDURE build_transcend_app(
+      p_schema       VARCHAR2 DEFAULT 'TDSYS',
+      p_repository   VARCHAR2 DEFAULT 'TDSYS',
+      p_drop	     BOOLEAN  DEFAULT FALSE
+   ) 
+   IS
+      e_tab_exists   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_tab_exists, -955 );
+      e_no_tab   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_no_tab, -942 );
+   BEGIN
+      
+      -- first, make sure the Evolve piece has been created
+      build_evolve_app( p_schema     => p_schema,
+			p_repository => p_repository,
+			p_drop	     => p_drop );
+
+      -- create the synonyms to the repository
+      build_transcend_rep_syns( p_user   => p_schema,
+				p_schema => p_repository );
+      
+      -- grant application privileges to the roles
+      grant_transcend_sys_privs( p_schema => p_schema );
+      	 
+      -- grant the privileges to the repository tables to the roles
+      grant_transcend_rep_privs( p_schema );
+	 
+   END build_transcend_app;
 
 BEGIN
    SELECT sys_context('USERENV','CURRENT_SCHEMA')
