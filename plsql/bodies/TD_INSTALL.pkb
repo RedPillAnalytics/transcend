@@ -757,18 +757,23 @@ IS
 	 grant_evolve_rep_privs( p_schema, p_drop );
 	 
 	 -- write application tracking record
-	 BEGIN
-	    EXECUTE IMMEDIATE 	    
+	 EXECUTE IMMEDIATE 	    
+	 q'|UPDATE tdsys.repositories
+	 SET modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
+	 modified_dt = SYSDATE
+	 WHERE repository_name=upper(:v_schema)|'
+	 USING p_schema;
+	 
+	 IF SQL%ROWCOUNT = 0
+	 THEN
+	    EXECUTE IMMEDIATE
 	    q'|INSERT INTO tdsys.repositories
 	    ( repository_name)
 	    VALUES
 	    ( upper(:v_schema))|'
 	    USING p_schema;
-	 EXCEPTION
-	    WHEN dup_val_on_index
-	    THEN
-	    NULL;
-	 END;
+	 END IF;
+
 
       EXCEPTION
 	 WHEN e_tab_exists
@@ -1808,13 +1813,13 @@ IS
       -- grant the privileges to the repository tables to the roles
       grant_evolve_rep_privs( p_schema, p_drop );
 	 
-	 -- write application tracking record
+      -- write application tracking record
       EXECUTE IMMEDIATE 	    
       q'|UPDATE tdsys.applications
       SET repository_name = upper(:v_rep_schema),
       modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
       modified_dt = SYSDATE
-      WHERE application_name=upper(:v_app_schema);|'
+      WHERE application_name=upper(:v_app_schema)|'
       USING p_repository, p_schema;
       
       IF SQL%ROWCOUNT = 0
@@ -1828,6 +1833,9 @@ IS
 	   upper(:v_rep_schema))|'
 	 USING p_schema, p_repository;
       END IF;
+      
+      dbms_output.put_line(' The CURRENT_SCHEMA is set to '||sys_context('USERENV','CURRENT_SCHEMA')||' in preparation for installing application');     
+
    END build_evolve_app;
    
    PROCEDURE build_transcend_app(
