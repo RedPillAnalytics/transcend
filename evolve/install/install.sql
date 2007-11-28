@@ -53,4 +53,4 @@ EXEC tdsys.td_install.build_sys_repo( p_schema=> 'tdsys', p_tablespace => '&tabl
 EXEC tdsys.td_install.build_evolve_repo( p_schema => '&rep_schema', p_tablespace => '&tablespace');
 
 -- create the Evolve application
-EXEC tdsys.td_install.build_evolve_repo( p_schema => '&app_schema', p_repository => '&rep_schema');
+EXEC tdsys.td_install.build_evolve_app( p_schema => '&app_schema', p_repository => '&rep_schema');
