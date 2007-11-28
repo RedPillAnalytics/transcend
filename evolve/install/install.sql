@@ -42,8 +42,9 @@ ALTER SESSION SET current_schema=tdsys;
 @../../plsql/wrapped_bodies/TD_INSTALL.plb
 
 BEGIN
-   ALTER SESSION SET current_schema=:current_schema;
+   EXECUTE IMMEDIATE 'ALTER SESSION SET current_schema='||:current_schema;
 END;
+/
 
 -- build the system repository
 EXEC tdsys.td_install.build_sys_repo( p_schema=> 'tdsys', p_tablespace => '&tablespace' );
