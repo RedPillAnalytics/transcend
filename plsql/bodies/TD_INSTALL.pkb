@@ -1869,28 +1869,74 @@ IS
    
    PROCEDURE drop_evolve_types
    IS
-      e_tab_exists   EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_tab_exists, -955 );
+      e_obj_exists   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_obj_exists, -4043 );
    BEGIN
 
-      EXECUTE IMMEDIATE 'DROP TYPE notification_ot';
-      EXECUTE IMMEDIATE 'DROP TYPE evolve_ot';
-      EXECUTE IMMEDIATE 'DROP TYPE app_ot';
+      BEGIN
+	 EXECUTE IMMEDIATE 'DROP TYPE notification_ot';
+      EXCEPTION
+	 WHEN e_obj_exists
+	 THEN
+	 NULL;
+      END;
+
+      BEGIN
+	 EXECUTE IMMEDIATE 'DROP TYPE evolve_ot';
+      EXCEPTION
+	 WHEN e_obj_exists
+	 THEN
+	 NULL;
+      END;
+
+      BEGIN
+	 EXECUTE IMMEDIATE 'DROP TYPE app_ot';
+      EXCEPTION
+	 WHEN e_obj_exists
+	 THEN
+	 NULL;
+      END;
+
 	 
    END drop_evolve_types;
 
    PROCEDURE drop_transcend_types
    IS
-      e_tab_exists   EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_tab_exists, -955 );
-      e_no_tab   EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_no_tab, -942 );
+      e_obj_exists   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_obj_exists, -4043 );
    BEGIN
 
-      EXECUTE IMMEDIATE 'DROP TYPE dimension_ot';
-      EXECUTE IMMEDIATE 'DROP TYPE feed_ot';
-      EXECUTE IMMEDIATE 'DROP TYPE extract_ot';
-      EXECUTE IMMEDIATE 'DROP TYPE file_ot';
+      BEGIN
+	 EXECUTE IMMEDIATE 'DROP TYPE dimension_ot';
+      EXCEPTION
+	 WHEN e_obj_exists
+	 THEN
+	 NULL;
+      END;
+
+      BEGIN
+	 EXECUTE IMMEDIATE 'DROP TYPE feed_ot';
+      EXCEPTION
+	 WHEN e_obj_exists
+	 THEN
+	 NULL;
+      END;
+
+      BEGIN
+	 EXECUTE IMMEDIATE 'DROP TYPE extract_ot';
+      EXCEPTION
+	 WHEN e_obj_exists
+	 THEN
+	 NULL;
+      END;
+
+      BEGIN
+	 EXECUTE IMMEDIATE 'DROP TYPE file_ot';
+      EXCEPTION
+	 WHEN e_obj_exists
+	 THEN
+	 NULL;
+      END;
 	 
    END drop_transcend_types;
 
