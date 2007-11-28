@@ -43,12 +43,13 @@ ALTER SESSION SET current_schema=tdsys;
 
 BEGIN
    ALTER SESSION SET current_schema=:current_schema;
-   -- build the system repository
-   tdsys.td_install.build_sys_repo( p_schema=> 'tdsys', p_tablespace => '&tablespace' );
-
-   -- create the Evolve repository
-   tdsys.td_install.build_evolve_repo( p_schema => '&rep_user', p_tablespace => '&tablespace');
-
-   -- create the Evolve application
-   tdsys.td_install.build_evolve_repo( p_schema => '&app_user', p_repository => '&rep_schema');
 END;
+
+-- build the system repository
+EXEC tdsys.td_install.build_sys_repo( p_schema=> 'tdsys', p_tablespace => '&tablespace' );
+
+-- create the Evolve repository
+EXEC tdsys.td_install.build_evolve_repo( p_schema => '&rep_user', p_tablespace => '&tablespace');
+
+-- create the Evolve application
+EXEC tdsys.td_install.build_evolve_repo( p_schema => '&app_user', p_repository => '&rep_schema');
