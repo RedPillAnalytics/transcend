@@ -7,9 +7,9 @@ SPOOL InstallEvolve_&_DATE..log
 -- get the schema for the Evolve repository (tables)
 ACCEPT rep_schema char default 'TDSYS' prompt 'Schema name for the Evolve default repository [tdsys]: '
 -- get the tablespace for the repository
-ACCEPT tablespace char default 'TDSYS' prompt 'Tablespace in which to install Transcend default repository: [tdsys]: '
+ACCEPT tablespace char default 'TDSYS' prompt 'Tablespace in which to install Evolve default repository: [tdsys]: '
 -- get the schema for the Evolve application (PL/SQL and Java code)
-ACCEPT app_schema char default 'TDSYS' prompt 'Schema name for the Transcend application [tdsys]: '
+ACCEPT app_schema char default 'TDSYS' prompt 'Schema name for the Evolve application [tdsys]: '
 
 WHENEVER sqlerror exit sql.sqlcode
 
