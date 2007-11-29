@@ -58,6 +58,9 @@ EXEC tdsys.td_install.build_evolve_app( p_schema => '&app_schema', p_repository 
 -- first drop the types
 EXEC tdsys.td_install.drop_evolve_types;
 
+--CREATE java stored procedure
+@../java/TdCore.jvs
+
 --CREATE core pieces
 @../plsql/specs/STRING_AGG_OT.tps
 @../plsql/wrapped_bodies/STRING_AGG_OT.plb
