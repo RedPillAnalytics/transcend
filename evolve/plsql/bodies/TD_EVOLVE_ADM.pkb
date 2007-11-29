@@ -16,7 +16,7 @@ IS
             THEN
                NULL;
             ELSE
-	       td_inst.raise_err('no_module',p_module);
+	       raise_application_error(-20012, 'The following module is not configured: '||p_module);
             END IF;
          WHEN TOO_MANY_ROWS
          THEN
@@ -60,7 +60,8 @@ IS
 			  );
 	 EXCEPTION
 	    WHEN e_dup_conf
-	    THEN td_inst.raise_err('dup_conf');
+	    THEN
+	       raise_application_error(-20011, 'An attempt was made to add a duplicate configuration');
 	 END;
 
       END IF;
@@ -74,7 +75,7 @@ IS
       -- if we still have not affected any records, then there's a problem      
       IF sql%rowcount = 0
       THEN
-	 td_inst.raise_err('conf_not_affected');
+	 raise_application_error(-20013, 'This action affected no repository configurations');
       END IF;
 
    END set_logging_level;
@@ -111,7 +112,8 @@ IS
 			  );
 	 EXCEPTION
 	    WHEN e_dup_conf
-	    THEN td_inst.raise_err('dup_conf');
+	    THEN
+	       raise_application_error(-20011, 'An attempt was made to add a duplicate configuration');
 	 END;
 
       END IF;
@@ -125,7 +127,7 @@ IS
       -- if we still have not affected any records, then there's a problem      
       IF sql%rowcount = 0
       THEN
-	 td_inst.raise_err('conf_not_affected');
+	 raise_application_error(-20013, 'This action affected no repository configurations');
       END IF;
 
 
@@ -163,7 +165,8 @@ IS
 			  );
 	 EXCEPTION
 	    WHEN e_dup_conf
-	    THEN td_inst.raise_err('dup_conf');
+	    THEN
+	       raise_application_error(-20011, 'An attempt was made to add a duplicate configuration');
 	 END;
       END IF;
       
@@ -176,7 +179,7 @@ IS
       -- if we still have not affected any records, then there's a problem      
       IF sql%rowcount = 0
       THEN
-	 td_inst.raise_err('conf_not_affected');
+	 raise_application_error(-20013, 'This action affected no repository configurations');
       END IF;
 
    EXCEPTION
@@ -225,7 +228,8 @@ IS
 			  );
 	 EXCEPTION
 	    WHEN e_dup_conf
-	    THEN td_inst.raise_err('dup_conf');
+	    THEN
+	       raise_application_error(-20011, 'An attempt was made to add a duplicate configuration');
 	 END;
 
       END IF;
@@ -239,7 +243,7 @@ IS
       -- if we still have not affected any records, then there's a problem      
       IF sql%rowcount = 0
       THEN
-	 td_inst.raise_err('conf_not_affected');
+	 raise_application_error(-20013, 'This action affected no repository configurations');
       END IF;
 
    END set_notification_event;
@@ -288,7 +292,8 @@ IS
 			  );
 	 EXCEPTION
 	    WHEN e_dup_conf
-	    THEN td_inst.raise_err('dup_conf');
+	    THEN
+	       raise_application_error(-20011, 'An attempt was made to add a duplicate configuration');
 	 END;
 
       END IF;
@@ -302,7 +307,7 @@ IS
       -- if we still have not affected any records, then there's a problem      
       IF sql%rowcount = 0
       THEN
-	 td_inst.raise_err('conf_not_affected');
+	 raise_application_error(-20013, 'This action affected no repository configurations');
       END IF;
 
    END set_notification;
@@ -332,7 +337,7 @@ IS
             THEN
                NULL;
             ELSE
-	       td_inst.raise_err( 'no_session_parm',p_name);
+	       raise_application_error(-20014,'The specified parameter name is not a recognized database parameter: '||p_name);
             END IF;
       END;
       
@@ -366,7 +371,8 @@ IS
 			  );
 	 EXCEPTION
 	    WHEN e_dup_conf
-	    THEN td_inst.raise_err('dup_conf');
+	    THEN
+	       raise_application_error(-20011, 'An attempt was made to add a duplicate configuration');
 	 END;
 
       END IF;
@@ -380,7 +386,7 @@ IS
       -- if we still have not affected any records, then there's a problem      
       IF sql%rowcount = 0
       THEN
-	 td_inst.raise_err('conf_not_affected');
+	 raise_application_error(-20013, 'This action affected no repository configurations');
       END IF;
 
    END set_session_parameter;
@@ -397,3 +403,4 @@ IS
    END clear_log;
 END td_evolve_adm;
 /
+SHOW errors

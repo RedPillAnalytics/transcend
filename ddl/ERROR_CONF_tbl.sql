@@ -26,6 +26,9 @@ ALTER TABLE error_conf ADD (
     USING INDEX)
 /
 
+
+ALTER TABLE error_conf ADD CONSTRAINT error_conf_ck1 CHECK (name=lower(name));
+
 INSERT INTO error_conf (code,name,message) VALUES (-20101, 'unrecognized_parm','The specified parameter value is not recognized');
 INSERT INTO error_conf (code,name,message) VALUES (-20102, 'file_too_small','File size smaller than MAX_BYTES paramter');
 INSERT INTO error_conf (code,name,message) VALUES (-20103, 'notify_method_invalid','The notification method is not valid');
@@ -42,19 +45,14 @@ INSERT INTO error_conf (code,name,message) VALUES (-20113, 'not_partitioned','Th
 INSERT INTO error_conf (code,name,message) VALUES (-20114, 'parms_not_compatible','The specified parameters are not compatible');
 INSERT INTO error_conf (code,name,message) VALUES (-20115, 'parm_not_configured','The specified parameter is not configured');
 INSERT INTO error_conf (code,name,message) VALUES (-20116, 'file_not_found','Expected file does not exist');
-INSERT INTO error_conf (code,name,message) VALUES (-20117, 'no_session_parm','The specified parameter name is not a recognized database parameter');
-INSERT INTO error_conf (code,name,message) VALUES (-20118, 'not_iot','The specified table is not index-organized');
-INSERT INTO error_conf (code,name,message) VALUES (-20119, 'not_compressed','The specified segment is not compresed');
-INSERT INTO error_conf (code,name,message) VALUES (-20120, 'no_part','The specified partition does not exist');
-INSERT INTO error_conf (code,name,message) VALUES (-20121, 'partitioned','The specified table is partitioned');
-INSERT INTO error_conf (code,name,message) VALUES (-20122, 'iot','The specified table is index-organized');
-INSERT INTO error_conf (code,name,message) VALUES (-20123, 'compressed','The specified segment is compresed');
-INSERT INTO error_conf (code,name,message) VALUES (-20124, 'no_stats','The specified segment has no stored statistics');
-INSERT INTO error_conf (code,name,message) VALUES (-20125, 'no_or_wrong_object','The specified object does not exist or is of the wrong type');
-INSERT INTO error_conf (code,name,message) VALUES (-20126, 'too_many_objects','The specified parameters yield more than one object');
-INSERT INTO error_conf (code,name,message) VALUES (-20127, 'owb_flow_err','An error was returned from the OWB Control Center');
-INSERT INTO error_conf (code,name,message) VALUES (-20128, 'parm_not_supported','The specified parameter is not supported');
-INSERT INTO error_conf (code,name,message) VALUES (-20129, 'conf_not_affected','This action affected no repository configurations');
-INSERT INTO error_conf (code,name,message) VALUES (-20120, 'dup_conf','An attempt was made to add a duplicate configuration');
-
-ALTER TABLE error_conf ADD CONSTRAINT error_conf_ck1 CHECK (name=lower(name));
+INSERT INTO error_conf (code,name,message) VALUES (-20117, 'not_iot','The specified table is not index-organized');
+INSERT INTO error_conf (code,name,message) VALUES (-20118, 'not_compressed','The specified segment is not compresed');
+INSERT INTO error_conf (code,name,message) VALUES (-20119, 'no_part','The specified partition does not exist');
+INSERT INTO error_conf (code,name,message) VALUES (-20120, 'partitioned','The specified table is partitioned');
+INSERT INTO error_conf (code,name,message) VALUES (-20121, 'iot','The specified table is index-organized');
+INSERT INTO error_conf (code,name,message) VALUES (-20122, 'compressed','The specified segment is compresed');
+INSERT INTO error_conf (code,name,message) VALUES (-20123, 'no_stats','The specified segment has no stored statistics');
+INSERT INTO error_conf (code,name,message) VALUES (-20124, 'no_or_wrong_object','The specified object does not exist or is of the wrong type');
+INSERT INTO error_conf (code,name,message) VALUES (-20125, 'too_many_objects','The specified parameters yield more than one object');
+INSERT INTO error_conf (code,name,message) VALUES (-20126, 'owb_flow_err','An error was returned from the OWB Control Center');
+INSERT INTO error_conf (code,name,message) VALUES (-20127, 'parm_not_supported','The specified parameter is not supported');
