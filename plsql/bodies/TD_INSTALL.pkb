@@ -74,37 +74,53 @@ IS
    END reset_current_schema;
 
    PROCEDURE grant_evolve_rep_privs(
-      p_schema   VARCHAR2 DEFAULT 'TDSYS',
+      p_schema   VARCHAR2 DEFAULT NULL,
+      p_user     VARCHAR2 DEFAULT NULL,
       p_drop     BOOLEAN  DEFAULT FALSE    
    ) 
    IS
-      l_sel_role VARCHAR2(30) := p_schema||'_sel';
-      l_adm_role VARCHAR2(30) := p_schema||'_adm';
+      l_sel_grant VARCHAR2(30);
+      l_adm_grant VARCHAR2(30);
       e_obj_exists   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_obj_exists, -955 );
       e_role_exists   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_role_exists, -1921 );
-      e_no_role   EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_no_role, -1919 );
+      e_no_grantee   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_no_grantee, -1919 );
       e_no_obj   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_obj, -942 );
    BEGIN
+      CASE
+      WHEN p_schema IS NOT NULL AND p_user IS NOT NULL
+      THEN
+      raise_application_error(-20006, 'Parameters P_SCHEMA and P_USER are mutually exclusive');
+      WHEN p_schema IS NOT NULL
+      THEN
+      l_sel_grant := p_schema||'_sel';
+      l_adm_grant := p_schema||'_adm';
+      WHEN p_user IS NOT NULL
+      THEN
+      l_sel_grant := p_user;
+      l_adm_grant := p_user;
+      ELSE
+      NULL;
+      END CASE;
       
       -- this will drop the roles before beginning
       IF p_drop
       THEN
 	 BEGIN
-	    EXECUTE IMMEDIATE 'DROP role '||l_sel_role;
+	    EXECUTE IMMEDIATE 'DROP role '||l_sel_grant;
 	 EXCEPTION
-	    WHEN e_no_role
+	    WHEN e_no_grantee
 	    THEN
 	    NULL;
 	 END;
 	 
 	 BEGIN
-	    EXECUTE IMMEDIATE 'DROP role '||l_adm_role;
+	    EXECUTE IMMEDIATE 'DROP role '||l_adm_grant;
 	 EXCEPTION
-	    WHEN e_no_role
+	    WHEN e_no_grantee
 	    THEN
 	    NULL;
 	 END;
@@ -112,7 +128,7 @@ IS
       END IF;
 
 	 BEGIN
-	    EXECUTE IMMEDIATE 'CREATE ROLE '||l_sel_role;
+	    EXECUTE IMMEDIATE 'CREATE ROLE '||l_sel_grant;
 	 EXCEPTION
 	    WHEN e_role_exists
 	    THEN
@@ -120,7 +136,7 @@ IS
 	 END;
 
 	 BEGIN
-	    EXECUTE IMMEDIATE 'CREATE ROLE '||l_adm_role;
+	    EXECUTE IMMEDIATE 'CREATE ROLE '||l_adm_grant;
 	 EXCEPTION
 	    WHEN e_role_exists
 	    THEN
@@ -128,37 +144,40 @@ IS
 	 END;
 	 
 	 BEGIN
-	    EXECUTE IMMEDIATE 'GRANT SELECT ON COUNT_TABLE TO '||l_sel_role;
-	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON COUNT_TABLE TO '||l_adm_role;
+	    EXECUTE IMMEDIATE 'GRANT SELECT ON COUNT_TABLE TO '||l_sel_grant;
+	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON COUNT_TABLE TO '||l_adm_grant;
 
-	    EXECUTE IMMEDIATE 'GRANT SELECT ON DIR_LIST TO '||l_sel_role;
-	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON DIR_LIST TO '||l_adm_role;
+	    EXECUTE IMMEDIATE 'GRANT SELECT ON DIR_LIST TO '||l_sel_grant;
+	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON DIR_LIST TO '||l_adm_grant;
 
-	    EXECUTE IMMEDIATE 'GRANT SELECT ON LOGGING_CONF TO '||l_sel_role;
-	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON LOGGING_CONF TO '||l_adm_role;
+	    EXECUTE IMMEDIATE 'GRANT SELECT ON LOGGING_CONF TO '||l_sel_grant;
+	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON LOGGING_CONF TO '||l_adm_grant;
 
-	    EXECUTE IMMEDIATE 'GRANT SELECT ON LOG_TABLE TO '||l_sel_role;
-	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON LOG_TABLE TO '||l_adm_role;
+	    EXECUTE IMMEDIATE 'GRANT SELECT ON LOG_TABLE TO '||l_sel_grant;
+	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON LOG_TABLE TO '||l_adm_grant;
 
-	    EXECUTE IMMEDIATE 'GRANT SELECT ON NOTIFICATION_CONF TO '||l_sel_role;
-	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON NOTIFICATION_CONF TO '||l_adm_role;
+	    EXECUTE IMMEDIATE 'GRANT SELECT ON NOTIFICATION_CONF TO '||l_sel_grant;
+	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON NOTIFICATION_CONF TO '||l_adm_grant;
 
-	    EXECUTE IMMEDIATE 'GRANT SELECT ON NOTIFICATION_EVENTS TO '||l_sel_role;
-	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON NOTIFICATION_EVENTS TO '||l_adm_role;
+	    EXECUTE IMMEDIATE 'GRANT SELECT ON NOTIFICATION_EVENTS TO '||l_sel_grant;
+	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON NOTIFICATION_EVENTS TO '||l_adm_grant;
 
-	    EXECUTE IMMEDIATE 'GRANT SELECT ON PARAMETER_CONF TO '||l_sel_role;
-	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON PARAMETER_CONF TO '||l_adm_role;
+	    EXECUTE IMMEDIATE 'GRANT SELECT ON PARAMETER_CONF TO '||l_sel_grant;
+	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON PARAMETER_CONF TO '||l_adm_grant;
 
-	    EXECUTE IMMEDIATE 'GRANT SELECT ON REGISTRATION_CONF TO '||l_sel_role;
-	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON REGISTRATION_CONF TO '||l_adm_role;
+	    EXECUTE IMMEDIATE 'GRANT SELECT ON REGISTRATION_CONF TO '||l_sel_grant;
+	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON REGISTRATION_CONF TO '||l_adm_grant;
 
-	    EXECUTE IMMEDIATE 'GRANT SELECT ON RUNMODE_CONF TO '||l_sel_role;
-	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON RUNMODE_CONF TO '||l_adm_role;
+	    EXECUTE IMMEDIATE 'GRANT SELECT ON RUNMODE_CONF TO '||l_sel_grant;
+	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON RUNMODE_CONF TO '||l_adm_grant;
 
-	    EXECUTE IMMEDIATE 'GRANT SELECT ON ERROR_CONF TO '||l_sel_role;
-	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON ERROR_CONF TO '||l_adm_role;	
+	    EXECUTE IMMEDIATE 'GRANT SELECT ON ERROR_CONF TO '||l_sel_grant;
+	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON ERROR_CONF TO '||l_adm_grant;	
 	
       EXCEPTION
+	 WHEN e_no_grantee
+	 THEN
+	    raise_application_error(-20005,'The grantees '||l_sel_grant||' and '||l_adm_grant||' do not exist.');
 	 WHEN e_no_obj
 	    THEN
 	    raise_application_error(-20004,'Some repository objects do not exist.');
@@ -167,56 +186,75 @@ IS
    END grant_evolve_rep_privs;
  
    PROCEDURE grant_transcend_rep_privs(
-      p_schema   VARCHAR2 DEFAULT 'TDSYS'  
+      p_schema   VARCHAR2 DEFAULT NULL,
+      p_user	 varchar2 DEFAULT NULL  
    ) 
    IS
-      l_sel_role VARCHAR2(30) := p_schema||'_sel';
-      l_adm_role VARCHAR2(30) := p_schema||'_adm';
-      e_no_role	 EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_no_role, -1917 );
+      l_sel_grant VARCHAR2(30);
+      l_adm_grant VARCHAR2(30);
+      e_no_obj   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_no_obj, -942 );
+      e_no_grantee	 EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_no_grantee, -1917 );
    BEGIN
+      CASE
+      WHEN p_schema IS NOT NULL AND p_user IS NOT NULL
+      THEN
+      raise_application_error(-20006, 'Parameters P_SCHEMA and P_USER are mutually exclusive');
+      WHEN p_schema IS NOT NULL
+      THEN
+      l_sel_grant := p_schema||'_sel';
+      l_adm_grant := p_schema||'_adm';
+      WHEN p_user IS NOT NULL
+      THEN
+      l_sel_grant := p_user;
+      l_adm_grant := p_user;
+      ELSE
+      NULL;
+      END CASE;
+
       BEGIN
-	    EXECUTE IMMEDIATE 'GRANT SELECT ON FILES_CONF TO '||l_sel_role;
-	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON FILES_CONF TO '||l_adm_role;
+	    EXECUTE IMMEDIATE 'GRANT SELECT ON FILES_CONF TO '||l_sel_grant;
+	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON FILES_CONF TO '||l_adm_grant;
 
-	    EXECUTE IMMEDIATE 'GRANT SELECT ON FILES_DETAIL TO '||l_sel_role;
-	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON FILES_DETAIL TO '||l_adm_role;
-	    EXECUTE IMMEDIATE 'GRANT SELECT ON files_detail_seq TO '||l_sel_role;
-	    EXECUTE IMMEDIATE 'GRANT SELECT ON files_detail_seq TO '||l_adm_role;
+	    EXECUTE IMMEDIATE 'GRANT SELECT ON FILES_DETAIL TO '||l_sel_grant;
+	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON FILES_DETAIL TO '||l_adm_grant;
+	    EXECUTE IMMEDIATE 'GRANT SELECT ON files_detail_seq TO '||l_sel_grant;
+	    EXECUTE IMMEDIATE 'GRANT SELECT ON files_detail_seq TO '||l_adm_grant;
 
-	    EXECUTE IMMEDIATE 'GRANT SELECT ON FILES_OBJ_DETAIL TO '||l_sel_role;
-	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON FILES_OBJ_DETAIL TO '||l_adm_role;
-	    EXECUTE IMMEDIATE 'GRANT SELECT ON files_obj_detail_seq TO '||l_sel_role;
-	    EXECUTE IMMEDIATE 'GRANT SELECT ON files_obj_detail_seq TO '||l_adm_role;
+	    EXECUTE IMMEDIATE 'GRANT SELECT ON FILES_OBJ_DETAIL TO '||l_sel_grant;
+	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON FILES_OBJ_DETAIL TO '||l_adm_grant;
+	    EXECUTE IMMEDIATE 'GRANT SELECT ON files_obj_detail_seq TO '||l_sel_grant;
+	    EXECUTE IMMEDIATE 'GRANT SELECT ON files_obj_detail_seq TO '||l_adm_grant;
 
-	    EXECUTE IMMEDIATE 'GRANT SELECT ON TD_PART_GTT TO '||l_sel_role;
-	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON TD_PART_GTT TO '||l_adm_role;
+	    EXECUTE IMMEDIATE 'GRANT SELECT ON TD_PART_GTT TO '||l_sel_grant;
+	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON TD_PART_GTT TO '||l_adm_grant;
 
-	    EXECUTE IMMEDIATE 'GRANT SELECT ON TD_BUILD_IDX_GTT TO '||l_sel_role;
-	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON TD_BUILD_IDX_GTT TO '||l_adm_role;
+	    EXECUTE IMMEDIATE 'GRANT SELECT ON TD_BUILD_IDX_GTT TO '||l_sel_grant;
+	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON TD_BUILD_IDX_GTT TO '||l_adm_grant;
 
-	    EXECUTE IMMEDIATE 'GRANT SELECT ON TD_BUILD_CON_GTT TO '||l_sel_role;
-	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON TD_BUILD_CON_GTT TO '||l_adm_role;
+	    EXECUTE IMMEDIATE 'GRANT SELECT ON TD_BUILD_CON_GTT TO '||l_sel_grant;
+	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON TD_BUILD_CON_GTT TO '||l_adm_grant;
 
-	    EXECUTE IMMEDIATE 'GRANT SELECT ON TD_CON_MAINT_GTT TO '||l_sel_role;
-	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON TD_CON_MAINT_GTT TO '||l_adm_role;
+	    EXECUTE IMMEDIATE 'GRANT SELECT ON TD_CON_MAINT_GTT TO '||l_sel_grant;
+	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON TD_CON_MAINT_GTT TO '||l_adm_grant;
 
-	    EXECUTE IMMEDIATE 'GRANT SELECT ON DIMENSION_CONF TO '||l_sel_role;
-	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON DIMENSION_CONF TO '||l_adm_role;
+	    EXECUTE IMMEDIATE 'GRANT SELECT ON DIMENSION_CONF TO '||l_sel_grant;
+	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON DIMENSION_CONF TO '||l_adm_grant;
 
-	    EXECUTE IMMEDIATE 'GRANT SELECT ON COLUMN_CONF TO '||l_sel_role;
-	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON COLUMN_CONF TO '||l_adm_role;
+	    EXECUTE IMMEDIATE 'GRANT SELECT ON COLUMN_CONF TO '||l_sel_grant;
+	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON COLUMN_CONF TO '||l_adm_grant;
 
-	    EXECUTE IMMEDIATE 'GRANT SELECT ON COLUMN_TYPE_LIST TO '||l_sel_role;
-	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON COLUMN_TYPE_LIST TO '||l_adm_role;
+	    EXECUTE IMMEDIATE 'GRANT SELECT ON COLUMN_TYPE_LIST TO '||l_sel_grant;
+	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON COLUMN_TYPE_LIST TO '||l_adm_grant;
 
-	    EXECUTE IMMEDIATE 'GRANT SELECT ON REPLACE_METHOD_LIST TO '||l_sel_role;
-	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON REPLACE_METHOD_LIST TO '||l_adm_role;
+	    EXECUTE IMMEDIATE 'GRANT SELECT ON REPLACE_METHOD_LIST TO '||l_sel_grant;
+	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON REPLACE_METHOD_LIST TO '||l_adm_grant;
 
       EXCEPTION
-	 WHEN e_no_role
+	 WHEN e_no_grantee
 	 THEN
-	    raise_application_error(-20005,'The specified schema roles '||l_sel_role||' '||l_adm_role||' do not exist.');
+	    raise_application_error(-20005,'The grantees '||l_sel_grant||' and '||l_adm_grant||' do not exist.');
       END;
 
    END grant_transcend_rep_privs;
@@ -754,7 +792,8 @@ IS
 	 q'|ALTER TABLE parameter_conf ADD CONSTRAINT parameter_conf_ck3 CHECK (module=lower(module))|';
 	 
 	 -- grant the privileges to the repository tables to the roles
-	 grant_evolve_rep_privs( p_schema, p_drop );
+	 grant_evolve_rep_privs( p_schema => p_schema, 
+	 			 p_drop	  => p_drop );
 	 
 	 -- write application tracking record
 	 EXECUTE IMMEDIATE 	    
@@ -1257,7 +1296,7 @@ IS
 	 )|';
 	 
 	 -- grant the privileges to the repository tables to the roles
-	 grant_transcend_rep_privs( p_schema ); 
+	 grant_transcend_rep_privs( p_schema => p_schema ); 
      
       EXCEPTION
       WHEN e_tab_exists OR e_stat_tab_exists
@@ -1810,8 +1849,9 @@ IS
       -- grant application privileges to the roles
       grant_evolve_sys_privs( p_schema => p_schema );
       	 
-      -- grant the privileges to the repository tables to the roles
-      grant_evolve_rep_privs( p_schema, p_drop );
+      -- grant privileges on the repository objects
+      grant_evolve_rep_privs( p_schema => p_schema, 
+			      p_drop   => p_drop );
 	 
       -- write application tracking record
       EXECUTE IMMEDIATE 	    
@@ -1863,7 +1903,7 @@ IS
       grant_transcend_sys_privs( p_schema => p_schema );
       	 
       -- grant the privileges to the repository tables to the roles
-      grant_transcend_rep_privs( p_schema );
+      grant_transcend_rep_privs( p_schema => p_schema );
 	 
    END build_transcend_app;
    
