@@ -20,7 +20,7 @@ AS
             THEN
                RETURN NULL;
             ELSE
-	       td_inst.raise_err('unrecognized_parm',p_parm);
+	       raise_application_error(-20030, 'The specified parameter value is not recognized: '||p_parm);
             END IF;
       END CASE;
    END is_true;
@@ -43,7 +43,7 @@ AS
          THEN
             RETURN 'no';
          ELSE
-	    td_inst.raise_err('unrecognized_parm',p_parm);
+            raise_application_error(-20030, 'The specified parameter value is not recognized: '||p_parm);
       END CASE;
    END get_yn_ind;
    
