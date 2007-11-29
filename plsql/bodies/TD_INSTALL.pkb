@@ -51,10 +51,31 @@ IS
 	 EXECUTE IMMEDIATE 'ALTER USER '||p_user||' QUOTA 50M ON '||p_tablespace;
       END IF;
       
-      -- set the session to that user
-      EXECUTE IMMEDIATE 'ALTER SESSION SET current_schema='||p_user;
-
    END create_user;
+   
+   PROCEDURE set_current_schema(
+      p_schema    VARCHAR2 DEFAULT 'TDSYS'
+   ) 
+   IS
+      l_current_schema	dba_users.username%TYPE;
+      e_no_user EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_no_user, -1435 );
+   BEGIN
+      BEGIN
+	 -- get the current schema before this
+	 SELECT sys_context('USERENV','CURRENT_SCHEMA')
+	   INTO l_current_schema
+	   FROM dual;
+      
+      -- set the session to that user
+	 EXECUTE IMMEDIATE 'ALTER SESSION SET current_schema='||p_schema;
+	 g_current_schema := l_current_schema;
+      EXCEPTION
+	 WHEN e_no_user
+	 THEN raise_application_error(-20008, 'User "'||upper(p_schema)||'" does not exist.');
+      END; 
+   END set_current_schema;
+   
 
    PROCEDURE reset_default_tablespace
    IS
@@ -274,8 +295,11 @@ IS
 
       -- create the user if it doesn't already exist
       -- if it does, then simply change the default tablespace for that user
-      -- alter session to become that user      
-      create_user( p_schema, p_tablespace );
+      create_user( p_user 	=> p_schema, 
+		   p_tablespace => p_tablespace );
+      
+      -- alter session to CURRENT_SCHEMA
+      set_current_schema( p_schema => p_schema );
       
       -- this will drop all the tables before beginning
       IF p_drop
@@ -400,7 +424,7 @@ IS
       -- if the default tablespace was changed, then put it back
       reset_default_tablespace;
       
-      -- set current_schema back to where it started
+      -- set CURRENT_SCHEMA back to where it started
       reset_current_schema;
    EXCEPTION
    WHEN others
@@ -408,7 +432,7 @@ IS
       -- if the default tablespace was changed, then put it back
       reset_default_tablespace;
       
-      -- set current_schema back to where it started
+      -- set CURRENT_SCHEMA back to where it started
       reset_current_schema;
       RAISE;      
 
@@ -427,9 +451,11 @@ IS
    BEGIN
       -- create the user if it doesn't already exist
       -- if it does, then simply change the default tablespace for that user
-      -- alter session to become that user      
-      create_user( p_schema, p_tablespace );
+      create_user( p_user 	=> p_schema, 
+		   p_tablespace => p_tablespace );
       
+      -- alter session to CURRENT_SCHEMA
+      set_current_schema( p_schema => p_schema );
       
       -- this will drop all the tables before beginning
       IF p_drop
@@ -861,8 +887,12 @@ IS
       -- create the user if it doesn't already exist
       -- if it does, then simply change the default tablespace for that user
       -- alter session to become that user      
-      create_user( p_schema, p_tablespace );
+      create_user( p_user 	=> p_schema, 
+		   p_tablespace => p_tablespace );
       
+      -- alter session to CURRENT_SCHEMA
+      set_current_schema( p_schema => p_schema );
+
       -- this will drop all the tables before beginning
       IF p_drop
       THEN
@@ -1839,20 +1869,27 @@ IS
       PRAGMA EXCEPTION_INIT( e_no_tab, -942 );
    BEGIN
       -- create the user if it doesn't already exist
-      -- alter session to become that user      
-      create_user( p_schema );
+      create_user( p_user 	=> p_schema );
       
+      -- set CURRENT_SCHEMA to the owner of the repository
+      set_current_schema( p_schema => p_repository );
+      
+      -- create grants to the application owner to all the tables in the repository
+      grant_evolve_rep_privs( p_user => p_repository );
+      
+      -- set the CURRENT_SCHEMA back
+      reset_current_schema;
+      
+      -- set the CURRENT_SCHEMA to the application owner
+      set_current_schema( p_schema => p_schema );
+
       -- create the synonyms to the repository
       build_evolve_rep_syns( p_user   => p_schema,
 			     p_schema => p_repository );
       
       -- grant application privileges to the roles
       grant_evolve_sys_privs( p_schema => p_schema );
-      	 
-      -- grant privileges on the repository objects
-      grant_evolve_rep_privs( p_schema => p_schema, 
-			      p_drop   => p_drop );
-	 
+      	 	 
       -- write application tracking record
       EXECUTE IMMEDIATE 	    
       q'|UPDATE tdsys.applications
@@ -1895,16 +1932,25 @@ IS
 			p_repository => p_repository,
 			p_drop	     => p_drop );
 
+      -- set CURRENT_SCHEMA to the owner of the repository
+      set_current_schema( p_schema => p_repository );
+      
+      -- create grants to the application owner to all the tables in the repository
+      grant_transcend_rep_privs( p_user => p_repository );
+      
+      -- set the CURRENT_SCHEMA back
+      reset_current_schema;
+      
+      -- set the CURRENT_SCHEMA to the application owner
+      set_current_schema( p_schema => p_schema );
+
       -- create the synonyms to the repository
       build_transcend_rep_syns( p_user   => p_schema,
-				p_schema => p_repository );
+			     p_schema => p_repository );
       
       -- grant application privileges to the roles
       grant_transcend_sys_privs( p_schema => p_schema );
-      	 
-      -- grant the privileges to the repository tables to the roles
-      grant_transcend_rep_privs( p_schema => p_schema );
-	 
+
    END build_transcend_app;
    
    PROCEDURE drop_evolve_types
@@ -1978,11 +2024,6 @@ IS
       END;
 	 
    END drop_transcend_types;
-
-BEGIN
-   SELECT sys_context('USERENV','CURRENT_SCHEMA')
-     INTO g_current_schema
-     FROM dual;
 END td_install;
 /
 
