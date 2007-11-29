@@ -115,6 +115,9 @@ IS
       WHEN p_schema IS NOT NULL AND p_user IS NOT NULL
       THEN
       raise_application_error(-20006, 'Parameters P_SCHEMA and P_USER are mutually exclusive');
+      WHEN p_user IS NOT NULL AND p_drop
+      THEN
+      raise_application_error(-20007, 'Specifying P_USER with a value of TRUE for P_DROP is not compatible');
       WHEN p_schema IS NOT NULL
       THEN
       l_sel_grant := p_schema||'_sel';
@@ -128,7 +131,7 @@ IS
       END CASE;
       
       -- this will drop the roles before beginning
-      IF p_drop
+      IF p_drop AND p_schema IS NOT null
       THEN
 	 BEGIN
 	    EXECUTE IMMEDIATE 'DROP role '||l_sel_grant;
@@ -1782,7 +1785,7 @@ IS
       EXCEPTION
 	 WHEN e_no_obj
 	 THEN
-	 raise_application_error(-20007, 'Either package UTL_MAIL does not exist, or the installing user do not have privileges to grant access on it.');
+	 raise_application_error(-20009, 'Either package UTL_MAIL does not exist, or the installing user does not have privileges to grant access on it.');
       END;
 
       -- grant java specific privilege to the _JAVA role
@@ -1875,7 +1878,7 @@ IS
       set_current_schema( p_schema => p_repository );
       
       -- create grants to the application owner to all the tables in the repository
-      grant_evolve_rep_privs( p_user => p_repository );
+      grant_evolve_rep_privs( p_user => p_schema );
       
       -- set the CURRENT_SCHEMA back
       reset_current_schema;
@@ -1936,7 +1939,7 @@ IS
       set_current_schema( p_schema => p_repository );
       
       -- create grants to the application owner to all the tables in the repository
-      grant_transcend_rep_privs( p_user => p_repository );
+      grant_transcend_rep_privs( p_user => p_schema );
       
       -- set the CURRENT_SCHEMA back
       reset_current_schema;
