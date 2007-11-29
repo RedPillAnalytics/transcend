@@ -56,7 +56,7 @@ EXEC tdsys.td_install.build_transcend_app( p_schema => '&app_schema', p_reposito
 
 -- now install the Evolve code
 -- first drop the types
-EXEC tdsys.td_install.drop_trascend_types;
+EXEC tdsys.td_install.drop_transcend_types;
 
 
 -- Install the Evolve pieces
