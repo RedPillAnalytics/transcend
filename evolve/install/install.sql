@@ -2,11 +2,7 @@ PROMPT 'Running install.sql'
 SET serveroutput on size unlimited
 SET timing off
 ALTER SESSION SET nls_date_format = 'yyyymmdd_hhmiss';
-SPOOL InstallTranscend_&_DATE..log
-
--- get the CURRENT_SCHEMA
-VARIABLE current_schema char(30)
-EXEC :current_schema := sys_context('USERENV','CURRENT_SCHEMA');
+SPOOL InstallEvolve_&_DATE..log
 
 -- get the schema for the Evolve repository (tables)
 ACCEPT rep_schema char default 'TDSYS' prompt 'Schema name for the Evolve default repository [tdsys]: '
