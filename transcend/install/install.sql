@@ -17,37 +17,6 @@ ACCEPT app_schema char default 'TDSYS' prompt 'Schema name for the Transcend app
 
 WHENEVER sqlerror exit sql.sqlcode
 
-DECLARE
-   e_user_exists EXCEPTION;
-   PRAGMA EXCEPTION_INIT( e_user_exists, -1920 );
-BEGIN
-   BEGIN
-      EXECUTE IMMEDIATE 'CREATE USER tdsys identified by no2tdsys';
-   EXCEPTION
-      WHEN e_user_exists
-      THEN
-        NULL;
-   END;
-END;
-/
-
--- needed to interact with users and their tablespaces
-GRANT SELECT ANY dictionary TO tdsys;
-
-ALTER SESSION SET current_schema=tdsys;
-
--- install the installation package
-@../../plsql/specs/TD_INSTALL.pks
-@../../plsql/wrapped_bodies/TD_INSTALL.plb
-
-BEGIN
-   EXECUTE IMMEDIATE 'ALTER SESSION SET current_schema='||:current_schema;
-END;
-/
-
--- build the system repository
-EXEC tdsys.td_install.build_sys_repo( p_schema=> 'tdsys', p_tablespace => '&tablespace' );
-
 -- create the Transcend repository
 EXEC tdsys.td_install.build_transcend_repo( p_schema => '&rep_schema', p_tablespace => '&tablespace');
 
