@@ -88,6 +88,6 @@ EXEC tdsys.td_install.drop_evolve_types;
 @../plsql/wrapped_bodies/TD_EVOLVE_ADM.plb
 
 -- set the default logging, registration and runmodes
-EXEC td_control.set_logging_level('default',2,3);
-EXEC td_control.set_runmode;
-EXEC td_control.set_registration;
+EXEC td_evolve_adm.set_logging_level('default',2,3);
+EXEC td_evolve_adm.set_runmode;
+EXEC td_evolve_adm.set_registration;
