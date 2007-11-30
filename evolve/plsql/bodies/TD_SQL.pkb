@@ -1,8 +1,8 @@
+
 CREATE OR REPLACE PACKAGE BODY td_sql
 AS
-   -- use EXECUTE IMMEDIATE to execute a SQL statement
-   -- uses AUTONOMOUS_TRANSACTION, so this will NOT execute within the current transaction
-   -- excellent for DDL that where the commit incurred by the DDL will not affect the current transaction
+   -- called by the EXEC_SQL function when an autonomous transaction is desired
+   -- and the number of results are desired
    FUNCTION exec_auto( p_sql VARCHAR2 )
       RETURN NUMBER
    AS
@@ -16,9 +16,8 @@ AS
       COMMIT;
       RETURN l_results;
    END exec_auto;
-
-   -- use EXECUTE IMMEDIATE to execute a SQL statement
-   -- this function is not compile with AUTONOMOUS_TRANSATION
+   
+   -- accepts the P_AUTO flag and determines whether to execute the statement
    -- if the P_AUTO flag of 'yes' is passed, then EXEC_AUTO is called
    FUNCTION exec_sql(
       p_sql              VARCHAR2,
@@ -30,11 +29,6 @@ AS
    AS
       l_results   NUMBER;
    BEGIN
-      td_inst.log_msg( CASE
-                          WHEN p_msg IS NULL
-                             THEN 'SQL: ' || p_sql
-                          ELSE p_msg
-                       END, 3 );
 
       IF NOT td_inst.is_debugmode OR NOT td_ext.is_true( p_override_debug )
       THEN
@@ -52,6 +46,7 @@ AS
    END exec_sql;
 
    -- if I don't care about the number of results (DDL, for instance), just call this procedure
+   -- if P_AUTO is 'no' and P_CONCURRENT is 'no', then SQL%ROWCOUNT will still give the correct results after this call
    PROCEDURE exec_sql(
       p_sql              VARCHAR2,
       p_auto             VARCHAR2 DEFAULT 'no',
@@ -64,6 +59,38 @@ AS
       -- simply call the procedure and discard the results
       l_results := exec_sql( p_sql => p_sql, p_auto => p_auto, p_msg => p_msg );
    END exec_sql;
+
+   -- this process will execute through DBMS_SCHEDULER
+   PROCEDURE consume_sql(
+      p_session_id  NUMBER,
+      p_module	    VARCHAR2,
+      p_action	    VARCHAR2,
+      p_ddl         VARCHAR2,
+      p_msg         VARCHAR2 DEFAULT NULL
+   )
+   AS      
+   BEGIN
+      -- use the SET_CONCURRENT_INFO
+      -- for now, we will always use the same program, CONSUME_SQL
+      -- in the future, each module may have it's own program
+      dbms_scheduler.create_job(dbms_scheduler.generate_job_name(p_module);
+   END consume_sql;
+   
+   -- this process will execute through DBMS_SCHEDULER
+   PROCEDURE submit_sql(
+      p_session_id  NUMBER,
+      p_module	    VARCHAR2,
+      p_action	    VARCHAR2,
+      p_ddl         VARCHAR2,
+      p_msg         VARCHAR2 DEFAULT NULL
+   )
+   AS
+   BEGIN
+      -- for now, we will always use the same program, SUBMIT_SQL
+      -- in the future, each module may have it's own program
+      dbms_scheduler.create_job(dbms_scheduler.generate_job_name(p_module);
+   END submit_sql;
+   
 
    -- checks things about a table depending on the parameters passed
    -- raises an exception if the specified things are not true
