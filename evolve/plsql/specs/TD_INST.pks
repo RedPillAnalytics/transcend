@@ -78,5 +78,11 @@ AS
 
    PROCEDURE stop_debug;
 
+    PROCEDURE set_concurrent_info(
+      p_session_id  NUMBER,
+      p_module      VARCHAR2,
+      p_action      VARCHAR2
+   );
+
 END td_inst;
 /
