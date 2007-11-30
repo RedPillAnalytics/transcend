@@ -1597,7 +1597,7 @@ AS
                           END
                        || ' PARALLEL DML'
                      );
-         td_sql.exec_sql
+      td_sql.exec_sql
                    ( p_sql      =>    'insert '
                                    || CASE
                                          WHEN td_ext.is_true( p_direct )
@@ -1844,7 +1844,7 @@ AS
                                         || ' PARALLEL DML'
                         );
          -- we put the merge statement together using all the different clauses constructed above
-            td_sql.exec_sql
+         td_sql.exec_sql
                       ( p_sql      =>    'MERGE INTO '
                                       || p_owner
                                       || '.'
