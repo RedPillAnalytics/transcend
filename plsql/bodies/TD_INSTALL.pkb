@@ -881,17 +881,6 @@ IS
       e_no_seq   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_seq, -2289 );
    BEGIN
-      BEGIN
-	 build_evolve_repo( p_schema     => p_schema,
-			    p_tablespace => p_tablespace,
-			    p_drop	 => p_drop );
-      END;
-      
-      -- create the user if it doesn't already exist
-      -- if it does, then simply change the default tablespace for that user
-      -- alter session to become that user      
-      create_user( p_user 	=> p_schema, 
-		   p_tablespace => p_tablespace );
       
       -- alter session to CURRENT_SCHEMA
       set_current_schema( p_schema => p_schema );
@@ -1636,7 +1625,7 @@ IS
    END build_transcend_rep_syns;
 
    PROCEDURE build_transcend_app_syns(
-      p_user        VARCHAR2,
+      p_user    VARCHAR2,
       p_schema  VARCHAR2
    ) 
    IS
@@ -1929,12 +1918,6 @@ IS
       e_no_tab   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_tab, -942 );
    BEGIN
-      
-      -- first, make sure the Evolve piece has been created
-      build_evolve_app( p_schema     => p_schema,
-			p_repository => p_repository,
-			p_drop	     => p_drop );
-
       -- set CURRENT_SCHEMA to the owner of the repository
       set_current_schema( p_schema => p_repository );
       
@@ -1961,6 +1944,9 @@ IS
       e_obj_exists   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_obj_exists, -4043 );
    BEGIN
+      
+      -- there are Transcend types that inherit from Evolve types
+      -- so we need to drop any Transcend types first
 
       BEGIN
 	 EXECUTE IMMEDIATE 'DROP TYPE notification_ot';
