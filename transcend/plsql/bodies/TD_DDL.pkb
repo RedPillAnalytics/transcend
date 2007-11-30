@@ -1597,7 +1597,6 @@ AS
                           END
                        || ' PARALLEL DML'
                      );
-      l_results :=
          td_sql.exec_sql
                    ( p_sql      =>    'insert '
                                    || CASE
@@ -1633,7 +1632,7 @@ AS
       -- record the number of rows affected
       IF NOT td_inst.is_debugmode
       THEN
-         td_inst.log_cnt_msg( p_count      => l_results,
+         td_inst.log_cnt_msg( p_count      => sql%rowcount,
                               p_msg        =>    'Number of records inserted into '
                                               || l_trg_name
                             );
@@ -1703,11 +1702,11 @@ AS
                                         - 1
                                       )
                               ) AS token
-                     FROM ( SELECT ',' || p_columns || ',' COLUMNS
+                     FROM ( SELECT ',' || upper(p_columns) || ',' COLUMNS
                              FROM DUAL )
                CONNECT BY LEVEL <=
-                               LENGTH( p_columns )
-                             - LENGTH( REPLACE( p_columns, ',', '' ))
+                               LENGTH( upper(p_columns) )
+                             - LENGTH( REPLACE( upper(p_columns), ',', '' ))
                              + 1 )
          SELECT REGEXP_REPLACE(    '('
                                 || stragg(    'target.'
@@ -1777,11 +1776,11 @@ AS
                                                  - 1
                                                )
                                        ) AS token
-                              FROM ( SELECT ',' || p_columns || ',' COLUMNS
+                              FROM ( SELECT ',' || upper(p_columns) || ',' COLUMNS
                                       FROM DUAL )
                         CONNECT BY LEVEL <=
-                                        LENGTH( p_columns )
-                                      - LENGTH( REPLACE( p_columns, ',', '' ))
+                                        LENGTH( upper(p_columns) )
+                                      - LENGTH( REPLACE( upper(p_columns), ',', '' ))
                                       + 1 )
                  SELECT column_name
                    FROM all_tab_columns
@@ -1845,7 +1844,6 @@ AS
                                         || ' PARALLEL DML'
                         );
          -- we put the merge statement together using all the different clauses constructed above
-         l_results :=
             td_sql.exec_sql
                       ( p_sql      =>    'MERGE INTO '
                                       || p_owner
@@ -1907,7 +1905,7 @@ AS
       -- record the number of rows affected
       IF NOT td_inst.is_debugmode
       THEN
-         td_inst.log_cnt_msg( p_count      => l_results,
+         td_inst.log_cnt_msg( p_count      => sql%rowcount,
                               p_msg        =>    'Number of records merged into '
                                               || l_trg_name
                             );
