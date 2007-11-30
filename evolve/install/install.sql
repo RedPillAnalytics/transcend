@@ -86,3 +86,8 @@ EXEC tdsys.td_install.drop_evolve_types;
 --CREATE callable packages
 @../plsql/specs/TD_EVOLVE_ADM.pks
 @../plsql/wrapped_bodies/TD_EVOLVE_ADM.plb
+
+-- set the default logging, registration and runmodes
+EXEC td_control.set_logging_level('default',2,3);
+EXEC td_control.set_runmode;
+EXEC td_control.set_registration;
