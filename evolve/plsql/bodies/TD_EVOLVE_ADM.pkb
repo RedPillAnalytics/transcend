@@ -1,31 +1,5 @@
 CREATE OR REPLACE PACKAGE BODY td_evolve_adm
 IS
-   PROCEDURE check_module( p_module VARCHAR2, p_allow_default BOOLEAN DEFAULT FALSE )
-   IS
-      l_package_name   all_arguments.package_name%TYPE := p_module;
-   BEGIN
-      BEGIN
-         SELECT package_name
-           INTO l_package_name
-           FROM all_arguments
-          WHERE LOWER( p_module ) = LOWER( package_name || '.' || object_name );
-      EXCEPTION
-         WHEN NO_DATA_FOUND
-         THEN
-            IF p_module = 'default' AND p_allow_default
-            THEN
-               NULL;
-            ELSE
-	       raise_application_error(-20012, 'The following module is not configured: '||p_module);
-            END IF;
-         WHEN TOO_MANY_ROWS
-         THEN
-            NULL;
-      END;
-
-      td_inst.log_msg( 'Check for module name "' || l_package_name || '" succeeded', 5 );
-   END check_module;
-
    PROCEDURE set_logging_level(
       p_module          VARCHAR2 DEFAULT 'default',
       p_logging_level   NUMBER DEFAULT 2,
@@ -36,7 +10,6 @@ IS
       e_dup_conf   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_conf, -1 );
    BEGIN
-      check_module( p_module => p_module, p_allow_default => TRUE );
       
       -- this is the default method... update if it exists or insert it
       IF lower(p_mode) IN ('upsert','update')
@@ -89,7 +62,6 @@ IS
       e_dup_conf   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_conf, -1 );
    BEGIN
-      check_module( p_module => p_module, p_allow_default => TRUE );
       
       -- this is the default method... update if it exists or insert it
       IF lower(p_mode) IN ('upsert','update')
@@ -142,7 +114,6 @@ IS
       e_dup_conf   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_conf, -1 );
    BEGIN
-      check_module( p_module => p_module, p_allow_default => TRUE );
       
       -- this is the default method... update if it exists or insert it
       IF lower(p_mode) IN ('upsert','update')
@@ -202,7 +173,6 @@ IS
       e_dup_conf   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_conf, -1 );
    BEGIN
-      check_module( p_module => p_module, p_allow_default => TRUE );
       
       -- this is the default method... update if it exists or insert it
       IF lower(p_mode) IN ('upsert','update')
@@ -263,7 +233,6 @@ IS
       e_dup_conf   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_conf, -1 );
    BEGIN
-      check_module( p_module => p_module, p_allow_default => TRUE );
       
       -- this is the default method... update if it exists or insert it
       IF lower(p_mode) IN ('upsert','update')
@@ -323,8 +292,7 @@ IS
       e_dup_conf   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_conf, -1 );
    BEGIN
-      check_module( p_module => p_module, p_allow_default => TRUE );
-
+      
       BEGIN
          SELECT NAME
            INTO l_parameter

@@ -12,16 +12,9 @@ AS
       -- read in all the previous values
       read_prev_info;
       -- first we need to populate the module attribute, because it helps us determine parameter values
-      td_inst.module(LOWER( CASE
-			    WHEN REGEXP_LIKE(get_package_name,'anonymous block','i') AND p_module IS NOT null
-			    THEN p_module
-			    WHEN p_module IS NULL
-			    THEN get_package_name
-			    ELSE get_package_name || '.' || p_module
-			    END
-			  ));
+      td_inst.module( LOWER( p_module ) );
       -- we also set the action, which may be used one day to fine tune parameters
-      td_inst.action (LOWER( p_action ));
+      td_inst.action ( LOWER( p_action ) );
       -- read previous app_info settings
       -- populate attributes with new app_info settings
       td_inst.client_info ( NVL( p_client_info,td_inst.client_info ) );
