@@ -45,7 +45,5 @@ EXEC tdsys.td_install.build_transcend_app( p_schema => '&app_schema', p_reposito
 @../plsql/wrapped_bodies/TD_ETL.plb
 @../plsql/specs/TD_FILES.pks
 @../plsql/wrapped_bodies/TD_FILES.plb
-@../plsql/specs/TD_CONTROL.pks
-@../plsql/wrapped_bodies/TD_CONTROL.plb
 @../plsql/specs/TD_OWB.pks
 @../plsql/wrapped_bodies/TD_OWB.plb
