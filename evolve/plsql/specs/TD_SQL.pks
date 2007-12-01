@@ -15,6 +15,21 @@ AS
       p_override_debug   VARCHAR2 DEFAULT 'no'
    );
 
+   PROCEDURE submit_sql(
+      p_sql         VARCHAR2,
+      p_msg         VARCHAR2 DEFAULT NULL,
+      p_session	    VARCHAR2 DEFAULT 'yes',
+      p_program	    VARCHAR2 DEFAULT 'consume_sql_job'
+   );
+
+   PROCEDURE consume_sql(
+      p_session_id  NUMBER,
+      p_module	    VARCHAR2,
+      p_action	    VARCHAR2,
+      p_sql         VARCHAR2,
+      p_msg         VARCHAR2 DEFAULT NULL
+   );
+
    PROCEDURE check_table(
       p_owner         VARCHAR2,
       p_table         VARCHAR2,

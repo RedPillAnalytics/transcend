@@ -59,39 +59,61 @@ AS
       -- simply call the procedure and discard the results
       l_results := exec_sql( p_sql => p_sql, p_auto => p_auto, p_msg => p_msg );
    END exec_sql;
-
+   
+   -- this process will execute through DBMS_SCHEDULER
+   PROCEDURE submit_sql(
+      p_sql         VARCHAR2,
+      p_msg         VARCHAR2 DEFAULT NULL,
+      p_session	    VARCHAR2 DEFAULT 'yes',
+      p_program	    VARCHAR2 DEFAULT 'consume_sql_job'
+   )
+   AS
+      l_job_name all_scheduler_job_run_details.job_name%type := dbms_scheduler.generate_job_name(td_inst.module);
+   BEGIN
+      -- for now, we will always use the same program, CONSUME_SQL_JOB
+      -- in the future, each module may have it's own program
+      dbms_scheduler.create_job( l_job_name, program_name=>p_program );
+      
+      -- define the values for each argument
+      dbms_scheduler.set_job_argument_value(l_job_name,1,sys_context('USERENV','SESSIONID'));
+      dbms_scheduler.set_job_argument_value(l_job_name,2,td_inst.module);
+      dbms_scheduler.set_job_argument_value(l_job_name,3,td_inst.action);
+      dbms_scheduler.set_job_argument_value(l_job_name,4,p_sql);
+      dbms_scheduler.set_job_argument_value(l_job_name,5,p_msg);
+      
+      -- run the job
+      -- if p_session is affirmative, then execute within the same session
+      -- if it's not, then schedule the job to be picked up by the scheduler
+      dbms_scheduler.run_job(l_job_name,td_ext.is_true(p_session));
+   END submit_sql;
+   
    -- this process will execute through DBMS_SCHEDULER
    PROCEDURE consume_sql(
       p_session_id  NUMBER,
       p_module	    VARCHAR2,
       p_action	    VARCHAR2,
-      p_ddl         VARCHAR2,
-      p_msg         VARCHAR2 DEFAULT NULL
-   )
-   AS      
-   BEGIN
-      -- use the SET_CONCURRENT_INFO
-      -- for now, we will always use the same program, CONSUME_SQL
-      -- in the future, each module may have it's own program
-      dbms_scheduler.create_job(dbms_scheduler.generate_job_name(p_module);
-   END consume_sql;
-   
-   -- this process will execute through DBMS_SCHEDULER
-   PROCEDURE submit_sql(
-      p_session_id  NUMBER,
-      p_module	    VARCHAR2,
-      p_action	    VARCHAR2,
-      p_ddl         VARCHAR2,
+      p_sql         VARCHAR2,
       p_msg         VARCHAR2 DEFAULT NULL
    )
    AS
+      -- to keep these processes consistent with the Evolve framework, we are manually setting this information
+      o_ev          evolve_ot := evolve_ot( p_module  => p_module,
+					    p_action  => p_action );
    BEGIN
-      -- for now, we will always use the same program, SUBMIT_SQL
-      -- in the future, each module may have it's own program
-      dbms_scheduler.create_job(dbms_scheduler.generate_job_name(p_module);
-   END submit_sql;
-   
+      -- use the SET_SCHEDULER_SESSION_ID procedure to register with the framework
+      -- this allows all logging entries to be kept together
+      td_inst.set_scheduler_session_id( p_session_id => sys_context('USERENV','SESSIONID') );
 
+      -- just use the standard procedure to execute the SQL
+      exec_sql( p_sql => p_sql,
+		p_msg => p_msg );
+      
+      -- clear it up, even though this will do nothing
+      -- the sessions end as soon as they are complete
+      o_ev.clear_app_info;
+
+   END consume_sql;
+   
    -- checks things about a table depending on the parameters passed
    -- raises an exception if the specified things are not true
    PROCEDURE check_table(
@@ -399,3 +421,4 @@ AS
    END object_exists;
 END td_sql;
 /
+SHOW errors

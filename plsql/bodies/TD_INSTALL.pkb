@@ -94,6 +94,26 @@ IS
       EXECUTE IMMEDIATE 'alter session set current_schema='||g_current_schema;
    END reset_current_schema;
 
+   -- this creates the job metadata (called a program) for submitting concurrent processes
+   PROCEDURE create_scheduler_program(
+      p_schema       VARCHAR2 DEFAULT 'TDSYS'
+   ) 
+   IS
+   BEGIN
+      
+      -- create the actual program
+      dbms_scheduler.create_program(p_schema||'.consume_sql_job','STORED_PROCEDURE','td_sql.consume_sql',5);
+      
+      -- define all the arguments that are passed to td_sql.consume_sql
+      dbms_scheduler.define_program_argument('tdapp.consume_sql_job',1,'p_session_id','number');
+      dbms_scheduler.define_program_argument('tdapp.consume_sql_job',2,'p_module','varchar2');
+      dbms_scheduler.define_program_argument('tdapp.consume_sql_job',3,'p_action','varchar2');
+      dbms_scheduler.define_program_argument('tdapp.consume_sql_job',4,'p_sql','varchar2');
+      dbms_scheduler.define_program_argument('tdapp.consume_sql_job',5,'p_msg','varchar2');
+
+   END create_scheduler_program;
+
+
    PROCEDURE grant_evolve_rep_privs(
       p_schema   VARCHAR2 DEFAULT NULL,
       p_user     VARCHAR2 DEFAULT NULL,
@@ -1848,6 +1868,7 @@ IS
       END;
 
    END grant_transcend_sys_privs;
+
    
    PROCEDURE build_evolve_app(
       p_schema       VARCHAR2 DEFAULT 'TDSYS',
@@ -1881,6 +1902,9 @@ IS
       
       -- grant application privileges to the roles
       grant_evolve_sys_privs( p_schema => p_schema );
+
+      -- create the dbms_scheduler program
+      create_scheduler_program( p_schema );      
       	 	 
       -- write application tracking record
       EXECUTE IMMEDIATE 	    
@@ -2013,6 +2037,59 @@ IS
       END;
 	 
    END drop_transcend_types;
+
+   PROCEDURE create_evolve_user(
+      p_user         VARCHAR2,
+      p_application  VARCHAR2, 
+      p_repository   VARCHAR2
+   ) 
+   IS
+   BEGIN
+      -- create the user if it doesn't already exist
+      create_user( p_user  => p_user );
+      
+      -- create the synonyms to the repository
+      build_evolve_rep_syns( p_user   => p_user,
+			     p_schema => p_repository );
+
+      -- create the synonyms to the application
+      build_evolve_app_syns( p_user   => p_user,
+			     p_schema => p_application );
+      
+      -- grant the appropriate roles to the application user
+      EXECUTE IMMEDIATE 'grant '||p_repository||'_adm to '||p_user;
+      EXECUTE IMMEDIATE 'grant '||p_application||'_app to '||p_user;
+
+      -- create the dbms_scheduler program
+      create_scheduler_program( p_user );      
+      
+      -- write application tracking record
+      EXECUTE IMMEDIATE 	    
+      q'|UPDATE tdsys.users
+      SET application_name = upper(:v_app_schema),
+      repository_name = upper(:v_rep_schema),
+      modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
+      modified_dt = SYSDATE
+      WHERE application_name=upper(:v_app_schema)|'
+      USING p_application, p_repository;
+      
+      IF SQL%ROWCOUNT = 0
+      THEN
+	 EXECUTE IMMEDIATE
+	 q'|INSERT INTO tdsys.users
+	 ( user_name,
+	   application_name,
+	   repository_name)
+	 VALUES
+	 ( upper(:v_user)
+	   upper(:v_app_schema),
+	   upper(:v_rep_schema))|'
+	 USING p_user, p_application, p_repository;
+      END IF;
+      
+   END create_evolve_user;
+   
+
 END td_install;
 /
 

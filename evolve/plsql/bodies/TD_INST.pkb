@@ -429,23 +429,16 @@ AS
       td_inst.runmode( 'runtime' );
    END stop_debug;
 
-   -- allows USUALLY unchangeable aspects to be changed for using SCHEDULE_DDL
    -- specifically, SESSION_ID should never be modified by a user, and that is why there are no SESSION_ID methods
    -- however, to keep all logging entries together when DBMS_SCHEDULER is used, we allow changing it just in those instances
-   -- also, we usually only set MODULE through the constructor and ACTION through CHANGE_ACTION
-   -- since we are not really "resetting" this info, and just maintaining it, we set the attributes directly
-    PROCEDURE set_concurrent_info(
-      p_session_id  NUMBER,
-      p_module      VARCHAR2,
-      p_action      VARCHAR2
+   PROCEDURE set_scheduler_session_id(
+      p_session_id  NUMBER
    )
   AS
    BEGIN
       g_session_id := p_session_id;
-      module( p_module );
-      action( p_action );
-   END set_concurrent_info;
-   
+   END set_scheduler_session_id;   
 
 END td_inst;
 /
+SHOW errors

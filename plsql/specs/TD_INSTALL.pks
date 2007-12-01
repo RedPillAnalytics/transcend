@@ -33,6 +33,12 @@ IS
    PROCEDURE drop_evolve_types;
 
    PROCEDURE drop_transcend_types;
+
+   PROCEDURE create_evolve_user(
+      p_user         VARCHAR2,
+      p_application  VARCHAR2, 
+      p_repository   VARCHAR2
+   );
      
 END td_install;
 /
