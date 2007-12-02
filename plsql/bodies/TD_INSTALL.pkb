@@ -102,7 +102,7 @@ IS
    BEGIN
       
       -- create the actual program
-      dbms_scheduler.create_program(p_schema||'.consume_sql_job','STORED_PROCEDURE','td_sql.consume_sql',5);
+      dbms_scheduler.create_program(p_schema||'.consume_sql_job','STORED_PROCEDURE','td_utils.consume_sql',5);
 
       -- define all the arguments that are passed to td_sql.consume_sql
       dbms_scheduler.define_program_argument(p_schema||'.consume_sql_job',1,'p_session_id','number');
@@ -1473,7 +1473,7 @@ IS
       -- create the synonyms
       BEGIN
 	 BEGIN
-	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.TD_EXT for '||p_schema||'.TD_EXT';
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.STRAGG for '||p_schema||'.STRAGG';
 	 EXCEPTION
 	    WHEN e_same_name
 	    THEN
@@ -1481,7 +1481,7 @@ IS
 	 END;
 
 	 BEGIN
-	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.TD_SQL for '||p_schema||'.TD_SQL';
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.TD_CORE for '||p_schema||'.TD_CORE';
 	 EXCEPTION
 	    WHEN e_same_name
 	    THEN
@@ -1489,15 +1489,7 @@ IS
 	 END;
 
 	 BEGIN
-	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.TD_HOST for '||p_schema||'.TD_HOST';
-	 EXCEPTION
-	    WHEN e_same_name
-	    THEN
-	    NULL;
-	 END;
-
-	 BEGIN
-	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.TD_EVOLVE_ADM for '||p_schema||'.TD_EVOLVE_ADM';
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.TD_UTILS for '||p_schema||'.TD_UTILS';
 	 EXCEPTION
 	    WHEN e_same_name
 	    THEN
@@ -1510,10 +1502,18 @@ IS
 	    WHEN e_same_name
 	    THEN
 	    NULL;
+	 END;	 
+
+	 BEGIN
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.TD_EVOLVE for '||p_schema||'.TD_EVOLVE';
+	 EXCEPTION
+	    WHEN e_same_name
+	    THEN
+	    NULL;
 	 END;
 
 	 BEGIN
-	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.STRAGG for '||p_schema||'.STRAGG';
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.TD_EVOLVE_ADM for '||p_schema||'.TD_EVOLVE_ADM';
 	 EXCEPTION
 	    WHEN e_same_name
 	    THEN

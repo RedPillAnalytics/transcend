@@ -83,7 +83,7 @@ AS
       g_logging_level := p_logging_level;
    END logging_level;
 
-   -- accessor methods for batch_id and batch_id
+   -- accessor methods for batch_id
    FUNCTION batch_id
       RETURN NUMBER
    AS
@@ -97,6 +97,20 @@ AS
       g_batch_id := p_batch_id;
    END batch_id;
 
+   -- accessor methods for session_id
+   FUNCTION session_id
+      RETURN NUMBER
+   AS
+   BEGIN
+      RETURN g_session_id;
+   END session_id;
+
+   PROCEDURE session_id( p_session_id NUMBER )
+   AS
+   BEGIN
+      g_session_id := p_session_id;
+   END session_id;
+
    -- accessor methods for module
    FUNCTION module
       RETURN VARCHAR2
@@ -105,14 +119,13 @@ AS
       RETURN g_module;
    END module;
 
-   -- have to register the application
    PROCEDURE module( p_module VARCHAR2 )
    AS
    BEGIN
       g_module := p_module;
    END module;
 
-   -- accessor methods for action and action
+   -- accessor methods for action
    FUNCTION action
       RETURN VARCHAR2
    AS
@@ -120,7 +133,6 @@ AS
       RETURN g_action;
    END action;
 
-   -- have to register the application
    PROCEDURE action( p_action VARCHAR2 )
    AS
    BEGIN
@@ -135,28 +147,12 @@ AS
       RETURN g_client_info;
    END client_info;
 
-   -- have to register the application
    PROCEDURE client_info( p_client_info VARCHAR2 )
    AS
    BEGIN
       g_client_info := p_client_info;
-   END client_info;
-   
+   END client_info;   
 
-   -- SPECIALIZED ACCESSOR METHODS
-
-   -- return a Boolean determining runmode
-   FUNCTION is_debugmode
-      RETURN BOOLEAN
-   AS
-   BEGIN
-      RETURN CASE
-      WHEN REGEXP_LIKE(td_inst.runmode,'debug','i')
-            THEN TRUE
-         ELSE FALSE
-      END;
-   END is_debugmode;
-   
    -- return a Boolean determing full debug mode
    FUNCTION is_full_debugmode
       RETURN BOOLEAN
@@ -222,17 +218,6 @@ AS
       RETURN l_msg;
    END get_err_msg;
    
-   
-   -- writes error information to the log_table
-   PROCEDURE raise_err ( p_name VARCHAR2,
-			 p_add_msg VARCHAR2 DEFAULT null )
-   AS
-   BEGIN
-      raise_application_error( get_err_cd( p_name),
-			       get_err_msg( p_name )||CASE WHEN p_add_msg IS NULL THEN NULL ELSE ': '||p_add_msg end
-			     );
-   END raise_err;
-
    -- OTHER PROGRAM UNITS
 
    -- used to pull the calling block from the dictionary
@@ -266,178 +251,20 @@ AS
 
       RETURN l_line;
    END whence;
-   
-   -- used to write a standard message to the LOG_TABLE
-   PROCEDURE log_msg(
-      p_msg      VARCHAR2,
-      p_level    NUMBER DEFAULT 2
-   )
-   AS
-      PRAGMA AUTONOMOUS_TRANSACTION;
-      l_whence   VARCHAR2( 1024 );
-      l_msg      log_table.msg%TYPE;
-      l_scn      NUMBER;
-      e_no_tab   EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_no_tab, -942 );
-   BEGIN
-      -- still write as much to the logfile if we can even if it's too large for the log table
-      BEGIN
-         l_msg := p_msg;
-      EXCEPTION
-         WHEN VALUE_ERROR
-         THEN
-            l_msg := SUBSTR( l_msg, 0, 1998 ) || '>>';
-      END;
 
-      -- find out what called me
-      l_whence := whence;
-
-      -- using invokers rights model
-      -- some users won't have access to see the SCN
-      -- need to except this just in case
-      -- if cannot see the scn, then use a 0
-      BEGIN
-         SELECT current_scn
-           INTO l_scn
-           FROM v$database;
-      EXCEPTION
-         WHEN e_no_tab
-         THEN
-            l_scn := 0;
-      END;
-
-      -- check to see the logging level to see if the message should be written
-      IF g_logging_level >= p_level
-      THEN
-         -- write the record to the log table
-         INSERT INTO log_table
-                     ( msg, client_info, module, action, service_name, runmode,
-                       session_id, current_scn, instance_name, machine, dbuser,
-                       osuser, code, call_stack,
-                       back_trace,
-                       batch_id
-                     )
-              VALUES ( l_msg, g_client_info, g_module, g_action, g_service_name, g_runmode,
-                       g_session_id, l_scn, g_instance_name, g_machine, g_dbuser,
-                       g_osuser, 0, l_whence,
-                       null,
-                       g_batch_id
-                     );
-
-         COMMIT;
-
-         -- also output the message to the screen
-         -- the client can control whether or not they want to see this
-         -- in sqlplus, just SET SERVEROUTPUT ON or OFF
-         DBMS_OUTPUT.put_line( p_msg );
-      END IF;
-   END log_msg;   
-
-   -- writes error information to the log_table
-   PROCEDURE log_err
-   AS
-      PRAGMA AUTONOMOUS_TRANSACTION;
-      l_whence   VARCHAR2( 1024 );
-      l_code     NUMBER  := SQLCODE;
-      l_msg      log_table.msg%TYPE := SQLERRM;
-      l_scn      NUMBER;
-      e_no_tab   EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_no_tab, -942 );
-   BEGIN
-      -- find out what called me
-      l_whence := whence;
-
-      -- using invokers rights model
-      -- some users won't have access to see the SCN
-      -- need to except this just in case
-      -- if cannot see the scn, then use a 0
-      BEGIN
-         SELECT current_scn
-           INTO l_scn
-           FROM v$database;
-      EXCEPTION
-         WHEN e_no_tab
-         THEN
-            l_scn := 0;
-      END;
-
-      -- check to see the logging level to see if the message should be written
-      IF g_logging_level >= 1
-      THEN
-         -- write the record to the log table
-         INSERT INTO log_table
-                     ( msg, client_info, module, action, service_name, runmode,
-                       session_id, current_scn, instance_name, machine, dbuser,
-                       osuser, code, call_stack,
-                       back_trace,
-                       batch_id
-                     )
-              VALUES ( l_msg, g_client_info, g_module, g_action, g_service_name, g_runmode,
-                       g_session_id, l_scn, g_instance_name, g_machine, g_dbuser,
-                       g_osuser, l_code, l_whence,
-                       REGEXP_REPLACE( SUBSTR( DBMS_UTILITY.format_error_backtrace,
-                                               1,
-                                               4000
-                                             ),
-                                       '[[:cntrl:]]',
-                                       '; '
-                                     ),
-                       g_batch_id
-                     );
-
-         COMMIT;
-
-      END IF;
-   END log_err;
-
-   PROCEDURE log_cnt_msg(
-      p_count     NUMBER,
-      p_msg       VARCHAR2 DEFAULT NULL,
-      p_level     NUMBER DEFAULT 2
-   )
-   AS
-      PRAGMA AUTONOMOUS_TRANSACTION;
-   BEGIN
-      -- store in COUNT_TABLE numbers of records affected by particular actions in modules
-      INSERT INTO count_table
-                  ( client_info, module,
-                    action, runmode, session_id, row_cnt
-                  )
-           VALUES ( g_client_info, g_module,
-                    g_action, g_runmode, g_session_id, p_count
-                  );
-
-      -- if a message was provided to this procedure, then write it to the log table
-      -- if not, then simply use the default message below
-      log_msg( NVL( p_msg, 'Number of records selected/affected' ) || ': ' || p_count,
-               p_level
-             );
-      COMMIT;
-   END log_cnt_msg;
-   
-   -- begins debug mode
-   PROCEDURE start_debug
-   AS
-   BEGIN
-      td_inst.runmode( 'full debug' );
-   END start_debug;
-
-   -- stops debug mode
-   PROCEDURE stop_debug
-   AS
-   BEGIN
-      td_inst.runmode( 'runtime' );
-   END stop_debug;
-
-   -- specifically, SESSION_ID should never be modified by a user, and that is why there are no SESSION_ID methods
-   -- however, to keep all logging entries together when DBMS_SCHEDULER is used, we allow changing it just in those instances
-   PROCEDURE set_scheduler_session_id(
-      p_session_id  NUMBER
+   -- the standard methods to set up the session aren't applicable for those submitted in the background with DBMS_SCHEDULER
+   -- that is why this method has to be used
+   PROCEDURE set_scheduler_info(
+      p_session_id  NUMBER,
+      p_module	    VARCHAR2,
+      p_action	    varchar2
    )
   AS
    BEGIN
-      g_session_id := p_session_id;
-   END set_scheduler_session_id;   
+      session_id( p_session_id );
+      module( p_module );
+      action( p_action );
+   END set_scheduler_info;
 
 END td_inst;
 /

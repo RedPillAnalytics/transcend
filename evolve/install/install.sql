@@ -61,16 +61,16 @@ EXEC tdsys.td_install.drop_evolve_types;
 --CREATE java stored procedure
 @../java/TdCore.jvs
 
---CREATE core pieces
+--CREATE core pieces needed by types
 @../plsql/specs/STRING_AGG_OT.tps
 @../plsql/wrapped_bodies/STRING_AGG_OT.plb
 @../plsql/wrapped_bodies/STRAGG.plb
-@../plsql/specs/TD_EXT.pks
-@../plsql/wrapped_bodies/TD_EXT.plb
+@../plsql/specs/TD_CORE.pks
+@../plsql/wrapped_bodies/TD_CORE.plb
 @../plsql/specs/TD_INST.pks
 @../plsql/wrapped_bodies/TD_INST.plb
 
---CREATE targeted types, packages and object views
+-- crate the types
 @../plsql/specs/APP_OT.tps
 @../plsql/wrapped_bodies/APP_OT.plb
 @../plsql/specs/NOTIFICATION_OT.tps
@@ -78,12 +78,14 @@ EXEC tdsys.td_install.drop_evolve_types;
 @../object_views/NOTIFICATION_OV_vw.sql
 @../plsql/specs/EVOLVE_OT.tps
 @../plsql/wrapped_bodies/EVOLVE_OT.plb
-@../plsql/specs/TD_SQL.pks
-@../plsql/wrapped_bodies/TD_SQL.plb
-@../plsql/specs/TD_HOST.pks
-@../plsql/wrapped_bodies/TD_HOST.plb
+
+-- create the packages that use the types
+@../plsql/specs/TD_UTILS.pks
+@../plsql/wrapped_bodies/TD_UTILS.plb
 
 --CREATE callable packages
+@../plsql/specs/TD_EVOLVE.pks
+@../plsql/wrapped_bodies/TD_EVOLVE.plb
 @../plsql/specs/TD_EVOLVE_ADM.pks
 @../plsql/wrapped_bodies/TD_EVOLVE_ADM.plb
 

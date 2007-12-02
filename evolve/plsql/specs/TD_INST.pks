@@ -37,14 +37,9 @@ AS
 
    PROCEDURE batch_id( p_batch_id NUMBER );
       
-   FUNCTION is_debugmode
-      RETURN BOOLEAN;
-   
-   -- return a Boolean determing full debug mode
    FUNCTION is_full_debugmode
       RETURN BOOLEAN;
 
-   -- get method for a Boolean to determine registration
    FUNCTION is_registered
       RETURN BOOLEAN;
 
@@ -53,33 +48,14 @@ AS
 
    FUNCTION get_err_msg( p_name VARCHAR2 )
       RETURN VARCHAR2;
-
-   PROCEDURE raise_err ( p_name VARCHAR2,
-			 p_add_msg VARCHAR2 DEFAULT null
-   );      
    
    FUNCTION whence
       RETURN VARCHAR2;
 
-   PROCEDURE log_msg(
-      p_msg      VARCHAR2,
-      p_level    NUMBER DEFAULT 2
-   );
-
-   PROCEDURE log_err;
-
-   PROCEDURE log_cnt_msg(
-      p_count     NUMBER,
-      p_msg       VARCHAR2 DEFAULT NULL,
-      p_level     NUMBER DEFAULT 2
-   );
-      
-   PROCEDURE start_debug;
-
-   PROCEDURE stop_debug;
-
-    PROCEDURE set_scheduler_session_id(
-      p_session_id  NUMBER
+   PROCEDURE set_scheduler_info(
+      p_session_id  NUMBER,
+      p_module	    VARCHAR2,
+      p_action	    varchar2
    );
 
 END td_inst;
