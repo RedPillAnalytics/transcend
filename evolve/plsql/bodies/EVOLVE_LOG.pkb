@@ -73,13 +73,15 @@ AS
       THEN
          -- write the record to the log table
          INSERT INTO log_table
-                     ( msg, client_info, module, action, service_name,
-                       runmode, session_id, current_scn, instance_name, machine,
-                       dbuser, osuser, code, call_stack, back_trace, batch_id
+                     ( msg, client_info, module, action,
+                       service_name, runmode, session_id, current_scn,
+                       instance_name, machine, dbuser,
+                       osuser, code, call_stack, back_trace, batch_id
                      )
-              VALUES ( l_msg, g_client_info, g_module, g_action, g_service_name,
-                       g_runmode, g_session_id, l_scn, g_instance_name, g_machine,
-                       g_dbuser, g_osuser, 0, l_whence, NULL, g_batch_id
+              VALUES ( l_msg, td_inst.client_info, td_inst.module, td_inst.action,
+                       td_inst.service_name, td_inst.runmode, td_inst.session_id, l_scn,
+                       td_inst.instance_name, td_inst.machine, td_inst.dbuser,
+                       td_inst.osuser, 0, l_whence, NULL, td_inst.batch_id
                      );
 
          COMMIT;

@@ -36,6 +36,11 @@ AS
       RETURN NUMBER;
 
    PROCEDURE batch_id( p_batch_id NUMBER );
+
+   FUNCTION session_id
+      RETURN NUMBER;
+
+   PROCEDURE session_id( p_session_id NUMBER );
       
    FUNCTION is_full_debugmode
       RETURN BOOLEAN;

@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE td_host AUTHID CURRENT_USER
+CREATE OR REPLACE PACKAGE td_utils AUTHID CURRENT_USER
 AS
    PROCEDURE get_dir_list( p_directory IN VARCHAR2 )
    AS
@@ -72,5 +72,5 @@ AS
       p_msg         VARCHAR2
    );
 
-END td_host;
+END td_utils;
 /

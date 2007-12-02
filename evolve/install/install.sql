@@ -88,12 +88,12 @@ EXEC tdsys.td_install.drop_evolve_types;
 --CREATE callable packages
 @../plsql/specs/EVOLVE_APP.pks
 @../plsql/wrapped_bodies/EVOLVE_APP.plb
-@../plsql/specs/TD_EVOLVE_ADM.pks
-@../plsql/wrapped_bodies/TD_EVOLVE_ADM.plb
+@../plsql/specs/EVOLVE_ADM.pks
+@../plsql/wrapped_bodies/EVOLVE_ADM.plb
 
 -- set the default logging, registration and runmodes
-EXEC td_evolve_adm.set_logging_level('default',2,3);
-EXEC td_evolve_adm.set_runmode;
-EXEC td_evolve_adm.set_registration;
+EXEC evolve_adm.set_logging_level('default',2,3);
+EXEC evolve_adm.set_runmode;
+EXEC evolve_adm.set_registration;
 
 SPOOL off
