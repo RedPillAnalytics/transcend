@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE BODY td_ext
+CREATE OR REPLACE PACKAGE BODY td_core
 AS
    -- returns a boolean
    -- accepts a varchar2 and determines if regexp matches 'yes' or 'no'
@@ -79,7 +79,7 @@ AS
 
       RETURN;
    END SPLIT;
-END td_ext;
+END td_core;
 /
 
 SHOW errors
