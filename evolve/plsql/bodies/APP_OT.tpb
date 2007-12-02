@@ -19,10 +19,10 @@ AS
       -- populate attributes with new app_info settings
       td_inst.client_info ( NVL( p_client_info,td_inst.client_info ) );
 
-      td_inst.log_msg( 'MODULE "' || td_inst.module || '" beginning in RUNMODE "' || td_inst.runmode || '"',
+      td_evolve.log_msg( 'MODULE "' || td_inst.module || '" beginning in RUNMODE "' || td_inst.runmode || '"',
                     4
                   );
-      td_inst.log_msg( 'Inital ACTION attribute set to "' || td_inst.action || '"', 4 );
+      td_evolve.log_msg( 'Inital ACTION attribute set to "' || td_inst.action || '"', 4 );
       
       RETURN;
    END app_ot;
@@ -99,7 +99,7 @@ AS
    AS
    BEGIN
       td_inst.action(p_action);
-      td_inst.log_msg( 'ACTION attribute changed to "' || td_inst.action || '"', 4 );
+      td_evolve.log_msg( 'ACTION attribute changed to "' || td_inst.action || '"', 4 );
       td_inst.register;
    END change_action;
    MEMBER PROCEDURE clear_app_info
@@ -108,8 +108,8 @@ AS
       td_inst.action ( prev_action );
       td_inst.module ( prev_module );
       td_inst.client_info ( prev_client_info );
-      td_inst.log_msg( 'ACTION attribute changed to "' || td_inst.action || '"', 4 );
-      td_inst.log_msg( 'MODULE attribute changed to "' || td_inst.module || '"', 4 );
+      td_evolve.log_msg( 'ACTION attribute changed to "' || td_inst.action || '"', 4 );
+      td_evolve.log_msg( 'MODULE attribute changed to "' || td_inst.module || '"', 4 );
       td_inst.register;
    END clear_app_info;
    

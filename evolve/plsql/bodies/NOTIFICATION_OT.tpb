@@ -15,7 +15,7 @@ AS
    BEGIN
       IF td_ext.is_true( enabled )
       THEN
-         IF NOT td_inst.is_debugmode
+         IF NOT td_evolve.is_debugmode
          THEN
             CASE method
                WHEN 'email'
@@ -27,8 +27,8 @@ AS
                                     MESSAGE         => NVL( p_message, message ),
                                     mime_type       => 'text/html'
                                   );
-                     td_inst.log_msg( 'Email sent to: ' || recipients );
-                     td_inst.log_msg(    'Email Information:'
+                     td_evolve.log_msg( 'Email sent to: ' || recipients );
+                     td_evolve.log_msg(    'Email Information:'
                                       || CHR( 10 )
                                       || 'Sender: '
                                       || sender
@@ -55,7 +55,7 @@ AS
                                                  || SQLERRM
                                                );
                         ELSE
-                           td_inst.log_msg( 'The following SMTP error occured:' || SQLERRM
+                           td_evolve.log_msg( 'The following SMTP error occured:' || SQLERRM
                                           );
                         END IF;
                   END;

@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE BODY td_sql
+CREATE OR REPLACE PACKAGE BODY td_evolve
 AS
 
    -- checks things about a table depending on the parameters passed
@@ -336,7 +336,7 @@ AS
       l_results   NUMBER;
    BEGIN
 
-      IF NOT td_inst.is_debugmode OR NOT td_ext.is_true( p_override_debug )
+      IF NOT td_evolve.is_debugmode OR NOT td_ext.is_true( p_override_debug )
       THEN
          IF td_ext.is_true( p_auto )
          THEN
@@ -380,7 +380,7 @@ AS
       l_action      VARCHAR2(24) := td_inst.action;
       l_session_id  NUMBER 	 := sys_context('USERENV','SESSIONID');
    BEGIN
-      td_inst.log_msg('The job name is: '||l_job_name, 4);
+      td_evolve.log_msg('The job name is: '||l_job_name, 4);
       -- for now, we will always use the same program, CONSUME_SQL_JOB
       -- in the future, each module may have it's own program
       dbms_scheduler.create_job( l_job_name, program_name=>p_program, job_class=>p_job_class );
@@ -423,7 +423,7 @@ AS
    EXCEPTION
       WHEN others
       THEN 
-      td_inst.log_err;
+      td_evolve.log_err;
       RAISE;
    END coordinate_sql;   
    
@@ -611,6 +611,6 @@ AS
       td_inst.runmode( 'runtime' );
    END stop_debug;
 
-END td_sql;
+END td_evolve;
 /
 SHOW errors

@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE td_sql AUTHID CURRENT_USER
+CREATE OR REPLACE PACKAGE td_evolve AUTHID CURRENT_USER
 AS
 
    PROCEDURE check_table(
@@ -92,5 +92,5 @@ AS
 
    PROCEDURE stop_debug;
 
-END td_sql;
+END td_evolve;
 /

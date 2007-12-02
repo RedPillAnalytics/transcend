@@ -156,7 +156,7 @@ IS
    EXCEPTION
       WHEN OTHERS
       THEN
-         td_inst.log_err;
+         td_evolve.log_err;
          RAISE;
 
 
@@ -188,7 +188,7 @@ IS
       -- if the update was unsuccessful above, or an insert it specifically requested, then do an insert
       IF (SQL%ROWCOUNT = 0 AND lower(p_mode) = 'upsert') OR lower(p_mode) = 'insert'
       THEN
-	 td_inst.log_msg('Update was unsuccessful or insert was specified',5);
+	 td_evolve.log_msg('Update was unsuccessful or insert was specified',5);
 
 	 BEGIN
             INSERT INTO notification_events

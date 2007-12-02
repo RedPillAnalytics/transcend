@@ -93,3 +93,5 @@ EXEC tdsys.td_install.drop_evolve_types;
 EXEC td_evolve_adm.set_logging_level('default',2,3);
 EXEC td_evolve_adm.set_runmode;
 EXEC td_evolve_adm.set_registration;
+
+SPOOL off
