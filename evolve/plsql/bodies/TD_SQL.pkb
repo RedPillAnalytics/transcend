@@ -70,23 +70,33 @@ AS
    AS
       l_job_name all_scheduler_job_run_details.job_name%type := dbms_scheduler.generate_job_name(td_inst.module);
    BEGIN
+      td_inst.log_msg('The job name is: '||l_job_name, 4);
       -- for now, we will always use the same program, CONSUME_SQL_JOB
       -- in the future, each module may have it's own program
       dbms_scheduler.create_job( l_job_name, program_name=>p_program, job_class=>p_job_class );
       
       -- define the values for each argument
-      dbms_scheduler.set_job_argument_value(l_job_name,1,sys_context('USERENV','SESSIONID'));
-      dbms_scheduler.set_job_argument_value(l_job_name,2,td_inst.module);
-      dbms_scheduler.set_job_argument_value(l_job_name,3,td_inst.action);
-      dbms_scheduler.set_job_argument_value(l_job_name,4,p_sql);
-      dbms_scheduler.set_job_argument_value(l_job_name,5,p_msg);
+      dbms_scheduler.set_job_argument_value( job_name          => l_job_name,
+					     argument_position =>1,
+					     argument_value    =>sys_context('USERENV','SESSIONID'));
+      dbms_scheduler.set_job_argument_value( job_name          => l_job_name,
+					     argument_position => 2,
+					     argument_value    => td_inst.module);
+      dbms_scheduler.set_job_argument_value( job_name 	       => l_job_name,
+					     argument_position => 3,
+					     argument_value    => td_inst.action);
+      dbms_scheduler.set_job_argument_value( job_name	       => l_job_name,
+					     argument_position => 4,
+					     argument_value    => p_sql);
+      dbms_scheduler.set_job_argument_value( job_name 	       => l_job_name,
+					     argument_position => 5,
+					     argument_value    => p_msg);
 
-      -- enable the job
-      dbms_scheduler.ENABLE(l_job_name);      
       -- run the job
       -- if p_session is affirmative, then execute within the same session
       -- if it's not, then schedule the job to be picked up by the scheduler
-      dbms_scheduler.run_job(l_job_name, NOT td_ext.is_true( p_background ));
+      dbms_scheduler.run_job( job_name            => l_job_name, 
+			      use_current_session => NOT td_ext.is_true( p_background ));
    END submit_sql;
    
    -- this process will execute through DBMS_SCHEDULER
