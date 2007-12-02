@@ -63,35 +63,33 @@ AS
          END IF;
 
          o_ev.change_action( 'insert into td_part_gtt' );
-         l_results :=
-            td_sql.exec_sql
-               ( p_sql                 =>    'insert into td_part_gtt (table_owner, table_name, partition_name, partition_position) '
-                                          || ' SELECT table_owner, table_name, partition_name, partition_position'
-                                          || '  FROM all_tab_partitions'
-                                          || ' WHERE table_owner = '''
-                                          || UPPER( p_owner )
-                                          || ''' AND table_name = '''
-                                          || UPPER( p_table )
-                                          || ''' AND partition_position IN '
-                                          || ' (SELECT DISTINCT tbl$or$idx$part$num("'
-                                          || UPPER( p_owner )
-                                          || '"."'
-                                          || UPPER( p_table )
-                                          || '", 0, '
-                                          || p_d_num
-                                          || ', '
-                                          || p_p_num
-                                          || ', "'
-                                          || UPPER( l_source_column )
-                                          || '")	 FROM '
-                                          || UPPER( p_source_owner )
-                                          || '.'
-                                          || UPPER( p_source_object )
-                                          || ') '
-                                          || 'ORDER By partition_position',
-                 p_override_debug      => 'yes'
-               );
-         td_inst.log_cnt_msg( l_results, l_num_msg, 4 );
+
+         EXECUTE IMMEDIATE    'insert into td_part_gtt (table_owner, table_name, partition_name, partition_position) '
+                           || ' SELECT table_owner, table_name, partition_name, partition_position'
+                           || '  FROM all_tab_partitions'
+                           || ' WHERE table_owner = '''
+                           || UPPER( p_owner )
+                           || ''' AND table_name = '''
+                           || UPPER( p_table )
+                           || ''' AND partition_position IN '
+                           || ' (SELECT DISTINCT tbl$or$idx$part$num("'
+                           || UPPER( p_owner )
+                           || '"."'
+                           || UPPER( p_table )
+                           || '", 0, '
+                           || p_d_num
+                           || ', '
+                           || p_p_num
+                           || ', "'
+                           || UPPER( l_source_column )
+                           || '")	 FROM '
+                           || UPPER( p_source_owner )
+                           || '.'
+                           || UPPER( p_source_object )
+                           || ') '
+                           || 'ORDER By partition_position';
+
+         td_inst.log_cnt_msg( SQL%ROWCOUNT, l_num_msg, 4 );
       END IF;
 
       o_ev.clear_app_info;
@@ -285,7 +283,7 @@ AS
          THEN
             NULL;
          ELSE
-	    td_inst.raise_err('unrecognized_parm',p_statistics);
+            td_inst.raise_err( 'unrecognized_parm', p_statistics );
       END CASE;
 
       o_ev.clear_app_info;
@@ -327,7 +325,7 @@ AS
       CASE
          WHEN p_tablespace IS NOT NULL AND p_partname IS NOT NULL
          THEN
-	    td_inst.raise_err('parms_not_compatible','P_TABLESPACE and P_PARTNAME');
+            td_inst.raise_err( 'parms_not_compatible', 'P_TABLESPACE and P_PARTNAME' );
          ELSE
             NULL;
       END CASE;
@@ -1632,7 +1630,7 @@ AS
       -- record the number of rows affected
       IF NOT td_inst.is_debugmode
       THEN
-         td_inst.log_cnt_msg( p_count      => sql%rowcount,
+         td_inst.log_cnt_msg( p_count      => SQL%ROWCOUNT,
                               p_msg        =>    'Number of records inserted into '
                                               || l_trg_name
                             );
@@ -1702,11 +1700,11 @@ AS
                                         - 1
                                       )
                               ) AS token
-                     FROM ( SELECT ',' || upper(p_columns) || ',' COLUMNS
+                     FROM ( SELECT ',' || UPPER( p_columns ) || ',' COLUMNS
                              FROM DUAL )
                CONNECT BY LEVEL <=
-                               LENGTH( upper(p_columns) )
-                             - LENGTH( REPLACE( upper(p_columns), ',', '' ))
+                               LENGTH( UPPER( p_columns ))
+                             - LENGTH( REPLACE( UPPER( p_columns ), ',', '' ))
                              + 1 )
          SELECT REGEXP_REPLACE(    '('
                                 || stragg(    'target.'
@@ -1776,11 +1774,11 @@ AS
                                                  - 1
                                                )
                                        ) AS token
-                              FROM ( SELECT ',' || upper(p_columns) || ',' COLUMNS
+                              FROM ( SELECT ',' || UPPER( p_columns ) || ',' COLUMNS
                                       FROM DUAL )
                         CONNECT BY LEVEL <=
-                                        LENGTH( upper(p_columns) )
-                                      - LENGTH( REPLACE( upper(p_columns), ',', '' ))
+                                        LENGTH( UPPER( p_columns ))
+                                      - LENGTH( REPLACE( UPPER( p_columns ), ',', '' ))
                                       + 1 )
                  SELECT column_name
                    FROM all_tab_columns
@@ -1899,13 +1897,13 @@ AS
          -- ON columns not specified correctly
          WHEN e_no_on_columns
          THEN
-	    td_inst.raise_err('on_clause_missing');
+            td_inst.raise_err( 'on_clause_missing' );
       END;
 
       -- record the number of rows affected
       IF NOT td_inst.is_debugmode
       THEN
-         td_inst.log_cnt_msg( p_count      => sql%rowcount,
+         td_inst.log_cnt_msg( p_count      => SQL%ROWCOUNT,
                               p_msg        =>    'Number of records merged into '
                                               || l_trg_name
                             );
@@ -2006,7 +2004,7 @@ AS
 
       IF NOT l_rows
       THEN
-         td_inst.raise_err('incorrect_parameters');
+         td_inst.raise_err( 'incorrect_parameters' );
       END IF;
 
       o_ev.clear_app_info;
@@ -2102,7 +2100,7 @@ AS
          THEN
             NULL;
          ELSE
-  	    td_inst.raise_err('unrecognized_parm',p_statistics);
+            td_inst.raise_err( 'unrecognized_parm', p_statistics );
       END CASE;
 
       -- now build the indexes
@@ -2369,13 +2367,20 @@ AS
          WHEN     p_partname IS NOT NULL
               AND ( p_source_owner IS NOT NULL OR p_source_object IS NOT NULL )
          THEN
-	    td_inst.raise_err( 'parms_not_compatible','P_PARTNAME with either P_SOURCE_OWNER or P_SOURCE_OBJECT' );
+            td_inst.raise_err
+                             ( 'parms_not_compatible',
+                               'P_PARTNAME with either P_SOURCE_OWNER or P_SOURCE_OBJECT'
+                             );
          WHEN p_source_owner IS NOT NULL AND p_source_object IS NULL
          THEN
-	    td_inst.raise_err( 'parms_not_compatible','P_SOURCE_OWNER without P_SOURCE_OBJECT' );
+            td_inst.raise_err( 'parms_not_compatible',
+                               'P_SOURCE_OWNER without P_SOURCE_OBJECT'
+                             );
          WHEN p_source_owner IS NULL AND p_source_object IS NOT NULL
          THEN
-	    td_inst.raise_err( 'parms_not_compatible','P_SOURCE_OBJECT without P_SOURCE_OWNEW' );
+            td_inst.raise_err( 'parms_not_compatible',
+                               'P_SOURCE_OBJECT without P_SOURCE_OWNEW'
+                             );
          ELSE
             NULL;
       END CASE;
@@ -2672,14 +2677,22 @@ AS
          WHEN    p_source_owner IS NOT NULL AND p_source_table IS NULL
               OR ( p_source_owner IS NULL AND p_source_table IS NOT NULL )
          THEN
-	    td_inst.raise_err('parms_not_compatible','P_SOURCE_OWNER and P_SOURCE_OBJECT are mutually inclusive');
+            td_inst.raise_err
+                            ( 'parms_not_compatible',
+                              'P_SOURCE_OWNER and P_SOURCE_OBJECT are mutually inclusive'
+                            );
          WHEN     p_source_partname IS NOT NULL
               AND ( p_source_owner IS NULL OR p_source_table IS NULL )
          THEN
-	    td_inst.raise_err('parms_not_compatible','P_SOURCE_PARTNAME requires P_SOURCE_OWNER and P_SOURCE_OBJECT');
+            td_inst.raise_err
+                        ( 'parms_not_compatible',
+                          'P_SOURCE_PARTNAME requires P_SOURCE_OWNER and P_SOURCE_OBJECT'
+                        );
          WHEN p_partname IS NOT NULL AND( p_owner IS NULL OR p_table IS NULL )
          THEN
-	    td_inst.raise_err('parms_not_compatible','P_PARTNAME requires P_OWNER and P_OBJECT');
+            td_inst.raise_err( 'parms_not_compatible',
+                               'P_PARTNAME requires P_OWNER and P_OBJECT'
+                             );
          ELSE
             NULL;
       END CASE;
