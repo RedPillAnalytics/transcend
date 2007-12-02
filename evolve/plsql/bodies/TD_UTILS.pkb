@@ -281,7 +281,7 @@ AS
       o_ev.clear_app_info;
       RETURN l_return;
    END decrypt_file;
-   
+
    -- checks things about a table depending on the parameters passed
    -- raises an exception if the specified things are not true
    PROCEDURE check_table(
@@ -366,21 +366,22 @@ AS
       END IF;
 
       CASE
-         WHEN td_ext.is_true( p_partitioned, TRUE )
-              AND NOT td_ext.is_true( l_partitioned )
+         WHEN     td_core.is_true( p_partitioned, TRUE )
+              AND NOT td_core.is_true( l_partitioned )
          THEN
             evolve_log.raise_err( 'not_partitioned', l_tab_name );
-         WHEN NOT td_ext.is_true( p_partitioned, TRUE )
-              AND td_ext.is_true( l_partitioned )
+         WHEN     NOT td_core.is_true( p_partitioned, TRUE )
+              AND td_core.is_true( l_partitioned )
          THEN
             evolve_log.raise_err( 'partitioned', l_tab_name );
-         WHEN td_ext.is_true( p_iot, TRUE ) AND NOT td_ext.is_true( l_iot )
+         WHEN td_core.is_true( p_iot, TRUE ) AND NOT td_core.is_true( l_iot )
          THEN
             evolve_log.raise_err( 'not_iot', l_tab_name );
-         WHEN NOT td_ext.is_true( p_iot, TRUE ) AND td_ext.is_true( l_iot )
+         WHEN NOT td_core.is_true( p_iot, TRUE ) AND td_core.is_true( l_iot )
          THEN
             evolve_log.raise_err( 'iot', l_tab_name );
-         WHEN td_ext.is_true( p_compressed, TRUE ) AND NOT td_ext.is_true( l_compressed )
+         WHEN td_core.is_true( p_compressed, TRUE )
+              AND NOT td_core.is_true( l_compressed )
          THEN
             evolve_log.raise_err( 'not_compressed',
                                   CASE
@@ -389,7 +390,8 @@ AS
                                      ELSE l_part_name
                                   END
                                 );
-         WHEN NOT td_ext.is_true( p_compressed, TRUE ) AND td_ext.is_true( l_compressed )
+         WHEN NOT td_core.is_true( p_compressed, TRUE )
+              AND td_core.is_true( l_compressed )
          THEN
             evolve_log.raise_err( 'compressed',
                                   CASE
@@ -515,10 +517,10 @@ AS
        WHERE owner = UPPER( p_owner ) AND table_name = UPPER( p_table );
 
       CASE
-         WHEN td_ext.is_true( l_partitioned )
+         WHEN td_core.is_true( l_partitioned )
          THEN
             RETURN TRUE;
-         WHEN NOT td_ext.is_true( l_partitioned )
+         WHEN NOT td_core.is_true( l_partitioned )
          THEN
             RETURN FALSE;
       END CASE;
@@ -574,9 +576,9 @@ AS
    AS
       l_results   NUMBER;
    BEGIN
-      IF NOT evolve_log.is_debugmode OR NOT td_ext.is_true( p_override_debug )
+      IF NOT evolve_log.is_debugmode OR NOT td_core.is_true( p_override_debug )
       THEN
-         IF td_ext.is_true( p_auto )
+         IF td_core.is_true( p_auto )
          THEN
             l_results := exec_auto( p_sql => p_sql );
          ELSE
@@ -588,7 +590,6 @@ AS
 
       RETURN l_results;
    END exec_sql;
-   
 
    -- modified FROM tom kyte's "dump_csv":
    -- 1. allow a quote CHARACTER
@@ -748,7 +749,6 @@ AS
       o_ev.clear_app_info;
       RETURN l_cnt;
    END extract_object;
-
 END td_utils;
 /
 

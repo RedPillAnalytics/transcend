@@ -1,6 +1,5 @@
 CREATE OR REPLACE PACKAGE BODY evolve_app
 AS
-
    -- if I don't care about the number of results (DDL, for instance), just call this procedure
    -- if P_AUTO is 'no' and P_CONCURRENT is 'no', then SQL%ROWCOUNT will still give the correct results after this call
    PROCEDURE exec_sql(
@@ -64,7 +63,7 @@ AS
       -- run the job
       -- if p_session is affirmative, then execute within the same session
       -- if it's not, then schedule the job to be picked up by the scheduler
-      DBMS_SCHEDULER.run_job( l_job_name, NOT td_ext.is_true( p_background ));
+      DBMS_SCHEDULER.run_job( l_job_name, NOT td_core.is_true( p_background ));
    END submit_sql;
 
    -- this process will execute through DBMS_SCHEDULER
@@ -80,7 +79,7 @@ AS
          evolve_log.log_err;
          RAISE;
    END coordinate_sql;
-   
+
    -- this process is called by submitted jobs to DBMS_SCHEDULER
    -- when SQL is submitted through SUBMIT_SQL, this is what those submitted jobs actually call
    PROCEDURE consume_sql(
@@ -126,7 +125,6 @@ AS
          evolve_log.log_err;
          RAISE;
    END consume_sql;
-
 END evolve_app;
 /
 

@@ -12,7 +12,7 @@ AS
       e_smtp_error   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_smtp_error, -29279 );
    BEGIN
-      IF td_ext.is_true( enabled )
+      IF td_core.is_true( enabled )
       THEN
          IF NOT evolve_log.is_debugmode
          THEN
@@ -45,7 +45,7 @@ AS
                   EXCEPTION
                      WHEN e_smtp_error
                      THEN
-                        IF td_ext.is_true( required )
+                        IF td_core.is_true( required )
                         THEN
                            raise_application_error
                                                ( td_inst.get_err_cd( 'utl_mail_error' ),
