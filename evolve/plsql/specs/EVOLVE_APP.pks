@@ -58,39 +58,6 @@ AS
       p_sleep    NUMBER DEFAULT 5,
       p_timeout	 NUMBER DEFAULT 0
    );
-      
-   FUNCTION get_err_cd( p_name VARCHAR2 )
-      RETURN NUMBER;
-
-   FUNCTION get_err_msg( p_name VARCHAR2 )
-      RETURN VARCHAR2;
-
-   FUNCTION whence
-      RETURN VARCHAR2;
-
-   PROCEDURE log_msg(
-      p_msg      VARCHAR2,
-      p_level    NUMBER DEFAULT 2
-   );
-
-   PROCEDURE log_cnt_msg(
-      p_count     NUMBER,
-      p_msg       VARCHAR2 DEFAULT NULL,
-      p_level     NUMBER DEFAULT 2
-   );
-
-   PROCEDURE log_err;
-      
-   PROCEDURE raise_err ( p_name VARCHAR2,
-			 p_add_msg VARCHAR2 DEFAULT null
-   );      
-   
-   FUNCTION is_debugmode
-      RETURN BOOLEAN;   
-   
-   PROCEDURE start_debug;
-
-   PROCEDURE stop_debug;
 
 END td_evolve;
 /
