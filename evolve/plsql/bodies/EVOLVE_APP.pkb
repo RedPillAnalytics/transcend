@@ -21,17 +21,16 @@ AS
    FUNCTION exec_sql(
       p_sql              VARCHAR2,
       p_auto             VARCHAR2 DEFAULT 'no',
-      p_msg              VARCHAR2 DEFAULT NULL,
-      p_override_debug   VARCHAR2 DEFAULT 'no'
+      p_msg              VARCHAR2 DEFAULT NULL
    )
       RETURN NUMBER
    AS
       l_results   NUMBER;
    BEGIN
 
-      IF NOT td_inst.is_debugmode OR NOT td_ext.is_true( p_override_debug )
+      IF NOT td_inst.is_debugmode
       THEN
-         IF td_ext.is_true( p_auto )
+         IF td_core.is_true( p_auto )
          THEN
             l_results := exec_auto( p_sql => p_sql );
          ELSE
@@ -49,8 +48,7 @@ AS
    PROCEDURE exec_sql(
       p_sql              VARCHAR2,
       p_auto             VARCHAR2 DEFAULT 'no',
-      p_msg              VARCHAR2 DEFAULT NULL,
-      p_override_debug   VARCHAR2 DEFAULT 'no'
+      p_msg              VARCHAR2 DEFAULT NULL
    )
    AS
       l_results   NUMBER;
