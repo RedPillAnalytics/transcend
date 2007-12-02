@@ -61,8 +61,35 @@ AS
       p_append      VARCHAR2 DEFAULT 'no'
    )
       RETURN NUMBER;
-      
-   PROCEDURE load_session_parms;
+   PROCEDURE check_table(
+      p_owner         VARCHAR2,
+      p_table         VARCHAR2,
+      p_partname      VARCHAR2 DEFAULT NULL,
+      p_partitioned   VARCHAR2 DEFAULT NULL,
+      p_iot           VARCHAR2 DEFAULT NULL,
+      p_compressed    VARCHAR2 DEFAULT NULL
+   );
+
+   PROCEDURE check_object(
+      p_owner         VARCHAR2,
+      p_object        VARCHAR2,
+      p_object_type   VARCHAR2 DEFAULT NULL
+   );
+
+   FUNCTION get_dir_path( p_dirname VARCHAR2 )
+      RETURN VARCHAR2;
+
+   FUNCTION get_dir_name( p_dir_path VARCHAR2 )
+      RETURN VARCHAR2;
+
+   FUNCTION table_exists( p_owner VARCHAR2, p_table VARCHAR2 )
+      RETURN BOOLEAN;
+
+   FUNCTION is_part_table( p_owner VARCHAR2, p_table VARCHAR2 )
+      RETURN BOOLEAN;
+
+   FUNCTION object_exists( p_owner VARCHAR2, p_object VARCHAR2 )
+      RETURN BOOLEAN;
       
    PROCEDURE consume_sql(
       p_session_id  NUMBER,
