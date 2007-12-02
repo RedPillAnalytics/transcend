@@ -1,5 +1,49 @@
 CREATE OR REPLACE PACKAGE BODY evolve_app
 AS
+   -- called by the EXEC_SQL function when an autonomous transaction is desired
+   -- and the number of results are desired
+   FUNCTION exec_auto( p_sql VARCHAR2 )
+      RETURN NUMBER
+   AS
+      PRAGMA AUTONOMOUS_TRANSACTION;
+      l_results   NUMBER;
+   BEGIN
+      EXECUTE IMMEDIATE p_sql;
+
+      l_results := SQL%ROWCOUNT;
+
+      COMMIT;
+      RETURN l_results;
+   END exec_auto;
+
+   -- accepts the P_AUTO flag and determines whether to execute the statement
+   -- if the P_AUTO flag of 'yes' is passed, then EXEC_AUTO is called
+   FUNCTION exec_sql(
+      p_sql              VARCHAR2,
+      p_auto             VARCHAR2 DEFAULT 'no',
+      p_msg              VARCHAR2 DEFAULT NULL,
+      p_override_debug   VARCHAR2 DEFAULT 'no'
+   )
+      RETURN NUMBER
+   AS
+      l_results   NUMBER;
+   BEGIN
+
+      IF NOT td_inst.is_debugmode OR NOT td_ext.is_true( p_override_debug )
+      THEN
+         IF td_ext.is_true( p_auto )
+         THEN
+            l_results := exec_auto( p_sql => p_sql );
+         ELSE
+            EXECUTE IMMEDIATE p_sql;
+
+            l_results := SQL%ROWCOUNT;
+         END IF;
+      END IF;
+
+      RETURN l_results;
+   END exec_sql;
+
    -- if I don't care about the number of results (DDL, for instance), just call this procedure
    -- if P_AUTO is 'no' and P_CONCURRENT is 'no', then SQL%ROWCOUNT will still give the correct results after this call
    PROCEDURE exec_sql(
