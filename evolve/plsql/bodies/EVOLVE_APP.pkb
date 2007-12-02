@@ -28,7 +28,7 @@ AS
       l_results   NUMBER;
    BEGIN
 
-      IF NOT td_inst.is_debugmode
+      IF NOT evolve_log.is_debugmode
       THEN
          IF td_core.is_true( p_auto )
          THEN
