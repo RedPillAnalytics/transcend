@@ -40,6 +40,76 @@ AS
 
    -- DEFAULT ACCESSOR METHODS
 
+   -- accessor methods for osuser
+   FUNCTION osuser
+      RETURN VARCHAR2
+   AS
+   BEGIN
+      RETURN g_osuser;
+   END osuser;
+
+   PROCEDURE osuser( p_osuser VARCHAR2 )
+   AS
+   BEGIN
+      g_osuser := p_osuser;
+   END osuser;
+
+   -- accessor methods for dbuser
+   FUNCTION dbuser
+      RETURN VARCHAR2
+   AS
+   BEGIN
+      RETURN g_dbuser;
+   END dbuser;
+
+   PROCEDURE dbuser( p_dbuser VARCHAR2 )
+   AS
+   BEGIN
+      g_dbuser := p_dbuser;
+   END dbuser;
+
+   -- accessor methods for machine
+   FUNCTION machine
+      RETURN VARCHAR2
+   AS
+   BEGIN
+      RETURN g_machine;
+   END machine;
+
+   PROCEDURE machine( p_machine VARCHAR2 )
+   AS
+   BEGIN
+      g_machine := p_machine;
+   END machine;
+
+   -- accessor methods for instance_name
+   FUNCTION instance_name
+      RETURN VARCHAR2
+   AS
+   BEGIN
+      RETURN g_instance_name;
+   END instance_name;
+
+   PROCEDURE instance_name( p_instance_name VARCHAR2 )
+   AS
+   BEGIN
+      g_instance_name := p_instance_name;
+   END instance_name;
+
+   -- accessor methods for service_name
+   FUNCTION service_name
+      RETURN VARCHAR2
+   AS
+   BEGIN
+      RETURN g_service_name;
+   END service_name;
+
+   PROCEDURE service_name( p_service_name VARCHAR2 )
+   AS
+   BEGIN
+      g_service_name := p_service_name;
+   END service_name;
+
    -- accessor methods for runmode
    FUNCTION runmode
       RETURN VARCHAR2

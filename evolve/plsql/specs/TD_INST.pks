@@ -1,7 +1,32 @@
 CREATE OR REPLACE PACKAGE td_inst AUTHID CURRENT_USER
 AS
    PROCEDURE REGISTER;
+      
+   FUNCTION service_name
+      RETURN VARCHAR2;
 
+   PROCEDURE service_name( p_service_name VARCHAR2 );
+      
+   FUNCTION instance_name
+      RETURN VARCHAR2;
+
+   PROCEDURE instance_name( p_instance_name VARCHAR2 );
+   
+   FUNCTION machine
+      RETURN VARCHAR2;
+
+   PROCEDURE machine( p_machine VARCHAR2 );
+   
+   FUNCTION dbuser
+      RETURN VARCHAR2;
+
+   PROCEDURE dbuser( p_dbuser VARCHAR2 );
+
+   FUNCTION osuser
+      RETURN VARCHAR2;
+
+   PROCEDURE osuser( p_osuser VARCHAR2 );
+   
    FUNCTION runmode
       RETURN VARCHAR2;
 
