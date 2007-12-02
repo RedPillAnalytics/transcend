@@ -69,6 +69,8 @@ EXEC tdsys.td_install.drop_evolve_types;
 @../plsql/wrapped_bodies/TD_CORE.plb
 @../plsql/specs/TD_INST.pks
 @../plsql/wrapped_bodies/TD_INST.plb
+@../plsql/specs/EVOLVE_LOG.pks
+@../plsql/wrapped_bodies/EVOLVE_LOG.plb
 
 -- crate the types
 @../plsql/specs/APP_OT.tps
@@ -84,8 +86,8 @@ EXEC tdsys.td_install.drop_evolve_types;
 @../plsql/wrapped_bodies/TD_UTILS.plb
 
 --CREATE callable packages
-@../plsql/specs/TD_EVOLVE.pks
-@../plsql/wrapped_bodies/TD_EVOLVE.plb
+@../plsql/specs/EVOLVE_APP.pks
+@../plsql/wrapped_bodies/EVOLVE_APP.plb
 @../plsql/specs/TD_EVOLVE_ADM.pks
 @../plsql/wrapped_bodies/TD_EVOLVE_ADM.plb
 

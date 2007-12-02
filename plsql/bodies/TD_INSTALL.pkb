@@ -1487,6 +1487,22 @@ IS
 	    THEN
 	    NULL;
 	 END;
+	 
+	 BEGIN
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.TD_INST for '||p_schema||'.TD_INST';
+	 EXCEPTION
+	    WHEN e_same_name
+	    THEN
+	    NULL;
+	 END;	 
+
+	 BEGIN
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.EVOLVE_LOG for '||p_schema||'.EVOLVE_LOG';
+	 EXCEPTION
+	    WHEN e_same_name
+	    THEN
+	    NULL;
+	 END;
 
 	 BEGIN
 	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.TD_UTILS for '||p_schema||'.TD_UTILS';
@@ -1497,15 +1513,7 @@ IS
 	 END;
 
 	 BEGIN
-	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.TD_INST for '||p_schema||'.TD_INST';
-	 EXCEPTION
-	    WHEN e_same_name
-	    THEN
-	    NULL;
-	 END;	 
-
-	 BEGIN
-	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.TD_EVOLVE for '||p_schema||'.TD_EVOLVE';
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.EVOLVE_APP for '||p_schema||'.EVOLVE_APP';
 	 EXCEPTION
 	    WHEN e_same_name
 	    THEN
@@ -1513,7 +1521,7 @@ IS
 	 END;
 
 	 BEGIN
-	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.TD_EVOLVE_ADM for '||p_schema||'.TD_EVOLVE_ADM';
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.EVOLVE_ADM for '||p_schema||'.EVOLVE_ADM';
 	 EXCEPTION
 	    WHEN e_same_name
 	    THEN
