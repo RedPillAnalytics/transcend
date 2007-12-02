@@ -104,7 +104,7 @@ IS
       -- create the actual program
       dbms_scheduler.create_program(p_schema||'.consume_sql_job','STORED_PROCEDURE','td_utils.consume_sql',5);
 
-      -- define all the arguments that are passed to td_sql.consume_sql
+      -- define all the arguments that are passed to td_utils.consume_sql
       dbms_scheduler.define_program_argument(p_schema||'.consume_sql_job',1,'p_session_id','number');
       dbms_scheduler.define_program_argument(p_schema||'.consume_sql_job',2,'p_module','varchar2');
       dbms_scheduler.define_program_argument(p_schema||'.consume_sql_job',3,'p_action','varchar2');
