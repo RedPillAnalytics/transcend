@@ -95,7 +95,7 @@ IS
    END reset_current_schema;
 
    -- this creates the job metadata (called a program) for submitting concurrent processes
-   PROCEDURE create_scheduler_program(
+   PROCEDURE create_scheduler_metadata(
       p_schema       VARCHAR2 DEFAULT 'TDSYS'
    ) 
    IS
@@ -103,15 +103,18 @@ IS
       
       -- create the actual program
       dbms_scheduler.create_program(p_schema||'.consume_sql_job','STORED_PROCEDURE','td_sql.consume_sql',5);
-      
-      -- define all the arguments that are passed to td_sql.consume_sql
-      dbms_scheduler.define_program_argument('tdapp.consume_sql_job',1,'p_session_id','number');
-      dbms_scheduler.define_program_argument('tdapp.consume_sql_job',2,'p_module','varchar2');
-      dbms_scheduler.define_program_argument('tdapp.consume_sql_job',3,'p_action','varchar2');
-      dbms_scheduler.define_program_argument('tdapp.consume_sql_job',4,'p_sql','varchar2');
-      dbms_scheduler.define_program_argument('tdapp.consume_sql_job',5,'p_msg','varchar2');
 
-   END create_scheduler_program;
+      -- define all the arguments that are passed to td_sql.consume_sql
+      dbms_scheduler.define_program_argument(p_schema||'.consume_sql_job',1,'p_session_id','number');
+      dbms_scheduler.define_program_argument(p_schema||'.consume_sql_job',2,'p_module','varchar2');
+      dbms_scheduler.define_program_argument(p_schema||'.consume_sql_job',3,'p_action','varchar2');
+      dbms_scheduler.define_program_argument(p_schema||'.consume_sql_job',4,'p_sql','varchar2');
+      dbms_scheduler.define_program_argument(p_schema||'.consume_sql_job',5,'p_msg','varchar2');
+
+      -- enable the program
+      dbms_scheduler.ENABLE(p_schema||'.consume_sql_job');
+      
+   END create_scheduler_metadata;
 
 
    PROCEDURE grant_evolve_rep_privs(
@@ -1478,6 +1481,14 @@ IS
 	 END;
 
 	 BEGIN
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.TD_SQL for '||p_schema||'.TD_SQL';
+	 EXCEPTION
+	    WHEN e_same_name
+	    THEN
+	    NULL;
+	 END;
+
+	 BEGIN
 	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.TD_HOST for '||p_schema||'.TD_HOST';
 	 EXCEPTION
 	    WHEN e_same_name
@@ -1904,7 +1915,7 @@ IS
       grant_evolve_sys_privs( p_schema => p_schema );
 
       -- create the dbms_scheduler program
-      create_scheduler_program( p_schema );      
+      create_scheduler_metadata( p_schema );      
       	 	 
       -- write application tracking record
       EXECUTE IMMEDIATE 	    
@@ -2061,7 +2072,7 @@ IS
       EXECUTE IMMEDIATE 'grant '||p_application||'_app to '||p_user;
 
       -- create the dbms_scheduler program
-      create_scheduler_program( p_user );      
+      create_scheduler_metadata( p_user );      
       
       -- write application tracking record
       EXECUTE IMMEDIATE 	    
@@ -2070,8 +2081,8 @@ IS
       repository_name = upper(:v_rep_schema),
       modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
       modified_dt = SYSDATE
-      WHERE application_name=upper(:v_app_schema)|'
-      USING p_application, p_repository;
+      WHERE user_name=upper(:v_user)|'
+      USING p_application, p_repository,p_user;
       
       IF SQL%ROWCOUNT = 0
       THEN
@@ -2081,7 +2092,7 @@ IS
 	   application_name,
 	   repository_name)
 	 VALUES
-	 ( upper(:v_user)
+	 ( upper(:v_user),
 	   upper(:v_app_schema),
 	   upper(:v_rep_schema))|'
 	 USING p_user, p_application, p_repository;

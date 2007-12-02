@@ -18,8 +18,9 @@ AS
    PROCEDURE submit_sql(
       p_sql         VARCHAR2,
       p_msg         VARCHAR2 DEFAULT NULL,
-      p_session	    VARCHAR2 DEFAULT 'yes',
-      p_program	    VARCHAR2 DEFAULT 'consume_sql_job'
+      p_background  VARCHAR2 DEFAULT 'no',
+      p_program	    VARCHAR2 DEFAULT 'consume_sql_job',
+      p_job_class   VARCHAR2 DEFAULT 'DEFAULT_JOB_CLASS'
    );
 
    PROCEDURE consume_sql(
@@ -27,7 +28,12 @@ AS
       p_module	    VARCHAR2,
       p_action	    VARCHAR2,
       p_sql         VARCHAR2,
-      p_msg         VARCHAR2 DEFAULT NULL
+      p_msg         VARCHAR2
+   );
+      
+   PROCEDURE coordinate_sql(
+      p_sleep    NUMBER DEFAULT 5,
+      p_timeout	 NUMBER DEFAULT 0
    );
 
    PROCEDURE check_table(

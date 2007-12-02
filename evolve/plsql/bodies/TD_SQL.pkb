@@ -1,4 +1,3 @@
-
 CREATE OR REPLACE PACKAGE BODY td_sql
 AS
    -- called by the EXEC_SQL function when an autonomous transaction is desired
@@ -64,15 +63,16 @@ AS
    PROCEDURE submit_sql(
       p_sql         VARCHAR2,
       p_msg         VARCHAR2 DEFAULT NULL,
-      p_session	    VARCHAR2 DEFAULT 'yes',
-      p_program	    VARCHAR2 DEFAULT 'consume_sql_job'
+      p_background  VARCHAR2 DEFAULT 'no',
+      p_program	    VARCHAR2 DEFAULT 'consume_sql_job',
+      p_job_class   VARCHAR2 DEFAULT 'DEFAULT_JOB_CLASS'
    )
    AS
       l_job_name all_scheduler_job_run_details.job_name%type := dbms_scheduler.generate_job_name(td_inst.module);
    BEGIN
       -- for now, we will always use the same program, CONSUME_SQL_JOB
       -- in the future, each module may have it's own program
-      dbms_scheduler.create_job( l_job_name, program_name=>p_program );
+      dbms_scheduler.create_job( l_job_name, program_name=>p_program, job_class=>p_job_class );
       
       -- define the values for each argument
       dbms_scheduler.set_job_argument_value(l_job_name,1,sys_context('USERENV','SESSIONID'));
@@ -80,11 +80,13 @@ AS
       dbms_scheduler.set_job_argument_value(l_job_name,3,td_inst.action);
       dbms_scheduler.set_job_argument_value(l_job_name,4,p_sql);
       dbms_scheduler.set_job_argument_value(l_job_name,5,p_msg);
-      
+
+      -- enable the job
+      dbms_scheduler.ENABLE(l_job_name);      
       -- run the job
       -- if p_session is affirmative, then execute within the same session
       -- if it's not, then schedule the job to be picked up by the scheduler
-      dbms_scheduler.run_job(l_job_name,td_ext.is_true(p_session));
+      dbms_scheduler.run_job(l_job_name, NOT td_ext.is_true( p_background ));
    END submit_sql;
    
    -- this process will execute through DBMS_SCHEDULER
@@ -93,7 +95,7 @@ AS
       p_module	    VARCHAR2,
       p_action	    VARCHAR2,
       p_sql         VARCHAR2,
-      p_msg         VARCHAR2 DEFAULT NULL
+      p_msg         VARCHAR2
    )
    AS
       -- to keep these processes consistent with the Evolve framework, we are manually setting this information
@@ -102,7 +104,7 @@ AS
    BEGIN
       -- use the SET_SCHEDULER_SESSION_ID procedure to register with the framework
       -- this allows all logging entries to be kept together
-      td_inst.set_scheduler_session_id( p_session_id => sys_context('USERENV','SESSIONID') );
+      td_inst.set_scheduler_session_id( p_session_id => p_session_id );
 
       -- just use the standard procedure to execute the SQL
       exec_sql( p_sql => p_sql,
@@ -111,8 +113,30 @@ AS
       -- clear it up, even though this will do nothing
       -- the sessions end as soon as they are complete
       o_ev.clear_app_info;
-
+   EXCEPTION
+      WHEN others
+      THEN 
+      td_inst.log_err;
+      RAISE;
    END consume_sql;
+
+   -- this process will execute through DBMS_SCHEDULER
+   PROCEDURE coordinate_sql(
+      p_sleep    NUMBER DEFAULT 5,
+      p_timeout	 NUMBER DEFAULT 0
+   )
+   AS
+      l_sid     NUMBER;
+      l_serial  NUMBER;
+   BEGIN
+      NULL;
+   EXCEPTION
+      WHEN others
+      THEN 
+      td_inst.log_err;
+      RAISE;
+   END coordinate_sql;
+
    
    -- checks things about a table depending on the parameters passed
    -- raises an exception if the specified things are not true
