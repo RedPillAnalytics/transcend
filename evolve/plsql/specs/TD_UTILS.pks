@@ -91,13 +91,5 @@ AS
    FUNCTION object_exists( p_owner VARCHAR2, p_object VARCHAR2 )
       RETURN BOOLEAN;
       
-   PROCEDURE consume_sql(
-      p_session_id  NUMBER,
-      p_module	    VARCHAR2,
-      p_action	    VARCHAR2,
-      p_sql         VARCHAR2,
-      p_msg         VARCHAR2
-   );
-
 END td_utils;
 /

@@ -80,6 +80,53 @@ AS
          evolve_log.log_err;
          RAISE;
    END coordinate_sql;
+   
+   -- this process is called by submitted jobs to DBMS_SCHEDULER
+   -- when SQL is submitted through SUBMIT_SQL, this is what those submitted jobs actually call
+   PROCEDURE consume_sql(
+      p_session_id   NUMBER,
+      p_module       VARCHAR2,
+      p_action       VARCHAR2,
+      p_sql          VARCHAR2,
+      p_msg          VARCHAR2
+   )
+   AS
+   BEGIN
+      -- use the SET_SCHEDULER_SESSION_ID procedure to register with the framework
+      -- this allows all logging entries to be kept together
+      td_inst.set_scheduler_info( p_session_id      => p_session_id,
+                                  p_module          => p_module,
+                                  p_action          => p_action
+                                );
+
+      -- load session parameters configured in PARAMETER_CONF for this module
+      -- this is usually done by EVOLVE_OT, but that is not applicable here
+      FOR c_params IN
+         ( SELECT CASE
+                     WHEN REGEXP_LIKE( NAME, 'enable|disable', 'i' )
+                        THEN 'alter session ' || NAME || ' ' || VALUE
+                     ELSE 'alter session set ' || NAME || '=' || VALUE
+                  END DDL
+            FROM parameter_conf
+           WHERE LOWER( module ) = td_inst.module )
+      LOOP
+         IF evolve_log.is_debugmode
+         THEN
+            evolve_log.log_msg( 'Session SQL: ' || c_params.DDL );
+         ELSE
+            EXECUTE IMMEDIATE ( c_params.DDL );
+         END IF;
+      END LOOP;
+
+      -- just use the standard procedure to execute the SQL
+      exec_sql( p_sql => p_sql, p_msg => p_msg );
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         evolve_log.log_err;
+         RAISE;
+   END consume_sql;
+
 END evolve_app;
 /
 

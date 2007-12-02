@@ -28,6 +28,14 @@ AS
       p_sleep    NUMBER DEFAULT 5,
       p_timeout	 NUMBER DEFAULT 0
    );
+      
+   PROCEDURE consume_sql(
+      p_session_id  NUMBER,
+      p_module	    VARCHAR2,
+      p_action	    VARCHAR2,
+      p_sql         VARCHAR2,
+      p_msg         VARCHAR2
+   );
 
 END evolve_app;
 /
