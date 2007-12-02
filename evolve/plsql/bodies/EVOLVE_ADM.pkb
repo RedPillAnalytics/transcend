@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE BODY td_evolve_adm
+CREATE OR REPLACE PACKAGE BODY evolve_adm
 IS
    PROCEDURE set_logging_level(
       p_module          VARCHAR2 DEFAULT 'default',
@@ -369,6 +369,6 @@ IS
             WHERE session_id = p_session_id
               AND REGEXP_LIKE( runmode, NVL( p_runmode, '.' ), 'i' );
    END clear_log;
-END td_evolve_adm;
+END evolve_adm;
 /
 SHOW errors

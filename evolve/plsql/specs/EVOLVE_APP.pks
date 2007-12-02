@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE td_evolve AUTHID CURRENT_USER
+CREATE OR REPLACE PACKAGE evolve_app AUTHID CURRENT_USER
 AS
 
    PROCEDURE check_table(
@@ -59,5 +59,5 @@ AS
       p_timeout	 NUMBER DEFAULT 0
    );
 
-END td_evolve;
+END evolve_app;
 /

@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE BODY td_evolve
+CREATE OR REPLACE PACKAGE BODY evolve_app
 AS
 
    -- checks things about a table depending on the parameters passed
@@ -427,6 +427,6 @@ AS
       RAISE;
    END coordinate_sql;   
 
-END td_evolve;
+END evolve_app;
 /
 SHOW errors

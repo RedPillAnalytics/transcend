@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE BODY td_evolve
+CREATE OR REPLACE PACKAGE BODY evolve_log
 AS
 
    -- used to pull the calling block from the dictionary
@@ -217,6 +217,6 @@ AS
       td_inst.runmode( 'runtime' );
    END stop_debug;
 
-END td_evolve;
+END evolve_log;
 /
 SHOW errors

@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE td_evolve AUTHID CURRENT_USER
+CREATE OR REPLACE PACKAGE evolve_log AUTHID CURRENT_USER
 AS
    PROCEDURE log_msg(
       p_msg      VARCHAR2,
@@ -24,5 +24,5 @@ AS
 
    PROCEDURE stop_debug;
 
-END td_evolve;
+END evolve_log;
 /
