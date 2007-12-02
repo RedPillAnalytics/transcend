@@ -2,29 +2,28 @@ CREATE OR REPLACE PACKAGE BODY td_inst
 AS
 -- global variables placed in the package body because they should be accessed or set outside the package
 
--- variables for holding information about the current session
-   g_service_name             VARCHAR2(64)   := SYS_CONTEXT( 'USERENV', 'SERVICE_NAME' );
-   g_session_id               NUMBER         := SYS_CONTEXT( 'USERENV', 'SESSIONID' );
-   g_instance_name            VARCHAR( 30 )  := SYS_CONTEXT( 'USERENV', 'INSTANCE_NAME' );
-   g_machine                  VARCHAR2( 50 )
+   -- variables for holding information about the current session
+   g_service_name    VARCHAR2( 64 ) := SYS_CONTEXT( 'USERENV', 'SERVICE_NAME' );
+   g_session_id      NUMBER         := SYS_CONTEXT( 'USERENV', 'SESSIONID' );
+   g_instance_name   VARCHAR( 30 )  := SYS_CONTEXT( 'USERENV', 'INSTANCE_NAME' );
+   g_machine         VARCHAR2( 50 )
       :=    SYS_CONTEXT( 'USERENV', 'HOST' )
          || '['
          || SYS_CONTEXT( 'USERENV', 'IP_ADDRESS' )
          || ']';
-   g_dbuser                   VARCHAR2( 30 ) := SYS_CONTEXT( 'USERENV', 'SESSION_USER' );
-   g_osuser                   VARCHAR2( 30 ) := SYS_CONTEXT( 'USERENV', 'OS_USER' );
-
+   g_dbuser          VARCHAR2( 30 ) := SYS_CONTEXT( 'USERENV', 'SESSION_USER' );
+   g_osuser          VARCHAR2( 30 ) := SYS_CONTEXT( 'USERENV', 'OS_USER' );
 -- variables for holding information used to register an application with some other framework, such as DBMS_APPLCIATION_INFO
-   g_client_info              VARCHAR2( 30 ) := SYS_CONTEXT( 'USERENV', 'CLIENT_INFO' );
-   g_module                   VARCHAR2( 30 ) := SYS_CONTEXT( 'USERENV', 'MODULE' );
-   g_action                   VARCHAR2( 30 ) := SYS_CONTEXT( 'USERENV', 'ACTION' );
-   g_batch_id                 NUMBER;
-   g_registration             VARCHAR2( 30 ) := 'appinfo';
-   g_logging_level            VARCHAR2( 30 ) := 2;
-   g_runmode                  VARCHAR2( 10 ) := 'runtime';
+   g_client_info     VARCHAR2( 30 ) := SYS_CONTEXT( 'USERENV', 'CLIENT_INFO' );
+   g_module          VARCHAR2( 30 ) := SYS_CONTEXT( 'USERENV', 'MODULE' );
+   g_action          VARCHAR2( 30 ) := SYS_CONTEXT( 'USERENV', 'ACTION' );
+   g_batch_id        NUMBER;
+   g_registration    VARCHAR2( 30 ) := 'appinfo';
+   g_logging_level   VARCHAR2( 30 ) := 2;
+   g_runmode         VARCHAR2( 10 ) := 'runtime';
 
    -- registers the application
-   PROCEDURE register
+   PROCEDURE REGISTER
    AS
    BEGIN
       CASE registration
@@ -37,7 +36,7 @@ AS
             DBMS_APPLICATION_INFO.set_client_info( g_client_info );
             DBMS_APPLICATION_INFO.set_module( g_module, g_action );
       END CASE;
-   END register;
+   END REGISTER;
 
    -- DEFAULT ACCESSOR METHODS
 
@@ -151,7 +150,7 @@ AS
    AS
    BEGIN
       g_client_info := p_client_info;
-   END client_info;   
+   END client_info;
 
    -- return a Boolean determing full debug mode
    FUNCTION is_full_debugmode
@@ -159,7 +158,7 @@ AS
    AS
    BEGIN
       RETURN CASE td_inst.runmode
-        WHEN 'full debug'
+         WHEN 'full debug'
             THEN TRUE
          ELSE FALSE
       END;
@@ -177,7 +176,6 @@ AS
       END;
    END is_registered;
 
-
    -- CUSTOM METHODS
 
    -- used to return a distinct error message number by label
@@ -187,13 +185,14 @@ AS
       l_code   error_conf.code%TYPE;
    BEGIN
       BEGIN
-	 SELECT code
+         SELECT code
            INTO l_code
            FROM error_conf
-	  WHERE NAME = p_name;
+          WHERE NAME = p_name;
       EXCEPTION
-	 WHEN no_data_found
-	 THEN raise_application_error(-20001,'An invalid error name was invoked');
+         WHEN NO_DATA_FOUND
+         THEN
+            raise_application_error( -20001, 'An invalid error name was invoked' );
       END;
 
       RETURN l_code;
@@ -206,18 +205,19 @@ AS
       l_msg   error_conf.MESSAGE%TYPE;
    BEGIN
       BEGIN
-	 SELECT message
+         SELECT MESSAGE
            INTO l_msg
            FROM error_conf
-	  WHERE NAME = p_name;
+          WHERE NAME = p_name;
       EXCEPTION
-	 WHEN no_data_found
-	 THEN raise_application_error(-20001,'An invalid error name was invoked');
+         WHEN NO_DATA_FOUND
+         THEN
+            raise_application_error( -20001, 'An invalid error name was invoked' );
       END;
 
       RETURN l_msg;
    END get_err_msg;
-   
+
    -- OTHER PROGRAM UNITS
 
    -- used to pull the calling block from the dictionary
@@ -254,18 +254,14 @@ AS
 
    -- the standard methods to set up the session aren't applicable for those submitted in the background with DBMS_SCHEDULER
    -- that is why this method has to be used
-   PROCEDURE set_scheduler_info(
-      p_session_id  NUMBER,
-      p_module	    VARCHAR2,
-      p_action	    varchar2
-   )
-  AS
+   PROCEDURE set_scheduler_info( p_session_id NUMBER, p_module VARCHAR2, p_action VARCHAR2 )
+   AS
    BEGIN
       session_id( p_session_id );
       module( p_module );
       action( p_action );
    END set_scheduler_info;
-
 END td_inst;
 /
+
 SHOW errors

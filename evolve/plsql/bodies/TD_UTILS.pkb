@@ -63,7 +63,7 @@ AS
    AS
       l_retval     NUMBER;
       l_filepath   VARCHAR2( 100 );
-      o_ev         evolve_ot          := evolve_ot( p_module => 'delete_file' );
+      o_ev         evolve_ot       := evolve_ot( p_module => 'delete_file' );
    BEGIN
       l_filepath := td_utils.get_dir_path( p_directory ) || '/' || p_filename;
 
@@ -85,7 +85,7 @@ AS
    AS
       l_fh        UTL_FILE.file_type;
       l_dirpath   VARCHAR2( 100 );
-      o_ev        evolve_ot             := evolve_ot( p_module => 'create_file' );
+      o_ev        evolve_ot          := evolve_ot( p_module => 'create_file' );
    BEGIN
       l_dirpath := td_utils.get_dir_path( p_directory ) || '/' || p_filename;
 
@@ -105,7 +105,7 @@ AS
       l_fh     UTL_FILE.file_type;
       l_line   VARCHAR2( 2000 );
       l_cnt    NUMBER             := 0;
-      o_ev     evolve_ot             := evolve_ot( p_module => 'get_numlines' );
+      o_ev     evolve_ot          := evolve_ot( p_module => 'get_numlines' );
    BEGIN
       IF evolve_log.is_debugmode
       THEN
@@ -146,14 +146,15 @@ AS
       l_file_exists    BOOLEAN;
       l_file_size      NUMBER;
       l_blocksize      NUMBER;
-      o_ev             evolve_ot          := evolve_ot( p_module => 'unzip_file' );
+      o_ev             evolve_ot       := evolve_ot( p_module => 'unzip_file' );
    BEGIN
       l_filebase := REGEXP_REPLACE( p_filename, '\.[^\.]+$', NULL, 1, 1, 'i' );
       l_filesuf := REGEXP_SUBSTR( p_filename, '[^\.]+$' );
       l_filebasepath := p_dirpath || '/' || l_filebase;
-      evolve_log.log_msg( l_filepath || ' checked for compression using standard libraries',
-                       3
-                     );
+      evolve_log.log_msg( l_filepath
+                          || ' checked for compression using standard libraries',
+                          3
+                        );
 
       CASE l_filesuf
          WHEN 'gz'
@@ -228,7 +229,7 @@ AS
       l_file_exists    BOOLEAN;
       l_file_size      NUMBER;
       l_blocksize      NUMBER;
-      o_ev             evolve_ot          := evolve_ot( p_module => 'decrypt_file' );
+      o_ev             evolve_ot       := evolve_ot( p_module => 'decrypt_file' );
    BEGIN
       l_filebase := REGEXP_REPLACE( p_filename, '\.[^\.]+$', NULL, 1, 1, 'i' );
       l_filesuf := REGEXP_SUBSTR( p_filename, '[^\.]+$' );
@@ -311,7 +312,7 @@ AS
       l_blocksize     NUMBER;
       e_no_var        EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_var, -1007 );
-      o_ev            evolve_ot             := evolve_ot( p_module => 'extract_query' );
+      o_ev            evolve_ot          := evolve_ot( p_module => 'extract_query' );
    BEGIN
       l_output := UTL_FILE.fopen( p_dirname, p_filename, l_mode, 32767 );
       DBMS_SQL.parse( l_thecursor, p_query, DBMS_SQL.native );
@@ -379,13 +380,13 @@ AS
       l_cnt           NUMBER           := 0;
       l_head_sql      VARCHAR( 1000 );
       l_extract_sql   VARCHAR2( 1000 );
-      o_ev            evolve_ot           := evolve_ot( p_module => 'extract_object' );
+      o_ev            evolve_ot        := evolve_ot( p_module => 'extract_object' );
    BEGIN
       -- check that the source object exists and is something we can select from
       td_utils.check_object( p_owner            => p_owner,
-                           p_object           => p_object,
-                           p_object_type      => 'table$|view'
-                         );
+                             p_object           => p_object,
+                             p_object_type      => 'table$|view'
+                           );
       l_head_sql :=
             'select regexp_replace(stragg(column_name),'','','''
          || p_delimiter
@@ -443,30 +444,31 @@ AS
    -- this process is called by submitted jobs to DBMS_SCHEDULER
    -- when SQL is submitted through SUBMIT_SQL, this is what those submitted jobs actually call
    PROCEDURE consume_sql(
-      p_session_id  NUMBER,
-      p_module	    VARCHAR2,
-      p_action	    VARCHAR2,
-      p_sql         VARCHAR2,
-      p_msg         VARCHAR2
+      p_session_id   NUMBER,
+      p_module       VARCHAR2,
+      p_action       VARCHAR2,
+      p_sql          VARCHAR2,
+      p_msg          VARCHAR2
    )
    AS
    BEGIN
       -- use the SET_SCHEDULER_SESSION_ID procedure to register with the framework
       -- this allows all logging entries to be kept together
-      td_inst.set_scheduler_info( p_session_id => p_session_id,
-				  p_module     => p_module,
-				  p_action     => p_action );
+      td_inst.set_scheduler_info( p_session_id      => p_session_id,
+                                  p_module          => p_module,
+                                  p_action          => p_action
+                                );
 
       -- load session parameters configured in PARAMETER_CONF for this module
       -- this is usually done by EVOLVE_OT, but that is not applicable here
       FOR c_params IN
          ( SELECT CASE
-                  WHEN REGEXP_LIKE( NAME, 'enable|disable', 'i' )
-                  THEN 'alter session ' || NAME || ' ' || VALUE
-                  ELSE 'alter session set ' || NAME || '=' || VALUE
+                     WHEN REGEXP_LIKE( NAME, 'enable|disable', 'i' )
+                        THEN 'alter session ' || NAME || ' ' || VALUE
+                     ELSE 'alter session set ' || NAME || '=' || VALUE
                   END DDL
-             FROM parameter_conf
-            WHERE LOWER( module ) = td_inst.module )
+            FROM parameter_conf
+           WHERE LOWER( module ) = td_inst.module )
       LOOP
          IF evolve_log.is_debugmode
          THEN
@@ -475,17 +477,16 @@ AS
             EXECUTE IMMEDIATE ( c_params.DDL );
          END IF;
       END LOOP;
-      
-      -- just use the standard procedure to execute the SQL
-      exec_sql( p_sql => p_sql,
-		p_msg => p_msg );
-      
-   EXCEPTION
-      WHEN others
-      THEN 
-      evolve_log.log_err;
-      RAISE;
-   END consume_sql;
 
+      -- just use the standard procedure to execute the SQL
+      exec_sql( p_sql => p_sql, p_msg => p_msg );
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         evolve_log.log_err;
+         RAISE;
+   END consume_sql;
 END td_utils;
 /
+
+SHOW errors

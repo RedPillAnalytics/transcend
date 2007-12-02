@@ -34,3 +34,5 @@ IS
    END;
 END;
 /
+
+SHOW errors

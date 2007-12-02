@@ -16,9 +16,9 @@ AS
       -- read in all the previous values
       SELF.read_prev_info;
       -- first we need to populate the module attribute, because it helps us determine parameter values
-      td_inst.module( LOWER( p_module ) );
+      td_inst.module( LOWER( p_module ));
       -- we also set the action, which may be used one day to fine tune parameters
-      td_inst.action( LOWER( p_action ) );
+      td_inst.action( LOWER( p_action ));
       -- read previous app_info settings
       -- populate attributes with new app_info settings
       td_inst.client_info( NVL( p_client_info, td_inst.client_info ));
@@ -118,12 +118,12 @@ AS
                            );
       -- log module and action changes to a high logging level
       evolve_log.log_msg(    'MODULE "'
-                       || td_inst.module
-                       || '" beginning in RUNMODE "'
-                       || td_inst.runmode
-                       || '"',
-                       4
-                     );
+                          || td_inst.module
+                          || '" beginning in RUNMODE "'
+                          || td_inst.runmode
+                          || '"',
+                          4
+                        );
       evolve_log.log_msg( 'Inital ACTION attribute set to "' || td_inst.action || '"', 4 );
 
       -- set session level parameters
@@ -154,23 +154,21 @@ AS
          SELECT VALUE( t )
            INTO o_notify
            FROM notification_ov t
-          WHERE module = td_inst.module
-            AND action = td_inst.action
-            AND label = p_label;
+          WHERE module = td_inst.module AND action = td_inst.action AND label = p_label;
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
             evolve_log.log_msg(    'No notification configured for label '
-                             || p_label
-                             || ' with module '
-                             || td_inst.module
-                             || ' and action '
-                             || td_inst.action,
-                             4
-                           );
+                                || p_label
+                                || ' with module '
+                                || td_inst.module
+                                || ' and action '
+                                || td_inst.action,
+                                4
+                              );
       END;
 
-      o_notify.send(p_message => p_message);
+      o_notify.send( p_message => p_message );
    EXCEPTION
       WHEN NO_DATA_FOUND
       THEN
@@ -178,3 +176,5 @@ AS
    END send;
 END;
 /
+
+SHOW errors

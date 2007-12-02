@@ -20,7 +20,11 @@ AS
             THEN
                RETURN NULL;
             ELSE
-	       raise_application_error(-20030, 'The specified parameter value is not recognized: '||p_parm);
+               raise_application_error
+                                 ( -20030,
+                                      'The specified parameter value is not recognized: '
+                                   || p_parm
+                                 );
             END IF;
       END CASE;
    END is_true;
@@ -43,13 +47,17 @@ AS
          THEN
             RETURN 'no';
          ELSE
-            raise_application_error(-20030, 'The specified parameter value is not recognized: '||p_parm);
+            raise_application_error
+                                 ( -20030,
+                                      'The specified parameter value is not recognized: '
+                                   || p_parm
+                                 );
       END CASE;
    END get_yn_ind;
-   
+
    -- function takes a text string and a delimiter and parses the string
    -- should only be used as a pipelined table function
-   FUNCTION split( p_text VARCHAR2, p_delimiter VARCHAR2 := ',' )
+   FUNCTION SPLIT( p_text VARCHAR2, p_delimiter VARCHAR2 := ',' )
       RETURN t_split PIPELINED
    IS
       l_idx     PLS_INTEGER;
@@ -70,7 +78,8 @@ AS
       END LOOP;
 
       RETURN;
-   END split;
-
+   END SPLIT;
 END td_ext;
 /
+
+SHOW errors

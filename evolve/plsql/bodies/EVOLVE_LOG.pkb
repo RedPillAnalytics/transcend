@@ -1,6 +1,5 @@
 CREATE OR REPLACE PACKAGE BODY evolve_log
 AS
-
    -- used to pull the calling block from the dictionary
    -- used to populate CALL_STACK column in the LOG_TABLE
    FUNCTION whence
@@ -32,12 +31,9 @@ AS
 
       RETURN l_line;
    END whence;
-   
+
    -- used to write a standard message to the LOG_TABLE
-   PROCEDURE log_msg(
-      p_msg      VARCHAR2,
-      p_level    NUMBER DEFAULT 2
-   )
+   PROCEDURE log_msg( p_msg VARCHAR2, p_level NUMBER DEFAULT 2 )
    AS
       PRAGMA AUTONOMOUS_TRANSACTION;
       l_whence   VARCHAR2( 1024 );
@@ -73,47 +69,42 @@ AS
       END;
 
       -- check to see the logging level to see if the message should be written
-      IF td_inst.g_logging_level >= p_level
+      IF td_inst.logging_level >= p_level
       THEN
          -- write the record to the log table
          INSERT INTO log_table
-                     ( msg, client_info, module, action, service_name, runmode,
-                       session_id, current_scn, instance_name, machine, dbuser,
-                       osuser, code, call_stack,
-                       back_trace,
-                       batch_id
+                     ( msg, client_info, module, action, service_name,
+                       runmode, session_id, current_scn, instance_name, machine,
+                       dbuser, osuser, code, call_stack, back_trace, batch_id
                      )
-              VALUES ( l_msg, g_client_info, g_module, g_action, g_service_name, g_runmode,
-                       g_session_id, l_scn, g_instance_name, g_machine, g_dbuser,
-                       g_osuser, 0, l_whence,
-                       null,
-                       g_batch_id
+              VALUES ( l_msg, g_client_info, g_module, g_action, g_service_name,
+                       g_runmode, g_session_id, l_scn, g_instance_name, g_machine,
+                       g_dbuser, g_osuser, 0, l_whence, NULL, g_batch_id
                      );
 
          COMMIT;
-
          -- also output the message to the screen
          -- the client can control whether or not they want to see this
          -- in sqlplus, just SET SERVEROUTPUT ON or OFF
          DBMS_OUTPUT.put_line( p_msg );
       END IF;
-   END log_msg;   
+   END log_msg;
 
    PROCEDURE log_cnt_msg(
-      p_count     NUMBER,
-      p_msg       VARCHAR2 DEFAULT NULL,
-      p_level     NUMBER DEFAULT 2
+      p_count   NUMBER,
+      p_msg     VARCHAR2 DEFAULT NULL,
+      p_level   NUMBER DEFAULT 2
    )
    AS
       PRAGMA AUTONOMOUS_TRANSACTION;
    BEGIN
       -- store in COUNT_TABLE numbers of records affected by particular actions in modules
       INSERT INTO count_table
-                  ( client_info, module,
-                    action, runmode, session_id, row_cnt
+                  ( client_info, module, action,
+                    runmode, session_id, row_cnt
                   )
-           VALUES ( td_inst.g_client_info, td_inst.g_module,
-                    td_inst.g_action, td_inst.g_runmode, td_inst.g_session_id, p_count
+           VALUES ( td_inst.client_info, td_inst.module, td_inst.action,
+                    td_inst.runmode, td_inst.session_id, p_count
                   );
 
       -- if a message was provided to this procedure, then write it to the log table
@@ -123,14 +114,14 @@ AS
              );
       COMMIT;
    END log_cnt_msg;
-   
+
    -- writes error information to the log_table
    PROCEDURE log_err
    AS
       PRAGMA AUTONOMOUS_TRANSACTION;
       l_whence   VARCHAR2( 1024 );
-      l_code     NUMBER  := SQLCODE;
-      l_msg      log_table.msg%TYPE := SQLERRM;
+      l_code     NUMBER               := SQLCODE;
+      l_msg      log_table.msg%TYPE   := SQLERRM;
       l_scn      NUMBER;
       e_no_tab   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_tab, -942 );
@@ -153,19 +144,19 @@ AS
       END;
 
       -- check to see the logging level to see if the message should be written
-      IF g_logging_level >= 1
+      IF td_inst.logging_level >= 1
       THEN
          -- write the record to the log table
          INSERT INTO log_table
-                     ( msg, client_info, module, action, service_name, runmode,
-                       session_id, current_scn, instance_name, machine, dbuser,
-                       osuser, code, call_stack,
+                     ( msg, client_info, module, action, service_name,
+                       runmode, session_id, current_scn, instance_name, machine,
+                       dbuser, osuser, code, call_stack,
                        back_trace,
                        batch_id
                      )
-              VALUES ( l_msg, g_client_info, g_module, g_action, g_service_name, g_runmode,
-                       g_session_id, l_scn, g_instance_name, g_machine, g_dbuser,
-                       g_osuser, l_code, l_whence,
+              VALUES ( l_msg, g_client_info, g_module, g_action, g_service_name,
+                       g_runmode, g_session_id, l_scn, g_instance_name, g_machine,
+                       g_dbuser, g_osuser, l_code, l_whence,
                        REGEXP_REPLACE( SUBSTR( DBMS_UTILITY.format_error_backtrace,
                                                1,
                                                4000
@@ -177,32 +168,35 @@ AS
                      );
 
          COMMIT;
-
       END IF;
    END log_err;
-   
+
    -- writes error information to the log_table
-   PROCEDURE raise_err ( p_name VARCHAR2,
-			 p_add_msg VARCHAR2 DEFAULT null )
+   PROCEDURE raise_err( p_name VARCHAR2, p_add_msg VARCHAR2 DEFAULT NULL )
    AS
    BEGIN
-      raise_application_error( get_err_cd( p_name),
-			       get_err_msg( p_name )||CASE WHEN p_add_msg IS NULL THEN NULL ELSE ': '||p_add_msg end
-			     );
+      raise_application_error( td_inst.get_err_cd( p_name ),
+                                  td_inst.get_err_msg( p_name )
+                               || CASE
+                                     WHEN p_add_msg IS NULL
+                                        THEN NULL
+                                     ELSE ': ' || p_add_msg
+                                  END
+                             );
    END raise_err;
-   
+
    -- return a Boolean determining runmode
    FUNCTION is_debugmode
       RETURN BOOLEAN
    AS
    BEGIN
       RETURN CASE
-      WHEN REGEXP_LIKE(td_inst.runmode,'debug','i')
+         WHEN REGEXP_LIKE( td_inst.runmode, 'debug', 'i' )
             THEN TRUE
          ELSE FALSE
       END;
    END is_debugmode;
-   
+
    -- begins debug mode
    PROCEDURE start_debug
    AS
@@ -216,7 +210,7 @@ AS
    BEGIN
       td_inst.runmode( 'runtime' );
    END stop_debug;
-
 END evolve_log;
 /
+
 SHOW errors
