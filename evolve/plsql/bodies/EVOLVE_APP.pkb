@@ -44,30 +44,19 @@ AS
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
-            raise_application_error( td_inst.get_err_cd( 'no_tab' ),
-                                     td_inst.get_err_msg( 'no_tab' ) || ': ' || l_tab_name
-                                   );
+	    evolve_log.raise_err( 'no_tab', l_tab_name )
       END;
 
       IF l_partitioned = 'yes' AND p_partname IS NULL AND p_compressed IS NOT NULL
       THEN
-         raise_application_error
-                        ( td_inst.get_err_cd( 'parms_not_compatible' ),
-                             td_inst.get_err_msg( 'parms_not_compatible' )
-                          || ': '
-                          || 'P_COMPRESSED requires P_PARTNAME when the table is partitioned'
-                        );
+	 evolve_log.raise_err( 'parms_not_compatible','P_COMPRESSED requires P_PARTNAME when the table is partitioned');
       END IF;
 
       IF p_partname IS NOT NULL
       THEN
          IF l_partitioned = 'no'
          THEN
-            raise_application_error( td_inst.get_err_cd( 'not_partitioned' ),
-                                        td_inst.get_err_msg( 'not_partitioned' )
-                                     || ': '
-                                     || l_tab_name
-                                   );
+	    evolve_log.raise_err( 'not_partitioned',l_tab_name);
          END IF;
 
          BEGIN
@@ -88,64 +77,39 @@ AS
          EXCEPTION
             WHEN NO_DATA_FOUND
             THEN
-               raise_application_error( td_inst.get_err_cd( 'no_part' ),
-                                           td_inst.get_err_msg( 'no_part' )
-                                        || ': '
-                                        || l_part_name
-                                      );
+	       evolve_log.raise_err( 'no_part',l_part_name );
          END;
       END IF;
 
       CASE
          WHEN td_ext.is_true( p_partitioned, TRUE )
               AND NOT td_ext.is_true( l_partitioned )
-         THEN
-            raise_application_error( td_inst.get_err_cd( 'not_partitioned' ),
-                                        td_inst.get_err_msg( 'not_partitioned' )
-                                     || ': '
-                                     || l_tab_name
-                                   );
+      THEN
+      evolve_log.raise_err( 'not_partitioned',l_tab_name );
          WHEN NOT td_ext.is_true( p_partitioned, TRUE )
               AND td_ext.is_true( l_partitioned )
          THEN
-            raise_application_error( td_inst.get_err_cd( 'partitioned' ),
-                                        td_inst.get_err_msg( 'partitioned' )
-                                     || ': '
-                                     || l_tab_name
-                                   );
+      evolve_log.raise_err('partitioned',l_tab_name);
          WHEN td_ext.is_true( p_iot, TRUE ) AND NOT td_ext.is_true( l_iot )
-         THEN
-            raise_application_error( td_inst.get_err_cd( 'not_iot' ),
-                                     td_inst.get_err_msg( 'not_iot' ) || ': '
-                                     || l_tab_name
-                                   );
+      THEN
+      evolve_log.raise_err( 'not_iot',l_tab_name );
          WHEN NOT td_ext.is_true( p_iot, TRUE ) AND td_ext.is_true( l_iot )
-         THEN
-            raise_application_error( td_inst.get_err_cd( 'iot' ),
-                                     td_inst.get_err_msg( 'iot' ) || ': ' || l_tab_name
-                                   );
+      THEN
+      evolve_log.raise_err( 'iot',l_tab_name );
          WHEN td_ext.is_true( p_compressed, TRUE ) AND NOT td_ext.is_true( l_compressed )
-         THEN
-            raise_application_error( td_inst.get_err_cd( 'not_compressed' ),
-                                        td_inst.get_err_msg( 'not_compressed' )
-                                     || ': '
-                                     || CASE
+      THEN
+      evolve_log.raise_err( 'not_compressed',CASE
                                            WHEN p_partname IS NULL
                                               THEN l_tab_name
                                            ELSE l_part_name
-                                        END
-                                   );
+                            END);
          WHEN NOT td_ext.is_true( p_compressed, TRUE ) AND td_ext.is_true( l_compressed )
-         THEN
-            raise_application_error( td_inst.get_err_cd( 'compressed' ),
-                                        td_inst.get_err_msg( 'compressed' )
-                                     || ': '
-                                     || CASE
+      THEN
+      evolve_log.raise_err( 'compressed',CASE
                                            WHEN p_partname IS NULL
                                               THEN l_tab_name
                                            ELSE l_part_name
-                                        END
-                                   );
+                            END );
          ELSE
             NULL;
       END CASE;
@@ -173,16 +137,10 @@ AS
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
-            raise_application_error( td_inst.get_err_cd( 'no_or_wrong_object' ),
-                                        td_inst.get_err_msg( 'no_or_wrong_object' )
-                                     || ': '
-                                     || l_obj_name
-                                   );
+	 evolve_log.raise_err( 'no_or_wrong_object',l_obj_name );
          WHEN TOO_MANY_ROWS
          THEN
-            raise_application_error( td_inst.get_err_cd( 'too_many_objects' ),
-                                     td_inst.get_err_msg( 'too_many_objects' )
-                                   );
+	 evolve_log.raise_err( 'too_many_objects' );
       END;
    END check_object;
 
@@ -260,13 +218,7 @@ AS
    BEGIN
       IF NOT table_exists( UPPER( p_owner ), UPPER( p_table ))
       THEN
-         raise_application_error( td_inst.get_err_cd( 'no_tab' ),
-                                     td_inst.get_err_msg( 'no_tab' )
-                                  || ': '
-                                  || p_owner
-                                  || '.'
-                                  || p_table
-                                );
+	 evolve_log.raise_err( 'no_tab',p_owner||'.'||p_table );
       END IF;
 
       SELECT partitioned
@@ -336,7 +288,7 @@ AS
       l_results   NUMBER;
    BEGIN
 
-      IF NOT td_evolve.is_debugmode OR NOT td_ext.is_true( p_override_debug )
+      IF NOT evolve_log.is_debugmode OR NOT td_ext.is_true( p_override_debug )
       THEN
          IF td_ext.is_true( p_auto )
          THEN
@@ -380,7 +332,7 @@ AS
       l_action      VARCHAR2(24) := td_inst.action;
       l_session_id  NUMBER 	 := sys_context('USERENV','SESSIONID');
    BEGIN
-      td_evolve.log_msg('The job name is: '||l_job_name, 4);
+      evolve_log.log_msg('The job name is: '||l_job_name, 4);
       -- for now, we will always use the same program, CONSUME_SQL_JOB
       -- in the future, each module may have it's own program
       dbms_scheduler.create_job( l_job_name, program_name=>p_program, job_class=>p_job_class );
@@ -423,7 +375,7 @@ AS
    EXCEPTION
       WHEN others
       THEN 
-      td_evolve.log_err;
+      evolve_log.log_err;
       RAISE;
    END coordinate_sql;   
 

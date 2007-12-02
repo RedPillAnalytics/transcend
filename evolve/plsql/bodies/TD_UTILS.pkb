@@ -8,7 +8,7 @@ AS
    BEGIN
       DBMS_JAVA.set_output( 1000000 );
 
-      IF NOT td_evolve.is_debugmode
+      IF NOT evolve_log.is_debugmode
       THEN
          l_retval := host_cmd( p_cmd, p_stdin );
 
@@ -21,12 +21,12 @@ AS
          END IF;
       END IF;
 
-      td_evolve.log_msg( 'Host command: ' || p_cmd, 3 );
+      evolve_log.log_msg( 'Host command: ' || p_cmd, 3 );
       o_ev.clear_app_info;
    EXCEPTION
       WHEN OTHERS
       THEN
-         td_evolve.log_err;
+         evolve_log.log_err;
          RAISE;
    END host_cmd;
 
@@ -38,7 +38,7 @@ AS
    BEGIN
       DBMS_JAVA.set_output( 1000000 );
 
-      IF NOT td_evolve.is_debugmode
+      IF NOT evolve_log.is_debugmode
       THEN
          l_retval := copy_file( p_srcfile, p_dstfile );
 
@@ -54,7 +54,7 @@ AS
          END IF;
       END IF;
 
-      td_evolve.log_msg( 'File ' || p_srcfile || ' copied to ' || p_dstfile, 3 );
+      evolve_log.log_msg( 'File ' || p_srcfile || ' copied to ' || p_dstfile, 3 );
       o_ev.clear_app_info;
    END copy_file;
 
@@ -67,17 +67,17 @@ AS
    BEGIN
       l_filepath := td_utils.get_dir_path( p_directory ) || '/' || p_filename;
 
-      IF NOT td_evolve.is_debugmode
+      IF NOT evolve_log.is_debugmode
       THEN
          UTL_FILE.fremove( p_directory, p_filename );
       END IF;
 
-      td_evolve.log_msg( 'File ' || l_filepath || ' deleted', 3 );
+      evolve_log.log_msg( 'File ' || l_filepath || ' deleted', 3 );
       o_ev.clear_app_info;
    EXCEPTION
       WHEN UTL_FILE.invalid_operation
       THEN
-         td_evolve.log_msg( l_filepath || ' could not be deleted, or does not exist' );
+         evolve_log.log_msg( l_filepath || ' could not be deleted, or does not exist' );
    END delete_file;
 
    -- uses UTL_FILE to "touch" a file
@@ -89,12 +89,12 @@ AS
    BEGIN
       l_dirpath := td_utils.get_dir_path( p_directory ) || '/' || p_filename;
 
-      IF NOT td_evolve.is_debugmode
+      IF NOT evolve_log.is_debugmode
       THEN
          l_fh := UTL_FILE.fopen( p_directory, p_filename, 'W' );
       END IF;
 
-      td_evolve.log_msg( 'File ' || l_dirpath || ' created', 3 );
+      evolve_log.log_msg( 'File ' || l_dirpath || ' created', 3 );
       o_ev.clear_app_info;
    END create_file;
 
@@ -107,9 +107,9 @@ AS
       l_cnt    NUMBER             := 0;
       o_ev     evolve_ot             := evolve_ot( p_module => 'get_numlines' );
    BEGIN
-      IF td_evolve.is_debugmode
+      IF evolve_log.is_debugmode
       THEN
-         td_evolve.log_msg( td_inst.module || ' returning 0 because of DEBUG mode' );
+         evolve_log.log_msg( td_inst.module || ' returning 0 because of DEBUG mode' );
          o_ev.clear_app_info;
          RETURN 0;
       ELSE
@@ -151,7 +151,7 @@ AS
       l_filebase := REGEXP_REPLACE( p_filename, '\.[^\.]+$', NULL, 1, 1, 'i' );
       l_filesuf := REGEXP_SUBSTR( p_filename, '[^\.]+$' );
       l_filebasepath := p_dirpath || '/' || l_filebase;
-      td_evolve.log_msg( l_filepath || ' checked for compression using standard libraries',
+      evolve_log.log_msg( l_filepath || ' checked for compression using standard libraries',
                        3
                      );
 
@@ -159,19 +159,19 @@ AS
          WHEN 'gz'
          THEN
             host_cmd( 'gzip -df ' || l_filepath );
-            td_evolve.log_msg( l_filepath || ' gunzipped', 3 );
+            evolve_log.log_msg( l_filepath || ' gunzipped', 3 );
          WHEN 'Z'
          THEN
             host_cmd( 'uncompress ' || l_filepath );
-            td_evolve.log_msg( l_filepath || ' uncompressed', 3 );
+            evolve_log.log_msg( l_filepath || ' uncompressed', 3 );
          WHEN 'bz2'
          THEN
             host_cmd( 'bunzip2 ' || l_filepath );
-            td_evolve.log_msg( l_filepath || ' bunzipped', 3 );
+            evolve_log.log_msg( l_filepath || ' bunzipped', 3 );
          WHEN 'zip'
          THEN
             host_cmd( 'unzip ' || l_filepath );
-            td_evolve.log_msg( l_filepath || ' unzipped', 3 );
+            evolve_log.log_msg( l_filepath || ' unzipped', 3 );
          ELSE
             -- this is the only case where the file wasn't compressed
             l_compressed := FALSE;
@@ -186,9 +186,9 @@ AS
          l_return := l_filepath;
       END IF;
 
-      IF td_evolve.is_debugmode
+      IF evolve_log.is_debugmode
       THEN
-         td_evolve.log_msg( 'File returned by UNZIP_FILE: ' || l_return );
+         evolve_log.log_msg( 'File returned by UNZIP_FILE: ' || l_return );
       ELSE
          o_ev.change_action( 'Check for extracted file' );
          -- check and make sure the unzip process worked
@@ -257,9 +257,9 @@ AS
          l_return := l_filepath;
       END IF;
 
-      IF td_evolve.is_debugmode
+      IF evolve_log.is_debugmode
       THEN
-         td_evolve.log_msg( 'File returned by DECRYPT_FILE: ' || l_return );
+         evolve_log.log_msg( 'File returned by DECRYPT_FILE: ' || l_return );
       ELSE
          o_ev.change_action( 'Check for decrypted file' );
          -- check and make sure the unzip process worked
@@ -341,7 +341,7 @@ AS
          LOOP
             DBMS_SQL.COLUMN_VALUE( l_thecursor, i, l_columnvalue );
 
-            IF NOT td_evolve.is_debugmode
+            IF NOT evolve_log.is_debugmode
             THEN
                UTL_FILE.put( l_output,
                              l_delimiter || p_quotechar || l_columnvalue || p_quotechar
@@ -402,10 +402,10 @@ AS
          || UPPER( p_owner )
          || ''' order by column_id)';
       l_extract_sql := 'select * from ' || p_owner || '.' || p_object;
-      td_evolve.log_msg( 'Headers query: ' || l_head_sql, 3 );
-      td_evolve.log_msg( 'Extract query: ' || l_extract_sql, 3 );
+      evolve_log.log_msg( 'Headers query: ' || l_head_sql, 3 );
+      evolve_log.log_msg( 'Extract query: ' || l_extract_sql, 3 );
 
-      IF NOT td_evolve.is_debugmode
+      IF NOT evolve_log.is_debugmode
       THEN
          IF td_core.is_true( p_headers )
          THEN
@@ -468,9 +468,9 @@ AS
              FROM parameter_conf
             WHERE LOWER( module ) = td_inst.module )
       LOOP
-         IF td_evolve.is_debugmode
+         IF evolve_log.is_debugmode
          THEN
-            td_evolve.log_msg( 'Session SQL: ' || c_params.DDL );
+            evolve_log.log_msg( 'Session SQL: ' || c_params.DDL );
          ELSE
             EXECUTE IMMEDIATE ( c_params.DDL );
          END IF;
@@ -483,7 +483,7 @@ AS
    EXCEPTION
       WHEN others
       THEN 
-      td_evolve.log_err;
+      evolve_log.log_err;
       RAISE;
    END consume_sql;
 

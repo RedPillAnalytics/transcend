@@ -111,20 +111,20 @@ AS
       END;
 
       td_inst.logging_level( CASE
-                                WHEN td_evolve.is_debugmode
+                                WHEN evolve_log.is_debugmode
                                    THEN l_debug_level
                                 ELSE l_logging_level
                              END
                            );
       -- log module and action changes to a high logging level
-      td_evolve.log_msg(    'MODULE "'
+      evolve_log.log_msg(    'MODULE "'
                        || td_inst.module
                        || '" beginning in RUNMODE "'
                        || td_inst.runmode
                        || '"',
                        4
                      );
-      td_evolve.log_msg( 'Inital ACTION attribute set to "' || td_inst.action || '"', 4 );
+      evolve_log.log_msg( 'Inital ACTION attribute set to "' || td_inst.action || '"', 4 );
 
       -- set session level parameters
       FOR c_params IN
@@ -136,9 +136,9 @@ AS
             FROM parameter_conf
            WHERE LOWER( module ) = td_inst.module )
       LOOP
-         IF td_evolve.is_debugmode
+         IF evolve_log.is_debugmode
          THEN
-            td_evolve.log_msg( 'Session SQL: ' || c_params.DDL );
+            evolve_log.log_msg( 'Session SQL: ' || c_params.DDL );
          ELSE
             EXECUTE IMMEDIATE ( c_params.DDL );
          END IF;
@@ -160,7 +160,7 @@ AS
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
-            td_evolve.log_msg(    'No notification configured for label '
+            evolve_log.log_msg(    'No notification configured for label '
                              || p_label
                              || ' with module '
                              || td_inst.module
@@ -174,7 +174,7 @@ AS
    EXCEPTION
       WHEN NO_DATA_FOUND
       THEN
-         td_evolve.log_msg( 'Notification not configured for this action', 3 );
+         evolve_log.log_msg( 'Notification not configured for this action', 3 );
    END send;
 END;
 /

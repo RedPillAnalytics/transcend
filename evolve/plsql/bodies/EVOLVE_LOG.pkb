@@ -73,7 +73,7 @@ AS
       END;
 
       -- check to see the logging level to see if the message should be written
-      IF g_logging_level >= p_level
+      IF td_inst.g_logging_level >= p_level
       THEN
          -- write the record to the log table
          INSERT INTO log_table
@@ -112,8 +112,8 @@ AS
                   ( client_info, module,
                     action, runmode, session_id, row_cnt
                   )
-           VALUES ( g_client_info, g_module,
-                    g_action, g_runmode, g_session_id, p_count
+           VALUES ( td_inst.g_client_info, td_inst.g_module,
+                    td_inst.g_action, td_inst.g_runmode, td_inst.g_session_id, p_count
                   );
 
       -- if a message was provided to this procedure, then write it to the log table
