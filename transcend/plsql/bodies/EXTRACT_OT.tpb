@@ -17,15 +17,15 @@ AS
       o_ev.change_action( 'Configure NLS formats' );
       -- set date and timestamp NLS formats
       l_results :=
-             evolve_app.td_sql( p_sql      => dateformat_ddl,
+             evolve_app.exec_sql( p_sql      => dateformat_ddl,
                               p_msg      => 'nls_date_format DDL: ' );
       l_results :=
-          evolve_app.td_sql( p_sql      => tsformat_ddl,
+          evolve_app.exec_sql( p_sql      => tsformat_ddl,
                            p_msg      => 'nls_timestamp_format DDL: ' );
       o_ev.change_action( 'Extract data' );
       -- extract data to arch location first
       l_numlines :=
-         td_host.extract_object( p_owner          => object_owner,
+         td_utils.extract_object( p_owner          => object_owner,
                                  p_object         => object_name,
                                  p_dirname        => arch_directory,
                                  p_filename       => arch_filename,
@@ -45,7 +45,7 @@ AS
                      );
       l_file_dt := SYSDATE;
       -- copy the file to the target location
-      td_host.copy_file( p_srcfile => arch_filepath, p_dstfile => filepath );
+      td_utils.copy_file( p_srcfile => arch_filepath, p_dstfile => filepath );
       evolve_log.log_msg(    'Archive file '
                        || arch_filepath
                        || ' copied to destination '

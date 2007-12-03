@@ -6,18 +6,18 @@ AS
       l_rows   BOOLEAN;
    BEGIN
       -- check to see if the dimension table exists
-      td_sql.check_table( p_owner => owner, p_table => table_name );
+      td_utils.check_table( p_owner => owner, p_table => table_name );
       -- check that the source object exists
-      td_sql.check_object( p_owner            => source_owner,
+      td_utils.check_object( p_owner            => source_owner,
                            p_object           => source_object,
                            p_object_type      => 'table$|view'
                          );
 
       -- check to see if the staging table is constant
-      IF td_ext.is_true( constant_staging )
+      IF td_core.is_true( constant_staging )
       THEN
          -- if it is, then make sure that it exists
-         td_sql.check_table( p_owner => staging_owner, p_table => staging_table );
+         td_utils.check_table( p_owner => staging_owner, p_table => staging_table );
       ELSE
          -- otherwise, create the table
          o_ev.change_action( 'Create staging table' );
@@ -37,7 +37,7 @@ AS
 
       -- now run the insert statement to load the staging table
       o_ev.change_action( 'Load staging table' );
-      evolve_app.td_sql( load_sql );
+      evolve_app.exec_sql( load_sql );
       -- perform the replace method
       o_ev.change_action( 'Load staging table' );
 

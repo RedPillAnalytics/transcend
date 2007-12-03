@@ -54,7 +54,7 @@ IS
       o_ev    evolve_ot := evolve_ot( p_module => 'extract_object' );
    BEGIN
       l_cnt :=
-         td_host.extract_object( p_owner          => p_owner,
+         td_utils.extract_object( p_owner          => p_owner,
                                  p_object         => p_object,
                                  p_dirname        => p_dirname,
                                  p_filename       => p_filename,

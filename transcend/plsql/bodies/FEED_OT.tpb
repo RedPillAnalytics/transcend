@@ -117,7 +117,7 @@ AS
                          ORDER BY LOCATION )
       LOOP
          l_rows_delete := TRUE;
-         td_host.delete_file( c_location.DIRECTORY, c_location.LOCATION );
+         td_utils.delete_file( c_location.DIRECTORY, c_location.LOCATION );
       END LOOP;
 
       IF l_rows_delete
@@ -127,7 +127,7 @@ AS
 
       -- now we need to see all the source files in the source directory that match the regular expression
       -- use java stored procedure to populate global temp table DIR_LIST with all the files in the directory
-      td_host.get_dir_list( source_dirpath );
+      td_utils.get_dir_list( source_dirpath );
 
       -- look at the contents of the DIR_LIST table to evaluate source files
       -- pull out only the ones matching the regular expression
@@ -292,7 +292,7 @@ AS
          l_numlines := 0;
          -- copy file to the archive location
          o_ev.change_action( 'Copy archivefile' );
-         td_host.copy_file( c_dir_list.source_filepath, c_dir_list.arch_filepath );
+         td_utils.copy_file( c_dir_list.source_filepath, c_dir_list.arch_filepath );
          evolve_log.log_msg( 'Archive file ' || c_dir_list.arch_filepath || ' created' );
          -- copy the file to the external table
          o_ev.change_action( 'Copy external table files' );
@@ -309,30 +309,30 @@ AS
             l_files_url := c_dir_list.files_url;
             -- first move the file to the target destination without changing the name
             -- because the file might be zipped or encrypted
-            td_host.copy_file( c_dir_list.arch_filepath, c_dir_list.pre_mv_filepath );
+            td_utils.copy_file( c_dir_list.arch_filepath, c_dir_list.pre_mv_filepath );
             -- decrypt the file if it's encrypted
             -- currently only supports gpg
             -- decrypt_file will return the decrypted filename
             -- IF the file isn't a recognized encrypted file type, it just returns the name passed
             l_filepath :=
-               td_host.decrypt_file( dirpath, c_dir_list.source_filename,
+               td_utils.decrypt_file( dirpath, c_dir_list.source_filename,
                                      SELF.passphrase );
             -- unzip the file if it's zipped
             -- currently will unzip, or gunzip, or bunzip2 or uncompress
             -- unzip_file will return the unzipped filename
             -- IF the file isn't a recognized zip archive file, it just returns the name passed
-            l_filepath := td_host.unzip_file( dirpath, c_dir_list.source_filename );
+            l_filepath := td_utils.unzip_file( dirpath, c_dir_list.source_filename );
                  -- now move the file to the expected name
             -- do this with a copy/delete
-            td_host.copy_file( l_filepath, c_dir_list.filepath );
-            td_host.delete_file( DIRECTORY, l_filepath );
+            td_utils.copy_file( l_filepath, c_dir_list.filepath );
+            td_utils.delete_file( DIRECTORY, l_filepath );
             evolve_log.log_msg(    'Source file '
                              || c_dir_list.source_filepath
                              || ' moved to destination '
                              || c_dir_list.filepath
                            );
             -- get the number of lines in the file now that it is decrypted and uncompressed
-            l_numlines := td_host.get_numlines( SELF.DIRECTORY, c_dir_list.filename );
+            l_numlines := td_utils.get_numlines( SELF.DIRECTORY, c_dir_list.filename );
             -- get a total count of all the lines in all the files making up the external table
             l_sum_numlines := l_sum_numlines + l_numlines;
          END IF;
@@ -354,9 +354,9 @@ AS
          -- this step is ignored if delete_source = 'no'
          o_ev.change_action( 'Delete source files' );
 
-         IF td_ext.is_true( delete_source )
+         IF td_core.is_true( delete_source )
          THEN
-            td_host.delete_file( source_directory, c_dir_list.source_filename );
+            td_utils.delete_file( source_directory, c_dir_list.source_filename );
          END IF;
       END LOOP;
 
@@ -385,7 +385,7 @@ AS
                                 WHERE owner = UPPER( object_owner )
                                   AND table_name = UPPER( object_name ))
             LOOP
-               td_host.create_file( c_location.DIRECTORY, c_location.LOCATION );
+               td_utils.create_file( c_location.DIRECTORY, c_location.LOCATION );
             END LOOP;
          WHEN l_rows_dirlist AND LOWER( source_policy ) = 'all'
          -- matching files found, so ignore
@@ -394,7 +394,7 @@ AS
             o_ev.change_action( 'Alter external table' );
 
             BEGIN
-               l_results := evolve_app.td_sql( p_sql => l_ext_tab_ddl, p_auto => 'yes' );
+               l_results := evolve_app.exec_sql( p_sql => l_ext_tab_ddl, p_auto => 'yes' );
                evolve_log.log_msg(    'External table '
                                 || object_owner
                                 || '.'

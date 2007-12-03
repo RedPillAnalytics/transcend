@@ -9,11 +9,11 @@ VARIABLE current_schema char(30)
 EXEC :current_schema := sys_context('USERENV','CURRENT_SCHEMA');
 
 -- get the schema for the Transcend repository (tables)
-ACCEPT rep_schema char default 'TDSYS' prompt 'Evolve repository name to use for the Transcend default repository [tdsys]: '
+ACCEPT rep_schema char default 'TDSYS' prompt 'Evolve repository schema to use for the Transcend default repository [tdsys]: '
 -- get the tablespace for the repository
 ACCEPT tablespace char default 'TDSYS' prompt 'Tablespace in which to install Transcend default repository: [tdsys]: '
 -- get the schema for the Transcend application (PL/SQL and Java code)
-ACCEPT app_schema char default 'TDSYS' prompt 'Evolve application name for the Transcend application [tdsys]: '
+ACCEPT app_schema char default 'TDSYS' prompt 'Evolve application schema for the Transcend application [tdsys]: '
 
 
 WHENEVER sqlerror exit sql.sqlcode

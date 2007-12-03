@@ -27,7 +27,7 @@ AS
       l_part_position   all_tab_partitions.partition_position%TYPE;
       l_high_value      all_tab_partitions.high_value%TYPE;
    BEGIN
-      td_sql.check_table( p_owner            => p_owner,
+      td_utils.check_table( p_owner            => p_owner,
                           p_table            => p_table,
                           p_partname         => p_partname,
                           p_partitioned      => 'yes'
@@ -106,13 +106,13 @@ AS
    BEGIN
       -- confirm that the table exists
       -- raise an error if it doesn't
-      td_sql.check_table( p_owner => p_owner, p_table => p_table );
-      evolve_app.td_sql( p_sql       =>    'truncate table '
+      td_utils.check_table( p_owner => p_owner, p_table => p_table );
+      evolve_app.exec_sql( p_sql       =>    'truncate table '
                                       || p_owner
                                       || '.'
                                       || p_table
                                       || CASE
-                                            WHEN td_ext.is_true( p_reuse )
+                                            WHEN td_core.is_true( p_reuse )
                                                THEN ' reuse storage'
                                             ELSE NULL
                                          END,
@@ -131,13 +131,13 @@ AS
    BEGIN
       -- confirm that the table exists
       -- raise an error if it doesn't
-      td_sql.check_table( p_owner => p_owner, p_table => p_table );
-      evolve_app.td_sql( p_sql       =>    'drop table '
+      td_utils.check_table( p_owner => p_owner, p_table => p_table );
+      evolve_app.exec_sql( p_sql       =>    'drop table '
                                       || p_owner
                                       || '.'
                                       || p_table
                                       || CASE
-                                            WHEN td_ext.is_true( p_purge )
+                                            WHEN td_core.is_true( p_purge )
                                                THEN ' purge'
                                             ELSE NULL
                                          END,
@@ -174,7 +174,7 @@ AS
    BEGIN
       -- confirm that the source table
       -- raise an error if it doesn't
-      td_sql.check_table( p_owner => p_source_owner, p_table => p_source_table );
+      td_utils.check_table( p_owner => p_source_owner, p_table => p_source_table );
       -- don't want any constraints pulled
       DBMS_METADATA.set_transform_param( DBMS_METADATA.session_transform,
                                          'CONSTRAINTS',
@@ -206,7 +206,7 @@ AS
                           ( DBMS_METADATA.get_ddl( 'TABLE', table_name, owner ),
                             CASE
                                -- don't want partitioning
-                            WHEN td_ext.get_yn_ind( p_partitioning ) = 'no'
+                            WHEN td_core.get_yn_ind( p_partitioning ) = 'no'
                                   -- remove all partitioning
                             THEN '(\(\s*partition.+\))\s*|(partition by).+\)\s*'
                                ELSE NULL
@@ -245,11 +245,11 @@ AS
                           );
       END IF;
 
-      evolve_app.td_sql( p_sql => l_ddl, p_auto => 'yes' );
+      evolve_app.exec_sql( p_sql => l_ddl, p_auto => 'yes' );
       evolve_log.log_msg( 'Table ' || l_tab_name || ' created' );
 
       -- if you want the records as well
-      IF td_ext.is_true( p_rows )
+      IF td_core.is_true( p_rows )
       THEN
          insert_table( p_source_owner       => p_source_owner,
                        p_source_object      => p_source_table,
@@ -332,10 +332,10 @@ AS
 
       -- confirm that the target table exists
       -- raise an error if it doesn't
-      td_sql.check_table( p_owner => p_owner, p_table => p_table );
+      td_utils.check_table( p_owner => p_owner, p_table => p_table );
       -- confirm that the source table
       -- raise an error if it doesn't
-      td_sql.check_table( p_owner         => p_source_owner,
+      td_utils.check_table( p_owner         => p_source_owner,
                           p_table         => p_source_table,
                           p_partname      => p_partname
                         );
@@ -614,7 +614,7 @@ AS
          o_ev.change_action( 'Execute index DDL' );
 
          BEGIN
-            evolve_app.td_sql( p_sql => c_indexes.index_ddl, p_auto => 'yes' );
+            evolve_app.exec_sql( p_sql => c_indexes.index_ddl, p_auto => 'yes' );
             evolve_log.log_msg( 'Index ' || c_indexes.index_name || ' built', 3 );
             l_idx_cnt := l_idx_cnt + 1;
             o_ev.change_action( 'insert into td_build_idx_gtt' );
@@ -675,7 +675,7 @@ AS
       LOOP
          BEGIN
             l_rows := TRUE;
-            evolve_app.td_sql( p_sql => c_idxs.rename_ddl, p_auto => 'yes' );
+            evolve_app.exec_sql( p_sql => c_idxs.rename_ddl, p_auto => 'yes' );
             evolve_log.log_msg( c_idxs.rename_msg, 3 );
             l_idx_cnt := l_idx_cnt + 1;
          END;
@@ -734,10 +734,10 @@ AS
    BEGIN
       -- confirm that the target table exists
       -- raise an error if it doesn't
-      td_sql.check_table( p_owner => p_owner, p_table => p_table );
+      td_utils.check_table( p_owner => p_owner, p_table => p_table );
       -- confirm that the source table
       -- raise an error if it doesn't
-      td_sql.check_table( p_owner         => p_source_owner,
+      td_utils.check_table( p_owner         => p_source_owner,
                           p_table         => p_source_table,
                           p_partname      => p_partname
                         );
@@ -989,7 +989,7 @@ AS
          l_rows := TRUE;
 
          BEGIN
-            evolve_app.td_sql( p_sql => c_constraints.constraint_ddl, p_auto => 'yes' );
+            evolve_app.exec_sql( p_sql => c_constraints.constraint_ddl, p_auto => 'yes' );
             evolve_log.log_msg( 'Constraint ' || c_constraints.constraint_name || ' built',
                              3
                            );
@@ -1088,7 +1088,7 @@ AS
 
       -- confirm that the table exists
       -- raise an error if it doesn't
-      td_sql.check_table( p_owner => p_owner, p_table => p_table );
+      td_utils.check_table( p_owner => p_owner, p_table => p_table );
       -- disable both table and reference constraints for this particular table
       o_ev.change_action( 'Constraint maintenance' );
 
@@ -1187,7 +1187,7 @@ AS
          l_rows := TRUE;
 
          BEGIN
-            evolve_app.td_sql
+            evolve_app.exec_sql
                ( p_sql       => CASE
                     WHEN REGEXP_LIKE( 'disable', p_maint_type, 'i' )
                        THEN c_constraints.disable_ddl
@@ -1287,7 +1287,7 @@ AS
       LOOP
          BEGIN
             l_rows := TRUE;
-            evolve_app.td_sql( p_sql => c_cons.enable_ddl, p_auto => 'yes' );
+            evolve_app.exec_sql( p_sql => c_cons.enable_ddl, p_auto => 'yes' );
             evolve_log.log_msg( c_cons.enable_msg );
             l_con_cnt := l_con_cnt + 1;
          END;
@@ -1343,7 +1343,7 @@ AS
          l_rows := TRUE;
 
          BEGIN
-            evolve_app.td_sql( p_sql => c_indexes.index_ddl, p_auto => 'yes' );
+            evolve_app.exec_sql( p_sql => c_indexes.index_ddl, p_auto => 'yes' );
             l_idx_cnt := l_idx_cnt + 1;
             evolve_log.log_msg( 'Index ' || c_indexes.index_name || ' dropped', 3 );
          EXCEPTION
@@ -1407,7 +1407,7 @@ AS
       LOOP
          -- catch empty cursor sets
          l_rows := TRUE;
-         evolve_app.td_sql( p_sql => c_constraints.constraint_ddl, p_auto => 'yes' );
+         evolve_app.exec_sql( p_sql => c_constraints.constraint_ddl, p_auto => 'yes' );
          l_con_cnt := l_con_cnt + 1;
          evolve_log.log_msg( 'Constraint ' || c_constraints.constraint_name || ' dropped',
                           3 );
@@ -1454,10 +1454,10 @@ AS
    BEGIN
       -- confirm that the target table exists
       -- raise an error if it doesn't
-      td_sql.check_object( p_owner => p_owner, p_object => p_object );
+      td_utils.check_object( p_owner => p_owner, p_object => p_object );
       -- confirm that the source table
       -- raise an error if it doesn't
-      td_sql.check_object( p_owner => p_source_owner, p_object => p_source_object );
+      td_utils.check_object( p_owner => p_source_owner, p_object => p_source_object );
       -- execute immediate doesn't like ";" on the end
       DBMS_METADATA.set_transform_param( DBMS_METADATA.session_transform,
                                          'SQLTERMINATOR',
@@ -1516,10 +1516,10 @@ AS
       o_ev.change_action( 'Execute grants' );
 
       FOR c_grants IN ( SELECT *
-                         FROM TABLE( td_ext.SPLIT( l_ddl, ';' )))
+                         FROM TABLE( td_core.SPLIT( l_ddl, ';' )))
       LOOP
          l_rows := TRUE;
-         evolve_app.td_sql( p_sql => c_grants.COLUMN_VALUE, p_auto => 'yes' );
+         evolve_app.exec_sql( p_sql => c_grants.COLUMN_VALUE, p_auto => 'yes' );
          l_grant_cnt := l_grant_cnt + 1;
       END LOOP;
 
@@ -1564,15 +1564,15 @@ AS
                      );
    BEGIN
       -- check information about the table
-      td_sql.check_table( p_owner => p_owner, p_table => p_table );
+      td_utils.check_table( p_owner => p_owner, p_table => p_table );
       -- check that the source object exists.
-      td_sql.check_object( p_owner            => p_source_owner,
+      td_utils.check_object( p_owner            => p_source_owner,
                            p_object           => p_source_object,
                            p_object_type      => 'table$|view'
                          );
 
       -- warning concerning using LOG ERRORS clause and the APPEND hint
-      IF td_ext.is_true( p_direct ) AND p_log_table IS NOT NULL
+      IF td_core.is_true( p_direct ) AND p_log_table IS NOT NULL
       THEN
          evolve_log.log_msg
             ( 'Unique constraints can still be violated when using P_LOG_TABLE in conjunction with P_DIRECT mode',
@@ -1580,14 +1580,14 @@ AS
             );
       END IF;
 
-      IF td_ext.is_true( p_trunc )
+      IF td_core.is_true( p_trunc )
       THEN
          -- truncate the target table
          truncate_table( p_owner, p_table );
       END IF;
 
       -- enable|disable parallel dml depending on the parameter for P_DIRECT
-      evolve_app.td_sql(    'ALTER SESSION '
+      evolve_app.exec_sql(    'ALTER SESSION '
                        || CASE
                              WHEN REGEXP_LIKE( 'yes', p_direct, 'i' )
                                 THEN 'ENABLE'
@@ -1595,10 +1595,10 @@ AS
                           END
                        || ' PARALLEL DML'
                      );
-      evolve_app.td_sql
+      evolve_app.exec_sql
                    ( p_sql      =>    'insert '
                                    || CASE
-                                         WHEN td_ext.is_true( p_direct )
+                                         WHEN td_core.is_true( p_direct )
                                             THEN '/*+ APPEND */ '
                                          ELSE NULL
                                       END
@@ -1667,9 +1667,9 @@ AS
                      );
    BEGIN
       -- check information about the table
-      td_sql.check_table( p_owner => p_owner, p_table => p_table );
+      td_utils.check_table( p_owner => p_owner, p_table => p_table );
       -- check that the source object exists.
-      td_sql.check_object( p_owner            => p_source_owner,
+      td_utils.check_object( p_owner            => p_source_owner,
                            p_object           => p_source_object,
                            p_object_type      => 'table$|view'
                          );
@@ -1833,7 +1833,7 @@ AS
       BEGIN
          o_ev.change_action( 'Issue MERGE statement' );
          -- ENABLE|DISABLE parallel dml depending on the value of P_DIRECT
-         evolve_app.td_sql( p_sql      =>    'ALTER SESSION '
+         evolve_app.exec_sql( p_sql      =>    'ALTER SESSION '
                                         || CASE
                                               WHEN REGEXP_LIKE( 'yes', p_direct, 'i' )
                                                  THEN 'ENABLE'
@@ -1842,7 +1842,7 @@ AS
                                         || ' PARALLEL DML'
                         );
          -- we put the merge statement together using all the different clauses constructed above
-         evolve_app.td_sql
+         evolve_app.exec_sql
                       ( p_sql      =>    'MERGE INTO '
                                       || p_owner
                                       || '.'
@@ -1872,7 +1872,7 @@ AS
                                       || CHR( 10 )
                                       || ' WHEN NOT MATCHED THEN INSERT '
                                       || CASE
-                                            WHEN td_ext.is_true( p_direct )
+                                            WHEN td_core.is_true( p_direct )
                                                THEN '/*+ APPEND */ '
                                             ELSE NULL
                                          END
@@ -1974,7 +1974,7 @@ AS
 
          -- use the load_tab or merge_tab procedure depending on P_MERGE
          CASE
-            WHEN td_ext.is_true( p_trunc )
+            WHEN td_core.is_true( p_trunc )
             THEN
                merge_table( p_source_owner       => c_objects.src_owner,
                             p_source_object      => c_objects.src,
@@ -1983,7 +1983,7 @@ AS
                             p_direct             => p_direct,
                             p_degree             => p_degree
                           );
-            WHEN NOT td_ext.is_true( p_trunc )
+            WHEN NOT td_core.is_true( p_trunc )
             THEN
                insert_table( p_source_owner       => c_objects.src_owner,
                              p_source_object      => c_objects.src,
@@ -2045,13 +2045,13 @@ AS
    BEGIN
       o_ev.change_action( 'Determine partition to use' );
       -- check to make sure the target table exists, is partitioned, and the partition name exists
-      td_sql.check_table( p_owner            => p_owner,
+      td_utils.check_table( p_owner            => p_owner,
                           p_table            => p_table,
                           p_partname         => p_partname,
                           p_partitioned      => 'yes'
                         );
       -- check to make sure the source table exists and is not partitioned
-      td_sql.check_table( p_owner            => p_source_owner,
+      td_utils.check_table( p_owner            => p_source_owner,
                           p_table            => p_source_table,
                           p_partitioned      => 'no'
                         );
@@ -2129,7 +2129,7 @@ AS
          l_retry_ddl := FALSE;
 
          BEGIN
-            evolve_app.td_sql
+            evolve_app.exec_sql
                 ( p_sql       =>    'alter table '
                                  || l_tab_name
                                  || ' exchange partition '
@@ -2164,7 +2164,7 @@ AS
                -- need to compress the staging table
                l_compress := TRUE;
                l_retry_ddl := TRUE;
-               evolve_app.td_sql( p_sql       =>    'alter table '
+               evolve_app.exec_sql( p_sql       =>    'alter table '
                                                || l_src_name
                                                || ' move compress',
                                 p_auto      => 'yes'
@@ -2177,7 +2177,7 @@ AS
 
                -- need to drop indexes if there is an exception
                -- this is for rerunability
-               IF td_ext.is_true( p_index_drop )
+               IF td_core.is_true( p_index_drop )
                THEN
                   -- now record the reason for the index drops
                   evolve_log.log_msg( 'Dropping indexes for restartability', 3 );
@@ -2208,7 +2208,7 @@ AS
       END IF;
 
       -- drop the indexes on the stage table
-      IF td_ext.is_true( p_index_drop )
+      IF td_core.is_true( p_index_drop )
       THEN
          drop_indexes( p_owner => p_source_owner, p_table => p_source_table );
       END IF;
@@ -2242,9 +2242,9 @@ AS
    BEGIN
       o_ev.change_action( 'Perform object checks' );
       -- check to make sure the target table exists
-      td_sql.check_table( p_owner => p_owner, p_table => p_table );
+      td_utils.check_table( p_owner => p_owner, p_table => p_table );
       -- check to make sure the source table exists
-      td_sql.check_table( p_owner => p_owner, p_table => p_source_table );
+      td_utils.check_table( p_owner => p_owner, p_table => p_source_table );
 
       -- do something with statistics on the new table
       -- if p_statistics is 'ignore', then do nothing
@@ -2298,21 +2298,21 @@ AS
       -- using a table rename for this
       o_ev.change_action( 'Rename tables' );
       -- first name the current table to another name
-      evolve_app.td_sql( p_sql       =>    'alter table '
+      evolve_app.exec_sql( p_sql       =>    'alter table '
                                       || l_tab_name
                                       || ' rename to '
                                       || l_tab_rn,
                        p_auto      => 'yes'
                      );
       -- now rename to source table to the target table
-      evolve_app.td_sql( p_sql       =>    'alter table '
+      evolve_app.exec_sql( p_sql       =>    'alter table '
                                       || l_src_name
                                       || ' rename to '
                                       || UPPER( p_table ),
                        p_auto      => 'yes'
                      );
       -- now rename to previous target table to the source table name
-      evolve_app.td_sql( p_sql       =>    'alter table '
+      evolve_app.exec_sql( p_sql       =>    'alter table '
                                       || l_ren_name
                                       || ' rename to '
                                       || UPPER( p_source_table ),
@@ -2320,7 +2320,7 @@ AS
                      );
 
       -- drop the indexes on the stage table
-      IF td_ext.is_true( p_index_drop )
+      IF td_core.is_true( p_index_drop )
       THEN
          drop_indexes( p_owner => p_owner, p_table => p_source_table );
       END IF;
@@ -2386,7 +2386,7 @@ AS
       END CASE;
 
       -- test the target table
-      td_sql.check_table( p_owner         => p_owner, p_table => p_table,
+      td_utils.check_table( p_owner         => p_owner, p_table => p_table,
                           p_partname      => p_partname );
 
       -- test the source object
@@ -2394,7 +2394,7 @@ AS
       -- make sure it's a table or view
       IF p_source_object IS NOT NULL
       THEN
-         td_sql.check_object( p_owner            => p_source_owner,
+         td_utils.check_object( p_owner            => p_source_owner,
                               p_object           => p_source_object,
                               p_object_type      => 'table$|view'
                             );
@@ -2505,7 +2505,7 @@ AS
       LOOP
          o_ev.change_action( 'Execute index DDL' );
          l_rows := TRUE;
-         evolve_app.td_sql( p_sql => c_idx.DDL, p_auto => 'yes' );
+         evolve_app.exec_sql( p_sql => c_idx.DDL, p_auto => 'yes' );
          l_pidx_cnt := c_idx.num_partitions;
          l_idx_cnt := c_idx.num_indexes;
       END LOOP;
@@ -2555,9 +2555,9 @@ AS
               := evolve_ot( p_module      => 'usable_indexes',
                             p_action      => 'Rebuild indexes' );
    BEGIN
-      td_sql.check_table( p_owner => p_owner, p_table => p_table );
+      td_utils.check_table( p_owner => p_owner, p_table => p_table );
 
-      IF td_sql.is_part_table( p_owner, p_table )
+      IF td_utils.is_part_table( p_owner, p_table )
       THEN
          -- rebuild local indexes first
          FOR c_idx IN ( SELECT  table_name, partition_position,
@@ -2574,7 +2574,7 @@ AS
                             AND table_owner = UPPER( p_owner )
                        ORDER BY table_name, partition_position )
          LOOP
-            evolve_app.td_sql( p_sql => c_idx.DDL, p_auto => 'yes' );
+            evolve_app.exec_sql( p_sql => c_idx.DDL, p_auto => 'yes' );
             l_cnt := l_cnt + 1;
          END LOOP;
 
@@ -2609,7 +2609,7 @@ AS
                      ORDER BY table_name )
       LOOP
          l_rows := TRUE;
-         evolve_app.td_sql( p_sql => c_gidx.DDL, p_auto => 'yes' );
+         evolve_app.exec_sql( p_sql => c_gidx.DDL, p_auto => 'yes' );
          l_cnt := l_cnt + 1;
       END LOOP;
 
@@ -2617,7 +2617,7 @@ AS
       THEN
          evolve_log.log_msg(    l_cnt
                           || CASE
-                                WHEN td_sql.is_part_table( p_owner, p_table )
+                                WHEN td_utils.is_part_table( p_owner, p_table )
                                    THEN ' global'
                                 ELSE NULL
                              END
@@ -2632,7 +2632,7 @@ AS
       ELSE
          evolve_log.log_msg(    'No matching unusable '
                           || CASE
-                                WHEN td_sql.is_part_table( p_owner, p_table )
+                                WHEN td_utils.is_part_table( p_owner, p_table )
                                    THEN 'global '
                                 ELSE NULL
                              END
@@ -2701,7 +2701,7 @@ AS
       -- this is only applicable if a table is having stats gathered, instead of a schema
       IF p_table IS NOT NULL
       THEN
-         td_sql.check_table( p_owner         => p_owner,
+         td_utils.check_table( p_owner         => p_owner,
                              p_table         => p_table,
                              p_partname      => p_partname
                            );
@@ -2710,7 +2710,7 @@ AS
       -- verify the structure of the source table (if specified)
       IF ( p_source_owner IS NOT NULL OR p_source_table IS NOT NULL )
       THEN
-         td_sql.check_table( p_owner         => p_source_owner,
+         td_utils.check_table( p_owner         => p_source_owner,
                              p_table         => p_source_table,
                              p_partname      => p_source_partname
                            );
@@ -2743,7 +2743,7 @@ AS
                                                                ),
                                    granularity           => p_granularity,
                                    CASCADE               => NVL
-                                                               ( td_ext.is_true
+                                                               ( td_core.is_true
                                                                               ( p_cascade,
                                                                                 TRUE
                                                                               ),
@@ -2767,7 +2767,7 @@ AS
                                                                 ),
                                     granularity           => p_granularity,
                                     CASCADE               => NVL
-                                                                ( td_ext.is_true
+                                                                ( td_core.is_true
                                                                               ( p_cascade,
                                                                                 TRUE
                                                                               ),
@@ -2800,11 +2800,11 @@ AS
 
                CASE
                   -- if the source table is partitioned
-               WHEN     td_sql.is_part_table( p_owner      => p_source_owner,
+               WHEN     td_utils.is_part_table( p_owner      => p_source_owner,
                                               p_table      => p_source_table
                                             )
                     -- and the target table is not partitioned
-                    AND NOT td_sql.is_part_table( p_owner      => p_owner,
+                    AND NOT td_utils.is_part_table( p_owner      => p_owner,
                                                   p_table      => p_table )
                   -- then delete the partition level information from the stats table
                THEN

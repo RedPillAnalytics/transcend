@@ -106,7 +106,7 @@ AS
       LOOP
          BEGIN
             l_rows := TRUE;
-            evolve_app.td_sql( p_sql => c_idxs.rename_ddl, p_auto => 'yes' );
+            evolve_app.exec_sql( p_sql => c_idxs.rename_ddl, p_auto => 'yes' );
             evolve_log.log_msg( c_idxs.rename_msg, 3 );
             l_idx_cnt := l_idx_cnt + 1;
          END;
