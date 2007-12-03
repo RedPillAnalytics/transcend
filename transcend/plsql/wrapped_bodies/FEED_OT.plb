@@ -80,3 +80,4 @@ rlQ5Uwxk06MNP0cl9lRxD2TqQsS5SKIquR1Wn3y6YsQp0e1Hqc+TGx7zO8frHpGC3zAQp9Bf
 /CzSSHo4GFRtCxhyOXdftdIsYlRqxQ==
 
 /
+SHOW errors

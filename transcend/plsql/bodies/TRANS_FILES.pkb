@@ -66,7 +66,8 @@ IS
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+      evolve_log.log_err;
+      o_ev.clear_app_info;
          RAISE;
    END extract_object;
 
@@ -131,7 +132,10 @@ IS
       THEN
          evolve_log.log_err;
          ROLLBACK;
+         o_ev.clear_app_info;
          RAISE;
    END process_files;
 END trans_files;
 /
+
+SHOW errors

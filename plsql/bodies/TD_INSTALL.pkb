@@ -1,7 +1,7 @@
 CREATE OR REPLACE PACKAGE BODY td_install
 IS
-   g_user	dba_users.username%TYPE;
-   g_tablespace dba_users.default_tablespace%TYPE;
+   g_user	    dba_users.username%TYPE;
+   g_tablespace     dba_users.default_tablespace%TYPE;
    g_current_schema dba_users.username%TYPE;
 
    PROCEDURE create_user(
@@ -2100,7 +2100,7 @@ IS
       
    END create_evolve_user;
 
-   PROCEDURE create_evolve_user(
+   PROCEDURE create_transcend_user(
       p_user         VARCHAR2,
       p_application  VARCHAR2, 
       p_repository   VARCHAR2
@@ -2118,7 +2118,7 @@ IS
       build_transcend_app_syns( p_user   => p_user,
 				p_schema => p_application );
       
-   END create_evolve_user;   
+   END create_transcend_user;   
 
 END td_install;
 /

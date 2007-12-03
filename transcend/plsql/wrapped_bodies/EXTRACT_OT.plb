@@ -40,3 +40,4 @@ ek/hYQjuNfMAZ9Gf9Htkmp4tBzCdmugKm2iL70O0gOPHuOs9NV3gXqb5VGwF93vu4E+RC06i
 
 
 /
+SHOW errors

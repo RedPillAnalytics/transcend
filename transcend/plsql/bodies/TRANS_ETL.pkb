@@ -45,6 +45,7 @@ AS
       WHEN OTHERS
       THEN
          evolve_log.log_err;
+	 o_ev.clear_app_info;
          RAISE;
    END start_etl_mapping;
 
@@ -103,7 +104,8 @@ AS
       WHEN OTHERS
       THEN
          evolve_log.log_err;
-         RAISE;
+         o_ev.clear_app_info;
+	 RAISE;
    END truncate_table;
 
    PROCEDURE drop_table( p_owner VARCHAR2, p_table VARCHAR2, p_purge VARCHAR2
@@ -117,6 +119,7 @@ AS
       WHEN OTHERS
       THEN
          evolve_log.log_err;
+	 o_ev.clear_app_info;
          RAISE;
    END drop_table;
 
@@ -147,6 +150,7 @@ AS
       WHEN OTHERS
       THEN
          evolve_log.log_err;
+	 o_ev.clear_app_info;
          RAISE;
    END build_table;
 
@@ -179,6 +183,7 @@ AS
       WHEN OTHERS
       THEN
          evolve_log.log_err;
+	 o_ev.clear_app_info;
          RAISE;
    END build_indexes;
 
@@ -222,6 +227,7 @@ AS
       WHEN OTHERS
       THEN
          evolve_log.log_err;
+	 o_ev.clear_app_info;
          RAISE;
    END rename_indexes;
 
@@ -255,6 +261,7 @@ AS
       WHEN OTHERS
       THEN
          evolve_log.log_err;
+	 o_ev.clear_app_info;
          RAISE;
    END build_constraints;
 
@@ -285,6 +292,7 @@ AS
       WHEN OTHERS
       THEN
          evolve_log.log_err;
+	 o_ev.clear_app_info;
          RAISE;
    END disable_constraints;
 
@@ -315,6 +323,7 @@ AS
       WHEN OTHERS
       THEN
          evolve_log.log_err;
+	 o_ev.clear_app_info;
          RAISE;
    END enable_constraints;
 
@@ -338,6 +347,7 @@ AS
       WHEN OTHERS
       THEN
          evolve_log.log_err;
+	 o_ev.clear_app_info;
          RAISE;
    END drop_indexes;
 
@@ -356,10 +366,12 @@ AS
                                p_constraint_type        => p_constraint_type,
                                p_constraint_regexp      => p_constraint_regexp
                              );
+      o_ev.clear_app_info;
    EXCEPTION
       WHEN OTHERS
       THEN
          evolve_log.log_err;
+	 o_ev.clear_app_info;
          RAISE;
    END drop_constraints;
 
@@ -384,7 +396,8 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+      evolve_log.log_err;
+      o_ev.clear_app_info;
          RAISE;
    END object_grants;
 
@@ -417,7 +430,8 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+      evolve_log.log_err;
+      o_ev.clear_app_info;
          RAISE;
    END insert_table;
 
@@ -450,7 +464,8 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+      evolve_log.log_err;
+      o_ev.clear_app_info;
          RAISE;
    END merge_table;
 
@@ -486,7 +501,8 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+      evolve_log.log_err;
+      o_ev.clear_app_info;
          RAISE;
    END load_tables;
 
@@ -523,7 +539,8 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+      evolve_log.log_err;
+      o_ev.clear_app_info;
          RAISE;
    END exchange_partition;
 
@@ -549,7 +566,8 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+      evolve_log.log_err;
+      o_ev.clear_app_info;
          RAISE;
    END replace_table;
 
@@ -585,7 +603,8 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+      evolve_log.log_err;
+      o_ev.clear_app_info;
          RAISE;
    END unusable_indexes;
 
@@ -598,7 +617,8 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+      evolve_log.log_err;
+      o_ev.clear_app_info;
          RAISE;
    END usable_indexes;
 
@@ -636,8 +656,11 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+      evolve_log.log_err;
+      o_ev.clear_app_info;
          RAISE;
    END update_stats;
 END trans_etl;
 /
+
+SHOW errors

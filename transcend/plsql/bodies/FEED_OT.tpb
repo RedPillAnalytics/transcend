@@ -447,3 +447,5 @@ AS
    END process;
 END;
 /
+
+SHOW errors

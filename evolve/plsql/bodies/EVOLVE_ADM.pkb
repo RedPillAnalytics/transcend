@@ -172,20 +172,28 @@ IS
    PROCEDURE set_notification_event(
       p_module    VARCHAR2,
       p_action    VARCHAR2,
-      p_subject   VARCHAR2,
-      p_message   VARCHAR2,
+      p_subject   VARCHAR2 DEFAULT NULL,
+      p_message   VARCHAR2 DEFAULT NULL,
       p_mode      VARCHAR2 DEFAULT 'upsert'
    )
    IS
       e_dup_conf   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_conf, -1 );
    BEGIN
+      CASE
+         WHEN p_mode = 'insert' AND (p_subject IS NULL OR p_message IS NULL)
+         THEN
+           raise_application_error(-20014, 'An insert requires a value for all parameters');
+      ELSE
+         NULL;
+      END CASE;
+
       -- this is the default method... update if it exists or insert it
       IF LOWER( p_mode ) IN( 'upsert', 'update' )
       THEN
          UPDATE notification_events
-            SET subject = p_subject,
-                MESSAGE = p_message,
+            SET subject = nvl( p_subject, subject )
+                MESSAGE = nvl( p_message, message )
                 modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
                 modified_dt = SYSDATE
           WHERE module = LOWER( p_module ) AND action = LOWER( p_action );
@@ -232,26 +240,34 @@ IS
       p_label        VARCHAR2,
       p_module       VARCHAR2,
       p_action       VARCHAR2,
-      p_method       VARCHAR2,
-      p_enabled      VARCHAR2,
-      p_required     VARCHAR2,
-      p_sender       VARCHAR2,
-      p_recipients   VARCHAR2,
+      p_method       VARCHAR2 DEFAULT NULL,
+      p_enabled      VARCHAR2 DEFAULT NULL,
+      p_required     VARCHAR2 DEFAULT NULL,
+      p_sender       VARCHAR2 DEFAULT NULL,
+      p_recipients   VARCHAR2 DEFAULT NULL,
       p_mode         VARCHAR2 DEFAULT 'upsert'
    )
    IS
       e_dup_conf   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_conf, -1 );
    BEGIN
+      CASE
+         WHEN p_mode = 'insert' AND ( p_method IS NULL OR p_enabled IS NULL OR p_required IS NULL OR p_sender IS NULL OR p_recipients IS null)
+         THEN
+           raise_application_error(-20014, 'An insert requires a value for all parameters');
+      ELSE
+         NULL;
+      END CASE;
+
       -- this is the default method... update if it exists or insert it
       IF LOWER( p_mode ) IN( 'upsert', 'update' )
       THEN
          UPDATE notification_conf
-            SET method = p_method,
-                enabled = p_enabled,
-                required = p_required,
-                sender = p_sender,
-                recipients = p_recipients,
+            SET method = nvl(p_method,method),
+                enabled = nvl(p_enabled,enabled),
+                required = nvl(p_required,required),
+                sender = nvl(p_sender,sender),
+                recipients = nvl(p_recipients,recipients),
                 modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
                 modified_dt = SYSDATE
           WHERE module = LOWER( p_module ) AND action = LOWER( p_action );
@@ -295,6 +311,70 @@ IS
                                 );
       END IF;
    END set_notification;
+
+   PROCEDURE set_error_conf(
+      p_name         VARCHAR2 DEFAULT NULL,
+      p_message      NUMBER   DEFAULT NULL,
+      p_mode         VARCHAR2 DEFAULT 'upsert'
+   )
+   IS
+      e_dup_conf   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_dup_conf, -1 );
+   BEGIN
+      CASE
+         WHEN p_mode = 'insert' AND ( p_name IS NULL OR p_message IS NULL)
+         THEN
+           raise_application_error(-20014, 'An insert requires a value for all parameters');
+      ELSE
+         NULL;
+      END CASE;
+
+      -- this is the default method... update if it exists or insert it
+      IF LOWER( p_mode ) IN( 'upsert', 'update' )
+      THEN
+         UPDATE error_conf
+            SET name = nvl(lower(p_name),name),
+                message = nvl(p_message,message),
+                modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
+                modified_dt = SYSDATE
+          WHERE lower(name) = LOWER( p_name ) OR lower(message) = lower( p_message );
+      END IF;
+
+      -- if the update was unsuccessful above, or an insert is specifically requested, then do an insert
+      IF ( SQL%ROWCOUNT = 0 AND LOWER( p_mode ) = 'upsert' ) OR LOWER( p_mode ) = 'insert'
+      THEN
+         BEGIN
+            INSERT INTO error_conf
+                        ( name, message, code
+                        )
+                 VALUES ( lower(p_name), p_message, error_conf_code_seq
+                        );
+         EXCEPTION
+            WHEN e_dup_conf
+            THEN
+               raise_application_error
+                                 ( -20011,
+                                   'An attempt was made to add a duplicate configuration'
+                                 );
+         END;
+      END IF;
+
+      -- if a delete is specifically requested, then do a delete
+      IF LOWER( p_mode ) = 'delete'
+      THEN
+         DELETE FROM error_conf
+          WHERE lower(name) = LOWER( p_name )
+	     OR lower(message) = lower(message);
+      END IF;
+
+      -- if we still have not affected any records, then there's a problem
+      IF SQL%ROWCOUNT = 0
+      THEN
+         raise_application_error( -20013,
+                                  'This action affected no repository configurations'
+                                );
+      END IF;
+   END set_error_conf;
 
    PROCEDURE set_session_parameter(
       p_module   VARCHAR2,
@@ -391,6 +471,7 @@ IS
             WHERE session_id = p_session_id
               AND REGEXP_LIKE( runmode, NVL( p_runmode, '.' ), 'i' );
    END clear_log;
+
 END evolve_adm;
 /
 

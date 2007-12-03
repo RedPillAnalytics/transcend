@@ -67,3 +67,5 @@ AS
    END audit_file;
 END;
 /
+
+SHOW errors

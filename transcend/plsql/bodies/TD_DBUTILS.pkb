@@ -1035,9 +1035,10 @@ AS
                           );
             WHEN OTHERS
             THEN
-                  -- first log the error
+               -- first log the error
                -- provide a backtrace from this exception handler to the next exception
                evolve_log.log_err;
+	       o_ev.clear_app_info;
                RAISE;
          END;
       END LOOP;
@@ -1570,7 +1571,8 @@ AS
                            p_object           => p_source_object,
                            p_object_type      => 'table$|view'
                          );
-
+      
+      o_ev.change_action( 'issue log_errors warning' );
       -- warning concerning using LOG ERRORS clause and the APPEND hint
       IF td_core.is_true( p_direct ) AND p_log_table IS NOT NULL
       THEN
@@ -1579,7 +1581,8 @@ AS
               3
             );
       END IF;
-
+      
+      o_ev.change_action( 'truncate table' );
       IF td_core.is_true( p_trunc )
       THEN
          -- truncate the target table
@@ -1587,6 +1590,7 @@ AS
       END IF;
 
       -- enable|disable parallel dml depending on the parameter for P_DIRECT
+      o_ev.change_action( 'alter parallel dml' );
       evolve_app.exec_sql(    'ALTER SESSION '
                        || CASE
                              WHEN REGEXP_LIKE( 'yes', p_direct, 'i' )
@@ -1594,7 +1598,8 @@ AS
                              ELSE 'DISABLE'
                           END
                        || ' PARALLEL DML'
-                     );
+			 );
+      o_ev.change_action( 'issue insert statement' );
       evolve_app.exec_sql
                    ( p_sql      =>    'insert '
                                    || CASE
@@ -1626,7 +1631,8 @@ AS
                                               || p_reject_limit
                                       END
                    );
-
+      
+      o_ev.change_action( 'log row count' );
       -- record the number of rows affected
       IF NOT evolve_log.is_debugmode
       THEN
@@ -1674,6 +1680,7 @@ AS
                            p_object_type      => 'table$|view'
                          );
 
+      o_ev.change_action( 'issue log_errors warning' );
       -- warning concerning using LOG ERRORS clause and the APPEND hint
       IF REGEXP_LIKE( 'yes', p_direct, 'i' ) AND p_log_table IS NOT NULL
       THEN
@@ -1683,8 +1690,7 @@ AS
             );
       END IF;
 
-      o_ev.change_action( 'Construct MERGE ON clause' );
-
+      o_ev.change_action( 'Construct merge on clause' );
       -- use the columns provided in P_COLUMNS.
       -- if that is left null, then choose the columns in the primary key of the target table
       -- if there is no primary key, then choose a unique key (any unique key)
@@ -1750,8 +1756,7 @@ AS
                     AND dc.constraint_type IN( 'P', 'U' ));
       END IF;
 
-      o_ev.change_action( 'Construct MERGE update clause' );
-
+      o_ev.change_action( 'Construct merge update clause' );
       IF p_columns IS NOT NULL
       THEN
          SELECT REGEXP_REPLACE( stragg(    'target.'
@@ -1816,8 +1821,7 @@ AS
                          GROUP BY column_name ));
       END IF;
 
-      o_ev.change_action( 'Construnct MERGE insert clause' );
-
+      o_ev.change_action( 'Construnct merge insert clause' );
       SELECT   REGEXP_REPLACE( '(' || stragg( 'target.' || column_name ) || ') ',
                                ',',
                                ',' || CHR( 10 )
@@ -1827,11 +1831,11 @@ AS
          WHERE table_name = UPPER( p_table ) AND owner = UPPER( p_owner )
       ORDER BY column_name;
 
-      o_ev.change_action( 'Construct MERGE values clause' );
+      o_ev.change_action( 'Construct merge values clause' );
       l_values := REGEXP_REPLACE( l_insert, 'target.', 'source.' );
 
       BEGIN
-         o_ev.change_action( 'Issue MERGE statement' );
+         o_ev.change_action( 'alter parallel dml' );
          -- ENABLE|DISABLE parallel dml depending on the value of P_DIRECT
          evolve_app.exec_sql( p_sql      =>    'ALTER SESSION '
                                         || CASE
@@ -1840,8 +1844,10 @@ AS
                                               ELSE 'DISABLE'
                                            END
                                         || ' PARALLEL DML'
-                        );
-         -- we put the merge statement together using all the different clauses constructed above
+                            );
+
+         o_ev.change_action( 'Issue merge statement' );
+	 -- we put the merge statement together using all the different clauses constructed above
          evolve_app.exec_sql
                       ( p_sql      =>    'MERGE INTO '
                                       || p_owner
@@ -1899,7 +1905,8 @@ AS
          THEN
             evolve_log.raise_err( 'on_clause_missing' );
       END;
-
+      
+      o_ev.change_action( 'log row count' );
       -- record the number of rows affected
       IF NOT evolve_log.is_debugmode
       THEN
@@ -2171,7 +2178,7 @@ AS
                               );
             WHEN OTHERS
             THEN
-                  -- first log the error
+               -- first log the error
                -- provide a backtrace from this exception handler to the next exception
                evolve_log.log_err;
 
@@ -2189,7 +2196,8 @@ AS
                THEN
                   enable_constraints;
                END IF;
-
+	       
+	       o_ev.clear_app_info;
                RAISE;
          END;
 
@@ -2870,3 +2878,5 @@ AS
    END update_stats;
 END td_dbutils;
 /
+
+SHOW errors
