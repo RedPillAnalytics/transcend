@@ -1675,14 +1675,6 @@ IS
    BEGIN
       -- create the synonyms
       BEGIN
-	 EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.TRANS_FILES for '||p_schema||'.TRANS_FILES';
-      EXCEPTION
-	 WHEN e_same_name
-	 THEN
-	 NULL;
-      END;
-
-      BEGIN
 	 EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.TD_DBUTILS for '||p_schema||'.TD_DBUTILS';
       EXCEPTION
 	 WHEN e_same_name
@@ -1699,7 +1691,7 @@ IS
       END;
 
       BEGIN
-	 EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.TD_OWB for '||p_schema||'.TD_OWB';
+	 EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.TRANS_FILES for '||p_schema||'.TRANS_FILES';
       EXCEPTION
 	 WHEN e_same_name
 	 THEN
