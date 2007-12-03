@@ -66,18 +66,30 @@ AS
       p_job_class    VARCHAR2 DEFAULT 'DEFAULT_JOB_CLASS'
    )
    AS
-      l_job_name     all_scheduler_job_run_details.job_name%TYPE
-                                    := DBMS_SCHEDULER.generate_job_name( td_inst.module );
-      l_module       VARCHAR2( 48 )                                := td_inst.module;
-      l_action       VARCHAR2( 32 )                                := td_inst.action;
-      l_session_id   NUMBER                      := SYS_CONTEXT( 'USERENV', 'SESSIONID' );
+      l_job_name     all_scheduler_job_run_details.job_name%TYPE;
+      l_module           VARCHAR2( 48 )       := td_inst.module;
+      l_action       	 VARCHAR2( 32 )                                := td_inst.action;
+      l_session_id   	 NUMBER                      := SYS_CONTEXT( 'USERENV', 'SESSIONID' );
+      e_invalid_jobname  EXCEPTION;
+      PRAGMA exception_init( e_invalid_jobname, -23481 );
    BEGIN
+      BEGIN
+	 l_job_name := DBMS_SCHEDULER.generate_job_name( td_inst.module );
+      EXCEPTION
+	 WHEN e_invalid_jobname
+	 THEN
+	 l_job_name := DBMS_SCHEDULER.generate_job_name;
+      END;
+
       evolve_log.log_msg( 'The job name is: ' || l_job_name, 4 );
       -- for now, we will always use the same program, CONSUME_SQL_JOB
       -- in the future, each module may have it's own program
       DBMS_SCHEDULER.create_job( l_job_name,
-                                 program_name      => p_program
-                               );
+                                 program_name      => p_program,
+                                 job_class         => p_job_class,
+				 auto_drop	   => TRUE
+			       );
+	 
       -- define the values for each argument
       DBMS_SCHEDULER.set_job_argument_value( job_name               => l_job_name,
                                              argument_position      => 1,
