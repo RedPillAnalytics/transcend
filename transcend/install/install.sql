@@ -26,8 +26,8 @@ EXEC tdsys.td_install.build_transcend_app( p_schema => '&app_schema', p_reposito
 -- Install the Transcend Pieces
 
 --CREATE targeted _ots, packages and object views
-@../plsql/specs/TD_DDL.pks
-@../plsql/wrapped_bodies/TD_DDL.plb
+@../plsql/specs/TD_DBUTILS.pks
+@../plsql/wrapped_bodies/TD_DBUTILS.plb
 @../plsql/specs/FILE_OT.tps
 @../plsql/wrapped_bodies/FILE_OT.plb
 @../plsql/specs/EXTRACT_OT.tps
@@ -41,10 +41,10 @@ EXEC tdsys.td_install.build_transcend_app( p_schema => '&app_schema', p_reposito
 @../object_views/DIMENSION_OV_vw.sql
 
 --CREATE callable packages
-@../plsql/specs/TD_ETL.pks
-@../plsql/wrapped_bodies/TD_ETL.plb
-@../plsql/specs/TD_FILES.pks
-@../plsql/wrapped_bodies/TD_FILES.plb
+@../plsql/specs/TRANS_ETL.pks
+@../plsql/wrapped_bodies/TRANS_ETL.plb
+@../plsql/specs/TRANS_FILES.pks
+@../plsql/wrapped_bodies/TRANS_FILES.plb
 @../plsql/specs/TD_OWB.pks
 @../plsql/wrapped_bodies/TD_OWB.plb
 
