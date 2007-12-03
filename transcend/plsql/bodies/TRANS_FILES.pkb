@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE BODY td_files
+CREATE OR REPLACE PACKAGE BODY trans_files
 IS
    -- calculates whether the anticipated number of rejected (bad) records meets a certain threshhold, which is specified in terms of percentage
    FUNCTION calc_rej_ind(
@@ -33,7 +33,7 @@ IS
    EXCEPTION
       WHEN OTHERS
       THEN
-         td_inst.log_err;
+         evolve_log.log_err;
          RAISE;
    END calc_rej_ind;
 
@@ -66,7 +66,7 @@ IS
    EXCEPTION
       WHEN OTHERS
       THEN
-         td_inst.log_err;
+         evolve_log.log_err;
          RAISE;
    END extract_object;
 
@@ -129,9 +129,9 @@ IS
    EXCEPTION
       WHEN OTHERS
       THEN
-         td_inst.log_err;
+         evolve_log.log_err;
          ROLLBACK;
          RAISE;
    END process_files;
-END td_files;
+END trans_files;
 /

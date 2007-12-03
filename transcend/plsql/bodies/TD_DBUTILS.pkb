@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE BODY td_ddl
+CREATE OR REPLACE PACKAGE BODY td_dbutils
 AS
    -- find records in p_source_table that match the values of the partitioned column in p_table
    -- This procedure uses an undocumented database function called tbl$or$idx$part$num.
@@ -50,7 +50,7 @@ AS
                        l_part_position
                      );
 
-         td_inst.log_cnt_msg( SQL%ROWCOUNT, l_num_msg, 4 );
+         evolve_log.log_cnt_msg( SQL%ROWCOUNT, l_num_msg, 4 );
       ELSE
          IF p_source_column IS NULL
          THEN
@@ -89,7 +89,7 @@ AS
                            || ') '
                            || 'ORDER By partition_position';
 
-         td_inst.log_cnt_msg( SQL%ROWCOUNT, l_num_msg, 4 );
+         evolve_log.log_cnt_msg( SQL%ROWCOUNT, l_num_msg, 4 );
       END IF;
 
       o_ev.clear_app_info;
@@ -107,7 +107,7 @@ AS
       -- confirm that the table exists
       -- raise an error if it doesn't
       td_sql.check_table( p_owner => p_owner, p_table => p_table );
-      td_sql.exec_sql( p_sql       =>    'truncate table '
+      evolve_app.td_sql( p_sql       =>    'truncate table '
                                       || p_owner
                                       || '.'
                                       || p_table
@@ -118,7 +118,7 @@ AS
                                          END,
                        p_auto      => 'yes'
                      );
-      td_inst.log_msg( l_tab_name || ' truncated' );
+      evolve_log.log_msg( l_tab_name || ' truncated' );
       o_ev.clear_app_info;
    END truncate_table;
 
@@ -132,7 +132,7 @@ AS
       -- confirm that the table exists
       -- raise an error if it doesn't
       td_sql.check_table( p_owner => p_owner, p_table => p_table );
-      td_sql.exec_sql( p_sql       =>    'drop table '
+      evolve_app.td_sql( p_sql       =>    'drop table '
                                       || p_owner
                                       || '.'
                                       || p_table
@@ -143,7 +143,7 @@ AS
                                          END,
                        p_auto      => 'yes'
                      );
-      td_inst.log_msg( l_tab_name || ' dropped' );
+      evolve_log.log_msg( l_tab_name || ' dropped' );
       o_ev.clear_app_info;
    END drop_table;
 
@@ -245,8 +245,8 @@ AS
                           );
       END IF;
 
-      td_sql.exec_sql( p_sql => l_ddl, p_auto => 'yes' );
-      td_inst.log_msg( 'Table ' || l_tab_name || ' created' );
+      evolve_app.td_sql( p_sql => l_ddl, p_auto => 'yes' );
+      evolve_log.log_msg( 'Table ' || l_tab_name || ' created' );
 
       -- if you want the records as well
       IF td_ext.is_true( p_rows )
@@ -283,7 +283,7 @@ AS
          THEN
             NULL;
          ELSE
-            td_inst.raise_err( 'unrecognized_parm', p_statistics );
+            evolve_log.raise_err( 'unrecognized_parm', p_statistics );
       END CASE;
 
       o_ev.clear_app_info;
@@ -325,7 +325,7 @@ AS
       CASE
          WHEN p_tablespace IS NOT NULL AND p_partname IS NOT NULL
          THEN
-            td_inst.raise_err( 'parms_not_compatible', 'P_TABLESPACE and P_PARTNAME' );
+            evolve_log.raise_err( 'parms_not_compatible', 'P_TABLESPACE and P_PARTNAME' );
          ELSE
             NULL;
       END CASE;
@@ -614,8 +614,8 @@ AS
          o_ev.change_action( 'Execute index DDL' );
 
          BEGIN
-            td_sql.exec_sql( p_sql => c_indexes.index_ddl, p_auto => 'yes' );
-            td_inst.log_msg( 'Index ' || c_indexes.index_name || ' built', 3 );
+            evolve_app.td_sql( p_sql => c_indexes.index_ddl, p_auto => 'yes' );
+            evolve_log.log_msg( 'Index ' || c_indexes.index_name || ' built', 3 );
             l_idx_cnt := l_idx_cnt + 1;
             o_ev.change_action( 'insert into td_build_idx_gtt' );
 
@@ -636,7 +636,7 @@ AS
             -- if a duplicate column list of indexes already exist, log it, but continue
             WHEN e_dup_col_list
             THEN
-               td_inst.log_msg(    'Index comparable to '
+               evolve_log.log_msg(    'Index comparable to '
                                 || c_indexes.source_index
                                 || ' already exists',
                                 3
@@ -646,9 +646,9 @@ AS
 
       IF NOT l_rows
       THEN
-         td_inst.log_msg( 'No matching indexes found on ' || l_src_name );
+         evolve_log.log_msg( 'No matching indexes found on ' || l_src_name );
       ELSE
-         td_inst.log_msg(    l_idx_cnt
+         evolve_log.log_msg(    l_idx_cnt
                           || ' index'
                           || CASE
                                 WHEN l_idx_cnt = 1
@@ -675,17 +675,17 @@ AS
       LOOP
          BEGIN
             l_rows := TRUE;
-            td_sql.exec_sql( p_sql => c_idxs.rename_ddl, p_auto => 'yes' );
-            td_inst.log_msg( c_idxs.rename_msg, 3 );
+            evolve_app.td_sql( p_sql => c_idxs.rename_ddl, p_auto => 'yes' );
+            evolve_log.log_msg( c_idxs.rename_msg, 3 );
             l_idx_cnt := l_idx_cnt + 1;
          END;
       END LOOP;
 
       IF NOT l_rows
       THEN
-         td_inst.log_msg( 'No previously cloned indexes identified' );
+         evolve_log.log_msg( 'No previously cloned indexes identified' );
       ELSE
-         td_inst.log_msg(    l_idx_cnt
+         evolve_log.log_msg(    l_idx_cnt
                           || ' index'
                           || CASE
                                 WHEN l_idx_cnt = 1
@@ -989,8 +989,8 @@ AS
          l_rows := TRUE;
 
          BEGIN
-            td_sql.exec_sql( p_sql => c_constraints.constraint_ddl, p_auto => 'yes' );
-            td_inst.log_msg( 'Constraint ' || c_constraints.constraint_name || ' built',
+            evolve_app.td_sql( p_sql => c_constraints.constraint_ddl, p_auto => 'yes' );
+            evolve_log.log_msg( 'Constraint ' || c_constraints.constraint_name || ' built',
                              3
                            );
             l_con_cnt := l_con_cnt + 1;
@@ -1014,13 +1014,13 @@ AS
          EXCEPTION
             WHEN e_dup_pk
             THEN
-               td_inst.log_msg(    'Primary key constraint already exists on table '
+               evolve_log.log_msg(    'Primary key constraint already exists on table '
                                 || l_tab_name,
                                 3
                               );
             WHEN e_dup_fk
             THEN
-               td_inst.log_msg(    'Constraint comparable to '
+               evolve_log.log_msg(    'Constraint comparable to '
                                 || c_constraints.constraint_name
                                 || ' already exists on table '
                                 || l_tab_name,
@@ -1028,7 +1028,7 @@ AS
                               );
             WHEN e_dup_not_null
             THEN
-               td_inst.log_msg
+               evolve_log.log_msg
                           (    'Referenced not null constraint already exists on table '
                             || l_tab_name,
                             3
@@ -1037,16 +1037,16 @@ AS
             THEN
                   -- first log the error
                -- provide a backtrace from this exception handler to the next exception
-               td_inst.log_err;
+               evolve_log.log_err;
                RAISE;
          END;
       END LOOP;
 
       IF NOT l_rows
       THEN
-         td_inst.log_msg( 'No matching constraints found on ' || l_src_name );
+         evolve_log.log_msg( 'No matching constraints found on ' || l_src_name );
       ELSE
-         td_inst.log_msg(    l_con_cnt
+         evolve_log.log_msg(    l_con_cnt
                           || ' constraint'
                           || CASE
                                 WHEN l_con_cnt = 1
@@ -1081,7 +1081,7 @@ AS
       -- P_CONSTRAINT_TYPE only relates to constraints based on the table, not the reference
       IF REGEXP_LIKE( 'reference|all', p_basis, 'i' ) AND p_constraint_type IS NOT NULL
       THEN
-         td_inst.log_msg
+         evolve_log.log_msg
             ( 'A value provided in P_CONSTRAINT_TYPE is ignored for constraints based on references'
             );
       END IF;
@@ -1187,7 +1187,7 @@ AS
          l_rows := TRUE;
 
          BEGIN
-            td_sql.exec_sql
+            evolve_app.td_sql
                ( p_sql       => CASE
                     WHEN REGEXP_LIKE( 'disable', p_maint_type, 'i' )
                        THEN c_constraints.disable_ddl
@@ -1216,7 +1216,7 @@ AS
                            );
             END IF;
 
-            td_inst.log_msg
+            evolve_log.log_msg
                          ( CASE
                               WHEN REGEXP_LIKE( 'disable', p_maint_type, 'i' )
                                  THEN c_constraints.disable_msg
@@ -1229,7 +1229,7 @@ AS
          EXCEPTION
             WHEN e_iot_shc
             THEN
-               td_inst.log_msg
+               evolve_log.log_msg
                       (    'Constraint '
                         || c_constraints.constraint_name
                         || ' is the primary key for either an IOT or a sorted hash cluster',
@@ -1240,7 +1240,7 @@ AS
 
       IF NOT l_rows
       THEN
-         td_inst.log_msg(    'No matching '
+         evolve_log.log_msg(    'No matching '
                           || CASE
                                 WHEN REGEXP_LIKE( 'disable', p_maint_type, 'i' )
                                    THEN 'enabled'
@@ -1250,7 +1250,7 @@ AS
                           || ' constraints found.'
                         );
       ELSE
-         td_inst.log_msg(    l_con_cnt
+         evolve_log.log_msg(    l_con_cnt
                           || ' constraint'
                           || CASE
                                 WHEN l_con_cnt = 1
@@ -1280,24 +1280,24 @@ AS
       l_rows      BOOLEAN   := FALSE;
       o_ev        evolve_ot := evolve_ot( p_module => 'enable_constraints' );
    BEGIN
-      td_inst.log_msg( 'Enabling constraints disabled previously' );
+      evolve_log.log_msg( 'Enabling constraints disabled previously' );
 
       FOR c_cons IN ( SELECT *
                        FROM td_con_maint_gtt )
       LOOP
          BEGIN
             l_rows := TRUE;
-            td_sql.exec_sql( p_sql => c_cons.enable_ddl, p_auto => 'yes' );
-            td_inst.log_msg( c_cons.enable_msg );
+            evolve_app.td_sql( p_sql => c_cons.enable_ddl, p_auto => 'yes' );
+            evolve_log.log_msg( c_cons.enable_msg );
             l_con_cnt := l_con_cnt + 1;
          END;
       END LOOP;
 
       IF NOT l_rows
       THEN
-         td_inst.log_msg( 'No previously disabled constraints found' );
+         evolve_log.log_msg( 'No previously disabled constraints found' );
       ELSE
-         td_inst.log_msg(    l_con_cnt
+         evolve_log.log_msg(    l_con_cnt
                           || ' constraint'
                           || CASE
                                 WHEN l_con_cnt = 1
@@ -1343,9 +1343,9 @@ AS
          l_rows := TRUE;
 
          BEGIN
-            td_sql.exec_sql( p_sql => c_indexes.index_ddl, p_auto => 'yes' );
+            evolve_app.td_sql( p_sql => c_indexes.index_ddl, p_auto => 'yes' );
             l_idx_cnt := l_idx_cnt + 1;
-            td_inst.log_msg( 'Index ' || c_indexes.index_name || ' dropped', 3 );
+            evolve_log.log_msg( 'Index ' || c_indexes.index_name || ' dropped', 3 );
          EXCEPTION
             WHEN e_pk_idx
             THEN
@@ -1355,9 +1355,9 @@ AS
 
       IF NOT l_rows
       THEN
-         td_inst.log_msg( 'No matching indexes found on ' || l_tab_name );
+         evolve_log.log_msg( 'No matching indexes found on ' || l_tab_name );
       ELSE
-         td_inst.log_msg(    l_idx_cnt
+         evolve_log.log_msg(    l_idx_cnt
                           || ' index'
                           || CASE
                                 WHEN l_idx_cnt = 1
@@ -1407,17 +1407,17 @@ AS
       LOOP
          -- catch empty cursor sets
          l_rows := TRUE;
-         td_sql.exec_sql( p_sql => c_constraints.constraint_ddl, p_auto => 'yes' );
+         evolve_app.td_sql( p_sql => c_constraints.constraint_ddl, p_auto => 'yes' );
          l_con_cnt := l_con_cnt + 1;
-         td_inst.log_msg( 'Constraint ' || c_constraints.constraint_name || ' dropped',
+         evolve_log.log_msg( 'Constraint ' || c_constraints.constraint_name || ' dropped',
                           3 );
       END LOOP;
 
       IF NOT l_rows
       THEN
-         td_inst.log_msg( 'No matching constraints found on ' || l_tab_name );
+         evolve_log.log_msg( 'No matching constraints found on ' || l_tab_name );
       ELSE
-         td_inst.log_msg(    l_con_cnt
+         evolve_log.log_msg(    l_con_cnt
                           || ' constraint'
                           || CASE
                                 WHEN l_con_cnt = 1
@@ -1509,7 +1509,7 @@ AS
          -- if a duplicate column list of indexes already exist, log it, but continue
          WHEN e_no_grants
          THEN
-            td_inst.log_msg( l_none_msg, 3 );
+            evolve_log.log_msg( l_none_msg, 3 );
       END;
 
       -- now, parse the string to work on the different values in it
@@ -1519,15 +1519,15 @@ AS
                          FROM TABLE( td_ext.SPLIT( l_ddl, ';' )))
       LOOP
          l_rows := TRUE;
-         td_sql.exec_sql( p_sql => c_grants.COLUMN_VALUE, p_auto => 'yes' );
+         evolve_app.td_sql( p_sql => c_grants.COLUMN_VALUE, p_auto => 'yes' );
          l_grant_cnt := l_grant_cnt + 1;
       END LOOP;
 
       IF NOT l_rows
       THEN
-         td_inst.log_msg( l_none_msg );
+         evolve_log.log_msg( l_none_msg );
       ELSE
-         td_inst.log_msg(    l_grant_cnt
+         evolve_log.log_msg(    l_grant_cnt
                           || ' privilege'
                           || CASE
                                 WHEN l_grant_cnt = 1
@@ -1574,7 +1574,7 @@ AS
       -- warning concerning using LOG ERRORS clause and the APPEND hint
       IF td_ext.is_true( p_direct ) AND p_log_table IS NOT NULL
       THEN
-         td_inst.log_msg
+         evolve_log.log_msg
             ( 'Unique constraints can still be violated when using P_LOG_TABLE in conjunction with P_DIRECT mode',
               3
             );
@@ -1587,7 +1587,7 @@ AS
       END IF;
 
       -- enable|disable parallel dml depending on the parameter for P_DIRECT
-      td_sql.exec_sql(    'ALTER SESSION '
+      evolve_app.td_sql(    'ALTER SESSION '
                        || CASE
                              WHEN REGEXP_LIKE( 'yes', p_direct, 'i' )
                                 THEN 'ENABLE'
@@ -1595,7 +1595,7 @@ AS
                           END
                        || ' PARALLEL DML'
                      );
-      td_sql.exec_sql
+      evolve_app.td_sql
                    ( p_sql      =>    'insert '
                                    || CASE
                                          WHEN td_ext.is_true( p_direct )
@@ -1628,9 +1628,9 @@ AS
                    );
 
       -- record the number of rows affected
-      IF NOT td_inst.is_debugmode
+      IF NOT evolve_log.is_debugmode
       THEN
-         td_inst.log_cnt_msg( p_count      => SQL%ROWCOUNT,
+         evolve_log.log_cnt_msg( p_count      => SQL%ROWCOUNT,
                               p_msg        =>    'Number of records inserted into '
                                               || l_trg_name
                             );
@@ -1677,7 +1677,7 @@ AS
       -- warning concerning using LOG ERRORS clause and the APPEND hint
       IF REGEXP_LIKE( 'yes', p_direct, 'i' ) AND p_log_table IS NOT NULL
       THEN
-         td_inst.log_msg
+         evolve_log.log_msg
             ( 'Unique constraints can still be violated when using P_LOG_TABLE in conjunction with P_DIRECT mode',
               3
             );
@@ -1833,7 +1833,7 @@ AS
       BEGIN
          o_ev.change_action( 'Issue MERGE statement' );
          -- ENABLE|DISABLE parallel dml depending on the value of P_DIRECT
-         td_sql.exec_sql( p_sql      =>    'ALTER SESSION '
+         evolve_app.td_sql( p_sql      =>    'ALTER SESSION '
                                         || CASE
                                               WHEN REGEXP_LIKE( 'yes', p_direct, 'i' )
                                                  THEN 'ENABLE'
@@ -1842,7 +1842,7 @@ AS
                                         || ' PARALLEL DML'
                         );
          -- we put the merge statement together using all the different clauses constructed above
-         td_sql.exec_sql
+         evolve_app.td_sql
                       ( p_sql      =>    'MERGE INTO '
                                       || p_owner
                                       || '.'
@@ -1897,13 +1897,13 @@ AS
          -- ON columns not specified correctly
          WHEN e_no_on_columns
          THEN
-            td_inst.raise_err( 'on_clause_missing' );
+            evolve_log.raise_err( 'on_clause_missing' );
       END;
 
       -- record the number of rows affected
-      IF NOT td_inst.is_debugmode
+      IF NOT evolve_log.is_debugmode
       THEN
-         td_inst.log_cnt_msg( p_count      => SQL%ROWCOUNT,
+         evolve_log.log_cnt_msg( p_count      => SQL%ROWCOUNT,
                               p_msg        =>    'Number of records merged into '
                                               || l_trg_name
                             );
@@ -2004,7 +2004,7 @@ AS
 
       IF NOT l_rows
       THEN
-         td_inst.raise_err( 'incorrect_parameters' );
+         evolve_log.raise_err( 'incorrect_parameters' );
       END IF;
 
       o_ev.clear_app_info;
@@ -2100,7 +2100,7 @@ AS
          THEN
             NULL;
          ELSE
-            td_inst.raise_err( 'unrecognized_parm', p_statistics );
+            evolve_log.raise_err( 'unrecognized_parm', p_statistics );
       END CASE;
 
       -- now build the indexes
@@ -2129,7 +2129,7 @@ AS
          l_retry_ddl := FALSE;
 
          BEGIN
-            td_sql.exec_sql
+            evolve_app.td_sql
                 ( p_sql       =>    'alter table '
                                  || l_tab_name
                                  || ' exchange partition '
@@ -2139,7 +2139,7 @@ AS
                                  || ' including indexes without validation update global indexes',
                   p_auto      => 'yes'
                 );
-            td_inst.log_msg(    l_src_name
+            evolve_log.log_msg(    l_src_name
                              || ' exchanged for partition '
                              || l_partname
                              || ' of table '
@@ -2160,11 +2160,11 @@ AS
                                );
             WHEN e_compress
             THEN
-               td_inst.log_msg( l_src_name || ' compressed to facilitate exchange', 3 );
+               evolve_log.log_msg( l_src_name || ' compressed to facilitate exchange', 3 );
                -- need to compress the staging table
                l_compress := TRUE;
                l_retry_ddl := TRUE;
-               td_sql.exec_sql( p_sql       =>    'alter table '
+               evolve_app.td_sql( p_sql       =>    'alter table '
                                                || l_src_name
                                                || ' move compress',
                                 p_auto      => 'yes'
@@ -2173,14 +2173,14 @@ AS
             THEN
                   -- first log the error
                -- provide a backtrace from this exception handler to the next exception
-               td_inst.log_err;
+               evolve_log.log_err;
 
                -- need to drop indexes if there is an exception
                -- this is for rerunability
                IF td_ext.is_true( p_index_drop )
                THEN
                   -- now record the reason for the index drops
-                  td_inst.log_msg( 'Dropping indexes for restartability', 3 );
+                  evolve_log.log_msg( 'Dropping indexes for restartability', 3 );
                   drop_indexes( p_owner => p_source_owner, p_table => p_source_table );
                END IF;
 
@@ -2298,21 +2298,21 @@ AS
       -- using a table rename for this
       o_ev.change_action( 'Rename tables' );
       -- first name the current table to another name
-      td_sql.exec_sql( p_sql       =>    'alter table '
+      evolve_app.td_sql( p_sql       =>    'alter table '
                                       || l_tab_name
                                       || ' rename to '
                                       || l_tab_rn,
                        p_auto      => 'yes'
                      );
       -- now rename to source table to the target table
-      td_sql.exec_sql( p_sql       =>    'alter table '
+      evolve_app.td_sql( p_sql       =>    'alter table '
                                       || l_src_name
                                       || ' rename to '
                                       || UPPER( p_table ),
                        p_auto      => 'yes'
                      );
       -- now rename to previous target table to the source table name
-      td_sql.exec_sql( p_sql       =>    'alter table '
+      evolve_app.td_sql( p_sql       =>    'alter table '
                                       || l_ren_name
                                       || ' rename to '
                                       || UPPER( p_source_table ),
@@ -2367,18 +2367,18 @@ AS
          WHEN     p_partname IS NOT NULL
               AND ( p_source_owner IS NOT NULL OR p_source_object IS NOT NULL )
          THEN
-            td_inst.raise_err
+            evolve_log.raise_err
                              ( 'parms_not_compatible',
                                'P_PARTNAME with either P_SOURCE_OWNER or P_SOURCE_OBJECT'
                              );
          WHEN p_source_owner IS NOT NULL AND p_source_object IS NULL
          THEN
-            td_inst.raise_err( 'parms_not_compatible',
+            evolve_log.raise_err( 'parms_not_compatible',
                                'P_SOURCE_OWNER without P_SOURCE_OBJECT'
                              );
          WHEN p_source_owner IS NULL AND p_source_object IS NOT NULL
          THEN
-            td_inst.raise_err( 'parms_not_compatible',
+            evolve_log.raise_err( 'parms_not_compatible',
                                'P_SOURCE_OBJECT without P_SOURCE_OWNEW'
                              );
          ELSE
@@ -2505,7 +2505,7 @@ AS
       LOOP
          o_ev.change_action( 'Execute index DDL' );
          l_rows := TRUE;
-         td_sql.exec_sql( p_sql => c_idx.DDL, p_auto => 'yes' );
+         evolve_app.td_sql( p_sql => c_idx.DDL, p_auto => 'yes' );
          l_pidx_cnt := c_idx.num_partitions;
          l_idx_cnt := c_idx.num_indexes;
       END LOOP;
@@ -2514,7 +2514,7 @@ AS
       THEN
          IF l_idx_cnt > 0 OR l_pidx_cnt > 0
          THEN
-            td_inst.log_msg(    l_idx_cnt
+            evolve_log.log_msg(    l_idx_cnt
                              || ' index'
                              || CASE l_idx_cnt
                                    WHEN 1
@@ -2534,7 +2534,7 @@ AS
                            );
          END IF;
       ELSE
-         td_inst.log_msg( 'No matching usable indexes found on ' || l_tab_name );
+         evolve_log.log_msg( 'No matching usable indexes found on ' || l_tab_name );
       END IF;
 
       -- commit needed to clear the contents of the global temporary table
@@ -2574,11 +2574,11 @@ AS
                             AND table_owner = UPPER( p_owner )
                        ORDER BY table_name, partition_position )
          LOOP
-            td_sql.exec_sql( p_sql => c_idx.DDL, p_auto => 'yes' );
+            evolve_app.td_sql( p_sql => c_idx.DDL, p_auto => 'yes' );
             l_cnt := l_cnt + 1;
          END LOOP;
 
-         td_inst.log_msg(    'Any unusable indexes on '
+         evolve_log.log_msg(    'Any unusable indexes on '
                           || l_cnt
                           || ' table partition'
                           || CASE
@@ -2609,13 +2609,13 @@ AS
                      ORDER BY table_name )
       LOOP
          l_rows := TRUE;
-         td_sql.exec_sql( p_sql => c_gidx.DDL, p_auto => 'yes' );
+         evolve_app.td_sql( p_sql => c_gidx.DDL, p_auto => 'yes' );
          l_cnt := l_cnt + 1;
       END LOOP;
 
       IF l_rows
       THEN
-         td_inst.log_msg(    l_cnt
+         evolve_log.log_msg(    l_cnt
                           || CASE
                                 WHEN td_sql.is_part_table( p_owner, p_table )
                                    THEN ' global'
@@ -2630,7 +2630,7 @@ AS
                           || ' rebuilt'
                         );
       ELSE
-         td_inst.log_msg(    'No matching unusable '
+         evolve_log.log_msg(    'No matching unusable '
                           || CASE
                                 WHEN td_sql.is_part_table( p_owner, p_table )
                                    THEN 'global '
@@ -2677,20 +2677,20 @@ AS
          WHEN    p_source_owner IS NOT NULL AND p_source_table IS NULL
               OR ( p_source_owner IS NULL AND p_source_table IS NOT NULL )
          THEN
-            td_inst.raise_err
+            evolve_log.raise_err
                             ( 'parms_not_compatible',
                               'P_SOURCE_OWNER and P_SOURCE_OBJECT are mutually inclusive'
                             );
          WHEN     p_source_partname IS NOT NULL
               AND ( p_source_owner IS NULL OR p_source_table IS NULL )
          THEN
-            td_inst.raise_err
+            evolve_log.raise_err
                         ( 'parms_not_compatible',
                           'P_SOURCE_PARTNAME requires P_SOURCE_OWNER and P_SOURCE_OBJECT'
                         );
          WHEN p_partname IS NOT NULL AND( p_owner IS NULL OR p_table IS NULL )
          THEN
-            td_inst.raise_err( 'parms_not_compatible',
+            evolve_log.raise_err( 'parms_not_compatible',
                                'P_PARTNAME requires P_OWNER and P_OBJECT'
                              );
          ELSE
@@ -2719,7 +2719,7 @@ AS
       o_ev.change_action( 'Gathering statistics' );
 
       -- check to see if we are in debug mode
-      IF NOT td_inst.is_debugmode
+      IF NOT evolve_log.is_debugmode
       THEN
          -- check to see if source owner is null
          -- if source owner is null, then we know we aren't transferring statistics
@@ -2831,7 +2831,7 @@ AS
          END IF;
       END IF;
 
-      td_inst.log_msg(    'Statistics '
+      evolve_log.log_msg(    'Statistics '
                        || CASE
                              WHEN p_source_table IS NULL
                                 THEN 'gathered on '
@@ -2868,5 +2868,5 @@ AS
       COMMIT;
       o_ev.clear_app_info;
    END update_stats;
-END td_ddl;
+END td_dbutils;
 /

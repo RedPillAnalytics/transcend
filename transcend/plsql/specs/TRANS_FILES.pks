@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE td_files AUTHID CURRENT_USER
+CREATE OR REPLACE PACKAGE trans_files AUTHID CURRENT_USER
 IS
    FUNCTION calc_rej_ind(
       p_file_group   VARCHAR2,
@@ -22,5 +22,5 @@ IS
       p_file_group   VARCHAR2,
       p_file_label    VARCHAR2 DEFAULT NULL
    );
-END td_files;
+END trans_files;
 /

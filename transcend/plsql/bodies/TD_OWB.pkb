@@ -1,6 +1,7 @@
 CREATE OR REPLACE PACKAGE BODY td_owb
 AS
-   PROCEDURE start_map_control(
+   PROCEDURE start_etl_mapping(
+      p_mapping		VARCHAR2 DEFAULT $$PLSQL_UNIT,
       p_owner           VARCHAR2 DEFAULT NULL,
       p_table           VARCHAR2 DEFAULT NULL,
       p_partname        VARCHAR2 DEFAULT NULL,
@@ -15,11 +16,13 @@ AS
       p_batch_id        NUMBER DEFAULT NULL
    )
    AS
-      o_ev   evolve_ot := evolve_ot( p_module => 'start_map_control' );
+      o_ev   evolve_ot;
    BEGIN
-      o_ev.change_action( REGEXP_SUBSTR( td_inst.whence, '\S+$', 1, 1, 'i' ));
+      o_ev   := evolve_ot( p_module => 'start_map_control',
+			   p_action => 'mapping '||p_mapping);
+
       td_inst.batch_id( p_batch_id );
-      td_inst.log_msg( 'Beginning OWB mapping' );
+      evolve_log.log_msg( 'Beginning OWB mapping' );
 
       -- see whether or not to call UNUSABLE_INDEXES
       IF p_owner IS NOT NULL AND p_table IS NOT NULL
@@ -40,11 +43,12 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         td_inst.log_err;
+         evolve_log.log_err;
          RAISE;
    END start_map_control;
 
    PROCEDURE end_map_control(
+      p_mapping	       VARCHAR2 DEFAULT $$PLSQL_UNIT,
       p_owner          VARCHAR2 DEFAULT NULL,
       p_table          VARCHAR2 DEFAULT NULL,
       p_source_owner   VARCHAR2 DEFAULT NULL,
@@ -55,9 +59,10 @@ AS
       p_statistics     VARCHAR2 DEFAULT NULL
    )
    AS
-      o_ev   evolve_ot := evolve_ot( p_module => 'end_map_control' );
+      o_ev   evolve_ot;
    BEGIN
-      o_ev.change_action( REGEXP_SUBSTR( td_inst.whence, '\S+$', 1, 1, 'i' ));
+      o_ev   := evolve_ot( p_module => 'start_map_control',
+			   p_action => 'mapping '||p_mapping);
 
       CASE
          WHEN p_source_owner IS NOT NULL AND p_source_table IS NOT NULL
@@ -78,7 +83,7 @@ AS
             NULL;
       END CASE;
 
-      td_inst.log_msg( 'Ending OWB mapping' );
+      evolve_log.log_msg( 'Ending OWB mapping' );
       o_ev.clear_app_info;
    END end_map_control;
 END td_owb;

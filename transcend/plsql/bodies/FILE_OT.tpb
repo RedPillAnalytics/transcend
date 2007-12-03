@@ -26,7 +26,7 @@ AS
                   );
 
       -- the job fails when size threshholds are not met
-      IF NOT td_inst.is_debugmode
+      IF NOT evolve_log.is_debugmode
       THEN
 
          IF p_num_bytes >= max_bytes AND max_bytes <> 0

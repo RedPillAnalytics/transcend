@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE td_ddl AUTHID CURRENT_USER
+CREATE OR REPLACE PACKAGE td_dbutils AUTHID CURRENT_USER
 IS
    PROCEDURE populate_partname(
       p_owner           VARCHAR2,
@@ -179,5 +179,5 @@ IS
       p_cascade           VARCHAR2 DEFAULT NULL,
       p_options           VARCHAR2 DEFAULT 'GATHER AUTO'
    );
-END td_ddl;
+END td_dbutils;
 /

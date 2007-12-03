@@ -37,7 +37,7 @@ AS
 
       -- now run the insert statement to load the staging table
       o_ev.change_action( 'Load staging table' );
-      td_sql.exec_sql( load_sql );
+      evolve_app.td_sql( load_sql );
       -- perform the replace method
       o_ev.change_action( 'Load staging table' );
 

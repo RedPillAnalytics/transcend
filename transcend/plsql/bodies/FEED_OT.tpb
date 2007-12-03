@@ -18,9 +18,9 @@ AS
       -- defaults to registering with DBMS_APPLICATION_INFO
       o_ev.change_action( 'Get count from table' );
       l_sql := 'SELECT count(*) FROM ' || SELF.object_owner || '.' || SELF.object_name;
-      td_inst.log_msg( 'Count SQL: ' || l_sql, 3 );
+      evolve_log.log_msg( 'Count SQL: ' || l_sql, 3 );
 
-      IF NOT td_inst.is_debugmode
+      IF NOT evolve_log.is_debugmode
       THEN
          BEGIN
             EXECUTE IMMEDIATE l_sql
@@ -39,7 +39,7 @@ AS
                                              td_inst.get_err_msg( 'location_file_missing' )
                                            );
                   ELSE
-                     td_inst.log_msg( 'Unknown data cartridge error' );
+                     evolve_log.log_msg( 'Unknown data cartridge error' );
                END CASE;
          END;
 
@@ -59,7 +59,7 @@ AS
          EXCEPTION
             WHEN ZERO_DIVIDE
             THEN
-               td_inst.log_msg( 'External table location is an empty file' );
+               evolve_log.log_msg( 'External table location is an empty file' );
          END;
 
          INSERT INTO files_obj_detail
@@ -103,7 +103,7 @@ AS
       PRAGMA EXCEPTION_INIT( e_no_files, -1756 );
       o_ev             evolve_ot                  := evolve_ot( p_module => 'process' );
    BEGIN
-      td_inst.log_msg( 'Processing feed "' || file_label || '"' );
+      evolve_log.log_msg( 'Processing feed "' || file_label || '"' );
       o_ev.change_action( 'Evaluate source directory' );
 
       -- first we remove all current files in the external table
@@ -122,7 +122,7 @@ AS
 
       IF l_rows_delete
       THEN
-         td_inst.log_msg( 'Previous external table location files removed' );
+         evolve_log.log_msg( 'Previous external table location files removed' );
       END IF;
 
       -- now we need to see all the source files in the source directory that match the regular expression
@@ -293,7 +293,7 @@ AS
          -- copy file to the archive location
          o_ev.change_action( 'Copy archivefile' );
          td_host.copy_file( c_dir_list.source_filepath, c_dir_list.arch_filepath );
-         td_inst.log_msg( 'Archive file ' || c_dir_list.arch_filepath || ' created' );
+         evolve_log.log_msg( 'Archive file ' || c_dir_list.arch_filepath || ' created' );
          -- copy the file to the external table
          o_ev.change_action( 'Copy external table files' );
 
@@ -326,7 +326,7 @@ AS
             -- do this with a copy/delete
             td_host.copy_file( l_filepath, c_dir_list.filepath );
             td_host.delete_file( DIRECTORY, l_filepath );
-            td_inst.log_msg(    'Source file '
+            evolve_log.log_msg(    'Source file '
                              || c_dir_list.source_filepath
                              || ' moved to destination '
                              || c_dir_list.filepath
@@ -338,7 +338,7 @@ AS
          END IF;
 
          -- WRITE an audit record for the file that was just archived
-         IF NOT td_inst.is_debugmode
+         IF NOT evolve_log.is_debugmode
          THEN
             o_ev.change_action( 'Audit feed' );
             SELF.audit_file( p_source_filepath      => c_dir_list.source_filepath,
@@ -377,7 +377,7 @@ AS
          -- an external table with a zero-byte file gives "no rows returned"
       WHEN NOT l_rows_dirlist AND required = 'N'
          THEN
-            td_inst.log_msg( 'No files found... but none are required' );
+            evolve_log.log_msg( 'No files found... but none are required' );
             o_ev.change_action( 'Empty previous files' );
 
             FOR c_location IN ( SELECT DIRECTORY, LOCATION
@@ -394,8 +394,8 @@ AS
             o_ev.change_action( 'Alter external table' );
 
             BEGIN
-               l_results := td_sql.exec_sql( p_sql => l_ext_tab_ddl, p_auto => 'yes' );
-               td_inst.log_msg(    'External table '
+               l_results := evolve_app.td_sql( p_sql => l_ext_tab_ddl, p_auto => 'yes' );
+               evolve_log.log_msg(    'External table '
                                 || object_owner
                                 || '.'
                                 || object_name

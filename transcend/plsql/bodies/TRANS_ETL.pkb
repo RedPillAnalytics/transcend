@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE BODY td_etl
+CREATE OR REPLACE PACKAGE BODY trans_etl
 AS
    PROCEDURE truncate_table(
       p_owner   VARCHAR2,
@@ -8,13 +8,13 @@ AS
    IS
       o_ev   evolve_ot := evolve_ot( p_module => 'truncate_table' );
    BEGIN
-      td_ddl.truncate_table( p_owner      => p_owner, p_table => p_table,
+      td_dbutils.truncate_table( p_owner      => p_owner, p_table => p_table,
                              p_reuse      => p_reuse );
       o_ev.clear_app_info;
    EXCEPTION
       WHEN OTHERS
       THEN
-         td_inst.log_err;
+         evolve_log.log_err;
          RAISE;
    END truncate_table;
 
@@ -23,12 +23,12 @@ AS
    IS
       o_ev   evolve_ot := evolve_ot( p_module => 'truncate_table' );
    BEGIN
-      td_ddl.drop_table( p_owner => p_owner, p_table => p_table, p_purge => p_purge );
+      td_dbutils.drop_table( p_owner => p_owner, p_table => p_table, p_purge => p_purge );
       o_ev.clear_app_info;
    EXCEPTION
       WHEN OTHERS
       THEN
-         td_inst.log_err;
+         evolve_log.log_err;
          RAISE;
    END drop_table;
 
@@ -45,7 +45,7 @@ AS
    IS
       o_ev   evolve_ot := evolve_ot( p_module => 'build_table' );
    BEGIN
-      td_ddl.build_table( p_owner             => p_owner,
+      td_dbutils.build_table( p_owner             => p_owner,
                           p_table             => p_table,
                           p_source_owner      => p_source_owner,
                           p_source_table      => p_source_table,
@@ -58,7 +58,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         td_inst.log_err;
+         evolve_log.log_err;
          RAISE;
    END build_table;
 
@@ -76,7 +76,7 @@ AS
    IS
       o_ev   evolve_ot := evolve_ot( p_module => 'build_indexes' );
    BEGIN
-      td_ddl.build_indexes( p_owner             => p_owner,
+      td_dbutils.build_indexes( p_owner             => p_owner,
                             p_table             => p_table,
                             p_source_owner      => p_source_owner,
                             p_source_table      => p_source_table,
@@ -90,7 +90,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         td_inst.log_err;
+         evolve_log.log_err;
          RAISE;
    END build_indexes;
 
@@ -106,17 +106,17 @@ AS
       LOOP
          BEGIN
             l_rows := TRUE;
-            td_sql.exec_sql( p_sql => c_idxs.rename_ddl, p_auto => 'yes' );
-            td_inst.log_msg( c_idxs.rename_msg, 3 );
+            evolve_app.td_sql( p_sql => c_idxs.rename_ddl, p_auto => 'yes' );
+            evolve_log.log_msg( c_idxs.rename_msg, 3 );
             l_idx_cnt := l_idx_cnt + 1;
          END;
       END LOOP;
 
       IF NOT l_rows
       THEN
-         td_inst.log_msg( 'No previously cloned indexes identified' );
+         evolve_log.log_msg( 'No previously cloned indexes identified' );
       ELSE
-         td_inst.log_msg(    l_idx_cnt
+         evolve_log.log_msg(    l_idx_cnt
                           || ' index'
                           || CASE
                                 WHEN l_idx_cnt = 1
@@ -133,7 +133,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         td_inst.log_err;
+         evolve_log.log_err;
          RAISE;
    END rename_indexes;
 
@@ -152,7 +152,7 @@ AS
    IS
       o_ev   evolve_ot := evolve_ot( p_module => 'build_constraints' );
    BEGIN
-      td_ddl.build_constraints( p_owner                  => p_owner,
+      td_dbutils.build_constraints( p_owner                  => p_owner,
                                 p_table                  => p_table,
                                 p_source_owner           => p_source_owner,
                                 p_source_table           => p_source_table,
@@ -166,7 +166,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         td_inst.log_err;
+         evolve_log.log_err;
          RAISE;
    END build_constraints;
 
@@ -184,7 +184,7 @@ AS
       l_tab_name   VARCHAR2( 61 ) := UPPER( p_owner || '.' || p_table );
       o_ev         evolve_ot         := evolve_ot( p_module => 'disable_constraints' );
    BEGIN
-      td_ddl.constraint_maint( p_owner                  => p_owner,
+      td_dbutils.constraint_maint( p_owner                  => p_owner,
                                p_table                  => p_table,
                                p_maint_type             => 'disable',
                                p_constraint_type        => p_constraint_type,
@@ -196,7 +196,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         td_inst.log_err;
+         evolve_log.log_err;
          RAISE;
    END disable_constraints;
 
@@ -214,7 +214,7 @@ AS
       l_tab_name   VARCHAR2( 61 ) := UPPER( p_owner || '.' || p_table );
       o_ev         evolve_ot         := evolve_ot( p_module => 'enable_constraints' );
    BEGIN
-      td_ddl.constraint_maint( p_owner                  => p_owner,
+      td_dbutils.constraint_maint( p_owner                  => p_owner,
                                p_table                  => p_table,
                                p_maint_type             => 'enable',
                                p_constraint_type        => p_constraint_type,
@@ -226,7 +226,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         td_inst.log_err;
+         evolve_log.log_err;
          RAISE;
    END enable_constraints;
 
@@ -240,7 +240,7 @@ AS
    IS
       o_ev   evolve_ot := evolve_ot( p_module => 'drop_indexes' );
    BEGIN
-      td_ddl.drop_indexes( p_owner             => p_owner,
+      td_dbutils.drop_indexes( p_owner             => p_owner,
                            p_table             => p_table,
                            p_index_type        => p_index_type,
                            p_index_regexp      => p_index_regexp
@@ -249,7 +249,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         td_inst.log_err;
+         evolve_log.log_err;
          RAISE;
    END drop_indexes;
 
@@ -263,7 +263,7 @@ AS
    IS
       o_ev   evolve_ot := evolve_ot( p_module => 'drop_constraints' );
    BEGIN
-      td_ddl.drop_constraints( p_owner                  => p_owner,
+      td_dbutils.drop_constraints( p_owner                  => p_owner,
                                p_table                  => p_table,
                                p_constraint_type        => p_constraint_type,
                                p_constraint_regexp      => p_constraint_regexp
@@ -271,7 +271,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         td_inst.log_err;
+         evolve_log.log_err;
          RAISE;
    END drop_constraints;
 
@@ -286,7 +286,7 @@ AS
    IS
       o_ev   evolve_ot := evolve_ot( p_module => 'object_grants' );
    BEGIN
-      td_ddl.object_grants( p_owner              => p_owner,
+      td_dbutils.object_grants( p_owner              => p_owner,
                             p_object             => p_object,
                             p_source_owner       => p_source_owner,
                             p_source_object      => p_source_object,
@@ -296,7 +296,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         td_inst.log_err;
+         evolve_log.log_err;
          RAISE;
    END object_grants;
 
@@ -315,7 +315,7 @@ AS
    IS
       o_ev   evolve_ot := evolve_ot( p_module => 'insert_table' );
    BEGIN
-      td_ddl.insert_table( p_owner              => p_owner,
+      td_dbutils.insert_table( p_owner              => p_owner,
                            p_table              => p_table,
                            p_source_owner       => p_source_owner,
                            p_source_object      => p_source_object,
@@ -329,7 +329,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         td_inst.log_err;
+         evolve_log.log_err;
          RAISE;
    END insert_table;
 
@@ -348,7 +348,7 @@ AS
    IS
       o_ev   evolve_ot := evolve_ot( p_module => 'merge_table' );
    BEGIN
-      td_ddl.merge_table( p_owner              => p_owner,
+      td_dbutils.merge_table( p_owner              => p_owner,
                           p_table              => p_table,
                           p_source_owner       => p_source_owner,
                           p_source_object      => p_source_object,
@@ -362,7 +362,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         td_inst.log_err;
+         evolve_log.log_err;
          RAISE;
    END merge_table;
 
@@ -383,7 +383,7 @@ AS
       l_rows   BOOLEAN := FALSE;
       o_ev     evolve_ot  := evolve_ot( p_module => 'load_tables' );
    BEGIN
-      td_ddl.load_tables( p_owner              => p_owner,
+      td_dbutils.load_tables( p_owner              => p_owner,
                           p_source_owner       => p_source_owner,
                           p_source_regexp      => p_source_regexp,
                           p_suffix             => p_suffix,
@@ -398,7 +398,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         td_inst.log_err;
+         evolve_log.log_err;
          RAISE;
    END load_tables;
 
@@ -419,7 +419,7 @@ AS
    IS
       o_ev   evolve_ot := evolve_ot( p_module => 'exchange_partition' );
    BEGIN
-      td_ddl.exchange_partition( p_owner             => p_owner,
+      td_dbutils.exchange_partition( p_owner             => p_owner,
                                  p_table             => p_table,
                                  p_source_owner      => p_source_owner,
                                  p_source_table      => p_source_table,
@@ -435,7 +435,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         td_inst.log_err;
+         evolve_log.log_err;
          RAISE;
    END exchange_partition;
 
@@ -450,7 +450,7 @@ AS
    IS
       o_ev   evolve_ot := evolve_ot( p_module => 'replace_table' );
    BEGIN
-      td_ddl.replace_table( p_owner             => p_owner,
+      td_dbutils.replace_table( p_owner             => p_owner,
                             p_table             => p_table,
                             p_source_table      => p_source_table,
                             p_tablespace        => p_tablespace,
@@ -461,7 +461,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         td_inst.log_err;
+         evolve_log.log_err;
          RAISE;
    END replace_table;
 
@@ -481,7 +481,7 @@ AS
    IS
       o_ev   evolve_ot := evolve_ot( p_module => 'unusable_indexes' );
    BEGIN
-      td_ddl.unusable_indexes( p_owner              => p_owner,
+      td_dbutils.unusable_indexes( p_owner              => p_owner,
                                p_table              => p_table,
                                p_partname           => p_partname,
                                p_source_owner       => p_source_owner,
@@ -497,7 +497,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         td_inst.log_err;
+         evolve_log.log_err;
          RAISE;
    END unusable_indexes;
 
@@ -505,12 +505,12 @@ AS
    IS
       o_ev   evolve_ot := evolve_ot( p_module => 'usable_indexes' );
    BEGIN
-      td_ddl.usable_indexes( p_owner => p_owner, p_table => p_table );
+      td_dbutils.usable_indexes( p_owner => p_owner, p_table => p_table );
       o_ev.clear_app_info;
    EXCEPTION
       WHEN OTHERS
       THEN
-         td_inst.log_err;
+         evolve_log.log_err;
          RAISE;
    END usable_indexes;
 
@@ -531,7 +531,7 @@ AS
    IS
       o_ev   evolve_ot := evolve_ot( p_module => 'update_stats' );
    BEGIN
-      td_ddl.update_stats( p_owner                => p_owner,
+      td_dbutils.update_stats( p_owner                => p_owner,
                            p_table                => p_table,
                            p_partname             => p_partname,
                            p_source_owner         => p_source_owner,
@@ -548,8 +548,8 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         td_inst.log_err;
+         evolve_log.log_err;
          RAISE;
    END update_stats;
-END td_etl;
+END trans_etl;
 /

@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE td_etl AUTHID CURRENT_USER
+CREATE OR REPLACE PACKAGE trans_etl AUTHID CURRENT_USER
 IS
    PROCEDURE truncate_table(
       p_owner   VARCHAR2,
@@ -175,5 +175,5 @@ IS
       p_cascade           VARCHAR2 DEFAULT NULL,
       p_options           VARCHAR2 DEFAULT 'GATHER AUTO'
    );
-END td_etl;
+END trans_etl;
 /

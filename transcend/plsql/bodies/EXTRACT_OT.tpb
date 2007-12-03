@@ -13,14 +13,14 @@ AS
       l_results     NUMBER;
       o_ev          evolve_ot                  := evolve_ot( p_module => 'process' );
    BEGIN
-      td_inst.log_msg( 'Processing extract "' || file_label || '"' );
+      evolve_log.log_msg( 'Processing extract "' || file_label || '"' );
       o_ev.change_action( 'Configure NLS formats' );
       -- set date and timestamp NLS formats
       l_results :=
-             td_sql.exec_sql( p_sql      => dateformat_ddl,
+             evolve_app.td_sql( p_sql      => dateformat_ddl,
                               p_msg      => 'nls_date_format DDL: ' );
       l_results :=
-          td_sql.exec_sql( p_sql      => tsformat_ddl,
+          evolve_app.td_sql( p_sql      => tsformat_ddl,
                            p_msg      => 'nls_timestamp_format DDL: ' );
       o_ev.change_action( 'Extract data' );
       -- extract data to arch location first
@@ -33,7 +33,7 @@ AS
                                  p_quotechar      => quotechar,
                                  p_headers        => headers
                                );
-      td_inst.log_msg(    l_numlines
+      evolve_log.log_msg(    l_numlines
                        || ' '
                        || CASE l_numlines
                              WHEN 1
@@ -46,17 +46,17 @@ AS
       l_file_dt := SYSDATE;
       -- copy the file to the target location
       td_host.copy_file( p_srcfile => arch_filepath, p_dstfile => filepath );
-      td_inst.log_msg(    'Archive file '
+      evolve_log.log_msg(    'Archive file '
                        || arch_filepath
                        || ' copied to destination '
                        || filepath
                      );
 
       -- get file attributes
-      IF td_inst.is_debugmode
+      IF evolve_log.is_debugmode
       THEN
          l_num_bytes := 0;
-         td_inst.log_msg( 'Reporting 0 size file in debug mode' );
+         evolve_log.log_msg( 'Reporting 0 size file in debug mode' );
       ELSE
          UTL_FILE.fgetattr( DIRECTORY, filename, l_exists, l_num_bytes, l_blocksize );
       END IF;
