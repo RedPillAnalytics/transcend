@@ -102,7 +102,7 @@ IS
    BEGIN
       
       -- create the actual program
-      dbms_scheduler.create_program(p_schema||'.consume_sql_job','STORED_PROCEDURE','td_utils.consume_sql',5);
+      dbms_scheduler.create_program(p_schema||'.consume_sql_job','STORED_PROCEDURE','evolve_app.consume_sql',5);
 
       -- define all the arguments that are passed to td_utils.consume_sql
       dbms_scheduler.define_program_argument(p_schema||'.consume_sql_job',1,'p_session_id','number');

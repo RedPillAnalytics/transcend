@@ -68,16 +68,15 @@ AS
    AS
       l_job_name     all_scheduler_job_run_details.job_name%TYPE
                                     := DBMS_SCHEDULER.generate_job_name( td_inst.module );
-      l_module       VARCHAR2( 32 )                                := td_inst.module;
-      l_action       VARCHAR2( 24 )                                := td_inst.action;
+      l_module       VARCHAR2( 48 )                                := td_inst.module;
+      l_action       VARCHAR2( 32 )                                := td_inst.action;
       l_session_id   NUMBER                      := SYS_CONTEXT( 'USERENV', 'SESSIONID' );
    BEGIN
       evolve_log.log_msg( 'The job name is: ' || l_job_name, 4 );
       -- for now, we will always use the same program, CONSUME_SQL_JOB
       -- in the future, each module may have it's own program
       DBMS_SCHEDULER.create_job( l_job_name,
-                                 program_name      => p_program,
-                                 job_class         => p_job_class
+                                 program_name      => p_program
                                );
       -- define the values for each argument
       DBMS_SCHEDULER.set_job_argument_value( job_name               => l_job_name,
@@ -100,8 +99,6 @@ AS
                                              argument_position      => 5,
                                              argument_value         => p_msg
                                            );
-      -- enable the job
-      DBMS_SCHEDULER.ENABLE( l_job_name );
       -- run the job
       -- if p_session is affirmative, then execute within the same session
       -- if it's not, then schedule the job to be picked up by the scheduler
@@ -160,7 +157,8 @@ AS
       END LOOP;
 
       -- just use the standard procedure to execute the SQL
-      exec_sql( p_sql => p_sql, p_msg => p_msg );
+      exec_sql( p_sql => p_sql, 
+		p_msg => p_msg );
    EXCEPTION
       WHEN OTHERS
       THEN

@@ -327,9 +327,14 @@ AS
    PROCEDURE set_scheduler_info( p_session_id NUMBER, p_module VARCHAR2, p_action VARCHAR2 )
    AS
    BEGIN
+      -- set the session information that usually gets set by EVOLVE_OT
       session_id( p_session_id );
       module( p_module );
       action( p_action );
+
+      -- now register the information
+      register;
+
    END set_scheduler_info;
 END td_inst;
 /
