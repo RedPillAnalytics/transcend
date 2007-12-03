@@ -37,8 +37,8 @@ GRANT SELECT ANY dictionary TO tdsys;
 ALTER SESSION SET current_schema=tdsys;
 
 -- install the installation package
-@@../../plsql/specs/TD_INSTALL.pks
-@@../../plsql/wrapped_bodies/TD_INSTALL.plb
+@../../plsql/specs/TD_INSTALL.pks
+@../../plsql/wrapped_bodies/TD_INSTALL.plb
 
 BEGIN
    EXECUTE IMMEDIATE 'ALTER SESSION SET current_schema='||:current_schema;
@@ -59,37 +59,37 @@ EXEC tdsys.td_install.build_evolve_app( p_schema => '&app_schema', p_repository 
 EXEC tdsys.td_install.drop_evolve_types;
 
 --CREATE java stored procedure
-@@../java/TdCore.jvs
+@../java/TdCore.jvs
 
 --CREATE core pieces needed by types
-@@../plsql/specs/STRING_AGG_OT.tps
-@@../plsql/wrapped_bodies/STRING_AGG_OT.plb
-@@../plsql/wrapped_bodies/STRAGG.plb
-@@../plsql/specs/TD_CORE.pks
-@@../plsql/wrapped_bodies/TD_CORE.plb
-@@../plsql/specs/TD_INST.pks
-@@../plsql/wrapped_bodies/TD_INST.plb
-@@../plsql/specs/EVOLVE_LOG.pks
-@@../plsql/wrapped_bodies/EVOLVE_LOG.plb
+@../plsql/specs/STRING_AGG_OT.tps
+@../plsql/wrapped_bodies/STRING_AGG_OT.plb
+@../plsql/wrapped_bodies/STRAGG.plb
+@../plsql/specs/TD_CORE.pks
+@../plsql/wrapped_bodies/TD_CORE.plb
+@../plsql/specs/TD_INST.pks
+@../plsql/wrapped_bodies/TD_INST.plb
+@../plsql/specs/EVOLVE_LOG.pks
+@../plsql/wrapped_bodies/EVOLVE_LOG.plb
 
 -- crate the types
-@@../plsql/specs/APP_OT.tps
-@@../plsql/wrapped_bodies/APP_OT.plb
-@@../plsql/specs/NOTIFICATION_OT.tps
-@@../plsql/wrapped_bodies/NOTIFICATION_OT.plb
-@@../object_views/NOTIFICATION_OV_vw.sql
-@@../plsql/specs/EVOLVE_OT.tps
-@@../plsql/wrapped_bodies/EVOLVE_OT.plb
+@../plsql/specs/APP_OT.tps
+@../plsql/wrapped_bodies/APP_OT.plb
+@../plsql/specs/NOTIFICATION_OT.tps
+@../plsql/wrapped_bodies/NOTIFICATION_OT.plb
+@../object_views/NOTIFICATION_OV_vw.sql
+@../plsql/specs/EVOLVE_OT.tps
+@../plsql/wrapped_bodies/EVOLVE_OT.plb
 
 -- create the packages that use the types
-@@../plsql/specs/TD_UTILS.pks
-@@../plsql/wrapped_bodies/TD_UTILS.plb
+@../plsql/specs/TD_UTILS.pks
+@../plsql/wrapped_bodies/TD_UTILS.plb
 
 --CREATE callable packages
-@@../plsql/specs/EVOLVE_APP.pks
-@@../plsql/wrapped_bodies/EVOLVE_APP.plb
-@@../plsql/specs/EVOLVE_ADM.pks
-@@../plsql/wrapped_bodies/EVOLVE_ADM.plb
+@../plsql/specs/EVOLVE_APP.pks
+@../plsql/wrapped_bodies/EVOLVE_APP.plb
+@../plsql/specs/EVOLVE_ADM.pks
+@../plsql/wrapped_bodies/EVOLVE_ADM.plb
 
 -- set the default logging, registration and runmodes
 EXEC evolve_adm.set_logging_level('default',2,3);
