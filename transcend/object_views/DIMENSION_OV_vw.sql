@@ -15,7 +15,7 @@ SELECT DISTINCT owner,
        direct_load,
        replace_method,
        'insert '
-       ||CASE td_ext.get_yn_ind(direct_load)
+       ||CASE td_core.get_yn_ind(direct_load)
        WHEN 'yes' THEN '/*+ APPEND */ '
        ELSE
        NULL END
