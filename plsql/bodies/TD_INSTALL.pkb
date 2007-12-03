@@ -2099,7 +2099,26 @@ IS
       END IF;
       
    END create_evolve_user;
-   
+
+   PROCEDURE create_evolve_user(
+      p_user         VARCHAR2,
+      p_application  VARCHAR2, 
+      p_repository   VARCHAR2
+   ) 
+   IS
+   BEGIN
+      -- create the user if it doesn't already exist
+      create_user( p_user  => p_user );
+      
+      -- create the synonyms to the repository
+      build_transcend_rep_syns( p_user   => p_user,
+				p_schema => p_repository );
+
+      -- create the synonyms to the application
+      build_transcend_app_syns( p_user   => p_user,
+				p_schema => p_application );
+      
+   END create_evolve_user;   
 
 END td_install;
 /
