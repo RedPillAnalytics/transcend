@@ -21,7 +21,7 @@ AS
       ELSE
          -- otherwise, create the table
          o_ev.change_action( 'Create staging table' );
-         td_ddl.build_table( p_source_owner      => owner,
+         td_dbutils.build_table( p_source_owner      => owner,
                              p_source_table      => table_name,
                              p_owner             => owner,
                              p_table             => staging_table,
@@ -44,7 +44,7 @@ AS
       CASE replace_method
          WHEN 'exchange'
          THEN
-            td_ddl.exchange_partition( p_source_owner      => staging_owner,
+            td_dbutils.exchange_partition( p_source_owner      => staging_owner,
                                        p_source_table      => staging_table,
                                        p_owner             => owner,
                                        p_table             => table_name,
@@ -52,7 +52,7 @@ AS
                                      );
          WHEN 'replace'
          THEN
-            td_ddl.replace_table( p_owner             => owner,
+            td_dbutils.replace_table( p_owner             => owner,
                                   p_table             => table_name,
                                   p_source_table      => staging_table,
                                   p_statistics        => 'transfer'
@@ -63,3 +63,5 @@ AS
    END LOAD;
 END;
 /
+
+SHOW errors

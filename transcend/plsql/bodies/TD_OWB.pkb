@@ -45,9 +45,9 @@ AS
       THEN
          evolve_log.log_err;
          RAISE;
-   END start_map_control;
+   END start_etl_mapping;
 
-   PROCEDURE end_map_control(
+   PROCEDURE end_etl_mapping(
       p_mapping	       VARCHAR2 DEFAULT $$PLSQL_UNIT,
       p_owner          VARCHAR2 DEFAULT NULL,
       p_table          VARCHAR2 DEFAULT NULL,
@@ -85,6 +85,6 @@ AS
 
       evolve_log.log_msg( 'Ending OWB mapping' );
       o_ev.clear_app_info;
-   END end_map_control;
+   END end_etl_mapping;
 END td_owb;
 /
