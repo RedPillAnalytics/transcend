@@ -16,7 +16,7 @@ EXEC :current_schema := sys_context('USERENV','CURRENT_SCHEMA');
 -- ACCEPT app_schema char default 'TDSYS' prompt 'Schema name for the Transcend application [tdsys]: '
 
 -- attempt to just call the Evolve intaller instead of all of this
-@@../../evolve/install/install.sql
+@../../evolve/install/install.sql
 
 WHENEVER sqlerror exit sql.sqlcode
 
@@ -29,27 +29,27 @@ EXEC tdsys.td_install.build_transcend_app( p_schema => '&app_schema', p_reposito
 -- Install the Transcend Pieces
 
 --CREATE targeted _ots, packages and object views
-@@../plsql/specs/TD_DBUTILS.pks
-@@../plsql/wrapped_bodies/TD_DBUTILS.plb
-@@../plsql/specs/FILE_OT.tps
-@@../plsql/wrapped_bodies/FILE_OT.plb
-@@../plsql/specs/EXTRACT_OT.tps
-@@../plsql/wrapped_bodies/EXTRACT_OT.plb
-@@../object_views/EXTRACT_OV_vw.sql
-@@../plsql/specs/FEED_OT.tps
-@@../plsql/wrapped_bodies/FEED_OT.plb
-@@../object_views/FEED_OV_vw.sql
-@@../plsql/specs/DIMENSION_OT.tps
-@@../plsql/wrapped_bodies/DIMENSION_OT.plb
-@@../object_views/DIMENSION_OV_vw.sql
+@../plsql/specs/TD_DBUTILS.pks
+@../plsql/wrapped_bodies/TD_DBUTILS.plb
+@../plsql/specs/FILE_OT.tps
+@../plsql/wrapped_bodies/FILE_OT.plb
+@../plsql/specs/EXTRACT_OT.tps
+@../plsql/wrapped_bodies/EXTRACT_OT.plb
+@../object_views/EXTRACT_OV_vw.sql
+@../plsql/specs/FEED_OT.tps
+@../plsql/wrapped_bodies/FEED_OT.plb
+@../object_views/FEED_OV_vw.sql
+@../plsql/specs/DIMENSION_OT.tps
+@../plsql/wrapped_bodies/DIMENSION_OT.plb
+@../object_views/DIMENSION_OV_vw.sql
 
 --CREATE callable packages
-@@../plsql/specs/TRANS_ETL.pks
-@@../plsql/wrapped_bodies/TRANS_ETL.plb
-@@../plsql/specs/TRANS_FILES.pks
-@@../plsql/wrapped_bodies/TRANS_FILES.plb
-@@../plsql/specs/TD_OWB.pks
-@@../plsql/wrapped_bodies/TD_OWB.plb
+@../plsql/specs/TRANS_ETL.pks
+@../plsql/wrapped_bodies/TRANS_ETL.plb
+@../plsql/specs/TRANS_FILES.pks
+@../plsql/wrapped_bodies/TRANS_FILES.plb
+@../plsql/specs/TD_OWB.pks
+@../plsql/wrapped_bodies/TD_OWB.plb
 
 -- add notification events
 EXEC td_control.set_notification_event('audit_file','file too large','File outside size threshholds','The file referenced below is larger than the configured threshhold:');
