@@ -55,3 +55,5 @@ BEGIN
    EXECUTE IMMEDIATE 'ALTER SESSION SET current_schema='||:current_schema;
 END;
 /
+
+SPOOL off
