@@ -97,3 +97,5 @@ EXEC evolve_adm.set_runmode;
 EXEC evolve_adm.set_registration;
 
 SPOOL off
+
+ALTER SESSION SET current_schema=:current_schema;

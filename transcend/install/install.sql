@@ -50,5 +50,7 @@ EXEC tdsys.td_install.build_transcend_app( p_schema => '&app_schema', p_reposito
 @../plsql/wrapped_bodies/TD_OWB.plb
 
 -- add notification events
-EXEC td_control.set_notification_event('audit_file','file too large','File outside size threshholds','The file referenced below is larger than the configured threshhold:');
-EXEC td_control.set_notification_event('audit_file','file too small','File outside size threshholds','The file referenced below is smaller than the configured threshhold:');
+EXEC evolve_adm.set_notification_event('audit_file','file too large','File outside size threshholds','The file referenced below is larger than the configured threshhold:');
+EXEC evolve_adm.set_notification_event('audit_file','file too small','File outside size threshholds','The file referenced below is smaller than the configured threshhold:');
+
+ALTER SESSION SET current_schema=:current_schema;
