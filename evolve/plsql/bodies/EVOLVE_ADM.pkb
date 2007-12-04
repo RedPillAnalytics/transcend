@@ -3,7 +3,7 @@ IS
    PROCEDURE set_logging_level(
       p_module          VARCHAR2 DEFAULT 'default',
       p_logging_level   NUMBER DEFAULT 2,
-      p_debug_level     NUMBER DEFAULT 4,
+      p_debug_level     NUMBER DEFAULT 3,
       p_mode            VARCHAR2 DEFAULT 'upsert'
    )
    IS
@@ -192,8 +192,8 @@ IS
       IF LOWER( p_mode ) IN( 'upsert', 'update' )
       THEN
          UPDATE notification_events
-            SET subject = nvl( p_subject, subject )
-                MESSAGE = nvl( p_message, message )
+            SET subject = nvl( p_subject, subject ),
+                MESSAGE = nvl( p_message, message ),
                 modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
                 modified_dt = SYSDATE
           WHERE module = LOWER( p_module ) AND action = LOWER( p_action );
@@ -347,7 +347,7 @@ IS
             INSERT INTO error_conf
                         ( name, message, code
                         )
-                 VALUES ( lower(p_name), p_message, error_conf_code_seq
+                   VALUES ( lower(p_name), p_message, error_conf_code_seq.nextval
                         );
          EXCEPTION
             WHEN e_dup_conf
@@ -375,7 +375,6 @@ IS
                                 );
       END IF;
    END set_error_conf;
-
    PROCEDURE set_session_parameter(
       p_module   VARCHAR2,
       p_name     VARCHAR2,
@@ -459,7 +458,48 @@ IS
                                   'This action affected no repository configurations'
                                 );
       END IF;
-   END set_session_parameter;
+   END set_session_parameter;   
+
+   PROCEDURE set_default_configs(
+      p_config   VARCHAR2 DEFAULT 'all',
+      p_reset	 VARCHAR2 DEFAULT 'no'
+   )
+   IS
+   BEGIN
+      -- reset logging_level
+      IF lower(p_config) IN ('all','logging_level')
+      THEN
+	 
+	 IF td_core.is_true(p_reset)
+	 THEN
+	    DELETE FROM logging_level;
+	 END IF;
+
+	 evolve_adm.set_logging_level;
+      END IF;
+
+      -- reset runmode
+      IF lower(p_config) IN ('all','runmode')
+      THEN
+	 DELETE FROM runmode;
+	 evolve_adm.set_runmode;
+      END IF;
+
+      -- reset registration
+      IF lower(p_config) IN ('all','registration')
+      THEN
+	 DELETE FROM registration;
+	 evolve_adm.set_registration;
+      END IF;
+
+      -- reset error_conf
+      IF lower(p_config) IN ('all','errors')
+      THEN
+	 DELETE FROM logging_level;
+	 evolve_adm.set_logging_level('default',2,3);
+      END IF;
+
+   END reset_default_configs;
 
    PROCEDURE clear_log(
       p_runmode      VARCHAR2 DEFAULT NULL,

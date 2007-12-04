@@ -568,6 +568,15 @@ IS
 	 
       END IF;
 
+      -- sequences
+      BEGIN
+	 EXECUTE IMMEDIATE q'|DROP sequence error_conf_code_seq|';
+      EXCEPTION
+	 WHEN e_no_seq
+	 THEN
+	 NULL;
+      END;
+      
 
       BEGIN      
 	 -- DIR_LIST table
@@ -632,6 +641,9 @@ IS
 	   (code)
 	   USING INDEX
 	 )|';
+
+	 EXECUTE IMMEDIATE 
+	 q'|CREATE SEQUENCE error_conf_code_seq start with start with 20100 nocache|';
 	 
 	 -- LOG_TABLE table
 	 EXECUTE IMMEDIATE 
@@ -1457,6 +1469,15 @@ IS
 	    THEN
 	    NULL;
 	 END;
+	 
+	 BEGIN
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.ERROR_CONF_CODE_SEQ for '||p_schema||'.ERROR_CONF_CODE_SEQ';
+	 EXCEPTION
+	    WHEN e_same_name
+	    THEN
+	    NULL;
+	 END;
+
       END;
    END build_evolve_rep_syns;
 
@@ -1566,7 +1587,23 @@ IS
       END;
 
       BEGIN
+	 EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.FILES_DETAIL_SEQ for '||p_schema||'.FILES_DETAIL_SEQ';
+      EXCEPTION
+	 WHEN e_same_name
+	 THEN
+	 NULL;
+      END;
+
+      BEGIN
 	 EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.FILES_OBJ_DETAIL for '||p_schema||'.FILES_OBJ_DETAIL';
+      EXCEPTION
+	 WHEN e_same_name
+	 THEN
+	 NULL;
+      END;
+
+      BEGIN
+	 EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.FILES_OBJ_DETAIL_SEQ for '||p_schema||'.FILES_OBJ_DETAIL_SEQ';
       EXCEPTION
 	 WHEN e_same_name
 	 THEN
@@ -1848,29 +1885,17 @@ IS
 	 BEGIN
 	    -- for each system privilege, grant it to the application owner and the _SYS role
 	    EXECUTE IMMEDIATE 'GRANT ALTER ANY TABLE TO '||p_schema||'_sys';
-	    EXECUTE IMMEDIATE 'GRANT ALTER ANY TABLE TO '||p_schema;
 	    EXECUTE IMMEDIATE 'GRANT INSERT ANY TABLE TO '||p_schema||'_sys';
-	    EXECUTE IMMEDIATE 'GRANT INSERT ANY TABLE TO '||p_schema;
 	    EXECUTE IMMEDIATE 'GRANT SELECT ANY dictionary TO '||p_schema||'_sys';
-	    EXECUTE IMMEDIATE 'GRANT SELECT ANY dictionary TO '||p_schema;
 	    EXECUTE IMMEDIATE 'GRANT SELECT ANY TABLE TO '||p_schema||'_sys';
-	    EXECUTE IMMEDIATE 'GRANT SELECT ANY TABLE TO '||p_schema;
 	    EXECUTE IMMEDIATE 'GRANT SELECT ANY SEQUENCE TO '||p_schema||'_sys';
-	    EXECUTE IMMEDIATE 'GRANT SELECT ANY SEQUENCE TO '||p_schema;
 	    EXECUTE IMMEDIATE 'GRANT UPDATE ANY TABLE TO '||p_schema||'_sys';
-	    EXECUTE IMMEDIATE 'GRANT UPDATE ANY TABLE TO '||p_schema;
 	    EXECUTE IMMEDIATE 'GRANT DELETE ANY TABLE TO '||p_schema||'_sys';
-	    EXECUTE IMMEDIATE 'GRANT DELETE ANY TABLE TO '||p_schema;
 	    EXECUTE IMMEDIATE 'GRANT ALTER ANY INDEX TO '||p_schema||'_sys';
-	    EXECUTE IMMEDIATE 'GRANT ALTER ANY INDEX TO '||p_schema;
 	    EXECUTE IMMEDIATE 'GRANT CREATE ANY INDEX TO '||p_schema||'_sys';
-	    EXECUTE IMMEDIATE 'GRANT CREATE ANY INDEX TO '||p_schema;
 	    EXECUTE IMMEDIATE 'GRANT DROP ANY INDEX TO '||p_schema||'_sys';
-	    EXECUTE IMMEDIATE 'GRANT DROP ANY INDEX TO '||p_schema;
 	    EXECUTE IMMEDIATE 'GRANT DROP ANY TABLE TO '||p_schema||'_sys';
-	    EXECUTE IMMEDIATE 'GRANT DROP ANY TABLE TO '||p_schema;
 	    EXECUTE IMMEDIATE 'GRANT ANALYZE ANY TO '||p_schema||'_sys';
-	    EXECUTE IMMEDIATE 'GRANT ANALYZE ANY TO '||p_schema;
 	    
       EXCEPTION
 	 WHEN e_no_obj

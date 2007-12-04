@@ -255,7 +255,7 @@ AS
       l_code   error_conf.code%TYPE;
    BEGIN
       BEGIN
-         SELECT code
+         SELECT (0 - code)
            INTO l_code
            FROM error_conf
           WHERE NAME = p_name;

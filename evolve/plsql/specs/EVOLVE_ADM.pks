@@ -3,7 +3,7 @@ IS
    PROCEDURE set_logging_level(
       p_module          VARCHAR2 DEFAULT 'default',
       p_logging_level   NUMBER DEFAULT 2,
-      p_debug_level     NUMBER DEFAULT 4,
+      p_debug_level     NUMBER DEFAULT 3,
       p_mode		VARCHAR2 DEFAULT 'upsert'
    );
 
@@ -22,8 +22,8 @@ IS
    PROCEDURE set_notification_event(
       p_module		VARCHAR2,
       p_action 		VARCHAR2,
-      p_subject		VARCHAR2,
-      p_message         VARCHAR2,
+      p_subject		VARCHAR2 DEFAULT NULL,
+      p_message         VARCHAR2 DEFAULT NULL,
       p_mode		VARCHAR2 DEFAULT 'upsert'
    );
 
@@ -31,12 +31,18 @@ IS
       p_label        VARCHAR2,
       p_module       VARCHAR2,
       p_action       VARCHAR2,
-      p_method       VARCHAR2,
-      p_enabled      VARCHAR2,
-      p_required     VARCHAR2,
-      p_sender       VARCHAR2,
-      p_recipients   VARCHAR2,
-      p_mode	     VARCHAR2 DEFAULT 'upsert'
+      p_method       VARCHAR2 DEFAULT NULL,
+      p_enabled      VARCHAR2 DEFAULT NULL,
+      p_required     VARCHAR2 DEFAULT NULL,
+      p_sender       VARCHAR2 DEFAULT NULL,
+      p_recipients   VARCHAR2 DEFAULT NULL,
+      p_mode         VARCHAR2 DEFAULT 'upsert'
+   );
+
+   PROCEDURE set_error_conf(
+      p_name         VARCHAR2 DEFAULT NULL,
+      p_message      NUMBER   DEFAULT NULL,
+      p_mode         VARCHAR2 DEFAULT 'upsert'
    );
 
    PROCEDURE set_session_parameter(
