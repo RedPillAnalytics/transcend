@@ -47,7 +47,7 @@ AS
                      THEN
                         IF td_core.is_true( required )
                         THEN
-			   td_inst.raise_err( 'utl_mail_error', SQLERRM );
+			   evolve_log.raise_err( 'utl_mail_error', SQLERRM );
                         ELSE
                            evolve_log.log_msg(    'The following SMTP error occured:'
                                                || SQLERRM
@@ -55,7 +55,7 @@ AS
                         END IF;
                   END;
                ELSE
-		  td_inst.raise_err( 'notify_method_invalid' );
+		  evolve_log.raise_err( 'notify_method_invalid' );
             END CASE;
          END IF;
       END IF;
