@@ -349,7 +349,7 @@ IS
             INSERT INTO error_conf
                         ( name, message, code, comments
                         )
-                   VALUES ( lower(p_name), p_message, error_conf_code_seq.nextval, comments
+                   VALUES ( lower(p_name), p_message, error_conf_code_seq.nextval, p_comments
                         );
          EXCEPTION
             WHEN e_dup_conf
@@ -475,7 +475,7 @@ IS
 	 
 	 IF td_core.is_true(p_reset)
 	 THEN
-	    DELETE FROM logging_level;
+	    DELETE FROM logging_level_conf;
 	 END IF;
 
 	 evolve_adm.set_logging_level;
@@ -486,7 +486,7 @@ IS
       THEN
 	 IF td_core.is_true(p_reset)
 	 THEN
-	    DELETE FROM runmode;
+	    DELETE FROM runmode_conf;
 	 END IF;
 
 	 evolve_adm.set_runmode;
@@ -498,7 +498,7 @@ IS
 	 
 	 IF td_core.is_true(p_reset)
 	 THEN
-	    DELETE FROM registration;
+	    DELETE FROM registration_conf;
 	 END IF;
 
 	 evolve_adm.set_registration;
