@@ -89,6 +89,7 @@ AS
                                  job_class         => p_job_class,
 				 auto_drop	   => TRUE
 			       );
+--      dbms_scheduler.set_attribute( l_job_name,'max_runs',1);
 	 
       -- define the values for each argument
       DBMS_SCHEDULER.set_job_argument_value( job_name               => l_job_name,
