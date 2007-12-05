@@ -474,6 +474,8 @@ IS
       PRAGMA EXCEPTION_INIT( e_tab_exists, -955 );
       e_no_tab   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_tab, -942 );
+      e_no_seq   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_no_seq, -2289 );
    BEGIN
       -- create the user if it doesn't already exist
       -- if it does, then simply change the default tablespace for that user
