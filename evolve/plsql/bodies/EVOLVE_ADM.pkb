@@ -551,7 +551,7 @@ IS
 
       END IF;
 
-   END reset_default_configs;
+   END set_default_configs;
 
    PROCEDURE clear_log(
       p_runmode      VARCHAR2 DEFAULT NULL,

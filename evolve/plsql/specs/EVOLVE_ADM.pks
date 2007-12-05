@@ -52,6 +52,11 @@ IS
       p_mode	     VARCHAR2 DEFAULT 'upsert'
    );
 
+   PROCEDURE set_default_configs(
+      p_config   VARCHAR2 DEFAULT 'all',
+      p_reset	 VARCHAR2 DEFAULT 'no'
+   );
+
    PROCEDURE clear_log(
       p_runmode      VARCHAR2 DEFAULT NULL,
       p_session_id   NUMBER DEFAULT SYS_CONTEXT( 'USERENV', 'SESSIONID' )

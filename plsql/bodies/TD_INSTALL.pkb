@@ -599,7 +599,7 @@ IS
 	   client_info    VARCHAR2(64),
 	   module         VARCHAR2(48),
 	   action         VARCHAR2(32),
-	   runmode VARCHAR2(10) NOT NULL,
+	   runmode 	  VARCHAR2(10) NOT NULL,
 	   session_id     NUMBER NOT null,
 	   row_cnt        NUMBER NOT null
 	 )|';
@@ -617,13 +617,13 @@ IS
 	 EXECUTE IMMEDIATE 
 	 q'|CREATE TABLE error_conf
 	 ( 
-	   code NUMBER NOT NULL,
-	   name VARCHAR2(30) NOT NULL,
-	   message VARCHAR2(1000) NOT NULL,
-	   comments VARCHAR2(4000),
+	   code              NUMBER NOT NULL,
+	   name 	     VARCHAR2(30) NOT NULL,
+	   message 	     VARCHAR2(1000) NOT NULL,
+	   comment 	     VARCHAR2(4000),
 	   created_user	     VARCHAR2(30) DEFAULT sys_context('USERENV','SESSION_USER') NOT NULL,
 	   created_dt	     DATE DEFAULT SYSDATE NOT NULL,
-	   modified_user	     VARCHAR2(30),
+	   modified_user     VARCHAR2(30),
 	   modified_dt	     DATE
 	 )|';
 
