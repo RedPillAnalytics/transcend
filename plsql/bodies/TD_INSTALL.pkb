@@ -465,7 +465,7 @@ IS
    END build_sys_repo;
 
    PROCEDURE build_evolve_repo(
-      p_schema       VARCHAR2 DEFAULT 'TDSYS',
+      p_schema      VARCHAR2 DEFAULT 'TDSYS',
       p_tablespace  VARCHAR2 DEFAULT 'TDSYS',
       p_drop	    BOOLEAN  DEFAULT FALSE
    ) 
@@ -646,7 +646,7 @@ IS
 	 )|';
 
 	 EXECUTE IMMEDIATE 
-	 q'|CREATE SEQUENCE error_conf_code_seq start with start with 20100 nocache|';
+	 q'|CREATE SEQUENCE error_conf_code_seq start with 20100 nocache|';
 	 
 	 -- LOG_TABLE table
 	 EXECUTE IMMEDIATE 
