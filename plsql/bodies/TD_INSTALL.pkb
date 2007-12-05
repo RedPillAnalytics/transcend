@@ -220,11 +220,7 @@ IS
 
 	    EXECUTE IMMEDIATE 'GRANT SELECT ON ERROR_CONF TO '||l_sel_grant;
 	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON ERROR_CONF TO '||l_adm_grant;
-	    
-	    -- sequences
-	    EXECUTE IMMEDIATE 'GRANT SELECT ON ERROR_CONF_CODE_SEQ TO '||l_sel_grant;
-	    EXECUTE IMMEDIATE 'GRANT SELECT ON ERROR_CONF_CODE_SEQ TO '||l_adm_grant;
-	
+	    	
       EXCEPTION
 	 WHEN e_no_grantee
 	 THEN
@@ -574,15 +570,6 @@ IS
 	 
       END IF;
 
-      -- sequences
-      BEGIN
-	 EXECUTE IMMEDIATE q'|DROP sequence error_conf_code_seq|';
-      EXCEPTION
-	 WHEN e_no_seq
-	 THEN
-	 NULL;
-      END;
-      
 
       BEGIN      
 	 -- DIR_LIST table
@@ -649,9 +636,6 @@ IS
 	   USING INDEX
 	 )|';
 
-	 EXECUTE IMMEDIATE 
-	 q'|CREATE SEQUENCE error_conf_code_seq start with 20100 nocache|';
-	 
 	 -- LOG_TABLE table
 	 EXECUTE IMMEDIATE 
 	 q'|CREATE TABLE log_table
@@ -1471,15 +1455,6 @@ IS
 
 	 BEGIN
 	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.PARAMETER_CONF for '||p_schema||'.PARAMETER_CONF';
-	 EXCEPTION
-	    WHEN e_same_name
-	    THEN
-	    NULL;
-	 END;
-
-	 -- sequences	 
-	 BEGIN
-	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.ERROR_CONF_CODE_SEQ for '||p_schema||'.ERROR_CONF_CODE_SEQ';
 	 EXCEPTION
 	    WHEN e_same_name
 	    THEN

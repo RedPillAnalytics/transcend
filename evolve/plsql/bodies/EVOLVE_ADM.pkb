@@ -319,6 +319,7 @@ IS
       p_mode         VARCHAR2 DEFAULT 'upsert'
    )
    IS
+      l_code       error_conf.code%type;
       e_dup_conf   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_conf, -1 );
    BEGIN
@@ -329,7 +330,7 @@ IS
       ELSE
          NULL;
       END CASE;
-
+   
       -- this is the default method... update if it exists or insert it
       IF LOWER( p_mode ) IN( 'upsert', 'update' )
       THEN
@@ -345,11 +346,38 @@ IS
       -- if the update was unsuccessful above, or an insert is specifically requested, then do an insert
       IF ( SQL%ROWCOUNT = 0 AND LOWER( p_mode ) = 'upsert' ) OR LOWER( p_mode ) = 'insert'
       THEN
+	
+	 -- error_codes for RAISE_APPLICATON_ERROR are a scarce resource
+	 -- need to use them carefully, and reuse wherever possible
+	 
+	 -- first, try and use 20101 (that is the lowest used for ERROR_CONF)
+	 -- if that is taken, then use the lowest gap number
+	 -- otherwise, use the max number +1
+	 BEGIN 
+	    SELECT DISTINCT MIN( CASE
+				 WHEN min_code > 20101
+				 THEN 20101
+				 WHEN code+1<> lead_code
+				 THEN code+1
+				 ELSE max_code+1
+				 END) OVER (partition BY 1)
+	      INTO l_code
+	      FROM (SELECT code,
+			   lead(code) OVER (ORDER BY code) lead_code,
+			   MIN(code) OVER (partition BY 1) min_code,
+			   MAX(code) OVER (partition BY 1) max_code
+		      FROM error_conf);
+	 EXCEPTION
+	    WHEN no_data_found
+	    THEN
+  	       l_code := 20101;
+	 END;
+
          BEGIN
             INSERT INTO error_conf
                         ( name, message, code, comments
                         )
-                   VALUES ( lower(p_name), p_message, error_conf_code_seq.nextval, p_comments
+                   VALUES ( lower(p_name), p_message, l_code, p_comments
                         );
          EXCEPTION
             WHEN e_dup_conf
@@ -478,7 +506,7 @@ IS
 	    DELETE FROM logging_conf;
 	 END IF;
 
-	 evolve_adm.set_logging_level;
+	 set_logging_level;
       END IF;
 
       -- reset runmode
@@ -489,7 +517,7 @@ IS
 	    DELETE FROM runmode_conf;
 	 END IF;
 
-	 evolve_adm.set_runmode;
+	 set_runmode;
       END IF;
 
       -- reset registration
@@ -501,7 +529,7 @@ IS
 	    DELETE FROM registration_conf;
 	 END IF;
 
-	 evolve_adm.set_registration;
+	 set_registration;
       END IF;
 
       -- reset error_conf
@@ -512,7 +540,6 @@ IS
 	 THEN
 	    DELETE FROM error_conf;
 	 END IF;
-
 	 
 	 set_error_conf( p_name=>    'unrecognized_parm',
 			 p_message=> 'The specified parameter value is not recognized');
