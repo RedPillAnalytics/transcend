@@ -475,7 +475,7 @@ IS
 	 
 	 IF td_core.is_true(p_reset)
 	 THEN
-	    DELETE FROM logging_level_conf;
+	    DELETE FROM logging_conf;
 	 END IF;
 
 	 evolve_adm.set_logging_level;
@@ -514,40 +514,40 @@ IS
 	 END IF;
 
 	 
-	 set_error_conf( p_name=> 'unrecognized_parm',
-			 p_code=> 'The specified parameter value is not recognized');
-	 set_error_conf( p_name=> 'notify_method_invalid',
-			 p_code=> 'The notification method is not valid');
-	 set_error_conf( p_name=> 'no_tab',
-			 p_code=> 'The specified table does not exist');
-	 set_error_conf( p_name=> 'no_object',
-			 p_code=> 'The specified object does not exist');
-	 set_error_conf( p_name=> 'not_partitioned',
-			 p_code=> 'The specified table is not partititoned');
-	 set_error_conf( p_name=> 'parms_not_compatible',
-			 p_code=> 'The specified parameters are not compatible');
-	 set_error_conf( p_name=> 'parm_not_configured',
-			 p_code=> 'The specified parameter is not configured');
-	 set_error_conf( p_name=> 'file_not_found',
-			 p_code=> 'Expected file does not exist');
-	 set_error_conf( p_name=> 'not_iot',
-			 p_code=> 'The specified table is not index-organized');
-	 set_error_conf( p_name=> 'not_compressed',
-			 p_code=> 'The specified segment is not compresed');
-	 set_error_conf( p_name=> 'no_part',
-			 p_code=> 'The specified partition does not exist');
-	 set_error_conf( p_name=> 'partitioned',
-			 p_code=> 'The specified table is partitioned');
-	 set_error_conf( p_name=> 'iot',
-			 p_code=> 'The specified table is index-organized');
-	 set_error_conf( p_name=> 'compressed',
-			 p_code=> 'The specified segment is compresed');
-	 set_error_conf( p_name=> 'no_or_wrong_object',
-			 p_code=> 'The specified object does not exist or is of the wrong type');
-	 set_error_conf( p_name=> 'too_many_objects',
-			 p_code=> 'The specified parameters yield more than one object');
-	 set_error_conf( p_name=> 'parm_not_supported',
-			 p_code=> 'The specified parameter is not supported');	 
+	 set_error_conf( p_name=>    'unrecognized_parm',
+			 p_message=> 'The specified parameter value is not recognized');
+	 set_error_conf( p_name=>    'notify_method_invalid',
+			 p_message=> 'The notification method is not valid');
+	 set_error_conf( p_name=>    'no_tab',
+			 p_message=> 'The specified table does not exist');
+	 set_error_conf( p_name=>    'no_object',
+			 p_message=> 'The specified object does not exist');
+	 set_error_conf( p_name=>    'not_partitioned',
+			 p_message=> 'The specified table is not partititoned');
+	 set_error_conf( p_name=>    'parms_not_compatible',
+			 p_message=> 'The specified parameters are not compatible');
+	 set_error_conf( p_name=>    'parm_not_configured',
+			 p_message=> 'The specified parameter is not configured');
+	 set_error_conf( p_name=>    'file_not_found',
+			 p_message=> 'Expected file does not exist');
+	 set_error_conf( p_name=>    'not_iot',
+			 p_message=> 'The specified table is not index-organized');
+	 set_error_conf( p_name=>    'not_compressed',
+			 p_message=> 'The specified segment is not compresed');
+	 set_error_conf( p_name=>    'no_part',
+			 p_message=> 'The specified partition does not exist');
+	 set_error_conf( p_name=>    'partitioned',
+			 p_message=> 'The specified table is partitioned');
+	 set_error_conf( p_name=>    'iot',
+			 p_message=> 'The specified table is index-organized');
+	 set_error_conf( p_name=>    'compressed',
+			 p_message=> 'The specified segment is compresed');
+	 set_error_conf( p_name=>    'no_or_wrong_object',
+			 p_message=> 'The specified object does not exist or is of the wrong type');
+	 set_error_conf( p_name=>    'too_many_objects',
+			 p_message=> 'The specified parameters yield more than one object');
+	 set_error_conf( p_name=>    'parm_not_supported',
+			 p_message=> 'The specified parameter is not supported');	 
 
       END IF;
 
