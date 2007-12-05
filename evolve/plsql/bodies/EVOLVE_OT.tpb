@@ -46,7 +46,7 @@ AS
          EXCEPTION
             WHEN NO_DATA_FOUND
             THEN
-	       raise_err( 'parm_not_configured','RUNMODE' );
+	       evolve_log.raise_err( 'parm_not_configured','RUNMODE' );
          END;
 
          td_inst.runmode( l_runmode );
@@ -71,7 +71,7 @@ AS
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
-	    raise_err( 'parm_not_configured','REGISTRATION' );
+	    evolve_log.raise_err( 'parm_not_configured','REGISTRATION' );
       END;
 
       -- set the registration value
@@ -98,7 +98,7 @@ AS
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
-   	    raise_err( 'parm_not_configured','LOGGING_LEVEL or DEBUG_LEVEL' );
+   	    evolve_log.raise_err( 'parm_not_configured','LOGGING_LEVEL or DEBUG_LEVEL' );
       END;
 
       td_inst.logging_level( CASE
