@@ -175,18 +175,14 @@ AS
       END IF;
    END log_err;
 
-   -- writes error information to the log_table
+   -- calls a stub in the TD_INST package
+   -- raises an error using RAISE_APPLICATION_ERROR
+   -- uses a configuration table to find the error code and the message
    PROCEDURE raise_err( p_name VARCHAR2, p_add_msg VARCHAR2 DEFAULT NULL )
    AS
    BEGIN
-      raise_application_error( td_inst.get_err_cd( p_name ),
-                                  td_inst.get_err_msg( p_name )
-                               || CASE
-                                     WHEN p_add_msg IS NULL
-                                        THEN NULL
-                                     ELSE ': ' || p_add_msg
-                                  END
-                             );
+      td_inst.raise_err( p_name    => p_name,
+      			 p_add_msg => p_add_msg );
    END raise_err;
 
    -- return a Boolean determining runmode

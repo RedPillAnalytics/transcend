@@ -288,6 +288,22 @@ AS
       RETURN l_msg;
    END get_err_msg;
 
+   -- raises an error using RAISE_APPLICATION_ERROR
+   -- uses a configuration table to find the error code and the message
+   PROCEDURE raise_err( p_name VARCHAR2, p_add_msg VARCHAR2 DEFAULT NULL )
+   AS
+   BEGIN
+      raise_application_error( get_err_cd( p_name ),
+                                  get_err_msg( p_name )
+                               || CASE
+                                     WHEN p_add_msg IS NULL
+                                        THEN NULL
+                                     ELSE ': ' || p_add_msg
+                                  END
+                             );
+   END raise_err;
+
+
    -- OTHER PROGRAM UNITS
 
    -- used to pull the calling block from the dictionary

@@ -78,6 +78,11 @@ AS
 
    FUNCTION get_err_msg( p_name VARCHAR2 )
       RETURN VARCHAR2;
+
+   PROCEDURE raise_err ( p_name VARCHAR2,
+			 p_add_msg VARCHAR2 DEFAULT null
+   );      
+
    
    FUNCTION whence
       RETURN VARCHAR2;
