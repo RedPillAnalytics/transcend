@@ -336,7 +336,7 @@ IS
          UPDATE error_conf
             SET name = nvl(lower(p_name),name),
                 message = nvl(p_message,message),
-		COMMENTS = nvl(p_comment,COMMENTS),
+		COMMENTS = nvl(p_comments,COMMENTS),
                 modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
                 modified_dt = SYSDATE
           WHERE lower(name) = LOWER( p_name ) OR lower(message) = lower( p_message );
