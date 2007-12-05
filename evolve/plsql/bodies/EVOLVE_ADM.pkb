@@ -314,7 +314,7 @@ IS
 
    PROCEDURE set_error_conf(
       p_name         VARCHAR2 DEFAULT NULL,
-      p_message      NUMBER   DEFAULT NULL,
+      p_message      VARCHAR2 DEFAULT NULL,
       p_comments     VARCHAR2 DEFAULT NULL,
       p_mode         VARCHAR2 DEFAULT 'upsert'
    )
