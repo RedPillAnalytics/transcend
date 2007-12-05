@@ -92,9 +92,7 @@ EXEC tdsys.td_install.drop_evolve_types;
 @../plsql/wrapped_bodies/EVOLVE_ADM.plb
 
 -- set the default logging, registration and runmodes
-EXEC evolve_adm.set_logging_level('default',2,3);
-EXEC evolve_adm.set_runmode;
-EXEC evolve_adm.set_registration;
+EXEC evolve_adm.set_default_configs;
 
 SPOOL off
 

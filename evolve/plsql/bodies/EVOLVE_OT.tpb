@@ -46,10 +46,7 @@ AS
          EXCEPTION
             WHEN NO_DATA_FOUND
             THEN
-               raise_application_error( td_inst.get_err_cd( 'parm_not_configured' ),
-                                           td_inst.get_err_msg( 'parm_not_configured' )
-                                        || ': RUNMODE'
-                                      );
+	       raise_err( 'parm_not_configured','RUNMODE' );
          END;
 
          td_inst.runmode( l_runmode );
@@ -74,10 +71,7 @@ AS
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
-            raise_application_error( td_inst.get_err_cd( 'parm_not_configured' ),
-                                        td_inst.get_err_msg( 'parm_not_configured' )
-                                     || ': REGISTRATION'
-                                   );
+	    raise_err( 'parm_not_configured','REGISTRATION' );
       END;
 
       -- set the registration value
@@ -104,10 +98,7 @@ AS
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
-            raise_application_error( td_inst.get_err_cd( 'parm_not_configured' ),
-                                        td_inst.get_err_msg( 'parm_not_configured' )
-                                     || ': LOGGING_LEVEL or DEBUG_LEVEL'
-                                   );
+   	    raise_err( 'parm_not_configured','LOGGING_LEVEL or DEBUG_LEVEL' );
       END;
 
       td_inst.logging_level( CASE

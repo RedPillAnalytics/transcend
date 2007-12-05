@@ -618,6 +618,7 @@ IS
 	   code NUMBER NOT NULL,
 	   name VARCHAR2(30) NOT NULL,
 	   message VARCHAR2(1000) NOT NULL,
+	   comments VARCHAR2(4000),
 	   created_user	     VARCHAR2(30) DEFAULT sys_context('USERENV','SESSION_USER') NOT NULL,
 	   created_dt	     DATE DEFAULT SYSDATE NOT NULL,
 	   modified_user	     VARCHAR2(30),

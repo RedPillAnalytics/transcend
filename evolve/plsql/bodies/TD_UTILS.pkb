@@ -203,9 +203,7 @@ AS
 
          IF NOT l_file_exists
          THEN
-            raise_application_error( td_inst.get_err_cd( 'file_not_found' ),
-                                     td_inst.get_err_msg( 'file_not_found' )
-                                   );
+	    evolve_log.raise_err( 'file_not_found' );
          END IF;
       END IF;
 

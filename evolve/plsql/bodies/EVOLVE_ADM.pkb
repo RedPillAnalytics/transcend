@@ -315,6 +315,7 @@ IS
    PROCEDURE set_error_conf(
       p_name         VARCHAR2 DEFAULT NULL,
       p_message      NUMBER   DEFAULT NULL,
+      p_comment	     VARCHAR2 DEFAULT NULL,
       p_mode         VARCHAR2 DEFAULT 'upsert'
    )
    IS
@@ -324,7 +325,7 @@ IS
       CASE
          WHEN p_mode = 'insert' AND ( p_name IS NULL OR p_message IS NULL)
          THEN
-           raise_application_error(-20014, 'An insert requires a value for all parameters');
+           raise_application_error(-20014, 'An insert requires a value for all parameters except P_COMMENT');
       ELSE
          NULL;
       END CASE;
@@ -335,6 +336,7 @@ IS
          UPDATE error_conf
             SET name = nvl(lower(p_name),name),
                 message = nvl(p_message,message),
+		COMMENT = nvl(p_comment,COMMENT),
                 modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
                 modified_dt = SYSDATE
           WHERE lower(name) = LOWER( p_name ) OR lower(message) = lower( p_message );
@@ -345,9 +347,9 @@ IS
       THEN
          BEGIN
             INSERT INTO error_conf
-                        ( name, message, code
+                        ( name, message, code, comment
                         )
-                   VALUES ( lower(p_name), p_message, error_conf_code_seq.nextval
+                   VALUES ( lower(p_name), p_message, error_conf_code_seq.nextval, comment
                         );
          EXCEPTION
             WHEN e_dup_conf
@@ -375,6 +377,7 @@ IS
                                 );
       END IF;
    END set_error_conf;
+
    PROCEDURE set_session_parameter(
       p_module   VARCHAR2,
       p_name     VARCHAR2,
@@ -481,22 +484,71 @@ IS
       -- reset runmode
       IF lower(p_config) IN ('all','runmode')
       THEN
-	 DELETE FROM runmode;
+	 IF td_core.is_true(p_reset)
+	 THEN
+	    DELETE FROM runmode;
+	 END IF;
+
 	 evolve_adm.set_runmode;
       END IF;
 
       -- reset registration
       IF lower(p_config) IN ('all','registration')
       THEN
-	 DELETE FROM registration;
+	 
+	 IF td_core.is_true(p_reset)
+	 THEN
+	    DELETE FROM registration;
+	 END IF;
+
 	 evolve_adm.set_registration;
       END IF;
 
       -- reset error_conf
       IF lower(p_config) IN ('all','errors')
       THEN
-	 DELETE FROM logging_level;
-	 evolve_adm.set_logging_level('default',2,3);
+	 
+	 IF td_core.is_true(p_reset)
+	 THEN
+	    DELETE FROM error_conf;
+	 END IF;
+
+	 
+	 set_error_conf( p_name=> 'unrecognized_parm',
+			 p_code=> 'The specified parameter value is not recognized');
+	 set_error_conf( p_name=> 'notify_method_invalid',
+			 p_code=> 'The notification method is not valid');
+	 set_error_conf( p_name=> 'no_tab',
+			 p_code=> 'The specified table does not exist');
+	 set_error_conf( p_name=> 'no_object',
+			 p_code=> 'The specified object does not exist');
+	 set_error_conf( p_name=> 'not_partitioned',
+			 p_code=> 'The specified table is not partititoned');
+	 set_error_conf( p_name=> 'parms_not_compatible',
+			 p_code=> 'The specified parameters are not compatible');
+	 set_error_conf( p_name=> 'parm_not_configured',
+			 p_code=> 'The specified parameter is not configured');
+	 set_error_conf( p_name=> 'file_not_found',
+			 p_code=> 'Expected file does not exist');
+	 set_error_conf( p_name=> 'not_iot',
+			 p_code=> 'The specified table is not index-organized');
+	 set_error_conf( p_name=> 'not_compressed',
+			 p_code=> 'The specified segment is not compresed');
+	 set_error_conf( p_name=> 'no_part',
+			 p_code=> 'The specified partition does not exist');
+	 set_error_conf( p_name=> 'partitioned',
+			 p_code=> 'The specified table is partitioned');
+	 set_error_conf( p_name=> 'iot',
+			 p_code=> 'The specified table is index-organized');
+	 set_error_conf( p_name=> 'compressed',
+			 p_code=> 'The specified segment is compresed');
+	 set_error_conf( p_name=> 'no_or_wrong_object',
+			 p_code=> 'The specified object does not exist or is of the wrong type');
+	 set_error_conf( p_name=> 'too_many_objects',
+			 p_code=> 'The specified parameters yield more than one object');
+	 set_error_conf( p_name=> 'parm_not_supported',
+			 p_code=> 'The specified parameter is not supported');	 
+
       END IF;
 
    END reset_default_configs;
