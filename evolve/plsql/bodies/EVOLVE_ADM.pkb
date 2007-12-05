@@ -315,7 +315,7 @@ IS
    PROCEDURE set_error_conf(
       p_name         VARCHAR2 DEFAULT NULL,
       p_message      NUMBER   DEFAULT NULL,
-      p_comment	     VARCHAR2 DEFAULT NULL,
+      p_comments     VARCHAR2 DEFAULT NULL,
       p_mode         VARCHAR2 DEFAULT 'upsert'
    )
    IS
@@ -325,7 +325,7 @@ IS
       CASE
          WHEN p_mode = 'insert' AND ( p_name IS NULL OR p_message IS NULL)
          THEN
-           raise_application_error(-20014, 'An insert requires a value for all parameters except P_COMMENT');
+           raise_application_error(-20014, 'An insert requires a value for all parameters except P_COMMENTS');
       ELSE
          NULL;
       END CASE;
@@ -336,7 +336,7 @@ IS
          UPDATE error_conf
             SET name = nvl(lower(p_name),name),
                 message = nvl(p_message,message),
-		COMMENT = nvl(p_comment,COMMENT),
+		COMMENTS = nvl(p_comment,COMMENTS),
                 modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
                 modified_dt = SYSDATE
           WHERE lower(name) = LOWER( p_name ) OR lower(message) = lower( p_message );
@@ -347,9 +347,9 @@ IS
       THEN
          BEGIN
             INSERT INTO error_conf
-                        ( name, message, code, comment
+                        ( name, message, code, comments
                         )
-                   VALUES ( lower(p_name), p_message, error_conf_code_seq.nextval, comment
+                   VALUES ( lower(p_name), p_message, error_conf_code_seq.nextval, comments
                         );
          EXCEPTION
             WHEN e_dup_conf
