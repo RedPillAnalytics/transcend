@@ -4,8 +4,7 @@ AS
    FUNCTION exec_sql(
       p_sql         VARCHAR2,
       p_msg    	    VARCHAR2 DEFAULT NULL,
-      p_auto   	    VARCHAR2 DEFAULT 'no',
-      p_background  VARCHAR2 DEFAULT 'no'
+      p_auto   	    VARCHAR2 DEFAULT 'no'
    )
       RETURN NUMBER;
 

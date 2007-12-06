@@ -302,7 +302,8 @@ AS
       p_index_type     VARCHAR2 DEFAULT NULL,
       p_part_type      VARCHAR2 DEFAULT NULL,
       p_tablespace     VARCHAR2 DEFAULT NULL,
-      p_partname       VARCHAR2 DEFAULT NULL
+      p_partname       VARCHAR2 DEFAULT NULL,
+      p_concurrent     VARCHAR2 DEFAULT 'no'
    )
    IS
       l_ddl             LONG;
@@ -614,8 +615,14 @@ AS
          o_ev.change_action( 'Execute index DDL' );
 
          BEGIN
-            evolve_app.exec_sql( p_sql => c_indexes.index_ddl, p_auto => 'yes' );
-            evolve_log.log_msg( 'Index ' || c_indexes.index_name || ' built', 3 );
+            evolve_app.exec_sql( p_sql       => c_indexes.index_ddl, 
+				 p_auto       => 'yes',
+				 p_background => p_concurrent );
+            evolve_log.log_msg( 'Index ' || c_indexes.index_name || CASE WHEN td_core.is_true( p_concurrent )
+				THEN ' creation submitted'
+				ELSE
+				' built'
+				END , 3 );
             l_idx_cnt := l_idx_cnt + 1;
             o_ev.change_action( 'insert into td_build_idx_gtt' );
 
@@ -643,6 +650,10 @@ AS
                               );
          END;
       END LOOP;
+      
+      -- now simply waiting for all the concurrent processes to complete
+      o_ev.change_action( 'wait for submitted processes' );
+      evolve_app.coordinate_sql;
 
       IF NOT l_rows
       THEN
@@ -1632,7 +1643,6 @@ AS
                                       END
                    );
       
-      o_ev.change_action( 'log row count' );
       -- record the number of rows affected
       IF NOT evolve_log.is_debugmode
       THEN
@@ -1906,7 +1916,6 @@ AS
             evolve_log.raise_err( 'on_clause_missing' );
       END;
       
-      o_ev.change_action( 'log row count' );
       -- record the number of rows affected
       IF NOT evolve_log.is_debugmode
       THEN

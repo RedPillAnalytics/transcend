@@ -43,7 +43,8 @@ IS
       p_index_type     VARCHAR2 DEFAULT NULL,
       p_part_type      VARCHAR2 DEFAULT NULL,
       p_tablespace     VARCHAR2 DEFAULT NULL,
-      p_partname       VARCHAR2 DEFAULT NULL
+      p_partname       VARCHAR2 DEFAULT NULL,
+      p_concurrent     VARCHAR2 DEFAULT 'no'
    );
 
    PROCEDURE build_constraints(

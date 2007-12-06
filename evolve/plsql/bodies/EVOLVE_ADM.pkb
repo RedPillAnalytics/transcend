@@ -575,6 +575,10 @@ IS
 			 p_message=> 'The specified parameters yield more than one object');
 	 set_error_conf( p_name=>    'parm_not_supported',
 			 p_message=> 'The specified parameter is not supported');	 
+	 set_error_conf( p_name=>    'submit_sql_err',
+			 p_message=> 'A job submitted through the Oracle scheduler failed.');	 
+	 set_error_conf( p_name=>    'submit_sql_timeout',
+			 p_message=> 'The execution of a job submitted through the Oracle scheduler ran longer than the provided timeout');	 
 
       END IF;
 

@@ -21,8 +21,7 @@ AS
    FUNCTION exec_sql(
       p_sql         VARCHAR2,
       p_msg    	    VARCHAR2 DEFAULT NULL,
-      p_auto   	    VARCHAR2 DEFAULT 'no',
-      p_background  VARCHAR2 DEFAULT 'no'
+      p_auto   	    VARCHAR2 DEFAULT 'no'
    )
       RETURN NUMBER
    AS
@@ -38,18 +37,23 @@ AS
       THEN
          IF td_core.is_true( p_auto )
          THEN
+  	    evolve_log.log_msg('P_AUTO is true',4);
             l_results := exec_auto( p_sql => p_sql );
          ELSE
-            EXECUTE IMMEDIATE p_sql;
+            evolve_log.log_msg('P_AUTO is false',4);
+	    EXECUTE IMMEDIATE p_sql;
+	 END IF;
 
             l_results := SQL%ROWCOUNT;
-         END IF;
       END IF;
 
       RETURN l_results;
    END exec_sql;
 
    -- if I don't care about the number of results (DDL, for instance), just call this procedure
+   -- accepts the P_AUTO flag and determines whether to execute the statement autonomously
+   -- if the P_AUTO flag of 'yes' is passed, then EXEC_AUTO is called
+   -- if P_BACKGROUND of 'yes' is called, then it is executed through SUBMIT_SQL
    PROCEDURE exec_sql(
       p_sql         VARCHAR2,
       p_msg    	    VARCHAR2 DEFAULT NULL,
@@ -59,8 +63,32 @@ AS
    AS
       l_results   NUMBER;
    BEGIN
-      -- simply call the procedure and discard the results
-      l_results := exec_sql( p_sql => p_sql, p_auto => p_auto, p_msg => p_msg );
+      evolve_log.log_msg( CASE
+                          WHEN p_msg IS NULL
+                             THEN 'SQL: ' || p_sql
+                          ELSE p_msg
+                       END, 3 );
+
+      IF NOT evolve_log.is_debugmode
+      THEN
+	 evolve_log.log_msg('P_BACKGROUND: '||p_background,4);
+	 evolve_log.log_msg('P_AUTO: '||p_auto,4);
+	 CASE
+	 WHEN td_core.is_true( p_background )
+         THEN
+  	    evolve_log.log_msg('P_BACKGROUND is true',4);
+	    submit_sql( p_sql => p_sql );
+         WHEN td_core.is_true( p_auto )
+         THEN
+  	    evolve_log.log_msg('P_AUTO is true',4);
+            l_results := exec_auto( p_sql => p_sql );
+         ELSE
+            evolve_log.log_msg('P_AUTO and P_BACKGROUND were false',4);
+	    EXECUTE IMMEDIATE p_sql;
+	 END CASE;
+
+            l_results := SQL%ROWCOUNT;
+      END IF;
    END exec_sql;
 
    -- this process will execute through DBMS_SCHEDULER
@@ -120,17 +148,48 @@ AS
    END submit_sql;
 
    -- this process will execute through DBMS_SCHEDULER
-   PROCEDURE coordinate_sql( p_sleep NUMBER DEFAULT 5, p_timeout NUMBER DEFAULT 0 )
+   PROCEDURE coordinate_sql( p_sleep NUMBER DEFAULT 5, 
+			     p_timeout NUMBER DEFAULT 0 )
    AS
-      l_sid      NUMBER;
-      l_serial   NUMBER;
+      l_client_id     all_scheduler_jobs.client_id%TYPE;
+      l_running       NUMBER;
+      l_failed 	      NUMBER;
+      l_start_secs    NUMBER := dbms_utility.get_time;
    BEGIN
-      NULL;
-   EXCEPTION
-      WHEN OTHERS
-      THEN
-         evolve_log.log_err;
-         RAISE;
+      -- construct the CLIENT_ID
+      l_client_id := td_inst.module||'-'||td_inst.action||'-'||td_inst.session_id;
+      LOOP
+	 -- the amount of time to wait
+	 dbms_lock.sleep( p_sleep );
+	 
+	 -- get the count of running jobs
+	 SELECT count(*) 
+	   INTO l_running 
+	   FROM all_scheduler_jobs
+	  WHERE client_id = l_client_id
+	    AND state = 'RUNNING';
+	 
+	 -- get the count of failed jobs
+	 SELECT count(*) 
+	   INTO l_failed
+	   FROM all_scheduler_jobs
+	  WHERE client_id = l_client_id
+	    AND state = 'RUNNING';
+	 
+	 -- raise an error if there are failed jobs
+	 IF l_failed > 0
+	 THEN
+	    evolve_log.raise_err( 'submit_sql' );
+	 END IF;
+	 
+	 -- check for the timeout
+	 IF (( dbms_utility.get_time - l_start_secs ) > p_timeout) AND p_timeout <> 0
+	 THEN
+	    evolve_log.raise_err( 'submit_sql_timeout' );
+	 END IF;
+
+	 EXIT WHEN l_running = 0;
+      END LOOP;
    END coordinate_sql;
 
    -- this process is called by submitted jobs to DBMS_SCHEDULER

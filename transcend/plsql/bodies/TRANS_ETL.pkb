@@ -163,20 +163,21 @@ AS
       p_index_type     VARCHAR2 DEFAULT NULL,
       p_part_type      VARCHAR2 DEFAULT NULL,
       p_tablespace     VARCHAR2 DEFAULT NULL,
-      p_partname       VARCHAR2 DEFAULT NULL
+      p_partname       VARCHAR2 DEFAULT NULL,
+      p_concurrent     VARCHAR2 DEFAULT 'no'
    )
    IS
       o_ev   evolve_ot := evolve_ot( p_module => 'build_indexes' );
    BEGIN
       td_dbutils.build_indexes( p_owner             => p_owner,
-                            p_table             => p_table,
-                            p_source_owner      => p_source_owner,
-                            p_source_table      => p_source_table,
-                            p_index_regexp      => p_index_regexp,
-                            p_index_type        => p_index_type,
-                            p_part_type         => p_part_type,
-                            p_tablespace        => p_tablespace,
-                            p_partname          => p_partname
+				p_table             => p_table,
+				p_source_owner      => p_source_owner,
+				p_source_table      => p_source_table,
+				p_index_regexp      => p_index_regexp,
+				p_index_type        => p_index_type,
+				p_part_type         => p_part_type,
+				p_tablespace        => p_tablespace,
+				p_partname          => p_partname
                           );
       o_ev.clear_app_info;
    EXCEPTION

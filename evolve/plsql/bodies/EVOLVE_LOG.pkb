@@ -38,7 +38,7 @@ AS
       PRAGMA AUTONOMOUS_TRANSACTION;
       l_whence   VARCHAR2( 1024 );
       l_msg      log_table.msg%TYPE;
-      l_scn      NUMBER;
+      l_scn      NUMBER	:= dbms_flashback.get_system_change_number;
       e_no_tab   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_tab, -942 );
    BEGIN
@@ -53,20 +53,6 @@ AS
 
       -- find out what called me
       l_whence := whence;
-
-      -- using invokers rights model
-      -- some users won't have access to see the SCN
-      -- need to except this just in case
-      -- if cannot see the scn, then use a 0
-      BEGIN
-         SELECT current_scn
-           INTO l_scn
-           FROM v$database;
-      EXCEPTION
-         WHEN e_no_tab
-         THEN
-            l_scn := 0;
-      END;
 
       -- check to see the logging level to see if the message should be written
       IF td_inst.logging_level >= p_level

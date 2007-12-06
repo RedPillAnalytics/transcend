@@ -1821,6 +1821,32 @@ IS
 	 THEN
 	 raise_application_error(-20009, 'Either package UTL_MAIL does not exist, or the installing user does not have privileges to grant access on it.');
       END;
+      
+      -- grant permissions on DBMS_LOCK
+      -- if the package doesn't exist, or the user doesn't have access to see it, then fail
+      BEGIN
+
+	 EXECUTE IMMEDIATE 'GRANT EXECUTE ON sys.dbms_lock TO '||l_sys_role;
+	 EXECUTE IMMEDIATE 'GRANT EXECUTE ON sys.dbms_lock TO '||p_schema;
+	 
+      EXCEPTION
+	 WHEN e_no_obj
+	 THEN
+	 raise_application_error(-20009, 'Either package DBMS_LOCK does not exist, or the installing user does not have privileges to grant access on it.');
+      END;
+      
+      -- grant permissions on DBMS_FLASHBACK
+      -- if the package doesn't exist, or the user doesn't have access to see it, then fail
+      BEGIN
+
+	 EXECUTE IMMEDIATE 'GRANT EXECUTE ON sys.dbms_flashback TO '||l_sys_role;
+	 EXECUTE IMMEDIATE 'GRANT EXECUTE ON sys.dbms_flashback TO '||p_schema;
+	 
+      EXCEPTION
+	 WHEN e_no_obj
+	 THEN
+	 raise_application_error(-20009, 'Either package DBMS_FLASHBACK does not exist, or the installing user does not have privileges to grant access on it.');
+      END;
 
       -- grant java specific privilege to the _JAVA role
       dbms_java.set_output(1000000);
@@ -1896,6 +1922,8 @@ IS
    BEGIN
       -- create the user if it doesn't already exist
       create_user( p_user 	=> p_schema );
+      
+      -- two packages that are needed
       
       -- set CURRENT_SCHEMA to the owner of the repository
       set_current_schema( p_schema => p_repository );
