@@ -15,11 +15,9 @@ AS
    );
 
    PROCEDURE submit_sql(
-      p_sql         VARCHAR2,
-      p_msg         VARCHAR2 DEFAULT NULL,
-      p_background  VARCHAR2 DEFAULT 'no',
-      p_program	    VARCHAR2 DEFAULT 'consume_sql_job',
-      p_job_class   VARCHAR2 DEFAULT 'DEFAULT_JOB_CLASS'
+      p_sql          VARCHAR2,
+      p_msg          VARCHAR2 DEFAULT NULL,
+      p_job_class    VARCHAR2 DEFAULT 'consume_sql_class'
    );
 
    PROCEDURE coordinate_sql(

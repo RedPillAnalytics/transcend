@@ -95,24 +95,15 @@ IS
    END reset_current_schema;
 
    -- this creates the job metadata (called a program) for submitting concurrent processes
-   PROCEDURE create_scheduler_metadata(
-      p_schema       VARCHAR2 DEFAULT 'TDSYS'
-   ) 
+   PROCEDURE create_scheduler_metadata
    IS
    BEGIN
       
       -- create the actual program
-      dbms_scheduler.create_program(p_schema||'.consume_sql_job','STORED_PROCEDURE','evolve_app.consume_sql',5);
-
-      -- define all the arguments that are passed to td_utils.consume_sql
-      dbms_scheduler.define_program_argument(p_schema||'.consume_sql_job',1,'p_session_id','number');
-      dbms_scheduler.define_program_argument(p_schema||'.consume_sql_job',2,'p_module','varchar2');
-      dbms_scheduler.define_program_argument(p_schema||'.consume_sql_job',3,'p_action','varchar2');
-      dbms_scheduler.define_program_argument(p_schema||'.consume_sql_job',4,'p_sql','varchar2');
-      dbms_scheduler.define_program_argument(p_schema||'.consume_sql_job',5,'p_msg','varchar2');
-
-      -- enable the program
-      dbms_scheduler.ENABLE(p_schema||'.consume_sql_job');
+      dbms_scheduler.create_job_class( job_class_name    => 'consume_sql_class',
+				       logging_level	 => DBMS_SCHEDULER.LOGGING_FULL,
+				       comments		 =>   'Job class for the Evolve product by Transcendent Data, Inc.'
+				                            ||' This is the job class used by default when the Oracle scheduler is used for concurrent processing');
       
    END create_scheduler_metadata;
 
@@ -285,6 +276,9 @@ IS
 
 	    EXECUTE IMMEDIATE 'GRANT SELECT ON TD_CON_MAINT_GTT TO '||l_sel_grant;
 	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON TD_CON_MAINT_GTT TO '||l_adm_grant;
+	 
+	    EXECUTE IMMEDIATE 'GRANT SELECT ON OPT_STATS TO '||l_sel_grant;
+	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON OPT_STATS TO '||l_adm_grant;
 
 	    EXECUTE IMMEDIATE 'GRANT SELECT ON DIMENSION_CONF TO '||l_sel_grant;
 	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON DIMENSION_CONF TO '||l_adm_grant;
@@ -297,7 +291,7 @@ IS
 
 	    EXECUTE IMMEDIATE 'GRANT SELECT ON REPLACE_METHOD_LIST TO '||l_sel_grant;
 	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON REPLACE_METHOD_LIST TO '||l_adm_grant;
-
+	 
       EXCEPTION
 	 WHEN e_no_grantee
 	 THEN
@@ -1923,7 +1917,7 @@ IS
       grant_evolve_sys_privs( p_schema => p_schema );
 
       -- create the dbms_scheduler program
-      create_scheduler_metadata( p_schema );      
+      create_scheduler_metadata;      
       	 	 
       -- write application tracking record
       EXECUTE IMMEDIATE 	    
@@ -2079,9 +2073,6 @@ IS
       EXECUTE IMMEDIATE 'grant '||p_repository||'_adm to '||p_user;
       EXECUTE IMMEDIATE 'grant '||p_application||'_app to '||p_user;
 
-      -- create the dbms_scheduler program
-      create_scheduler_metadata( p_user );      
-      
       -- write application tracking record
       EXECUTE IMMEDIATE 	    
       q'|UPDATE tdsys.users
