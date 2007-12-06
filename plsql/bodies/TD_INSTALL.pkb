@@ -97,13 +97,22 @@ IS
    -- this creates the job metadata (called a program) for submitting concurrent processes
    PROCEDURE create_scheduler_metadata
    IS
+      e_class_exists EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_class_exists, 27477 );
    BEGIN
       
-      -- create the actual program
-      dbms_scheduler.create_job_class( job_class_name    => 'consume_sql_class',
-				       logging_level	 => DBMS_SCHEDULER.LOGGING_FULL,
-				       comments		 =>   'Job class for the Evolve product by Transcendent Data, Inc.'
-				                            ||' This is the job class used by default when the Oracle scheduler is used for concurrent processing');
+      -- create the job class
+      BEGIN
+	 dbms_scheduler.create_job_class( job_class_name    => 'consume_sql_class',
+					  logging_level	 => DBMS_SCHEDULER.LOGGING_FULL,
+					  comments		 =>   'Job class for the Evolve product by Transcendent Data, Inc.'
+				          ||' This is the job class used by default when the Oracle scheduler is used for concurrent processing');
+      EXCEPTION
+	 WHEN e_class_exists
+	 THEN
+	 NULL;
+      END;
+
       
    END create_scheduler_metadata;
 
