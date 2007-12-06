@@ -17,15 +17,23 @@ AS
 
    -- accepts the P_AUTO flag and determines whether to execute the statement
    -- if the P_AUTO flag of 'yes' is passed, then EXEC_AUTO is called
+   -- if P_BACKGROUND of 'yes' is called, then it is executed through DBMS_SCHEDULER
    FUNCTION exec_sql(
-      p_sql    VARCHAR2,
-      p_auto   VARCHAR2 DEFAULT 'no',
-      p_msg    VARCHAR2 DEFAULT NULL
+      p_sql         VARCHAR2,
+      p_msg    	    VARCHAR2 DEFAULT NULL,
+      p_auto   	    VARCHAR2 DEFAULT 'no',
+      p_background  VARCHAR2 DEFAULT 'no'
    )
       RETURN NUMBER
    AS
       l_results   NUMBER;
    BEGIN
+      evolve_log.log_msg( CASE
+                          WHEN p_msg IS NULL
+                             THEN 'SQL: ' || p_sql
+                          ELSE p_msg
+                       END, 3 );
+
       IF NOT evolve_log.is_debugmode
       THEN
          IF td_core.is_true( p_auto )
@@ -43,9 +51,10 @@ AS
 
    -- if I don't care about the number of results (DDL, for instance), just call this procedure
    PROCEDURE exec_sql(
-      p_sql    VARCHAR2,
-      p_auto   VARCHAR2 DEFAULT 'no',
-      p_msg    VARCHAR2 DEFAULT NULL
+      p_sql         VARCHAR2,
+      p_msg    	    VARCHAR2 DEFAULT NULL,
+      p_auto   	    VARCHAR2 DEFAULT 'no',
+      p_background  VARCHAR2 DEFAULT 'no'
    )
    AS
       l_results   NUMBER;
@@ -57,7 +66,6 @@ AS
    -- this process will execute through DBMS_SCHEDULER
    PROCEDURE submit_sql(
       p_sql         VARCHAR2,
-      p_msg         VARCHAR2 DEFAULT NULL,
       p_job_class   VARCHAR2 DEFAULT 'consume_sql_class'
    )
    AS
@@ -67,6 +75,7 @@ AS
       l_action            VARCHAR2( 32 )                       := td_inst.action;
       l_session_id        NUMBER                 := SYS_CONTEXT( 'USERENV', 'SESSIONID' );
       l_job_action        all_scheduler_jobs.job_action%TYPE;
+      l_client_id	  all_scheduler_jobs.client_id%TYPE := l_module||'-'||l_action||'-'||l_session_id;
       e_invalid_jobname   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_invalid_jobname, -23481 );
    BEGIN
@@ -78,6 +87,12 @@ AS
             l_job_name := DBMS_SCHEDULER.generate_job_name;
       END;
 
+      -- the CLIENT_ID will be available in the running jobs as well
+      -- it will also be written to the scheduler logging metadata
+      -- construct a CLIENT_ID as a combination of MODULE, ACTION, and SESSION_ID      
+      evolve_log.log_msg('The CLIENT_ID is: '||l_client_id,4);
+      DBMS_SESSION.set_identifier( l_client_id );
+
       -- generate the job action
       l_job_action :=
             'begin evolve_app.consume_sql('
@@ -88,20 +103,20 @@ AS
          || l_action
          || ''','''
          || p_sql
-         || ''','''
-         || p_msg
          || '''); end;';
-      evolve_log.log_msg( 'Submitting job ' || l_job_name || ' to the Oracle scheduler' );
       evolve_log.log_msg( 'The scheduler job action is: ' || l_job_action, 4 );
-      -- for now, we will always use the same program, CONSUME_SQL_JOB
-      -- in the future, each module may have it's own program
-      -- use the CURRENT_SESSION parameter to determine whether it runs in the background
+
+      -- schedule the job
       DBMS_SCHEDULER.create_job( l_job_name,
                                  job_class       => p_job_class,
                                  job_type        => 'plsql_block',
-                                 job_action      => l_job_action,
-                                 enabled         => TRUE
+                                 job_action      => l_job_action
                                );
+      
+      dbms_scheduler.ENABLE( l_job_name );
+      
+      evolve_log.log_msg( 'Job ' || l_job_name || ' submitted to the Oracle scheduler' );
+      
    END submit_sql;
 
    -- this process will execute through DBMS_SCHEDULER
@@ -124,8 +139,7 @@ AS
       p_session_id   NUMBER,
       p_module       VARCHAR2,
       p_action       VARCHAR2,
-      p_sql          VARCHAR2,
-      p_msg          VARCHAR2
+      p_sql          VARCHAR2
    )
    AS
    BEGIN
@@ -135,8 +149,6 @@ AS
                                   p_module          => p_module,
                                   p_action          => p_action
                                 );
-      -- set the CLIENT_ID, which is used in the DBMS_SCHEDULER metdata
-      DBMS_SESSION.set_identifier( p_session_id );
 
       -- load session parameters configured in PARAMETER_CONF for this module
       -- this is usually done by EVOLVE_OT, but that is not applicable here
@@ -149,11 +161,14 @@ AS
             FROM parameter_conf
            WHERE LOWER( module ) = td_inst.module )
       LOOP
-         exec_sql( p_sql => c_params.DDL, p_msg => 'Session SQL: ' );
+	 -- use the standard execute immediate instead of the EXEC_SQL api
+	 -- there is no concept of DEBUG mode inside scheduler jobs, so don't complicate it
+	 EXECUTE IMMEDIATE c_params.DDL;
       END LOOP;
 
-      -- just use the standard procedure to execute the SQL
-      exec_sql( p_sql => p_sql, p_msg => p_msg );
+      -- use the standard execute immediate instead of the EXEC_SQL api
+      -- there is no concept of DEBUG mode inside scheduler jobs, so don't complicate it
+      EXECUTE IMMEDIATE p_sql;
    EXCEPTION
       WHEN OTHERS
       THEN

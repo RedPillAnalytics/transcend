@@ -2,22 +2,23 @@ CREATE OR REPLACE PACKAGE evolve_app AUTHID CURRENT_USER
 AS
 
    FUNCTION exec_sql(
-      p_sql              VARCHAR2,
-      p_auto             VARCHAR2 DEFAULT 'no',
-      p_msg              VARCHAR2 DEFAULT NULL
+      p_sql         VARCHAR2,
+      p_msg    	    VARCHAR2 DEFAULT NULL,
+      p_auto   	    VARCHAR2 DEFAULT 'no',
+      p_background  VARCHAR2 DEFAULT 'no'
    )
       RETURN NUMBER;
 
    PROCEDURE exec_sql(
-      p_sql              VARCHAR2,
-      p_auto             VARCHAR2 DEFAULT 'no',
-      p_msg              VARCHAR2 DEFAULT NULL
+      p_sql         VARCHAR2,
+      p_msg    	    VARCHAR2 DEFAULT NULL,
+      p_auto   	    VARCHAR2 DEFAULT 'no',
+      p_background  VARCHAR2 DEFAULT 'no'
    );
 
    PROCEDURE submit_sql(
-      p_sql          VARCHAR2,
-      p_msg          VARCHAR2 DEFAULT NULL,
-      p_job_class    VARCHAR2 DEFAULT 'consume_sql_class'
+      p_sql         VARCHAR2,
+      p_job_class   VARCHAR2 DEFAULT 'consume_sql_class'
    );
 
    PROCEDURE coordinate_sql(
@@ -29,8 +30,7 @@ AS
       p_session_id   NUMBER,
       p_module       VARCHAR2,
       p_action       VARCHAR2,
-      p_sql          VARCHAR2,
-      p_msg          VARCHAR2
+      p_sql          VARCHAR2
    );
 
 END evolve_app;
