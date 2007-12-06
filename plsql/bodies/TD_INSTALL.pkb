@@ -103,7 +103,7 @@ IS
       
       -- first, drop the job class
       BEGIN
-	 dbms_scheduler.create_job_class( job_class_name    => 'consume_sql_class' );
+	 dbms_scheduler.drop_job_class( job_class_name    => 'consume_sql_class' );
       EXCEPTION
 	 WHEN e_no_class
 	 THEN
