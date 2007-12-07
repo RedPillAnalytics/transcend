@@ -70,8 +70,8 @@ AS
 
       IF NOT evolve_log.is_debugmode
       THEN
-	 evolve_log.log_msg('P_BACKGROUND: '||p_background,4);
-	 evolve_log.log_msg('P_AUTO: '||p_auto,4);
+	 evolve_log.log_msg('P_BACKGROUND: '||p_background,5);
+	 evolve_log.log_msg('P_AUTO: '||p_auto,5);
 	 CASE
 	 WHEN td_core.is_true( p_background )
          THEN

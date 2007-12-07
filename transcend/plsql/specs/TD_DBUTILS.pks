@@ -56,7 +56,8 @@ IS
       p_constraint_regexp   VARCHAR2 DEFAULT NULL,
       p_seg_attributes      VARCHAR2 DEFAULT 'no',
       p_tablespace          VARCHAR2 DEFAULT NULL,
-      p_partname            VARCHAR2 DEFAULT NULL
+      p_partname            VARCHAR2 DEFAULT NULL,
+      p_concurrent	    VARCHAR2 DEFAULT 'no'
    );
 
    PROCEDURE constraint_maint(
@@ -65,7 +66,8 @@ IS
       p_maint_type          VARCHAR2,
       p_constraint_type     VARCHAR2 DEFAULT NULL,
       p_constraint_regexp   VARCHAR2 DEFAULT NULL,
-      p_basis               VARCHAR2 DEFAULT 'table'
+      p_basis               VARCHAR2 DEFAULT 'table',
+      p_concurrent	    VARCHAR2 DEFAULT 'no'
    );
 
    PROCEDURE drop_indexes(
@@ -164,7 +166,9 @@ IS
       p_part_type       VARCHAR2 DEFAULT NULL
    );
 
-   PROCEDURE usable_indexes( p_owner VARCHAR2, p_table VARCHAR2 );
+   PROCEDURE usable_indexes( p_owner      VARCHAR2, 
+   	     		     p_table 	  VARCHAR2,
+			     p_concurrent VARCHAR2 DEFAULT 'no' );
 
    PROCEDURE update_stats(
       p_owner             VARCHAR2,

@@ -167,7 +167,8 @@ AS
 				p_index_type        => p_index_type,
 				p_part_type         => p_part_type,
 				p_tablespace        => p_tablespace,
-				p_partname          => p_partname
+				p_partname          => p_partname,
+				p_concurrent	    => p_concurrent
                           );
    EXCEPTION
       WHEN OTHERS
@@ -230,7 +231,8 @@ AS
       p_constraint_regexp   VARCHAR2 DEFAULT NULL,
       p_seg_attributes      VARCHAR2 DEFAULT 'no',
       p_tablespace          VARCHAR2 DEFAULT NULL,
-      p_partname            VARCHAR2 DEFAULT NULL
+      p_partname            VARCHAR2 DEFAULT NULL,
+      p_concurrent	    VARCHAR2 DEFAULT 'no'
    )
    IS
    BEGIN
@@ -242,8 +244,9 @@ AS
                                     p_constraint_regexp      => p_constraint_regexp,
                                     p_seg_attributes         => p_seg_attributes,
                                     p_tablespace             => p_tablespace,
-                                    p_partname               => p_partname
-                              );
+                                    p_partname               => p_partname,
+				    p_concurrent	     => p_concurrent
+				  );
    EXCEPTION
       WHEN OTHERS
       THEN
@@ -263,12 +266,12 @@ AS
    IS
    BEGIN
       td_dbutils.constraint_maint( p_owner                  => p_owner,
-                               p_table                  => p_table,
-                               p_maint_type             => 'disable',
-                               p_constraint_type        => p_constraint_type,
-                               p_constraint_regexp      => p_constraint_regexp,
-                               p_basis                  => p_basis
-                             );
+				   p_table                  => p_table,
+				   p_maint_type             => 'disable',
+				   p_constraint_type        => p_constraint_type,
+				   p_constraint_regexp      => p_constraint_regexp,
+				   p_basis                  => p_basis
+				 );
       COMMIT;
    EXCEPTION
       WHEN OTHERS
@@ -284,17 +287,19 @@ AS
       p_table               VARCHAR2,
       p_constraint_type     VARCHAR2 DEFAULT NULL,
       p_constraint_regexp   VARCHAR2 DEFAULT NULL,
-      p_basis               VARCHAR2 DEFAULT 'table'
+      p_basis               VARCHAR2 DEFAULT 'table',
+      p_concurrent	    VARCHAR2 DEFAULT 'no'
    )
    IS
    BEGIN
       td_dbutils.constraint_maint( p_owner                  => p_owner,
-                               p_table                  => p_table,
-                               p_maint_type             => 'enable',
-                               p_constraint_type        => p_constraint_type,
-                               p_constraint_regexp      => p_constraint_regexp,
-                               p_basis                  => p_basis
-                             );
+				   p_table                  => p_table,
+				   p_maint_type             => 'enable',
+				   p_constraint_type        => p_constraint_type,
+				   p_constraint_regexp      => p_constraint_regexp,
+				   p_basis                  => p_basis,
+				   p_concurrent		    => p_concurrent
+				 );
       COMMIT;
    EXCEPTION
       WHEN OTHERS
@@ -313,10 +318,10 @@ AS
    IS
    BEGIN
       td_dbutils.drop_indexes( p_owner             => p_owner,
-                           p_table             => p_table,
-                           p_index_type        => p_index_type,
-                           p_index_regexp      => p_index_regexp
-                         );
+                               p_table             => p_table,
+                               p_index_type        => p_index_type,
+                               p_index_regexp      => p_index_regexp
+                             );
    EXCEPTION
       WHEN OTHERS
       THEN
@@ -557,10 +562,14 @@ AS
          RAISE;
    END unusable_indexes;
 
-   PROCEDURE usable_indexes( p_owner VARCHAR2, p_table VARCHAR2 )
+   PROCEDURE usable_indexes( p_owner      VARCHAR2, 
+   	     		     p_table      VARCHAR2,
+			     p_concurrent VARCHAR2 DEFAULT 'no' )
    IS
    BEGIN
-      td_dbutils.usable_indexes( p_owner => p_owner, p_table => p_table );
+      td_dbutils.usable_indexes( p_owner      => p_owner, 
+      				 p_table      => p_table,
+				 p_concurrent => p_concurrent );
    EXCEPTION
       WHEN OTHERS
       THEN

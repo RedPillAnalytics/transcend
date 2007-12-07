@@ -666,7 +666,7 @@ AS
 
 	 IF td_core.is_true( p_concurrent )
 	 THEN
-	    evolve_log.log_msg('P_CONCURRENT is true',4);
+	    evolve_log.log_msg('P_CONCURRENT is true',5);
 	    -- now simply waiting for all the concurrent processes to complete
 	    o_ev.change_action( 'wait for submitted processes' );
 	    evolve_app.coordinate_sql;
@@ -735,7 +735,8 @@ AS
       p_constraint_regexp   VARCHAR2 DEFAULT NULL,
       p_seg_attributes      VARCHAR2 DEFAULT 'no',
       p_tablespace          VARCHAR2 DEFAULT NULL,
-      p_partname            VARCHAR2 DEFAULT NULL
+      p_partname            VARCHAR2 DEFAULT NULL,
+      p_concurrent	    VARCHAR2 DEFAULT 'no'
    )
    IS
       l_targ_part       all_tables.partitioned%TYPE;
@@ -1013,7 +1014,9 @@ AS
          l_rows := TRUE;
 
          BEGIN
-            evolve_app.exec_sql( p_sql => c_constraints.constraint_ddl, p_auto => 'yes' );
+            evolve_app.exec_sql( p_sql         => c_constraints.constraint_ddl, 
+	                         p_auto        => 'yes',
+				 p_background  => p_concurrent );
             evolve_log.log_msg( 'Constraint ' || c_constraints.constraint_name || ' built',
                              3
                            );
@@ -1071,6 +1074,14 @@ AS
       THEN
          evolve_log.log_msg( 'No matching constraints found on ' || l_src_name );
       ELSE
+	 IF td_core.is_true( p_concurrent )
+	 THEN
+	    evolve_log.log_msg('P_CONCURRENT is true',5);
+	    -- now simply waiting for all the concurrent processes to complete
+	    o_ev.change_action( 'wait for submitted processes' );
+	    evolve_app.coordinate_sql;
+	 END IF;
+
          evolve_log.log_msg(    l_con_cnt
                           || ' constraint'
                           || CASE
@@ -1093,7 +1104,8 @@ AS
       p_maint_type          VARCHAR2,
       p_constraint_type     VARCHAR2 DEFAULT NULL,
       p_constraint_regexp   VARCHAR2 DEFAULT NULL,
-      p_basis               VARCHAR2 DEFAULT 'table'
+      p_basis               VARCHAR2 DEFAULT 'table',
+      p_concurrent	    VARCHAR2 DEFAULT 'no'
    )
    IS
       l_con_cnt    NUMBER         := 0;
@@ -1213,13 +1225,14 @@ AS
 
          BEGIN
             evolve_app.exec_sql
-               ( p_sql       => CASE
+               ( p_sql        => CASE
                     WHEN REGEXP_LIKE( 'disable', p_maint_type, 'i' )
                        THEN c_constraints.disable_ddl
                     WHEN REGEXP_LIKE( 'enable', p_maint_type, 'i' )
                        THEN c_constraints.enable_ddl
                  END,
-                 p_auto      => 'yes'
+                 p_auto       => 'yes',
+		 p_background => p_concurrent
                );
 
             -- insert records into a GTT
@@ -1275,6 +1288,15 @@ AS
                           || ' constraints found.'
                         );
       ELSE
+
+	 IF td_core.is_true( p_concurrent )
+	 THEN
+	    evolve_log.log_msg('P_CONCURRENT is true',5);
+	    -- now simply waiting for all the concurrent processes to complete
+	    o_ev.change_action( 'wait for submitted processes' );
+	    evolve_app.coordinate_sql;
+	 END IF;
+
          evolve_log.log_msg(    l_con_cnt
                           || ' constraint'
                           || CASE
@@ -2580,8 +2602,9 @@ AS
 
    -- rebuilds all unusable index segments on a particular table
    PROCEDURE usable_indexes(
-      p_owner   VARCHAR2,                     -- owner of table for the indexes to work on
-      p_table   VARCHAR2                                -- table to operate on indexes for
+      p_owner      VARCHAR2,
+      p_table      VARCHAR2,
+      p_concurrent VARCHAR2 DEFAULT 'no'
    )
    IS
       l_ddl    VARCHAR2( 2000 );
@@ -2595,6 +2618,7 @@ AS
 
       IF td_utils.is_part_table( p_owner, p_table )
       THEN
+	 o_ev.change_action( 'rebuild local indexes' );
          -- rebuild local indexes first
          FOR c_idx IN ( SELECT  table_name, partition_position,
                                    'alter table '
@@ -2610,7 +2634,9 @@ AS
                             AND table_owner = UPPER( p_owner )
                        ORDER BY table_name, partition_position )
          LOOP
-            evolve_app.exec_sql( p_sql => c_idx.DDL, p_auto => 'yes' );
+            evolve_app.exec_sql( p_sql        => c_idx.DDL, 
+	    			 p_auto       => 'yes',
+				 p_background => p_concurrent );
             l_cnt := l_cnt + 1;
          END LOOP;
 
@@ -2624,6 +2650,14 @@ AS
                              END
                           || ' rebuilt'
                         );
+      END IF;
+
+      IF td_core.is_true( p_concurrent )
+      THEN
+	 evolve_log.log_msg('P_CONCURRENT is true',5);
+	 -- now simply waiting for all the concurrent processes to complete
+	 o_ev.change_action( 'wait for submitted processes' );
+	 evolve_app.coordinate_sql;
       END IF;
 
       -- reset variables
@@ -2651,6 +2685,15 @@ AS
 
       IF l_rows
       THEN
+
+	 IF td_core.is_true( p_concurrent )
+	 THEN
+	    evolve_log.log_msg('P_CONCURRENT is true',5);
+	    -- now simply waiting for all the concurrent processes to complete
+	    o_ev.change_action( 'wait for submitted processes' );
+	    evolve_app.coordinate_sql;
+	 END IF;
+
          evolve_log.log_msg(    l_cnt
                           || CASE
                                 WHEN td_utils.is_part_table( p_owner, p_table )
