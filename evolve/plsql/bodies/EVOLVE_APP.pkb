@@ -170,7 +170,7 @@ AS
 	   INTO l_failed
 	   FROM all_scheduler_jobs
 	  WHERE client_id = l_client_id
-	    AND state = 'RUNNING';
+	    AND state = 'FAILED';
 	 
 	 -- raise an error if there are failed jobs
 	 IF l_failed > 0
