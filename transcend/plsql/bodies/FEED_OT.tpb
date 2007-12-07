@@ -6,7 +6,7 @@ AS
       l_num_rows         NUMBER          := 0;
       l_pct_miss         NUMBER;
       l_sql              VARCHAR2( 100 );
-      l_ext_tab		 self.object_owner||'.'||self.object_name;
+      l_ext_tab		 VARCHAR2(61) := self.object_owner||'.'||self.object_name;
       e_data_cartridge   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_data_cartridge, -29913 );
       e_no_table         EXCEPTION;
@@ -418,7 +418,7 @@ AS
 
       -- notify about successful arrival of feed
       o_ev.change_action( 'Notify success' );
-      announce_file( p_num_files => l_ext_file_cnt,
+      SELF.announce_file( p_num_files => l_ext_file_cnt,
       		     p_num_lines => l_max_numlines,
       		     p_files_url => l_files_url );
 

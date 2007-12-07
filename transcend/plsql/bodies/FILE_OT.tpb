@@ -94,7 +94,7 @@ AS
          || CHR( 10 )
          || p_files_url;
 
-      IF l_numlines > 65536
+      IF p_num_lines > 65536
       THEN
          l_message :=
                l_message

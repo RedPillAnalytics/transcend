@@ -123,7 +123,7 @@ IS
       IF NOT l_rows
       THEN
          o_ev.clear_app_info;
-	 evolve_app.raise_err( 'incorrect_parameters' );
+	 evolve_log.raise_err( 'incorrect_parameters' );
       END IF;
 
       o_ev.clear_app_info;

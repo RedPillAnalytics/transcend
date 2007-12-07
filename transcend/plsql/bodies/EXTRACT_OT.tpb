@@ -69,8 +69,10 @@ AS
                      );
 
       -- notify about successful arrival of feed
+      -- only works if this notification event has been configured for the file label.
       o_ev.change_action( 'Notify success' );
-      announce_file( p_files_url => file_url );
+      self.announce_file( p_files_url => file_url,
+      			  p_num_lines => l_numlines );
 
       o_ev.clear_app_info;
    END process;
