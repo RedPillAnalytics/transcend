@@ -13,7 +13,7 @@ AS
       l_results     NUMBER;
       o_ev          evolve_ot                  := evolve_ot( p_module => 'process' );
    BEGIN
-      evolve_log.log_msg( 'Processing extract "' || file_label || '"' );
+      evolve_log.log_msg( 'Processing extract "' || file_label || '"',3 );
       o_ev.change_action( 'Configure NLS formats' );
       -- set date and timestamp NLS formats
       l_results :=
@@ -41,7 +41,7 @@ AS
                              ELSE 'rows'
                           END
                        || ' extracted to '
-                       || arch_filepath
+                       || arch_filepath, 3
                      );
       l_file_dt := SYSDATE;
       -- copy the file to the target location
@@ -49,14 +49,14 @@ AS
       evolve_log.log_msg(    'Archive file '
                        || arch_filepath
                        || ' copied to destination '
-                       || filepath
+                       || filepath, 3
                      );
 
       -- get file attributes
       IF evolve_log.is_debugmode
       THEN
          l_num_bytes := 0;
-         evolve_log.log_msg( 'Reporting 0 size file in debug mode' );
+         evolve_log.log_msg( 'Reporting 0 size file in debug mode',3 );
       ELSE
          UTL_FILE.fgetattr( DIRECTORY, filename, l_exists, l_num_bytes, l_blocksize );
       END IF;
@@ -67,22 +67,11 @@ AS
                        p_num_lines      => l_numlines,
                        p_file_dt        => l_file_dt
                      );
-      -- send the notification if configured
+
+      -- notify about successful arrival of feed
       o_ev.change_action( 'Notify success' );
-      l_message :=
-               'The file can be downloaded at the following link:' || CHR( 10 )
-               || file_url;
+      announce_file( p_files_url => file_url );
 
-      IF l_numlines > 65536
-      THEN
-         l_message :=
-               l_message
-            || CHR( 10 )
-            || CHR( 10 )
-            || 'The file is too large for some desktop applications, such as Microsoft Excel, to open.';
-      END IF;
-
-      o_ev.send( p_label => file_label, p_message => l_message );
       o_ev.clear_app_info;
    END process;
 END;

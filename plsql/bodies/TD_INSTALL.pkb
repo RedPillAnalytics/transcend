@@ -113,7 +113,7 @@ IS
       dbms_scheduler.create_job_class( job_class_name    => 'consume_sql_class',
 				       logging_level	 => DBMS_SCHEDULER.LOGGING_FULL,
 				       comments		 =>   'Job class for the Evolve product by Transcendent Data, Inc.'
-				       ||' This is the job class used by default when the Oracle scheduler is used for concurrent processing');
+				                            ||' This is the job class used by default when the Oracle scheduler is used for concurrent processing');
 
       
    END create_scheduler_metadata;

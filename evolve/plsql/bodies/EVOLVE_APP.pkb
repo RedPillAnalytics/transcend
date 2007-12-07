@@ -27,6 +27,7 @@ AS
    AS
       l_results   NUMBER;
    BEGIN
+      evolve_log.log_msg( 'P_AUTO: '||p_auto, 5 );
       evolve_log.log_msg( CASE
                           WHEN p_msg IS NULL
                              THEN 'SQL: ' || p_sql
@@ -37,10 +38,8 @@ AS
       THEN
          IF td_core.is_true( p_auto )
          THEN
-  	    evolve_log.log_msg('P_AUTO is true',4);
             l_results := exec_auto( p_sql => p_sql );
          ELSE
-            evolve_log.log_msg('P_AUTO is false',4);
 	    EXECUTE IMMEDIATE p_sql;
 	 END IF;
 
@@ -76,14 +75,11 @@ AS
 	 CASE
 	 WHEN td_core.is_true( p_background )
          THEN
-  	    evolve_log.log_msg('P_BACKGROUND is true',4);
 	    submit_sql( p_sql => p_sql );
          WHEN td_core.is_true( p_auto )
          THEN
-  	    evolve_log.log_msg('P_AUTO is true',4);
             l_results := exec_auto( p_sql => p_sql );
          ELSE
-            evolve_log.log_msg('P_AUTO and P_BACKGROUND were false',4);
 	    EXECUTE IMMEDIATE p_sql;
 	 END CASE;
 

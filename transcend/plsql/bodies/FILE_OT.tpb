@@ -65,6 +65,48 @@ AS
                   p_file_dt              => p_file_dt
                 );
    END audit_file;
+
+   MEMBER PROCEDURE announce_file(
+      p_files_url   VARCHAR2,
+      p_num_files   NUMBER DEFAULT 1
+   )
+   AS
+      o_ev        evolve_ot := evolve_ot( p_module => 'announce_file' );
+      l_message   notification_events.message%type;
+   BEGIN
+      -- notify about successful arrival of feed
+      o_ev.change_action( 'Notify success' );
+      l_message :=
+            'The file'
+         || CASE
+               WHEN p_num_files > 1
+                  THEN 's'
+               ELSE NULL
+            END
+         || ' can be downloaded at the following link'
+         || CASE
+               WHEN p_num_files > 1
+                  THEN 's'
+               ELSE NULL
+            END
+         || ':'
+         || CHR( 10 )
+         || p_files_url;
+
+      IF l_numlines > 65536
+      THEN
+         l_message :=
+               l_message
+            || CHR( 10 )
+            || CHR( 10 )
+            || 'The file is too large for some desktop applications, such as Microsoft Excel, to open.';
+      END IF;
+
+      o_ev.send( p_label   => self.file_label,
+		 p_message => l_message );
+
+   END announce_file;
+
 END;
 /
 

@@ -6,6 +6,7 @@ AS
       l_num_rows         NUMBER          := 0;
       l_pct_miss         NUMBER;
       l_sql              VARCHAR2( 100 );
+      l_ext_tab		 self.object_owner||'.'||self.object_name;
       e_data_cartridge   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_data_cartridge, -29913 );
       e_no_table         EXCEPTION;
@@ -17,9 +18,10 @@ AS
       -- type object which handles logging and application registration for instrumentation purposes
       -- defaults to registering with DBMS_APPLICATION_INFO
       o_ev.change_action( 'Get count from table' );
-      l_sql := 'SELECT count(*) FROM ' || SELF.object_owner || '.' || SELF.object_name;
+      l_sql := 'SELECT count(*) FROM ' || l_ext_tab;
       evolve_log.log_msg( 'Count SQL: ' || l_sql, 3 );
 
+      o_ev.change_action( 'get external table count' );
       IF NOT evolve_log.is_debugmode
       THEN
          BEGIN
@@ -28,18 +30,24 @@ AS
          EXCEPTION
             WHEN e_data_cartridge
             THEN
+	       -- no matter what happens, we want to log the error
+	       -- this is prior to the case on purpose
+	       evolve_log.log_err;
                -- use a regular expression to pull the KUP error out of SQLERRM
+	       -- this tells us the explicit issue with the external table
                CASE REGEXP_SUBSTR( SQLERRM, '^KUP-[[:digit:]]{5}', 1, 1, 'im' )
+	          -- so far, only one known error to check for
+		  -- others will come
                   WHEN 'KUP-04040'
                   THEN
-                     o_ev.change_action( 'location file missing' );
+                     o_ev.change_action( 'external file missing' );
                      o_ev.send( p_label => self.file_label );
-                     raise_application_error
-                                           ( td_inst.get_err_cd( 'location_file_missing' ),
-                                             td_inst.get_err_msg( 'location_file_missing' )
-                                           );
+                     o_ev.clear_app_info;
+	             evolve_log.raise_err( 'ext_file_missing',l_ext_tab );
+		  -- All other errors get routed here
                   ELSE
-                     evolve_log.log_msg( 'Unknown data cartridge error' );
+		     o_ev.clear_app_info;
+		     evolve_log.raise_err( 'data_cartridge',l_ext_tab );
                END CASE;
          END;
 
@@ -52,9 +60,8 @@ AS
                o_ev.change_action( 'reject limit exceeded' );
                -- notify if reject limit is exceeded
                o_ev.send( p_label => self.file_label );
-               raise_application_error( td_inst.get_err_cd( 'reject_limit_exceeded' ),
-                                        td_inst.get_err_msg( 'reject_limit_exceeded' )
-                                      );
+	       o_ev.clear_app_info;
+	       evolve_log.raise_err( 'reject_limit_exceeded' );
             END IF;
          EXCEPTION
             WHEN ZERO_DIVIDE
@@ -77,13 +84,7 @@ AS
    EXCEPTION
       WHEN e_no_table
       THEN
-         raise_application_error( td_inst.get_err_cd( 'no_tab' ),
-                                     td_inst.get_err_msg( 'no_tab' )
-                                  || ': '
-                                  || SELF.object_owner
-                                  || '.'
-                                  || SELF.object_name
-                                );
+         evolve_log.raise_err( 'no_tab',SELF.object_owner||'.'||SELF.object_name );
    END audit_ext_tab;
    MEMBER PROCEDURE process
    IS
@@ -96,6 +97,7 @@ AS
       l_sum_numlines   NUMBER                     := 0;
       l_ext_file_cnt   NUMBER;
       l_ext_tab_ddl    VARCHAR2( 2000 );
+      l_ext_tab	       VARCHAR2(61)		  := object_owner||'.'||object_name;
       l_files_url      VARCHAR2( 1000 );
       l_message        notification_events.MESSAGE%TYPE;
       l_results        NUMBER;
@@ -166,9 +168,7 @@ AS
                       
                       -- use analytics (stragg function) to construct the alter table command (if needed)
                       'alter table '
-                   || SELF.object_owner
-                   || '.'
-                   || SELF.object_name
+                   || l_ext_tab
                    || ' location ('
                    || REGEXP_REPLACE
                          ( STRAGG
@@ -366,12 +366,10 @@ AS
       CASE
          WHEN NOT l_rows_dirlist AND required = 'Y'
          THEN
-            raise_application_error( td_inst.get_err_cd( 'no_files_found' ),
-                                     td_inst.get_err_msg( 'no_files_found' )
-                                   );
+	    evolve_log.raise_err( 'no_files_found' );
          -- there were no matching files for this configuration
          -- however, the REQUIRED attribute is N
-         -- therefore, and load process dependent on this job will proceed
+         -- therefore, any load process dependent on this job should proceed
          -- but need a "business logic" way of saying "no rows for today"
          -- so I empty the file out
          -- an external table with a zero-byte file gives "no rows returned"
@@ -396,17 +394,13 @@ AS
             BEGIN
                l_results := evolve_app.exec_sql( p_sql => l_ext_tab_ddl, p_auto => 'yes' );
                evolve_log.log_msg(    'External table '
-                                || object_owner
-                                || '.'
-                                || object_name
+                                || l_ext_tab
                                 || ' altered'
                               );
             EXCEPTION
                WHEN e_no_files
                THEN
-                  raise_application_error( td_inst.get_err_cd( 'no_ext_files' ),
-                                           td_inst.get_err_msg( 'no_ext_files' )
-                                         );
+	          evolve_log.raise_err( 'no_ext_files',l_ext_tab);
             END;
 
             -- audit the external table
@@ -416,33 +410,9 @@ AS
 
       -- notify about successful arrival of feed
       o_ev.change_action( 'Notify success' );
-      l_message :=
-            'The file'
-         || CASE
-               WHEN l_ext_file_cnt > 1
-                  THEN 's'
-               ELSE NULL
-            END
-         || ' can be downloaded at the following link'
-         || CASE
-               WHEN l_ext_file_cnt > 1
-                  THEN 's'
-               ELSE NULL
-            END
-         || ':'
-         || CHR( 10 )
-         || l_files_url;
+      announce_file( p_num_files => l_ext_file_cnt,
+      		     p_files_url => l_files_url );
 
-      IF l_numlines > 65536
-      THEN
-         l_message :=
-               l_message
-            || CHR( 10 )
-            || CHR( 10 )
-            || 'The file is too large for some desktop applications, such as Microsoft Excel, to open.';
-      END IF;
-
-      o_ev.send( p_label => self.file_label );
       o_ev.clear_app_info;
    END process;
 END;

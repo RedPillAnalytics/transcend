@@ -166,6 +166,7 @@ AS
    PROCEDURE raise_err( p_name VARCHAR2, p_add_msg VARCHAR2 DEFAULT NULL )
    AS
    BEGIN
+      log_msg( 'The error name passed was '||p_name, 5);
       raise_application_error( td_inst.get_err_cd( p_name ),
                                   td_inst.get_err_msg( p_name )
                                || CASE

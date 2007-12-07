@@ -30,6 +30,10 @@ CREATE OR REPLACE TYPE file_ot AUTHID CURRENT_USER AS object(
       p_num_bytes   NUMBER,
       p_num_lines   NUMBER,
       p_file_dt     DATE
+   ),
+   MEMBER PROCEDURE announce_file(
+      p_files_url   VARCHAR2,
+      p_num_files   NUMBER DEFAULT 1
    )
 )
 NOT FINAL;

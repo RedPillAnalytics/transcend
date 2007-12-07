@@ -17,22 +17,22 @@ AS
       p_p_num           NUMBER DEFAULT 65535
    )
    AS
+      o_ev              evolve_ot         := evolve_ot( p_module      => 'populate_partname' );
       l_dsql            LONG;
       l_num_msg         VARCHAR2( 100 )
                                    := 'Number of records inserted into TD_PART_GTT table';
-      -- to catch empty cursors
       l_source_column   all_part_key_columns.column_name%TYPE;
       l_results         NUMBER;
-      o_ev              evolve_ot         := evolve_ot( p_module      => 'populate_partname' );
       l_part_position   all_tab_partitions.partition_position%TYPE;
       l_high_value      all_tab_partitions.high_value%TYPE;
    BEGIN
       td_utils.check_table( p_owner            => p_owner,
-                          p_table            => p_table,
-                          p_partname         => p_partname,
-                          p_partitioned      => 'yes'
-                        );
-
+                            p_table            => p_table,
+                            p_partname         => p_partname,
+                            p_partitioned      => 'yes'
+                          );
+      
+      -- get the default partname, which is the max partition
       IF p_partname IS NOT NULL
       THEN
          SELECT partition_position, high_value
@@ -41,7 +41,12 @@ AS
           WHERE table_owner = UPPER( p_owner )
             AND table_name = UPPER( p_table )
             AND partition_name = UPPER( p_partname );
+	 
+	 -- write records to the global temporary table, which will later be used in cursors for other procedures
 
+	 -- if P_PARTNAME is null, then we want the max partition
+	 -- go ahead and write that single record
+	 o_ev.change_action( 'static insert into td_part_gtt');
          INSERT INTO td_part_gtt
                      ( table_owner, table_name, partition_name,
                        partition_position
@@ -52,6 +57,7 @@ AS
 
          evolve_log.log_cnt_msg( SQL%ROWCOUNT, l_num_msg, 4 );
       ELSE
+	 -- if P_SOURCE_COLUMN is null, then use the same name as the partitioning source column on the target
          IF p_source_column IS NULL
          THEN
             SELECT column_name
@@ -62,7 +68,7 @@ AS
             l_source_column := p_source_column;
          END IF;
 
-         o_ev.change_action( 'insert into td_part_gtt' );
+         o_ev.change_action( 'dynamic insert into td_part_gtt' );
 
          EXECUTE IMMEDIATE    'insert into td_part_gtt (table_owner, table_name, partition_name, partition_position) '
                            || ' SELECT table_owner, table_name, partition_name, partition_position'
@@ -283,6 +289,7 @@ AS
          THEN
             NULL;
          ELSE
+	    o_ev.clear_app_info;
             evolve_log.raise_err( 'unrecognized_parm', p_statistics );
       END CASE;
 
@@ -326,6 +333,7 @@ AS
       CASE
          WHEN p_tablespace IS NOT NULL AND p_partname IS NOT NULL
          THEN
+      	    o_ev.clear_app_info;
             evolve_log.raise_err( 'parms_not_compatible', 'P_TABLESPACE and P_PARTNAME' );
          ELSE
             NULL;
@@ -1918,6 +1926,7 @@ AS
          -- ON columns not specified correctly
          WHEN e_no_on_columns
          THEN
+ 	    o_ev.clear_app_info;
             evolve_log.raise_err( 'on_clause_missing' );
       END;
       
@@ -2025,6 +2034,7 @@ AS
 
       IF NOT l_rows
       THEN
+         o_ev.clear_app_info;
          evolve_log.raise_err( 'incorrect_parameters' );
       END IF;
 
@@ -2121,6 +2131,7 @@ AS
          THEN
             NULL;
          ELSE
+            o_ev.clear_app_info;
             evolve_log.raise_err( 'unrecognized_parm', p_statistics );
       END CASE;
 
@@ -2389,18 +2400,21 @@ AS
          WHEN     p_partname IS NOT NULL
               AND ( p_source_owner IS NOT NULL OR p_source_object IS NOT NULL )
          THEN
+            o_ev.clear_app_info;
             evolve_log.raise_err
                              ( 'parms_not_compatible',
                                'P_PARTNAME with either P_SOURCE_OWNER or P_SOURCE_OBJECT'
                              );
          WHEN p_source_owner IS NOT NULL AND p_source_object IS NULL
          THEN
+            o_ev.clear_app_info;
             evolve_log.raise_err( 'parms_not_compatible',
                                'P_SOURCE_OWNER without P_SOURCE_OBJECT'
                              );
          WHEN p_source_owner IS NULL AND p_source_object IS NOT NULL
          THEN
-            evolve_log.raise_err( 'parms_not_compatible',
+          o_ev.clear_app_info;
+          evolve_log.raise_err( 'parms_not_compatible',
                                'P_SOURCE_OBJECT without P_SOURCE_OWNEW'
                              );
          ELSE
@@ -2699,6 +2713,7 @@ AS
          WHEN    p_source_owner IS NOT NULL AND p_source_table IS NULL
               OR ( p_source_owner IS NULL AND p_source_table IS NOT NULL )
          THEN
+            o_ev.clear_app_info;
             evolve_log.raise_err
                             ( 'parms_not_compatible',
                               'P_SOURCE_OWNER and P_SOURCE_OBJECT are mutually inclusive'
@@ -2706,12 +2721,14 @@ AS
          WHEN     p_source_partname IS NOT NULL
               AND ( p_source_owner IS NULL OR p_source_table IS NULL )
          THEN
+            o_ev.clear_app_info;
             evolve_log.raise_err
                         ( 'parms_not_compatible',
                           'P_SOURCE_PARTNAME requires P_SOURCE_OWNER and P_SOURCE_OBJECT'
                         );
          WHEN p_partname IS NOT NULL AND( p_owner IS NULL OR p_table IS NULL )
          THEN
+            o_ev.clear_app_info;
             evolve_log.raise_err( 'parms_not_compatible',
                                'P_PARTNAME requires P_OWNER and P_OBJECT'
                              );

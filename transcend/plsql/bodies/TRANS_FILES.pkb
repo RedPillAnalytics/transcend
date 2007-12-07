@@ -34,6 +34,7 @@ IS
       WHEN OTHERS
       THEN
          evolve_log.log_err;
+         o_ev.clear_app_info;
          RAISE;
    END calc_rej_ind;
 
@@ -66,8 +67,8 @@ IS
    EXCEPTION
       WHEN OTHERS
       THEN
-      evolve_log.log_err;
-      o_ev.clear_app_info;
+         evolve_log.log_err;
+         o_ev.clear_app_info;
          RAISE;
    END extract_object;
 
@@ -121,9 +122,8 @@ IS
       -- no matching files entries are found
       IF NOT l_rows
       THEN
-         raise_application_error( td_inst.get_err_cd( 'incorrect_parameters' ),
-                                  td_inst.get_err_msg( 'incorrect_parameters' )
-                                );
+         o_ev.clear_app_info;
+	 evolve_app.raise_err( 'incorrect_parameters' );
       END IF;
 
       o_ev.clear_app_info;
