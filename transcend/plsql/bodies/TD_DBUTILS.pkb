@@ -99,6 +99,9 @@ AS
       END IF;
 
       o_ev.clear_app_info;
+   WHEN OTHERS
+      o_ev.clear_app_info;
+      RAISE;
    END populate_partname;
 
    PROCEDURE truncate_table(
@@ -126,6 +129,9 @@ AS
                      );
       evolve_log.log_msg( l_tab_name || ' truncated' );
       o_ev.clear_app_info;
+      WHEN OTHERS
+         o_ev.clear_app_info;
+         RAISE;
    END truncate_table;
 
    -- drop a table
@@ -151,6 +157,9 @@ AS
                      );
       evolve_log.log_msg( l_tab_name || ' dropped' );
       o_ev.clear_app_info;
+   WHEN OTHERS
+      o_ev.clear_app_info;
+      RAISE;
    END drop_table;
 
    -- builds a new table based on a current one
@@ -294,6 +303,9 @@ AS
       END CASE;
 
       o_ev.clear_app_info;
+   WHEN OTHERS
+      o_ev.clear_app_info;
+      RAISE;
    END build_table;
 
    -- builds the indexes from one table on another
@@ -685,6 +697,9 @@ AS
       END IF;
 
       o_ev.clear_app_info;
+   WHEN OTHERS
+      o_ev.clear_app_info;
+      RAISE;
    END build_indexes;
 
    -- renames cloned indexes on a particular table back to their original names
@@ -723,6 +738,9 @@ AS
       -- commit is required to clear out the contents of the global temporary table
       COMMIT;
       o_ev.clear_app_info;
+   WHEN OTHERS
+      o_ev.clear_app_info;
+      RAISE;
    END rename_indexes;
 
    -- builds the constraints from one table on another
@@ -1095,6 +1113,9 @@ AS
       END IF;
 
       o_ev.clear_app_info;
+   WHEN OTHERS
+      o_ev.clear_app_info;
+      RAISE;
    END build_constraints;
 
    -- disables constraints related to a particular table
@@ -1317,6 +1338,9 @@ AS
       END IF;
 
       o_ev.clear_app_info;
+   WHEN OTHERS
+      o_ev.clear_app_info;
+      RAISE;
    END constraint_maint;
 
    -- enables constraints related to a particular table
@@ -1358,6 +1382,9 @@ AS
       -- commit is required to clear out the contents of the global temporary table
       COMMIT;
       o_ev.clear_app_info;
+   WHEN OTHERS
+      o_ev.clear_app_info;
+      RAISE;
    END enable_constraints;
 
    -- drop particular indexes from a table
@@ -1417,6 +1444,9 @@ AS
       END IF;
 
       o_ev.clear_app_info;
+   WHEN OTHERS
+      o_ev.clear_app_info;
+      RAISE;
    END drop_indexes;
 
    -- drop particular constraints from a table
@@ -1477,6 +1507,9 @@ AS
       END IF;
 
       o_ev.clear_app_info;
+   WHEN OTHERS
+      o_ev.clear_app_info;
+      RAISE;
    END drop_constraints;
 
    -- extracts grants for a particular object from the dictionary and applies those grants to another object
@@ -1587,6 +1620,9 @@ AS
       END IF;
 
       o_ev.clear_app_info;
+   WHEN OTHERS
+      o_ev.clear_app_info;
+      RAISE;
    END object_grants;
 
    -- structures an insert or insert append statement from the source to the target provided
@@ -1688,6 +1724,9 @@ AS
       END IF;
 
       o_ev.clear_app_info;
+   WHEN OTHERS
+      o_ev.clear_app_info;
+      RAISE;
    END insert_table;
 
    -- structures a merge statement between two tables that have the same table
@@ -1962,6 +2001,9 @@ AS
       END IF;
 
       o_ev.clear_app_info;
+   WHEN OTHERS
+      o_ev.clear_app_info;
+      RAISE;
    END merge_table;
 
    -- queries the dictionary based on regular expressions and loads tables using either the load_tab method or the merge_tab method
@@ -2061,6 +2103,9 @@ AS
       END IF;
 
       o_ev.clear_app_info;
+   WHEN OTHERS
+      o_ev.clear_app_info;
+      RAISE;
    END load_tables;
 
    -- procedure to exchange a partitioned table with a non-partitioned table
@@ -2269,6 +2314,9 @@ AS
       END IF;
 
       o_ev.clear_app_info;
+   WHEN OTHERS
+      o_ev.clear_app_info;
+      RAISE;
    END exchange_partition;
 
    -- procedure to "swap" two tables using rename
@@ -2385,6 +2433,9 @@ AS
       -- clear out temporary table holding index statements
       COMMIT;
       o_ev.clear_app_info;
+   WHEN OTHERS
+      o_ev.clear_app_info;
+      RAISE;
    END replace_table;
 
    -- Provides functionality for setting local and non-local indexes to unusable based on parameters
@@ -2598,6 +2649,9 @@ AS
       -- commit needed to clear the contents of the global temporary table
       COMMIT;
       o_ev.clear_app_info;
+   WHEN OTHERS
+      o_ev.clear_app_info;
+      RAISE;
    END unusable_indexes;
 
    -- rebuilds all unusable index segments on a particular table
@@ -2679,7 +2733,9 @@ AS
                      ORDER BY table_name )
       LOOP
          l_rows := TRUE;
-         evolve_app.exec_sql( p_sql => c_gidx.DDL, p_auto => 'yes' );
+         evolve_app.exec_sql( p_sql        => c_gidx.DDL, 
+	 		      p_auto       => 'yes',
+			      p_background => p_concurrent );
          l_cnt := l_cnt + 1;
       END LOOP;
 
@@ -2720,6 +2776,13 @@ AS
       END IF;
 
       o_ev.clear_app_info;
+   EXCEPTION
+   WHEN OTHERS
+      o_ev.clear_app_info;
+      RAISE;
+   WHEN OTHERS
+      o_ev.clear_app_info;
+      RAISE;
    END usable_indexes;
 
    PROCEDURE update_stats(
@@ -2949,6 +3012,9 @@ AS
                      );
       COMMIT;
       o_ev.clear_app_info;
+   WHEN OTHERS
+      o_ev.clear_app_info;
+      RAISE;
    END update_stats;
 END td_dbutils;
 /
