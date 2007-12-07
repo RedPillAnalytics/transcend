@@ -33,6 +33,7 @@ CREATE OR REPLACE TYPE file_ot AUTHID CURRENT_USER AS object(
    ),
    MEMBER PROCEDURE announce_file(
       p_files_url   VARCHAR2,
+      p_num_lines   NUMBER,
       p_num_files   NUMBER DEFAULT 1
    )
 )
