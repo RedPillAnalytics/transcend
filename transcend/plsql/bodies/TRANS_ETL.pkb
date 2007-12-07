@@ -544,16 +544,16 @@ AS
    IS
    BEGIN
       td_dbutils.unusable_indexes( p_owner              => p_owner,
-                               p_table              => p_table,
-                               p_partname           => p_partname,
-                               p_source_owner       => p_source_owner,
-                               p_source_object      => p_source_object,
-                               p_source_column      => p_source_column,
-                               p_d_num              => p_d_num,
-                               p_p_num              => p_p_num,
-                               p_index_regexp       => p_index_regexp,
-                               p_index_type         => p_index_type,
-                               p_part_type          => p_part_type
+				   p_table              => p_table,
+				   p_partname           => p_partname,
+				   p_source_owner       => p_source_owner,
+				   p_source_object      => p_source_object,
+				   p_source_column      => p_source_column,
+				   p_d_num              => p_d_num,
+				   p_p_num              => p_p_num,
+				   p_index_regexp       => p_index_regexp,
+				   p_index_type         => p_index_type,
+				   p_part_type          => p_part_type
                              );
    EXCEPTION
       WHEN OTHERS
