@@ -651,14 +651,19 @@ AS
          END;
       END LOOP;
       
-      -- now simply waiting for all the concurrent processes to complete
-      o_ev.change_action( 'wait for submitted processes' );
-      evolve_app.coordinate_sql;
-
       IF NOT l_rows
       THEN
          evolve_log.log_msg( 'No matching indexes found on ' || l_src_name );
       ELSE
+
+	 IF td_core.is_true( p_concurrent )
+	 THEN
+	    evolve_log.log_msg('P_CONCURRENT is true',4);
+	    -- now simply waiting for all the concurrent processes to complete
+	    o_ev.change_action( 'wait for submitted processes' );
+	    evolve_app.coordinate_sql;
+	 END IF;
+
          evolve_log.log_msg(    l_idx_cnt
                           || ' index'
                           || CASE
