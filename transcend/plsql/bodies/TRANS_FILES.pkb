@@ -97,18 +97,14 @@ IS
          CASE LOWER( c_fh_conf.file_type )
             WHEN 'extract'
             THEN
-               SELECT VALUE( t )
-                 INTO o_extract
-                 FROM extract_ov t
-                WHERE t.file_label = c_fh_conf.file_label AND t.file_group = p_file_group;
+	       o_extract := extract_ot( p_file_group	=> p_file_group,
+	    				p_file_label	=> c_fh_conf.file_label );
 
                o_extract.process;
             WHEN 'feed'
             THEN
-               SELECT VALUE( t )
-                 INTO o_feed
-                 FROM feed_ov t
-                WHERE t.file_label = c_fh_conf.file_label AND t.file_group = p_file_group;
+ 	       o_feed := feed_ot( p_file_group	=> p_file_group,
+	    			  p_file_label	=> c_fh_conf.file_label );
 
                o_feed.process;
             ELSE

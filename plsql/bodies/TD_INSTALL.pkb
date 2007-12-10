@@ -1722,6 +1722,14 @@ IS
 	 THEN
 	 NULL;
       END;
+      
+      BEGIN
+	 EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.TRANS_ADM for '||p_schema||'.TRANS_ADM';
+      EXCEPTION
+	 WHEN e_same_name
+	 THEN
+	 NULL;
+      END;
 
       BEGIN
 	 EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.FEED_OV for '||p_schema||'.FEED_OV';
@@ -2147,6 +2155,8 @@ IS
    BEGIN
       -- create the user if it doesn't already exist
       create_user( p_user  => p_user );
+      
+      EXECUTE IMMEDIATE 'grant select_catalog_role to '||p_user;
       
       -- create the synonyms to the repository
       build_transcend_rep_syns( p_user   => p_user,

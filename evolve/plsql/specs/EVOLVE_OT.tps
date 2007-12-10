@@ -5,7 +5,7 @@ CREATE OR REPLACE TYPE evolve_ot UNDER app_ot(
       p_client_info   VARCHAR2 DEFAULT NULL
    )
       RETURN SELF AS RESULT,
-   MEMBER PROCEDURE send( p_label NUMBER, p_message VARCHAR2 DEFAULT NULL )
+   MEMBER PROCEDURE send( p_label VARCHAR2, p_message VARCHAR2 DEFAULT NULL )
 )
 ;
 /

@@ -67,7 +67,8 @@ AS
       p_partname      VARCHAR2 DEFAULT NULL,
       p_partitioned   VARCHAR2 DEFAULT NULL,
       p_iot           VARCHAR2 DEFAULT NULL,
-      p_compressed    VARCHAR2 DEFAULT NULL
+      p_compressed    VARCHAR2 DEFAULT NULL,
+      p_external      VARCHAR2 DEFAULT NULL
    );
 
    PROCEDURE check_object(
@@ -83,6 +84,9 @@ AS
       RETURN VARCHAR2;
 
    FUNCTION table_exists( p_owner VARCHAR2, p_table VARCHAR2 )
+      RETURN BOOLEAN;
+      
+   FUNCTION ext_table_exists( p_owner VARCHAR2, p_table VARCHAR2 )
       RETURN BOOLEAN;
 
    FUNCTION is_part_table( p_owner VARCHAR2, p_table VARCHAR2 )

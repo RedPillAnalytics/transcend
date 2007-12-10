@@ -137,9 +137,11 @@ AS
 
       RETURN;
    END evolve_ot;
-   MEMBER PROCEDURE send( p_label NUMBER, p_message VARCHAR2 DEFAULT NULL )
+   MEMBER PROCEDURE send( p_label     VARCHAR2, 
+			  p_message   VARCHAR2 DEFAULT NULL )
    AS
       o_notify   notification_ot;
+      l_notify_found BOOLEAN := TRUE;
    BEGIN
       BEGIN
          SELECT VALUE( t )
@@ -149,17 +151,22 @@ AS
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
-            evolve_log.log_msg(    'No notification configured for label '
-                                || p_label
-                                || ' with module '
-                                || td_inst.module
-                                || ' and action '
-                                || td_inst.action,
-                                4
-                              );
+   	    l_notify_found := FALSE;
       END;
-
-      o_notify.send( p_message => p_message );
+      
+      IF l_notify_found
+      THEN
+	 o_notify.send( p_message => p_message );
+      ELSE
+         evolve_log.log_msg(    'No notification configured for label '
+                             || p_label
+                             || ' with module '
+                             || td_inst.module
+                             || ' and action '
+                             || td_inst.action,
+                             4
+                           );
+      END IF;
    EXCEPTION
       WHEN NO_DATA_FOUND
       THEN

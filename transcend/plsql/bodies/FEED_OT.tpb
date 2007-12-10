@@ -1,6 +1,97 @@
 CREATE OR REPLACE TYPE BODY feed_ot
 AS
--- audits information about external tables after the file(s) have been put in place
+   CONSTRUCTOR FUNCTION feed_ot(
+      p_file_group   VARCHAR2,
+      p_file_label   VARCHAR2
+   )
+      RETURN SELF AS RESULT
+   AS
+   BEGIN
+      SELECT file_label,
+	     file_group,
+	     file_type,
+	     object_owner,
+	     object_name,
+	     directory,
+	     dirpath,
+	     filename,
+	     dirpath || '/' || filename filepath,
+	     arch_directory,
+	     arch_dirpath,
+	     NULL arch_filename,
+	     null arch_filepath,
+	     file_datestamp,
+	     min_bytes,
+	     max_bytes,
+	     baseurl,
+	     NULL file_url,
+	     passphrase,
+	     source_directory,
+	     source_dirpath,
+	     source_regexp,
+	     regexp_options,
+	     source_policy,
+	     required,
+	     delete_source,
+	     reject_limit
+	INTO file_label,
+	     file_group,
+	     file_type,
+	     object_owner,
+	     object_name,
+	     directory,
+	     dirpath,
+	     filename,
+	     filepath,
+	     arch_directory,
+	     arch_dirpath,
+	     arch_filename,
+	     arch_filepath,
+	     file_datestamp,
+	     min_bytes,
+	     max_bytes,
+	     baseurl,
+	     file_url,
+	     passphrase,
+	     source_directory,
+	     source_dirpath,
+	     source_regexp,
+	     regexp_options,
+	     source_policy,
+	     required,
+	     delete_source,
+	     reject_limit
+	FROM (SELECT file_label,
+		     file_group,
+		     file_type,
+		     object_owner,
+		     object_name,
+		     directory,
+		     td_utils.get_dir_path (directory) dirpath,
+		     filename,
+		     arch_directory,
+		     td_utils.get_dir_path (arch_directory) arch_dirpath,
+		     file_datestamp,
+		     min_bytes,
+		     max_bytes,
+		     baseurl,
+		     passphrase,
+		     source_directory,
+		     td_utils.get_dir_path (source_directory) source_dirpath,
+		     source_regexp,
+		     regexp_options,
+		     source_policy,
+		     required,
+		     delete_source,
+		     reject_limit
+		FROM files_conf
+	       WHERE REGEXP_LIKE (file_type, '^feed$', 'i')
+		 AND file_group = p_file_group
+		 AND file_label = p_file_label);
+      RETURN;
+   END feed_ot;
+
+   -- audits information about external tables after the file(s) have been put in place
    MEMBER PROCEDURE audit_ext_tab( p_num_lines NUMBER )
    IS
       l_num_rows         NUMBER          := 0;
@@ -248,8 +339,8 @@ AS
                                     -- USE the attribute FILE_DATESTAMP to determin if the archived file needs a date added
                                     -- SOME files will come in dated already, and two datestamps are silly
                                     -- WHEN we have a whole catalog to track the files
-                                    CASE file_datestamp
-                                    WHEN NULL
+                                    CASE
+                                    WHEN file_datestamp IS NULL
                                     THEN    SELF.arch_dirpath
                                     || '/'
                                     || filename
@@ -325,13 +416,16 @@ AS
             l_filepath := td_utils.unzip_file( dirpath, c_dir_list.source_filename );
             -- now move the file to the expected name
             -- do this with a copy/delete
-            td_utils.copy_file( l_filepath, c_dir_list.filepath );
-            td_utils.delete_file( DIRECTORY, l_filepath );
-            evolve_log.log_msg(    'Source file '
-				|| c_dir_list.source_filepath
-				|| ' moved to destination '
-				|| c_dir_list.filepath
-                              );
+	    IF dirpath||'/'||l_filepath <> c_dir_list.filepath
+	    THEN
+               td_utils.copy_file( dirpath||'/'||l_filepath, c_dir_list.filepath );
+               td_utils.delete_file( DIRECTORY, l_filepath );
+               evolve_log.log_msg(    'Source file '
+				   || c_dir_list.source_filepath
+				   || ' moved to destination '
+				   || c_dir_list.filepath
+				 );
+	    END IF;
             -- get the number of lines in the file now that it is decrypted and uncompressed
             l_numlines := td_utils.get_numlines( SELF.DIRECTORY, c_dir_list.filename );
             -- get a total count of all the lines in all the files making up the external table
@@ -370,18 +464,30 @@ AS
 
       -- check to see if the cursor was empty
       o_ev.change_action( 'Check for matching files' );
+      
+      evolve_log.log_msg('Attribute REQUIRED is: '||required,5);
+      evolve_log.log_msg('Attribute SOURCE_POLICY is: '||source_policy,5);
+      evolve_log.log_msg('Variable L_ROWS_DIRLIST is: '||CASE
+			                                    WHEN l_rows_dirlist 
+							    THEN 
+							       'TRUE'
+							    ELSE 
+							       'FALSE'
+							 END,5 );
 
       CASE
-         WHEN NOT l_rows_dirlist AND required = 'Y'
+         -- there were no files found, and the file is required
+         -- then we should fail
+         WHEN NOT l_rows_dirlist AND td_core.is_true( required )
          THEN
 	    evolve_log.raise_err( 'no_files_found' );
-         -- there were no matching files for this configuration
-         -- however, the REQUIRED attribute is N
+         -- there were no files found
+         -- however, the REQUIRED attribute is "no"
          -- therefore, any load process dependent on this job should proceed
          -- but need a "business logic" way of saying "no rows for today"
          -- so I empty the file out
          -- an external table with a zero-byte file gives "no rows returned"
-      WHEN NOT l_rows_dirlist AND required = 'N'
+      WHEN NOT l_rows_dirlist AND NOT td_core.is_true( required )
          THEN
             evolve_log.log_msg( 'No files found... but none are required' );
             o_ev.change_action( 'Empty previous files' );
@@ -414,6 +520,8 @@ AS
             -- audit the external table
             o_ev.change_action( 'Audit external table' );
             SELF.audit_ext_tab( p_num_lines => l_sum_numlines );
+	 ELSE
+	    NULL;
       END CASE;
 
       -- notify about successful arrival of feed

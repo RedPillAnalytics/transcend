@@ -9,7 +9,6 @@ IS
       p_object_owner       VARCHAR2 DEFAULT NULL,
       p_object_name        VARCHAR2 DEFAULT NULL,
       p_directory          VARCHAR2 DEFAULT NULL,
-      p_filename           VARCHAR2 DEFAULT NULL,
       p_arch_directory     VARCHAR2 DEFAULT NULL,
       p_min_bytes          NUMBER DEFAULT 0,
       p_max_bytes          NUMBER DEFAULT 0,

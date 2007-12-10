@@ -549,6 +549,12 @@ IS
 			 p_message=> 'The specified table does not exist');
 	 set_error_conf( p_name=>    'no_object',
 			 p_message=> 'The specified object does not exist');
+	 set_error_conf( p_name=>    'no_dir_obj',
+			 p_message=> 'The specified directory object does not exist');
+	 set_error_conf( p_name=>    'no_dir_path',
+			 p_message=> 'There is no directory object defined for the specififed path');
+	 set_error_conf( p_name=>    'too_many_dirs',
+			 p_message=> 'There is more than one directory object defined for the specififed path');
 	 set_error_conf( p_name=>    'not_partitioned',
 			 p_message=> 'The specified table is not partititoned');
 	 set_error_conf( p_name=>    'parms_not_compatible',
@@ -556,9 +562,11 @@ IS
 	 set_error_conf( p_name=>    'parm_not_configured',
 			 p_message=> 'The specified parameter is not configured');
 	 set_error_conf( p_name=>    'file_not_found',
-			 p_message=> 'Expected file does not exist');
+			 p_message=> 'The specified file does not exist');
 	 set_error_conf( p_name=>    'not_iot',
 			 p_message=> 'The specified table is not index-organized');
+	 set_error_conf( p_name=>    'not_external',
+			 p_message=> 'The specified table is not an external table');
 	 set_error_conf( p_name=>    'not_compressed',
 			 p_message=> 'The specified segment is not compresed');
 	 set_error_conf( p_name=>    'no_part',
@@ -579,6 +587,10 @@ IS
 			 p_message=> 'A job submitted through the Oracle scheduler failed.');
 	 set_error_conf( p_name=>    'submit_sql_timeout',
 			 p_message=> 'The execution of a job submitted through the Oracle scheduler ran longer than the provided timeout');	 
+	 set_error_conf( p_name=>    'host_cmd',
+			 p_message=> 'Java Error: method hostCmd made unsuccessful system calls');	 
+	 set_error_conf( p_name=>    'copy_file',
+			 p_message=> 'Java Error: method copyFile was unable to copy');	 
 
       END IF;
 

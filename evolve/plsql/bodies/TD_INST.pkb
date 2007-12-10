@@ -262,7 +262,7 @@ AS
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
-            raise_application_error( -20001, 'An invalid error name was invoked' );
+            raise_application_error( -20001, 'The specified error has not been configured: '||p_name );
       END;
 
       RETURN l_code;
@@ -282,7 +282,7 @@ AS
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
-            raise_application_error( -20001, 'An invalid error name was invoked' );
+            raise_application_error( -20001, 'The specified error has not been configured: '||p_name );
       END;
 
       RETURN l_msg;

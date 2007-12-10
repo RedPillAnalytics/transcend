@@ -14,10 +14,7 @@ AS
 
          IF l_retval <> 0
          THEN
-            raise_application_error
-                            ( -20020,
-                              'Java Error: method hostCmd made unsuccessful system calls'
-                            );
+	    evolve_log.raise_err( 'host_cmd' );
          END IF;
       END IF;
 
@@ -44,13 +41,7 @@ AS
 
          IF l_retval <> 0
          THEN
-            raise_application_error
-                            ( -20020,
-                                 'Java Error: method TdCore.copyFile was unable to copy '
-                              || p_srcfile
-                              || ' to '
-                              || p_dstfile
-                            );
+	    evolve_log.raise_err( 'copy_file' );
          END IF;
       END IF;
 
@@ -182,9 +173,9 @@ AS
       -- or the provided filename if no unzip process was performed
       IF l_compressed
       THEN
-         l_return := l_filebasepath;
+         l_return := l_filebase;
       ELSE
-         l_return := l_filepath;
+         l_return := l_filebase||'.'||l_filesuf;
       END IF;
 
       IF evolve_log.is_debugmode
@@ -272,7 +263,7 @@ AS
 
          IF NOT l_file_exists
          THEN
-            raise_application_error( -20020, 'Filename to return does not exist' );
+	    evolve_log.raise_err( 'file_not_found', p_dirpath );
          END IF;
       END IF;
 
@@ -288,7 +279,8 @@ AS
       p_partname      VARCHAR2 DEFAULT NULL,
       p_partitioned   VARCHAR2 DEFAULT NULL,
       p_iot           VARCHAR2 DEFAULT NULL,
-      p_compressed    VARCHAR2 DEFAULT NULL
+      p_compressed    VARCHAR2 DEFAULT NULL,
+      p_external      VARCHAR2 DEFAULT NULL
    )
    AS
       l_tab_name         VARCHAR2( 61 )     := UPPER( p_owner ) || '.'
@@ -299,6 +291,8 @@ AS
       l_compressed       VARCHAR2( 3 );
       l_partition_name   all_tab_partitions.partition_name%TYPE;
    BEGIN
+      
+      -- now get compression, partitioning and iot information
       BEGIN
          SELECT CASE
                    WHEN compression = 'DISABLED'
@@ -325,7 +319,16 @@ AS
          THEN
             evolve_log.raise_err( 'no_tab', l_tab_name );
       END;
+	     
+      -- first check to see if it's an external table
+      IF NOT ext_table_exists( p_owner => p_owner,
+			       p_table => p_table )
+      THEN
+	 evolve_log.raise_err( 'not_external',l_tab_name );
+      END IF;
 
+
+      -- now just work through the gathered information and raise the appropriate exceptions.
       IF l_partitioned = 'yes' AND p_partname IS NULL AND p_compressed IS NOT NULL
       THEN
          evolve_log.raise_err
@@ -447,7 +450,7 @@ AS
    EXCEPTION
       WHEN NO_DATA_FOUND
       THEN
-         raise_application_error( -20010, 'Directory object does not exist' );
+         evolve_log.raise_err( 'no_dir_obj',p_dirname );
    END get_dir_path;
 
    -- used to get a directory name associated with a directory path
@@ -467,15 +470,10 @@ AS
    EXCEPTION
       WHEN NO_DATA_FOUND
       THEN
-         raise_application_error( -20011,
-                                  'No directory object defined for the specified path'
-                                );
+         evolve_log.raise_err( 'no_dir_path', p_dir_path );
       WHEN TOO_MANY_ROWS
       THEN
-         raise_application_error
-                        ( -20012,
-                          'More than one directory object defined for the specified path'
-                        );
+         evolve_log.raise_err( 'too_many_dirs', p_dir_path );
    END get_dir_name;
 
    -- returns a boolean
@@ -483,11 +481,11 @@ AS
    FUNCTION table_exists( p_owner VARCHAR2, p_table VARCHAR2 )
       RETURN BOOLEAN
    AS
-      l_table   dba_tables.table_name%TYPE;
+      l_table   all_tables.table_name%TYPE;
    BEGIN
       SELECT table_name
         INTO l_table
-        FROM dba_tables
+        FROM all_tables
        WHERE owner = UPPER( p_owner ) AND table_name = UPPER( p_table );
 
       RETURN TRUE;
@@ -496,13 +494,33 @@ AS
       THEN
          RETURN FALSE;
    END table_exists;
+   
+   -- returns a boolean
+   -- does a check to see if an external table exists
+   FUNCTION ext_table_exists( p_owner VARCHAR2, p_table VARCHAR2 )
+      RETURN BOOLEAN
+   AS
+      l_table   all_external_tables.table_name%TYPE;
+   BEGIN
+      SELECT table_name
+        INTO l_table
+        FROM all_external_tables
+       WHERE owner = UPPER( p_owner ) AND table_name = UPPER( p_table );
+
+      RETURN TRUE;
+   EXCEPTION
+      WHEN NO_DATA_FOUND
+      THEN
+         RETURN FALSE;
+   END ext_table_exists;
+   
 
    -- returns a boolean
    -- does a check to see if table is partitioned
    FUNCTION is_part_table( p_owner VARCHAR2, p_table VARCHAR2 )
       RETURN BOOLEAN
    AS
-      l_partitioned   dba_tables.partitioned%TYPE;
+      l_partitioned   all_tables.partitioned%TYPE;
    BEGIN
       IF NOT table_exists( UPPER( p_owner ), UPPER( p_table ))
       THEN
@@ -511,7 +529,7 @@ AS
 
       SELECT partitioned
         INTO l_partitioned
-        FROM dba_tables
+        FROM all_tables
        WHERE owner = UPPER( p_owner ) AND table_name = UPPER( p_table );
 
       CASE
@@ -533,11 +551,11 @@ AS
    FUNCTION object_exists( p_owner VARCHAR2, p_object VARCHAR2 )
       RETURN BOOLEAN
    AS
-      l_object   dba_objects.object_name%TYPE;
+      l_object   all_objects.object_name%TYPE;
    BEGIN
       SELECT DISTINCT object_name
                  INTO l_object
-                 FROM dba_objects
+                 FROM all_objects
                 WHERE owner = UPPER( p_owner ) AND object_name = UPPER( p_object );
 
       RETURN TRUE;
