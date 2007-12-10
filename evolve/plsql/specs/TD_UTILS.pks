@@ -45,7 +45,7 @@ AS
       p_dirname     VARCHAR2,
       p_filename    VARCHAR2,
       p_delimiter   VARCHAR2 DEFAULT '|',
-      p_quotechar   VARCHAR2 DEFAULT '',
+      p_quotechar   VARCHAR2 DEFAULT NULL,
       p_append      VARCHAR2 DEFAULT 'no'
    )
       RETURN NUMBER;
@@ -56,7 +56,7 @@ AS
       p_dirname     VARCHAR2,
       p_filename    VARCHAR2,
       p_delimiter   VARCHAR2 DEFAULT '|',
-      p_quotechar   VARCHAR2 DEFAULT '',
+      p_quotechar   VARCHAR2 DEFAULT NULL,
       p_headers     VARCHAR2 DEFAULT 'yes',
       p_append      VARCHAR2 DEFAULT 'no'
    )

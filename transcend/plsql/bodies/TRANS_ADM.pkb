@@ -69,91 +69,271 @@ IS
       p_directory          VARCHAR2 DEFAULT NULL,
       p_filename           VARCHAR2 DEFAULT NULL,
       p_arch_directory     VARCHAR2 DEFAULT NULL,
-      p_min_bytes          NUMBER DEFAULT NULL,
-      p_max_bytes          NUMBER DEFAULT NULL,
+      p_min_bytes          NUMBER DEFAULT 0,
+      p_max_bytes          NUMBER DEFAULT 0,
       p_file_datestamp     VARCHAR2 DEFAULT NULL,
       p_baseurl            VARCHAR2 DEFAULT NULL,
       p_passphrase         VARCHAR2 DEFAULT NULL,
       p_source_directory   VARCHAR2 DEFAULT NULL,
       p_source_regexp      VARCHAR2 DEFAULT NULL,
-      p_regexp_options     VARCHAR2 DEFAULT NULL,
-      p_source_policy      VARCHAR2 DEFAULT NULL,
-      p_required           VARCHAR2 DEFAULT NULL,
-      p_delete_source      VARCHAR2 DEFAULT NULL,
-      p_reject_limit       NUMBER,
+      p_regexp_options     VARCHAR2 DEFAULT 'i',
+      p_source_policy      VARCHAR2 DEFAULT 'newest',
+      p_required           VARCHAR2 DEFAULT 'yes',
+      p_delete_source      VARCHAR2 DEFAULT 'yes',
+      p_reject_limit       NUMBER   DEFAULT 100,
       p_mode               VARCHAR2 DEFAULT 'upsert'
    )
    IS
+      e_dup_conf   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_dup_conf, -1 );
    BEGIN
       CASE
-         WHEN p_mode = 'insert' AND( p_subject IS NULL OR p_message IS NULL )
+      -- these are the required parameters
+      WHEN p_mode = 'insert' AND( p_object_owner IS NULL
+				  OR p_object_name IS NULL
+				  OR p_directory IS NULL
+				  OR p_filename IS NULL
+				  OR p_arch_directory IS NULL
+				  OR p_source_directory IS NULL
+				  OR p_source_regexp IS NULL )
          THEN
-            raise_application_error( -20014, 'An insert requires a value for all parameters' );
+            raise_application_error( -20014, 'An insert requires a value for all required parameters' );
          ELSE
             NULL;
       END CASE;
+      
 
-      IF l_found
+      -- this is the default method... update if it exists or insert it
+      IF LOWER( p_mode ) IN( 'upsert', 'update' )
       THEN
-         file_description := NVL( p_file_description, file_description );
-         object_owner := NVL( p_object_owner, object_owner );
-         object_name := NVL( p_object_name, object_name );
-         DIRECTORY := NVL( p_directory, DIRECTORY );
-         filename := NVL( p_filename, filename );
-         arch_directory := NVL( p_arch_directory, arch_directory );
-         min_bytes := NVL( p_min_bytes, min_bytes );
-         max_bytes := NVL( p_max_bytes, max_bytes );
-         file_datestamp := NVL( p_file_datestamp, file_datestamp );
-         baseurl := NVL( p_baseurl, baseurl );
-         passphrase := NVL( p_passphrase, passphrase );
-         source_directory := NVL( p_source_directory, source_directory );
-         source_regexp := NVL( p_source_regexp, source_regexp );
-         regexp_options := NVL( p_regexp_options, regexp_options );
-         source_policy := NVL( p_source_policy, source_policy );
-         required := NVL( p_required, required );
-         delete_source := NVL( p_delete_source, delete_source );
-         reject_limit := NVL( p_reject_limit, reject_limit );
+         UPDATE files_conf
+            SET file_description = NVL( p_file_description, file_description ),
+		object_owner = NVL( p_object_owner, object_owner ),
+		object_name = NVL( p_object_name, object_name ),
+		DIRECTORY = NVL( p_directory, DIRECTORY ),
+		filename = NVL( p_filename, filename ),
+		arch_directory = NVL( p_arch_directory, arch_directory ),
+		min_bytes = NVL( p_min_bytes, min_bytes ),
+		max_bytes = NVL( p_max_bytes, max_bytes ),
+		file_datestamp = NVL( p_file_datestamp, file_datestamp ),
+		baseurl = NVL( p_baseurl, baseurl ),
+		passphrase = NVL( p_passphrase, passphrase ),
+		source_directory = NVL( p_source_directory, source_directory ),
+		source_regexp = NVL( p_source_regexp, source_regexp ),
+		regexp_options = NVL( p_regexp_options, regexp_options ),
+		source_policy = NVL( p_source_policy, source_policy ),
+		required = NVL( p_required, required ),
+		delete_source = NVL( p_delete_source, delete_source ),
+		reject_limit = NVL( p_reject_limit, reject_limit ),
+                modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
+                modified_dt = SYSDATE
+          WHERE file_label = LOWER( p_file_label) AND file_group = lower( p_file_group );
+      END IF;
+      
+      -- if the update was unsuccessful above, or an insert it specifically requested, then do an insert
+      IF ( SQL%ROWCOUNT = 0 AND LOWER( p_mode ) = 'upsert' ) OR LOWER( p_mode ) = 'insert'
+      THEN
+         BEGIN
+            INSERT INTO files_conf
+                        (  file_label, 
+                           file_group, 
+                           file_type, 
+                           file_description, 
+                           object_owner, 
+                           object_name, 
+                           directory, 
+                           filename, 
+                           arch_directory, 
+                           min_bytes, 
+                           max_bytes, 
+                           file_datestamp, 
+                           baseurl, 
+                           passphrase, 
+                           source_directory, 
+                           source_regexp, 
+                           regexp_options, 
+                           source_policy, 
+                           required, 
+                           delete_source, 
+                           reject_limit )
+                   VALUES ( p_file_label, 
+                            p_file_group, 
+                            'feed', 
+                            p_file_description, 
+                            p_object_owner, 
+                            p_object_name, 
+                            p_directory, 
+                            p_filename, 
+                            p_arch_directory, 
+                            p_min_bytes, 
+                            p_max_bytes, 
+                            p_file_datestamp, 
+                            p_baseurl, 
+                            p_passphrase, 
+                            p_source_directory, 
+                            p_source_regexp, 
+                            p_regexp_options, 
+                            p_source_policy, 
+                            p_required, 
+                            p_delete_source, 
+                            p_reject_limit );
+         EXCEPTION
+            WHEN e_dup_conf
+            THEN
+               raise_application_error
+                                 ( -20011,
+                                   'An attempt was made to add a duplicate configuration'
+                                 );
+         END;
+      END IF;
 
-         UPDATE feed_ov t
-            SET VALUE( t ) = feed_ot
-          WHERE t.file_label = p_file_label AND t.file_group = p_file_group;
-      ELSE
-         INSERT INTO feed_ov
-                     ( file_label, file_group, file_type, file_description, object_owner,
-                       object_name, DIRECTORY, dirpath, filename, filepath, arch_directory,
-                       arch_dirpath, arch_filename, arch_filepath, file_datestamp, min_bytes,
-                       max_bytes, baseurl, file_url, passphrase, source_directory, source_dirpath, source_regexp, regexp_options, source_policy, required, delete_source, reject_limit
-                     )
-              VALUES ( p_file_label, p_file_group, 'feed', p_file_description, p_object_owner,
-                       p_object_name, p_directory, p_filename, p_arch_directory, p_min_bytes, p_max_bytes,
-                       p_file_datestamp, p_baseurl, p_passphrase, p_source_directory, p_source_regexp,
-                       p_regexp_options, p_source_policy, p_required, p_delete_source, p_reject_limit
-                     );
+      
+      -- if a delete is specifically requested, then do a delete
+      IF LOWER( p_mode ) = 'delete'
+      THEN
+         DELETE FROM files_conf
+          WHERE file_label = lower( p_file_label )
+	    AND file_group = lower( p_file_group );
+      END IF;
+
+      -- if we still have not affected any records, then there's a problem
+      IF SQL%ROWCOUNT = 0
+      THEN
+         raise_application_error( -20013,
+                                  'This action affected no repository configurations'
+                                );
       END IF;
    END configure_file;
 
    PROCEDURE configure_file(
       p_file_label         VARCHAR2,
       p_file_group         VARCHAR2,
-      p_file_description   VARCHAR2,
-      p_object_owner       VARCHAR2,
-      p_object_name        VARCHAR2,
-      p_directory          VARCHAR2,
-      p_filename           VARCHAR2,
-      p_arch_directory     VARCHAR2,
-      p_min_bytes          NUMBER,
-      p_max_bytes          NUMBER,
-      p_file_datestamp     VARCHAR2,
-      p_baseurl            VARCHAR2,
-      p_dateformat         VARCHAR2,
-      p_timestampformat    VARCHAR2,
-      p_delimiter          VARCHAR2,
-      p_quotechar          VARCHAR2,
-      p_headers            VARCHAR2
+      p_file_description   VARCHAR2 DEFAULT NULL,
+      p_object_owner       VARCHAR2 DEFAULT NULL,
+      p_object_name        VARCHAR2 DEFAULT NULL,
+      p_directory          VARCHAR2 DEFAULT NULL,
+      p_filename           VARCHAR2 DEFAULT NULL,
+      p_arch_directory     VARCHAR2 DEFAULT NULL,
+      p_min_bytes          NUMBER DEFAULT 0,
+      p_max_bytes          NUMBER DEFAULT 0,
+      p_file_datestamp     VARCHAR2 DEFAULT NULL,
+      p_baseurl            VARCHAR2 DEFAULT NULL,
+      p_dateformat         VARCHAR2 DEFAULT 'mm/dd/yyyy hh:mi:ss am',
+      p_timestampformat    VARCHAR2 DEFAULT 'mm/dd/yyyy hh:mi:ss:x:ff am',
+      p_delimiter          VARCHAR2 DEFAULT ',',
+      p_quotechar          VARCHAR2 DEFAULT NULL,
+      p_headers            VARCHAR2 DEFAULT 'yes',
+      p_mode		   VARCHAR2 DEFAULT 'upsert'
    )
    IS
+      e_dup_conf   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_dup_conf, -1 );
    BEGIN
-      NULL;
+      CASE
+      -- these are the required parameters
+      WHEN p_mode = 'insert' AND( p_object_owner IS NULL
+				  OR p_object_name IS NULL
+				  OR p_directory IS NULL
+				  OR p_filename IS NULL
+				  OR p_arch_directory IS NULL )
+         THEN
+            raise_application_error( -20014, 'An insert requires a value for all required parameters' );
+         ELSE
+            NULL;
+      END CASE;
+      
+
+      -- this is the default method... update if it exists or insert it
+      IF LOWER( p_mode ) IN( 'upsert', 'update' )
+      THEN
+         UPDATE files_conf
+            SET file_description = NVL( p_file_description, file_description ),
+		object_owner = NVL( p_object_owner, object_owner ),
+		object_name = NVL( p_object_name, object_name ),
+		DIRECTORY = NVL( p_directory, DIRECTORY ),
+		filename = NVL( p_filename, filename ),
+		arch_directory = NVL( p_arch_directory, arch_directory ),
+		min_bytes = NVL( p_min_bytes, min_bytes ),
+		max_bytes = NVL( p_max_bytes, max_bytes ),
+		file_datestamp = NVL( p_file_datestamp, file_datestamp ),
+		baseurl = NVL( p_baseurl, baseurl ),
+		dateformat = NVL( p_dateformat, dateformat ),
+		timestampformat = NVL( p_timestampformat, timestampformat ),
+		delimiter = NVL( p_delimiter, delimiter ),
+		quotechar = NVL( p_quotechar, quotechar ),
+		headers = NVL( p_headers, headers ),
+                modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
+                modified_dt = SYSDATE
+          WHERE file_label = LOWER( p_file_label ) AND file_group = lower( p_file_group );
+      END IF;
+      
+      -- if the update was unsuccessful above, or an insert it specifically requested, then do an insert
+      IF ( SQL%ROWCOUNT = 0 AND LOWER( p_mode ) = 'upsert' ) OR LOWER( p_mode ) = 'insert'
+      THEN
+         BEGIN
+            INSERT INTO files_conf
+                        (  file_label, 
+                           file_group, 
+                           file_type, 
+                           file_description, 
+                           object_owner, 
+                           object_name, 
+                           directory, 
+                           filename, 
+                           arch_directory, 
+                           min_bytes, 
+                           max_bytes, 
+                           file_datestamp, 
+                           baseurl, 
+                           dateformat, 
+                           timestampformat, 
+                           delimiter, 
+                           quotechar, 
+                           headers )
+                   VALUES ( p_file_label, 
+                            p_file_group, 
+                            'extract', 
+                            p_file_description, 
+                            p_object_owner, 
+                            p_object_name, 
+                            p_directory, 
+                            p_filename, 
+                            p_arch_directory, 
+                            p_min_bytes, 
+                            p_max_bytes, 
+                            p_file_datestamp, 
+                            p_baseurl, 
+                            p_dateformat, 
+                            p_timestampformat, 
+                            p_delimiter, 
+                            p_quotechar, 
+                            p_headers );
+         EXCEPTION
+            WHEN e_dup_conf
+            THEN
+               raise_application_error
+                                 ( -20011,
+                                   'An attempt was made to add a duplicate configuration'
+                                 );
+         END;
+      END IF;
+
+      
+      -- if a delete is specifically requested, then do a delete
+      IF LOWER( p_mode ) = 'delete'
+      THEN
+         DELETE FROM files_conf
+          WHERE file_label = lower( p_file_label )
+	    AND file_group = lower( p_file_group );
+      END IF;
+
+      -- if we still have not affected any records, then there's a problem
+      IF SQL%ROWCOUNT = 0
+      THEN
+         raise_application_error( -20013,
+                                  'This action affected no repository configurations'
+                                );
+      END IF;
    END configure_file;
 END trans_adm;
 /

@@ -42,6 +42,8 @@ EXEC tdsys.td_install.build_transcend_app( p_schema => '&app_schema', p_reposito
 @../object_views/DIMENSION_OV_vw.sql
 
 --CREATE callable packages
+@../plsql/specs/TRANS_ADM.pks
+@../plsql/wrapped_bodies/TRANS_ADM.plb
 @../plsql/specs/TRANS_ETL.pks
 @../plsql/wrapped_bodies/TRANS_ETL.plb
 @../plsql/specs/TRANS_FILES.pks
