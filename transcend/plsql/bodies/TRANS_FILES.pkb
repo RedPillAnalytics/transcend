@@ -79,7 +79,7 @@ IS
       l_rows      BOOLEAN    := FALSE;
       o_extract   extract_ot;
       o_feed      feed_ot;
-      o_ev        evolve_ot  := evolve_ot( p_module => 'process_file' );
+      o_ev        evolve_ot  := evolve_ot( p_module => 'process_files' );
    BEGIN
       FOR c_fh_conf IN ( SELECT  file_label, file_type
                             FROM files_conf
