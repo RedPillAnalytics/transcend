@@ -60,7 +60,7 @@ IS
          );
    END set_default_configs;
 
-   PROCEDURE configure_file(
+   PROCEDURE configure_feed(
       p_file_label         VARCHAR2,
       p_file_group         VARCHAR2,
       p_file_description   VARCHAR2 DEFAULT NULL,
@@ -203,9 +203,9 @@ IS
                                   'This action affected no repository configurations'
                                 );
       END IF;
-   END configure_file;
+   END configure_feed;
 
-   PROCEDURE configure_file(
+   PROCEDURE configure_extract(
       p_file_label         VARCHAR2,
       p_file_group         VARCHAR2,
       p_file_description   VARCHAR2 DEFAULT NULL,
@@ -334,7 +334,7 @@ IS
                                   'This action affected no repository configurations'
                                 );
       END IF;
-   END configure_file;
+   END configure_extract;
 END trans_adm;
 /
 

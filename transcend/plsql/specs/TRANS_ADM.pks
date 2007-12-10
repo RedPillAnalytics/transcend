@@ -2,7 +2,7 @@ CREATE OR REPLACE PACKAGE trans_adm AUTHID CURRENT_USER
 IS
    PROCEDURE set_default_configs;
 
-   PROCEDURE configure_file(
+   PROCEDURE configure_feed(
       p_file_label         VARCHAR2,
       p_file_group         VARCHAR2,
       p_file_description   VARCHAR2 DEFAULT NULL,
@@ -26,7 +26,7 @@ IS
       p_mode               VARCHAR2 DEFAULT 'upsert'
    );
 
-   PROCEDURE configure_file(
+   PROCEDURE configure_extract(
       p_file_label         VARCHAR2,
       p_file_group         VARCHAR2,
       p_file_description   VARCHAR2 DEFAULT NULL,
