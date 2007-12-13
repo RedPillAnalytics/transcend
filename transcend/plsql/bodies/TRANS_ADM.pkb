@@ -81,18 +81,18 @@ IS
       p_table_owner        VARCHAR2 DEFAULT NULL,
       p_table_name         VARCHAR2 DEFAULT NULL,
       p_arch_directory     VARCHAR2 DEFAULT NULL,
-      p_min_bytes          NUMBER   DEFAULT 0,
-      p_max_bytes          NUMBER   DEFAULT 0,
+      p_min_bytes          NUMBER   DEFAULT NULL,
+      p_max_bytes          NUMBER   DEFAULT NULL,
       p_file_datestamp     VARCHAR2 DEFAULT NULL,
       p_baseurl            VARCHAR2 DEFAULT NULL,
       p_passphrase         VARCHAR2 DEFAULT NULL,
       p_source_directory   VARCHAR2 DEFAULT NULL,
       p_source_regexp      VARCHAR2 DEFAULT NULL,
-      p_regexp_options     VARCHAR2 DEFAULT 'i',
-      p_source_policy      VARCHAR2 DEFAULT 'newest',
-      p_required           VARCHAR2 DEFAULT 'yes',
-      p_delete_source      VARCHAR2 DEFAULT 'yes',
-      p_reject_limit       NUMBER   DEFAULT 100,
+      p_regexp_options     VARCHAR2 DEFAULT NULL,
+      p_source_policy      VARCHAR2 DEFAULT NULL,
+      p_required           VARCHAR2 DEFAULT NULL,
+      p_delete_source      VARCHAR2 DEFAULT NULL,
+      p_reject_limit       NUMBER   DEFAULT NULL,
       p_file_description   VARCHAR2 DEFAULT NULL,
       p_mode               VARCHAR2 DEFAULT 'upsert'
    )
@@ -202,9 +202,9 @@ IS
                           regexp_options, source_policy, required, delete_source, reject_limit
                         )
                  VALUES ( p_file_label, p_file_group, 'feed', p_file_description, upper(p_table_owner),
-                          upper(p_table_name), l_directory, p_filename, upper(p_arch_directory), p_min_bytes, p_max_bytes,
+                          upper(p_table_name), l_directory, p_filename, upper(p_arch_directory), nvl( p_min_bytes, 0), nvl(p_max_bytes,0),
                           p_file_datestamp, p_baseurl, p_passphrase, upper(p_source_directory), p_source_regexp,
-                          p_regexp_options, p_source_policy, p_required, p_delete_source, p_reject_limit
+                          nvl( p_regexp_options,'i'), nvl( p_source_policy,'newest'), nvl(p_required,'yes'), nvl( p_delete_source, 'yes' ), nvl( p_reject_limit,100)
                         );
          EXCEPTION
             WHEN e_dup_conf
@@ -230,61 +230,80 @@ IS
    PROCEDURE configure_extract(
       p_file_group         VARCHAR2,
       p_file_label         VARCHAR2,
-      p_file_description   VARCHAR2 DEFAULT NULL,
+      p_filename	   VARCHAR2 DEFAULT NULL,
       p_object_owner       VARCHAR2 DEFAULT NULL,
       p_object_name        VARCHAR2 DEFAULT NULL,
       p_directory          VARCHAR2 DEFAULT NULL,
-      p_filename           VARCHAR2 DEFAULT NULL,
       p_arch_directory     VARCHAR2 DEFAULT NULL,
-      p_min_bytes          NUMBER   DEFAULT 0,
-      p_max_bytes          NUMBER   DEFAULT 0,
+      p_min_bytes          NUMBER   DEFAULT NULL,
+      p_max_bytes          NUMBER   DEFAULT NULL,
       p_file_datestamp     VARCHAR2 DEFAULT NULL,
       p_baseurl            VARCHAR2 DEFAULT NULL,
-      p_dateformat         VARCHAR2 DEFAULT 'mm/dd/yyyy hh:mi:ss am',
-      p_timestampformat    VARCHAR2 DEFAULT 'mm/dd/yyyy hh:mi:ss:x:ff am',
-      p_delimiter          VARCHAR2 DEFAULT ',',
+      p_passphrase         VARCHAR2 DEFAULT NULL,
+      p_dateformat         VARCHAR2 DEFAULT NULL,
+      p_timestampformat    VARCHAR2 DEFAULT NULL,
+      p_delimiter          VARCHAR2 DEFAULT NULL,
       p_quotechar          VARCHAR2 DEFAULT NULL,
-      p_headers            VARCHAR2 DEFAULT 'yes',
-      p_mode		   VARCHAR2 DEFAULT 'upsert'
+      p_headers            VARCHAR2 DEFAULT NULL,
+      p_file_description   VARCHAR2 DEFAULT NULL,
+      p_mode               VARCHAR2 DEFAULT 'upsert'
    )
    IS
-      e_dup_conf   EXCEPTION;
+      l_owner       all_external_tables.owner%TYPE;
+      l_object      all_objects.object_name%TYPE;
+      l_dir_path    all_directories.directory_path%TYPE;
+      l_obj_name    VARCHAR2(61) := p_object_owner||'.'||p_object_name;
+      e_dup_conf    EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_conf, -1 );
    BEGIN
       CASE
          -- these are the required parameters
-      WHEN     p_mode = 'insert'
-           AND (    p_object_owner IS NULL
+      WHEN     LOWER( p_mode ) = 'insert'
+           AND (    p_filename IS NULL
+	         OR p_object_owner IS NULL
                  OR p_object_name IS NULL
-                 OR p_directory IS NULL
-                 OR p_filename IS NULL
+		 OR p_directory IS NULL
                  OR p_arch_directory IS NULL
                )
          THEN
-            raise_application_error( -20014, 'An insert requires a value for all required parameters' );
-         ELSE
-            NULL;
+            evolve_log.raise_err( 'parms_req' );
+
+      ELSE
+      NULL;
       END CASE;
+
+      -- do checks to make sure all the provided information is legitimate
+      IF NOT p_mode = 'delete'
+      THEN
+         -- check to see if the directories are legitimate
+         -- if they aren't, the GET_DIR_PATH function raises an error
+         IF p_arch_directory IS NOT NULL
+         THEN
+            l_dir_path := td_utils.get_dir_path( p_arch_directory );
+         END IF;
+
+      END IF;
 
       -- this is the default method... update if it exists or insert it
       IF LOWER( p_mode ) IN( 'upsert', 'update' )
       THEN
          UPDATE files_conf
             SET file_description = NVL( p_file_description, file_description ),
-                object_owner = NVL( p_object_owner, object_owner ),
-                object_name = NVL( p_object_name, object_name ),
-                DIRECTORY = NVL( p_directory, DIRECTORY ),
+                object_owner = upper(NVL( p_object_owner, object_owner )),
+                object_name = upper(NVL( p_object_name, object_name )),
+                directory = upper(nvl(p_directory,directory)),
                 filename = NVL( p_filename, filename ),
-                arch_directory = NVL( p_arch_directory, arch_directory ),
+                arch_directory = upper(NVL( p_arch_directory, arch_directory )),
                 min_bytes = NVL( p_min_bytes, min_bytes ),
                 max_bytes = NVL( p_max_bytes, max_bytes ),
                 file_datestamp = NVL( p_file_datestamp, file_datestamp ),
                 baseurl = NVL( p_baseurl, baseurl ),
-                DATEFORMAT = NVL( p_dateformat, DATEFORMAT ),
-                timestampformat = NVL( p_timestampformat, timestampformat ),
-                delimiter = NVL( p_delimiter, delimiter ),
-                quotechar = NVL( p_quotechar, quotechar ),
-                headers = NVL( p_headers, headers ),
+                passphrase = NVL( p_passphrase, passphrase ),
+		dateformat = nvl(p_dateformat,dateformat),
+		timestampformat = nvl(p_timestampformat,timestampformat),
+		delimiter=nvl(p_delimiter,delimiter),
+		quotechar=nvl(p_quotechar,quotechar),
+		headers=nvl(p_headers,headers),
                 modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
                 modified_dt = SYSDATE
           WHERE file_label = LOWER( p_file_label ) AND file_group = LOWER( p_file_group );
@@ -296,14 +315,14 @@ IS
          BEGIN
             INSERT INTO files_conf
                         ( file_label, file_group, file_type, file_description, object_owner,
-                          object_name, DIRECTORY, filename, arch_directory, min_bytes,
-                          max_bytes, file_datestamp, baseurl, DATEFORMAT, timestampformat,
+                          object_name, DIRECTORY, filename, arch_directory, min_bytes, max_bytes,
+                          file_datestamp, baseurl, passphrase, dateformat, timestampformat,
                           delimiter, quotechar, headers
                         )
-                 VALUES ( p_file_label, p_file_group, 'extract', p_file_description, p_object_owner,
-                          p_object_name, p_directory, p_filename, p_arch_directory, p_min_bytes,
-                          p_max_bytes, p_file_datestamp, p_baseurl, p_dateformat, p_timestampformat,
-                          p_delimiter, p_quotechar, p_headers
+                 VALUES ( p_file_label, p_file_group, 'extract', p_file_description, upper(p_object_owner),
+                          upper(p_object_name), p_directory, p_filename, upper(p_arch_directory), p_min_bytes, p_max_bytes,
+                          p_file_datestamp, p_baseurl, p_passphrase, nvl(p_dateformat,'mm/dd/yyyy hh:mi:ss am'), nvl(p_timestampformat,'mm/dd/yyyy hh:mi:ss:x:ff am'),
+                          nvl(p_delimiter,','), p_quotechar, nvl(p_headers,'yes')
                         );
          EXCEPTION
             WHEN e_dup_conf
@@ -312,9 +331,9 @@ IS
          END;
       END IF;
 
-      -- if a delete is specifically requested, then do a delete
       IF LOWER( p_mode ) = 'delete'
       THEN
+         -- if a delete is specifically requested, then do a delete
          DELETE FROM files_conf
                WHERE file_label = LOWER( p_file_label ) AND file_group = LOWER( p_file_group );
       END IF;
