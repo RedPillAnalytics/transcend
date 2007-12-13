@@ -499,7 +499,7 @@ AS
             LOOP
                td_utils.create_file( c_location.DIRECTORY, c_location.LOCATION );
             END LOOP;
-         WHEN l_rows_dirlist AND LOWER( source_policy ) = 'all'
+         WHEN l_rows_dirlist
          -- matching files found, so ignore
                   -- alter the external table to contain all the files
       THEN
