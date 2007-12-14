@@ -61,6 +61,9 @@ AS
       p_append      VARCHAR2 DEFAULT 'no'
    )
       RETURN NUMBER;
+
+   PROCEDURE print_query( p_query IN VARCHAR2 );
+
    PROCEDURE check_table(
       p_owner         VARCHAR2,
       p_table         VARCHAR2,
@@ -71,11 +74,7 @@ AS
       p_external      VARCHAR2 DEFAULT NULL
    );
 
-   PROCEDURE check_object(
-      p_owner         VARCHAR2,
-      p_object        VARCHAR2,
-      p_object_type   VARCHAR2 DEFAULT NULL
-   );
+   PROCEDURE check_object( p_owner VARCHAR2, p_object VARCHAR2, p_object_type VARCHAR2 DEFAULT NULL );
 
    FUNCTION get_dir_path( p_dirname VARCHAR2 )
       RETURN VARCHAR2;
@@ -85,7 +84,7 @@ AS
 
    FUNCTION table_exists( p_owner VARCHAR2, p_table VARCHAR2 )
       RETURN BOOLEAN;
-      
+
    FUNCTION ext_table_exists( p_owner VARCHAR2, p_table VARCHAR2 )
       RETURN BOOLEAN;
 
@@ -94,6 +93,5 @@ AS
 
    FUNCTION object_exists( p_owner VARCHAR2, p_object VARCHAR2 )
       RETURN BOOLEAN;
-      
 END td_utils;
 /

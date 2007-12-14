@@ -14,7 +14,7 @@ AS
 
          IF l_retval <> 0
          THEN
-	    evolve_log.raise_err( 'host_cmd' );
+            evolve_log.raise_err( 'host_cmd' );
          END IF;
       END IF;
 
@@ -41,7 +41,7 @@ AS
 
          IF l_retval <> 0
          THEN
-	    evolve_log.raise_err( 'copy_file' );
+            evolve_log.raise_err( 'copy_file' );
          END IF;
       END IF;
 
@@ -68,7 +68,7 @@ AS
    EXCEPTION
       WHEN UTL_FILE.invalid_operation
       THEN
-         evolve_log.log_msg( l_filepath || ' could not be deleted, or does not exist' );
+         evolve_log.log_msg( l_filepath || ' could not be deleted, or does not exist', 3 );
    END delete_file;
 
    -- uses UTL_FILE to "touch" a file
@@ -142,10 +142,7 @@ AS
       l_filebase := REGEXP_REPLACE( p_filename, '\.[^\.]+$', NULL, 1, 1, 'i' );
       l_filesuf := REGEXP_SUBSTR( p_filename, '[^\.]+$' );
       l_filebasepath := p_dirpath || '/' || l_filebase;
-      evolve_log.log_msg( l_filepath
-                          || ' checked for compression using standard libraries',
-                          3
-                        );
+      evolve_log.log_msg( l_filepath || ' checked for compression using standard libraries', 3 );
 
       CASE l_filesuf
          WHEN 'gz'
@@ -175,7 +172,7 @@ AS
       THEN
          l_return := l_filebase;
       ELSE
-         l_return := l_filebase||'.'||l_filesuf;
+         l_return := l_filebase || '.' || l_filesuf;
       END IF;
 
       IF evolve_log.is_debugmode
@@ -194,7 +191,7 @@ AS
 
          IF NOT l_file_exists
          THEN
-	    evolve_log.raise_err( 'file_not_found' );
+            evolve_log.raise_err( 'file_not_found' );
          END IF;
       END IF;
 
@@ -263,7 +260,7 @@ AS
 
          IF NOT l_file_exists
          THEN
-	    evolve_log.raise_err( 'file_not_found', p_dirpath );
+            evolve_log.raise_err( 'file_not_found', p_dirpath );
          END IF;
       END IF;
 
@@ -283,15 +280,14 @@ AS
       p_external      VARCHAR2 DEFAULT NULL
    )
    AS
-      l_tab_name         VARCHAR2( 61 )     := UPPER( p_owner ) || '.'
-                                               || UPPER( p_table );
-      l_part_name        VARCHAR2( 92 )       := l_tab_name || ':' || UPPER( p_partname );
+      l_tab_name         VARCHAR2( 61 )                         := UPPER( p_owner ) || '.'
+                                                                   || UPPER( p_table );
+      l_part_name        VARCHAR2( 92 )                           := l_tab_name || ':' || UPPER( p_partname );
       l_partitioned      VARCHAR2( 3 );
       l_iot              VARCHAR2( 3 );
       l_compressed       VARCHAR2( 3 );
       l_partition_name   all_tab_partitions.partition_name%TYPE;
    BEGIN
-      
       -- now get compression, partitioning and iot information
       BEGIN
          SELECT CASE
@@ -303,15 +299,13 @@ AS
                       THEN 'no'
                    ELSE 'yes'
                 END,
-                LOWER( partitioned ) partitioned,
-                CASE iot_type
+                LOWER( partitioned ) partitioned, CASE iot_type
                    WHEN 'IOT'
                       THEN 'yes'
                    ELSE 'no'
                 END iot
            INTO l_compressed,
-                l_partitioned,
-                l_iot
+                l_partitioned, l_iot
            FROM all_tables
           WHERE owner = UPPER( p_owner ) AND table_name = UPPER( p_table );
       EXCEPTION
@@ -319,22 +313,13 @@ AS
          THEN
             evolve_log.raise_err( 'no_tab', l_tab_name );
       END;
-	     
-      -- first check to see if it's an external table
-      IF NOT ext_table_exists( p_owner => p_owner,
-			       p_table => p_table )
-      THEN
-	 evolve_log.raise_err( 'not_external',l_tab_name );
-      END IF;
-
 
       -- now just work through the gathered information and raise the appropriate exceptions.
       IF l_partitioned = 'yes' AND p_partname IS NULL AND p_compressed IS NOT NULL
       THEN
-         evolve_log.raise_err
-                       ( 'parms_not_compatible',
-                         'P_COMPRESSED requires P_PARTNAME when the table is partitioned'
-                       );
+         evolve_log.raise_err( 'parms_not_compatible',
+                               'P_COMPRESSED requires P_PARTNAME when the table is partitioned'
+                             );
       END IF;
 
       IF p_partname IS NOT NULL
@@ -367,40 +352,40 @@ AS
       END IF;
 
       CASE
-         WHEN     td_core.is_true( p_partitioned, TRUE )
-              AND NOT td_core.is_true( l_partitioned )
+         WHEN td_core.is_true( p_partitioned, TRUE ) AND NOT td_core.is_true( l_partitioned )
          THEN
             evolve_log.raise_err( 'not_partitioned', l_tab_name );
-         WHEN     NOT td_core.is_true( p_partitioned, TRUE )
-              AND td_core.is_true( l_partitioned )
+         WHEN NOT td_core.is_true( p_partitioned, TRUE ) AND td_core.is_true( l_partitioned )
          THEN
             evolve_log.raise_err( 'partitioned', l_tab_name );
+         WHEN     td_core.is_true( p_external, TRUE )
+              AND NOT ext_table_exists( p_owner => p_owner, p_table => p_table )
+         THEN
+            evolve_log.raise_err( 'not_external', l_tab_name );
+         WHEN     NOT td_core.is_true( p_external, TRUE )
+              AND ext_table_exists( p_owner => p_owner, p_table => p_table )
+         THEN
+            evolve_log.raise_err( 'external', l_tab_name );
          WHEN td_core.is_true( p_iot, TRUE ) AND NOT td_core.is_true( l_iot )
          THEN
             evolve_log.raise_err( 'not_iot', l_tab_name );
          WHEN NOT td_core.is_true( p_iot, TRUE ) AND td_core.is_true( l_iot )
          THEN
             evolve_log.raise_err( 'iot', l_tab_name );
-         WHEN td_core.is_true( p_compressed, TRUE )
-              AND NOT td_core.is_true( l_compressed )
+         WHEN td_core.is_true( p_compressed, TRUE ) AND NOT td_core.is_true( l_compressed )
          THEN
-            evolve_log.raise_err( 'not_compressed',
-                                  CASE
+            evolve_log.raise_err( 'not_compressed', CASE
                                      WHEN p_partname IS NULL
                                         THEN l_tab_name
                                      ELSE l_part_name
-                                  END
-                                );
-         WHEN NOT td_core.is_true( p_compressed, TRUE )
-              AND td_core.is_true( l_compressed )
+                                  END );
+         WHEN NOT td_core.is_true( p_compressed, TRUE ) AND td_core.is_true( l_compressed )
          THEN
-            evolve_log.raise_err( 'compressed',
-                                  CASE
+            evolve_log.raise_err( 'compressed', CASE
                                      WHEN p_partname IS NULL
                                         THEN l_tab_name
                                      ELSE l_part_name
-                                  END
-                                );
+                                  END );
          ELSE
             NULL;
       END CASE;
@@ -408,14 +393,9 @@ AS
 
    -- checks things about an object depending on the parameters passed
    -- raises an exception if the specified things are not true
-   PROCEDURE check_object(
-      p_owner         VARCHAR2,
-      p_object        VARCHAR2,
-      p_object_type   VARCHAR2 DEFAULT NULL
-   )
+   PROCEDURE check_object( p_owner VARCHAR2, p_object VARCHAR2, p_object_type VARCHAR2 DEFAULT NULL )
    AS
-      l_obj_name      VARCHAR2( 61 )       := UPPER( p_owner ) || '.'
-                                              || UPPER( p_object );
+      l_obj_name      VARCHAR2( 61 )                 := UPPER( p_owner ) || '.' || UPPER( p_object );
       l_object_name   all_objects.object_name%TYPE;
    BEGIN
       BEGIN
@@ -450,7 +430,7 @@ AS
    EXCEPTION
       WHEN NO_DATA_FOUND
       THEN
-         evolve_log.raise_err( 'no_dir_obj',p_dirname );
+         evolve_log.raise_err( 'no_dir_obj', p_dirname );
    END get_dir_path;
 
    -- used to get a directory name associated with a directory path
@@ -494,7 +474,7 @@ AS
       THEN
          RETURN FALSE;
    END table_exists;
-   
+
    -- returns a boolean
    -- does a check to see if an external table exists
    FUNCTION ext_table_exists( p_owner VARCHAR2, p_table VARCHAR2 )
@@ -513,7 +493,6 @@ AS
       THEN
          RETURN FALSE;
    END ext_table_exists;
-   
 
    -- returns a boolean
    -- does a check to see if table is partitioned
@@ -669,9 +648,7 @@ AS
 
             IF NOT evolve_log.is_debugmode
             THEN
-               UTL_FILE.put( l_output,
-                             l_delimiter || p_quotechar || l_columnvalue || p_quotechar
-                           );
+               UTL_FILE.put( l_output, l_delimiter || p_quotechar || l_columnvalue || p_quotechar );
             END IF;
 
             l_delimiter := p_delimiter;
@@ -708,10 +685,7 @@ AS
       o_ev            evolve_ot        := evolve_ot( p_module => 'extract_object' );
    BEGIN
       -- check that the source object exists and is something we can select from
-      td_utils.check_object( p_owner            => p_owner,
-                             p_object           => p_object,
-                             p_object_type      => 'table$|view'
-                           );
+      td_utils.check_object( p_owner => p_owner, p_object => p_object, p_object_type => 'table$|view' );
       l_head_sql :=
             'select regexp_replace(stragg(column_name),'','','''
          || p_delimiter
@@ -765,6 +739,95 @@ AS
       o_ev.clear_app_info;
       RETURN l_cnt;
    END extract_object;
+
+   PROCEDURE print_query( p_query IN VARCHAR2 )
+   IS
+      l_thecursor     INTEGER           DEFAULT DBMS_SQL.open_cursor;
+      l_columnvalue   VARCHAR2( 4000 );
+      l_status        INTEGER;
+      l_desctbl       DBMS_SQL.desc_tab;
+      l_colcnt        NUMBER;
+      l_cs            VARCHAR2( 255 );
+      l_date_fmt      VARCHAR2( 255 );
+
+      -- small inline procedure to restore the sessions state
+      -- we may have modified the cursor sharing and nls date format
+      -- session variables, this just restores them
+      PROCEDURE restore
+      IS
+      BEGIN
+         IF ( UPPER( l_cs ) NOT IN( 'FORCE', 'SIMILAR' ))
+         THEN
+            EXECUTE IMMEDIATE 'alter session set cursor_sharing=exact';
+         END IF;
+
+         DBMS_SQL.close_cursor( l_thecursor );
+      END restore;
+   BEGIN
+      evolve_log.log_msg( 'Results printed below for:' || CHR( 10 ) || p_query || CHR( 10 )
+                          || '-----------------',
+                          4
+                        );
+
+      -- to be bind variable friendly on this ad-hoc queries, we
+      -- look to see if cursor sharing is already set to FORCE or
+      -- similar, if not, set it so when we parse -- literals
+      -- are replaced with binds
+      IF ( DBMS_UTILITY.get_parameter_value( 'cursor_sharing', l_status, l_cs ) = 1 )
+      THEN
+         IF ( UPPER( l_cs ) NOT IN( 'FORCE', 'SIMILAR' ))
+         THEN
+            EXECUTE IMMEDIATE 'alter session set cursor_sharing=force';
+         END IF;
+      END IF;
+
+      -- parse and describe the query sent to us.  we need
+      -- to know the number of columns and their names.
+      DBMS_SQL.parse( l_thecursor, p_query, DBMS_SQL.native );
+      DBMS_SQL.describe_columns( l_thecursor, l_colcnt, l_desctbl );
+
+      -- define all columns to be cast to varchar2's, we
+      -- are just printing them out
+      FOR i IN 1 .. l_colcnt
+      LOOP
+         IF ( l_desctbl( i ).col_type NOT IN( 113 ))
+         THEN
+            DBMS_SQL.define_column( l_thecursor, i, l_columnvalue, 4000 );
+         END IF;
+      END LOOP;
+
+      -- execute the query, so we can fetch
+      l_status := DBMS_SQL.EXECUTE( l_thecursor );
+
+      -- loop and print out each column on a separate line
+      -- bear in mind that dbms_output only prints 255 characters/line
+      -- so we'll only see the first 200 characters by my design...
+      WHILE( DBMS_SQL.fetch_rows( l_thecursor ) > 0 )
+      LOOP
+         FOR i IN 1 .. l_colcnt
+         LOOP
+            IF ( l_desctbl( i ).col_type NOT IN( 113 ))
+            THEN
+               DBMS_SQL.COLUMN_VALUE( l_thecursor, i, l_columnvalue );
+               evolve_log.log_msg(    RPAD( l_desctbl( i ).col_name, 30 )
+                                   || ': '
+                                   || SUBSTR( l_columnvalue, 1, 200 ),
+                                   4
+                                 );
+            END IF;
+         END LOOP;
+
+         evolve_log.log_msg( '-----------------', 4 );
+      END LOOP;
+
+      -- now, restore the session state, no matter what
+      restore;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         restore;
+         RAISE;
+   END print_query;
 END td_utils;
 /
 

@@ -1,36 +1,31 @@
 CREATE OR REPLACE PACKAGE evolve_app AUTHID CURRENT_USER
 AS
-
-   FUNCTION exec_sql(
-      p_sql         VARCHAR2,
-      p_msg    	    VARCHAR2 DEFAULT NULL,
-      p_auto   	    VARCHAR2 DEFAULT 'no'
-   )
+   FUNCTION exec_sql( p_sql VARCHAR2, p_msg VARCHAR2 DEFAULT NULL, p_auto VARCHAR2 DEFAULT 'no' )
       RETURN NUMBER;
 
    PROCEDURE exec_sql(
-      p_sql         VARCHAR2,
-      p_msg    	    VARCHAR2 DEFAULT NULL,
-      p_auto   	    VARCHAR2 DEFAULT 'no',
-      p_background  VARCHAR2 DEFAULT 'no'
+      p_sql          VARCHAR2,
+      p_msg          VARCHAR2 DEFAULT NULL,
+      p_auto         VARCHAR2 DEFAULT 'no',
+      p_background   VARCHAR2 DEFAULT 'no'
    );
 
-   PROCEDURE submit_sql(
-      p_sql         VARCHAR2,
-      p_job_class   VARCHAR2 DEFAULT 'consume_sql_class'
-   );
+   PROCEDURE submit_sql( p_sql VARCHAR2, p_job_class VARCHAR2 DEFAULT 'consume_sql_class' );
 
-   PROCEDURE coordinate_sql(
-      p_sleep    NUMBER DEFAULT 5,
-      p_timeout	 NUMBER DEFAULT 0
-   );
-      
-   PROCEDURE consume_sql(
-      p_session_id   NUMBER,
-      p_module       VARCHAR2,
-      p_action       VARCHAR2,
-      p_sql          VARCHAR2
-   );
+   PROCEDURE coordinate_sql( p_sleep NUMBER DEFAULT 5, p_timeout NUMBER DEFAULT 0 );
 
+   PROCEDURE consume_sql( p_session_id NUMBER, p_module VARCHAR2, p_action VARCHAR2, p_sql VARCHAR2 );
+
+   PROCEDURE submit_mail(
+      p_sender       VARCHAR2,
+      p_recipients   VARCHAR2,
+      p_cc           VARCHAR2 DEFAULT NULL,
+      p_bcc          VARCHAR2 DEFAULT NULL,
+      p_subject      VARCHAR2 DEFAULT NULL,
+      p_message      VARCHAR2 DEFAULT NULL,
+      p_mime_type    VARCHAR2 DEFAULT NULL,
+      p_priority     BINARY_INTEGER DEFAULT NULL,
+      p_job_class    VARCHAR2 DEFAULT 'consume_sql_class'
+   );
 END evolve_app;
 /

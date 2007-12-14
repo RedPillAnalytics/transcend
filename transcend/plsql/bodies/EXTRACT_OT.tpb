@@ -180,6 +180,9 @@ AS
                        p_file_dt        => l_file_dt
                      );
 
+      -- log general information message
+      evolve_log.log_msg( 'Extract file '||filepath||' generated' );
+
       -- notify about successful arrival of feed
       -- only works if this notification event has been configured for the file label.
       o_ev.change_action( 'Notify success' );

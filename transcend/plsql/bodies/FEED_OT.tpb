@@ -157,7 +157,7 @@ AS
          EXCEPTION
             WHEN ZERO_DIVIDE
             THEN
-               evolve_log.log_msg( 'External table location is an empty file' );
+               evolve_log.log_msg( 'External table location is an empty file',3 );
          END;
 
          INSERT INTO files_obj_detail
@@ -197,26 +197,12 @@ AS
    PRAGMA EXCEPTION_INIT( e_no_files, -1756 );
    o_ev             evolve_ot                  := evolve_ot( p_module => 'process' );
    BEGIN
-      evolve_log.log_msg( 'Processing feed "' || file_label || '"' );
+      evolve_log.log_msg( 'Processing feed "' || file_label || '"',3 );
       o_ev.change_action( 'Evaluate source directory' );
-
-      -- first we remove all current files in the external table
-      -- we don't want the possiblity of data for a previous run getting loaded in
-      -- later, if no new files are found, and the REQUIRED attribute is 'N' (meaning this file is not required)
-      -- THEN we will create an empty file
-      FOR c_location IN ( SELECT  DIRECTORY, LOCATION
-                            FROM dba_external_locations
-                           WHERE owner = UPPER( object_owner )
-                             AND table_name = UPPER( object_name )
-                           ORDER BY LOCATION )
-      LOOP
-         l_rows_delete := TRUE;
-         td_utils.delete_file( c_location.DIRECTORY, c_location.LOCATION );
-      END LOOP;
 
       IF l_rows_delete
       THEN
-         evolve_log.log_msg( 'Previous external table location files removed' );
+         evolve_log.log_msg( 'Previous external table location files removed',3 );
       END IF;
 
       -- now we need to see all the source files in the source directory that match the regular expression
@@ -385,7 +371,23 @@ AS
          -- copy file to the archive location
          o_ev.change_action( 'Copy archivefile' );
          td_utils.copy_file( c_dir_list.source_filepath, c_dir_list.arch_filepath );
-         evolve_log.log_msg( 'Archive file ' || c_dir_list.arch_filepath || ' created' );
+         evolve_log.log_msg( 'Archive file ' || c_dir_list.arch_filepath || ' created',3 );
+	 
+	 -- we are about to copy files into place
+	 -- before that, we need to remove files placed in on previous runs
+	 -- we don't want the possiblity of data for a previous run getting loaded in
+	 -- later, if no new files are found, and the REQUIRED attribute is 'N' (meaning this file is not required)
+	 -- THEN we will create an empty file
+	 FOR c_location IN ( SELECT  DIRECTORY, LOCATION
+                               FROM dba_external_locations
+                              WHERE owner = UPPER( object_owner )
+				AND table_name = UPPER( object_name )
+                              ORDER BY LOCATION )
+	 LOOP
+            l_rows_delete := TRUE;
+            td_utils.delete_file( c_location.DIRECTORY, c_location.LOCATION );
+	 END LOOP;
+
          -- copy the file to the external table
          o_ev.change_action( 'Copy external table files' );
 
@@ -489,7 +491,7 @@ AS
          -- an external table with a zero-byte file gives "no rows returned"
       WHEN NOT l_rows_dirlist AND NOT td_core.is_true( required )
          THEN
-            evolve_log.log_msg( 'No files found... but none are required' );
+            evolve_log.log_msg( 'No files found... but none are required',3 );
             o_ev.change_action( 'Empty previous files' );
 
             FOR c_location IN ( SELECT DIRECTORY, LOCATION
@@ -509,7 +511,7 @@ AS
                l_results := evolve_app.exec_sql( p_sql => l_ext_tab_ddl, p_auto => 'yes' );
                evolve_log.log_msg(    'External table '
                                 || l_ext_tab
-                                || ' altered'
+                                || ' altered',3
                               );
             EXCEPTION
                WHEN e_no_files

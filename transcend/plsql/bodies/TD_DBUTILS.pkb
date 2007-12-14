@@ -2529,8 +2529,9 @@ AS
       END CASE;
 
       -- test the target table
-      td_utils.check_table( p_owner         => p_owner, p_table => p_table,
-                          p_partname      => p_partname );
+      td_utils.check_table( p_owner         => p_owner, 
+			    p_table => p_table,
+                            p_partname      => p_partname );
 
       -- test the source object
       -- but only if it's specified
@@ -2538,9 +2539,9 @@ AS
       IF p_source_object IS NOT NULL
       THEN
          td_utils.check_object( p_owner            => p_source_owner,
-                              p_object           => p_source_object,
-                              p_object_type      => 'table$|view'
-                            );
+				p_object           => p_source_object,
+				p_object_type      => 'table$|view'
+                              );
       END IF;
 
       o_ev.change_action( 'Populate PARTNAME table' );

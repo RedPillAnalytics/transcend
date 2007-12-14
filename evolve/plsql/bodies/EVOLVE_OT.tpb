@@ -140,37 +140,11 @@ AS
    MEMBER PROCEDURE send( p_label     VARCHAR2, 
 			  p_message   VARCHAR2 DEFAULT NULL )
    AS
-      o_notify   notification_ot;
-      l_notify_found BOOLEAN := TRUE;
+      o_notify notification_ot := notification_ot( p_label => p_label );
    BEGIN
-      BEGIN
-         SELECT VALUE( t )
-           INTO o_notify
-           FROM notification_ov t
-          WHERE module = td_inst.module AND action = td_inst.action AND label = p_label;
-      EXCEPTION
-         WHEN NO_DATA_FOUND
-         THEN
-   	    l_notify_found := FALSE;
-      END;
+      -- instantiate the notification object
       
-      IF l_notify_found
-      THEN
-	 o_notify.send( p_message => p_message );
-      ELSE
-         evolve_log.log_msg(    'No notification configured for label '
-                             || p_label
-                             || ' with module '
-                             || td_inst.module
-                             || ' and action '
-                             || td_inst.action,
-                             4
-                           );
-      END IF;
-   EXCEPTION
-      WHEN NO_DATA_FOUND
-      THEN
-         evolve_log.log_msg( 'Notification not configured for this action', 3 );
+      o_notify.send( p_message => p_message );
    END send;
 END;
 /

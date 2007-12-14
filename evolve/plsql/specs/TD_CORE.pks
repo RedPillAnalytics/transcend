@@ -10,6 +10,5 @@ AS
 
    FUNCTION SPLIT( p_text VARCHAR2, p_delimiter VARCHAR2 DEFAULT ',' )
       RETURN t_split PIPELINED;
-
 END td_core;
 /

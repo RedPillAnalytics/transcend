@@ -35,14 +35,18 @@ IS
            p_message      => 'Either a unique constraint must exist on the target table, or a value for P_COLUMNS must be specified'
          );
       evolve_adm.set_error_conf
+         ( p_name         => 'notify_err',
+           p_message      => 'There is an error with configuration for the specified notification'
+         );
+      evolve_adm.set_error_conf
                             ( p_name         => 'incorrect_parameters',
                               p_message      => 'The combination of parameters provided yields no matching objects'
                             );
       evolve_adm.set_error_conf( p_name         => 'file_too_big',
-                                 p_message      => 'The specified file is larger than the MAX_BYTES paramter'
+                                 p_message      => 'The specified file is larger than the MAX_BYTES parameter'
                                );
       evolve_adm.set_error_conf( p_name         => 'file_too_small',
-                                 p_message      => 'The specified file is smaller than the MAX_BYTES paramter'
+                                 p_message      => 'The specified file is smaller than the MAX_BYTES parameter'
                                );
       evolve_adm.set_error_conf( p_name         => 'no_stats',
                                  p_message      => 'The specified segment has no stored statistics'

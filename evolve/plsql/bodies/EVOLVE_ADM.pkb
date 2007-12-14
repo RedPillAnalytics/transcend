@@ -567,6 +567,8 @@ IS
 			 p_message=> 'The specified table is not index-organized');
 	 set_error_conf( p_name=>    'not_external',
 			 p_message=> 'The specified table is not an external table');
+	 set_error_conf( p_name=>    'external',
+			 p_message=> 'The specified table is an external table');
 	 set_error_conf( p_name=>    'not_compressed',
 			 p_message=> 'The specified segment is not compresed');
 	 set_error_conf( p_name=>    'no_part',
@@ -591,6 +593,8 @@ IS
 			 p_message=> 'Java Error: method hostCmd made unsuccessful system calls');	 
 	 set_error_conf( p_name=>    'copy_file',
 			 p_message=> 'Java Error: method copyFile was unable to copy');	 
+	 set_error_conf( p_name=>    'utl_mail_err',
+			 p_message=> 'Fatal UTL_MAIL error occured');	 
 
       END IF;
 

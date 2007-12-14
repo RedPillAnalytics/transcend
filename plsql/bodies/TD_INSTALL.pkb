@@ -1731,21 +1731,6 @@ IS
 	 NULL;
       END;
 
-      BEGIN
-	 EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.FEED_OV for '||p_schema||'.FEED_OV';
-      EXCEPTION
-	 WHEN e_same_name
-	 THEN
-	 NULL;
-      END;
-
-      BEGIN
-	 EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.EXTRACT_OV for '||p_schema||'.EXTRACT_OV';
-      EXCEPTION
-	 WHEN e_same_name
-	 THEN
-	 NULL;
-      END;
    END build_transcend_app_syns;
 
    PROCEDURE grant_evolve_sys_privs(
