@@ -641,7 +641,7 @@ AS
    BEGIN
       l_output := UTL_FILE.fopen( p_dirname, p_filename, l_mode, 32767 );
       DBMS_SQL.parse( l_thecursor, p_query, DBMS_SQL.native );
-      o_ev.change_action( 'Open Cursor to define columns' );
+      o_ev.change_action( 'define columns' );
 
       FOR i IN 1 .. 255
       LOOP
@@ -657,7 +657,7 @@ AS
 
       DBMS_SQL.define_column( l_thecursor, 1, l_columnvalue, 2000 );
       l_status := DBMS_SQL.EXECUTE( l_thecursor );
-      o_ev.change_action( 'Open Cursor to pull back records' );
+      o_ev.change_action( 'extract records' );
 
       LOOP
          EXIT WHEN( DBMS_SQL.fetch_rows( l_thecursor ) <= 0 );

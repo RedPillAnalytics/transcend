@@ -83,7 +83,7 @@ IS
    BEGIN
       FOR c_fh_conf IN ( SELECT  file_label, file_type
                             FROM files_conf
-                           WHERE file_group = p_file_group
+                          WHERE lower(file_group) = lower(p_file_group)
                              AND REGEXP_LIKE( file_label,
                                               DECODE( p_file_label,
                                                       NULL, '?',

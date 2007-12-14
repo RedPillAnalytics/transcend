@@ -167,6 +167,10 @@ AS
          evolve_log.log_msg( 'Reporting 0 size file in debug mode',3 );
       ELSE
          UTL_FILE.fgetattr( DIRECTORY, filename, l_exists, l_num_bytes, l_blocksize );
+	 IF NOT l_exists
+	 THEN
+	    evolve_log.raise_err( 'file_not_found',filename );
+	 END IF;
       END IF;
 
       -- audit the file

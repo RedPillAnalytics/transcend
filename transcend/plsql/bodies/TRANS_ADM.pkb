@@ -65,8 +65,8 @@ IS
                                  p_message      => 'The specified parameters are mutually inclusive'
                                );
       evolve_adm.set_error_conf
-               ( p_name         => 'parms_req',
-                 p_message      => 'A value of "insert" for P_MODE requires a value for all non-default parameters'
+               ( p_name         => 'parm_req',
+                 p_message      => 'When inserting a new record, the specified parameter is required'
                );
       evolve_adm.set_error_conf
          ( p_name         => 'submit_sql',
@@ -106,16 +106,6 @@ IS
       PRAGMA EXCEPTION_INIT( e_dup_conf, -1 );
    BEGIN
       CASE
-         -- these are the required parameters
-      WHEN     LOWER( p_mode ) = 'insert'
-           AND (    p_table_owner IS NULL
-                 OR p_table_name IS NULL
-                 OR p_arch_directory IS NULL
-                 OR p_source_directory IS NULL
-                 OR p_source_regexp IS NULL
-               )
-         THEN
-            evolve_log.raise_err( 'parms_req' );
          WHEN    ( p_table_owner IS NULL AND p_table_name IS NOT NULL )
               OR ( p_table_owner IS NOT NULL AND p_table_name IS NULL )
          THEN
@@ -151,7 +141,7 @@ IS
             l_dir_path := td_utils.get_dir_path( p_source_directory );
          END IF;
 
-         -- get the filename from the external table
+         -- get the directory from the external table
          BEGIN
             SELECT default_directory_name
               INTO l_directory
@@ -194,6 +184,21 @@ IS
       -- if the update was unsuccessful above, or an insert it specifically requested, then do an insert
       IF ( SQL%ROWCOUNT = 0 AND LOWER( p_mode ) = 'upsert' ) OR LOWER( p_mode ) = 'insert'
       THEN
+	 CASE
+	 WHEN p_table_owner IS NULL
+      THEN evolve_log.raise_err( 'parm_req', 'P_TABLE_OWNER' );
+	 WHEN p_table_name IS NULL
+      THEN evolve_log.raise_err( 'parm_req', 'P_TABLE_NAME' );
+	 WHEN p_arch_directory IS NULL
+      THEN evolve_log.raise_err( 'parm_req', 'P_ARCH_DIRECTORY' );
+	 WHEN p_source_directory IS NULL
+      THEN evolve_log.raise_err( 'parm_req', 'P_SOURCE_DIRECTORY' );
+	 WHEN p_source_regexp IS NULL
+      THEN evolve_log.raise_err( 'parm_req', 'P_SOURCE_REGEXP' );
+      ELSE
+	 NULL;
+	 END CASE;
+
          BEGIN
             INSERT INTO files_conf
                         ( file_label, file_group, file_type, file_description, object_owner,
@@ -271,7 +276,7 @@ IS
       ELSE
       NULL;
       END CASE;
-
+      
       -- do checks to make sure all the provided information is legitimate
       IF NOT p_mode = 'delete'
       THEN
@@ -281,6 +286,12 @@ IS
          THEN
             l_dir_path := td_utils.get_dir_path( p_arch_directory );
          END IF;
+	 
+         IF p_directory IS NOT NULL
+         THEN
+            l_dir_path := td_utils.get_dir_path( p_directory );
+         END IF;
+	 
 
       END IF;
 
@@ -320,7 +331,7 @@ IS
                           delimiter, quotechar, headers
                         )
                  VALUES ( p_file_label, p_file_group, 'extract', p_file_description, upper(p_object_owner),
-                          upper(p_object_name), p_directory, p_filename, upper(p_arch_directory), p_min_bytes, p_max_bytes,
+                          upper(p_object_name), upper(p_directory), p_filename, upper(p_arch_directory), nvl(p_min_bytes,0), nvl(p_max_bytes,0),
                           p_file_datestamp, p_baseurl, p_passphrase, nvl(p_dateformat,'mm/dd/yyyy hh:mi:ss am'), nvl(p_timestampformat,'mm/dd/yyyy hh:mi:ss:x:ff am'),
                           nvl(p_delimiter,','), p_quotechar, nvl(p_headers,'yes')
                         );
