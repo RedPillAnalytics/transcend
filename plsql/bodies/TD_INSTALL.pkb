@@ -95,26 +95,41 @@ IS
    END reset_current_schema;
 
    -- this creates the job metadata (called a program) for submitting concurrent processes
-   PROCEDURE create_scheduler_metadata
+   PROCEDURE create_scheduler_metadata(
+      p_schema     VARCHAR2 DEFAULT 'TDSYS'
+   ) 
    IS
-      e_no_class EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_no_class, -27476 );
+      e_no_sched_obj EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_no_sched_obj, -27476 );
    BEGIN
       
-      -- first, drop the job class
+      -- first, drop the job class and the program
       BEGIN
-	 dbms_scheduler.drop_job_class( job_class_name    => 'consume_sql_class' );
+	 dbms_scheduler.drop_job_class( job_class_name  => 'EVOLVE_DEFAULT_CLASS' );
+	 dbms_scheduler.drop_program( program_name      => 'CONSUME_SQL' );
       EXCEPTION
-	 WHEN e_no_class
+	 WHEN e_no_sched_obj
 	 THEN
 	 NULL;
       END;
-
-      dbms_scheduler.create_job_class( job_class_name    => 'consume_sql_class',
+      
+      dbms_scheduler.create_job_class( job_class_name    => 'EVOLVE_DEFAULT_CLASS',
 				       logging_level	 => DBMS_SCHEDULER.LOGGING_FULL,
 				       comments		 =>   'Job class for the Evolve product by Transcendent Data, Inc.'
-				                            ||' This is the job class used by default when the Oracle scheduler is used for concurrent processing');
+				       ||' This is the job class used by default when the Oracle scheduler is used for concurrent processing');
+      
+      -- create the actual program
+      dbms_scheduler.create_program(p_schema||'.CONSUME_SQL','STORED_PROCEDURE','EVOLVE_APP.CONSUME_SQL',5);
 
+      -- define all the arguments that are passed to td_utils.consume_sql
+      dbms_scheduler.define_program_argument(p_schema||'.CONSUME_SQL',1,'P_SESSION_ID','NUMBER');
+      dbms_scheduler.define_program_argument(p_schema||'.CONSUME_SQL',2,'P_MODULE','VARCHAR2');
+      dbms_scheduler.define_program_argument(p_schema||'.CONSUME_SQL',3,'P_ACTION','VARCHAR2');
+      dbms_scheduler.define_program_argument(p_schema||'.CONSUME_SQL',4,'P_SQL','VARCHAR2');
+      dbms_scheduler.define_program_argument(p_schema||'.CONSUME_SQL',5,'P_MSG','VARCHAR2');
+
+      -- enable the program
+      dbms_scheduler.ENABLE(p_schema||'.CONSUME_SQL_JOB');
       
    END create_scheduler_metadata;
 
@@ -193,6 +208,18 @@ IS
 	 END;
 	 
 	 BEGIN
+	    
+	    -- first, the TDSYS tables
+	    EXECUTE IMMEDIATE 'GRANT SELECT ON REPOSITORIES TO '||l_sel_grant;
+	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON REPOSITORIES TO '||l_adm_grant;
+	    
+	    EXECUTE IMMEDIATE 'GRANT SELECT ON APPLICATIONS TO '||l_sel_grant;
+	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON APPLICATIONS TO '||l_adm_grant;
+	    
+	    EXECUTE IMMEDIATE 'GRANT SELECT ON USERS TO '||l_sel_grant;
+	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON USERS TO '||l_adm_grant;
+	    
+	    -- now the evolve repository tables
 	    EXECUTE IMMEDIATE 'GRANT SELECT ON COUNT_TABLE TO '||l_sel_grant;
 	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON COUNT_TABLE TO '||l_adm_grant;
 
@@ -1384,7 +1411,36 @@ IS
       e_same_name   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_same_name, -1471 );
    BEGIN
-      -- create the synonyms
+      
+      -- create TDSYS synonyms
+      BEGIN
+	 BEGIN
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.REPOSITORIES for '||p_schema||'.REPOSITORIES';
+	 EXCEPTION
+	    WHEN e_same_name
+	    THEN
+	    NULL;
+	 END;
+	 
+      BEGIN
+	 BEGIN
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.APPLICATIONS for '||p_schema||'.APPLICATIONS';
+	 EXCEPTION
+	    WHEN e_same_name
+	    THEN
+	    NULL;
+	 END;
+	 
+      BEGIN
+	 BEGIN
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.USERS for '||p_schema||'.USERS';
+	 EXCEPTION
+	    WHEN e_same_name
+	    THEN
+	    NULL;
+	 END;
+
+	 -- create the repository synonyms
       BEGIN
 	 BEGIN
 	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.COUNT_TABLE for '||p_schema||'.COUNT_TABLE';
@@ -1949,7 +2005,7 @@ IS
       grant_evolve_sys_privs( p_schema => p_schema );
 
       -- create the dbms_scheduler program
-      create_scheduler_metadata;      
+      create_scheduler_metadata( p_schema => p_schema );      
       	 	 
       -- write application tracking record
       EXECUTE IMMEDIATE 	    

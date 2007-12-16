@@ -39,6 +39,7 @@ AS
       l_whence   VARCHAR2( 1024 );
       l_msg      log_table.msg%TYPE;
       l_scn      NUMBER	:= dbms_flashback.get_system_change_number;
+      l_schema	 VARCHAR2(30);
       e_no_tab   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_tab, -942 );
    BEGIN

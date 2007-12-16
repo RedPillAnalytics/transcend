@@ -10,7 +10,11 @@ AS
       p_background   VARCHAR2 DEFAULT 'no'
    );
 
-   PROCEDURE submit_sql( p_sql VARCHAR2, p_job_class VARCHAR2 DEFAULT 'consume_sql_class' );
+   PROCEDURE submit_sql(
+      p_sql         VARCHAR2,
+      p_program     VARCHAR2 DEFAULT 'TDSYS.CONSUME_SQL_JOB',
+      p_job_class   VARCHAR2 DEFAULT 'EVOLVE_DEFAULT_CLASS'
+   );
 
    PROCEDURE coordinate_sql( p_sleep NUMBER DEFAULT 5, p_timeout NUMBER DEFAULT 0 );
 

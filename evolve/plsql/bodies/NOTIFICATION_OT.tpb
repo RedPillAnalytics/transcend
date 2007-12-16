@@ -69,7 +69,8 @@ AS
       e_smtp_error3   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_smtp_error3, -29261 );
    BEGIN
-      IF td_core.is_true( enabled )
+      evolve_log.log_msg('Value for ENABLED: '||enabled,5);
+      IF td_core.is_true( enabled, TRUE )
       THEN
          IF NOT evolve_log.is_debugmode
          THEN
