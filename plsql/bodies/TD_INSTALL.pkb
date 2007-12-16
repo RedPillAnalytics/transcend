@@ -210,14 +210,14 @@ IS
 	 BEGIN
 	    
 	    -- first, the TDSYS tables
-	    EXECUTE IMMEDIATE 'GRANT SELECT ON tdsys.REPOSITORIES TO '||l_sel_grant;
-	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON tdsys.REPOSITORIES TO '||l_adm_grant;
+	    EXECUTE IMMEDIATE 'GRANT SELECT ON TDSYS.REPOSITORIES TO '||l_sel_grant;
+	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON TDSYS.REPOSITORIES TO '||l_adm_grant;
 	    
-	    EXECUTE IMMEDIATE 'GRANT SELECT ON tdsys.APPLICATIONS TO '||l_sel_grant;
-	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON tdsys.APPLICATIONS TO '||l_adm_grant;
+	    EXECUTE IMMEDIATE 'GRANT SELECT ON TDSYS.APPLICATIONS TO '||l_sel_grant;
+	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON TDSYS.APPLICATIONS TO '||l_adm_grant;
 	    
-	    EXECUTE IMMEDIATE 'GRANT SELECT ON tdsys.USERS TO '||l_sel_grant;
-	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON tdsys.USERS TO '||l_adm_grant;
+	    EXECUTE IMMEDIATE 'GRANT SELECT ON TDSYS.USERS TO '||l_sel_grant;
+	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON TDSYS.USERS TO '||l_adm_grant;
 	    
 	    -- now the evolve repository tables
 	    EXECUTE IMMEDIATE 'GRANT SELECT ON COUNT_TABLE TO '||l_sel_grant;
@@ -1413,7 +1413,7 @@ IS
    BEGIN      
       -- create TDSYS synonyms
 	 BEGIN
-	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.REPOSITORIES for '||p_schema||'.REPOSITORIES';
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.REPOSITORIES for TDSYS.REPOSITORIES';
 	 EXCEPTION
 	    WHEN e_same_name
 	    THEN
@@ -1421,7 +1421,7 @@ IS
 	 END;
 	 
 	 BEGIN
-	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.APPLICATIONS for '||p_schema||'.APPLICATIONS';
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.APPLICATIONS for TDSYS.APPLICATIONS';
 	 EXCEPTION
 	    WHEN e_same_name
 	    THEN
@@ -1429,7 +1429,7 @@ IS
 	 END;
 	 
 	 BEGIN
-	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.USERS for '||p_schema||'.USERS';
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.USERS for TDSYS.USERS';
 	 EXCEPTION
 	    WHEN e_same_name
 	    THEN
