@@ -116,44 +116,6 @@ AS
                ELSE
 		  evolve_log.raise_err( 'notify_method_invalid' );
             END CASE;
-
-            CASE method
-               WHEN 'email'
-               THEN
-                  evolve_log.log_msg(    'Email Information:'
-                                      || CHR( 10 )
-                                      || 'Sender: '
-                                      || sender
-                                      || CHR( 10 )
-                                      || 'Recipient: '
-                                      || recipients
-                                      || CHR( 10 )
-                                      || 'Subject: '
-                                      || subject
-                                      || CHR( 10 )
-                                      || 'Message: '
-                                      || p_message,
-                                      5
-                                    );
-
-                  BEGIN
-                     -- instead of sitting and waiting for the email server to respond, we will submit them in the background
-                     evolve_app.submit_mail( p_sender          => sender,
-                                             p_recipients      => recipients,
-                                             p_subject         => subject,
-                                             p_message         => NVL( p_message, MESSAGE ),
-                                             p_mime_type       => 'text/html'
-                                           );
-                     evolve_log.log_msg( 'Email sent to: ' || recipients, 3 );
-
-                     IF td_core.is_true( required )
-                     THEN
-                        evolve_app.coordinate_sql;
-                     END IF;
-                  END;
-               ELSE
-                  evolve_log.raise_err( 'notify_method_invalid' );
-            END CASE;
          END IF;
       END IF;
    END send;
