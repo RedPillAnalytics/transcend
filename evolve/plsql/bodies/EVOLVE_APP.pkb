@@ -147,10 +147,6 @@ AS
                                              argument_position      => 4,
                                              argument_value         => p_sql
                                            );
-      DBMS_SCHEDULER.set_job_argument_value( job_name               => l_job_name,
-                                             argument_position      => 5,
-                                             argument_value         => p_msg
-                                           );
       DBMS_SCHEDULER.ENABLE( l_job_name );
       evolve_log.log_msg( 'Job ' || l_job_name || ' submitted to the Oracle scheduler' );
    END submit_sql;
