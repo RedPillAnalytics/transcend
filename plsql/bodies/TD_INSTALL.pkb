@@ -1410,10 +1410,8 @@ IS
       PRAGMA EXCEPTION_INIT( e_tab_exists, -955 );
       e_same_name   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_same_name, -1471 );
-   BEGIN
-      
+   BEGIN      
       -- create TDSYS synonyms
-      BEGIN
 	 BEGIN
 	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.REPOSITORIES for '||p_schema||'.REPOSITORIES';
 	 EXCEPTION
@@ -1422,7 +1420,6 @@ IS
 	    NULL;
 	 END;
 	 
-      BEGIN
 	 BEGIN
 	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.APPLICATIONS for '||p_schema||'.APPLICATIONS';
 	 EXCEPTION
@@ -1431,7 +1428,6 @@ IS
 	    NULL;
 	 END;
 	 
-      BEGIN
 	 BEGIN
 	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.USERS for '||p_schema||'.USERS';
 	 EXCEPTION
@@ -1441,7 +1437,6 @@ IS
 	 END;
 
 	 -- create the repository synonyms
-      BEGIN
 	 BEGIN
 	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.COUNT_TABLE for '||p_schema||'.COUNT_TABLE';
 	 EXCEPTION
@@ -1520,9 +1515,7 @@ IS
 	    WHEN e_same_name
 	    THEN
 	    NULL;
-	 END;
-
-      END;
+	 END;   
    END build_evolve_rep_syns;
 
    PROCEDURE build_evolve_app_syns(
@@ -1536,7 +1529,6 @@ IS
       PRAGMA EXCEPTION_INIT( e_same_name, -1471 );
    BEGIN
       -- create the synonyms
-      BEGIN
 	 BEGIN
 	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.STRAGG for '||p_schema||'.STRAGG';
 	 EXCEPTION
@@ -1599,8 +1591,7 @@ IS
 	    WHEN e_same_name
 	    THEN
 	    NULL;
-	 END;
-      END;
+	 END;	
    END build_evolve_app_syns;
    
    PROCEDURE build_transcend_rep_syns(
