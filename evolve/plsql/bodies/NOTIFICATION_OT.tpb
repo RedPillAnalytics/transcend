@@ -78,6 +78,48 @@ AS
             CASE method
                WHEN 'email'
                THEN
+                  BEGIN
+                     UTL_MAIL.send( sender          => sender,
+                                    recipients      => recipients,
+                                    subject         => subject,
+                                    MESSAGE         => NVL( p_message, MESSAGE ),
+                                    mime_type       => 'text/html'
+                                  );
+                     evolve_log.log_msg( 'Email sent to: ' || recipients );
+                     evolve_log.log_msg(    'Email Information:'
+                                         || CHR( 10 )
+                                         || 'Sender: '
+                                         || sender
+                                         || CHR( 10 )
+                                         || 'Recipient: '
+                                         || recipients
+                                         || CHR( 10 )
+                                         || 'Subject: '
+                                         || subject
+                                         || CHR( 10 )
+                                         || 'Message: '
+                                         || p_message,
+                                         5
+                                       );
+                  EXCEPTION
+                     WHEN e_smtp_error1 OR e_smtp_error2 OR e_smtp_error3
+                     THEN
+                        IF td_core.is_true( required )
+                        THEN
+			   evolve_log.raise_err( 'utl_mail_err', SQLERRM );
+                        ELSE
+                           evolve_log.log_msg(    'The following SMTP error occured:'
+                                               || SQLERRM
+                                             );
+                        END IF;
+                  END;
+               ELSE
+		  evolve_log.raise_err( 'notify_method_invalid' );
+            END CASE;
+
+            CASE method
+               WHEN 'email'
+               THEN
                   evolve_log.log_msg(    'Email Information:'
                                       || CHR( 10 )
                                       || 'Sender: '
