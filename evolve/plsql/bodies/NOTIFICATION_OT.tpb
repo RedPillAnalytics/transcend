@@ -6,25 +6,25 @@ AS
    BEGIN
       evolve_log.log_msg( 'Notification module: ' || module, 5 );
       evolve_log.log_msg( 'Notification action: ' || action, 5 );
-      td_utils.print_query(    'SELECT label,'
-                            || 'method,'
-                            || 'enabled,'
-                            || 'required,'
-                            || 'subject,'
-                            || 'message,'
-                            || 'sender,'
-                            || 'recipients '
-                            || 'FROM notification_conf '
-                            || 'JOIN notification_events '
-                            || 'USING ( module,action ) '
-                            || 'WHERE lower(module) = lower('''
-                            || td_inst.module
-                            || ''') AND lower(action) = lower('''
-                            || td_inst.action
-                            || ''') AND lower(label) = lower('''
-                            || p_label
-                            || ''') '
-                          );
+      evolve_log.print_query(    'SELECT label,'
+                              || 'method,'
+                              || 'enabled,'
+                              || 'required,'
+                              || 'subject,'
+                              || 'message,'
+                              || 'sender,'
+                              || 'recipients '
+                              || 'FROM notification_conf '
+                              || 'JOIN notification_events '
+                              || 'USING ( module,action ) '
+                              || 'WHERE lower(module) = lower('''
+                              || td_inst.module
+                              || ''') AND lower(action) = lower('''
+                              || td_inst.action
+                              || ''') AND lower(label) = lower('''
+                              || p_label
+                              || ''') '
+                            );
 
       BEGIN
          SELECT label, method, enabled, required, subject, MESSAGE, sender, recipients
@@ -69,7 +69,8 @@ AS
       e_smtp_error3   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_smtp_error3, -29261 );
    BEGIN
-      evolve_log.log_msg('Value for ENABLED: '||enabled,5);
+      evolve_log.log_msg( 'Value for ENABLED: ' || enabled, 5 );
+
       IF td_core.is_true( enabled, TRUE )
       THEN
          IF NOT evolve_log.is_debugmode

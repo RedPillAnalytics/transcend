@@ -62,8 +62,6 @@ AS
    )
       RETURN NUMBER;
 
-   PROCEDURE print_query( p_query IN VARCHAR2 );
-
    PROCEDURE check_table(
       p_owner         VARCHAR2,
       p_table         VARCHAR2,

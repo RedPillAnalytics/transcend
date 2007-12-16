@@ -5,8 +5,7 @@ AS
    FUNCTION whence
       RETURN VARCHAR2
    AS
-      l_call_stack    VARCHAR2( 4096 )
-                                      DEFAULT DBMS_UTILITY.format_call_stack || CHR( 10 );
+      l_call_stack    VARCHAR2( 4096 ) DEFAULT DBMS_UTILITY.format_call_stack || CHR( 10 );
       l_num           NUMBER;
       l_found_stack   BOOLEAN          DEFAULT FALSE;
       l_line          VARCHAR2( 255 );
@@ -38,8 +37,8 @@ AS
       PRAGMA AUTONOMOUS_TRANSACTION;
       l_whence   VARCHAR2( 1024 );
       l_msg      log_table.msg%TYPE;
-      l_scn      NUMBER	:= dbms_flashback.get_system_change_number;
-      l_schema	 VARCHAR2(30);
+      l_scn      NUMBER               := DBMS_FLASHBACK.get_system_change_number;
+      l_schema   VARCHAR2( 30 );
       e_no_tab   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_tab, -942 );
    BEGIN
@@ -60,15 +59,13 @@ AS
       THEN
          -- write the record to the log table
          INSERT INTO log_table
-                     ( msg, client_info, module, action,
-                       service_name, runmode, session_id, current_scn,
-                       instance_name, machine, dbuser,
-                       osuser, code, call_stack, back_trace, batch_id
+                     ( msg, client_info, module, action, service_name,
+                       runmode, session_id, current_scn, instance_name, machine,
+                       dbuser, osuser, code, call_stack, back_trace, batch_id
                      )
-              VALUES ( l_msg, td_inst.client_info, td_inst.module, td_inst.action,
-                       td_inst.service_name, td_inst.runmode, td_inst.session_id, l_scn,
-                       td_inst.instance_name, td_inst.machine, td_inst.dbuser,
-                       td_inst.osuser, 0, l_whence, NULL, td_inst.batch_id
+              VALUES ( l_msg, td_inst.client_info, td_inst.module, td_inst.action, td_inst.service_name,
+                       td_inst.runmode, td_inst.session_id, l_scn, td_inst.instance_name, td_inst.machine,
+                       td_inst.dbuser, td_inst.osuser, 0, l_whence, NULL, td_inst.batch_id
                      );
 
          COMMIT;
@@ -79,28 +76,22 @@ AS
       END IF;
    END log_msg;
 
-   PROCEDURE log_cnt_msg(
-      p_count   NUMBER,
-      p_msg     VARCHAR2 DEFAULT NULL,
-      p_level   NUMBER DEFAULT 2
-   )
+   PROCEDURE log_cnt_msg( p_count NUMBER, p_msg VARCHAR2 DEFAULT NULL, p_level NUMBER DEFAULT 2 )
    AS
       PRAGMA AUTONOMOUS_TRANSACTION;
    BEGIN
       -- store in COUNT_TABLE numbers of records affected by particular actions in modules
       INSERT INTO count_table
-                  ( client_info, module, action,
-                    runmode, session_id, row_cnt
+                  ( client_info, module, action, runmode,
+                    session_id, row_cnt
                   )
-           VALUES ( td_inst.client_info, td_inst.module, td_inst.action,
-                    td_inst.runmode, td_inst.session_id, p_count
+           VALUES ( td_inst.client_info, td_inst.module, td_inst.action, td_inst.runmode,
+                    td_inst.session_id, p_count
                   );
 
       -- if a message was provided to this procedure, then write it to the log table
       -- if not, then simply use the default message below
-      log_msg( NVL( p_msg, 'Number of records selected/affected' ) || ': ' || p_count,
-               p_level
-             );
+      log_msg( NVL( p_msg, 'Number of records selected/affected' ) || ': ' || p_count, p_level );
       COMMIT;
    END log_cnt_msg;
 
@@ -137,21 +128,16 @@ AS
       THEN
          -- write the record to the log table
          INSERT INTO log_table
-                     ( msg, client_info, module, action,
-                       service_name, runmode, session_id, current_scn,
-                       instance_name, machine, dbuser,
-                       osuser, code, call_stack,
+                     ( msg, client_info, module, action, service_name,
+                       runmode, session_id, current_scn, instance_name, machine,
+                       dbuser, osuser, code, call_stack,
                        back_trace,
                        batch_id
                      )
-              VALUES ( l_msg, td_inst.client_info, td_inst.module, td_inst.action,
-                       td_inst.service_name, td_inst.runmode, td_inst.session_id, l_scn,
-                       td_inst.instance_name, td_inst.machine, td_inst.dbuser,
-                       td_inst.osuser, l_code, l_whence,
-                       REGEXP_REPLACE( SUBSTR( DBMS_UTILITY.format_error_backtrace,
-                                               1,
-                                               4000
-                                             ),
+              VALUES ( l_msg, td_inst.client_info, td_inst.module, td_inst.action, td_inst.service_name,
+                       td_inst.runmode, td_inst.session_id, l_scn, td_inst.instance_name, td_inst.machine,
+                       td_inst.dbuser, td_inst.osuser, l_code, l_whence,
+                       REGEXP_REPLACE( SUBSTR( DBMS_UTILITY.format_error_backtrace, 1, 4000 ),
                                        '[[:cntrl:]]',
                                        '; '
                                      ),
@@ -167,7 +153,7 @@ AS
    PROCEDURE raise_err( p_name VARCHAR2, p_add_msg VARCHAR2 DEFAULT NULL )
    AS
    BEGIN
-      log_msg( 'The error name passed: "'||p_name||'"', 5);
+      log_msg( 'The error name passed: "' || p_name || '"', 5 );
       raise_application_error( td_inst.get_err_cd( p_name ),
                                   td_inst.get_err_msg( p_name )
                                || CASE
@@ -178,6 +164,87 @@ AS
                              );
    END raise_err;
 
+   PROCEDURE print_query( p_query IN VARCHAR2 )
+   IS
+      l_thecursor     INTEGER           DEFAULT DBMS_SQL.open_cursor;
+      l_columnvalue   VARCHAR2( 4000 );
+      l_status        INTEGER;
+      l_desctbl       DBMS_SQL.desc_tab;
+      l_colcnt        NUMBER;
+      l_cs            VARCHAR2( 255 );
+      l_date_fmt      VARCHAR2( 255 );
+
+      -- small inline procedure to restore the sessions state
+      -- we may have modified the cursor sharing and nls date format
+      -- session variables, this just restores them
+      PROCEDURE restore
+      IS
+      BEGIN
+         IF ( UPPER( l_cs ) NOT IN( 'FORCE', 'SIMILAR' ))
+         THEN
+            EXECUTE IMMEDIATE 'alter session set cursor_sharing=exact';
+         END IF;
+
+         DBMS_SQL.close_cursor( l_thecursor );
+      END restore;
+   BEGIN
+      log_msg( 'Results printed below for:' || CHR( 10 ) || p_query || CHR( 10 ) || '-----------------', 4 );
+
+      -- to be bind variable friendly on this ad-hoc queries, we
+      -- look to see if cursor sharing is already set to FORCE or
+      -- similar, if not, set it so when we parse -- literals
+      -- are replaced with binds
+      IF ( DBMS_UTILITY.get_parameter_value( 'cursor_sharing', l_status, l_cs ) = 1 )
+      THEN
+         IF ( UPPER( l_cs ) NOT IN( 'FORCE', 'SIMILAR' ))
+         THEN
+            EXECUTE IMMEDIATE 'alter session set cursor_sharing=force';
+         END IF;
+      END IF;
+
+      -- parse and describe the query sent to us.  we need
+      -- to know the number of columns and their names.
+      DBMS_SQL.parse( l_thecursor, p_query, DBMS_SQL.native );
+      DBMS_SQL.describe_columns( l_thecursor, l_colcnt, l_desctbl );
+
+      -- define all columns to be cast to varchar2's, we
+      -- are just printing them out
+      FOR i IN 1 .. l_colcnt
+      LOOP
+         IF ( l_desctbl( i ).col_type NOT IN( 113 ))
+         THEN
+            DBMS_SQL.define_column( l_thecursor, i, l_columnvalue, 4000 );
+         END IF;
+      END LOOP;
+
+      -- execute the query, so we can fetch
+      l_status := DBMS_SQL.EXECUTE( l_thecursor );
+
+      -- loop and print out each column on a separate line
+      -- bear in mind that dbms_output only prints 255 characters/line
+      -- so we'll only see the first 200 characters by my design...
+      WHILE( DBMS_SQL.fetch_rows( l_thecursor ) > 0 )
+      LOOP
+         FOR i IN 1 .. l_colcnt
+         LOOP
+            IF ( l_desctbl( i ).col_type NOT IN( 113 ))
+            THEN
+               DBMS_SQL.COLUMN_VALUE( l_thecursor, i, l_columnvalue );
+               log_msg( RPAD( l_desctbl( i ).col_name, 30 ) || ': ' || SUBSTR( l_columnvalue, 1, 200 ), 4 );
+            END IF;
+         END LOOP;
+
+         log_msg( '-----------------', 4 );
+      END LOOP;
+
+      -- now, restore the session state, no matter what
+      restore;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         restore;
+         RAISE;
+   END print_query;
 
    -- return a Boolean determining runmode
    FUNCTION is_debugmode
