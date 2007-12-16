@@ -108,7 +108,7 @@ AS
                         THEN
 			   evolve_log.raise_err( 'utl_mail_err', SQLERRM );
                         ELSE
-                           evolve_log.log_msg(    'The following SMTP error occured:'
+                           evolve_log.log_msg(    'The following SMTP error occured: '
                                                || SQLERRM
                                              );
                         END IF;
