@@ -129,7 +129,7 @@ IS
       dbms_scheduler.define_program_argument(p_schema||'.CONSUME_SQL',5,'P_MSG','VARCHAR2');
 
       -- enable the program
-      dbms_scheduler.ENABLE(p_schema||'.CONSUME_SQL_JOB');
+      dbms_scheduler.ENABLE(p_schema||'.CONSUME_SQL');
       
    END create_scheduler_metadata;
 
