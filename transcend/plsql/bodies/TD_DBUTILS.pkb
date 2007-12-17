@@ -17,9 +17,9 @@ AS
       p_p_num           NUMBER DEFAULT 65535
    )
    AS
-      o_ev              evolve_ot          := evolve_ot( p_module      => 'populate_partname' );
+      o_ev              evolve_ot                             := evolve_ot( p_module      => 'populate_partname' );
       l_dsql            LONG;
-      l_num_msg         VARCHAR2( 100 )    := 'Number of records inserted into TD_PART_GTT table';
+      l_num_msg         VARCHAR2( 100 )                := 'Number of records inserted into TD_PART_GTT table';
       l_source_column   all_part_key_columns.column_name%TYPE;
       l_results         NUMBER;
       l_part_position   all_tab_partitions.partition_position%TYPE;
@@ -163,14 +163,14 @@ AS
 
    -- builds a new table based on a current one
    PROCEDURE build_table(
-      p_owner          VARCHAR2,
-      p_table          VARCHAR2,
-      p_source_owner   VARCHAR2,
-      p_source_table   VARCHAR2,
-      p_tablespace     VARCHAR2 DEFAULT NULL,
-      p_partitioning   VARCHAR2 DEFAULT 'yes',
-      p_rows           VARCHAR2 DEFAULT 'no',
-      p_statistics     VARCHAR2 DEFAULT 'ignore'
+      p_owner              VARCHAR2,
+      p_table              VARCHAR2,
+      p_source_owner       VARCHAR2,
+      p_source_table       VARCHAR2,
+      p_tablespace         VARCHAR2 DEFAULT NULL,
+      p_partitioning       VARCHAR2 DEFAULT 'yes',
+      p_rows               VARCHAR2 DEFAULT 'no',
+      p_statistics         VARCHAR2 DEFAULT 'ignore'
    )
    IS
       l_ddl            LONG;
@@ -1244,6 +1244,7 @@ AS
    -- enables constraints related to a particular table
    -- this procedure is used to just enable constraints disabled with the last call (in the current session) to DISABLE_CONSTRAINTS
    PROCEDURE enable_constraints
+   (p_concurrent VARCHAR2 DEFAULT 'yes')
    IS
       l_con_cnt   NUMBER    := 0;
       l_rows      BOOLEAN   := FALSE;
@@ -1256,7 +1257,7 @@ AS
       LOOP
          BEGIN
             l_rows := TRUE;
-            evolve_app.exec_sql( p_sql => c_cons.enable_ddl, p_auto => 'yes' );
+            evolve_app.exec_sql( p_sql => c_cons.enable_ddl, p_auto => 'yes', p_background => p_concurrent );
             evolve_log.log_msg( c_cons.enable_msg );
             l_con_cnt := l_con_cnt + 1;
          END;
@@ -1967,17 +1968,18 @@ AS
 
    -- procedure to exchange a partitioned table with a non-partitioned table
    PROCEDURE exchange_partition(
-      p_owner          VARCHAR2,
-      p_table          VARCHAR2,
-      p_source_owner   VARCHAR2,
-      p_source_table   VARCHAR2,
-      p_partname       VARCHAR2 DEFAULT NULL,
-      p_index_space    VARCHAR2 DEFAULT NULL,
-      p_index_drop     VARCHAR2 DEFAULT 'yes',
-      p_statistics     VARCHAR2 DEFAULT 'transfer',
-      p_statpercent    NUMBER DEFAULT NULL,
-      p_statdegree     NUMBER DEFAULT NULL,
-      p_statmethod     VARCHAR2 DEFAULT NULL
+      p_owner              VARCHAR2,
+      p_table              VARCHAR2,
+      p_source_owner       VARCHAR2,
+      p_source_table       VARCHAR2,
+      p_partname           VARCHAR2 DEFAULT NULL,
+      p_index_space        VARCHAR2 DEFAULT NULL,
+      p_index_drop         VARCHAR2 DEFAULT 'yes',
+      p_concurrent         VARCHAR2 DEFAULT 'yes',
+      p_statistics         VARCHAR2 DEFAULT 'transfer',
+      p_statpercent        NUMBER DEFAULT NULL,
+      p_statdegree         NUMBER DEFAULT NULL,
+      p_statmethod         VARCHAR2 DEFAULT NULL
    )
    IS
       l_src_name       VARCHAR2( 61 )                     := UPPER( p_source_owner || '.' || p_source_table );
@@ -2063,6 +2065,7 @@ AS
                      p_source_table      => p_table,
                      p_part_type         => 'local',
                      p_tablespace        => p_index_space,
+                     p_concurrent        => p_concurrent,
                      p_partname          => CASE
                         WHEN p_index_space IS NOT NULL
                            THEN NULL
@@ -2135,7 +2138,7 @@ AS
                -- need to put the disabled foreign keys back if we disabled them
                IF l_dis_fkeys
                THEN
-                  enable_constraints;
+                  enable_constraints( p_concurrent => p_concurrent );
                END IF;
 
                o_ev.clear_app_info;
@@ -2152,7 +2155,8 @@ AS
          constraint_maint( p_owner           => p_owner,
                            p_table           => p_table,
                            p_maint_type      => 'enable',
-                           p_basis           => 'reference'
+                           p_basis           => 'reference',
+			   p_concurrent	     => p_concurrent
                          );
       END IF;
 
@@ -2177,6 +2181,7 @@ AS
       p_source_table   VARCHAR2,
       p_tablespace     VARCHAR2 DEFAULT NULL,
       p_index_drop     VARCHAR2 DEFAULT 'yes',
+      p_concurrent     VARCHAR2 DEFAULT 'yes',
       p_statistics     VARCHAR2 DEFAULT 'transfer'
    )
    IS
@@ -2233,14 +2238,16 @@ AS
                      p_table             => p_source_table,
                      p_source_owner      => p_owner,
                      p_source_table      => p_table,
-                     p_tablespace        => p_tablespace
+                     p_tablespace        => p_tablespace,
+		     p_concurrent	 => p_concurrent
                    );
       -- build the constraints
       build_constraints( p_owner             => p_owner,
                          p_table             => p_source_table,
                          p_source_owner      => p_owner,
                          p_source_table      => p_table,
-                         p_tablespace        => p_tablespace
+                         p_tablespace        => p_tablespace,
+			 p_concurrent	     => p_concurrent
                        );
       -- grant privileges
       object_grants( p_owner              => p_owner,
