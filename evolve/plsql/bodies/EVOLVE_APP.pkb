@@ -61,7 +61,7 @@ AS
       evolve_log.log_msg( CASE
                              WHEN p_msg IS NULL
                                 THEN 'SQL: ' || p_sql
-                             ELSE p_msg
+                          ELSE p_msg||': '||p_sql
                           END, 3 );
 
       IF NOT evolve_log.is_debugmode
