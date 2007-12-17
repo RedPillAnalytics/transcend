@@ -85,10 +85,7 @@ AS
    END exec_sql;
 
    -- this process will execute through DBMS_SCHEDULER
-   PROCEDURE submit_sql(
-      p_sql         VARCHAR2,
-      p_job_class   VARCHAR2 DEFAULT 'EVOLVE_DEFAULT_CLASS'
-   )
+   PROCEDURE submit_sql( p_sql VARCHAR2, p_job_class VARCHAR2 DEFAULT 'EVOLVE_DEFAULT_CLASS' )
    AS
       PRAGMA AUTONOMOUS_TRANSACTION;
       l_job_name          all_scheduler_jobs.job_name%TYPE;
