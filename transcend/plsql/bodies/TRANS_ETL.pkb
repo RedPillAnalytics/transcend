@@ -469,6 +469,34 @@ AS
          RAISE;
    END load_tables;
 
+   -- uses SQL analytics to load a hybrid SCD dimension table
+   PROCEDURE load_dim(
+      p_owner           VARCHAR2,
+      p_table           VARCHAR2,
+      p_concurrent	VARCHAR2,
+   )
+   IS
+      o_dim	dimension_ot := dimension_ot( p_owner => p_owner,
+      			     		      p_table => p_table );
+   BEGIN
+      td_dbutils.load_dim( p_owner              => p_owner,
+                          p_source_owner       => p_source_owner,
+                          p_source_regexp      => p_source_regexp,
+                          p_suffix             => p_suffix,
+                          p_merge              => p_merge,
+                          p_part_tabs          => p_part_tabs,
+                          p_trunc              => p_trunc,
+                          p_direct             => p_direct,
+                          p_degree             => p_degree,
+                          p_commit             => p_commit
+                        );
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         evolve_log.log_err;
+         RAISE;
+   END load_dim;
+
    -- procedure to exchange a partitioned table with a non-partitioned table
    PROCEDURE exchange_partition(
       p_owner          VARCHAR2,
@@ -478,6 +506,7 @@ AS
       p_partname       VARCHAR2 DEFAULT NULL,
       p_index_space    VARCHAR2 DEFAULT NULL,
       p_index_drop     VARCHAR2 DEFAULT 'yes',
+      p_concurrent     VARCHAR2 DEFAULT 'yes',
       p_statistics     VARCHAR2 DEFAULT 'transfer',
       p_statpercent    NUMBER DEFAULT NULL,
       p_statdegree     NUMBER DEFAULT NULL,
@@ -492,6 +521,7 @@ AS
                                  p_partname          => p_partname,
                                  p_index_space       => p_index_space,
                                  p_index_drop        => p_index_drop,
+				 p_concurrent	     => p_concurrent,
                                  p_statistics        => p_statistics,
                                  p_statpercent       => p_statpercent,
                                  p_statdegree        => p_statdegree,
@@ -510,6 +540,7 @@ AS
       p_source_table   VARCHAR2,
       p_tablespace     VARCHAR2 DEFAULT NULL,
       p_index_drop     VARCHAR2 DEFAULT 'yes',
+      p_concurrent     VARCHAR2 DEFAULT 'yes',
       p_statistics     VARCHAR2 DEFAULT 'transfer'
    )
    IS
@@ -519,6 +550,7 @@ AS
                             p_source_table      => p_source_table,
                             p_tablespace        => p_tablespace,
                             p_index_drop        => p_index_drop,
+			    p_concurrent	=> p_concurrent,
                             p_statistics        => p_statistics
                           );
    EXCEPTION
