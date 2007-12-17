@@ -95,9 +95,7 @@ IS
    END reset_current_schema;
 
    -- this creates the job metadata (called a program) for submitting concurrent processes
-   PROCEDURE create_scheduler_metadata(
-      p_schema     VARCHAR2 DEFAULT 'TDSYS'
-   ) 
+   PROCEDURE create_scheduler_metadata
    IS
       e_no_sched_obj EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_sched_obj, -27476 );
@@ -106,7 +104,6 @@ IS
       -- first, drop the job class and the program
       BEGIN
 	 dbms_scheduler.drop_job_class( job_class_name  => 'EVOLVE_DEFAULT_CLASS' );
-	 dbms_scheduler.drop_program( program_name      => 'CONSUME_SQL' );
       EXCEPTION
 	 WHEN e_no_sched_obj
 	 THEN
@@ -117,20 +114,7 @@ IS
 				       logging_level	 => DBMS_SCHEDULER.LOGGING_FULL,
 				       comments		 =>   'Job class for the Evolve product by Transcendent Data, Inc.'
 				       ||' This is the job class used by default when the Oracle scheduler is used for concurrent processing');
-      
-      -- create the actual program
-      dbms_scheduler.create_program(p_schema||'.CONSUME_SQL','STORED_PROCEDURE','EVOLVE_APP.CONSUME_SQL',5);
 
-      -- define all the arguments that are passed to td_utils.consume_sql
-      dbms_scheduler.define_program_argument(p_schema||'.CONSUME_SQL',1,'P_SESSION_ID','NUMBER');
-      dbms_scheduler.define_program_argument(p_schema||'.CONSUME_SQL',2,'P_MODULE','VARCHAR2');
-      dbms_scheduler.define_program_argument(p_schema||'.CONSUME_SQL',3,'P_ACTION','VARCHAR2');
-      dbms_scheduler.define_program_argument(p_schema||'.CONSUME_SQL',4,'P_SQL','VARCHAR2');
-      dbms_scheduler.define_program_argument(p_schema||'.CONSUME_SQL',5,'P_MSG','VARCHAR2');
-
-      -- enable the program
-      dbms_scheduler.ENABLE(p_schema||'.CONSUME_SQL');
-      
    END create_scheduler_metadata;
 
 
@@ -1996,7 +1980,7 @@ IS
       grant_evolve_sys_privs( p_schema => p_schema );
 
       -- create the dbms_scheduler program
-      create_scheduler_metadata( p_schema => p_schema );      
+      create_scheduler_metadata;      
       	 	 
       -- write application tracking record
       EXECUTE IMMEDIATE 	    

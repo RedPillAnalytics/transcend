@@ -87,7 +87,6 @@ AS
    -- this process will execute through DBMS_SCHEDULER
    PROCEDURE submit_sql(
       p_sql         VARCHAR2,
-      p_program     VARCHAR2 DEFAULT 'CONSUME_SQL',
       p_job_class   VARCHAR2 DEFAULT 'EVOLVE_DEFAULT_CLASS'
    )
    AS
@@ -111,42 +110,29 @@ AS
             l_job_name := DBMS_SCHEDULER.generate_job_name;
       END;
 
-      -- find the owner of the executing package
-      -- this is needed because of DBMS_SCHEDULER program objects
-      -- synonyms cannot be created for DBMS_SCHEDULER objects
-      SELECT NVL( application_name, SYS_CONTEXT( 'USERENV', 'CURRENT_SCHEMA' ))
-        INTO l_app_schema
-        FROM users
-       WHERE user_name = SYS_CONTEXT( 'USERENV', 'CURRENT_SCHEMA' );
-
       -- the CLIENT_ID will be available in the running jobs as well
       -- it will also be written to the scheduler logging metadata
       -- construct a CLIENT_ID as a combination of MODULE, ACTION, and SESSION_ID
       evolve_log.log_msg( 'The CLIENT_ID is: ' || l_client_id, 4 );
       DBMS_SESSION.set_identifier( l_client_id );
-      -- for now, we will always use the same program, CONSUME_SQL_JOB
-      -- in the future, each module may have it's own program
+      -- generate the job action
+      l_job_action :=
+            'begin evolve_app.consume_sql('
+         || l_session_id
+         || ','''
+         || l_module
+         || ''','''
+         || l_action
+         || ''','''
+         || p_sql
+         || '''); end;';
+      evolve_log.log_msg( 'The scheduler job action is: ' || l_job_action, 4 );
+      -- schedule the job
       DBMS_SCHEDULER.create_job( l_job_name,
-                                 program_name      => l_app_schema || '.' || p_program,
-                                 job_class         => p_job_class
+                                 job_class       => p_job_class,
+                                 job_type        => 'plsql_block',
+                                 job_action      => l_job_action
                                );
-      -- define the values for each argument
-      DBMS_SCHEDULER.set_job_argument_value( job_name               => l_job_name,
-                                             argument_position      => 1,
-                                             argument_value         => l_session_id
-                                           );
-      DBMS_SCHEDULER.set_job_argument_value( job_name               => l_job_name,
-                                             argument_position      => 2,
-                                             argument_value         => l_module
-                                           );
-      DBMS_SCHEDULER.set_job_argument_value( job_name               => l_job_name,
-                                             argument_position      => 3,
-                                             argument_value         => l_action
-                                           );
-      DBMS_SCHEDULER.set_job_argument_value( job_name               => l_job_name,
-                                             argument_position      => 4,
-                                             argument_value         => p_sql
-                                           );
       DBMS_SCHEDULER.ENABLE( l_job_name );
       evolve_log.log_msg( 'Job ' || l_job_name || ' submitted to the Oracle scheduler' );
    END submit_sql;
