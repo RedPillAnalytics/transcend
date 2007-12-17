@@ -24,14 +24,14 @@ IS
    );
 
    PROCEDURE build_table(
-      p_owner          VARCHAR2,
-      p_table          VARCHAR2,
-      p_source_owner   VARCHAR2,
-      p_source_table   VARCHAR2,
-      p_tablespace     VARCHAR2 DEFAULT NULL,
-      p_partitioning   VARCHAR2 DEFAULT 'yes',
-      p_rows           VARCHAR2 DEFAULT 'no',
-      p_statistics     VARCHAR2 DEFAULT 'ignore'
+      p_owner              VARCHAR2,
+      p_table              VARCHAR2,
+      p_source_owner       VARCHAR2,
+      p_source_table       VARCHAR2,
+      p_tablespace         VARCHAR2 DEFAULT NULL,
+      p_partitioning       VARCHAR2 DEFAULT 'yes',
+      p_rows               VARCHAR2 DEFAULT 'no',
+      p_statistics         VARCHAR2 DEFAULT 'ignore'
    );
 
    PROCEDURE build_indexes(
@@ -130,17 +130,18 @@ IS
    );
 
    PROCEDURE exchange_partition(
-      p_owner          VARCHAR2,
-      p_table          VARCHAR2,
-      p_source_owner   VARCHAR2,
-      p_source_table   VARCHAR2,
-      p_partname       VARCHAR2 DEFAULT NULL,
-      p_index_space    VARCHAR2 DEFAULT NULL,
-      p_index_drop     VARCHAR2 DEFAULT 'yes',
-      p_statistics     VARCHAR2 DEFAULT 'transfer',
-      p_statpercent    NUMBER DEFAULT NULL,
-      p_statdegree     NUMBER DEFAULT NULL,
-      p_statmethod     VARCHAR2 DEFAULT NULL
+      p_owner              VARCHAR2,
+      p_table              VARCHAR2,
+      p_source_owner       VARCHAR2,
+      p_source_table       VARCHAR2,
+      p_partname           VARCHAR2 DEFAULT NULL,
+      p_index_space        VARCHAR2 DEFAULT NULL,
+      p_index_drop         VARCHAR2 DEFAULT 'yes',
+      p_concurrent   VARCHAR2 DEFAULT 'yes',
+      p_statistics         VARCHAR2 DEFAULT 'transfer',
+      p_statpercent        NUMBER DEFAULT NULL,
+      p_statdegree         NUMBER DEFAULT NULL,
+      p_statmethod         VARCHAR2 DEFAULT NULL
    );
 
    PROCEDURE replace_table(
@@ -149,6 +150,7 @@ IS
       p_source_table   VARCHAR2,
       p_tablespace     VARCHAR2 DEFAULT NULL,
       p_index_drop     VARCHAR2 DEFAULT 'yes',
+      p_concurrent     VARCHAR2 DEFAULT 'yes',
       p_statistics     VARCHAR2 DEFAULT 'transfer'
    );
 
