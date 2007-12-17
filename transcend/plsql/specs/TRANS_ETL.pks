@@ -168,6 +168,11 @@ IS
       p_statmethod     VARCHAR2 DEFAULT NULL
    );
 
+   PROCEDURE load_dim(
+      p_owner           VARCHAR2,
+      p_table           VARCHAR2
+   );
+   
    PROCEDURE replace_table(
       p_owner          VARCHAR2,
       p_table          VARCHAR2,

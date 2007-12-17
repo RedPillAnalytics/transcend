@@ -1,8 +1,7 @@
 CREATE OR REPLACE PACKAGE BODY trans_etl
 AS
-
    PROCEDURE start_etl_mapping(
-      p_mapping		VARCHAR2 DEFAULT $$PLSQL_UNIT,
+      p_mapping         VARCHAR2 DEFAULT $$plsql_unit,
       p_owner           VARCHAR2 DEFAULT NULL,
       p_table           VARCHAR2 DEFAULT NULL,
       p_partname        VARCHAR2 DEFAULT NULL,
@@ -19,9 +18,7 @@ AS
    AS
       o_ev   evolve_ot;
    BEGIN
-      o_ev   := evolve_ot( p_module => 'start_map_control',
-			   p_action => 'mapping '||p_mapping);
-
+      o_ev := evolve_ot( p_module => 'start_etl_mapping', p_action => 'mapping ' || p_mapping );
       td_inst.batch_id( p_batch_id );
       evolve_log.log_msg( 'Beginning OWB mapping' );
 
@@ -45,12 +42,12 @@ AS
       WHEN OTHERS
       THEN
          evolve_log.log_err;
-	 o_ev.clear_app_info;
+         o_ev.clear_app_info;
          RAISE;
    END start_etl_mapping;
 
    PROCEDURE end_etl_mapping(
-      p_mapping	       VARCHAR2 DEFAULT $$PLSQL_UNIT,
+      p_mapping        VARCHAR2 DEFAULT $$plsql_unit,
       p_owner          VARCHAR2 DEFAULT NULL,
       p_table          VARCHAR2 DEFAULT NULL,
       p_source_owner   VARCHAR2 DEFAULT NULL,
@@ -63,21 +60,20 @@ AS
    AS
       o_ev   evolve_ot;
    BEGIN
-      o_ev   := evolve_ot( p_module => 'start_map_control',
-			   p_action => 'mapping '||p_mapping);
+      o_ev := evolve_ot( p_module => 'end_etl_mapping', p_action => 'mapping ' || p_mapping );
 
       CASE
          WHEN p_source_owner IS NOT NULL AND p_source_table IS NOT NULL
          THEN
             td_dbutils.exchange_partition( p_source_owner      => p_source_owner,
-					   p_source_table      => p_source_table,
-					   p_owner             => p_owner,
-					   p_table             => p_table,
-					   p_partname          => p_partname,
-					   p_index_space       => p_index_space,
-					   p_index_drop        => NVL( p_index_drop, 'yes' ),
-					   p_statistics        => p_statistics
-                                     );
+                                           p_source_table      => p_source_table,
+                                           p_owner             => p_owner,
+                                           p_table             => p_table,
+                                           p_partname          => p_partname,
+                                           p_index_space       => p_index_space,
+                                           p_index_drop        => NVL( p_index_drop, 'yes' ),
+                                           p_statistics        => p_statistics
+                                         );
          WHEN p_owner IS NOT NULL AND p_table IS NOT NULL
          THEN
             td_dbutils.usable_indexes( p_owner, p_table );
@@ -89,24 +85,18 @@ AS
       o_ev.clear_app_info;
    END end_etl_mapping;
 
-   PROCEDURE truncate_table(
-      p_owner   VARCHAR2,
-      p_table   VARCHAR2,
-      p_reuse   VARCHAR2 DEFAULT 'no'
-   )
+   PROCEDURE truncate_table( p_owner VARCHAR2, p_table VARCHAR2, p_reuse VARCHAR2 DEFAULT 'no' )
    IS
    BEGIN
-      td_dbutils.truncate_table( p_owner      => p_owner, p_table => p_table,
-                             p_reuse      => p_reuse );
+      td_dbutils.truncate_table( p_owner => p_owner, p_table => p_table, p_reuse => p_reuse );
    EXCEPTION
       WHEN OTHERS
       THEN
          evolve_log.log_err;
-	 RAISE;
+         RAISE;
    END truncate_table;
 
-   PROCEDURE drop_table( p_owner VARCHAR2, p_table VARCHAR2, p_purge VARCHAR2
-            DEFAULT 'yes' )
+   PROCEDURE drop_table( p_owner VARCHAR2, p_table VARCHAR2, p_purge VARCHAR2 DEFAULT 'yes' )
    IS
    BEGIN
       td_dbutils.drop_table( p_owner => p_owner, p_table => p_table, p_purge => p_purge );
@@ -130,14 +120,14 @@ AS
    IS
    BEGIN
       td_dbutils.build_table( p_owner             => p_owner,
-                          p_table             => p_table,
-                          p_source_owner      => p_source_owner,
-                          p_source_table      => p_source_table,
-                          p_tablespace        => p_tablespace,
-                          p_partitioning      => p_partitioning,
-                          p_rows              => p_rows,
-                          p_statistics        => p_statistics
-                        );
+                              p_table             => p_table,
+                              p_source_owner      => p_source_owner,
+                              p_source_table      => p_source_table,
+                              p_tablespace        => p_tablespace,
+                              p_partitioning      => p_partitioning,
+                              p_rows              => p_rows,
+                              p_statistics        => p_statistics
+                            );
    EXCEPTION
       WHEN OTHERS
       THEN
@@ -160,16 +150,16 @@ AS
    IS
    BEGIN
       td_dbutils.build_indexes( p_owner             => p_owner,
-				p_table             => p_table,
-				p_source_owner      => p_source_owner,
-				p_source_table      => p_source_table,
-				p_index_regexp      => p_index_regexp,
-				p_index_type        => p_index_type,
-				p_part_type         => p_part_type,
-				p_tablespace        => p_tablespace,
-				p_partname          => p_partname,
-				p_concurrent	    => p_concurrent
-                          );
+                                p_table             => p_table,
+                                p_source_owner      => p_source_owner,
+                                p_source_table      => p_source_table,
+                                p_index_regexp      => p_index_regexp,
+                                p_index_type        => p_index_type,
+                                p_part_type         => p_part_type,
+                                p_tablespace        => p_tablespace,
+                                p_partname          => p_partname,
+                                p_concurrent        => p_concurrent
+                              );
    EXCEPTION
       WHEN OTHERS
       THEN
@@ -180,9 +170,9 @@ AS
    -- renames cloned indexes on a particular table back to their original names
    PROCEDURE rename_indexes
    IS
-      l_idx_cnt   NUMBER  := 0;
-      l_rows      BOOLEAN := FALSE;
-      o_ev        evolve_ot  := evolve_ot( p_module => 'rename_indexes' );
+      l_idx_cnt   NUMBER    := 0;
+      l_rows      BOOLEAN   := FALSE;
+      o_ev        evolve_ot := evolve_ot( p_module => 'rename_indexes' );
    BEGIN
       FOR c_idxs IN ( SELECT *
                        FROM td_build_idx_gtt )
@@ -199,15 +189,11 @@ AS
       THEN
          evolve_log.log_msg( 'No previously cloned indexes identified' );
       ELSE
-         evolve_log.log_msg(    l_idx_cnt
-                          || ' index'
-                          || CASE
+         evolve_log.log_msg( l_idx_cnt || ' index' || CASE
                                 WHEN l_idx_cnt = 1
                                    THEN NULL
                                 ELSE 'es'
-                             END
-                          || ' renamed'
-                        );
+                             END || ' renamed' );
       END IF;
 
       -- commit is required to clear out the contents of the global temporary table
@@ -217,7 +203,7 @@ AS
       WHEN OTHERS
       THEN
          evolve_log.log_err;
-	 o_ev.clear_app_info;
+         o_ev.clear_app_info;
          RAISE;
    END rename_indexes;
 
@@ -232,7 +218,7 @@ AS
       p_seg_attributes      VARCHAR2 DEFAULT 'no',
       p_tablespace          VARCHAR2 DEFAULT NULL,
       p_partname            VARCHAR2 DEFAULT NULL,
-      p_concurrent	    VARCHAR2 DEFAULT 'no'
+      p_concurrent          VARCHAR2 DEFAULT 'no'
    )
    IS
    BEGIN
@@ -245,8 +231,8 @@ AS
                                     p_seg_attributes         => p_seg_attributes,
                                     p_tablespace             => p_tablespace,
                                     p_partname               => p_partname,
-				    p_concurrent	     => p_concurrent
-				  );
+                                    p_concurrent             => p_concurrent
+                                  );
    EXCEPTION
       WHEN OTHERS
       THEN
@@ -266,12 +252,12 @@ AS
    IS
    BEGIN
       td_dbutils.constraint_maint( p_owner                  => p_owner,
-				   p_table                  => p_table,
-				   p_maint_type             => 'disable',
-				   p_constraint_type        => p_constraint_type,
-				   p_constraint_regexp      => p_constraint_regexp,
-				   p_basis                  => p_basis
-				 );
+                                   p_table                  => p_table,
+                                   p_maint_type             => 'disable',
+                                   p_constraint_type        => p_constraint_type,
+                                   p_constraint_regexp      => p_constraint_regexp,
+                                   p_basis                  => p_basis
+                                 );
       COMMIT;
    EXCEPTION
       WHEN OTHERS
@@ -288,18 +274,18 @@ AS
       p_constraint_type     VARCHAR2 DEFAULT NULL,
       p_constraint_regexp   VARCHAR2 DEFAULT NULL,
       p_basis               VARCHAR2 DEFAULT 'table',
-      p_concurrent	    VARCHAR2 DEFAULT 'no'
+      p_concurrent          VARCHAR2 DEFAULT 'no'
    )
    IS
    BEGIN
       td_dbutils.constraint_maint( p_owner                  => p_owner,
-				   p_table                  => p_table,
-				   p_maint_type             => 'enable',
-				   p_constraint_type        => p_constraint_type,
-				   p_constraint_regexp      => p_constraint_regexp,
-				   p_basis                  => p_basis,
-				   p_concurrent		    => p_concurrent
-				 );
+                                   p_table                  => p_table,
+                                   p_maint_type             => 'enable',
+                                   p_constraint_type        => p_constraint_type,
+                                   p_constraint_regexp      => p_constraint_regexp,
+                                   p_basis                  => p_basis,
+                                   p_concurrent             => p_concurrent
+                                 );
       COMMIT;
    EXCEPTION
       WHEN OTHERS
@@ -339,10 +325,10 @@ AS
    IS
    BEGIN
       td_dbutils.drop_constraints( p_owner                  => p_owner,
-                               p_table                  => p_table,
-                               p_constraint_type        => p_constraint_type,
-                               p_constraint_regexp      => p_constraint_regexp
-                             );
+                                   p_table                  => p_table,
+                                   p_constraint_type        => p_constraint_type,
+                                   p_constraint_regexp      => p_constraint_regexp
+                                 );
    EXCEPTION
       WHEN OTHERS
       THEN
@@ -361,11 +347,11 @@ AS
    IS
    BEGIN
       td_dbutils.object_grants( p_owner              => p_owner,
-                            p_object             => p_object,
-                            p_source_owner       => p_source_owner,
-                            p_source_object      => p_source_object,
-                            p_grant_regexp       => p_grant_regexp
-                          );
+                                p_object             => p_object,
+                                p_source_owner       => p_source_owner,
+                                p_source_object      => p_source_object,
+                                p_grant_regexp       => p_grant_regexp
+                              );
    EXCEPTION
       WHEN OTHERS
       THEN
@@ -388,15 +374,15 @@ AS
    IS
    BEGIN
       td_dbutils.insert_table( p_owner              => p_owner,
-                           p_table              => p_table,
-                           p_source_owner       => p_source_owner,
-                           p_source_object      => p_source_object,
-                           p_trunc              => p_trunc,
-                           p_direct             => p_direct,
-                           p_degree             => p_degree,
-                           p_log_table          => p_log_table,
-                           p_reject_limit       => p_reject_limit
-                         );
+                               p_table              => p_table,
+                               p_source_owner       => p_source_owner,
+                               p_source_object      => p_source_object,
+                               p_trunc              => p_trunc,
+                               p_direct             => p_direct,
+                               p_degree             => p_degree,
+                               p_log_table          => p_log_table,
+                               p_reject_limit       => p_reject_limit
+                             );
    EXCEPTION
       WHEN OTHERS
       THEN
@@ -419,15 +405,15 @@ AS
    IS
    BEGIN
       td_dbutils.merge_table( p_owner              => p_owner,
-                          p_table              => p_table,
-                          p_source_owner       => p_source_owner,
-                          p_source_object      => p_source_object,
-                          p_columns            => p_columns,
-                          p_direct             => p_direct,
-                          p_degree             => p_degree,
-                          p_log_table          => p_log_table,
-                          p_reject_limit       => p_reject_limit
-                        );
+                              p_table              => p_table,
+                              p_source_owner       => p_source_owner,
+                              p_source_object      => p_source_object,
+                              p_columns            => p_columns,
+                              p_direct             => p_direct,
+                              p_degree             => p_degree,
+                              p_log_table          => p_log_table,
+                              p_reject_limit       => p_reject_limit
+                            );
    EXCEPTION
       WHEN OTHERS
       THEN
@@ -452,40 +438,22 @@ AS
       l_rows   BOOLEAN := FALSE;
    BEGIN
       td_dbutils.load_tables( p_owner              => p_owner,
-                          p_source_owner       => p_source_owner,
-                          p_source_regexp      => p_source_regexp,
-                          p_suffix             => p_suffix,
-                          p_merge              => p_merge,
-                          p_part_tabs          => p_part_tabs,
-                          p_trunc              => p_trunc,
-                          p_direct             => p_direct,
-                          p_degree             => p_degree,
-                          p_commit             => p_commit
-                        );
+                              p_source_owner       => p_source_owner,
+                              p_source_regexp      => p_source_regexp,
+                              p_suffix             => p_suffix,
+                              p_merge              => p_merge,
+                              p_part_tabs          => p_part_tabs,
+                              p_trunc              => p_trunc,
+                              p_direct             => p_direct,
+                              p_degree             => p_degree,
+                              p_commit             => p_commit
+                            );
    EXCEPTION
       WHEN OTHERS
       THEN
          evolve_log.log_err;
          RAISE;
    END load_tables;
-
-   -- uses SQL analytics to load a hybrid SCD dimension table
-   PROCEDURE load_dim(
-      p_owner           VARCHAR2,
-      p_table           VARCHAR2,
-      p_concurrent	VARCHAR2
-   )
-   IS
-      o_dim	dimension_ot := dimension_ot( p_owner => p_owner,
-      			     		      p_table => p_table );
-   BEGIN
-      NULL;
-   EXCEPTION
-      WHEN OTHERS
-      THEN
-         evolve_log.log_err;
-         RAISE;
-   END load_dim;
 
    -- procedure to exchange a partitioned table with a non-partitioned table
    PROCEDURE exchange_partition(
@@ -505,18 +473,18 @@ AS
    IS
    BEGIN
       td_dbutils.exchange_partition( p_owner             => p_owner,
-                                 p_table             => p_table,
-                                 p_source_owner      => p_source_owner,
-                                 p_source_table      => p_source_table,
-                                 p_partname          => p_partname,
-                                 p_index_space       => p_index_space,
-                                 p_index_drop        => p_index_drop,
-				 p_concurrent	     => p_concurrent,
-                                 p_statistics        => p_statistics,
-                                 p_statpercent       => p_statpercent,
-                                 p_statdegree        => p_statdegree,
-                                 p_statmethod        => p_statmethod
-                               );
+                                     p_table             => p_table,
+                                     p_source_owner      => p_source_owner,
+                                     p_source_table      => p_source_table,
+                                     p_partname          => p_partname,
+                                     p_index_space       => p_index_space,
+                                     p_index_drop        => p_index_drop,
+                                     p_concurrent        => p_concurrent,
+                                     p_statistics        => p_statistics,
+                                     p_statpercent       => p_statpercent,
+                                     p_statdegree        => p_statdegree,
+                                     p_statmethod        => p_statmethod
+                                   );
    EXCEPTION
       WHEN OTHERS
       THEN
@@ -536,19 +504,32 @@ AS
    IS
    BEGIN
       td_dbutils.replace_table( p_owner             => p_owner,
-                            p_table             => p_table,
-                            p_source_table      => p_source_table,
-                            p_tablespace        => p_tablespace,
-                            p_index_drop        => p_index_drop,
-			    p_concurrent	=> p_concurrent,
-                            p_statistics        => p_statistics
-                          );
+                                p_table             => p_table,
+                                p_source_table      => p_source_table,
+                                p_tablespace        => p_tablespace,
+                                p_index_drop        => p_index_drop,
+                                p_concurrent        => p_concurrent,
+                                p_statistics        => p_statistics
+                              );
    EXCEPTION
       WHEN OTHERS
       THEN
          evolve_log.log_err;
          RAISE;
    END replace_table;
+
+   -- uses SQL analytics to load a hybrid SCD dimension table
+   PROCEDURE load_dim( p_owner VARCHAR2, p_table VARCHAR2 )
+   IS
+      o_dim   dimension_ot := dimension_ot( p_owner => p_owner, p_table => p_table );
+   BEGIN
+      o_dim.LOAD;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         evolve_log.log_err;
+         RAISE;
+   END load_dim;
 
    PROCEDURE unusable_indexes(
       p_owner           VARCHAR2,
@@ -566,17 +547,17 @@ AS
    IS
    BEGIN
       td_dbutils.unusable_indexes( p_owner              => p_owner,
-				   p_table              => p_table,
-				   p_partname           => p_partname,
-				   p_source_owner       => p_source_owner,
-				   p_source_object      => p_source_object,
-				   p_source_column      => p_source_column,
-				   p_d_num              => p_d_num,
-				   p_p_num              => p_p_num,
-				   p_index_regexp       => p_index_regexp,
-				   p_index_type         => p_index_type,
-				   p_part_type          => p_part_type
-                             );
+                                   p_table              => p_table,
+                                   p_partname           => p_partname,
+                                   p_source_owner       => p_source_owner,
+                                   p_source_object      => p_source_object,
+                                   p_source_column      => p_source_column,
+                                   p_d_num              => p_d_num,
+                                   p_p_num              => p_p_num,
+                                   p_index_regexp       => p_index_regexp,
+                                   p_index_type         => p_index_type,
+                                   p_part_type          => p_part_type
+                                 );
    EXCEPTION
       WHEN OTHERS
       THEN
@@ -584,14 +565,10 @@ AS
          RAISE;
    END unusable_indexes;
 
-   PROCEDURE usable_indexes( p_owner      VARCHAR2, 
-   	     		     p_table      VARCHAR2,
-			     p_concurrent VARCHAR2 DEFAULT 'no' )
+   PROCEDURE usable_indexes( p_owner VARCHAR2, p_table VARCHAR2, p_concurrent VARCHAR2 DEFAULT 'no' )
    IS
    BEGIN
-      td_dbutils.usable_indexes( p_owner      => p_owner, 
-      				 p_table      => p_table,
-				 p_concurrent => p_concurrent );
+      td_dbutils.usable_indexes( p_owner => p_owner, p_table => p_table, p_concurrent => p_concurrent );
    EXCEPTION
       WHEN OTHERS
       THEN
@@ -616,18 +593,18 @@ AS
    IS
    BEGIN
       td_dbutils.update_stats( p_owner                => p_owner,
-                           p_table                => p_table,
-                           p_partname             => p_partname,
-                           p_source_owner         => p_source_owner,
-                           p_source_table         => p_source_table,
-                           p_source_partname      => p_source_partname,
-                           p_percent              => p_percent,
-                           p_degree               => p_degree,
-                           p_method               => p_method,
-                           p_granularity          => p_granularity,
-                           p_cascade              => p_cascade,
-                           p_options              => p_options
-                         );
+                               p_table                => p_table,
+                               p_partname             => p_partname,
+                               p_source_owner         => p_source_owner,
+                               p_source_table         => p_source_table,
+                               p_source_partname      => p_source_partname,
+                               p_percent              => p_percent,
+                               p_degree               => p_degree,
+                               p_method               => p_method,
+                               p_granularity          => p_granularity,
+                               p_cascade              => p_cascade,
+                               p_options              => p_options
+                             );
    EXCEPTION
       WHEN OTHERS
       THEN

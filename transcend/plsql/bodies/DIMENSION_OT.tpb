@@ -7,7 +7,7 @@ AS
       SELECT DISTINCT owner, table_name, owner || '.' || table_name full_table, source_owner, source_object,
                       source_owner || '.' || source_object full_source, staging_owner, staging_table,
                       staging_owner || '.' || staging_table full_stage, constant_staging, direct_load,
-                      replace_method, statistics,
+                      replace_method, statistics, concurrent,
                          'insert '
                       || CASE td_core.get_yn_ind( direct_load )
                             WHEN 'yes'
@@ -41,10 +41,11 @@ AS
                  INTO owner, table_name, full_table, source_owner, source_object,
                       full_source, staging_owner, staging_table,
                       full_stage, constant_staging, direct_load,
-                      replace_method, statistics,
+                      replace_method, statistics, concurrent,
                       load_sql
                  FROM ( SELECT ROWNUM rn, owner, table_name, source_owner, source_object, staging_owner,
-                               staging_table, staging_owner || '.' || staging_table full_stage, statistics,
+                               staging_table, staging_owner || '.' || staging_table full_stage, 
+			       statistics, concurrent,
                                CASE
                                   WHEN staging_table IS NULL
                                      THEN 'yes'
@@ -163,7 +164,8 @@ AS
                                        UPPER( NVL( staging_owner, owner ) ) staging_owner,
                                        UPPER( NVL( staging_table, 'TD$' || table_name ) ) staging_table,
                                        UPPER( sequence_owner ) sequence_owner,
-                                       UPPER( sequence_name ) sequence_name, direct_load, replace_method, statistics,
+                                       UPPER( sequence_name ) sequence_name, direct_load, replace_method, 
+				       statistics, concurrent,
                                        
                                        -- STRAGG function aggregates strings
                                        ( SELECT STRAGG( column_name )
@@ -263,14 +265,16 @@ AS
                                            p_source_table      => staging_table,
                                            p_owner             => owner,
                                            p_table             => table_name,
-                                           p_statistics        => statistics
+                                           p_statistics        => statistics,
+					   p_concurrent	       => concurrent
                                          );
          WHEN 'replace'
          THEN
             td_dbutils.replace_table( p_owner             => owner,
                                       p_table             => table_name,
                                       p_source_table      => staging_table,
-                                      p_statistics        => statistics
+                                      p_statistics        => statistics,
+				      p_concurrent	  => concurrent
                                     );
          ELSE
             NULL;
