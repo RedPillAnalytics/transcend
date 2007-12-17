@@ -33,13 +33,10 @@ EXEC tdsys.td_install.build_transcend_app( p_schema => '&app_schema', p_reposito
 @../plsql/wrapped_bodies/FILE_OT.plb
 @../plsql/specs/EXTRACT_OT.tps
 @../plsql/wrapped_bodies/EXTRACT_OT.plb
-@../object_views/EXTRACT_OV_vw.sql
 @../plsql/specs/FEED_OT.tps
 @../plsql/wrapped_bodies/FEED_OT.plb
-@../object_views/FEED_OV_vw.sql
 @../plsql/specs/DIMENSION_OT.tps
 @../plsql/wrapped_bodies/DIMENSION_OT.plb
-@../object_views/DIMENSION_OV_vw.sql
 
 --CREATE callable packages
 @../plsql/specs/TRANS_ADM.pks
