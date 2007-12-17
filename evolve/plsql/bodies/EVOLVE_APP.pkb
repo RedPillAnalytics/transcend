@@ -87,7 +87,7 @@ AS
    -- this process will execute through DBMS_SCHEDULER
    PROCEDURE submit_sql(
       p_sql         VARCHAR2,
-      p_program     VARCHAR2 DEFAULT 'TDSYS.CONSUME_SQL_JOB',
+      p_program     VARCHAR2 DEFAULT 'CONSUME_SQL',
       p_job_class   VARCHAR2 DEFAULT 'EVOLVE_DEFAULT_CLASS'
    )
    AS
