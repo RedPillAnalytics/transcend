@@ -473,23 +473,13 @@ AS
    PROCEDURE load_dim(
       p_owner           VARCHAR2,
       p_table           VARCHAR2,
-      p_concurrent	VARCHAR2,
+      p_concurrent	VARCHAR2
    )
    IS
       o_dim	dimension_ot := dimension_ot( p_owner => p_owner,
       			     		      p_table => p_table );
    BEGIN
-      td_dbutils.load_dim( p_owner              => p_owner,
-                          p_source_owner       => p_source_owner,
-                          p_source_regexp      => p_source_regexp,
-                          p_suffix             => p_suffix,
-                          p_merge              => p_merge,
-                          p_part_tabs          => p_part_tabs,
-                          p_trunc              => p_trunc,
-                          p_direct             => p_direct,
-                          p_degree             => p_degree,
-                          p_commit             => p_commit
-                        );
+      NULL;
    EXCEPTION
       WHEN OTHERS
       THEN

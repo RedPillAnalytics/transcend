@@ -163,14 +163,14 @@ AS
 
    -- builds a new table based on a current one
    PROCEDURE build_table(
-      p_owner              VARCHAR2,
-      p_table              VARCHAR2,
-      p_source_owner       VARCHAR2,
-      p_source_table       VARCHAR2,
-      p_tablespace         VARCHAR2 DEFAULT NULL,
-      p_partitioning       VARCHAR2 DEFAULT 'yes',
-      p_rows               VARCHAR2 DEFAULT 'no',
-      p_statistics         VARCHAR2 DEFAULT 'ignore'
+      p_owner          VARCHAR2,
+      p_table          VARCHAR2,
+      p_source_owner   VARCHAR2,
+      p_source_table   VARCHAR2,
+      p_tablespace     VARCHAR2 DEFAULT NULL,
+      p_partitioning   VARCHAR2 DEFAULT 'yes',
+      p_rows           VARCHAR2 DEFAULT 'no',
+      p_statistics     VARCHAR2 DEFAULT 'ignore'
    )
    IS
       l_ddl            LONG;
@@ -1243,8 +1243,7 @@ AS
 
    -- enables constraints related to a particular table
    -- this procedure is used to just enable constraints disabled with the last call (in the current session) to DISABLE_CONSTRAINTS
-   PROCEDURE enable_constraints
-   (p_concurrent VARCHAR2 DEFAULT 'yes')
+   PROCEDURE enable_constraints( p_concurrent VARCHAR2 DEFAULT 'yes' )
    IS
       l_con_cnt   NUMBER    := 0;
       l_rows      BOOLEAN   := FALSE;
@@ -1968,18 +1967,18 @@ AS
 
    -- procedure to exchange a partitioned table with a non-partitioned table
    PROCEDURE exchange_partition(
-      p_owner              VARCHAR2,
-      p_table              VARCHAR2,
-      p_source_owner       VARCHAR2,
-      p_source_table       VARCHAR2,
-      p_partname           VARCHAR2 DEFAULT NULL,
-      p_index_space        VARCHAR2 DEFAULT NULL,
-      p_index_drop         VARCHAR2 DEFAULT 'yes',
-      p_concurrent         VARCHAR2 DEFAULT 'yes',
-      p_statistics         VARCHAR2 DEFAULT 'transfer',
-      p_statpercent        NUMBER DEFAULT NULL,
-      p_statdegree         NUMBER DEFAULT NULL,
-      p_statmethod         VARCHAR2 DEFAULT NULL
+      p_owner          VARCHAR2,
+      p_table          VARCHAR2,
+      p_source_owner   VARCHAR2,
+      p_source_table   VARCHAR2,
+      p_partname       VARCHAR2 DEFAULT NULL,
+      p_index_space    VARCHAR2 DEFAULT NULL,
+      p_index_drop     VARCHAR2 DEFAULT 'yes',
+      p_concurrent     VARCHAR2 DEFAULT 'yes',
+      p_statistics     VARCHAR2 DEFAULT 'transfer',
+      p_statpercent    NUMBER DEFAULT NULL,
+      p_statdegree     NUMBER DEFAULT NULL,
+      p_statmethod     VARCHAR2 DEFAULT NULL
    )
    IS
       l_src_name       VARCHAR2( 61 )                     := UPPER( p_source_owner || '.' || p_source_table );
@@ -2156,7 +2155,7 @@ AS
                            p_table           => p_table,
                            p_maint_type      => 'enable',
                            p_basis           => 'reference',
-			   p_concurrent	     => p_concurrent
+                           p_concurrent      => p_concurrent
                          );
       END IF;
 
@@ -2239,7 +2238,7 @@ AS
                      p_source_owner      => p_owner,
                      p_source_table      => p_table,
                      p_tablespace        => p_tablespace,
-		     p_concurrent	 => p_concurrent
+                     p_concurrent        => p_concurrent
                    );
       -- build the constraints
       build_constraints( p_owner             => p_owner,
@@ -2247,7 +2246,7 @@ AS
                          p_source_owner      => p_owner,
                          p_source_table      => p_table,
                          p_tablespace        => p_tablespace,
-			 p_concurrent	     => p_concurrent
+                         p_concurrent        => p_concurrent
                        );
       -- grant privileges
       object_grants( p_owner              => p_owner,
