@@ -1093,6 +1093,13 @@ IS
 	   (file_label, file_group)
 	   USING INDEX
 	 )|';
+
+	 EXECUTE IMMEDIATE 
+	 q'|ALTER TABLE files_conf ADD 
+	 (
+	   CONSTRAINT files_conf_sp_ck
+	   CHECK (source_policy IN ('oldest','newest','all','fail',NULL))
+	 )|';
 	 
 	 -- FILES_DETAIL table
 	 EXECUTE IMMEDIATE 
@@ -2116,8 +2123,8 @@ IS
 
    PROCEDURE create_evolve_user(
       p_user         VARCHAR2,
-      p_application  VARCHAR2, 
-      p_repository   VARCHAR2
+      p_application  VARCHAR2 DEFAULT 'TDSYS', 
+      p_repository   VARCHAR2 DEFAULT 'TDSYS'
    ) 
    IS
    BEGIN
@@ -2164,8 +2171,8 @@ IS
 
    PROCEDURE create_transcend_user(
       p_user         VARCHAR2,
-      p_application  VARCHAR2, 
-      p_repository   VARCHAR2
+      p_application  VARCHAR2 DEFAULT 'TDSYS', 
+      p_repository   VARCHAR2 DEFAULT 'TDSYS'
    ) 
    IS
    BEGIN
