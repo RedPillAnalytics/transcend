@@ -1022,7 +1022,7 @@ AS
          IF td_core.is_true( p_concurrent )
          THEN
             -- now simply waiting for all the concurrent processes to complete
-            evolve_app.coordinate_sql( p_concurrent_id => p_concurrent_id );
+            evolve_app.coordinate_sql( p_concurrent_id => l_concurrent_id );
          END IF;
 
          evolve_log.log_msg(    l_con_cnt
@@ -1235,7 +1235,7 @@ AS
          -- wait for the concurrent processes to complete or fail
          IF td_core.is_true( p_concurrent )
          THEN
-            evolve_app.coordinate_sql( p_concurrent_id => p_concurrent_id );
+            evolve_app.coordinate_sql( p_concurrent_id => l_concurrent_id );
          END IF;
 
          evolve_log.log_msg(    l_con_cnt
@@ -1269,9 +1269,10 @@ AS
    -- this procedure is used to just enable constraints disabled with the last call (in the current session) to DISABLE_CONSTRAINTS
    PROCEDURE enable_constraints( p_concurrent VARCHAR2 DEFAULT 'yes' )
    IS
-      l_con_cnt   NUMBER    := 0;
-      l_rows      BOOLEAN   := FALSE;
-      o_ev        evolve_ot := evolve_ot( p_module => 'enable_constraints' );
+      l_con_cnt         NUMBER    := 0;
+      l_concurrent_id   NUMBER;
+      l_rows            BOOLEAN   := FALSE;
+      o_ev              evolve_ot := evolve_ot( p_module => 'enable_constraints' );
    BEGIN
       -- need to get a unique "job header" number in case we are running concurrently
       o_ev.change_action( 'get concurrent id' );
@@ -1293,7 +1294,7 @@ AS
             -- execute the DDL either in this session or a background session
             evolve_app.exec_sql( p_sql                => c_cons.enable_ddl,
                                  p_auto               => 'yes',
-                                 p_concurrent_id      => p_concurrent_id
+                                 p_concurrent_id      => l_concurrent_id
                                );
             evolve_log.log_msg( c_cons.enable_msg );
             l_con_cnt := l_con_cnt + 1;
@@ -1307,7 +1308,7 @@ AS
          -- wait for the concurrent processes to complete or fail
          IF td_core.is_true( p_concurrent )
          THEN
-            evolve_app.coordinate_sql( p_concurrent_id => p_concurrent_id );
+            evolve_app.coordinate_sql( p_concurrent_id => l_concurrent_id );
          END IF;
 
          evolve_log.log_msg( l_con_cnt || ' constraint' || CASE
@@ -2611,7 +2612,7 @@ AS
       IF td_core.is_true( p_concurrent )
       THEN
          -- now simply waiting for all the concurrent processes to complete
-         evolve_app.coordinate_sql( p_concurrent_id => p_concurrent_id );
+         evolve_app.coordinate_sql( p_concurrent_id => l_concurrent_id );
       END IF;
 
       -- reset variables
@@ -2639,7 +2640,7 @@ AS
                      ORDER BY table_name )
       LOOP
          l_rows := TRUE;
-         evolve_app.exec_sql( p_sql => c_gidx.DDL, p_auto => 'yes', p_concurrent_id => p_concurrent_id );
+         evolve_app.exec_sql( p_sql => c_gidx.DDL, p_auto => 'yes', p_concurrent_id => l_concurrent_id );
          l_cnt := l_cnt + 1;
       END LOOP;
 
@@ -2648,7 +2649,7 @@ AS
          IF td_core.is_true( p_concurrent )
          THEN
             -- now simply waiting for all the concurrent processes to complete
-            evolve_app.coordinate_sql( p_concurrent_id => p_concurrent_id );
+            evolve_app.coordinate_sql( p_concurrent_id => l_concurrent_id );
          END IF;
 
          evolve_log.log_msg(    l_cnt

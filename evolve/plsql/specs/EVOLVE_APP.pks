@@ -10,6 +10,9 @@ AS
       p_concurrent_id   NUMBER DEFAULT NULL
    );
 
+   FUNCTION get_concurrent_id
+      RETURN NUMBER;
+
    PROCEDURE submit_sql(
       p_sql             VARCHAR2,
       p_concurrent_id   NUMBER,
