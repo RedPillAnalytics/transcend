@@ -574,10 +574,10 @@ AS
                              AND REGEXP_LIKE( index_name, NVL( p_index_regexp, '.' ), 'i' )
                              -- USE an NVL'd regular expression to determine the index types to worked on
                              -- when nothing is passed for P_INDEX_TYPE, then that is the same as passing a wildcard
-                             AND REGEXP_LIKE( index_type, '^' || NVL( p_index_type, '.' ), 'i' ) ) ind
+                             AND REGEXP_LIKE( index_type, '^' || NVL( p_index_type, '.' ), 'i' )) ind
                          LEFT JOIN
                          all_objects ao ON ao.object_name = ind.idx_rename AND ao.owner = UPPER( p_owner )
-                   WHERE subobject_name IS NULL ) )
+                   WHERE subobject_name IS NULL ))
       LOOP
          l_rows := TRUE;
          o_ev.change_action( 'Format index DDL' );
@@ -937,13 +937,13 @@ AS
                            WHERE ac.table_name = UPPER( p_source_table )
                              AND ac.owner = UPPER( p_source_owner )
                              AND REGEXP_LIKE( constraint_name, NVL( p_constraint_regexp, '.' ), 'i' )
-                             AND REGEXP_LIKE( constraint_type, NVL( p_constraint_type, '.' ), 'i' ) ) con
+                             AND REGEXP_LIKE( constraint_type, NVL( p_constraint_type, '.' ), 'i' )) con
                          LEFT JOIN
                          all_objects ao
                          ON ao.object_name = con.con_rename
                        AND ao.owner = UPPER( p_owner )
                        AND object_type = 'INDEX'
-                         ) )
+                         ))
       LOOP
          -- catch empty cursor sets
          l_rows := TRUE;
@@ -1140,7 +1140,7 @@ AS
                                                 FROM all_constraints
                                                WHERE table_name = UPPER( p_table )
                                                  AND owner = UPPER( p_owner )
-                                                 AND constraint_type = 'P' ) )
+                                                 AND constraint_type = 'P' ))
                              WHERE include = 'Y' )
       LOOP
          -- catch empty cursor sets
@@ -1289,7 +1289,8 @@ AS
       p_owner          VARCHAR2,
       p_table          VARCHAR2,
       p_index_type     VARCHAR2 DEFAULT NULL,
-      p_index_regexp   VARCHAR2 DEFAULT NULL
+      p_index_regexp   VARCHAR2 DEFAULT NULL,
+      p_part_type      VARCHAR2 DEFAULT NULL
    )
    IS
       l_rows       BOOLEAN        := FALSE;
@@ -1305,7 +1306,17 @@ AS
                          WHERE table_name = UPPER( p_table )
                            AND table_owner = UPPER( p_owner )
                            AND REGEXP_LIKE( index_name, NVL( p_index_regexp, '.' ), 'i' )
-                           AND REGEXP_LIKE( index_type, '^' || NVL( p_index_type, '.' ), 'i' ) )
+                           AND REGEXP_LIKE( index_type, '^' || NVL( p_index_type, '.' ), 'i' )
+                           AND REGEXP_LIKE( partitioned,
+                                            CASE
+                                               WHEN REGEXP_LIKE( 'global', p_part_type, 'i' )
+                                                  THEN 'NO'
+                                               WHEN REGEXP_LIKE( 'local', p_part_type, 'i' )
+                                                  THEN 'YES'
+                                               ELSE '.'
+                                            END,
+                                            'i'
+                                          ))
       LOOP
          l_rows := TRUE;
 
@@ -1369,7 +1380,7 @@ AS
                              WHERE table_name = UPPER( p_table )
                                AND owner = UPPER( p_owner )
                                AND REGEXP_LIKE( constraint_name, NVL( p_constraint_regexp, '.' ), 'i' )
-                               AND REGEXP_LIKE( constraint_type, NVL( p_constraint_type, '.' ), 'i' ) )
+                               AND REGEXP_LIKE( constraint_type, NVL( p_constraint_type, '.' ), 'i' ))
       LOOP
          -- catch empty cursor sets
          l_rows := TRUE;
@@ -1477,7 +1488,7 @@ AS
       o_ev.change_action( 'Execute grants' );
 
       FOR c_grants IN ( SELECT *
-                         FROM TABLE( td_core.SPLIT( l_ddl, ';' ) ) )
+                         FROM TABLE( td_core.SPLIT( l_ddl, ';' )))
       LOOP
          l_rows := TRUE;
          evolve_app.exec_sql( p_sql => c_grants.COLUMN_VALUE, p_auto => 'yes' );
@@ -1674,8 +1685,8 @@ AS
                      FROM ( SELECT ',' || UPPER( p_columns ) || ',' COLUMNS
                              FROM DUAL )
                CONNECT BY LEVEL <=
-                             LENGTH( UPPER( p_columns ) ) - LENGTH( REPLACE( UPPER( p_columns ), ',', '' ) )
-                             + 1 )
+                               LENGTH( UPPER( p_columns )) - LENGTH( REPLACE( UPPER( p_columns ), ',', '' ))
+                               + 1 )
          SELECT REGEXP_REPLACE( '(' || stragg( 'target.' || column_name || ' = source.' || column_name )
                                 || ')',
                                 ',',
@@ -1706,7 +1717,7 @@ AS
                    FROM all_cons_columns dcc JOIN all_constraints dc USING( constraint_name, table_name )
                   WHERE table_name = UPPER( p_table )
                     AND dcc.owner = UPPER( p_owner )
-                    AND dc.constraint_type IN( 'P', 'U' ) );
+                    AND dc.constraint_type IN( 'P', 'U' ));
       END IF;
 
       o_ev.change_action( 'Construct merge update clause' );
@@ -1732,8 +1743,8 @@ AS
                               FROM ( SELECT ',' || UPPER( p_columns ) || ',' COLUMNS
                                       FROM DUAL )
                         CONNECT BY LEVEL <=
-                                        LENGTH( UPPER( p_columns ) )
-                                      - LENGTH( REPLACE( UPPER( p_columns ), ',', '' ) )
+                                        LENGTH( UPPER( p_columns ))
+                                      - LENGTH( REPLACE( UPPER( p_columns ), ',', '' ))
                                       + 1 )
                  SELECT column_name
                    FROM all_tab_columns
@@ -1744,7 +1755,7 @@ AS
                   WHERE table_name = UPPER( p_table )
                     AND owner = UPPER( p_owner )
                     AND column_name IN( SELECT *
-                                         FROM DATA ) );
+                                         FROM DATA ));
       ELSE
          -- otherwise, we once again MIN a constraint type to ensure it's the same constraint
          -- then, we just minus the column names so they aren't included
@@ -1764,13 +1775,12 @@ AS
                             WHERE table_name = UPPER( p_table )
                               AND dcc.owner = UPPER( p_owner )
                               AND dc.constraint_type IN( 'P', 'U' )
-                         GROUP BY column_name ) );
+                         GROUP BY column_name ));
       END IF;
 
       o_ev.change_action( 'Construnct merge insert clause' );
 
-      SELECT   REGEXP_REPLACE( '(' || stragg( 'target.' || column_name ) || ') ', ',', ',' || CHR( 10 ) )
-                                                                                                         LIST
+      SELECT   REGEXP_REPLACE( '(' || stragg( 'target.' || column_name ) || ') ', ',', ',' || CHR( 10 )) LIST
           INTO l_insert
           FROM all_tab_columns
          WHERE table_name = UPPER( p_table ) AND owner = UPPER( p_owner )
@@ -1989,6 +1999,7 @@ AS
       l_ddl            LONG;
       l_build_cons     BOOLEAN                                  := FALSE;
       l_compress       BOOLEAN                                  := FALSE;
+      l_constraints    BOOLEAN                                  := FALSE;
       l_dis_fkeys      BOOLEAN                                  := FALSE;
       l_retry_ddl      BOOLEAN                                  := FALSE;
       e_no_stats       EXCEPTION;
@@ -1997,6 +2008,8 @@ AS
       PRAGMA EXCEPTION_INIT( e_compress, -14646 );
       e_fkeys          EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_fkeys, -2266 );
+      e_uk_mismatch    EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_uk_mismatch, -14130 );
       o_ev             evolve_ot                             := evolve_ot( p_module      => 'exchange_partition' );
    BEGIN
       o_ev.change_action( 'Determine partition to use' );
@@ -2017,7 +2030,7 @@ AS
          AND table_owner = UPPER( p_owner )
          AND partition_position IN( SELECT MAX( partition_position )
                                      FROM all_tab_partitions
-                                    WHERE table_name = UPPER( p_table ) AND table_owner = UPPER( p_owner ) );
+                                    WHERE table_name = UPPER( p_table ) AND table_owner = UPPER( p_owner ));
 
       -- we want to gather statistics
       -- we gather statistics first before the indexes are built
@@ -2112,13 +2125,25 @@ AS
                                );
             WHEN e_compress
             THEN
-               evolve_log.log_msg( l_src_name || ' compressed to facilitate exchange', 3 );
                -- need to compress the staging table
                l_compress := TRUE;
                l_retry_ddl := TRUE;
                evolve_app.exec_sql( p_sql       => 'alter table ' || l_src_name || ' move compress',
                                     p_auto      => 'yes'
                                   );
+               evolve_log.log_msg( l_src_name || ' compressed to facilitate exchange', 3 );
+            WHEN e_uk_mismatch
+            THEN
+               -- need to create unique constraints
+               l_constraints := TRUE;
+               l_retry_ddl := TRUE;
+               build_constraints( p_table                => p_source_table,
+                                  p_owner                => p_source_owner,
+                                  p_source_table         => p_table,
+                                  p_source_owner         => p_owner,
+                                  p_constraint_type      => 'p|u',
+                                  p_concurrent           => p_concurrent
+                                );
             WHEN OTHERS
             THEN
                -- first log the error
@@ -2424,7 +2449,7 @@ AS
                                                     ON ai.index_name = aip.index_name
                                                   AND ai.owner = aip.index_owner
                                               WHERE ai.table_name = UPPER( p_table )
-                                                AND ai.table_owner = UPPER( p_owner ) )
+                                                AND ai.table_owner = UPPER( p_owner ))
                                       WHERE REGEXP_LIKE( index_type, '^' || p_index_type, 'i' )
                                         AND REGEXP_LIKE( partitioned,
                                                          CASE
@@ -2441,7 +2466,7 @@ AS
                                         AND NOT REGEXP_LIKE( index_type, 'iot', 'i' )
                                         AND include = 'Y'
                                    ORDER BY idx_ddl_type, partition_position )
-                     WHERE status IN( 'VALID', 'USABLE', 'N/A' ) )
+                     WHERE status IN( 'VALID', 'USABLE', 'N/A' ))
       LOOP
          o_ev.change_action( 'Execute index DDL' );
          l_rows := TRUE;

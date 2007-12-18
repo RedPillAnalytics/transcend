@@ -1,7 +1,7 @@
 CREATE OR REPLACE PACKAGE trans_etl AUTHID CURRENT_USER
 IS
    PROCEDURE start_etl_mapping(
-      p_mapping		VARCHAR2 DEFAULT $$PLSQL_UNIT,
+      p_mapping         VARCHAR2 DEFAULT $$plsql_unit,
       p_owner           VARCHAR2 DEFAULT NULL,
       p_table           VARCHAR2 DEFAULT NULL,
       p_partname        VARCHAR2 DEFAULT NULL,
@@ -15,9 +15,9 @@ IS
       p_part_type       VARCHAR2 DEFAULT NULL,
       p_batch_id        NUMBER DEFAULT NULL
    );
-      
+
    PROCEDURE end_etl_mapping(
-      p_mapping	       VARCHAR2 DEFAULT $$PLSQL_UNIT,
+      p_mapping        VARCHAR2 DEFAULT $$plsql_unit,
       p_owner          VARCHAR2 DEFAULT NULL,
       p_table          VARCHAR2 DEFAULT NULL,
       p_source_owner   VARCHAR2 DEFAULT NULL,
@@ -26,19 +26,11 @@ IS
       p_index_space    VARCHAR2 DEFAULT NULL,
       p_index_drop     VARCHAR2 DEFAULT NULL,
       p_statistics     VARCHAR2 DEFAULT NULL
-   );      
-
-   PROCEDURE truncate_table(
-      p_owner   VARCHAR2,
-      p_table   VARCHAR2,
-      p_reuse   VARCHAR2 DEFAULT 'no'
    );
 
-   PROCEDURE drop_table(
-      p_owner   VARCHAR2,
-      p_table   VARCHAR2,
-      p_purge   VARCHAR2 DEFAULT 'yes'
-   );
+   PROCEDURE truncate_table( p_owner VARCHAR2, p_table VARCHAR2, p_reuse VARCHAR2 DEFAULT 'no' );
+
+   PROCEDURE drop_table( p_owner VARCHAR2, p_table VARCHAR2, p_purge VARCHAR2 DEFAULT 'yes' );
 
    PROCEDURE build_table(
       p_owner          VARCHAR2,
@@ -74,7 +66,7 @@ IS
       p_seg_attributes      VARCHAR2 DEFAULT 'no',
       p_tablespace          VARCHAR2 DEFAULT NULL,
       p_partname            VARCHAR2 DEFAULT NULL,
-      p_concurrent	    VARCHAR2 DEFAULT 'no'
+      p_concurrent          VARCHAR2 DEFAULT 'no'
    );
 
    PROCEDURE disable_constraints(
@@ -91,14 +83,15 @@ IS
       p_constraint_type     VARCHAR2 DEFAULT NULL,
       p_constraint_regexp   VARCHAR2 DEFAULT NULL,
       p_basis               VARCHAR2 DEFAULT 'table',
-      p_concurrent	    VARCHAR2 DEFAULT 'no'
+      p_concurrent          VARCHAR2 DEFAULT 'no'
    );
 
    PROCEDURE drop_indexes(
       p_owner          VARCHAR2,
       p_table          VARCHAR2,
       p_index_type     VARCHAR2 DEFAULT NULL,
-      p_index_regexp   VARCHAR2 DEFAULT NULL
+      p_index_regexp   VARCHAR2 DEFAULT NULL,
+      p_part_type      VARCHAR2 DEFAULT NULL
    );
 
    PROCEDURE drop_constraints(
@@ -168,11 +161,8 @@ IS
       p_statmethod     VARCHAR2 DEFAULT NULL
    );
 
-   PROCEDURE load_dim(
-      p_owner           VARCHAR2,
-      p_table           VARCHAR2
-   );
-   
+   PROCEDURE load_dim( p_owner VARCHAR2, p_table VARCHAR2 );
+
    PROCEDURE replace_table(
       p_owner          VARCHAR2,
       p_table          VARCHAR2,
@@ -197,9 +187,7 @@ IS
       p_part_type       VARCHAR2 DEFAULT NULL
    );
 
-   PROCEDURE usable_indexes( p_owner       VARCHAR2, 
-   	     		     p_table       VARCHAR2,
-			     p_concurrent  VARCHAR2 DEFAULT 'no' );
+   PROCEDURE usable_indexes( p_owner VARCHAR2, p_table VARCHAR2, p_concurrent VARCHAR2 DEFAULT 'no' );
 
    PROCEDURE update_stats(
       p_owner             VARCHAR2,

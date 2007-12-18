@@ -11,27 +11,19 @@ IS
       p_p_num           NUMBER DEFAULT 65535
    );
 
-   PROCEDURE truncate_table(
-      p_owner   VARCHAR2,
-      p_table   VARCHAR2,
-      p_reuse   VARCHAR2 DEFAULT 'no'
-   );
+   PROCEDURE truncate_table( p_owner VARCHAR2, p_table VARCHAR2, p_reuse VARCHAR2 DEFAULT 'no' );
 
-   PROCEDURE drop_table(
-      p_owner   VARCHAR2,
-      p_table   VARCHAR2,
-      p_purge   VARCHAR2 DEFAULT 'yes'
-   );
+   PROCEDURE drop_table( p_owner VARCHAR2, p_table VARCHAR2, p_purge VARCHAR2 DEFAULT 'yes' );
 
    PROCEDURE build_table(
-      p_owner              VARCHAR2,
-      p_table              VARCHAR2,
-      p_source_owner       VARCHAR2,
-      p_source_table       VARCHAR2,
-      p_tablespace         VARCHAR2 DEFAULT NULL,
-      p_partitioning       VARCHAR2 DEFAULT 'yes',
-      p_rows               VARCHAR2 DEFAULT 'no',
-      p_statistics         VARCHAR2 DEFAULT 'ignore'
+      p_owner          VARCHAR2,
+      p_table          VARCHAR2,
+      p_source_owner   VARCHAR2,
+      p_source_table   VARCHAR2,
+      p_tablespace     VARCHAR2 DEFAULT NULL,
+      p_partitioning   VARCHAR2 DEFAULT 'yes',
+      p_rows           VARCHAR2 DEFAULT 'no',
+      p_statistics     VARCHAR2 DEFAULT 'ignore'
    );
 
    PROCEDURE build_indexes(
@@ -57,7 +49,7 @@ IS
       p_seg_attributes      VARCHAR2 DEFAULT 'no',
       p_tablespace          VARCHAR2 DEFAULT NULL,
       p_partname            VARCHAR2 DEFAULT NULL,
-      p_concurrent	    VARCHAR2 DEFAULT 'no'
+      p_concurrent          VARCHAR2 DEFAULT 'no'
    );
 
    PROCEDURE constraint_maint(
@@ -67,14 +59,15 @@ IS
       p_constraint_type     VARCHAR2 DEFAULT NULL,
       p_constraint_regexp   VARCHAR2 DEFAULT NULL,
       p_basis               VARCHAR2 DEFAULT 'table',
-      p_concurrent	    VARCHAR2 DEFAULT 'no'
+      p_concurrent          VARCHAR2 DEFAULT 'no'
    );
 
    PROCEDURE drop_indexes(
       p_owner          VARCHAR2,
       p_table          VARCHAR2,
       p_index_type     VARCHAR2 DEFAULT NULL,
-      p_index_regexp   VARCHAR2 DEFAULT NULL
+      p_index_regexp   VARCHAR2 DEFAULT NULL,
+      p_part_type      VARCHAR2 DEFAULT NULL
    );
 
    PROCEDURE drop_constraints(
@@ -130,18 +123,18 @@ IS
    );
 
    PROCEDURE exchange_partition(
-      p_owner              VARCHAR2,
-      p_table              VARCHAR2,
-      p_source_owner       VARCHAR2,
-      p_source_table       VARCHAR2,
-      p_partname           VARCHAR2 DEFAULT NULL,
-      p_index_space        VARCHAR2 DEFAULT NULL,
-      p_index_drop         VARCHAR2 DEFAULT 'yes',
-      p_concurrent   VARCHAR2 DEFAULT 'yes',
-      p_statistics         VARCHAR2 DEFAULT 'transfer',
-      p_statpercent        NUMBER DEFAULT NULL,
-      p_statdegree         NUMBER DEFAULT NULL,
-      p_statmethod         VARCHAR2 DEFAULT NULL
+      p_owner          VARCHAR2,
+      p_table          VARCHAR2,
+      p_source_owner   VARCHAR2,
+      p_source_table   VARCHAR2,
+      p_partname       VARCHAR2 DEFAULT NULL,
+      p_index_space    VARCHAR2 DEFAULT NULL,
+      p_index_drop     VARCHAR2 DEFAULT 'yes',
+      p_concurrent     VARCHAR2 DEFAULT 'yes',
+      p_statistics     VARCHAR2 DEFAULT 'transfer',
+      p_statpercent    NUMBER DEFAULT NULL,
+      p_statdegree     NUMBER DEFAULT NULL,
+      p_statmethod     VARCHAR2 DEFAULT NULL
    );
 
    PROCEDURE replace_table(
@@ -168,9 +161,7 @@ IS
       p_part_type       VARCHAR2 DEFAULT NULL
    );
 
-   PROCEDURE usable_indexes( p_owner      VARCHAR2, 
-   	     		     p_table 	  VARCHAR2,
-			     p_concurrent VARCHAR2 DEFAULT 'no' );
+   PROCEDURE usable_indexes( p_owner VARCHAR2, p_table VARCHAR2, p_concurrent VARCHAR2 DEFAULT 'no' );
 
    PROCEDURE update_stats(
       p_owner             VARCHAR2,

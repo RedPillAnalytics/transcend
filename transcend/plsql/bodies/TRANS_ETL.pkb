@@ -299,14 +299,16 @@ AS
       p_owner          VARCHAR2,
       p_table          VARCHAR2,
       p_index_type     VARCHAR2 DEFAULT NULL,
-      p_index_regexp   VARCHAR2 DEFAULT NULL
+      p_index_regexp   VARCHAR2 DEFAULT NULL,
+      p_part_type      VARCHAR2 DEFAULT NULL
    )
    IS
    BEGIN
       td_dbutils.drop_indexes( p_owner             => p_owner,
                                p_table             => p_table,
                                p_index_type        => p_index_type,
-                               p_index_regexp      => p_index_regexp
+                               p_index_regexp      => p_index_regexp,
+                               p_part_type         => p_part_type
                              );
    EXCEPTION
       WHEN OTHERS
