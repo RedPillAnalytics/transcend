@@ -320,6 +320,7 @@ AS
       l_part_type       VARCHAR2( 6 );
       l_targ_part       all_tables.partitioned%TYPE;
       l_part_position   all_tab_partitions.partition_position%TYPE;
+      l_concurrent_id   NUMBER;
       l_rows            BOOLEAN                                      := FALSE;
       e_dup_idx_name    EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_idx_name, -955 );
@@ -367,6 +368,14 @@ AS
           WHERE table_name = UPPER( p_source_table )
             AND table_owner = UPPER( p_source_owner )
             AND partition_name = UPPER( p_partname );
+      END IF;
+
+      -- need to get a unique "job header" number in case we are running concurrently
+      o_ev.change_action( 'get concurrent id' );
+
+      IF td_core.is_true( p_concurrent )
+      THEN
+         l_concurrent_id := evolve_app.get_concurrent_id;
       END IF;
 
       -- create a cursor containing the DDL from the target indexes
@@ -574,18 +583,20 @@ AS
                              AND REGEXP_LIKE( index_name, NVL( p_index_regexp, '.' ), 'i' )
                              -- USE an NVL'd regular expression to determine the index types to worked on
                              -- when nothing is passed for P_INDEX_TYPE, then that is the same as passing a wildcard
-                             AND REGEXP_LIKE( index_type, '^' || NVL( p_index_type, '.' ), 'i' )) ind
+                             AND REGEXP_LIKE( index_type, '^' || NVL( p_index_type, '.' ), 'i' ) ) ind
                          LEFT JOIN
                          all_objects ao ON ao.object_name = ind.idx_rename AND ao.owner = UPPER( p_owner )
-                   WHERE subobject_name IS NULL ))
+                   WHERE subobject_name IS NULL ) )
       LOOP
          l_rows := TRUE;
          o_ev.change_action( 'Format index DDL' );
          o_ev.change_action( 'Execute index DDL' );
 
          BEGIN
-            evolve_app.exec_sql( p_sql             => c_indexes.index_ddl, p_auto => 'yes',
-                                 p_background      => p_concurrent );
+            evolve_app.exec_sql( p_sql                => c_indexes.index_ddl,
+                                 p_auto               => 'yes',
+                                 p_concurrent_id      => l_concurrent_id
+                               );
             evolve_log.log_msg(    'Index '
                                 || c_indexes.index_name
                                 || CASE
@@ -623,8 +634,7 @@ AS
          THEN
             evolve_log.log_msg( 'P_CONCURRENT is true', 5 );
             -- now simply waiting for all the concurrent processes to complete
-            o_ev.change_action( 'wait for submitted processes' );
-            evolve_app.coordinate_sql;
+            evolve_app.coordinate_sql( l_concurrent_id );
          END IF;
 
          evolve_log.log_msg(    l_idx_cnt
@@ -705,6 +715,7 @@ AS
       l_con_cnt         NUMBER                                       := 0;
       l_tab_name        VARCHAR2( 61 )                               := UPPER( p_owner || '.' || p_table );
       l_src_name        VARCHAR2( 61 )                    := UPPER( p_source_owner || '.' || p_source_table );
+      l_concurrent_id   NUMBER;
       l_rows            BOOLEAN                                      := FALSE;
       l_retry_ddl       BOOLEAN                                      := FALSE;
       e_dup_con_name    EXCEPTION;
@@ -752,6 +763,14 @@ AS
           WHERE table_name = UPPER( p_source_table )
             AND table_owner = UPPER( p_source_owner )
             AND partition_name = UPPER( p_partname );
+      END IF;
+
+      -- need to get a unique "job header" number in case we are running concurrently
+      o_ev.change_action( 'get concurrent id' );
+
+      IF td_core.is_true( p_concurrent )
+      THEN
+         l_concurrent_id := evolve_app.get_concurrent_id;
       END IF;
 
       o_ev.change_action( 'Build constraints' );
@@ -937,21 +956,21 @@ AS
                            WHERE ac.table_name = UPPER( p_source_table )
                              AND ac.owner = UPPER( p_source_owner )
                              AND REGEXP_LIKE( constraint_name, NVL( p_constraint_regexp, '.' ), 'i' )
-                             AND REGEXP_LIKE( constraint_type, NVL( p_constraint_type, '.' ), 'i' )) con
+                             AND REGEXP_LIKE( constraint_type, NVL( p_constraint_type, '.' ), 'i' ) ) con
                          LEFT JOIN
                          all_objects ao
                          ON ao.object_name = con.con_rename
                        AND ao.owner = UPPER( p_owner )
                        AND object_type = 'INDEX'
-                         ))
+                         ) )
       LOOP
          -- catch empty cursor sets
          l_rows := TRUE;
 
          BEGIN
-            evolve_app.exec_sql( p_sql             => c_constraints.constraint_ddl,
-                                 p_auto            => 'yes',
-                                 p_background      => p_concurrent
+            evolve_app.exec_sql( p_sql                => c_constraints.constraint_ddl,
+                                 p_auto               => 'yes',
+                                 p_concurrent_id      => l_concurrent_id
                                );
             evolve_log.log_msg( 'Constraint ' || c_constraints.constraint_name || ' built', 3 );
             l_con_cnt := l_con_cnt + 1;
@@ -1002,10 +1021,8 @@ AS
       ELSE
          IF td_core.is_true( p_concurrent )
          THEN
-            evolve_log.log_msg( 'P_CONCURRENT is true', 5 );
             -- now simply waiting for all the concurrent processes to complete
-            o_ev.change_action( 'wait for submitted processes' );
-            evolve_app.coordinate_sql;
+            evolve_app.coordinate_sql( p_concurrent_id => p_concurrent_id );
          END IF;
 
          evolve_log.log_msg(    l_con_cnt
@@ -1039,12 +1056,13 @@ AS
       p_concurrent          VARCHAR2 DEFAULT 'no'
    )
    IS
-      l_con_cnt    NUMBER         := 0;
-      l_tab_name   VARCHAR2( 61 ) := UPPER( p_owner || '.' || p_table );
-      l_rows       BOOLEAN        := FALSE;
-      e_iot_shc    EXCEPTION;
+      l_con_cnt         NUMBER         := 0;
+      l_tab_name        VARCHAR2( 61 ) := UPPER( p_owner || '.' || p_table );
+      l_concurrent_id   NUMBER;
+      l_rows            BOOLEAN        := FALSE;
+      e_iot_shc         EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_iot_shc, -25188 );
-      o_ev         evolve_ot      := evolve_ot( p_module => 'constraint_maint' );
+      o_ev              evolve_ot      := evolve_ot( p_module => 'constraint_maint' );
    BEGIN
       -- P_CONSTRAINT_TYPE only relates to constraints based on the table, not the reference
       IF REGEXP_LIKE( 'reference|all', p_basis, 'i' ) AND p_constraint_type IS NOT NULL
@@ -1056,6 +1074,14 @@ AS
       -- confirm that the table exists
       -- raise an error if it doesn't
       td_utils.check_table( p_owner => p_owner, p_table => p_table );
+      -- need to get a unique "job header" number in case we are running concurrently
+      o_ev.change_action( 'get concurrent id' );
+
+      IF td_core.is_true( p_concurrent )
+      THEN
+         l_concurrent_id := evolve_app.get_concurrent_id;
+      END IF;
+
       -- disable both table and reference constraints for this particular table
       o_ev.change_action( 'Constraint maintenance' );
 
@@ -1140,21 +1166,21 @@ AS
                                                 FROM all_constraints
                                                WHERE table_name = UPPER( p_table )
                                                  AND owner = UPPER( p_owner )
-                                                 AND constraint_type = 'P' ))
+                                                 AND constraint_type = 'P' ) )
                              WHERE include = 'Y' )
       LOOP
          -- catch empty cursor sets
          l_rows := TRUE;
 
          BEGIN
-            evolve_app.exec_sql( p_sql             => CASE
+            evolve_app.exec_sql( p_sql                => CASE
                                     WHEN REGEXP_LIKE( 'disable', p_maint_type, 'i' )
                                        THEN c_constraints.disable_ddl
                                     WHEN REGEXP_LIKE( 'enable', p_maint_type, 'i' )
                                        THEN c_constraints.enable_ddl
                                  END,
-                                 p_auto            => 'yes',
-                                 p_background      => p_concurrent
+                                 p_auto               => 'yes',
+                                 p_concurrent_id      => l_concurrent_id
                                );
 
             -- insert records into a GTT
@@ -1206,12 +1232,10 @@ AS
                              || ' constraints found.'
                            );
       ELSE
+         -- wait for the concurrent processes to complete or fail
          IF td_core.is_true( p_concurrent )
          THEN
-            evolve_log.log_msg( 'P_CONCURRENT is true', 5 );
-            -- now simply waiting for all the concurrent processes to complete
-            o_ev.change_action( 'wait for submitted processes' );
-            evolve_app.coordinate_sql;
+            evolve_app.coordinate_sql( p_concurrent_id => p_concurrent_id );
          END IF;
 
          evolve_log.log_msg(    l_con_cnt
@@ -1249,6 +1273,16 @@ AS
       l_rows      BOOLEAN   := FALSE;
       o_ev        evolve_ot := evolve_ot( p_module => 'enable_constraints' );
    BEGIN
+      -- need to get a unique "job header" number in case we are running concurrently
+      o_ev.change_action( 'get concurrent id' );
+
+      IF td_core.is_true( p_concurrent )
+      THEN
+         l_concurrent_id := evolve_app.get_concurrent_id;
+      END IF;
+
+      -- looping through records in the TD_CON_MAINT_GTT table
+      -- this table only gets populated by CONSTRAINT_MAINT
       evolve_log.log_msg( 'Enabling constraints disabled previously' );
 
       FOR c_cons IN ( SELECT *
@@ -1256,7 +1290,11 @@ AS
       LOOP
          BEGIN
             l_rows := TRUE;
-            evolve_app.exec_sql( p_sql => c_cons.enable_ddl, p_auto => 'yes', p_background => p_concurrent );
+            -- execute the DDL either in this session or a background session
+            evolve_app.exec_sql( p_sql                => c_cons.enable_ddl,
+                                 p_auto               => 'yes',
+                                 p_concurrent_id      => p_concurrent_id
+                               );
             evolve_log.log_msg( c_cons.enable_msg );
             l_con_cnt := l_con_cnt + 1;
          END;
@@ -1266,12 +1304,17 @@ AS
       THEN
          evolve_log.log_msg( 'No previously disabled constraints found' );
       ELSE
+         -- wait for the concurrent processes to complete or fail
+         IF td_core.is_true( p_concurrent )
+         THEN
+            evolve_app.coordinate_sql( p_concurrent_id => p_concurrent_id );
+         END IF;
+
          evolve_log.log_msg( l_con_cnt || ' constraint' || CASE
                                 WHEN l_con_cnt = 1
                                    THEN NULL
                                 ELSE 's'
-                             END || ' enabled'
-                           );
+                             END || ' enabled' );
       END IF;
 
       -- commit is required to clear out the contents of the global temporary table
@@ -1316,7 +1359,7 @@ AS
                                                ELSE '.'
                                             END,
                                             'i'
-                                          ))
+                                          ) )
       LOOP
          l_rows := TRUE;
 
@@ -1380,7 +1423,7 @@ AS
                              WHERE table_name = UPPER( p_table )
                                AND owner = UPPER( p_owner )
                                AND REGEXP_LIKE( constraint_name, NVL( p_constraint_regexp, '.' ), 'i' )
-                               AND REGEXP_LIKE( constraint_type, NVL( p_constraint_type, '.' ), 'i' ))
+                               AND REGEXP_LIKE( constraint_type, NVL( p_constraint_type, '.' ), 'i' ) )
       LOOP
          -- catch empty cursor sets
          l_rows := TRUE;
@@ -1488,7 +1531,7 @@ AS
       o_ev.change_action( 'Execute grants' );
 
       FOR c_grants IN ( SELECT *
-                         FROM TABLE( td_core.SPLIT( l_ddl, ';' )))
+                         FROM TABLE( td_core.SPLIT( l_ddl, ';' ) ) )
       LOOP
          l_rows := TRUE;
          evolve_app.exec_sql( p_sql => c_grants.COLUMN_VALUE, p_auto => 'yes' );
@@ -1685,8 +1728,8 @@ AS
                      FROM ( SELECT ',' || UPPER( p_columns ) || ',' COLUMNS
                              FROM DUAL )
                CONNECT BY LEVEL <=
-                               LENGTH( UPPER( p_columns )) - LENGTH( REPLACE( UPPER( p_columns ), ',', '' ))
-                               + 1 )
+                             LENGTH( UPPER( p_columns ) ) - LENGTH( REPLACE( UPPER( p_columns ), ',', '' ) )
+                             + 1 )
          SELECT REGEXP_REPLACE( '(' || stragg( 'target.' || column_name || ' = source.' || column_name )
                                 || ')',
                                 ',',
@@ -1717,7 +1760,7 @@ AS
                    FROM all_cons_columns dcc JOIN all_constraints dc USING( constraint_name, table_name )
                   WHERE table_name = UPPER( p_table )
                     AND dcc.owner = UPPER( p_owner )
-                    AND dc.constraint_type IN( 'P', 'U' ));
+                    AND dc.constraint_type IN( 'P', 'U' ) );
       END IF;
 
       o_ev.change_action( 'Construct merge update clause' );
@@ -1743,8 +1786,8 @@ AS
                               FROM ( SELECT ',' || UPPER( p_columns ) || ',' COLUMNS
                                       FROM DUAL )
                         CONNECT BY LEVEL <=
-                                        LENGTH( UPPER( p_columns ))
-                                      - LENGTH( REPLACE( UPPER( p_columns ), ',', '' ))
+                                        LENGTH( UPPER( p_columns ) )
+                                      - LENGTH( REPLACE( UPPER( p_columns ), ',', '' ) )
                                       + 1 )
                  SELECT column_name
                    FROM all_tab_columns
@@ -1755,7 +1798,7 @@ AS
                   WHERE table_name = UPPER( p_table )
                     AND owner = UPPER( p_owner )
                     AND column_name IN( SELECT *
-                                         FROM DATA ));
+                                         FROM DATA ) );
       ELSE
          -- otherwise, we once again MIN a constraint type to ensure it's the same constraint
          -- then, we just minus the column names so they aren't included
@@ -1775,12 +1818,13 @@ AS
                             WHERE table_name = UPPER( p_table )
                               AND dcc.owner = UPPER( p_owner )
                               AND dc.constraint_type IN( 'P', 'U' )
-                         GROUP BY column_name ));
+                         GROUP BY column_name ) );
       END IF;
 
       o_ev.change_action( 'Construnct merge insert clause' );
 
-      SELECT   REGEXP_REPLACE( '(' || stragg( 'target.' || column_name ) || ') ', ',', ',' || CHR( 10 )) LIST
+      SELECT   REGEXP_REPLACE( '(' || stragg( 'target.' || column_name ) || ') ', ',', ',' || CHR( 10 ) )
+                                                                                                         LIST
           INTO l_insert
           FROM all_tab_columns
          WHERE table_name = UPPER( p_table ) AND owner = UPPER( p_owner )
@@ -2030,7 +2074,7 @@ AS
          AND table_owner = UPPER( p_owner )
          AND partition_position IN( SELECT MAX( partition_position )
                                      FROM all_tab_partitions
-                                    WHERE table_name = UPPER( p_table ) AND table_owner = UPPER( p_owner ));
+                                    WHERE table_name = UPPER( p_table ) AND table_owner = UPPER( p_owner ) );
 
       -- we want to gather statistics
       -- we gather statistics first before the indexes are built
@@ -2137,13 +2181,11 @@ AS
                -- need to create unique constraints
                l_constraints := TRUE;
                l_retry_ddl := TRUE;
-               build_constraints( p_table                => p_source_table,
-                                  p_owner                => p_source_owner,
-                                  p_source_table         => p_table,
-                                  p_source_owner         => p_owner,
-                                  p_constraint_type      => 'p|u',
-                                  p_concurrent           => p_concurrent
-                                );
+               constraint_maint( p_owner                => p_owner,
+                                 p_table                => p_table,
+                                 p_maint_type           => 'disable',
+                                 p_constraint_type      => 'u'
+                               );
             WHEN OTHERS
             THEN
                -- first log the error
@@ -2449,7 +2491,7 @@ AS
                                                     ON ai.index_name = aip.index_name
                                                   AND ai.owner = aip.index_owner
                                               WHERE ai.table_name = UPPER( p_table )
-                                                AND ai.table_owner = UPPER( p_owner ))
+                                                AND ai.table_owner = UPPER( p_owner ) )
                                       WHERE REGEXP_LIKE( index_type, '^' || p_index_type, 'i' )
                                         AND REGEXP_LIKE( partitioned,
                                                          CASE
@@ -2466,7 +2508,7 @@ AS
                                         AND NOT REGEXP_LIKE( index_type, 'iot', 'i' )
                                         AND include = 'Y'
                                    ORDER BY idx_ddl_type, partition_position )
-                     WHERE status IN( 'VALID', 'USABLE', 'N/A' ))
+                     WHERE status IN( 'VALID', 'USABLE', 'N/A' ) )
       LOOP
          o_ev.change_action( 'Execute index DDL' );
          l_rows := TRUE;
@@ -2515,18 +2557,28 @@ AS
    -- rebuilds all unusable index segments on a particular table
    PROCEDURE usable_indexes( p_owner VARCHAR2, p_table VARCHAR2, p_concurrent VARCHAR2 DEFAULT 'no' )
    IS
-      l_ddl    VARCHAR2( 2000 );
-      l_rows   BOOLEAN          := FALSE;                                           -- to catch empty cursors
-      l_cnt    NUMBER           := 0;
-      o_ev     evolve_ot        := evolve_ot( p_module => 'usable_indexes', p_action => 'Rebuild indexes' );
+      l_ddl             VARCHAR2( 2000 );
+      l_rows            BOOLEAN          := FALSE;                                  -- to catch empty cursors
+      l_cnt             NUMBER           := 0;
+      l_concurrent_id   NUMBER;
+      o_ev              evolve_ot := evolve_ot( p_module      => 'usable_indexes',
+                                                p_action      => 'Rebuild indexes' );
    BEGIN
       td_utils.check_table( p_owner => p_owner, p_table => p_table );
 
       IF td_utils.is_part_table( p_owner, p_table )
       THEN
-         o_ev.change_action( 'rebuild local indexes' );
+         -- need to get a unique "job header" number in case we are running concurrently
+         o_ev.change_action( 'get concurrent id' );
+
+         IF td_core.is_true( p_concurrent )
+         THEN
+            l_concurrent_id := evolve_app.get_concurrent_id;
+         END IF;
 
          -- rebuild local indexes first
+         o_ev.change_action( 'rebuild local indexes' );
+
          FOR c_idx IN ( SELECT  table_name, partition_position,
                                    'alter table '
                                 || table_owner
@@ -2540,7 +2592,7 @@ AS
                           WHERE table_name = UPPER( p_table ) AND table_owner = UPPER( p_owner )
                        ORDER BY table_name, partition_position )
          LOOP
-            evolve_app.exec_sql( p_sql => c_idx.DDL, p_auto => 'yes', p_background => p_concurrent );
+            evolve_app.exec_sql( p_sql => c_idx.DDL, p_auto => 'yes', p_concurrent_id => l_concurrent_id );
             l_cnt := l_cnt + 1;
          END LOOP;
 
@@ -2558,15 +2610,21 @@ AS
 
       IF td_core.is_true( p_concurrent )
       THEN
-         o_ev.change_action( 'wait for submitted processes' );
-         evolve_log.log_msg( 'P_CONCURRENT is true', 5 );
          -- now simply waiting for all the concurrent processes to complete
-         evolve_app.coordinate_sql;
+         evolve_app.coordinate_sql( p_concurrent_id => p_concurrent_id );
       END IF;
 
       -- reset variables
       l_cnt := 0;
       l_rows := FALSE;
+      -- get another concurrent_id
+      o_ev.change_action( 'get concurrent id' );
+
+      IF td_core.is_true( p_concurrent )
+      THEN
+         l_concurrent_id := evolve_app.get_concurrent_id;
+      END IF;
+
       -- now see if any global are still unusable
       o_ev.change_action( 'rebuild global indexes' );
 
@@ -2581,7 +2639,7 @@ AS
                      ORDER BY table_name )
       LOOP
          l_rows := TRUE;
-         evolve_app.exec_sql( p_sql => c_gidx.DDL, p_auto => 'yes', p_background => p_concurrent );
+         evolve_app.exec_sql( p_sql => c_gidx.DDL, p_auto => 'yes', p_concurrent_id => p_concurrent_id );
          l_cnt := l_cnt + 1;
       END LOOP;
 
@@ -2590,10 +2648,7 @@ AS
          IF td_core.is_true( p_concurrent )
          THEN
             -- now simply waiting for all the concurrent processes to complete
-            o_ev.change_action( 'wait for submitted processes' );
-            evolve_log.log_msg( 'P_CONCURRENT is true', 5 );
-            o_ev.change_action( 'wait for submitted processes' );
-            evolve_app.coordinate_sql;
+            evolve_app.coordinate_sql( p_concurrent_id => p_concurrent_id );
          END IF;
 
          evolve_log.log_msg(    l_cnt

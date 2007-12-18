@@ -50,10 +50,10 @@ AS
    -- if the P_AUTO flag of 'yes' is passed, then EXEC_AUTO is called
    -- if P_BACKGROUND of 'yes' is called, then it is executed through SUBMIT_SQL
    PROCEDURE exec_sql(
-      p_sql          VARCHAR2,
-      p_msg          VARCHAR2 DEFAULT NULL,
-      p_auto         VARCHAR2 DEFAULT 'no',
-      p_background   VARCHAR2 DEFAULT 'no'
+      p_sql             VARCHAR2,
+      p_msg             VARCHAR2 DEFAULT NULL,
+      p_auto            VARCHAR2 DEFAULT 'no',
+      p_concurrent_id   NUMBER DEFAULT NULL
    )
    AS
       l_results   NUMBER;
@@ -61,18 +61,18 @@ AS
       evolve_log.log_msg( CASE
                              WHEN p_msg IS NULL
                                 THEN 'SQL: ' || p_sql
-                          ELSE p_msg||': '||p_sql
+                             ELSE p_msg || ': ' || p_sql
                           END, 3 );
 
       IF NOT evolve_log.is_debugmode
       THEN
-         evolve_log.log_msg( 'P_BACKGROUND: ' || p_background, 5 );
          evolve_log.log_msg( 'P_AUTO: ' || p_auto, 5 );
 
          CASE
-            WHEN td_core.is_true( p_background )
+            WHEN p_concurrent_id IS NOT NULL
             THEN
-               submit_sql( p_sql => p_sql );
+               evolve_log.log_msg( 'The concurrent id is: ' || p_concurrent_id, 5 );
+               submit_sql( p_sql => p_sql, p_concurrent_id => p_concurrent_id );
             WHEN td_core.is_true( p_auto )
             THEN
                l_results := exec_auto( p_sql => p_sql );
@@ -84,8 +84,29 @@ AS
       END IF;
    END exec_sql;
 
+   -- uses a sequence to generate a unique concurrent id for concurrent processes
+   -- this id is set with DBMS_SESSION.SET_IDENTIFIER
+   FUNCTION get_concurrent_id
+      RETURN NUMBER
+   AS
+      l_concurrent_id   NUMBER;
+   BEGIN
+      -- select the sequence nextval
+      SELECT concurrent_id_seq.NEXTVAL
+        INTO l_concurrent_id
+        FROM DUAL;
+
+      -- print the concurrent id to the log
+      evolve_log.log_msg( 'The generated concurrent_id is: ' || l_concurrent_id, 5 );
+      RETURN l_concurrent_id;
+   END get_concurrent_id;
+
    -- this process will execute through DBMS_SCHEDULER
-   PROCEDURE submit_sql( p_sql VARCHAR2, p_job_class VARCHAR2 DEFAULT 'EVOLVE_DEFAULT_CLASS' )
+   PROCEDURE submit_sql(
+      p_sql             VARCHAR2,
+      p_concurrent_id   NUMBER,
+      p_job_class       VARCHAR2 DEFAULT 'EVOLVE_DEFAULT_CLASS'
+   )
    AS
       PRAGMA AUTONOMOUS_TRANSACTION;
       l_job_name          all_scheduler_jobs.job_name%TYPE;
@@ -107,11 +128,9 @@ AS
             l_job_name := DBMS_SCHEDULER.generate_job_name;
       END;
 
-      -- the CLIENT_ID will be available in the running jobs as well
-      -- it will also be written to the scheduler logging metadata
-      -- construct a CLIENT_ID as a combination of MODULE, ACTION, and SESSION_ID
-      evolve_log.log_msg( 'The CLIENT_ID is: ' || l_client_id, 4 );
-      DBMS_SESSION.set_identifier( l_client_id );
+      -- use the unique concurrent id
+      evolve_log.log_msg( 'The child concurrent_id is: ' || p_concurrent_id, 5 );
+      DBMS_SESSION.set_identifier( p_concurrent_id );
       -- generate the job action
       l_job_action :=
             'begin evolve_app.consume_sql('
@@ -135,7 +154,7 @@ AS
    END submit_sql;
 
    -- this process will execute through DBMS_SCHEDULER
-   PROCEDURE coordinate_sql( p_sleep NUMBER DEFAULT 5, p_timeout NUMBER DEFAULT 0 )
+   PROCEDURE coordinate_sql( p_concurrent_id NUMBER, p_sleep NUMBER DEFAULT 5, p_timeout NUMBER DEFAULT 0 )
    AS
       l_client_id    all_scheduler_jobs.client_id%TYPE;
       l_running      NUMBER;
@@ -158,8 +177,10 @@ AS
          -- get the count of failed jobs
          SELECT COUNT( * )
            INTO l_failed
-           FROM all_scheduler_jobs
-          WHERE client_id = l_client_id AND state = 'FAILED';
+           FROM all_scheduler_job_log
+          WHERE client_id = l_client_id AND operation = 'RUN' AND status = 'FAILED';
+
+         evolve_log.log_msg( 'Failed job count: ' || l_failed, 5 );
 
          -- raise an error if there are failed jobs
          IF l_failed > 0
@@ -168,7 +189,7 @@ AS
          END IF;
 
          -- check for the timeout
-         IF ( ( DBMS_UTILITY.get_time - l_start_secs ) > p_timeout ) AND p_timeout <> 0
+         IF (  ( DBMS_UTILITY.get_time - l_start_secs ) > p_timeout ) AND p_timeout <> 0
          THEN
             evolve_log.raise_err( 'submit_sql_timeout' );
          END IF;
