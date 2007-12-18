@@ -287,7 +287,6 @@ IS
 	 EXECUTE IMMEDIATE 'grant execute on EVOLVE_APP to '||l_app_role;
 	 EXECUTE IMMEDIATE 'grant select on CONCURRENT_ID_SEQ to '||l_app_role;
 	 EXECUTE IMMEDIATE 'grant execute on EVOLVE_ADM to '||l_app_role;
-	 EXECUTE IMMEDIATE 'grant execute on NOTIFICATION_OV to '||l_app_role;
 	 
       EXCEPTION
 	 WHEN e_no_obj
@@ -1661,13 +1660,6 @@ IS
 	    NULL;
 	 END;
 
-	 BEGIN
-	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.NOTIFICATION_OV for '||p_schema||'.NOTIFICATION_OV';
-	 EXCEPTION
-	    WHEN e_same_name
-	    THEN
-	    NULL;
-	 END;	
    END build_evolve_app_syns;
    
    PROCEDURE build_transcend_rep_syns(
