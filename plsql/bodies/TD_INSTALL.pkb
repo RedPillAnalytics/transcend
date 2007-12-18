@@ -244,7 +244,57 @@ IS
       END;
 
    END grant_evolve_rep_privs;
- 
+  
+   PROCEDURE grant_evolve_app_privs(
+      p_schema   VARCHAR2 DEFAULT NULL    
+   ) 
+   IS
+      l_app_role VARCHAR2(30) := p_schema||'_app';
+      e_obj_exists   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_obj_exists, -955 );
+      e_role_exists   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_role_exists, -1921 );
+      e_no_grantee   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_no_grantee, -1919 );
+      e_no_obj   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_no_obj, -942 );
+   BEGIN
+      
+      BEGIN
+	 EXECUTE IMMEDIATE 'DROP role '||l_app_role;
+      EXCEPTION
+	 WHEN e_no_role
+	 THEN
+	 NULL;
+      END;
+      
+      BEGIN
+	 EXECUTE IMMEDIATE 'CREATE ROLE '||l_app_role;
+      EXCEPTION
+	 WHEN e_role_exists
+	 THEN
+	 NULL;
+      END;
+
+      BEGIN
+	 EXECUTE IMMEDIATE 'grant execute on STRAGG to '||l_app_role;
+	 EXECUTE IMMEDIATE 'grant execute on TD_CORE to '||l_app_role;
+	 EXECUTE IMMEDIATE 'grant execute on TD_INST to '||l_app_role;
+	 EXECUTE IMMEDIATE 'grant execute on EVOLVE_LOG to '||l_app_role;
+	 EXECUTE IMMEDIATE 'grant execute on TD_UTILS to '||l_app_role;
+	 EXECUTE IMMEDIATE 'grant execute on EVOLVE_APP to '||l_app_role;
+	 EXECUTE IMMEDIATE 'grant execute on CONCURRENT_ID_SEQ to '||l_app_role;
+	 EXECUTE IMMEDIATE 'grant execute on EVOLVE_ADM to '||l_app_role;
+	 EXECUTE IMMEDIATE 'grant execute on NOTIFICATION_OV to '||l_app_role;
+	 
+      EXCEPTION
+	 WHEN e_no_obj
+	 THEN
+	 raise_application_error(-20004,'Some application objects do not exist.');
+      END;
+
+   END grant_evolve_app_privs;
+  
    PROCEDURE grant_transcend_rep_privs(
       p_schema   VARCHAR2 DEFAULT NULL,
       p_user	 varchar2 DEFAULT NULL  
@@ -322,7 +372,39 @@ IS
 
    END grant_transcend_rep_privs;
    
+   PROCEDURE grant_transcend_app_privs(
+      p_schema   VARCHAR2 DEFAULT NULL    
+   ) 
+   IS
+      l_app_role VARCHAR2(30) := p_schema||'_app';
+      e_obj_exists   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_obj_exists, -955 );
+      e_role_exists   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_role_exists, -1921 );
+      e_no_grantee   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_no_grantee, -1919 );
+      e_no_obj   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_no_obj, -942 );
+   BEGIN
+      
+      BEGIN
+	 EXECUTE IMMEDIATE 'grant execute on DIMENSION_OT to '||l_app_role;
+	 EXECUTE IMMEDIATE 'grant execute on EXTRACT_OT to '||l_app_role;
+	 EXECUTE IMMEDIATE 'grant execute on FEED_OT to '||l_app_role;
+	 EXECUTE IMMEDIATE 'grant execute on FILE_OT to '||l_app_role;
+	 EXECUTE IMMEDIATE 'grant execute on TD_DBUTILS to '||l_app_role;
+	 EXECUTE IMMEDIATE 'grant execute on TRANS_ADM to '||l_app_role;
+	 EXECUTE IMMEDIATE 'grant execute on TRANS_ETL to '||l_app_role;
+	 EXECUTE IMMEDIATE 'grant execute on TRANS_FILES to '||l_app_role;
+	 
+      EXCEPTION
+	 WHEN e_no_obj
+	 THEN
+	 raise_application_error(-20004,'Some application objects do not exist.');
+      END;
 
+   END grant_transcend_app_privs;
+  
    PROCEDURE build_sys_repo(
       p_schema      VARCHAR2 DEFAULT 'TDSYS',
       p_tablespace  VARCHAR2 DEFAULT 'TDSYS',
@@ -1778,7 +1860,6 @@ IS
    ) 
    IS
       l_sys_role VARCHAR2(30)  := p_schema||'_sys';
-      l_app_role VARCHAR2(30)  := p_schema||'_app';
       l_java_role VARCHAR2(30) := p_schema||'_java';
       e_obj_exists   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_obj_exists, -955 );
@@ -1801,14 +1882,6 @@ IS
 	 END;
 	 
 	 BEGIN
-	    EXECUTE IMMEDIATE 'DROP role '||l_app_role;
-	 EXCEPTION
-	    WHEN e_no_role
-	    THEN
-	    NULL;
-	 END;
-
-	 BEGIN
 	    EXECUTE IMMEDIATE 'DROP role '||l_java_role;
 	 EXCEPTION
 	    WHEN e_no_role
@@ -1820,14 +1893,6 @@ IS
 
       BEGIN
 	 EXECUTE IMMEDIATE 'CREATE ROLE '||l_sys_role;
-      EXCEPTION
-	 WHEN e_role_exists
-	 THEN
-	 NULL;
-      END;
-
-      BEGIN
-	 EXECUTE IMMEDIATE 'CREATE ROLE '||l_app_role;
       EXCEPTION
 	 WHEN e_role_exists
 	 THEN
