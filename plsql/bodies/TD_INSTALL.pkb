@@ -258,6 +258,8 @@ IS
       PRAGMA EXCEPTION_INIT( e_no_grantee, -1919 );
       e_no_obj   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_obj, -942 );
+      e_no_role   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_no_role, -1919 );
    BEGIN
       
       BEGIN
@@ -2114,7 +2116,7 @@ IS
 
       -- create the synonyms to the repository
       build_transcend_rep_syns( p_user   => p_schema,
-			     p_schema => p_repository );
+				p_schema => p_repository );
       
       -- grant application privileges to the roles
       grant_transcend_sys_privs( p_schema => p_schema );
