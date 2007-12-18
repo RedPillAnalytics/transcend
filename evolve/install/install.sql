@@ -85,11 +85,14 @@ EXEC tdsys.td_install.drop_evolve_types;
 @../plsql/specs/TD_UTILS.pks
 @../plsql/wrapped_bodies/TD_UTILS.plb
 
---CREATE callable packages
+-- create callable packages
 @../plsql/specs/EVOLVE_APP.pks
 @../plsql/wrapped_bodies/EVOLVE_APP.plb
 @../plsql/specs/EVOLVE_ADM.pks
 @../plsql/wrapped_bodies/EVOLVE_ADM.plb
+
+-- grant execute on all the callable packages to the _APP role
+EXEC tdsys.td_install.grant_evolve_app_privs( p_schema => '&app_schema' );
 
 -- set the default logging, registration and runmodes
 EXEC evolve_adm.set_default_configs;

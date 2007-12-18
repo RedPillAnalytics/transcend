@@ -46,6 +46,9 @@ EXEC tdsys.td_install.build_transcend_app( p_schema => '&app_schema', p_reposito
 @../plsql/specs/TRANS_FILES.pks
 @../plsql/wrapped_bodies/TRANS_FILES.plb
 
+-- grant execute on all the callable packages to the _APP role
+EXEC tdsys.td_install.grant_transcend_app_privs( p_schema => '&app_schema' );
+
 -- set Evolve configurations specific to Transcend
 EXEC trans_adm.set_default_configs;
 

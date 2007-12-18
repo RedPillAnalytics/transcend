@@ -30,6 +30,14 @@ IS
       p_drop	     BOOLEAN  DEFAULT FALSE
    );
 
+   PROCEDURE grant_evolve_app_privs(
+      p_schema   VARCHAR2 DEFAULT 'TDSYS'    
+   );
+
+   PROCEDURE grant_transcend_app_privs(
+      p_schema   VARCHAR2 DEFAULT 'TDSYS' 
+   );
+
    PROCEDURE drop_evolve_types;
 
    PROCEDURE drop_transcend_types;
