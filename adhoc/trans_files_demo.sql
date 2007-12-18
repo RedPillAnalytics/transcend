@@ -1,3 +1,5 @@
+
+-- create test directories
 CREATE OR replace directory extdata AS '/transcend/ext';
 GRANT READ,WRITE ON directory extdata TO tdrep;
 
@@ -10,8 +12,8 @@ GRANT READ,WRITE ON directory extractdata TO tdrep;
 CREATE OR REPLACE directory sourcedata AS '/transcend/source';
 GRANT READ,WRITE ON directory extractdata TO tdrep;
 
-TRUNCATE TABLE filehub_conf;
 
+-- create test external table
 DROP TABLE test_feed
 /
 CREATE TABLE test_feed
@@ -30,134 +32,10 @@ CREATE TABLE test_feed
        PARALLEL
 /
 
-INSERT INTO filehub_conf
-       ( filehub_id, 
-	 filehub_name, 
-	 filehub_group, 
-	 filehub_type, 
-	 object_owner, 
-	 object_name, 
-	 directory, 
-	 filename, 
-	 arch_directory, 
-	 min_bytes, 
-	 max_bytes, 
-	 file_datestamp, 
-	 baseurl, 
-	 source_directory, 
-	 source_regexp, 
-	 regexp_options, 
-	 source_policy, 
-	 required, 
-	 dateformat, 
-	 timestampformat, 
-	 delimiter, 
-	 quotechar, 
-	 headers)
-       VALUES
-       ( filehub_conf_seq.nextval,
-	 'Test Feed',
-	 'Test Group',
-	 'feed',
-	 'tdrep',
-	 'test_feed',
-	 'EXTDATA',
-	 'TEST_FEED.dat',
-	 'ARCHDATA',
-	 1,
-	 10000000,
-	 'mmddyyyyhhmiss',
-	 'www.transcendentdata.com/feeds',
-	 'SOURCEDATA',
-	 '^test.+\.txt$',
-	 'i',
-	 'all',
-	 'Y',
-	 null,
-	 null,
-	 null,
-	 null,
-	 null);
+-- CREATE a test feed
+EXEC trans_adm.configure_feed( 'test group','test feed',p_filename=>'TEST_FEED.dat',p_table_owner=>'stewart',p_table_name=>'test_feed',p_arch_directory=>'archdata',p_baseurl=>'www.transcendentdata.com/files',p_passphrase=>'passw0rd',p_source_directory=>'sourcedata',p_source_regexp=>'txt$');
+
+-- CREATE a test extract
+EXEC trans_adm.configure_extract( 'test group','test extract',p_filename=>'TEST_EXTRACT.dat',p_object_owner=>'stewart',p_object_name=>'test_extract',p_arch_directory=>'archdata',p_baseurl=>'www.transcendentdata.com/files',p_passphrase=>'passw0rd',p_directory=>'extractdata');
 
 
--- INSERT INTO notify_conf
---        VALUES ( tdrep.notify_conf_seq.nextval,
--- 		'email',
--- 		'yes',
--- 		'Notify success',
--- 		'feed.process',
--- 		tdrep.filehub_conf_seq.currval,
--- 		'test feed file received',
--- 		'test feed file received',
--- 		'stewart.bryson@transcendentdat.com',
--- 		'stewartbryson@gmail.com,stewart.bryson@transcendentdata.com',
--- 		sys_context('USERENV','SESSION_USER'),
--- 		SYSDATE,
--- 		NULL,
--- 		NULL);
-
--- INSERT INTO notify_conf
---        VALUES ( tdrep.notify_conf_seq.nextval,
--- 		'email',
--- 		'yes',
--- 		'reject limit exceeded',
--- 		'feed.process',
--- 		tdrep.filehub_conf_seq.currval,
--- 		'Source file reject limit exceeded',
--- 		'Source file reject limit exceeded',
--- 		'stewart.bryson@transcendentdat.com',
--- 		'stewartbryson@gmail.com,stewart.bryson@transcendentdata.com',
--- 		sys_context('USERENV','SESSION_USER'),
--- 		SYSDATE,
--- 		NULL,
--- 		NULL);
-
-
-INSERT INTO filehub_conf
-       ( filehub_id, 
-	 filehub_name, 
-	 filehub_group, 
-	 filehub_type, 
-	 object_owner, 
-	 object_name, 
-	 directory, 
-	 filename, 
-	 arch_directory, 
-	 min_bytes, 
-	 max_bytes, 
-	 file_datestamp, 
-	 baseurl, 
-	 source_directory, 
-	 source_regexp, 
-	 regexp_options, 
-	 source_policy, 
-	 required, 
-	 dateformat, 
-	 timestampformat, 
-	 delimiter, 
-	 quotechar, 
-	 headers)
-       VALUES
-       ( tdrep.filehub_conf_seq.nextval,
-	 'Test Extract',
-	 'Test Group',
-	 'extract',
-	 'tdrep',
-	 'filehub_conf',
-	 'EXTRACTDATA',
-	 'filehub_conf.csv',
-	 'ARCHDATA',
-	 1,
-	 10000000,
-	 'mmddyyyyhhmiss',
-	 'www.transcendentdata.com/extracts',
-	 NULL,
-	 NULL,
-	 NULL,
-	 NULL,
-	 NULL,
-	 'mmddyyyyhhmiss',
-	 'mmddyyyyhhmiss',
-	 ',',
-	 '"',
-	 'Y');

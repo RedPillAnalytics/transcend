@@ -1,7 +1,7 @@
-exec td_dbapi.disable_constraints('tdrep','dimension_conf',p_basis=>'reference');
+exec trans_etl.disable_constraints('tdrep','dimension_conf',p_basis=>'reference');
 TRUNCATE TABLE tdrep.column_conf;
 TRUNCATE TABLE tdrep.dimension_conf;
-exec td_dbapi.enable_constraints('tdrep','dimension_conf',p_basis=>'reference');
+exec trans_etl.enable_constraints('tdrep','dimension_conf',p_basis=>'reference');
 
 INSERT INTO tdrep.dimension_conf(owner,table_name,source_owner,source_object,replace_method,sequence_owner,sequence_name) 
        VALUES ('stewart','test_dim','stewart','test_stg','rename','stewart','test_dim_seq');
