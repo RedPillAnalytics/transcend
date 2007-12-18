@@ -285,7 +285,7 @@ IS
 	 EXECUTE IMMEDIATE 'grant execute on EVOLVE_LOG to '||l_app_role;
 	 EXECUTE IMMEDIATE 'grant execute on TD_UTILS to '||l_app_role;
 	 EXECUTE IMMEDIATE 'grant execute on EVOLVE_APP to '||l_app_role;
-	 EXECUTE IMMEDIATE 'grant execute on CONCURRENT_ID_SEQ to '||l_app_role;
+	 EXECUTE IMMEDIATE 'grant select on CONCURRENT_ID_SEQ to '||l_app_role;
 	 EXECUTE IMMEDIATE 'grant execute on EVOLVE_ADM to '||l_app_role;
 	 EXECUTE IMMEDIATE 'grant execute on NOTIFICATION_OV to '||l_app_role;
 	 
