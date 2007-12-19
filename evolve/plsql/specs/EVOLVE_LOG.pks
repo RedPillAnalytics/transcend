@@ -1,8 +1,8 @@
 CREATE OR REPLACE PACKAGE evolve_log AUTHID CURRENT_USER
 AS
-   PROCEDURE log_msg( p_msg VARCHAR2, p_level NUMBER DEFAULT 2 );
+   PROCEDURE log_msg( p_msg VARCHAR2, p_level NUMBER DEFAULT 1 );
 
-   PROCEDURE log_cnt_msg( p_count NUMBER, p_msg VARCHAR2 DEFAULT NULL, p_level NUMBER DEFAULT 2 );
+   PROCEDURE log_cnt_msg( p_count NUMBER, p_msg VARCHAR2 DEFAULT NULL, p_level NUMBER DEFAULT 1 );
 
    PROCEDURE log_err;
 

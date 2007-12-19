@@ -32,7 +32,7 @@ AS
    END whence;
 
    -- used to write a standard message to the LOG_TABLE
-   PROCEDURE log_msg( p_msg VARCHAR2, p_level NUMBER DEFAULT 2 )
+   PROCEDURE log_msg( p_msg VARCHAR2, p_level NUMBER DEFAULT 1 )
    AS
       PRAGMA AUTONOMOUS_TRANSACTION;
       l_whence   VARCHAR2( 1024 );
@@ -76,17 +76,15 @@ AS
       END IF;
    END log_msg;
 
-   PROCEDURE log_cnt_msg( p_count NUMBER, p_msg VARCHAR2 DEFAULT NULL, p_level NUMBER DEFAULT 2 )
+   PROCEDURE log_cnt_msg( p_count NUMBER, p_msg VARCHAR2 DEFAULT NULL, p_level NUMBER DEFAULT 1 )
    AS
       PRAGMA AUTONOMOUS_TRANSACTION;
    BEGIN
       -- store in COUNT_TABLE numbers of records affected by particular actions in modules
       INSERT INTO count_table
-                  ( client_info, module, action, runmode,
-                    session_id, row_cnt
+                  ( client_info, module, action, runmode, session_id, row_cnt
                   )
-           VALUES ( td_inst.client_info, td_inst.module, td_inst.action, td_inst.runmode,
-                    td_inst.session_id, p_count
+           VALUES ( td_inst.client_info, td_inst.module, td_inst.action, td_inst.runmode, td_inst.session_id, p_count
                   );
 
       -- if a message was provided to this procedure, then write it to the log table
@@ -137,10 +135,7 @@ AS
               VALUES ( l_msg, td_inst.client_info, td_inst.module, td_inst.action, td_inst.service_name,
                        td_inst.runmode, td_inst.session_id, l_scn, td_inst.instance_name, td_inst.machine,
                        td_inst.dbuser, td_inst.osuser, l_code, l_whence,
-                       REGEXP_REPLACE( SUBSTR( DBMS_UTILITY.format_error_backtrace, 1, 4000 ),
-                                       '[[:cntrl:]]',
-                                       '; '
-                                     ),
+                       REGEXP_REPLACE( SUBSTR( DBMS_UTILITY.format_error_backtrace, 1, 4000 ), '[[:cntrl:]]', '; ' ),
                        td_inst.batch_id
                      );
 
@@ -155,12 +150,11 @@ AS
    BEGIN
       log_msg( 'The error name passed: "' || p_name || '"', 5 );
       raise_application_error( td_inst.get_err_cd( p_name ),
-                                  td_inst.get_err_msg( p_name )
-                               || CASE
-                                     WHEN p_add_msg IS NULL
-                                        THEN NULL
-                                     ELSE ': ' || p_add_msg
-                                  END
+                               td_inst.get_err_msg( p_name ) || CASE
+                                  WHEN p_add_msg IS NULL
+                                     THEN NULL
+                                  ELSE ': ' || p_add_msg
+                               END
                              );
    END raise_err;
 
