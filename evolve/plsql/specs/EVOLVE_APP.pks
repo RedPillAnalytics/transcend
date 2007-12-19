@@ -19,7 +19,12 @@ AS
       p_job_class       VARCHAR2 DEFAULT 'EVOLVE_DEFAULT_CLASS'
    );
 
-   PROCEDURE coordinate_sql( p_concurrent_id NUMBER, p_sleep NUMBER DEFAULT 5, p_timeout NUMBER DEFAULT 0 );
+   PROCEDURE coordinate_sql(
+      p_concurrent_id   NUMBER,
+      p_raise_err       VARCHAR2 DEFAULT 'yes',
+      p_sleep           NUMBER DEFAULT 5,
+      p_timeout         NUMBER DEFAULT 0
+   );
 
    PROCEDURE consume_sql( p_session_id NUMBER, p_module VARCHAR2, p_action VARCHAR2, p_sql VARCHAR2 );
 END evolve_app;

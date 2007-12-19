@@ -33,10 +33,7 @@ IS
          EXCEPTION
             WHEN e_dup_conf
             THEN
-               raise_application_error
-                                 ( -20011,
-                                   'An attempt was made to add a duplicate configuration'
-                                 );
+               raise_application_error( -20011, 'An attempt was made to add a duplicate configuration' );
          END;
       END IF;
 
@@ -50,9 +47,7 @@ IS
       -- if we still have not affected any records, then there's a problem
       IF SQL%ROWCOUNT = 0
       THEN
-         raise_application_error( -20013,
-                                  'This action affected no repository configurations'
-                                );
+         raise_application_error( -20013, 'This action affected no repository configurations' );
       END IF;
    END set_logging_level;
 
@@ -87,10 +82,7 @@ IS
          EXCEPTION
             WHEN e_dup_conf
             THEN
-               raise_application_error
-                                 ( -20011,
-                                   'An attempt was made to add a duplicate configuration'
-                                 );
+               raise_application_error( -20011, 'An attempt was made to add a duplicate configuration' );
          END;
       END IF;
 
@@ -104,9 +96,7 @@ IS
       -- if we still have not affected any records, then there's a problem
       IF SQL%ROWCOUNT = 0
       THEN
-         raise_application_error( -20013,
-                                  'This action affected no repository configurations'
-                                );
+         raise_application_error( -20013, 'This action affected no repository configurations' );
       END IF;
    END set_runmode;
 
@@ -141,10 +131,7 @@ IS
          EXCEPTION
             WHEN e_dup_conf
             THEN
-               raise_application_error
-                                 ( -20011,
-                                   'An attempt was made to add a duplicate configuration'
-                                 );
+               raise_application_error( -20011, 'An attempt was made to add a duplicate configuration' );
          END;
       END IF;
 
@@ -158,9 +145,7 @@ IS
       -- if we still have not affected any records, then there's a problem
       IF SQL%ROWCOUNT = 0
       THEN
-         raise_application_error( -20013,
-                                  'This action affected no repository configurations'
-                                );
+         raise_application_error( -20013, 'This action affected no repository configurations' );
       END IF;
    EXCEPTION
       WHEN OTHERS
@@ -181,19 +166,19 @@ IS
       PRAGMA EXCEPTION_INIT( e_dup_conf, -1 );
    BEGIN
       CASE
-         WHEN p_mode = 'insert' AND (p_subject IS NULL OR p_message IS NULL)
+         WHEN p_mode = 'insert' AND( p_subject IS NULL OR p_message IS NULL )
          THEN
-           raise_application_error(-20014, 'An insert requires a value for all parameters');
-      ELSE
-         NULL;
+            raise_application_error( -20014, 'An insert requires a value for all parameters' );
+         ELSE
+            NULL;
       END CASE;
 
       -- this is the default method... update if it exists or insert it
       IF LOWER( p_mode ) IN( 'upsert', 'update' )
       THEN
          UPDATE notification_events
-            SET subject = nvl( p_subject, subject ),
-                MESSAGE = nvl( p_message, message ),
+            SET subject = NVL( p_subject, subject ),
+                MESSAGE = NVL( p_message, MESSAGE ),
                 modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
                 modified_dt = SYSDATE
           WHERE module = LOWER( p_module ) AND action = LOWER( p_action );
@@ -213,10 +198,7 @@ IS
          EXCEPTION
             WHEN e_dup_conf
             THEN
-               raise_application_error
-                                 ( -20011,
-                                   'An attempt was made to add a duplicate configuration'
-                                 );
+               raise_application_error( -20011, 'An attempt was made to add a duplicate configuration' );
          END;
       END IF;
 
@@ -230,9 +212,7 @@ IS
       -- if we still have not affected any records, then there's a problem
       IF SQL%ROWCOUNT = 0
       THEN
-         raise_application_error( -20013,
-                                  'This action affected no repository configurations'
-                                );
+         raise_application_error( -20013, 'This action affected no repository configurations' );
       END IF;
    END set_notification_event;
 
@@ -252,22 +232,28 @@ IS
       PRAGMA EXCEPTION_INIT( e_dup_conf, -1 );
    BEGIN
       CASE
-         WHEN p_mode = 'insert' AND ( p_method IS NULL OR p_enabled IS NULL OR p_required IS NULL OR p_sender IS NULL OR p_recipients IS null)
+         WHEN     p_mode = 'insert'
+              AND (    p_method IS NULL
+                    OR p_enabled IS NULL
+                    OR p_required IS NULL
+                    OR p_sender IS NULL
+                    OR p_recipients IS NULL
+                  )
          THEN
-           raise_application_error(-20014, 'An insert requires a value for all parameters');
-      ELSE
-         NULL;
+            raise_application_error( -20014, 'An insert requires a value for all parameters' );
+         ELSE
+            NULL;
       END CASE;
 
       -- this is the default method... update if it exists or insert it
       IF LOWER( p_mode ) IN( 'upsert', 'update' )
       THEN
          UPDATE notification_conf
-            SET method = nvl(p_method,method),
-                enabled = nvl(p_enabled,enabled),
-                required = nvl(p_required,required),
-                sender = nvl(p_sender,sender),
-                recipients = nvl(p_recipients,recipients),
+            SET method = NVL( p_method, method ),
+                enabled = NVL( p_enabled, enabled ),
+                required = NVL( p_required, required ),
+                sender = NVL( p_sender, sender ),
+                recipients = NVL( p_recipients, recipients ),
                 modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
                 modified_dt = SYSDATE
           WHERE module = LOWER( p_module ) AND action = LOWER( p_action );
@@ -278,21 +264,16 @@ IS
       THEN
          BEGIN
             INSERT INTO notification_conf
-                        ( label, module, action,
-                          method, enabled, required,
-                          sender, recipients
+                        ( label, module, action, method,
+                          enabled, required, sender, recipients
                         )
-                 VALUES ( LOWER( p_label ), LOWER( p_module ), LOWER( p_action ),
-                          LOWER( p_method ), LOWER( p_enabled ), LOWER( p_required ),
-                          LOWER( p_sender ), LOWER( p_recipients )
+                 VALUES ( LOWER( p_label ), LOWER( p_module ), LOWER( p_action ), LOWER( p_method ),
+                          LOWER( p_enabled ), LOWER( p_required ), LOWER( p_sender ), LOWER( p_recipients )
                         );
          EXCEPTION
             WHEN e_dup_conf
             THEN
-               raise_application_error
-                                 ( -20011,
-                                   'An attempt was made to add a duplicate configuration'
-                                 );
+               raise_application_error( -20011, 'An attempt was made to add a duplicate configuration' );
          END;
       END IF;
 
@@ -306,86 +287,82 @@ IS
       -- if we still have not affected any records, then there's a problem
       IF SQL%ROWCOUNT = 0
       THEN
-         raise_application_error( -20013,
-                                  'This action affected no repository configurations'
-                                );
+         raise_application_error( -20013, 'This action affected no repository configurations' );
       END IF;
    END set_notification;
 
    PROCEDURE set_error_conf(
-      p_name         VARCHAR2 DEFAULT NULL,
-      p_message      VARCHAR2 DEFAULT NULL,
-      p_comments     VARCHAR2 DEFAULT NULL,
-      p_mode         VARCHAR2 DEFAULT 'upsert'
+      p_name       VARCHAR2 DEFAULT NULL,
+      p_message    VARCHAR2 DEFAULT NULL,
+      p_comments   VARCHAR2 DEFAULT NULL,
+      p_mode       VARCHAR2 DEFAULT 'upsert'
    )
    IS
-      l_code       error_conf.code%type;
+      l_code       error_conf.code%TYPE;
       e_dup_conf   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_conf, -1 );
    BEGIN
       CASE
-         WHEN p_mode = 'insert' AND ( p_name IS NULL OR p_message IS NULL)
+         WHEN p_mode = 'insert' AND( p_name IS NULL OR p_message IS NULL )
          THEN
-           raise_application_error(-20014, 'An insert requires a value for all parameters except P_COMMENTS');
-      ELSE
-         NULL;
+            raise_application_error( -20014,
+                                     'An insert requires a value for all parameters except P_COMMENTS'
+                                   );
+         ELSE
+            NULL;
       END CASE;
-   
+
       -- this is the default method... update if it exists or insert it
       IF LOWER( p_mode ) IN( 'upsert', 'update' )
       THEN
          UPDATE error_conf
-            SET name = nvl(lower(p_name),name),
-                message = nvl(p_message,message),
-		COMMENTS = nvl(p_comments,COMMENTS),
+            SET NAME = NVL( LOWER( p_name ), NAME ),
+                MESSAGE = NVL( p_message, MESSAGE ),
+                comments = NVL( p_comments, comments ),
                 modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
                 modified_dt = SYSDATE
-          WHERE lower(name) = LOWER( p_name ) OR lower(message) = lower( p_message );
+          WHERE LOWER( NAME ) = LOWER( p_name ) OR LOWER( MESSAGE ) = LOWER( p_message );
       END IF;
 
       -- if the update was unsuccessful above, or an insert is specifically requested, then do an insert
       IF ( SQL%ROWCOUNT = 0 AND LOWER( p_mode ) = 'upsert' ) OR LOWER( p_mode ) = 'insert'
       THEN
-	
-	 -- error_codes for RAISE_APPLICATON_ERROR are a scarce resource
-	 -- need to use them carefully, and reuse wherever possible
-	 
-	 -- first, try and use 20101 (that is the lowest used for ERROR_CONF)
-	 -- if that is taken, then use the lowest gap number
-	 -- otherwise, use the max number +1
-	 BEGIN 
-	    SELECT DISTINCT MIN( CASE
-				 WHEN min_code > 20101
-				 THEN 20101
-				 WHEN code+1<> lead_code
-				 THEN code+1
-				 ELSE max_code+1
-				 END) OVER (partition BY 1)
-	      INTO l_code
-	      FROM (SELECT code,
-			   lead(code) OVER (ORDER BY code) lead_code,
-			   MIN(code) OVER (partition BY 1) min_code,
-			   MAX(code) OVER (partition BY 1) max_code
-		      FROM error_conf);
-	 EXCEPTION
-	    WHEN no_data_found
-	    THEN
-  	       l_code := 20101;
-	 END;
+         -- error_codes for RAISE_APPLICATON_ERROR are a scarce resource
+         -- need to use them carefully, and reuse wherever possible
+
+         -- first, try and use 20101 (that is the lowest used for ERROR_CONF)
+         -- if that is taken, then use the lowest gap number
+         -- otherwise, use the max number +1
+         BEGIN
+            SELECT DISTINCT MIN( CASE
+                                    WHEN min_code > 20101
+                                       THEN 20101
+                                    WHEN code + 1 <> lead_code
+                                       THEN code + 1
+                                    ELSE max_code + 1
+                                 END
+                               ) OVER( PARTITION BY 1 )
+                       INTO l_code
+                       FROM ( SELECT code, LEAD( code ) OVER( ORDER BY code ) lead_code,
+                                     MIN( code ) OVER( PARTITION BY 1 ) min_code,
+                                     MAX( code ) OVER( PARTITION BY 1 ) max_code
+                               FROM error_conf );
+         EXCEPTION
+            WHEN NO_DATA_FOUND
+            THEN
+               l_code := 20101;
+         END;
 
          BEGIN
             INSERT INTO error_conf
-                        ( name, message, code, comments
+                        ( NAME, MESSAGE, code, comments
                         )
-                   VALUES ( lower(p_name), p_message, l_code, p_comments
+                 VALUES ( LOWER( p_name ), p_message, l_code, p_comments
                         );
          EXCEPTION
             WHEN e_dup_conf
             THEN
-               raise_application_error
-                                 ( -20011,
-                                   'An attempt was made to add a duplicate configuration'
-                                 );
+               raise_application_error( -20011, 'An attempt was made to add a duplicate configuration' );
          END;
       END IF;
 
@@ -393,16 +370,13 @@ IS
       IF LOWER( p_mode ) = 'delete'
       THEN
          DELETE FROM error_conf
-          WHERE lower(name) = LOWER( p_name )
-	     OR lower(message) = lower(message);
+               WHERE LOWER( NAME ) = LOWER( p_name ) OR LOWER( MESSAGE ) = LOWER( MESSAGE );
       END IF;
 
       -- if we still have not affected any records, then there's a problem
       IF SQL%ROWCOUNT = 0
       THEN
-         raise_application_error( -20013,
-                                  'This action affected no repository configurations'
-                                );
+         raise_application_error( -20013, 'This action affected no repository configurations' );
       END IF;
    END set_error_conf;
 
@@ -430,10 +404,10 @@ IS
                NULL;
             ELSE
                raise_application_error
-                  ( -20014,
-                       'The specified parameter name is not a recognized database parameter: '
-                    || p_name
-                  );
+                                 ( -20014,
+                                      'The specified parameter name is not a recognized database parameter: '
+                                   || p_name
+                                 );
             END IF;
       END;
 
@@ -468,10 +442,7 @@ IS
          EXCEPTION
             WHEN e_dup_conf
             THEN
-               raise_application_error
-                                 ( -20011,
-                                   'An attempt was made to add a duplicate configuration'
-                                 );
+               raise_application_error( -20011, 'An attempt was made to add a duplicate configuration' );
          END;
       END IF;
 
@@ -485,119 +456,113 @@ IS
       -- if we still have not affected any records, then there's a problem
       IF SQL%ROWCOUNT = 0
       THEN
-         raise_application_error( -20013,
-                                  'This action affected no repository configurations'
-                                );
+         raise_application_error( -20013, 'This action affected no repository configurations' );
       END IF;
-   END set_session_parameter;   
+   END set_session_parameter;
 
-   PROCEDURE set_default_configs(
-      p_config   VARCHAR2 DEFAULT 'all',
-      p_reset	 VARCHAR2 DEFAULT 'no'
-   )
+   PROCEDURE set_default_configs( p_config VARCHAR2 DEFAULT 'all', p_reset VARCHAR2 DEFAULT 'no' )
    IS
    BEGIN
       -- reset logging_level
-      IF lower(p_config) IN ('all','logging_level')
+      IF LOWER( p_config ) IN( 'all', 'logging_level' )
       THEN
-	 
-	 IF td_core.is_true(p_reset)
-	 THEN
-	    DELETE FROM logging_conf;
-	 END IF;
+         IF td_core.is_true( p_reset )
+         THEN
+            DELETE FROM logging_conf;
+         END IF;
 
-	 set_logging_level;
+         set_logging_level;
       END IF;
 
       -- reset runmode
-      IF lower(p_config) IN ('all','runmode')
+      IF LOWER( p_config ) IN( 'all', 'runmode' )
       THEN
-	 IF td_core.is_true(p_reset)
-	 THEN
-	    DELETE FROM runmode_conf;
-	 END IF;
+         IF td_core.is_true( p_reset )
+         THEN
+            DELETE FROM runmode_conf;
+         END IF;
 
-	 set_runmode;
+         set_runmode;
       END IF;
 
       -- reset registration
-      IF lower(p_config) IN ('all','registration')
+      IF LOWER( p_config ) IN( 'all', 'registration' )
       THEN
-	 
-	 IF td_core.is_true(p_reset)
-	 THEN
-	    DELETE FROM registration_conf;
-	 END IF;
+         IF td_core.is_true( p_reset )
+         THEN
+            DELETE FROM registration_conf;
+         END IF;
 
-	 set_registration;
+         set_registration;
       END IF;
 
       -- reset error_conf
-      IF lower(p_config) IN ('all','errors')
+      IF LOWER( p_config ) IN( 'all', 'errors' )
       THEN
-	 
-	 IF td_core.is_true(p_reset)
-	 THEN
-	    DELETE FROM error_conf;
-	 END IF;
-	 
-	 set_error_conf( p_name=>    'unrecognized_parm',
-			 p_message=> 'The specified parameter value is not recognized');
-	 set_error_conf( p_name=>    'notify_method_invalid',
-			 p_message=> 'The notification method is not valid');
-	 set_error_conf( p_name=>    'no_tab',
-			 p_message=> 'The specified table does not exist');
-	 set_error_conf( p_name=>    'no_object',
-			 p_message=> 'The specified object does not exist');
-	 set_error_conf( p_name=>    'no_dir_obj',
-			 p_message=> 'The specified directory object does not exist');
-	 set_error_conf( p_name=>    'no_dir_path',
-			 p_message=> 'There is no directory object defined for the specififed path');
-	 set_error_conf( p_name=>    'too_many_dirs',
-			 p_message=> 'There is more than one directory object defined for the specififed path');
-	 set_error_conf( p_name=>    'not_partitioned',
-			 p_message=> 'The specified table is not partititoned');
-	 set_error_conf( p_name=>    'parms_not_compatible',
-			 p_message=> 'The specified parameters are not compatible');
-	 set_error_conf( p_name=>    'parm_not_configured',
-			 p_message=> 'The specified parameter is not configured');
-	 set_error_conf( p_name=>    'file_not_found',
-			 p_message=> 'The specified file does not exist');
-	 set_error_conf( p_name=>    'not_iot',
-			 p_message=> 'The specified table is not index-organized');
-	 set_error_conf( p_name=>    'not_external',
-			 p_message=> 'The specified table is not an external table');
-	 set_error_conf( p_name=>    'external',
-			 p_message=> 'The specified table is an external table');
-	 set_error_conf( p_name=>    'not_compressed',
-			 p_message=> 'The specified segment is not compresed');
-	 set_error_conf( p_name=>    'no_part',
-			 p_message=> 'The specified partition does not exist');
-	 set_error_conf( p_name=>    'partitioned',
-			 p_message=> 'The specified table is partitioned');
-	 set_error_conf( p_name=>    'iot',
-			 p_message=> 'The specified table is index-organized');
-	 set_error_conf( p_name=>    'compressed',
-			 p_message=> 'The specified segment is compresed');
-	 set_error_conf( p_name=>    'no_or_wrong_object',
-			 p_message=> 'The specified object does not exist or is of the wrong type');
-	 set_error_conf( p_name=>    'too_many_objects',
-			 p_message=> 'The specified parameters yield more than one object');
-	 set_error_conf( p_name=>    'parm_not_supported',
-			 p_message=> 'The specified parameter is not supported');	 
-	 set_error_conf( p_name=>    'submit_sql_err',
-			 p_message=> 'A job submitted through the Oracle scheduler failed.');
-	 set_error_conf( p_name=>    'submit_sql_timeout',
-			 p_message=> 'The execution of a job submitted through the Oracle scheduler ran longer than the provided timeout');	 
-	 set_error_conf( p_name=>    'host_cmd',
-			 p_message=> 'Java Error: method hostCmd made unsuccessful system calls');	 
-	 set_error_conf( p_name=>    'copy_file',
-			 p_message=> 'Java Error: method copyFile was unable to copy');	 
-	 set_error_conf( p_name=>    'utl_mail_err',
-			 p_message=> 'Fatal UTL_MAIL error occured');	 
+         IF td_core.is_true( p_reset )
+         THEN
+            DELETE FROM error_conf;
+         END IF;
 
+         set_error_conf( p_name         => 'unrecognized_parm',
+                         p_message      => 'The specified parameter value is not recognized'
+                       );
+         set_error_conf( p_name         => 'notify_method_invalid',
+                         p_message      => 'The notification method is not valid'
+                       );
+         set_error_conf( p_name => 'no_tab', p_message => 'The specified table does not exist' );
+         set_error_conf( p_name => 'no_object', p_message => 'The specified object does not exist' );
+         set_error_conf( p_name         => 'no_dir_obj',
+                         p_message      => 'The specified directory object does not exist' );
+         set_error_conf( p_name         => 'no_dir_path',
+                         p_message      => 'There is no directory object defined for the specififed path'
+                       );
+         set_error_conf
+                      ( p_name         => 'too_many_dirs',
+                        p_message      => 'There is more than one directory object defined for the specififed path'
+                      );
+         set_error_conf( p_name         => 'not_partitioned',
+                         p_message      => 'The specified table is not partititoned' );
+         set_error_conf( p_name         => 'parms_not_compatible',
+                         p_message      => 'The specified parameters are not compatible'
+                       );
+         set_error_conf( p_name         => 'parm_not_configured',
+                         p_message      => 'The specified parameter is not configured'
+                       );
+         set_error_conf( p_name => 'file_not_found', p_message => 'The specified file does not exist' );
+         set_error_conf( p_name => 'not_iot', p_message => 'The specified table is not index-organized' );
+         set_error_conf( p_name         => 'not_external',
+                         p_message      => 'The specified table is not an external table' );
+         set_error_conf( p_name => 'external', p_message => 'The specified table is an external table' );
+         set_error_conf( p_name => 'not_compressed', p_message => 'The specified segment is not compresed' );
+         set_error_conf( p_name => 'no_part', p_message => 'The specified partition does not exist' );
+         set_error_conf( p_name => 'partitioned', p_message => 'The specified table is partitioned' );
+         set_error_conf( p_name => 'iot', p_message => 'The specified table is index-organized' );
+         set_error_conf( p_name => 'compressed', p_message => 'The specified segment is compresed' );
+         set_error_conf( p_name         => 'no_or_wrong_object',
+                         p_message      => 'The specified object does not exist or is of the wrong type'
+                       );
+         set_error_conf( p_name         => 'too_many_objects',
+                         p_message      => 'The specified parameters yield more than one object'
+                       );
+         set_error_conf( p_name         => 'parm_not_supported',
+                         p_message      => 'The specified parameter is not supported'
+                       );
+         set_error_conf
+            ( p_name         => 'submit_sql',
+              p_message      => 'Errors were generated by a process submitted to the Oracle scheduler. See the scheduler logs for details.'
+            );
+         set_error_conf
+            ( p_name         => 'submit_sql_timeout',
+              p_message      => 'The execution of a job submitted through the Oracle scheduler ran longer than the provided timeout'
+            );
+         set_error_conf( p_name         => 'host_cmd',
+                         p_message      => 'Java Error: method hostCmd made unsuccessful system calls'
+                       );
+         set_error_conf( p_name         => 'copy_file',
+                         p_message      => 'Java Error: method copyFile was unable to copy' );
+         set_error_conf( p_name => 'utl_mail_err', p_message => 'Fatal UTL_MAIL error occured' );
       END IF;
-
    END set_default_configs;
 
    PROCEDURE clear_log(
@@ -607,10 +572,8 @@ IS
    AS
    BEGIN
       DELETE FROM log_table
-            WHERE session_id = p_session_id
-              AND REGEXP_LIKE( runmode, NVL( p_runmode, '.' ), 'i' );
+            WHERE session_id = p_session_id AND REGEXP_LIKE( runmode, NVL( p_runmode, '.' ), 'i' );
    END clear_log;
-
 END evolve_adm;
 /
 
