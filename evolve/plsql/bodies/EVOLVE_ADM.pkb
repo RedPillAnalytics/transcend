@@ -2,7 +2,7 @@ CREATE OR REPLACE PACKAGE BODY evolve_adm
 IS
    PROCEDURE set_logging_level(
       p_module          VARCHAR2 DEFAULT 'default',
-      p_logging_level   NUMBER DEFAULT 2,
+      p_logging_level   NUMBER DEFAULT 1,
       p_debug_level     NUMBER DEFAULT 3,
       p_mode            VARCHAR2 DEFAULT 'upsert'
    )
