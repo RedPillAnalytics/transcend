@@ -1,6 +1,6 @@
 COL name format a13
 SELECT CASE test_key
-       WHEN -1
+       WHEN -.1
        THEN test_dim_seq.nextval
        ELSE test_key
        END test_key,
@@ -38,7 +38,7 @@ SELECT CASE test_key
 	       -- now do a series of comparisons of each record to see whether the value of the INCLUDE column is 'Y' or 'N'
 	       CASE
 	       -- if a record is an existing DIM record, then we know we want to include it
-	       WHEN test_key <> -1
+	       WHEN test_key <> -.1
 	       THEN 'Y'
 	       -- if we ever have a record where the effective date and expiry date are the same, they should be excluded
 	       -- this situation makes no logical sense, and usually wouldn't happen
@@ -64,11 +64,11 @@ SELECT CASE test_key
 	       END include
 	  FROM (SELECT nat_key,
 		       effect_start_dt,
-		       -- FOR now, use a -1 for the surrogate key
+		       -- FOR now, use a -.1 for the surrogate key
 		       -- selecting from a sequence is not allowed inside analytics statements
                        -- it'll be cased later
-                       -- the -1 also tells us which records are new
-                       -1 test_key,
+                       -- the -.1 also tells us which records are new
+                       -.1 test_key,
                        birthdate,
                        name,
                        zip,
