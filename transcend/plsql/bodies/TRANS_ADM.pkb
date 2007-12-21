@@ -271,20 +271,6 @@ IS
       e_dup_conf   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_conf, -1 );
    BEGIN
-      CASE
-         -- these are the required parameters
-      WHEN     LOWER( p_mode ) = 'insert'
-           AND (    p_filename IS NULL
-                 OR p_object_owner IS NULL
-                 OR p_object_name IS NULL
-                 OR p_directory IS NULL
-                 OR p_arch_directory IS NULL
-               )
-         THEN
-            evolve_log.raise_err( 'parms_req' );
-         ELSE
-            NULL;
-      END CASE;
 
       -- do checks to make sure all the provided information is legitimate
       IF NOT p_mode = 'delete'
@@ -330,6 +316,26 @@ IS
       -- if the update was unsuccessful above, or an insert it specifically requested, then do an insert
       IF ( SQL%ROWCOUNT = 0 AND LOWER( p_mode ) = 'upsert' ) OR LOWER( p_mode ) = 'insert'
       THEN
+         CASE
+            WHEN p_filename IS NULL
+            THEN
+               evolve_log.raise_err( 'parm_req', 'P_FILENAME' );
+            WHEN p_object_owner IS NULL
+            THEN
+               evolve_log.raise_err( 'parm_req', 'P_OBJECT_OWNER' );
+            WHEN p_object_name IS NULL
+            THEN
+               evolve_log.raise_err( 'parm_req', 'P_OBJECT_NAME' );
+            WHEN p_directory IS NULL
+            THEN
+               evolve_log.raise_err( 'parm_req', 'P_DIRECTORY' );
+            WHEN p_arch_directory IS NULL
+            THEN
+               evolve_log.raise_err( 'parm_req', 'P_ARCH_DIRECTORY' );
+            ELSE
+               NULL;
+         END CASE;
+
          BEGIN
             INSERT INTO files_conf
                         ( file_label, file_group, file_type, file_description,
@@ -368,6 +374,138 @@ IS
          raise_application_error( -20013, 'This action affected no repository configurations' );
       END IF;
    END configure_extract;
+
+   PROCEDURE configure_dim(
+      p_owner	          VARCHAR2, 
+      p_table_name	  VARCHAR2, 
+      p_source_owner	  VARCHAR2 DEFAULT NULL, 
+      p_source_object	  VARCHAR2 DEFAULT NULL, 
+      p_sequence_owner	  VARCHAR2 DEFAULT NULL, 
+      p_sequence_name	  VARCHAR2 DEFAULT NULL, 
+      p_staging_owner	  VARCHAR2 DEFAULT NULL, 
+      p_staging_table	  VARCHAR2 DEFAULT NULL, 
+      p_direct_load	  VARCHAR2 DEFAULT NULL, 
+      p_replace_method	  VARCHAR2 DEFAULT NULL, 
+      p_statistics	  VARCHAR2 DEFAULT NULL, 
+      p_concurrent	  VARCHAR2 DEFAULT NULL, 
+      p_dim_description   VARCHAR2 DEFAULT NULL,
+      p_mode              VARCHAR2 DEFAULT 'upsert'
+   )
+   IS
+      e_dup_conf   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_dup_conf, -1 );
+   BEGIN
+
+      -- do checks to make sure all the provided information is legitimate
+      IF NOT p_mode = 'delete'
+      THEN
+	 -- check to see that the source object is legitimate
+	 td_utils.check_object( p_owner => p_source_owner, p_object => p_source_object );
+
+	 -- check to see that the target table is legitimate
+	 -- if the replace method is an exchange, it better be partitioned
+	 td_utils.check_table( p_owner => p_owner, p_table => p_table, p_partitioned => CASE p_replace_method WHEN 'exchange' THEN yes ELSE NULL END );
+	 
+	 -- if the staging table is constant, then we need to make sure it is legitimate
+	 IF p_staging_table IS NOT NULL
+	 THEN
+	    td_utils.check_object( p_owner => p_source_owner, p_object => p_source_object );
+	 END IF;
+	    
+
+      END IF;
+
+      -- this is the default method... update if it exists or insert it
+      IF LOWER( p_mode ) IN( 'upsert', 'update' )
+      THEN
+         UPDATE files_conf
+            SET file_description = NVL( p_file_description, file_description ),
+                object_owner = UPPER( NVL( p_object_owner, object_owner )),
+                object_name = UPPER( NVL( p_object_name, object_name )),
+                DIRECTORY = UPPER( NVL( p_directory, DIRECTORY )),
+                filename = NVL( p_filename, filename ),
+                arch_directory = UPPER( NVL( p_arch_directory, arch_directory )),
+                min_bytes = NVL( p_min_bytes, min_bytes ),
+                max_bytes = NVL( p_max_bytes, max_bytes ),
+                file_datestamp = NVL( p_file_datestamp, file_datestamp ),
+                baseurl = NVL( p_baseurl, baseurl ),
+                passphrase = NVL( p_passphrase, passphrase ),
+                DATEFORMAT = NVL( p_dateformat, DATEFORMAT ),
+                timestampformat = NVL( p_timestampformat, timestampformat ),
+                delimiter = NVL( p_delimiter, delimiter ),
+                quotechar = NVL( p_quotechar, quotechar ),
+                headers = NVL( p_headers, headers ),
+                modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
+                modified_dt = SYSDATE
+          WHERE file_label = LOWER( p_file_label ) AND file_group = LOWER( p_file_group );
+      END IF;
+
+      -- if the update was unsuccessful above, or an insert it specifically requested, then do an insert
+      IF ( SQL%ROWCOUNT = 0 AND LOWER( p_mode ) = 'upsert' ) OR LOWER( p_mode ) = 'insert'
+      THEN
+
+         CASE
+            WHEN p_owner IS NULL
+            THEN
+               evolve_log.raise_err( 'parm_req', 'P_OWNER' );
+            WHEN p_table_name IS NULL
+            THEN
+               evolve_log.raise_err( 'parm_req', 'P_TABLE_NAME' );
+            WHEN p_source_owner IS NULL
+            THEN
+               evolve_log.raise_err( 'parm_req', 'P_SOURCE_OWNER' );
+            WHEN p_source_object IS NULL
+            THEN
+               evolve_log.raise_err( 'parm_req', 'P_SOURCE_OBJECT' );
+            WHEN p_sequence_owner IS NULL
+            THEN
+               evolve_log.raise_err( 'parm_req', 'P_SEQUENCE_OWNER' );
+            WHEN p_sequence_name IS NULL
+            THEN
+               evolve_log.raise_err( 'parm_req', 'P_SEQUENCE_NAME' );
+            ELSE
+               NULL;
+         END CASE;
+
+         BEGIN
+            INSERT INTO files_conf
+                        ( file_label, file_group, file_type, file_description,
+                          object_owner, object_name, DIRECTORY, filename,
+                          arch_directory, min_bytes, max_bytes,
+                          file_datestamp, baseurl, passphrase,
+                          DATEFORMAT,
+                          timestampformat, delimiter,
+                          quotechar, headers
+                        )
+                 VALUES ( p_file_label, p_file_group, 'extract', p_file_description,
+                          UPPER( p_object_owner ), UPPER( p_object_name ), UPPER( p_directory ), p_filename,
+                          UPPER( p_arch_directory ), NVL( p_min_bytes, 0 ), NVL( p_max_bytes, 0 ),
+                          p_file_datestamp, p_baseurl, p_passphrase,
+                          NVL( p_dateformat, 'mm/dd/yyyy hh:mi:ss am' ),
+                          NVL( p_timestampformat, 'mm/dd/yyyy hh:mi:ss:x:ff am' ), NVL( p_delimiter, ',' ),
+                          p_quotechar, NVL( p_headers, 'yes' )
+                        );
+         EXCEPTION
+            WHEN e_dup_conf
+            THEN
+               raise_application_error( -20011, 'An attempt was made to add a duplicate configuration' );
+         END;
+      END IF;
+
+      IF LOWER( p_mode ) = 'delete'
+      THEN
+         -- if a delete is specifically requested, then do a delete
+         DELETE FROM files_conf
+               WHERE file_label = LOWER( p_file_label ) AND file_group = LOWER( p_file_group );
+      END IF;
+
+      -- if we still have not affected any records, then there's a problem
+      IF SQL%ROWCOUNT = 0
+      THEN
+         raise_application_error( -20013, 'This action affected no repository configurations' );
+      END IF;
+   END configure_dim;
+
 END trans_adm;
 /
 
