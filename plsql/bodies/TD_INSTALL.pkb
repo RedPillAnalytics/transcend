@@ -1659,6 +1659,15 @@ IS
 	    THEN
 	    NULL;
 	 END;
+	 
+	 -- sequences
+	 BEGIN
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.CONCURRENT_ID_SEQ for '||p_schema||'.CONCURRENT_ID_SEQ';
+	 EXCEPTION
+	    WHEN e_same_name
+	    THEN
+	    NULL;
+	 END;
 
    END build_evolve_app_syns;
    
