@@ -279,14 +279,20 @@ IS
       END;
 
       BEGIN
+	 -- types
+	 EXECUTE IMMEDIATE 'grant execute on APP_OT to '||l_app_role;
+	 EXECUTE IMMEDIATE 'grant execute on EVOLVE_OT to '||l_app_role;
+	 EXECUTE IMMEDIATE 'grant execute on NOTIFICATION_OT to '||l_app_role;
+	 -- packages
 	 EXECUTE IMMEDIATE 'grant execute on STRAGG to '||l_app_role;
 	 EXECUTE IMMEDIATE 'grant execute on TD_CORE to '||l_app_role;
 	 EXECUTE IMMEDIATE 'grant execute on TD_INST to '||l_app_role;
 	 EXECUTE IMMEDIATE 'grant execute on EVOLVE_LOG to '||l_app_role;
 	 EXECUTE IMMEDIATE 'grant execute on TD_UTILS to '||l_app_role;
 	 EXECUTE IMMEDIATE 'grant execute on EVOLVE_APP to '||l_app_role;
-	 EXECUTE IMMEDIATE 'grant select on CONCURRENT_ID_SEQ to '||l_app_role;
 	 EXECUTE IMMEDIATE 'grant execute on EVOLVE_ADM to '||l_app_role;
+	 -- sequences
+	 EXECUTE IMMEDIATE 'grant select on CONCURRENT_ID_SEQ to '||l_app_role;
 	 
       EXCEPTION
 	 WHEN e_no_obj
@@ -389,10 +395,12 @@ IS
    BEGIN
       
       BEGIN
-	 EXECUTE IMMEDIATE 'grant execute on DIMENSION_OT to '||l_app_role;
-	 EXECUTE IMMEDIATE 'grant execute on EXTRACT_OT to '||l_app_role;
+	 -- types
+ 	 EXECUTE IMMEDIATE 'grant execute on FILE_OT to '||l_app_role;
 	 EXECUTE IMMEDIATE 'grant execute on FEED_OT to '||l_app_role;
-	 EXECUTE IMMEDIATE 'grant execute on FILE_OT to '||l_app_role;
+	 EXECUTE IMMEDIATE 'grant execute on EXTRACT_OT to '||l_app_role;
+	 EXECUTE IMMEDIATE 'grant execute on DIMENSION_OT to '||l_app_role;
+	 --packages
 	 EXECUTE IMMEDIATE 'grant execute on TD_DBUTILS to '||l_app_role;
 	 EXECUTE IMMEDIATE 'grant execute on TRANS_ADM to '||l_app_role;
 	 EXECUTE IMMEDIATE 'grant execute on TRANS_ETL to '||l_app_role;
@@ -1373,12 +1381,13 @@ IS
 	   source_object	VARCHAR2(30) NOT NULL,
 	   sequence_owner  	VARCHAR2(30) NOT NULL,
 	   sequence_name  	VARCHAR2(30) NOT NULL,
-	   staging_owner	VARCHAR2(30),
-	   staging_table	VARCHAR2(30),
+	   staging_owner	VARCHAR2(30) DEFAULT NULL,
+	   staging_table	VARCHAR2(30) DEFAULT NULL,
 	   direct_load		VARCHAR2(3) DEFAULT 'yes' NOT NULL,
 	   replace_method	VARCHAR2(10) DEFAULT 'rename' NOT NULL,
-	   statistics		VARCHAR2(10),
+	   statistics		VARCHAR2(10) DEFAULT 'transfer',
 	   concurrent		VARCHAR2(3) DEFAULT 'yes' NOT NULL,
+	   description		VARCHAR2(2000) DEFAULT NULL,
 	   created_user	     	VARCHAR2(30) DEFAULT sys_context('USERENV','SESSION_USER') NOT NULL,
 	   created_dt	     	DATE DEFAULT SYSDATE NOT NULL,
 	   modified_user  	VARCHAR2(30),
@@ -1604,6 +1613,32 @@ IS
       PRAGMA EXCEPTION_INIT( e_same_name, -1471 );
    BEGIN
       -- create the synonyms
+      -- types
+	 BEGIN
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.APP_OT for '||p_schema||'.APP_OT';
+	 EXCEPTION
+	    WHEN e_same_name
+	    THEN
+	    NULL;
+	 END;
+
+	 BEGIN
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.EVOLVE_OT for '||p_schema||'.EVOLVE_OT';
+	 EXCEPTION
+	    WHEN e_same_name
+	    THEN
+	    NULL;
+	 END;
+	
+	 BEGIN
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.NOTIFICATION_OT for '||p_schema||'.NOTIFICATION_OT';
+	 EXCEPTION
+	    WHEN e_same_name
+	    THEN
+	    NULL;
+	 END;
+ 
+      -- packages and functions
 	 BEGIN
 	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.STRAGG for '||p_schema||'.STRAGG';
 	 EXCEPTION

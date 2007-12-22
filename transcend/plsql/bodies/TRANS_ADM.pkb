@@ -4,75 +4,63 @@ IS
    IS
    BEGIN
       -- set the notification events
-      evolve_adm.set_notification_event
-                                      ( 'audit_file',
-                                        'file too large',
-                                        'File outside size threshholds',
-                                        'The file referenced below is larger than the configured threshhold:'
-                                      );
-      evolve_adm.set_notification_event
-                                      ( 'audit_file',
-                                        'file too small',
-                                        'File outside size threshholds',
-                                        'The file referenced below is smaller than the configured threshhold:'
-                                      );
+      evolve_adm.set_notification_event( 'audit_file',
+                                         'file too large',
+                                         'File outside size threshholds',
+                                         'The file referenced below is larger than the configured threshhold:'
+                                       );
+      evolve_adm.set_notification_event( 'audit_file',
+                                         'file too small',
+                                         'File outside size threshholds',
+                                         'The file referenced below is smaller than the configured threshhold:'
+                                       );
       -- load the entries into the ERROR_CONF table for Transcend
-      evolve_adm.set_error_conf( p_name         => 'no_files_found',
-                                 p_message      => 'No files found for this configuration'
-                               );
+      evolve_adm.set_error_conf( p_name => 'no_files_found', p_message => 'No files found for this configuration' );
       evolve_adm.set_error_conf( p_name         => 'no_ext_files',
                                  p_message      => 'There are no files found for this external table'
                                );
       evolve_adm.set_error_conf( p_name         => 'reject_limit_exceeded',
                                  p_message      => 'The external table reject limit was exceeded'
                                );
-      evolve_adm.set_error_conf
-                            ( p_name         => 'ext_file_missing',
-                              p_message      => 'The physical file for the specified external table does not exist'
-                            );
-      evolve_adm.set_error_conf
-                           ( p_name         => 'fail_source_policy',
-                             p_message      => 'Multiple matching files found with a SOURCE_POLICY value of "fail"'
-                           );
+      evolve_adm.set_error_conf( p_name         => 'ext_file_missing',
+                                 p_message      => 'The physical file for the specified external table does not exist'
+                               );
+      evolve_adm.set_error_conf( p_name         => 'fail_source_policy',
+                                 p_message      => 'Multiple matching files found with a SOURCE_POLICY value of "fail"'
+                               );
       evolve_adm.set_error_conf
          ( p_name         => 'on_clause_missing',
            p_message      => 'Either a unique constraint must exist on the target table, or a value for P_COLUMNS must be specified'
          );
-      evolve_adm.set_error_conf
-                          ( p_name         => 'notify_err',
-                            p_message      => 'There is an error with configuration for the specified notification'
-                          );
-      evolve_adm.set_error_conf
-                            ( p_name         => 'incorrect_parameters',
-                              p_message      => 'The combination of parameters provided yields no matching objects'
-                            );
+      evolve_adm.set_error_conf( p_name         => 'notify_err',
+                                 p_message      => 'There is an error with configuration for the specified notification'
+                               );
+      evolve_adm.set_error_conf( p_name         => 'incorrect_parameters',
+                                 p_message      => 'The combination of parameters provided yields no matching objects'
+                               );
       evolve_adm.set_error_conf( p_name         => 'file_too_big',
                                  p_message      => 'The specified file is larger than the MAX_BYTES parameter'
                                );
       evolve_adm.set_error_conf( p_name         => 'file_too_small',
                                  p_message      => 'The specified file is smaller than the MAX_BYTES parameter'
                                );
-      evolve_adm.set_error_conf( p_name         => 'no_stats',
-                                 p_message      => 'The specified segment has no stored statistics'
-                               );
+      evolve_adm.set_error_conf( p_name => 'no_stats', p_message => 'The specified segment has no stored statistics' );
       evolve_adm.set_error_conf
          ( p_name         => 'data_cartridge',
            p_message      => 'An unregistered data cartridge error was returned while selecting from the specified external table'
          );
-      evolve_adm.set_error_conf
-                       ( p_name         => 'multi_loc_ext_tab',
-                         p_message      => 'External tables used in Transcend Files must contain a single location'
-                       );
-      evolve_adm.set_error_conf( p_name         => 'no_ext_tab',
-                                 p_message      => 'The specified external table does not exist'
+      evolve_adm.set_error_conf( p_name         => 'multi_loc_ext_tab',
+                                 p_message      => 'External tables used in Transcend Files must contain a single location'
                                );
+      evolve_adm.set_error_conf( p_name => 'no_ext_tab', p_message => 'The specified external table does not exist' );
       evolve_adm.set_error_conf( p_name         => 'parms_combo',
-                                 p_message      => 'The specified parameters are mutually inclusive'
+                                 p_message      => 'The specified parameters are mutually inclusive' );
+      evolve_adm.set_error_conf( p_name         => 'parm_req',
+                                 p_message      => 'When inserting a new record, the specified parameter is required'
                                );
-      evolve_adm.set_error_conf
-                             ( p_name         => 'parm_req',
-                               p_message      => 'When inserting a new record, the specified parameter is required'
-                             );
+      evolve_adm.set_error_conf( p_name         => 'no_dim',
+                                 p_message      => 'The specified table is not a configured dimension table'
+                               );
    END set_default_configs;
 
    PROCEDURE configure_feed(
@@ -114,8 +102,8 @@ IS
          WHEN p_table_owner IS NOT NULL
          THEN
             -- table information is provided, so use that
-            l_owner := UPPER( p_table_owner );
-            l_table := UPPER( p_table_name );
+            l_owner    := UPPER( p_table_owner );
+            l_table    := UPPER( p_table_name );
             -- now check the external table
             td_utils.check_table( p_owner => p_table_owner, p_table => p_table_name, p_external => 'yes' );
          WHEN p_table_owner IS NULL
@@ -134,12 +122,12 @@ IS
          -- if they aren't, the GET_DIR_PATH function raises an error
          IF p_arch_directory IS NOT NULL
          THEN
-            l_dir_path := td_utils.get_dir_path( p_arch_directory );
+            l_dir_path    := td_utils.get_dir_path( p_arch_directory );
          END IF;
 
          IF p_source_directory IS NOT NULL
          THEN
-            l_dir_path := td_utils.get_dir_path( p_source_directory );
+            l_dir_path    := td_utils.get_dir_path( p_source_directory );
          END IF;
 
          -- get the directory from the external table
@@ -209,17 +197,17 @@ IS
             INSERT INTO files_conf
                         ( file_label, file_group, file_type, file_description, object_owner,
                           object_name, DIRECTORY, filename, arch_directory,
-                          min_bytes, max_bytes, file_datestamp, baseurl,
-                          passphrase, source_directory, source_regexp,
-                          regexp_options, source_policy,
-                          required, delete_source, reject_limit
+                          min_bytes, max_bytes, file_datestamp, baseurl, passphrase,
+                          source_directory, source_regexp, regexp_options,
+                          source_policy, required, delete_source,
+                          reject_limit
                         )
                  VALUES ( p_file_label, p_file_group, 'feed', p_file_description, UPPER( p_table_owner ),
                           UPPER( p_table_name ), l_directory, p_filename, UPPER( p_arch_directory ),
-                          NVL( p_min_bytes, 0 ), NVL( p_max_bytes, 0 ), p_file_datestamp, p_baseurl,
-                          p_passphrase, UPPER( p_source_directory ), p_source_regexp,
-                          NVL( p_regexp_options, 'i' ), NVL( p_source_policy, 'newest' ),
-                          NVL( p_required, 'yes' ), NVL( p_delete_source, 'yes' ), NVL( p_reject_limit, 100 )
+                          NVL( p_min_bytes, 0 ), NVL( p_max_bytes, 0 ), p_file_datestamp, p_baseurl, p_passphrase,
+                          UPPER( p_source_directory ), p_source_regexp, NVL( p_regexp_options, 'i' ),
+                          NVL( p_source_policy, 'newest' ), NVL( p_required, 'yes' ), NVL( p_delete_source, 'yes' ),
+                          NVL( p_reject_limit, 100 )
                         );
          EXCEPTION
             WHEN e_dup_conf
@@ -271,7 +259,6 @@ IS
       e_dup_conf   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_conf, -1 );
    BEGIN
-
       -- do checks to make sure all the provided information is legitimate
       IF NOT p_mode = 'delete'
       THEN
@@ -279,12 +266,12 @@ IS
          -- if they aren't, the GET_DIR_PATH function raises an error
          IF p_arch_directory IS NOT NULL
          THEN
-            l_dir_path := td_utils.get_dir_path( p_arch_directory );
+            l_dir_path    := td_utils.get_dir_path( p_arch_directory );
          END IF;
 
          IF p_directory IS NOT NULL
          THEN
-            l_dir_path := td_utils.get_dir_path( p_directory );
+            l_dir_path    := td_utils.get_dir_path( p_directory );
          END IF;
       END IF;
 
@@ -338,18 +325,16 @@ IS
 
          BEGIN
             INSERT INTO files_conf
-                        ( file_label, file_group, file_type, file_description,
-                          object_owner, object_name, DIRECTORY, filename,
-                          arch_directory, min_bytes, max_bytes,
-                          file_datestamp, baseurl, passphrase,
+                        ( file_label, file_group, file_type, file_description, object_owner,
+                          object_name, DIRECTORY, filename, arch_directory,
+                          min_bytes, max_bytes, file_datestamp, baseurl, passphrase,
                           DATEFORMAT,
                           timestampformat, delimiter,
                           quotechar, headers
                         )
-                 VALUES ( p_file_label, p_file_group, 'extract', p_file_description,
-                          UPPER( p_object_owner ), UPPER( p_object_name ), UPPER( p_directory ), p_filename,
-                          UPPER( p_arch_directory ), NVL( p_min_bytes, 0 ), NVL( p_max_bytes, 0 ),
-                          p_file_datestamp, p_baseurl, p_passphrase,
+                 VALUES ( p_file_label, p_file_group, 'extract', p_file_description, UPPER( p_object_owner ),
+                          UPPER( p_object_name ), UPPER( p_directory ), p_filename, UPPER( p_arch_directory ),
+                          NVL( p_min_bytes, 0 ), NVL( p_max_bytes, 0 ), p_file_datestamp, p_baseurl, p_passphrase,
                           NVL( p_dateformat, 'mm/dd/yyyy hh:mi:ss am' ),
                           NVL( p_timestampformat, 'mm/dd/yyyy hh:mi:ss:x:ff am' ), NVL( p_delimiter, ',' ),
                           p_quotechar, NVL( p_headers, 'yes' )
@@ -376,79 +361,55 @@ IS
    END configure_extract;
 
    PROCEDURE configure_dim(
-      p_owner	          VARCHAR2, 
-      p_table_name	  VARCHAR2, 
-      p_source_owner	  VARCHAR2 DEFAULT NULL, 
-      p_source_object	  VARCHAR2 DEFAULT NULL, 
-      p_sequence_owner	  VARCHAR2 DEFAULT NULL, 
-      p_sequence_name	  VARCHAR2 DEFAULT NULL, 
-      p_staging_owner	  VARCHAR2 DEFAULT NULL, 
-      p_staging_table	  VARCHAR2 DEFAULT NULL, 
-      p_direct_load	  VARCHAR2 DEFAULT NULL, 
-      p_replace_method	  VARCHAR2 DEFAULT NULL, 
-      p_statistics	  VARCHAR2 DEFAULT NULL, 
-      p_concurrent	  VARCHAR2 DEFAULT NULL, 
-      p_dim_description   VARCHAR2 DEFAULT NULL,
-      p_mode              VARCHAR2 DEFAULT 'upsert'
+      p_owner            VARCHAR2,
+      p_table            VARCHAR2,
+      p_source_owner     VARCHAR2 DEFAULT NULL,
+      p_source_object    VARCHAR2 DEFAULT NULL,
+      p_sequence_owner   VARCHAR2 DEFAULT NULL,
+      p_sequence_name    VARCHAR2 DEFAULT NULL,
+      p_staging_owner    VARCHAR2 DEFAULT NULL,
+      p_staging_table    VARCHAR2 DEFAULT NULL,
+      p_direct_load      VARCHAR2 DEFAULT NULL,
+      p_replace_method   VARCHAR2 DEFAULT NULL,
+      p_statistics       VARCHAR2 DEFAULT NULL,
+      p_concurrent       VARCHAR2 DEFAULT NULL,
+      p_description      VARCHAR2 DEFAULT NULL,
+      p_mode             VARCHAR2 DEFAULT 'upsert'
    )
    IS
+      o_dim        dimension_ot;
       e_dup_conf   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_conf, -1 );
    BEGIN
-
-      -- do checks to make sure all the provided information is legitimate
-      IF NOT p_mode = 'delete'
-      THEN
-	 -- check to see that the source object is legitimate
-	 td_utils.check_object( p_owner => p_source_owner, p_object => p_source_object );
-
-	 -- check to see that the target table is legitimate
-	 -- if the replace method is an exchange, it better be partitioned
-	 td_utils.check_table( p_owner => p_owner, p_table => p_table, p_partitioned => CASE p_replace_method WHEN 'exchange' THEN yes ELSE NULL END );
-	 
-	 -- if the staging table is constant, then we need to make sure it is legitimate
-	 IF p_staging_table IS NOT NULL
-	 THEN
-	    td_utils.check_object( p_owner => p_source_owner, p_object => p_source_object );
-	 END IF;
-	    
-
-      END IF;
-
-      -- this is the default method... update if it exists or insert it
       IF LOWER( p_mode ) IN( 'upsert', 'update' )
       THEN
-         UPDATE files_conf
-            SET file_description = NVL( p_file_description, file_description ),
-                object_owner = UPPER( NVL( p_object_owner, object_owner )),
-                object_name = UPPER( NVL( p_object_name, object_name )),
-                DIRECTORY = UPPER( NVL( p_directory, DIRECTORY )),
-                filename = NVL( p_filename, filename ),
-                arch_directory = UPPER( NVL( p_arch_directory, arch_directory )),
-                min_bytes = NVL( p_min_bytes, min_bytes ),
-                max_bytes = NVL( p_max_bytes, max_bytes ),
-                file_datestamp = NVL( p_file_datestamp, file_datestamp ),
-                baseurl = NVL( p_baseurl, baseurl ),
-                passphrase = NVL( p_passphrase, passphrase ),
-                DATEFORMAT = NVL( p_dateformat, DATEFORMAT ),
-                timestampformat = NVL( p_timestampformat, timestampformat ),
-                delimiter = NVL( p_delimiter, delimiter ),
-                quotechar = NVL( p_quotechar, quotechar ),
-                headers = NVL( p_headers, headers ),
-                modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
-                modified_dt = SYSDATE
-          WHERE file_label = LOWER( p_file_label ) AND file_group = LOWER( p_file_group );
+         -- first try to update an existing configuration
+         UPDATE dimension_conf
+            SET owner = NVL( p_owner, owner ),
+                table_name = NVL( p_table, table_name ),
+                source_owner = NVL( p_source_owner, source_owner ),
+                source_object = NVL( p_source_object, source_object ),
+                sequence_owner = NVL( p_sequence_owner, sequence_owner ),
+                sequence_name = NVL( p_sequence_name, sequence_name ),
+                staging_owner = NVL( p_staging_owner, staging_owner ),
+                staging_table = NVL( p_staging_table, staging_table ),
+                direct_load = NVL( p_direct_load, direct_load ),
+                replace_method = NVL( p_replace_method, replace_method ),
+                STATISTICS = NVL( p_statistics, STATISTICS ),
+                concurrent = NVL( p_concurrent, concurrent ),
+                description = NVL( p_description, description )
+          WHERE owner = p_owner AND table_name = p_table;
       END IF;
 
-      -- if the update was unsuccessful above, or an insert it specifically requested, then do an insert
-      IF ( SQL%ROWCOUNT = 0 AND LOWER( p_mode ) = 'upsert' ) OR LOWER( p_mode ) = 'insert'
+      -- updating a current config has failed, or an insert was specified
+      -- in this case, insert a new record
+      IF ( NOT SQL%ROWCOUNT = 0 AND LOWER( p_mode ) = 'upsert' ) OR LOWER( p_mode ) = 'insert'
       THEN
-
          CASE
             WHEN p_owner IS NULL
             THEN
                evolve_log.raise_err( 'parm_req', 'P_OWNER' );
-            WHEN p_table_name IS NULL
+            WHEN p_table IS NULL
             THEN
                evolve_log.raise_err( 'parm_req', 'P_TABLE_NAME' );
             WHEN p_source_owner IS NULL
@@ -468,22 +429,14 @@ IS
          END CASE;
 
          BEGIN
-            INSERT INTO files_conf
-                        ( file_label, file_group, file_type, file_description,
-                          object_owner, object_name, DIRECTORY, filename,
-                          arch_directory, min_bytes, max_bytes,
-                          file_datestamp, baseurl, passphrase,
-                          DATEFORMAT,
-                          timestampformat, delimiter,
-                          quotechar, headers
+            INSERT INTO dimension_conf
+                        ( owner, table_name, source_owner, source_object, sequence_owner, sequence_name,
+                          staging_owner, staging_table, direct_load, replace_method, STATISTICS,
+                          concurrent, description
                         )
-                 VALUES ( p_file_label, p_file_group, 'extract', p_file_description,
-                          UPPER( p_object_owner ), UPPER( p_object_name ), UPPER( p_directory ), p_filename,
-                          UPPER( p_arch_directory ), NVL( p_min_bytes, 0 ), NVL( p_max_bytes, 0 ),
-                          p_file_datestamp, p_baseurl, p_passphrase,
-                          NVL( p_dateformat, 'mm/dd/yyyy hh:mi:ss am' ),
-                          NVL( p_timestampformat, 'mm/dd/yyyy hh:mi:ss:x:ff am' ), NVL( p_delimiter, ',' ),
-                          p_quotechar, NVL( p_headers, 'yes' )
+                 VALUES ( p_owner, p_table, p_source_owner, p_source_object, p_sequence_owner, p_sequence_name,
+                          p_staging_owner, p_staging_table, p_direct_load, p_replace_method, p_statistics,
+                          p_concurrent, p_description
                         );
          EXCEPTION
             WHEN e_dup_conf
@@ -495,8 +448,15 @@ IS
       IF LOWER( p_mode ) = 'delete'
       THEN
          -- if a delete is specifically requested, then do a delete
-         DELETE FROM files_conf
-               WHERE file_label = LOWER( p_file_label ) AND file_group = LOWER( p_file_group );
+         DELETE FROM dimension_conf
+               WHERE owner = LOWER( p_owner ) AND table_name = LOWER( p_table );
+      ELSE
+              -- as long as P_MODE wasn't 'delete', then we should validate the new structure of the dimension
+              -- now use the dimension object to validate the new structure
+         -- just constructing the object calls the CONFIRM_OBJECTS procedure
+         BEGIN
+            o_dim    := dimension_ot( p_owner => p_owner, p_table => p_table );
+         END;
       END IF;
 
       -- if we still have not affected any records, then there's a problem
@@ -505,7 +465,6 @@ IS
          raise_application_error( -20013, 'This action affected no repository configurations' );
       END IF;
    END configure_dim;
-
 END trans_adm;
 /
 
