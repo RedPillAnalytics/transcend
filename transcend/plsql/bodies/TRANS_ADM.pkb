@@ -397,7 +397,9 @@ IS
                 replace_method = NVL( p_replace_method, replace_method ),
                 STATISTICS = NVL( p_statistics, STATISTICS ),
                 concurrent = NVL( p_concurrent, concurrent ),
-                description = NVL( p_description, description )
+                description = NVL( p_description, description ),
+                modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
+                modified_dt = SYSDATE
           WHERE owner = p_owner AND table_name = p_table;
       END IF;
 
@@ -465,6 +467,71 @@ IS
          raise_application_error( -20013, 'This action affected no repository configurations' );
       END IF;
    END configure_dim;
+
+   PROCEDURE configure_dim_cols(
+      p_owner            VARCHAR2,
+      p_table            VARCHAR2,
+      p_column_name	 VARCHAR2,
+      p_column_type	 VARCHAR2 DEFAULT NULL,
+      p_description      VARCHAR2 DEFAULT NULL,
+      p_mode             VARCHAR2 DEFAULT 'upsert'
+   )
+   IS
+      o_dim        dimension_ot;
+      e_dup_conf   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_dup_conf, -1 );
+   BEGIN
+      IF LOWER( p_mode ) IN( 'upsert', 'update' )
+      THEN
+         -- first try to update an existing configuration
+         UPDATE column_conf
+            SET column_type = NVL( p_column_type, column_type ),
+                description = NVL( p_description, description ),
+                modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
+                modified_dt = SYSDATE
+          WHERE owner = p_owner AND table_name = p_table
+	    AND column_name = p_column_name;
+      END IF;
+
+      -- updating a current config has failed, or an insert was specified
+      -- in this case, insert a new record
+      IF ( NOT SQL%ROWCOUNT = 0 AND LOWER( p_mode ) = 'upsert' ) OR LOWER( p_mode ) = 'insert'
+      THEN
+         CASE
+            WHEN p_column_type IS NULL
+            THEN
+               evolve_log.raise_err( 'parm_req', 'P_COLUMN_TYPE' );
+            ELSE
+               NULL;
+         END CASE;
+
+         BEGIN
+            INSERT INTO column_conf
+                   ( owner, table_name, column_name, column_type, description
+                        )
+                   VALUES ( p_owner, p_table, p_column_name, p_column_type, p_description
+                        );
+         EXCEPTION
+            WHEN e_dup_conf
+            THEN
+               raise_application_error( -20011, 'An attempt was made to add a duplicate configuration' );
+         END;
+      END IF;
+
+      IF LOWER( p_mode ) = 'delete'
+      THEN
+         -- if a delete is specifically requested, then do a delete
+         DELETE FROM column_conf
+          WHERE owner = LOWER( p_owner ) AND table_name = LOWER( p_table ) AND column_name = lower( p_column_name );
+      END IF;
+
+      -- if we still have not affected any records, then there's a problem
+      IF SQL%ROWCOUNT = 0
+      THEN
+         raise_application_error( -20013, 'This action affected no repository configurations' );
+      END IF;
+   END configure_dim_cols;
+
 END trans_adm;
 /
 
