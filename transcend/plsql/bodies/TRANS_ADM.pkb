@@ -55,9 +55,6 @@ IS
       evolve_adm.set_error_conf( p_name => 'no_ext_tab', p_message => 'The specified external table does not exist' );
       evolve_adm.set_error_conf( p_name         => 'parms_combo',
                                  p_message      => 'The specified parameters are mutually inclusive' );
-      evolve_adm.set_error_conf( p_name         => 'parm_req',
-                                 p_message      => 'When inserting a new record, the specified parameter is required'
-                               );
       evolve_adm.set_error_conf( p_name         => 'no_dim',
                                  p_message      => 'The specified table is not a configured dimension table'
                                );
@@ -378,11 +375,13 @@ IS
    )
    IS
       o_dim        dimension_ot;
+      l_num_rows   NUMBER;
       e_dup_conf   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_conf, -1 );
    BEGIN
       IF LOWER( p_mode ) IN( 'upsert', 'update' )
       THEN
+	 evolve_log.log_msg('Updating configuration',5);
          -- first try to update an existing configuration
          UPDATE dimension_conf
             SET owner = NVL( p_owner, owner ),
@@ -401,12 +400,15 @@ IS
                 modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
                 modified_dt = SYSDATE
           WHERE owner = p_owner AND table_name = p_table;
+	 -- get the SQL rowcount
+	 l_num_rows := sql%rowcount;
       END IF;
 
       -- updating a current config has failed, or an insert was specified
       -- in this case, insert a new record
-      IF ( NOT SQL%ROWCOUNT = 0 AND LOWER( p_mode ) = 'upsert' ) OR LOWER( p_mode ) = 'insert'
+      IF ( l_num_rows = 0 AND LOWER( p_mode ) = 'upsert' ) OR LOWER( p_mode ) = 'insert'
       THEN
+	 evolve_log.log_msg('Inserting configuration',5);
          CASE
             WHEN p_owner IS NULL
             THEN
@@ -437,9 +439,11 @@ IS
                           concurrent, description
                         )
                  VALUES ( p_owner, p_table, p_source_owner, p_source_object, p_sequence_owner, p_sequence_name,
-                          p_staging_owner, p_staging_table, p_direct_load, p_replace_method, p_statistics,
-                          p_concurrent, p_description
+                          p_staging_owner, p_staging_table, nvl(p_direct_load,'yes'), nvl(p_replace_method,'rename'), nvl(p_statistics,'transfer'),
+                          nvl(p_concurrent,'yes'), p_description
                         );
+	 -- get the SQL rowcount
+	 l_num_rows := sql%rowcount;
          EXCEPTION
             WHEN e_dup_conf
             THEN
@@ -451,28 +455,36 @@ IS
       THEN
          -- if a delete is specifically requested, then do a delete
          DELETE FROM dimension_conf
-               WHERE owner = LOWER( p_owner ) AND table_name = LOWER( p_table );
+          WHERE owner = LOWER( p_owner ) AND table_name = LOWER( p_table );
+	 -- get the SQL rowcount
+	 l_num_rows := sql%rowcount;
       ELSE
               -- as long as P_MODE wasn't 'delete', then we should validate the new structure of the dimension
               -- now use the dimension object to validate the new structure
          -- just constructing the object calls the CONFIRM_OBJECTS procedure
          BEGIN
+	    NULL;
             o_dim    := dimension_ot( p_owner => p_owner, p_table => p_table );
-         END;
+	 END;
       END IF;
 
       -- if we still have not affected any records, then there's a problem
-      IF SQL%ROWCOUNT = 0
+      IF l_num_rows = 0
       THEN
          raise_application_error( -20013, 'This action affected no repository configurations' );
       END IF;
    END configure_dim;
 
-   PROCEDURE configure_dim_cols(
+   PROCEDURE configure_dim_col(
       p_owner            VARCHAR2,
       p_table            VARCHAR2,
-      p_column_name	 VARCHAR2,
-      p_column_type	 VARCHAR2 DEFAULT NULL,
+      p_surrogate	 VARCHAR2,
+      p_nat_key		 VARCHAR2,
+      p_scd1		 VARCHAR2 DEFAULT NULL,
+      p_scd2		 VARCHAR2 DEFAULT NULL,
+      p_effective_dt	 VARCHAR2 DEFAULT 'effective_dt',
+      p_expiration_dt	 VARCHAR2 DEFAULT 'expiration_dt',
+      p_current_ind	 VARCHAR2 DEFAULT 'current_ind',
       p_description      VARCHAR2 DEFAULT NULL,
       p_mode             VARCHAR2 DEFAULT 'upsert'
    )
@@ -481,56 +493,8 @@ IS
       e_dup_conf   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_conf, -1 );
    BEGIN
-      IF LOWER( p_mode ) IN( 'upsert', 'update' )
-      THEN
-         -- first try to update an existing configuration
-         UPDATE column_conf
-            SET column_type = NVL( p_column_type, column_type ),
-                description = NVL( p_description, description ),
-                modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
-                modified_dt = SYSDATE
-          WHERE owner = p_owner AND table_name = p_table
-	    AND column_name = p_column_name;
-      END IF;
-
-      -- updating a current config has failed, or an insert was specified
-      -- in this case, insert a new record
-      IF ( NOT SQL%ROWCOUNT = 0 AND LOWER( p_mode ) = 'upsert' ) OR LOWER( p_mode ) = 'insert'
-      THEN
-         CASE
-            WHEN p_column_type IS NULL
-            THEN
-               evolve_log.raise_err( 'parm_req', 'P_COLUMN_TYPE' );
-            ELSE
-               NULL;
-         END CASE;
-
-         BEGIN
-            INSERT INTO column_conf
-                   ( owner, table_name, column_name, column_type, description
-                        )
-                   VALUES ( p_owner, p_table, p_column_name, p_column_type, p_description
-                        );
-         EXCEPTION
-            WHEN e_dup_conf
-            THEN
-               raise_application_error( -20011, 'An attempt was made to add a duplicate configuration' );
-         END;
-      END IF;
-
-      IF LOWER( p_mode ) = 'delete'
-      THEN
-         -- if a delete is specifically requested, then do a delete
-         DELETE FROM column_conf
-          WHERE owner = LOWER( p_owner ) AND table_name = LOWER( p_table ) AND column_name = lower( p_column_name );
-      END IF;
-
-      -- if we still have not affected any records, then there's a problem
-      IF SQL%ROWCOUNT = 0
-      THEN
-         raise_application_error( -20013, 'This action affected no repository configurations' );
-      END IF;
-   END configure_dim_cols;
+      NULL;
+   END configure_dim_col;
 
 END trans_adm;
 /

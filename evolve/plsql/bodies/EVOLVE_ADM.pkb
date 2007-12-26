@@ -33,7 +33,7 @@ IS
          EXCEPTION
             WHEN e_dup_conf
             THEN
-               raise_application_error( -20011, 'An attempt was made to add a duplicate configuration' );
+	       evolve_log.raise_err( 'dup_conf' );
          END;
       END IF;
 
@@ -47,7 +47,7 @@ IS
       -- if we still have not affected any records, then there's a problem
       IF SQL%ROWCOUNT = 0
       THEN
-         raise_application_error( -20013, 'This action affected no repository configurations' );
+	 evolve_log.raise_err( 'no_rep_obj' );
       END IF;
    END set_logging_level;
 
@@ -82,7 +82,7 @@ IS
          EXCEPTION
             WHEN e_dup_conf
             THEN
-               raise_application_error( -20011, 'An attempt was made to add a duplicate configuration' );
+	       evolve_log.raise_err( 'dup_conf' );
          END;
       END IF;
 
@@ -96,7 +96,7 @@ IS
       -- if we still have not affected any records, then there's a problem
       IF SQL%ROWCOUNT = 0
       THEN
-         raise_application_error( -20013, 'This action affected no repository configurations' );
+	 evolve_log.raise_err( 'no_rep_obj' );
       END IF;
    END set_runmode;
 
@@ -131,7 +131,7 @@ IS
          EXCEPTION
             WHEN e_dup_conf
             THEN
-               raise_application_error( -20011, 'An attempt was made to add a duplicate configuration' );
+ 	       evolve_log.raise_err( 'dup_conf' );
          END;
       END IF;
 
@@ -145,7 +145,7 @@ IS
       -- if we still have not affected any records, then there's a problem
       IF SQL%ROWCOUNT = 0
       THEN
-         raise_application_error( -20013, 'This action affected no repository configurations' );
+ 	 evolve_log.raise_err( 'no_rep_obj' );
       END IF;
    EXCEPTION
       WHEN OTHERS
@@ -212,7 +212,7 @@ IS
       -- if we still have not affected any records, then there's a problem
       IF SQL%ROWCOUNT = 0
       THEN
-         raise_application_error( -20013, 'This action affected no repository configurations' );
+	 raise_err( 'no_rep_obj' );
       END IF;
    END set_notification_event;
 
@@ -287,7 +287,7 @@ IS
       -- if we still have not affected any records, then there's a problem
       IF SQL%ROWCOUNT = 0
       THEN
-         raise_application_error( -20013, 'This action affected no repository configurations' );
+	 raise_err( 'no_rep_obj' );
       END IF;
    END set_notification;
 
@@ -376,7 +376,7 @@ IS
       -- if we still have not affected any records, then there's a problem
       IF SQL%ROWCOUNT = 0
       THEN
-         raise_application_error( -20013, 'This action affected no repository configurations' );
+	 raise_err( 'no_rep_obj' );
       END IF;
    END set_error_conf;
 
@@ -456,7 +456,7 @@ IS
       -- if we still have not affected any records, then there's a problem
       IF SQL%ROWCOUNT = 0
       THEN
-         raise_application_error( -20013, 'This action affected no repository configurations' );
+	 raise_err( 'no_rep_obj' );
       END IF;
    END set_session_parameter;
 
@@ -504,6 +504,15 @@ IS
             DELETE FROM error_conf;
          END IF;
 
+         set_error_conf( p_name         => 'dup_config',
+                         p_message      => 'An attempt was made to add a duplicate configuration'
+                       );
+         set_error_conf( p_name         => 'no_rep_obj',
+                         p_message      => 'This action affected no repository configurations'
+                       );
+         set_error_conf( p_name         => 'parm_req',
+                         p_message      => 'Creating a new configuration requires the specified parameter'
+                       );
          set_error_conf( p_name         => 'unrecognized_parm',
                          p_message      => 'The specified parameter value is not recognized'
                        );
