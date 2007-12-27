@@ -99,8 +99,8 @@ IS
          WHEN p_table_owner IS NOT NULL
          THEN
             -- table information is provided, so use that
-            l_owner    := UPPER( p_table_owner );
-            l_table    := UPPER( p_table_name );
+            l_owner := UPPER( p_table_owner );
+            l_table := UPPER( p_table_name );
             -- now check the external table
             td_utils.check_table( p_owner => p_table_owner, p_table => p_table_name, p_external => 'yes' );
          WHEN p_table_owner IS NULL
@@ -119,12 +119,12 @@ IS
          -- if they aren't, the GET_DIR_PATH function raises an error
          IF p_arch_directory IS NOT NULL
          THEN
-            l_dir_path    := td_utils.get_dir_path( p_arch_directory );
+            l_dir_path := td_utils.get_dir_path( p_arch_directory );
          END IF;
 
          IF p_source_directory IS NOT NULL
          THEN
-            l_dir_path    := td_utils.get_dir_path( p_source_directory );
+            l_dir_path := td_utils.get_dir_path( p_source_directory );
          END IF;
 
          -- get the directory from the external table
@@ -263,12 +263,12 @@ IS
          -- if they aren't, the GET_DIR_PATH function raises an error
          IF p_arch_directory IS NOT NULL
          THEN
-            l_dir_path    := td_utils.get_dir_path( p_arch_directory );
+            l_dir_path := td_utils.get_dir_path( p_arch_directory );
          END IF;
 
          IF p_directory IS NOT NULL
          THEN
-            l_dir_path    := td_utils.get_dir_path( p_directory );
+            l_dir_path := td_utils.get_dir_path( p_directory );
          END IF;
       END IF;
 
@@ -358,20 +358,21 @@ IS
    END configure_extract;
 
    PROCEDURE configure_dim(
-      p_owner            VARCHAR2,
-      p_table            VARCHAR2,
-      p_source_owner     VARCHAR2 DEFAULT NULL,
-      p_source_object    VARCHAR2 DEFAULT NULL,
-      p_sequence_owner   VARCHAR2 DEFAULT NULL,
-      p_sequence_name    VARCHAR2 DEFAULT NULL,
-      p_staging_owner    VARCHAR2 DEFAULT NULL,
-      p_staging_table    VARCHAR2 DEFAULT NULL,
-      p_direct_load      VARCHAR2 DEFAULT NULL,
-      p_replace_method   VARCHAR2 DEFAULT NULL,
-      p_statistics       VARCHAR2 DEFAULT NULL,
-      p_concurrent       VARCHAR2 DEFAULT NULL,
-      p_description      VARCHAR2 DEFAULT NULL,
-      p_mode             VARCHAR2 DEFAULT 'upsert'
+      p_owner              VARCHAR2,
+      p_table              VARCHAR2,
+      p_source_owner       VARCHAR2 DEFAULT NULL,
+      p_source_object      VARCHAR2 DEFAULT NULL,
+      p_sequence_owner     VARCHAR2 DEFAULT NULL,
+      p_sequence_name      VARCHAR2 DEFAULT NULL,
+      p_staging_owner      VARCHAR2 DEFAULT NULL,
+      p_staging_table      VARCHAR2 DEFAULT NULL,
+      p_default_scd_type   NUMBER DEFAULT NULL,
+      p_direct_load        VARCHAR2 DEFAULT NULL,
+      p_replace_method     VARCHAR2 DEFAULT NULL,
+      p_statistics         VARCHAR2 DEFAULT NULL,
+      p_concurrent         VARCHAR2 DEFAULT NULL,
+      p_description        VARCHAR2 DEFAULT NULL,
+      p_mode               VARCHAR2 DEFAULT 'upsert'
    )
    IS
       o_dim        dimension_ot;
@@ -381,35 +382,38 @@ IS
    BEGIN
       IF LOWER( p_mode ) IN( 'upsert', 'update' )
       THEN
-	 evolve_log.log_msg('Updating configuration',5);
+         evolve_log.log_msg( 'Updating configuration', 5 );
+
          -- first try to update an existing configuration
          UPDATE dimension_conf
-            SET owner = NVL( p_owner, owner ),
-                table_name = NVL( p_table, table_name ),
-                source_owner = NVL( p_source_owner, source_owner ),
-                source_object = NVL( p_source_object, source_object ),
-                sequence_owner = NVL( p_sequence_owner, sequence_owner ),
-                sequence_name = NVL( p_sequence_name, sequence_name ),
-                staging_owner = NVL( p_staging_owner, staging_owner ),
-                staging_table = NVL( p_staging_table, staging_table ),
-		default_scd_type = nvl( p_default_scd_type, default_scd_type ),
-                direct_load = NVL( p_direct_load, direct_load ),
-                replace_method = NVL( p_replace_method, replace_method ),
-                STATISTICS = NVL( p_statistics, STATISTICS ),
-                concurrent = NVL( p_concurrent, concurrent ),
+            SET owner = UPPER( NVL( p_owner, owner )),
+                table_name = UPPER( NVL( p_table, table_name )),
+                source_owner = UPPER( NVL( p_source_owner, source_owner )),
+                source_object = UPPER( NVL( p_source_object, source_object )),
+                sequence_owner = UPPER( NVL( p_sequence_owner, sequence_owner )),
+                sequence_name = UPPER( NVL( p_sequence_name, sequence_name )),
+                staging_owner = UPPER( NVL( p_staging_owner, staging_owner )),
+                staging_table = UPPER( NVL( p_staging_table, staging_table )),
+                default_scd_type = NVL( p_default_scd_type, default_scd_type ),
+                direct_load = LOWER( NVL( p_direct_load, direct_load )),
+                replace_method = LOWER( NVL( p_replace_method, replace_method )),
+                STATISTICS = LOWER( NVL( p_statistics, STATISTICS )),
+                concurrent = LOWER( NVL( p_concurrent, concurrent )),
                 description = NVL( p_description, description ),
                 modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
                 modified_dt = SYSDATE
-          WHERE owner = p_owner AND table_name = p_table;
-	 -- get the SQL rowcount
-	 l_num_rows := sql%rowcount;
+          WHERE owner = UPPER( p_owner ) AND table_name = UPPER( p_table );
+
+         -- get the SQL rowcount
+         l_num_rows := SQL%ROWCOUNT;
       END IF;
 
       -- updating a current config has failed, or an insert was specified
       -- in this case, insert a new record
       IF ( l_num_rows = 0 AND LOWER( p_mode ) = 'upsert' ) OR LOWER( p_mode ) = 'insert'
       THEN
-	 evolve_log.log_msg('Inserting configuration',5);
+         evolve_log.log_msg( 'Inserting configuration', 5 );
+
          CASE
             WHEN p_owner IS NULL
             THEN
@@ -435,17 +439,21 @@ IS
 
          BEGIN
             INSERT INTO dimension_conf
-                        ( owner, table_name, source_owner, source_object, sequence_owner, sequence_name,
-                          staging_owner, staging_table, default_scd_type, direct_load, replace_method, STATISTICS,
+                        ( owner, table_name, source_owner, source_object,
+                          sequence_owner, sequence_name, staging_owner,
+                          staging_table, default_scd_type, direct_load,
+                          replace_method, STATISTICS,
                           concurrent, description
                         )
-                 VALUES ( p_owner, p_table, p_source_owner, p_source_object, p_sequence_owner, p_sequence_name,
-                          p_staging_owner, p_staging_table, nvl(p_default_scd_type, 2), 
-			  nvl(p_direct_load,'yes'), nvl(p_replace_method,'rename'), nvl(p_statistics,'transfer'),
-                          nvl(p_concurrent,'yes'), p_description
+                 VALUES ( UPPER( p_owner ), UPPER( p_table ), UPPER( p_source_owner ), UPPER( p_source_object ),
+                          UPPER( p_sequence_owner ), UPPER( p_sequence_name ), UPPER( p_staging_owner ),
+                          UPPER( p_staging_table ), NVL( p_default_scd_type, 2 ), LOWER( NVL( p_direct_load, 'yes' )),
+                          LOWER( NVL( p_replace_method, 'rename' )), LOWER( NVL( p_statistics, 'transfer' )),
+                          LOWER( NVL( p_concurrent, 'yes' )), p_description
                         );
-	 -- get the SQL rowcount
-	 l_num_rows := sql%rowcount;
+
+            -- get the SQL rowcount
+            l_num_rows := SQL%ROWCOUNT;
          EXCEPTION
             WHEN e_dup_conf
             THEN
@@ -457,17 +465,18 @@ IS
       THEN
          -- if a delete is specifically requested, then do a delete
          DELETE FROM dimension_conf
-          WHERE owner = LOWER( p_owner ) AND table_name = LOWER( p_table );
-	 -- get the SQL rowcount
-	 l_num_rows := sql%rowcount;
+               WHERE owner = UPPER( p_owner ) AND table_name = UPPER( p_table );
+
+         -- get the SQL rowcount
+         l_num_rows := SQL%ROWCOUNT;
       ELSE
               -- as long as P_MODE wasn't 'delete', then we should validate the new structure of the dimension
               -- now use the dimension object to validate the new structure
          -- just constructing the object calls the CONFIRM_OBJECTS procedure
          BEGIN
-	    NULL;
-            o_dim    := dimension_ot( p_owner => p_owner, p_table => p_table );
-	 END;
+            NULL;
+            o_dim := dimension_ot( p_owner => p_owner, p_table => p_table );
+         END;
       END IF;
 
       -- if we still have not affected any records, then there's a problem
@@ -478,17 +487,17 @@ IS
    END configure_dim;
 
    PROCEDURE configure_dim_col(
-      p_owner            VARCHAR2,
-      p_table            VARCHAR2,
-      p_surrogate	 VARCHAR2,
-      p_nat_key		 VARCHAR2,
-      p_scd1		 VARCHAR2 DEFAULT NULL,
-      p_scd2		 VARCHAR2 DEFAULT NULL,
-      p_effective_dt	 VARCHAR2 DEFAULT 'effective_dt',
-      p_expiration_dt	 VARCHAR2 DEFAULT 'expiration_dt',
-      p_current_ind	 VARCHAR2 DEFAULT 'current_ind',
-      p_description      VARCHAR2 DEFAULT NULL,
-      p_mode             VARCHAR2 DEFAULT 'upsert'
+      p_owner           VARCHAR2,
+      p_table           VARCHAR2,
+      p_surrogate       VARCHAR2,
+      p_nat_key         VARCHAR2,
+      p_scd1            VARCHAR2 DEFAULT NULL,
+      p_scd2            VARCHAR2 DEFAULT NULL,
+      p_effective_dt    VARCHAR2 DEFAULT 'effective_dt',
+      p_expiration_dt   VARCHAR2 DEFAULT 'expiration_dt',
+      p_current_ind     VARCHAR2 DEFAULT 'current_ind',
+      p_description     VARCHAR2 DEFAULT NULL,
+      p_mode            VARCHAR2 DEFAULT 'upsert'
    )
    IS
       o_dim        dimension_ot;
@@ -497,7 +506,6 @@ IS
    BEGIN
       NULL;
    END configure_dim_col;
-
 END trans_adm;
 /
 

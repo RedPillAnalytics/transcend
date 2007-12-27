@@ -3,7 +3,11 @@ AS
    CONSTRUCTOR FUNCTION dimension_ot( p_owner VARCHAR2, p_table VARCHAR2 )
       RETURN SELF AS RESULT
    AS
-      l_tab_name   VARCHAR2( 61 ) := UPPER( p_owner || '.' || p_table );
+      l_tab_name   VARCHAR2( 61 )                   := UPPER( p_owner || '.' || p_table );
+      l_owner      dimension_conf.owner%TYPE        := UPPER( p_owner );
+      l_table      dimension_conf.table_name%TYPE   := UPPER( p_table );
+      o_ev         evolve_ot 			    := evolve_ot( p_module => 'dimension_ot' );
+
    BEGIN
       BEGIN
          SELECT DISTINCT owner, table_name, owner || '.' || table_name full_table, source_owner, source_object,
@@ -49,8 +53,8 @@ AS
                                   staging_table, staging_owner || '.' || staging_table full_stage, STATISTICS,
                                   concurrent, CASE
                                      WHEN staging_table IS NULL
-                                        THEN 'yes'
-                                     ELSE 'no'
+                                        THEN 'no'
+                                     ELSE 'yes'
                                   END constant_staging, direct_load, replace_method, sk, nk, esd, scd1_list, scd2_list,
                                   scd_list,
                                      'CASE '
@@ -89,7 +93,7 @@ AS
                                   || ci sel1,
                                   
                                   -- use a STRAGG function to aggregate strings
-                                  ( SELECT    MAX
+                                  ( SELECT    stragg
                                                  (    'last_value('
                                                    || column_name
                                                    || ') over (partition by '
@@ -141,7 +145,7 @@ AS
                                   || sk
                                   || ' desc) then ''N'''
                                   -- use the STRAGG function to aggregate strings
-                                  || ( SELECT REGEXP_REPLACE( MAX(    ' WHEN nvl('
+                                  || ( SELECT REGEXP_REPLACE( stragg(    ' WHEN nvl('
                                                                    || column_name
                                                                    || ',-.01) < > nvl(LAG('
                                                                    || column_name
@@ -168,21 +172,21 @@ AS
                                           direct_load, replace_method, STATISTICS, concurrent,
                                           
                                           -- STRAGG function aggregates strings
-                                          ( SELECT MAX( column_name )
+                                          ( SELECT stragg( column_name )
                                              FROM column_conf ic
                                             WHERE ic.owner = owner
                                               AND ic.table_name = table_name
                                               AND REGEXP_LIKE( ic.column_type, 'scd', 'i' )) scd_list,
                                           
                                           -- STRAGG function aggregates strings
-                                          ( SELECT MAX( column_name )
+                                          ( SELECT stragg( column_name )
                                              FROM column_conf ic
                                             WHERE ic.owner = owner
                                               AND ic.table_name = table_name
                                               AND column_type = 'scd type 1' ) scd1_list,
                                           
                                           -- STRAGG function aggregates strings
-                                          ( SELECT MAX( column_name )
+                                          ( SELECT stragg( column_name )
                                              FROM column_conf ic
                                             WHERE ic.owner = owner
                                               AND ic.table_name = table_name
@@ -213,7 +217,22 @@ AS
                                               AND ic.table_name = table_name
                                               AND ic.column_type = 'current indicator' ) ci
                                     FROM column_conf JOIN dimension_conf USING( owner, table_name )
-                                   WHERE owner = p_owner AND table_name = p_table ));
+                                   WHERE owner = l_owner AND table_name = l_table ));
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            SELECT owner, table_name, source_owner, source_object, sequence_owner, sequence_name, staging_owner,
+                   staging_table, direct_load, replace_method, STATISTICS, concurrent,
+                   CASE
+                      WHEN staging_table IS NULL
+                         THEN 'no'
+                      ELSE 'yes'
+                   END constant_staging
+              INTO owner, table_name, source_owner, source_object, sequence_owner, sequence_name, staging_owner,
+                   staging_table, direct_load, replace_method, STATISTICS, concurrent,
+                   constant_staging
+              FROM dimension_conf
+             WHERE owner = l_owner AND table_name = l_table;
       END;
 
       -- every time the dimension object is loaded, it should confirm the objects
@@ -224,10 +243,13 @@ AS
    IS
       o_ev   evolve_ot := evolve_ot( p_module => 'confirm_objects' );
    BEGIN
+      evolve_log.log_msg('Constant staging: '||constant_staging, 5 );
       -- check to see if the dimension table exists
       td_utils.check_table( p_owner => owner, p_table => table_name );
       -- check that the source object exists
       td_utils.check_object( p_owner => source_owner, p_object => source_object, p_object_type => 'table$|view' );
+      -- check that the sequence exists
+      td_utils.check_object( p_owner => sequence_owner, p_object => sequence_name, p_object_type => 'sequence' );
 
       -- check to see if the staging table is constant
       IF td_core.is_true( constant_staging )

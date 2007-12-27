@@ -56,12 +56,14 @@ IS
       p_sequence_name    VARCHAR2 DEFAULT NULL,
       p_staging_owner    VARCHAR2 DEFAULT NULL,
       p_staging_table    VARCHAR2 DEFAULT NULL,
+      p_default_scd_type NUMBER DEFAULT NULL,
       p_direct_load      VARCHAR2 DEFAULT NULL,
       p_replace_method   VARCHAR2 DEFAULT NULL,
       p_statistics       VARCHAR2 DEFAULT NULL,
       p_concurrent       VARCHAR2 DEFAULT NULL,
       p_description      VARCHAR2 DEFAULT NULL,
       p_mode             VARCHAR2 DEFAULT 'upsert'
+
    );
 END trans_adm;
 /
