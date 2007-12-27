@@ -40,33 +40,33 @@ SELECT * FROM (
 			       to_number(NULL) src2
 			  FROM (SELECT owner, table_name, column_name, 'surrogate key' column_type
 				  FROM  all_tab_columns
-				 WHERE column_name = upper(:p_surrogate)
+				 WHERE column_name = upper( :p_surrogate)
 				       UNION
 				SELECT owner, table_name, column_name, 'effective date' column_type
 				  FROM  all_tab_columns
-				 WHERE column_name = upper(:p_effective_dt)
+				 WHERE column_name = upper( :p_effective_dt)
 				       UNION
 				SELECT owner, table_name, column_name, 'expiration date' column_type
 				  FROM  all_tab_columns
-				 WHERE column_name = upper(:p_expiration_dt)
+				 WHERE column_name = upper( :p_expiration_dt)
 				       UNION
 				SELECT owner, table_name, column_name, 'current indicator' column_type
 				  FROM  all_tab_columns
-				 WHERE column_name = upper(:p_current_ind)
+				 WHERE column_name = upper( :p_current_ind)
 				       UNION
 				SELECT owner, table_name, column_name, 'natural key' column_type
 				  FROM all_tab_columns atc
-				  JOIN TABLE(td_core.split(upper(:p_nat_key),',')) s
+				  JOIN TABLE(td_core.split(upper( :p_nat_key),',')) s
 				       ON atc.column_name = s.column_value 
 				       UNION
 				SELECT owner, table_name, column_name, 'scd type 1' column_type
 				  FROM all_tab_columns atc
-				  JOIN TABLE(td_core.split(upper(:p_scd1),',')) s
+				  JOIN TABLE(td_core.split(upper( :p_scd1),',')) s
 				       ON atc.column_name = s.column_value 
 				       UNION
 				SELECT owner, table_name, column_name, 'scd type 2' column_type
 				  FROM all_tab_columns atc
-				  JOIN TABLE(td_core.split(upper(:p_scd2),',')) s
+				  JOIN TABLE(td_core.split(upper( :p_scd2),',')) s
 				       ON atc.column_name = s.column_value ) gp1
 			 WHERE owner = upper( :p_owner )
 			   AND table_name = upper( :p_table )
