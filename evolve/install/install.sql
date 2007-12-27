@@ -77,7 +77,6 @@ EXEC tdsys.td_install.drop_evolve_types;
 @../plsql/wrapped_bodies/APP_OT.plb
 @../plsql/specs/NOTIFICATION_OT.tps
 @../plsql/wrapped_bodies/NOTIFICATION_OT.plb
-@../object_views/NOTIFICATION_OV_vw.sql
 @../plsql/specs/EVOLVE_OT.tps
 @../plsql/wrapped_bodies/EVOLVE_OT.plb
 
