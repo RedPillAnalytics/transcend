@@ -1366,9 +1366,8 @@ IS
 	 EXECUTE IMMEDIATE q'|INSERT INTO column_type_list (column_type) VALUES ('natural key')|';
 	 EXECUTE IMMEDIATE q'|INSERT INTO column_type_list (column_type) VALUES ('scd type 1')|';
 	 EXECUTE IMMEDIATE q'|INSERT INTO column_type_list (column_type) VALUES ('scd type 2')|';
-	 EXECUTE IMMEDIATE q'|INSERT INTO column_type_list (column_type) VALUES ('scd type 3')|';
-	 EXECUTE IMMEDIATE q'|INSERT INTO column_type_list (column_type) VALUES ('effective start date')|';
-	 EXECUTE IMMEDIATE q'|INSERT INTO column_type_list (column_type) VALUES ('effective end date')|';
+	 EXECUTE IMMEDIATE q'|INSERT INTO column_type_list (column_type) VALUES ('effective date')|';
+	 EXECUTE IMMEDIATE q'|INSERT INTO column_type_list (column_type) VALUES ('expiration date')|';
 	 EXECUTE IMMEDIATE q'|INSERT INTO column_type_list (column_type) VALUES ('current indicator')|';
 	 
 	 -- DIMENSION_CONF table

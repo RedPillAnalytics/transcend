@@ -165,14 +165,6 @@ IS
       e_dup_conf   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_conf, -1 );
    BEGIN
-      CASE
-         WHEN p_mode = 'insert' AND( p_subject IS NULL OR p_message IS NULL )
-         THEN
-            raise_application_error( -20014, 'An insert requires a value for all parameters' );
-         ELSE
-            NULL;
-      END CASE;
-
       -- this is the default method... update if it exists or insert it
       IF LOWER( p_mode ) IN( 'upsert', 'update' )
       THEN
@@ -188,6 +180,17 @@ IS
       IF ( SQL%ROWCOUNT = 0 AND LOWER( p_mode ) = 'upsert' ) OR LOWER( p_mode ) = 'insert'
       THEN
          evolve_log.log_msg( 'Update was unsuccessful or insert was specified', 5 );
+	 
+         CASE
+            WHEN p_subject IS NULL
+            THEN
+               evolve_log.raise_err( 'parm_req', 'P_SUBJECT' );
+            WHEN p_message IS NULL
+            THEN
+               evolve_log.raise_err( 'parm_req', 'P_MESSAGE' );
+            ELSE
+               NULL;
+         END CASE;
 
          BEGIN
             INSERT INTO notification_events
@@ -198,7 +201,7 @@ IS
          EXCEPTION
             WHEN e_dup_conf
             THEN
-               raise_application_error( -20011, 'An attempt was made to add a duplicate configuration' );
+               evolve_log.raise_err( 'dup_conf' );
          END;
       END IF;
 
@@ -231,19 +234,6 @@ IS
       e_dup_conf   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_conf, -1 );
    BEGIN
-      CASE
-         WHEN     p_mode = 'insert'
-              AND (    p_method IS NULL
-                    OR p_enabled IS NULL
-                    OR p_required IS NULL
-                    OR p_sender IS NULL
-                    OR p_recipients IS NULL
-                  )
-         THEN
-            raise_application_error( -20014, 'An insert requires a value for all parameters' );
-         ELSE
-            NULL;
-      END CASE;
 
       -- this is the default method... update if it exists or insert it
       IF LOWER( p_mode ) IN( 'upsert', 'update' )
@@ -262,6 +252,26 @@ IS
       -- if the update was unsuccessful above, or an insert it specifically requested, then do an insert
       IF ( SQL%ROWCOUNT = 0 AND LOWER( p_mode ) = 'upsert' ) OR LOWER( p_mode ) = 'insert'
       THEN
+         CASE
+            WHEN p_method IS NULL
+            THEN
+               evolve_log.raise_err( 'parm_req', 'P_METHOD' );
+            WHEN p_enabled IS NULL
+            THEN
+               evolve_log.raise_err( 'parm_req', 'P_ENABLED' );
+            WHEN p_required IS NULL
+            THEN
+               evolve_log.raise_err( 'parm_req', 'P_REQUIRED' );
+            WHEN p_sender IS NULL
+            THEN
+               evolve_log.raise_err( 'parm_req', 'P_SENDER' );
+            WHEN p_recipients IS NULL
+            THEN
+               evolve_log.raise_err( 'parm_req', 'P_RECIPIENTS' );
+            ELSE
+               NULL;
+         END CASE;
+
          BEGIN
             INSERT INTO notification_conf
                         ( label, module, action, method,
@@ -273,7 +283,7 @@ IS
          EXCEPTION
             WHEN e_dup_conf
             THEN
-               raise_application_error( -20011, 'An attempt was made to add a duplicate configuration' );
+               evolve_log.raise_err( 'dup_conf' );
          END;
       END IF;
 
@@ -302,15 +312,6 @@ IS
       e_dup_conf   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_conf, -1 );
    BEGIN
-      CASE
-         WHEN p_mode = 'insert' AND( p_name IS NULL OR p_message IS NULL )
-         THEN
-            raise_application_error( -20014,
-                                     'An insert requires a value for all parameters except P_COMMENTS'
-                                   );
-         ELSE
-            NULL;
-      END CASE;
 
       -- this is the default method... update if it exists or insert it
       IF LOWER( p_mode ) IN( 'upsert', 'update' )
@@ -327,6 +328,17 @@ IS
       -- if the update was unsuccessful above, or an insert is specifically requested, then do an insert
       IF ( SQL%ROWCOUNT = 0 AND LOWER( p_mode ) = 'upsert' ) OR LOWER( p_mode ) = 'insert'
       THEN
+         CASE
+            WHEN p_name IS NULL
+            THEN
+               evolve_log.raise_err( 'parm_req', 'P_NAME' );
+            WHEN p_message IS NULL
+            THEN
+               evolve_log.raise_err( 'parm_req', 'P_MESSAGE' );
+            ELSE
+               NULL;
+         END CASE;
+
          -- error_codes for RAISE_APPLICATON_ERROR are a scarce resource
          -- need to use them carefully, and reuse wherever possible
 
@@ -362,7 +374,7 @@ IS
          EXCEPTION
             WHEN e_dup_conf
             THEN
-               raise_application_error( -20011, 'An attempt was made to add a duplicate configuration' );
+               evolve_log.raise_err( 'dup_conf' );
          END;
       END IF;
 
@@ -403,11 +415,7 @@ IS
             THEN
                NULL;
             ELSE
-               raise_application_error
-                                 ( -20014,
-                                      'The specified parameter name is not a recognized database parameter: '
-                                   || p_name
-                                 );
+	       evolve_log.raise_err( 'no_db_parm',p_name);
             END IF;
       END;
 
@@ -442,7 +450,7 @@ IS
          EXCEPTION
             WHEN e_dup_conf
             THEN
-               raise_application_error( -20011, 'An attempt was made to add a duplicate configuration' );
+               evolve_log.raise_err( 'dup_conf' );
          END;
       END IF;
 
@@ -556,6 +564,9 @@ IS
                        );
          set_error_conf( p_name         => 'parm_not_supported',
                          p_message      => 'The specified parameter is not supported'
+                       );
+         set_error_conf( p_name         => 'no_db_parm',
+                         p_message      => 'The specified parameter name is not a recognized database parameter'
                        );
          set_error_conf
             ( p_name         => 'submit_sql',

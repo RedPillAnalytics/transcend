@@ -209,7 +209,7 @@ IS
          EXCEPTION
             WHEN e_dup_conf
             THEN
-               raise_application_error( -20011, 'An attempt was made to add a duplicate configuration' );
+               evolve_log.raise_err( 'dup_conf' );
          END;
       END IF;
 
@@ -223,7 +223,7 @@ IS
       -- if we still have not affected any records, then there's a problem
       IF SQL%ROWCOUNT = 0
       THEN
-         raise_application_error( -20013, 'This action affected no repository configurations' );
+         evolve_log.raise_err( 'no_rep_obj' );
       END IF;
    END configure_feed;
 
@@ -339,7 +339,7 @@ IS
          EXCEPTION
             WHEN e_dup_conf
             THEN
-               raise_application_error( -20011, 'An attempt was made to add a duplicate configuration' );
+               evolve_log.raise_err( 'dup_conf' );
          END;
       END IF;
 
@@ -353,7 +353,7 @@ IS
       -- if we still have not affected any records, then there's a problem
       IF SQL%ROWCOUNT = 0
       THEN
-         raise_application_error( -20013, 'This action affected no repository configurations' );
+         evolve_log.raise_err( 'no_rep_obj' );
       END IF;
    END configure_extract;
 
@@ -392,6 +392,7 @@ IS
                 sequence_name = NVL( p_sequence_name, sequence_name ),
                 staging_owner = NVL( p_staging_owner, staging_owner ),
                 staging_table = NVL( p_staging_table, staging_table ),
+		default_scd_type = nvl( p_default_scd_type, default_scd_type ),
                 direct_load = NVL( p_direct_load, direct_load ),
                 replace_method = NVL( p_replace_method, replace_method ),
                 STATISTICS = NVL( p_statistics, STATISTICS ),
@@ -435,11 +436,12 @@ IS
          BEGIN
             INSERT INTO dimension_conf
                         ( owner, table_name, source_owner, source_object, sequence_owner, sequence_name,
-                          staging_owner, staging_table, direct_load, replace_method, STATISTICS,
+                          staging_owner, staging_table, default_scd_type, direct_load, replace_method, STATISTICS,
                           concurrent, description
                         )
                  VALUES ( p_owner, p_table, p_source_owner, p_source_object, p_sequence_owner, p_sequence_name,
-                          p_staging_owner, p_staging_table, nvl(p_direct_load,'yes'), nvl(p_replace_method,'rename'), nvl(p_statistics,'transfer'),
+                          p_staging_owner, p_staging_table, nvl(p_default_scd_type, 2), 
+			  nvl(p_direct_load,'yes'), nvl(p_replace_method,'rename'), nvl(p_statistics,'transfer'),
                           nvl(p_concurrent,'yes'), p_description
                         );
 	 -- get the SQL rowcount
@@ -447,7 +449,7 @@ IS
          EXCEPTION
             WHEN e_dup_conf
             THEN
-               raise_application_error( -20011, 'An attempt was made to add a duplicate configuration' );
+               evolve_log.raise_err( 'dup_conf' );
          END;
       END IF;
 
@@ -471,7 +473,7 @@ IS
       -- if we still have not affected any records, then there's a problem
       IF l_num_rows = 0
       THEN
-         raise_application_error( -20013, 'This action affected no repository configurations' );
+         evolve_log.raise_err( 'no_rep_obj' );
       END IF;
    END configure_dim;
 
