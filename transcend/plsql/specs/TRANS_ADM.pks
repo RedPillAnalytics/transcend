@@ -48,22 +48,33 @@ IS
    );
 
    PROCEDURE configure_dim(
-      p_owner            VARCHAR2,
-      p_table            VARCHAR2,
-      p_source_owner     VARCHAR2 DEFAULT NULL,
-      p_source_object    VARCHAR2 DEFAULT NULL,
-      p_sequence_owner   VARCHAR2 DEFAULT NULL,
-      p_sequence_name    VARCHAR2 DEFAULT NULL,
-      p_staging_owner    VARCHAR2 DEFAULT NULL,
-      p_staging_table    VARCHAR2 DEFAULT NULL,
-      p_default_scd_type NUMBER DEFAULT NULL,
-      p_direct_load      VARCHAR2 DEFAULT NULL,
-      p_replace_method   VARCHAR2 DEFAULT NULL,
-      p_statistics       VARCHAR2 DEFAULT NULL,
-      p_concurrent       VARCHAR2 DEFAULT NULL,
-      p_description      VARCHAR2 DEFAULT NULL,
-      p_mode             VARCHAR2 DEFAULT 'upsert'
+      p_owner              VARCHAR2,
+      p_table              VARCHAR2,
+      p_source_owner       VARCHAR2 DEFAULT NULL,
+      p_source_object      VARCHAR2 DEFAULT NULL,
+      p_sequence_owner     VARCHAR2 DEFAULT NULL,
+      p_sequence_name      VARCHAR2 DEFAULT NULL,
+      p_staging_owner      VARCHAR2 DEFAULT NULL,
+      p_staging_table      VARCHAR2 DEFAULT NULL,
+      p_default_scd_type   NUMBER DEFAULT NULL,
+      p_direct_load        VARCHAR2 DEFAULT NULL,
+      p_replace_method     VARCHAR2 DEFAULT NULL,
+      p_statistics         VARCHAR2 DEFAULT NULL,
+      p_concurrent         VARCHAR2 DEFAULT NULL,
+      p_description        VARCHAR2 DEFAULT NULL,
+      p_mode               VARCHAR2 DEFAULT 'upsert'
+   );
 
+   PROCEDURE configure_dim_cols(
+      p_owner           VARCHAR2,
+      p_table           VARCHAR2,
+      p_surrogate       VARCHAR2 DEFAULT NULL,
+      p_nat_key         VARCHAR2 DEFAULT NULL,
+      p_scd1            VARCHAR2 DEFAULT NULL,
+      p_scd2            VARCHAR2 DEFAULT NULL,
+      p_effective_dt    VARCHAR2 DEFAULT NULL,
+      p_expiration_dt   VARCHAR2 DEFAULT NULL,
+      p_current_ind     VARCHAR2 DEFAULT NULL
    );
 END trans_adm;
 /

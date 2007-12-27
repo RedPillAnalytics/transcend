@@ -283,6 +283,7 @@ IS
 	 EXECUTE IMMEDIATE 'grant execute on APP_OT to '||l_app_role;
 	 EXECUTE IMMEDIATE 'grant execute on EVOLVE_OT to '||l_app_role;
 	 EXECUTE IMMEDIATE 'grant execute on NOTIFICATION_OT to '||l_app_role;
+	 EXECUTE IMMEDIATE 'grant execute on SPLIT_OT to '||l_app_role;
 	 -- packages
 	 EXECUTE IMMEDIATE 'grant execute on STRAGG to '||l_app_role;
 	 EXECUTE IMMEDIATE 'grant execute on TD_CORE to '||l_app_role;
@@ -1632,6 +1633,14 @@ IS
 	
 	 BEGIN
 	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.NOTIFICATION_OT for '||p_schema||'.NOTIFICATION_OT';
+	 EXCEPTION
+	    WHEN e_same_name
+	    THEN
+	    NULL;
+	 END;
+	
+	 BEGIN
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.SPLIT_OT for '||p_schema||'.SPLIT_OT';
 	 EXCEPTION
 	    WHEN e_same_name
 	    THEN

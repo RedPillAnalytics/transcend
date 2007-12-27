@@ -486,26 +486,137 @@ IS
       END IF;
    END configure_dim;
 
-   PROCEDURE configure_dim_col(
+   PROCEDURE configure_dim_cols(
       p_owner           VARCHAR2,
       p_table           VARCHAR2,
-      p_surrogate       VARCHAR2,
-      p_nat_key         VARCHAR2,
+      p_surrogate       VARCHAR2 DEFAULT NULL,
+      p_nat_key         VARCHAR2 DEFAULT NULL,
       p_scd1            VARCHAR2 DEFAULT NULL,
       p_scd2            VARCHAR2 DEFAULT NULL,
-      p_effective_dt    VARCHAR2 DEFAULT 'effective_dt',
-      p_expiration_dt   VARCHAR2 DEFAULT 'expiration_dt',
-      p_current_ind     VARCHAR2 DEFAULT 'current_ind',
-      p_description     VARCHAR2 DEFAULT NULL,
-      p_mode            VARCHAR2 DEFAULT 'upsert'
+      p_effective_dt    VARCHAR2 DEFAULT NULL,
+      p_expiration_dt   VARCHAR2 DEFAULT NULL,
+      p_current_ind     VARCHAR2 DEFAULT NULL
    )
    IS
+      l_results    NUMBER;
       o_dim        dimension_ot;
       e_dup_conf   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_conf, -1 );
    BEGIN
+      -- do the first merge to update any changed column_types from the parameters
+      MERGE INTO column_conf t
+         USING ( SELECT *
+                  FROM ( SELECT owner, table_name, column_name, 'surrogate key' column_type
+                          FROM all_tab_columns
+                         WHERE column_name = UPPER( p_surrogate )
+                        UNION
+                        SELECT owner, table_name, column_name, 'effective date' column_type
+                          FROM all_tab_columns
+                         WHERE column_name = UPPER( p_effective_dt )
+                        UNION
+                        SELECT owner, table_name, column_name, 'expiration date' column_type
+                          FROM all_tab_columns
+                         WHERE column_name = UPPER( p_expiration_dt )
+                        UNION
+                        SELECT owner, table_name, column_name, 'current indicator' column_type
+                          FROM all_tab_columns
+                         WHERE column_name = UPPER( p_current_ind )
+                        UNION
+                        SELECT owner, table_name, column_name, 'natural key' column_type
+                          FROM all_tab_columns atc JOIN TABLE( CAST( td_core.SPLIT( UPPER( p_nat_key ), ',' ) AS split_ot )
+                                                             ) s ON atc.column_name = s.COLUMN_VALUE
+                        UNION
+                        SELECT owner, table_name, column_name, 'scd type 1' column_type
+                          FROM all_tab_columns atc JOIN TABLE( CAST( td_core.SPLIT( UPPER( p_scd1 ), ',' ) AS split_ot )) s
+                               ON atc.column_name = s.COLUMN_VALUE
+                        UNION
+                        SELECT owner, table_name, column_name, 'scd type 2' column_type
+                          FROM all_tab_columns atc JOIN TABLE( CAST( td_core.SPLIT( UPPER( p_scd2 ), ',' ) AS split_ot )) s
+                               ON atc.column_name = s.COLUMN_VALUE
+                               )
+                 WHERE owner = UPPER( p_owner ) AND table_name = UPPER( p_table )) s
+         ON (t.owner = s.owner AND t.table_name = s.table_name AND t.column_name = s.column_name )
+         WHEN MATCHED THEN
+            UPDATE
+               SET t.column_type = s.column_type, t.modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
+                   t.modified_dt = SYSDATE
+               WHERE s.column_type <> t.column_type
+         WHEN NOT MATCHED THEN
+            INSERT( t.owner, t.table_name, t.column_name, t.column_type )
+            VALUES( s.owner, s.table_name, s.column_name, s.column_type );
+
+      -- do checks to make sure rules concerning numbers of column types is are valid
+      -- check to make sure there is one and only one surrogate key column
+      SELECT COUNT( * )
+        INTO l_results
+        FROM column_conf
+       WHERE owner = UPPER( p_owner ) AND table_name = UPPER( table_name ) AND column_type = 'surrogate key';
+
+      IF l_results <> 1
+      THEN
+         evolve_log.raise_err( 'surr_key' );
+      END IF;
+
+      -- check to make sure there is one and only one expiration date column
+      SELECT COUNT( * )
+        INTO l_results
+        FROM column_conf
+       WHERE owner = UPPER( p_owner ) AND table_name = UPPER( table_name ) AND column_type = 'expiration date';
+
+      IF l_results <> 1
+      THEN
+         evolve_log.raise_err( 'exp_dt' );
+      END IF;
+
+      -- check to make sure there is one and only one effective date column
+      SELECT COUNT( * )
+        INTO l_results
+        FROM column_conf
+       WHERE owner = UPPER( p_owner ) AND table_name = UPPER( table_name ) AND column_type = 'effective date';
+
+      IF l_results <> 1
+      THEN
+         evolve_log.raise_err( 'effect_dt' );
+      END IF;
+
+      -- check to make sure there is no more than one current indicator
+      SELECT COUNT( * )
+        INTO l_results
+        FROM column_conf
+       WHERE owner = UPPER( p_owner ) AND table_name = UPPER( table_name ) AND column_type = 'current indicator';
+
+      IF l_results > 1
+      THEN
+         evolve_log.raise_err( 'curr_ind' );
+      END IF;
+
+      -- check to make sure there is at least one natural key
+      SELECT COUNT( * )
+        INTO l_results
+        FROM column_conf
+       WHERE owner = UPPER( p_owner ) AND table_name = UPPER( table_name ) AND column_type = 'natural key';
+
+      IF l_results < 1
+      THEN
+         evolve_log.raise_err( 'nat_key' );
+      END IF;
+
+      -- do the second merge to write any columns that have been left off
+      MERGE INTO column_conf t
+         USING ( SELECT owner, table_name, column_name,
+                        CASE default_scd_type
+                           WHEN 1
+                              THEN 'scd type 1'
+                           ELSE 'scd type 2'
+                        END column_type
+                  FROM all_tab_columns JOIN dimension_conf USING( owner, table_name )
+                 WHERE owner = UPPER( p_owner ) AND table_name = UPPER( p_table )) s
+         ON (t.owner = s.owner AND t.table_name = s.table_name AND t.column_name = s.column_name )
+         WHEN NOT MATCHED THEN
+            INSERT( t.owner, t.table_name, t.column_name, t.column_type )
+            VALUES( s.owner, s.table_name, s.column_name, s.column_type );
       NULL;
-   END configure_dim_col;
+   END configure_dim_cols;
 END trans_adm;
 /
 

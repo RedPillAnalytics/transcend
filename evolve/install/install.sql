@@ -62,6 +62,7 @@ EXEC tdsys.td_install.drop_evolve_types;
 @../java/TdCore.jvs
 
 --CREATE core pieces needed by types
+@../plsql/specs/SPLIT_OT.tps
 @../plsql/specs/STRING_AGG_OT.tps
 @../plsql/wrapped_bodies/STRING_AGG_OT.plb
 @../plsql/wrapped_bodies/STRAGG.plb

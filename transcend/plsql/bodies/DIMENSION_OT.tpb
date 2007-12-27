@@ -33,7 +33,7 @@ AS
                          || scd1_analytics
                          || scd2_list
                          || ','
-                         || esd
+                         || efd
                          || ','
                          || include_list
                          || ' from '
@@ -41,7 +41,7 @@ AS
                          || ' order by '
                          || nk
                          || ','
-                         || esd
+                         || efd
                          || ')'
                          || ' where include=''Y''' load_sql
                     INTO owner, table_name, full_table, source_owner, source_object,
@@ -55,7 +55,7 @@ AS
                                      WHEN staging_table IS NULL
                                         THEN 'no'
                                      ELSE 'yes'
-                                  END constant_staging, direct_load, replace_method, sk, nk, esd, scd1_list, scd2_list,
+                                  END constant_staging, direct_load, replace_method, sk, nk, efd, scd1_list, scd2_list,
                                   scd_list,
                                      'CASE '
                                   || sk
@@ -72,23 +72,23 @@ AS
                                   || ','
                                   || scd_list
                                   || ','
-                                  || esd
+                                  || efd
                                   || ','
                                   || 'nvl( lead('
-                                  || esd
+                                  || efd
                                   || ') OVER ( partition BY '
                                   || nk
                                   || ' ORDER BY '
-                                  || esd
+                                  || efd
                                   || '), to_date(''12/31/9999'',''mm/dd/yyyy'')) '
-                                  || eed
+                                  || exd
                                   || ','
                                   || ' CASE MAX('
-                                  || esd
+                                  || efd
                                   || ') OVER (partition BY '
                                   || nk
                                   || ') WHEN '
-                                  || esd
+                                  || efd
                                   || ' THEN ''Y'' ELSE ''N'' END '
                                   || ci sel1,
                                   
@@ -99,7 +99,7 @@ AS
                                                    || ') over (partition by '
                                                    || nk
                                                    || ' order by '
-                                                   || esd
+                                                   || efd
                                                    || ' ROWS BETWEEN unbounded preceding AND unbounded following) '
                                                    || column_name
                                                  ) OVER( PARTITION BY column_type )
@@ -113,7 +113,7 @@ AS
                                   || ','
                                   || nk
                                   || ','
-                                  || esd
+                                  || efd
                                   || ','
                                   || scd_list
                                   || ' from '
@@ -125,7 +125,7 @@ AS
                                   || ','
                                   || nk
                                   || ','
-                                  || esd
+                                  || efd
                                   || ','
                                   || scd_list
                                   || ' from '
@@ -136,11 +136,13 @@ AS
                                      'case when '
                                   || sk
                                   || ' <> -.1 then ''Y'' when '
-                                  || esd
-                                  || '=LAG(effect_start_dt) over (partition by '
+                                  || efd
+                                  || '=LAG('
+				  || efd
+				  || ') over (partition by '
                                   || nk
                                   || ' order by '
-                                  || esd
+                                  || efd
                                   || ','
                                   || sk
                                   || ' desc) then ''N'''
@@ -152,7 +154,7 @@ AS
                                                                    || ') OVER (partition BY '
                                                                    || nk
                                                                    || ' ORDER BY '
-                                                                   || esd
+                                                                   || efd
                                                                    || '),-.01) THEN ''Y'''
                                                                  ),
                                                               ', WHEN',
@@ -205,12 +207,12 @@ AS
                                              FROM column_conf ic
                                             WHERE ic.owner = owner
                                               AND ic.table_name = table_name
-                                              AND ic.column_type = 'effective start date' ) esd,
+                                              AND ic.column_type = 'effective date' ) efd,
                                           ( SELECT column_name
                                              FROM column_conf ic
                                             WHERE ic.owner = owner
                                               AND ic.table_name = table_name
-                                              AND ic.column_type = 'effective end date' ) eed,
+                                              AND ic.column_type = 'expiration date' ) exd,
                                           ( SELECT column_name
                                              FROM column_conf ic
                                             WHERE ic.owner = owner

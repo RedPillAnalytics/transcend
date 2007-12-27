@@ -1,7 +1,5 @@
 CREATE OR REPLACE PACKAGE td_core AUTHID CURRENT_USER
 AS
-   TYPE t_split IS TABLE OF VARCHAR2( 32767 );
-
    FUNCTION is_true( p_parm VARCHAR2, p_allownulls BOOLEAN DEFAULT FALSE )
       RETURN BOOLEAN;
 
@@ -9,6 +7,6 @@ AS
       RETURN VARCHAR2;
 
    FUNCTION SPLIT( p_text VARCHAR2, p_delimiter VARCHAR2 DEFAULT ',' )
-      RETURN t_split PIPELINED;
+      RETURN split_ot PIPELINED;
 END td_core;
 /

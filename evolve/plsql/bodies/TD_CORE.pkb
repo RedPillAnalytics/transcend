@@ -51,7 +51,7 @@ AS
    -- function takes a text string and a delimiter and parses the string
    -- should only be used as a pipelined table function
    FUNCTION SPLIT( p_text VARCHAR2, p_delimiter VARCHAR2 := ',' )
-      RETURN t_split PIPELINED
+      RETURN split_ot PIPELINED
    IS
       l_idx     PLS_INTEGER;
       l_list    VARCHAR2( 32767 ) := p_text;

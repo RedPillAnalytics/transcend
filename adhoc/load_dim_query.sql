@@ -2,27 +2,27 @@ SELECT 'SELECT '||sel1||' from ('
        ||'SELECT '||sk||','||nk||','
        ||scd1_analytics||','
        ||scd2_list||','
-       ||esd||','
+       ||efd||','
        ||include_list
        ||' from '
        ||union_list
-       ||' order by '||nk||','||esd
+       ||' order by '||nk||','||efd
        ||')'
        ||' where include=''Y''' dim_sql
   FROM (SELECT DISTINCT owner,
 	       table_name,
 	       sk,
 	       nk,
-	       esd,
+	       efd,
 	       scd1_list,
 	       scd2_list,
 	       scd_list,
 	       'CASE '||sk||' when -.1 then '||sequence_owner||'.'||sequence_name||'.nextval else '||sk||' end '||sk||','
 	       ||nk||','||scd_list||','
-	       ||esd||',' 
-	       || 'nvl( lead('||esd||') OVER ( partition BY '||nk||' ORDER BY '||esd||'), to_date(''12/31/9999'',''mm/dd/yyyy'')) '||eed||',' 
-	       || ' CASE MAX('||esd||') OVER (partition BY '||nk||') WHEN '||esd||' THEN ''Y'' ELSE ''N'' END '||ci sel1,
-	       (SELECT stragg('last_value('||column_name||') over (partition by '||nk||' order by '||esd||' ROWS BETWEEN unbounded preceding AND unbounded following) '||column_name) OVER ( partition BY column_type)
+	       ||efd||',' 
+	       || 'nvl( lead('||efd||') OVER ( partition BY '||nk||' ORDER BY '||efd||'), to_date(''12/31/9999'',''mm/dd/yyyy'')) '||exd||',' 
+	       || ' CASE MAX('||efd||') OVER (partition BY '||nk||') WHEN '||efd||' THEN ''Y'' ELSE ''N'' END '||ci sel1,
+	       (SELECT stragg('last_value('||column_name||') over (partition by '||nk||' order by '||efd||' ROWS BETWEEN unbounded preceding AND unbounded following) '||column_name) OVER ( partition BY column_type)
 		  FROM column_conf ic
 		 WHERE ic.owner=owner
 		   AND ic.table_name=table_name
@@ -30,17 +30,17 @@ SELECT 'SELECT '||sel1||' from ('
 	       '(select -.1 '
 	       ||sk||','
 	       ||nk||','
-	       ||esd||','
+	       ||efd||','
 	       ||scd_list
 	       ||' from '||source_owner||'.'||source_object
 	       ||' union select '
 	       ||sk||','
 	       ||nk||','
-	       ||esd||','
+	       ||efd||','
 	       ||scd_list
 	       ||' from '||owner||'.'||table_name||')' union_list,
-	       'case when '||sk||' <> -.1 then ''Y'' when '||esd||'=LAG(effect_start_dt) over (partition by '||nk||' order by '||esd||','||sk||' desc) then ''N'''
-	       ||(SELECT regexp_replace(stragg(' WHEN nvl('||column_name||',-.01) < > nvl(LAG('||column_name||') OVER (partition BY '||nk||' ORDER BY '||esd||'),-.01) THEN ''Y'''),', WHEN',' WHEN')
+	       'case when '||sk||' <> -.1 then ''Y'' when '||efd||'=LAG('||efd||') over (partition by '||nk||' order by '||efd||','||sk||' desc) then ''N'''
+	       ||(SELECT regexp_replace(stragg(' WHEN nvl('||column_name||',-.01) < > nvl(LAG('||column_name||') OVER (partition BY '||nk||' ORDER BY '||efd||'),-.01) THEN ''Y'''),', WHEN',' WHEN')
 		    FROM column_conf ic
 		   WHERE ic.owner=owner
 		     AND ic.table_name=table_name
@@ -83,12 +83,12 @@ SELECT 'SELECT '||sel1||' from ('
 			  FROM column_conf ic
 			 WHERE ic.owner=owner
 			   AND ic.table_name=table_name
-			   AND ic.column_type='effective start date') esd,
+			   AND ic.column_type='effective date') efd,
 		       (SELECT column_name
 			  FROM column_conf ic
 			 WHERE ic.owner=owner
 			   AND ic.table_name=table_name
-			   AND ic.column_type='effective end date') eed,
+			   AND ic.column_type='expiration date') exd,
 		       (SELECT column_name
 			  FROM column_conf ic
 			 WHERE ic.owner=owner
