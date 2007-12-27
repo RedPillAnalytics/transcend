@@ -215,7 +215,7 @@ IS
       -- if we still have not affected any records, then there's a problem
       IF SQL%ROWCOUNT = 0
       THEN
-	 raise_err( 'no_rep_obj' );
+	 evolve_log.raise_err( 'no_rep_obj' );
       END IF;
    END set_notification_event;
 
@@ -297,7 +297,7 @@ IS
       -- if we still have not affected any records, then there's a problem
       IF SQL%ROWCOUNT = 0
       THEN
-	 raise_err( 'no_rep_obj' );
+	 evolve_log.raise_err( 'no_rep_obj' );
       END IF;
    END set_notification;
 
@@ -388,7 +388,7 @@ IS
       -- if we still have not affected any records, then there's a problem
       IF SQL%ROWCOUNT = 0
       THEN
-	 raise_err( 'no_rep_obj' );
+	 evolve_log.raise_err( 'no_rep_obj' );
       END IF;
    END set_error_conf;
 
@@ -464,7 +464,7 @@ IS
       -- if we still have not affected any records, then there's a problem
       IF SQL%ROWCOUNT = 0
       THEN
-	 raise_err( 'no_rep_obj' );
+	 evolve_log.raise_err( 'no_rep_obj' );
       END IF;
    END set_session_parameter;
 
