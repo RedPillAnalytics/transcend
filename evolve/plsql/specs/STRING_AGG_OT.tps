@@ -1,5 +1,5 @@
 CREATE OR REPLACE TYPE string_agg_ot AS OBJECT(
-   total   VARCHAR2( 4000 ),
+   total   VARCHAR2( 32767 ),
    STATIC FUNCTION odciaggregateinitialize( sctx IN OUT string_agg_ot )
       RETURN NUMBER,
    MEMBER FUNCTION odciaggregateiterate( SELF IN OUT string_agg_ot, VALUE IN VARCHAR2 )
