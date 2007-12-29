@@ -177,23 +177,73 @@ AS
                                -- use the STRAGG function to aggregate strings
                                -- this puts together the scd type 2 case statement
                                -- this generates the include flag
-                               || ( SELECT REGEXP_REPLACE( stragg(    ' WHEN nvl('
-                                                                || column_name
-                                                                || ',-.01) < > nvl(LAG('
-                                                                || column_name
-                                                                || ') OVER (partition BY '
-                                                                || nk_list
-                                                                || ' ORDER BY '
-                                                                || efd
-                                                                || '),-.01) THEN ''Y'''
-                                                              ),
-                                                           ', WHEN',
-                                                           ' WHEN'
-                                                         )
-                                     FROM column_conf ic
-                                    WHERE ic.owner = SELF.owner
-                                      AND ic.table_name = SELF.table_name
-                                      AND column_type = 'scd type 2' )
+                               || REGEXP_REPLACE(    ( SELECT stragg(    ' WHEN nvl('
+                                                                   || column_name
+                                                                   || ',-.01) < > nvl(LAG('
+                                                                   || column_name
+                                                                   || ') OVER (partition BY '
+                                                                   || nk_list
+                                                                   || ' ORDER BY '
+                                                                   || efd
+                                                                   || '),-.01) THEN ''Y'''
+                                                                 )
+                                                        FROM ( SELECT column_name, ROWNUM rn
+                                                                FROM column_conf ic
+                                                               WHERE ic.owner = SELF.owner
+                                                                 AND ic.table_name = SELF.table_name
+                                                                 AND column_type = 'scd type 2' )
+                                                       WHERE rn <= scd2_grp_num )
+                                                  || ( SELECT stragg(    ' WHEN nvl('
+                                                                   || column_name
+                                                                   || ',-.01) < > nvl(LAG('
+                                                                   || column_name
+                                                                   || ') OVER (partition BY '
+                                                                   || nk_list
+                                                                   || ' ORDER BY '
+                                                                   || efd
+                                                                   || '),-.01) THEN ''Y'''
+                                                                 )
+                                                        FROM ( SELECT column_name, ROWNUM rn
+                                                                FROM column_conf ic
+                                                               WHERE ic.owner = SELF.owner
+                                                                 AND ic.table_name = SELF.table_name
+                                                                 AND column_type = 'scd type 2' )
+                                                       WHERE rn > scd2_grp_num AND rn <= scd2_grp_num * 2 )
+                                                  || ( SELECT stragg(    ' WHEN nvl('
+                                                                   || column_name
+                                                                   || ',-.01) < > nvl(LAG('
+                                                                   || column_name
+                                                                   || ') OVER (partition BY '
+                                                                   || nk_list
+                                                                   || ' ORDER BY '
+                                                                   || efd
+                                                                   || '),-.01) THEN ''Y'''
+                                                                 )
+                                                        FROM ( SELECT column_name, ROWNUM rn
+                                                                FROM column_conf ic
+                                                               WHERE ic.owner = SELF.owner
+                                                                 AND ic.table_name = SELF.table_name
+                                                                 AND column_type = 'scd type 2' )
+                                                       WHERE rn > ( scd2_grp_num ) * 2 AND rn <= ( scd2_grp_num ) * 3 )
+                                                  || ( SELECT stragg(    ' WHEN nvl('
+                                                                   || column_name
+                                                                   || ',-.01) < > nvl(LAG('
+                                                                   || column_name
+                                                                   || ') OVER (partition BY '
+                                                                   || nk_list
+                                                                   || ' ORDER BY '
+                                                                   || efd
+                                                                   || '),-.01) THEN ''Y'''
+                                                                 )
+                                                        FROM ( SELECT column_name, ROWNUM rn
+                                                                FROM column_conf ic
+                                                               WHERE ic.owner = SELF.owner
+                                                                 AND ic.table_name = SELF.table_name
+                                                                 AND column_type = 'scd type 2' )
+                                                       WHERE rn > ( scd2_grp_num ) * 3 ),
+                                                  ', WHEN',
+                                                  ' WHEN'
+                                                )
                                || ' else ''N'' end include' include_list
                          FROM ( SELECT column_type, column_name,
                                        
@@ -211,6 +261,16 @@ AS
                                            AND ic.table_name = SELF.table_name
                                            AND column_type = 'scd type 1' ) scd1_list,
                                        
+                                       -- get 1/4 of the number or rows rounded
+                                       ROUND(   ( SELECT COUNT( column_name )
+                                                   FROM column_conf ic
+                                                  WHERE ic.owner = SELF.owner
+                                                    AND ic.table_name = SELF.table_name
+                                                    AND column_type = 'scd type 2' )
+                                              / 4,
+                                              0
+                                            ) scd2_grp_num,
+                                       
                                        -- STRAGG function aggregates strings
                                        -- generate the list of all the different column types
                                        ( SELECT stragg( column_name )
@@ -223,7 +283,7 @@ AS
                                          WHERE ic.owner = SELF.owner
                                            AND ic.table_name = SELF.table_name
                                            AND ic.column_type = 'surrogate key' ) sk,
-                                       ( SELECT MAX( column_name )
+                                       ( SELECT stragg( column_name )
                                           FROM column_conf ic
                                          WHERE ic.owner = SELF.owner
                                            AND ic.table_name = SELF.table_name
