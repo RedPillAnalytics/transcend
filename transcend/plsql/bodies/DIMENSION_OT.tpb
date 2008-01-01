@@ -62,6 +62,7 @@ AS
       l_nk_list          VARCHAR2( 4000 );
       l_sql              LONG;
       l_scd2_list        LONG;
+      l_scd2_date_list   LONG;
       l_scd1_list        LONG;
       l_scd_list         LONG;
       l_include_case     LONG;
@@ -143,13 +144,16 @@ AS
 
       evolve_log.log_msg( 'The surrogate key: ' || l_surr_key, 5 );
 
-      -- get a comma separated list of scd2 columns
+      -- get a comma separated list of scd2 columns (except those that are dates)
       -- use the STRAGG function for this
       BEGIN
          SELECT stragg( column_name )
            INTO l_scd2_list
            FROM column_conf ic
-          WHERE ic.owner = SELF.owner AND ic.table_name = SELF.table_name AND ic.column_type = 'scd type 2';
+	   JOIN all_tab_columns
+		USING (owner,table_name,column_name)
+          WHERE owner = SELF.owner AND table_name = SELF.table_name AND column_type = 'scd type 2'
+	    AND data_type <> 'DATE';
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
@@ -158,6 +162,25 @@ AS
       END;
 
       evolve_log.log_msg( 'The SCD 2 list: ' || l_scd2_list, 5 );
+      
+      -- get a comma separated list of scd2 date columns
+      -- use the STRAGG function for this
+      BEGIN
+         SELECT stragg( column_name )
+           INTO l_scd2_date_list
+           FROM column_conf ic
+	   JOIN all_tab_columns
+		USING (owner,table_name,column_name)
+          WHERE owner = SELF.owner AND table_name = SELF.table_name AND column_type = 'scd type 2'
+	    AND data_type = 'DATE';
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            -- if there are no type 2 attributes, that is fine
+            NULL;
+      END;
+
+      evolve_log.log_msg( 'The SCD 2 DATE list: ' || l_scd2_date_list, 5 );
 
       -- get a comma separated list of scd1 columns
       -- use the STRAGG function for this
@@ -176,12 +199,12 @@ AS
       evolve_log.log_msg( 'The SCD 1 list: ' || l_scd1_list, 5 );
       -- construct a list of all scd attributes
       -- this is a combined list of all scd1 and scd2 attributes
+      -- if any of the variables are null, we may get a ',,'
+      -- use the regexp_replace to remove that
+      -- also need the regexp to remove an extra comma at the end if that appears
       l_scd_list          :=
-               l_scd2_list || CASE
-                  WHEN l_scd1_list IS NOT NULL AND l_scd2_list IS NOT NULL
-                     THEN ','
-                  ELSE NULL
-               END || l_scd1_list;
+      regexp_replace(l_scd2_list ||','|| l_scd2_date_list||','|| l_scd1_list,'(,)(,|$)','\2');
+
       evolve_log.log_msg( 'The SCD list: ' || l_scd_list, 5 );
       -- construct the include case statement
       -- this case statement determines which records from the staging table are included as new rows
@@ -195,8 +218,16 @@ AS
                             || l_eff_dt
                             || '),-.01) then ''Y'' '
                           )
+      || REGEXP_REPLACE( l_scd2_date_list,
+                            '(\w+)(,|$)',
+                               'when nvl(\1,''01/02/9999'') <> nvl(lag(\1) over (partition by '
+                            || l_nk_list
+                            || ' order by '
+                            || l_eff_dt
+                            || '),''01/02/9999'') then ''Y'' '
+                          )
          || ' else ''N'' end include';
-      evolve_log.log_msg( 'The include list: ' || l_include_case, 5 );
+      evolve_log.log_msg( 'The include CASE: ' || l_include_case, 5 );
       -- construct the scd1 analytics list
       -- this is a list of all the LAST_VALUE statements needed for the final statement
       l_scd1_analytics    :=
@@ -258,7 +289,9 @@ AS
          || l_nk_list
          || ','
          || l_scd1_analytics
-         || l_scd2_list
+            || l_scd2_list
+	    || ','
+	    || l_scd2_date_list
          || ','
          || l_eff_dt
          || ','
