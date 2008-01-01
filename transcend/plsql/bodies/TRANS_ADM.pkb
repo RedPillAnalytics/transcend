@@ -99,8 +99,8 @@ IS
          WHEN p_table_owner IS NOT NULL
          THEN
             -- table information is provided, so use that
-            l_owner := UPPER( p_table_owner );
-            l_table := UPPER( p_table_name );
+            l_owner    := UPPER( p_table_owner );
+            l_table    := UPPER( p_table_name );
             -- now check the external table
             td_utils.check_table( p_owner => p_table_owner, p_table => p_table_name, p_external => 'yes' );
          WHEN p_table_owner IS NULL
@@ -119,12 +119,12 @@ IS
          -- if they aren't, the GET_DIR_PATH function raises an error
          IF p_arch_directory IS NOT NULL
          THEN
-            l_dir_path := td_utils.get_dir_path( p_arch_directory );
+            l_dir_path    := td_utils.get_dir_path( p_arch_directory );
          END IF;
 
          IF p_source_directory IS NOT NULL
          THEN
-            l_dir_path := td_utils.get_dir_path( p_source_directory );
+            l_dir_path    := td_utils.get_dir_path( p_source_directory );
          END IF;
 
          -- get the directory from the external table
@@ -263,12 +263,12 @@ IS
          -- if they aren't, the GET_DIR_PATH function raises an error
          IF p_arch_directory IS NOT NULL
          THEN
-            l_dir_path := td_utils.get_dir_path( p_arch_directory );
+            l_dir_path    := td_utils.get_dir_path( p_arch_directory );
          END IF;
 
          IF p_directory IS NOT NULL
          THEN
-            l_dir_path := td_utils.get_dir_path( p_directory );
+            l_dir_path    := td_utils.get_dir_path( p_directory );
          END IF;
       END IF;
 
@@ -405,7 +405,7 @@ IS
           WHERE owner = UPPER( p_owner ) AND table_name = UPPER( p_table );
 
          -- get the SQL rowcount
-         l_num_rows := SQL%ROWCOUNT;
+         l_num_rows    := SQL%ROWCOUNT;
       END IF;
 
       -- updating a current config has failed, or an insert was specified
@@ -448,12 +448,12 @@ IS
                  VALUES ( UPPER( p_owner ), UPPER( p_table ), UPPER( p_source_owner ), UPPER( p_source_object ),
                           UPPER( p_sequence_owner ), UPPER( p_sequence_name ), UPPER( p_staging_owner ),
                           UPPER( p_staging_table ), NVL( p_default_scd_type, 2 ), LOWER( NVL( p_direct_load, 'yes' )),
-                          LOWER( NVL( p_replace_method, 'rename' )), LOWER( NVL( p_statistics, 'transfer' )),
+                          LOWER( NVL( p_replace_method, 'replace' )), LOWER( NVL( p_statistics, 'transfer' )),
                           LOWER( NVL( p_concurrent, 'yes' )), p_description
                         );
 
             -- get the SQL rowcount
-            l_num_rows := SQL%ROWCOUNT;
+            l_num_rows    := SQL%ROWCOUNT;
          EXCEPTION
             WHEN e_dup_conf
             THEN
@@ -464,18 +464,21 @@ IS
       IF LOWER( p_mode ) = 'delete'
       THEN
          -- if a delete is specifically requested, then do a delete
+         DELETE FROM column_conf
+               WHERE owner = UPPER( p_owner ) AND table_name = UPPER( p_table );
+
          DELETE FROM dimension_conf
                WHERE owner = UPPER( p_owner ) AND table_name = UPPER( p_table );
 
          -- get the SQL rowcount
-         l_num_rows := SQL%ROWCOUNT;
+         l_num_rows    := SQL%ROWCOUNT;
       ELSE
               -- as long as P_MODE wasn't 'delete', then we should validate the new structure of the dimension
               -- now use the dimension object to validate the new structure
          -- just constructing the object calls the CONFIRM_OBJECTS procedure
          BEGIN
             NULL;
-            o_dim := dimension_ot( p_owner => p_owner, p_table => p_table );
+            o_dim    := dimension_ot( p_owner => p_owner, p_table => p_table );
          END;
       END IF;
 
