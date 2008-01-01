@@ -55,256 +55,241 @@ AS
    END confirm_objects;
    MEMBER PROCEDURE LOAD
    IS
-      l_sql    LONG;
-      o_ev     evolve_ot := evolve_ot( p_module => 'load' );
-      l_rows   BOOLEAN;
+      l_curr_ind         column_conf.column_name%TYPE;
+      l_exp_dt           column_conf.column_name%TYPE;
+      l_eff_dt           column_conf.column_name%TYPE;
+      l_surr_key         column_conf.column_name%TYPE;
+      l_nk_list          VARCHAR2( 4000 );
+      l_sql              LONG;
+      l_scd2_list        LONG;
+      l_scd1_list        LONG;
+      l_scd_list         LONG;
+      l_include_case     LONG;
+      l_scd1_analytics   LONG;
+      o_ev               evolve_ot                      := evolve_ot( p_module => 'load' );
+      l_rows             BOOLEAN;
    BEGIN
-      SELECT DISTINCT    'insert '
-                      || CASE td_core.get_yn_ind( SELF.direct_load )
-                            WHEN 'yes'
-                               THEN '/*+ APPEND */ '
-                            ELSE NULL
-                         END
-                      || 'into '
-                      || SELF.full_stage
-                      || ' SELECT '
-                      || sel1
-                      || ' from ('
-                      || 'SELECT '
-                      || sk
-                      || ','
-                      || nk_list
-                      || ','
-                      || scd1_analytics
-                      || scd2_list
-                      || ','
-                      || efd
-                      || ','
-                      || include_list
-                      || ' from '
-                      || union_list
-                      || ' order by '
-                      || nk_list
-                      || ','
-                      || efd
-                      || ')'
-                      || ' where include=''Y'''
-                 INTO l_sql
-                 FROM ( SELECT sk, nk_list, efd, scd1_list, scd2_list, scd_list,
-                                  'CASE '
-                               || sk
-                               || ' when -.1 then '
-                               || SELF.full_sequence
-                               || '.nextval else '
-                               || sk
-                               || ' end '
-                               || sk
-                               || ','
-                               || nk_list
-                               || ','
-                               || scd_list
-                               || ','
-                               || efd
-                               || ','
-                               || 'nvl( lead('
-                               || efd
-                               || ') OVER ( partition BY '
-                               || nk_list
-                               || ' ORDER BY '
-                               || efd
-                               || '), to_date(''12/31/9999'',''mm/dd/yyyy'')) '
-                               || exd
-                               || ','
-                               || ' CASE MAX('
-                               || efd
-                               || ') OVER (partition BY '
-                               || nk_list
-                               || ') WHEN '
-                               || efd
-                               || ' THEN ''Y'' ELSE ''N'' END '
-                               || ci sel1,
-                               
-                               -- use a STRAGG function to aggregate strings
-                               ( SELECT    stragg
-                                              (    'last_value('
-                                                || column_name
-                                                || ') over (partition by '
-                                                || nk_list
-                                                || ' order by '
-                                                || efd
-                                                || ' ROWS BETWEEN unbounded preceding AND unbounded following) '
-                                                || column_name
-                                              ) OVER( PARTITION BY column_type )
-                                        || ','
-                                  FROM column_conf ic
-                                 WHERE ic.owner = SELF.owner
-                                   AND ic.table_name = SELF.table_name
-                                   AND ic.column_type = 'scd type 1' ) scd1_analytics,
-                                  '(select -.1 '
-                               || sk
-                               || ','
-                               || nk_list
-                               || ','
-                               || efd
-                               || ','
-                               || scd_list
-                               || ' from '
-                               || SELF.full_source
-                               || ' union select '
-                               || sk
-                               || ','
-                               || nk_list
-                               || ','
-                               || efd
-                               || ','
-                               || scd_list
-                               || ' from '
-                               || full_table
-                               || ')' union_list,
-                                  'case when '
-                               || sk
-                               || ' <> -.1 then ''Y'' when '
-                               || efd
-                               || '=LAG('
-                               || efd
-                               || ') over (partition by '
-                               || nk_list
-                               || ' order by '
-                               || efd
-                               || ','
-                               || sk
-                               || ' desc) then ''N'''
-                               -- use the STRAGG function to aggregate strings
-                               -- this puts together the scd type 2 case statement
-                               -- this generates the include flag
-                               || REGEXP_REPLACE(    ( SELECT stragg(    ' WHEN nvl('
-                                                                   || column_name
-                                                                   || ',-.01) < > nvl(LAG('
-                                                                   || column_name
-                                                                   || ') OVER (partition BY '
-                                                                   || nk_list
-                                                                   || ' ORDER BY '
-                                                                   || efd
-                                                                   || '),-.01) THEN ''Y'''
-                                                                 )
-                                                        FROM ( SELECT column_name, ROWNUM rn
-                                                                FROM column_conf ic
-                                                               WHERE ic.owner = SELF.owner
-                                                                 AND ic.table_name = SELF.table_name
-                                                                 AND column_type = 'scd type 2' )
-                                                       WHERE rn <= scd2_grp_num )
-                                                  || ( SELECT stragg(    ' WHEN nvl('
-                                                                   || column_name
-                                                                   || ',-.01) < > nvl(LAG('
-                                                                   || column_name
-                                                                   || ') OVER (partition BY '
-                                                                   || nk_list
-                                                                   || ' ORDER BY '
-                                                                   || efd
-                                                                   || '),-.01) THEN ''Y'''
-                                                                 )
-                                                        FROM ( SELECT column_name, ROWNUM rn
-                                                                FROM column_conf ic
-                                                               WHERE ic.owner = SELF.owner
-                                                                 AND ic.table_name = SELF.table_name
-                                                                 AND column_type = 'scd type 2' )
-                                                       WHERE rn > scd2_grp_num AND rn <= scd2_grp_num * 2 )
-                                                  || ( SELECT stragg(    ' WHEN nvl('
-                                                                   || column_name
-                                                                   || ',-.01) < > nvl(LAG('
-                                                                   || column_name
-                                                                   || ') OVER (partition BY '
-                                                                   || nk_list
-                                                                   || ' ORDER BY '
-                                                                   || efd
-                                                                   || '),-.01) THEN ''Y'''
-                                                                 )
-                                                        FROM ( SELECT column_name, ROWNUM rn
-                                                                FROM column_conf ic
-                                                               WHERE ic.owner = SELF.owner
-                                                                 AND ic.table_name = SELF.table_name
-                                                                 AND column_type = 'scd type 2' )
-                                                       WHERE rn > ( scd2_grp_num ) * 2 AND rn <= ( scd2_grp_num ) * 3 )
-                                                  || ( SELECT stragg(    ' WHEN nvl('
-                                                                   || column_name
-                                                                   || ',-.01) < > nvl(LAG('
-                                                                   || column_name
-                                                                   || ') OVER (partition BY '
-                                                                   || nk_list
-                                                                   || ' ORDER BY '
-                                                                   || efd
-                                                                   || '),-.01) THEN ''Y'''
-                                                                 )
-                                                        FROM ( SELECT column_name, ROWNUM rn
-                                                                FROM column_conf ic
-                                                               WHERE ic.owner = SELF.owner
-                                                                 AND ic.table_name = SELF.table_name
-                                                                 AND column_type = 'scd type 2' )
-                                                       WHERE rn > ( scd2_grp_num ) * 3 ),
-                                                  ', WHEN',
-                                                  ' WHEN'
-                                                )
-                               || ' else ''N'' end include' include_list
-                         FROM ( SELECT column_type, column_name,
-                                       
-                                       -- STRAGG function aggregates strings
-                                       ( SELECT stragg( column_name )
-                                          FROM column_conf ic
-                                         WHERE ic.owner = SELF.owner
-                                           AND ic.table_name = SELF.table_name
-                                           AND REGEXP_LIKE( ic.column_type, 'scd', 'i' )) scd_list,
-                                       
-                                       -- STRAGG function aggregates strings
-                                       ( SELECT stragg( column_name )
-                                          FROM column_conf ic
-                                         WHERE ic.owner = SELF.owner
-                                           AND ic.table_name = SELF.table_name
-                                           AND column_type = 'scd type 1' ) scd1_list,
-                                       
-                                       -- get 1/4 of the number or rows rounded
-                                       ROUND(   ( SELECT COUNT( column_name )
-                                                   FROM column_conf ic
-                                                  WHERE ic.owner = SELF.owner
-                                                    AND ic.table_name = SELF.table_name
-                                                    AND column_type = 'scd type 2' )
-                                              / 4,
-                                              0
-                                            ) scd2_grp_num,
-                                       
-                                       -- STRAGG function aggregates strings
-                                       -- generate the list of all the different column types
-                                       ( SELECT stragg( column_name )
-                                          FROM column_conf ic
-                                         WHERE ic.owner = SELF.owner
-                                           AND ic.table_name = SELF.table_name
-                                           AND column_type = 'scd type 2' ) scd2_list,
-                                       ( SELECT column_name
-                                          FROM column_conf ic
-                                         WHERE ic.owner = SELF.owner
-                                           AND ic.table_name = SELF.table_name
-                                           AND ic.column_type = 'surrogate key' ) sk,
-                                       ( SELECT stragg( column_name )
-                                          FROM column_conf ic
-                                         WHERE ic.owner = SELF.owner
-                                           AND ic.table_name = SELF.table_name
-                                           AND ic.column_type = 'natural key' ) nk_list,
-                                       ( SELECT column_name
-                                          FROM column_conf ic
-                                         WHERE ic.owner = SELF.owner
-                                           AND ic.table_name = SELF.table_name
-                                           AND ic.column_type = 'effective date' ) efd,
-                                       ( SELECT column_name
-                                          FROM column_conf ic
-                                         WHERE ic.owner = SELF.owner
-                                           AND ic.table_name = SELF.table_name
-                                           AND ic.column_type = 'expiration date' ) exd,
-                                       ( SELECT column_name
-                                          FROM column_conf ic
-                                         WHERE ic.owner = SELF.owner
-                                           AND ic.table_name = SELF.table_name
-                                           AND ic.column_type = 'current indicator' ) ci
-                                 FROM column_conf JOIN dimension_conf USING( owner, table_name )
-                                WHERE owner = SELF.owner AND table_name = SELF.table_name ));
+      -- need to construct the column lists of the different column types
+      -- first get the current indicator
+      BEGIN
+         SELECT column_name
+           INTO l_curr_ind
+           FROM column_conf ic
+          WHERE ic.owner = SELF.owner AND ic.table_name = SELF.table_name AND ic.column_type = 'current indicator';
+      EXCEPTION
+         -- if there is no current indicator, that's okay
+         -- it's not necessary
+         WHEN NO_DATA_FOUND
+         THEN
+            NULL;
+      END;
+
+      evolve_log.log_msg( 'The current indicator: ' || l_curr_ind, 5 );
+
+      -- get an expiration date
+      BEGIN
+         SELECT column_name
+           INTO l_exp_dt
+           FROM column_conf ic
+          WHERE ic.owner = SELF.owner AND ic.table_name = SELF.table_name AND ic.column_type = 'expiration date';
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            evolve_log.raise_err( 'no_exp_dt' );
+      END;
+
+      evolve_log.log_msg( 'The expiration date: ' || l_exp_dt, 5 );
+
+      -- get an effective date
+      BEGIN
+         SELECT column_name
+           INTO l_eff_dt
+           FROM column_conf ic
+          WHERE ic.owner = SELF.owner AND ic.table_name = SELF.table_name AND ic.column_type = 'effective date';
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            evolve_log.raise_err( 'no_eff_dt' );
+      END;
+
+      evolve_log.log_msg( 'The effective date: ' || l_eff_dt, 5 );
+
+      -- get a comma separated list of natural keys
+      -- use the STRAGG function for this
+      BEGIN
+         SELECT stragg( column_name )
+           INTO l_nk_list
+           FROM column_conf ic
+          WHERE ic.owner = SELF.owner AND ic.table_name = SELF.table_name AND ic.column_type = 'natural key';
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            evolve_log.raise_err( 'no_nat_key' );
+      END;
+
+      evolve_log.log_msg( 'The natural key list: ' || l_nk_list, 5 );
+
+      -- get the surrogate key column
+      BEGIN
+         SELECT column_name
+           INTO l_surr_key
+           FROM column_conf ic
+          WHERE ic.owner = SELF.owner AND ic.table_name = SELF.table_name AND ic.column_type = 'surrogate key';
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            evolve_log.raise_err( 'no_surr_key' );
+      END;
+
+      evolve_log.log_msg( 'The surrogate key: ' || l_surr_key, 5 );
+
+      -- get a comma separated list of scd2 columns
+      -- use the STRAGG function for this
+      BEGIN
+         SELECT stragg( column_name )
+           INTO l_scd2_list
+           FROM column_conf ic
+          WHERE ic.owner = SELF.owner AND ic.table_name = SELF.table_name AND ic.column_type = 'scd type 2';
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            -- if there are no type 2 attributes, that is fine
+            NULL;
+      END;
+
+      evolve_log.log_msg( 'The SCD 2 list: ' || l_scd2_list, 5 );
+
+      -- get a comma separated list of scd1 columns
+      -- use the STRAGG function for this
+      BEGIN
+         SELECT stragg( column_name )
+           INTO l_scd1_list
+           FROM column_conf ic
+          WHERE ic.owner = SELF.owner AND ic.table_name = SELF.table_name AND ic.column_type = 'scd type 1';
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            -- if there are no type 1 attributes, that is fine
+            NULL;
+      END;
+
+      evolve_log.log_msg( 'The SCD 1 list: ' || l_scd1_list, 5 );
+      -- construct a list of all scd attributes
+      -- this is a combined list of all scd1 and scd2 attributes
+      l_scd_list          :=
+               l_scd2_list || CASE
+                  WHEN l_scd1_list IS NOT NULL AND l_scd2_list IS NOT NULL
+                     THEN ','
+                  ELSE NULL
+               END || l_scd1_list;
+      evolve_log.log_msg( 'The SCD list: ' || l_scd_list, 5 );
+      -- construct the include case statement
+      -- this case statement determines which records from the staging table are included as new rows
+      l_include_case      :=
+            'case '
+         || REGEXP_REPLACE( l_scd2_list,
+                            '(\w+)(,|$)',
+                               'when nvl(\1,-.01) <> nvl(lag(\1) over (partition by '
+                            || l_nk_list
+                            || ' order by '
+                            || l_eff_dt
+                            || '),-.01) then ''Y'' '
+                          )
+         || ' else ''N'' end include';
+      evolve_log.log_msg( 'The include list: ' || l_include_case, 5 );
+      -- construct the scd1 analytics list
+      -- this is a list of all the LAST_VALUE statements needed for the final statement
+      l_scd1_analytics    :=
+         REGEXP_REPLACE( l_scd1_list,
+                         '(\w+)(,|$)',
+                            'last_value(\1) over (partition by '
+                         || l_nk_list
+                         || ' order by '
+                         || l_eff_dt
+                         || ' ROWS BETWEEN unbounded preceding AND unbounded following) \1'
+                       );
+      evolve_log.log_msg( 'The scd1 analytics clause: ' || l_scd1_analytics, 5 );
+      -- now, put the statement together
+      l_sql               :=
+            'insert '
+         || CASE td_core.get_yn_ind( SELF.direct_load )
+               WHEN 'yes'
+                  THEN '/*+ APPEND */ '
+               ELSE NULL
+            END
+         || 'into '
+         || SELF.full_stage
+         || ' SELECT case '
+         || l_surr_key
+         || ' when -.1 then '
+         || SELF.full_sequence
+         || '.nextval else '
+         || l_surr_key
+         || ' end '
+         || l_surr_key
+         || ','
+         || l_nk_list
+         || ','
+         || l_scd_list
+         || ','
+         || l_eff_dt
+         || ','
+         || 'nvl( lead('
+         || l_eff_dt
+         || ') OVER ( partition BY '
+         || l_nk_list
+         || ' ORDER BY '
+         || l_eff_dt
+         || '), to_date(''12/31/9999'',''mm/dd/yyyy'')) '
+         || l_exp_dt
+         || ','
+         || ' CASE MAX('
+         || l_eff_dt
+         || ') OVER (partition BY '
+         || l_nk_list
+         || ') WHEN '
+         || l_eff_dt
+         || ' THEN ''Y'' ELSE ''N'' END '
+         || l_curr_ind
+         || ' from ('
+         || 'SELECT '
+         || l_surr_key
+         || ','
+         || l_nk_list
+         || ','
+         || l_scd1_analytics
+         || l_scd2_list
+         || ','
+         || l_eff_dt
+         || ','
+         || l_include_case
+         || ' from (select -.1 '
+         || l_surr_key
+         || ','
+         || l_nk_list
+         || ','
+         || l_eff_dt
+         || ','
+         || l_scd_list
+         || ' from '
+         || SELF.full_source
+         || ' union select '
+         || l_surr_key
+         || ','
+         || l_nk_list
+         || ','
+         || l_eff_dt
+         || ','
+         || l_scd_list
+         || ' from '
+         || SELF.full_table
+         || ')'
+         || ' order by '
+         || l_nk_list
+         || ','
+         || l_eff_dt
+         || ')'
+         || ' where include=''Y''';
 
       -- check to see if the staging table is constant
       IF NOT td_core.is_true( constant_staging )
