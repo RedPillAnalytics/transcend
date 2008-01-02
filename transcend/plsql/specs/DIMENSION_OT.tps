@@ -18,6 +18,11 @@ AS OBJECT(
    replace_method     VARCHAR2( 10 ),
    statistics         VARCHAR2( 10 ),
    concurrent         VARCHAR2( 3 ),
+   current_ind_col    VARCHAR2( 30 ),
+   effect_dt_col      VARCHAR2( 30 ),
+   expire_dt_col      VARCHAR2( 30 ),
+   surrogate_key_col  VARCHAR2( 30 ),
+   natural_key_list   VARCHAR2( 4000 ),
    CONSTRUCTOR FUNCTION dimension_ot( p_owner VARCHAR2, p_table VARCHAR2 )
       RETURN SELF AS RESULT,
    MEMBER PROCEDURE confirm_objects,

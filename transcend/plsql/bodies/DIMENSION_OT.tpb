@@ -27,6 +27,81 @@ AS
                 FROM dimension_conf
                WHERE owner = l_owner AND table_name = l_table );
 
+      -- need to construct the column lists of the different column types
+      -- first get the current indicator
+      BEGIN
+	 SELECT column_name
+           INTO current_ind_col
+           FROM column_conf
+	  WHERE owner = SELF.owner 
+	    AND table_name = SELF.table_name 
+	    AND column_type = 'current indicator';
+      EXCEPTION
+	 WHEN no_data_found
+	 THEN 
+	    NULL;
+      END;
+
+      evolve_log.log_msg( 'The current indicator: ' || current_ind_col, 5 );
+
+      -- get an expiration date
+      BEGIN
+         SELECT column_name
+           INTO expire_dt_col
+           FROM column_conf
+          WHERE owner = SELF.owner AND table_name = SELF.table_name AND column_type = 'expiration date';
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            NULL;
+      END;
+
+      evolve_log.log_msg( 'The expiration date: ' || expire_dt_col, 5 );
+
+      -- get an effective date
+      BEGIN
+         SELECT column_name
+           INTO effect_dt_col
+           FROM column_conf
+          WHERE owner = SELF.owner AND table_name = SELF.table_name AND column_type = 'effective date';
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            NULL;
+      END;
+
+      evolve_log.log_msg( 'The effective date: ' || effect_dt_col, 5 );
+
+      -- get a comma separated list of natural keys
+      -- use the STRAGG function for this
+      BEGIN
+         SELECT stragg( column_name )
+           INTO natural_key_list
+           FROM column_conf
+          WHERE owner = SELF.owner AND table_name = SELF.table_name AND column_type = 'natural key';
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            NULL;
+      END;
+
+      evolve_log.log_msg( 'The natural key list: ' || natural_key_list, 5 );
+
+      -- get the surrogate key column
+      BEGIN
+         SELECT column_name
+           INTO surrogate_key_col
+           FROM column_conf
+          WHERE owner = SELF.owner AND table_name = SELF.table_name AND column_type = 'surrogate key';
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            NULL;
+      END;
+
+      evolve_log.log_msg( 'The surrogate key: ' || surrogate_key_col, 5 );
+
+
       -- every time the dimension object is loaded, it should confirm the objects
       confirm_objects;
       RETURN;
@@ -40,6 +115,72 @@ AS
       td_utils.check_table( p_owner => owner, p_table => table_name );
       -- check that the source object exists
       td_utils.check_object( p_owner => source_owner, p_object => source_object, p_object_type => 'table$|view' );
+      -- check and make sure that the correct columns exist in the source table compared to the target table
+      BEGIN
+      SELECT EXCEPT
+	INTO l_col_except
+	FROM ( SELECT CASE
+		      -- these are the only exceptable differences between the two tables
+		      WHEN column_name =surrogate_key_col AND source='D'
+		      THEN 'N'
+		      WHEN column_name=effect_dt_col AND source='D'
+		      THEN 'N'
+		      WHEN column_name=current_ind_col AND source='D'
+		      THEN 'N'
+		      -- everything else is a problem
+		      ELSE 'Y'
+		      END EXCEPT,
+		      src.*
+		 FROM (SELECT column_name,
+			      data_type,
+			      data_length,
+			      CASE
+			      WHEN count(src1) = 1 THEN 'D'
+			      WHEN count(src2) = 1 THEN 'S'
+			      END source,
+			      count(src1) cnt1, 
+			      count(src2) cnt2
+			 FROM 
+			      ( SELECT column_name,
+				       data_type,
+				       data_length,
+				       1 src1, 
+				       to_number(NULL) src2 
+				  FROM all_tab_columns
+				 WHERE owner='WHDATA'
+				   AND table_name='CUSTOMER_DIM'
+				       UNION ALL
+				SELECT column_name,
+				       data_type,
+				       data_length, 
+				       to_number(NULL) src1,
+				       2 src2
+				  FROM all_tab_columns
+				 WHERE owner='WHSTAGE'
+				   AND table_name='CUSTOMER_STG'
+			      )
+			GROUP BY column_name,
+			      data_type,
+			      data_length
+		       HAVING count(src1) <> count(src2)) src )
+       WHERE EXCEPT='Y';
+      EXCEPTION
+	 -- no differences is fine
+	 WHEN no_data_found
+	 THEN
+	 NULL;
+	 -- any differences are too many, so this should raise an error
+	 WHEN too_many_rows
+	 THEN
+	 evolve_log.raise_err( 'dim_load_mismatch' );
+      END;
+      
+      -- if even one difference is found, then it's too many
+      IF l_col_except = 'Y'
+      THEN
+	 evolve_log.raise_err( 'dim_load_mismatch' );
+      END IF;
+
       -- check that the sequence exists
       evolve_log.log_msg( 'The sequence owner: ' || sequence_owner, 5 );
       evolve_log.log_msg( 'The sequence name: ' || sequence_name, 5 );
@@ -55,14 +196,17 @@ AS
    END confirm_objects;
    MEMBER PROCEDURE LOAD
    IS
-      l_curr_ind         column_conf.column_name%TYPE;
-      l_exp_dt           column_conf.column_name%TYPE;
-      l_eff_dt           column_conf.column_name%TYPE;
-      l_surr_key         column_conf.column_name%TYPE;
-      l_nk_list          VARCHAR2( 4000 );
+      -- default comparision types
+      l_char_nvl         dimension_conf.char_nvl_default%TYPE;
+      l_num_nvl          dimension_conf.number_nvl_default%TYPE;
+      l_date_nvl         dimension_conf.date_nvl_default%TYPE;
+      l_stage_key        dimension_conf.stage_key_default%TYPE;
+
       l_sql              LONG;
+      l_scd2_dates       LONG;
+      l_scd2_nums        LONG;
+      l_scd2_chars       LONG;
       l_scd2_list        LONG;
-      l_scd2_date_list   LONG;
       l_scd1_list        LONG;
       l_scd_list         LONG;
       l_include_case     LONG;
@@ -70,13 +214,18 @@ AS
       o_ev               evolve_ot                      := evolve_ot( p_module => 'load' );
       l_rows             BOOLEAN;
    BEGIN
-      -- need to construct the column lists of the different column types
-      -- first get the current indicator
+      -- need to get some of the default comparision values
       BEGIN
-         SELECT column_name
-           INTO l_curr_ind
-           FROM column_conf ic
-          WHERE ic.owner = SELF.owner AND ic.table_name = SELF.table_name AND ic.column_type = 'current indicator';
+         SELECT char_nvl_default,
+		number_nvl_default,
+		date_nvl_default,
+		stage_key_default
+           INTO l_char_nvl,
+		l_num_nvl,
+		l_date_nvl,
+		l_stage_key
+           FROM dimension_conf
+          WHERE owner = SELF.owner AND table_name = SELF.table_name;
       EXCEPTION
          -- if there is no current indicator, that's okay
          -- it's not necessary
@@ -84,90 +233,12 @@ AS
          THEN
             NULL;
       END;
-
-      evolve_log.log_msg( 'The current indicator: ' || l_curr_ind, 5 );
-
-      -- get an expiration date
-      BEGIN
-         SELECT column_name
-           INTO l_exp_dt
-           FROM column_conf ic
-          WHERE ic.owner = SELF.owner AND ic.table_name = SELF.table_name AND ic.column_type = 'expiration date';
-      EXCEPTION
-         WHEN NO_DATA_FOUND
-         THEN
-            evolve_log.raise_err( 'no_exp_dt' );
-      END;
-
-      evolve_log.log_msg( 'The expiration date: ' || l_exp_dt, 5 );
-
-      -- get an effective date
-      BEGIN
-         SELECT column_name
-           INTO l_eff_dt
-           FROM column_conf ic
-          WHERE ic.owner = SELF.owner AND ic.table_name = SELF.table_name AND ic.column_type = 'effective date';
-      EXCEPTION
-         WHEN NO_DATA_FOUND
-         THEN
-            evolve_log.raise_err( 'no_eff_dt' );
-      END;
-
-      evolve_log.log_msg( 'The effective date: ' || l_eff_dt, 5 );
-
-      -- get a comma separated list of natural keys
-      -- use the STRAGG function for this
-      BEGIN
-         SELECT stragg( column_name )
-           INTO l_nk_list
-           FROM column_conf ic
-          WHERE ic.owner = SELF.owner AND ic.table_name = SELF.table_name AND ic.column_type = 'natural key';
-      EXCEPTION
-         WHEN NO_DATA_FOUND
-         THEN
-            evolve_log.raise_err( 'no_nat_key' );
-      END;
-
-      evolve_log.log_msg( 'The natural key list: ' || l_nk_list, 5 );
-
-      -- get the surrogate key column
-      BEGIN
-         SELECT column_name
-           INTO l_surr_key
-           FROM column_conf ic
-          WHERE ic.owner = SELF.owner AND ic.table_name = SELF.table_name AND ic.column_type = 'surrogate key';
-      EXCEPTION
-         WHEN NO_DATA_FOUND
-         THEN
-            evolve_log.raise_err( 'no_surr_key' );
-      END;
-
-      evolve_log.log_msg( 'The surrogate key: ' || l_surr_key, 5 );
-
-      -- get a comma separated list of scd2 columns (except those that are dates)
-      -- use the STRAGG function for this
-      BEGIN
-         SELECT stragg( column_name )
-           INTO l_scd2_list
-           FROM column_conf ic
-	   JOIN all_tab_columns
-		USING (owner,table_name,column_name)
-          WHERE owner = SELF.owner AND table_name = SELF.table_name AND column_type = 'scd type 2'
-	    AND data_type <> 'DATE';
-      EXCEPTION
-         WHEN NO_DATA_FOUND
-         THEN
-            -- if there are no type 2 attributes, that is fine
-            NULL;
-      END;
-
-      evolve_log.log_msg( 'The SCD 2 list: ' || l_scd2_list, 5 );
       
-      -- get a comma separated list of scd2 date columns
+      -- get a comma separated list of scd2 columns that are dates
       -- use the STRAGG function for this
       BEGIN
          SELECT stragg( column_name )
-           INTO l_scd2_date_list
+           INTO l_scd2_dates
            FROM column_conf ic
 	   JOIN all_tab_columns
 		USING (owner,table_name,column_name)
@@ -180,7 +251,45 @@ AS
             NULL;
       END;
 
-      evolve_log.log_msg( 'The SCD 2 DATE list: ' || l_scd2_date_list, 5 );
+      evolve_log.log_msg( 'The SCD2 date list: ' || l_scd2_dates, 5 );
+
+      -- get a comma separated list of scd2 attributes that are numbers
+      -- use the STRAGG function for this
+      BEGIN
+         SELECT stragg( column_name )
+           INTO l_scd2_nums
+           FROM column_conf ic
+	   JOIN all_tab_columns
+		USING (owner,table_name,column_name)
+          WHERE owner = SELF.owner AND table_name = SELF.table_name AND column_type = 'scd type 2'
+	    AND data_type = 'NUMBER';
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            -- if there are no type 2 attributes, that is fine
+            NULL;
+      END;
+
+      evolve_log.log_msg( 'The SCD 2 number list: ' || l_scd2_nums, 5 );
+      
+      -- get a comma separated list of scd2 date columns
+      -- use the STRAGG function for this
+      BEGIN
+         SELECT stragg( column_name )
+           INTO l_scd2_chars
+           FROM column_conf ic
+	   JOIN all_tab_columns
+		USING (owner,table_name,column_name)
+          WHERE owner = SELF.owner AND table_name = SELF.table_name AND column_type = 'scd type 2'
+	    AND data_type NOT IN ('DATE','NUMBER');
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            -- if there are no type 2 attributes, that is fine
+            NULL;
+      END;
+
+      evolve_log.log_msg( 'The SCD 2 DATE list: ' || l_scd2_chars, 5 );
 
       -- get a comma separated list of scd1 columns
       -- use the STRAGG function for this
@@ -196,35 +305,51 @@ AS
             NULL;
       END;
 
-      evolve_log.log_msg( 'The SCD 1 list: ' || l_scd1_list, 5 );
+      evolve_log.log_msg( 'The SCD 2 complete list: ' || l_scd1_list, 5 );
+
+      -- construct a list of all scd2 attributes
+      -- if any of the variables are null, we may get a ',,' or a ',' at the end of the list
+      -- use the regexp_replace to remove that
+      l_scd2_list          :=
+      regexp_replace(l_scd2_dates ||','|| l_scd2_nums||','|| l_scd2_chars,'(,)(,|$)','\2');
+
+
       -- construct a list of all scd attributes
       -- this is a combined list of all scd1 and scd2 attributes
       -- if any of the variables are null, we may get a ',,'
       -- use the regexp_replace to remove that
       -- also need the regexp to remove an extra comma at the end if that appears
       l_scd_list          :=
-      regexp_replace(l_scd2_list ||','|| l_scd2_date_list||','|| l_scd1_list,'(,)(,|$)','\2');
+      regexp_replace(l_scd2_list ||','|| l_scd1_list,'(,)(,|$)','\2');
 
       evolve_log.log_msg( 'The SCD list: ' || l_scd_list, 5 );
       -- construct the include case statement
       -- this case statement determines which records from the staging table are included as new rows
       l_include_case      :=
-            'case '
-         || REGEXP_REPLACE( l_scd2_list,
+            'CASE WHEN '||surrogate_key_col||' <> '||l_stage_key||' THEN ''Y'''
+         || REGEXP_REPLACE( l_scd2_nums,
                             '(\w+)(,|$)',
-                               'when nvl(\1,-.01) <> nvl(lag(\1) over (partition by '
-                            || l_nk_list
+                            'when nvl(\1,'||l_nvl_nums||') <> nvl(lag(\1) over (partition by '
+                            || natural_key_list
                             || ' order by '
-                            || l_eff_dt
-                            || '),-.01) then ''Y'' '
+                            || effect_dt_col
+                            || '),'||l_nvl_nums||') then ''Y'' '
                           )
-      || REGEXP_REPLACE( l_scd2_date_list,
+         || REGEXP_REPLACE( l_scd2_chars,
                             '(\w+)(,|$)',
-                               'when nvl(\1,''01/02/9999'') <> nvl(lag(\1) over (partition by '
-                            || l_nk_list
+                            'when nvl(\1,'||l_nvl_chars||') <> nvl(lag(\1) over (partition by '
+                            || natural_key_list
                             || ' order by '
-                            || l_eff_dt
-                            || '),''01/02/9999'') then ''Y'' '
+                            || effect_dt_col
+                            || '),'||l_nvl_chars||') then ''Y'' '
+                          )
+      || REGEXP_REPLACE( l_scd2_dates,
+                            '(\w+)(,|$)',
+                         'when nvl(\1,'||l_nvl_dates||') <> nvl(lag(\1) over (partition by '
+                            || natural_key_list
+                            || ' order by '
+                            || effect_dt_col
+                            || '),'||l_nvl_dates||') then ''Y'' '
                           )
          || ' else ''N'' end include';
       evolve_log.log_msg( 'The include CASE: ' || l_include_case, 5 );
@@ -234,9 +359,9 @@ AS
          REGEXP_REPLACE( l_scd1_list,
                          '(\w+)(,|$)',
                             'last_value(\1) over (partition by '
-                         || l_nk_list
+                         || natural_key_list
                          || ' order by '
-                         || l_eff_dt
+                         || effect_dt_col
                          || ' ROWS BETWEEN unbounded preceding AND unbounded following) \1'
                        );
       evolve_log.log_msg( 'The scd1 analytics clause: ' || l_scd1_analytics, 5 );
@@ -250,77 +375,90 @@ AS
             END
          || 'into '
          || SELF.full_stage
-         || ' SELECT case '
-         || l_surr_key
-         || ' when -.1 then '
-         || SELF.full_sequence
-         || '.nextval else '
-         || l_surr_key
-         || ' end '
-         || l_surr_key
+	 || '('
+         || surrogate_key_col
          || ','
-         || l_nk_list
+         || natural_key_list
          || ','
          || l_scd_list
          || ','
-         || l_eff_dt
+         || effect_dt_col
+         || ','
+         || expire_dt_col
+         || ','
+         || current_ind_col
+	 ||') '
+         || ' SELECT case '
+         || surrogate_key_col
+         || ' when '||l_stage_key||' then '
+         || SELF.full_sequence
+         || '.nextval else '
+         || surrogate_key_col
+         || ' end '
+         || surrogate_key_col
+         || ','
+         || natural_key_list
+         || ','
+         || l_scd_list
+         || ','
+         || effect_dt_col
          || ','
          || 'nvl( lead('
-         || l_eff_dt
+         || effect_dt_col
          || ') OVER ( partition BY '
-         || l_nk_list
+         || natural_key_list
          || ' ORDER BY '
-         || l_eff_dt
+         || effect_dt_col
          || '), to_date(''12/31/9999'',''mm/dd/yyyy'')) '
-         || l_exp_dt
+         || expire_dt_col
          || ','
          || ' CASE MAX('
-         || l_eff_dt
+         || effect_dt_col
          || ') OVER (partition BY '
-         || l_nk_list
+         || natural_key_list
          || ') WHEN '
-         || l_eff_dt
+         || effect_dt_col
          || ' THEN ''Y'' ELSE ''N'' END '
-         || l_curr_ind
+         || current_ind_col
          || ' from ('
          || 'SELECT '
-         || l_surr_key
+         || surrogate_key_col
          || ','
-         || l_nk_list
+         || natural_key_list
          || ','
          || l_scd1_analytics
-            || l_scd2_list
-	    || ','
-	    || l_scd2_date_list
+         || l_scd2_list
          || ','
-         || l_eff_dt
+         || effect_dt_col
          || ','
          || l_include_case
-         || ' from (select -.1 '
-         || l_surr_key
+         || ' from (select '
+	 || l_stage_key
+	 ||' '
+         || surrogate_key_col
          || ','
-         || l_nk_list
+         || natural_key_list
          || ','
-         || l_eff_dt
+         || effect_dt_col
          || ','
          || l_scd_list
          || ' from '
          || SELF.full_source
          || ' union select '
-         || l_surr_key
+         || surrogate_key_col
          || ','
-         || l_nk_list
+         || natural_key_list
          || ','
-         || l_eff_dt
+         || effect_dt_col
          || ','
          || l_scd_list
          || ' from '
          || SELF.full_table
          || ')'
          || ' order by '
-         || l_nk_list
+         || natural_key_list
          || ','
-         || l_eff_dt
+         || effect_dt_col
          || ')'
          || ' where include=''Y''';
 
@@ -352,6 +490,8 @@ AS
       CASE replace_method
          WHEN 'exchange'
          THEN
+	    -- partition exchange the staging table into the max partition of the target table
+	    -- this requires that the dimension table is a single partition table
             td_dbutils.exchange_partition( p_source_owner      => staging_owner,
                                            p_source_table      => staging_table,
                                            p_owner             => owner,
@@ -361,12 +501,18 @@ AS
                                          );
          WHEN 'replace'
          THEN
+	    -- switch the two tables using rename
+	    -- requires that the tables both exist in the same schema
             td_dbutils.replace_table( p_owner             => owner,
                                       p_table             => table_name,
                                       p_source_table      => staging_table,
                                       p_statistics        => STATISTICS,
                                       p_concurrent        => concurrent
                                     );
+	    
+	    -- now drop the source table, which is now the previous target table
+            td_dbutils.drop_table( p_owner => p_source_owner,
+				   p_table => p_source_table );
          ELSE
             NULL;
       END CASE;
