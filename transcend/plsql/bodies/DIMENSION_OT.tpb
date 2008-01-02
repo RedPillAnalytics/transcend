@@ -108,7 +108,8 @@ AS
    END dimension_ot;
    MEMBER PROCEDURE confirm_objects
    IS
-      o_ev   evolve_ot := evolve_ot( p_module => 'confirm_objects' );
+      l_col_except  VARCHAR2(1);
+      o_ev          evolve_ot := evolve_ot( p_module => 'confirm_objects' );
    BEGIN
       evolve_log.log_msg( 'Constant staging: ' || constant_staging, 5 );
       -- check to see if the dimension table exists
@@ -329,11 +330,11 @@ AS
             'CASE WHEN '||surrogate_key_col||' <> '||l_stage_key||' THEN ''Y'''
          || REGEXP_REPLACE( l_scd2_nums,
                             '(\w+)(,|$)',
-                            'when nvl(\1,'||l_nvl_nums||') <> nvl(lag(\1) over (partition by '
+                            'when nvl(\1,'||l_num_nvl||') <> nvl(lag(\1) over (partition by '
                             || natural_key_list
                             || ' order by '
                             || effect_dt_col
-                            || '),'||l_nvl_nums||') then ''Y'' '
+                            || '),'||l_num_nvl||') then ''Y'' '
                           )
          || REGEXP_REPLACE( l_scd2_chars,
                             '(\w+)(,|$)',
