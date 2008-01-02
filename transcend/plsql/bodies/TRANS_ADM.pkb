@@ -58,6 +58,9 @@ IS
       evolve_adm.set_error_conf( p_name         => 'no_dim',
                                  p_message      => 'The specified table is not a configured dimension table'
                                );
+      evolve_adm.set_error_conf( p_name         => 'dim_mismatch',
+                                 p_message      => 'There is a mismatch between columns in the source object and dimension table for the specified dimension table'
+                               );
    END set_default_configs;
 
    PROCEDURE configure_feed(

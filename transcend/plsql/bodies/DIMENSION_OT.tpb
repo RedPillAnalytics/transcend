@@ -9,23 +9,30 @@ AS
       l_load_sql   LONG;
       o_ev         evolve_ot                        := evolve_ot( p_module => 'dimension_ot' );
    BEGIN
-      SELECT owner, table_name, full_table, source_owner, source_object, full_source, sequence_owner, sequence_name,
-             full_sequence, staging_owner, staging_table, staging_owner || '.' || staging_table full_stage,
-             constant_staging, direct_load, replace_method, STATISTICS, concurrent
-        INTO owner, table_name, full_table, source_owner, source_object, full_source, sequence_owner, sequence_name,
-             full_sequence, staging_owner, staging_table, full_stage,
-             constant_staging, direct_load, replace_method, STATISTICS, concurrent
-        FROM ( SELECT owner, table_name, owner || '.' || table_name full_table, source_owner, source_object,
-                      source_owner || '.' || source_object full_source, sequence_owner, sequence_name,
-                      sequence_owner || '.' || sequence_name full_sequence, NVL( staging_owner, owner ) staging_owner,
-                      NVL( staging_table, 'TD$' || table_name ) staging_table,
-                      CASE
+      
+      BEGIN
+	 SELECT owner, table_name, full_table, source_owner, source_object, full_source, sequence_owner, sequence_name,
+		full_sequence, staging_owner, staging_table, staging_owner || '.' || staging_table full_stage,
+		constant_staging, direct_load, replace_method, STATISTICS, concurrent
+           INTO owner, table_name, full_table, source_owner, source_object, full_source, sequence_owner, sequence_name,
+		full_sequence, staging_owner, staging_table, full_stage,
+		constant_staging, direct_load, replace_method, STATISTICS, concurrent
+           FROM ( SELECT owner, table_name, owner || '.' || table_name full_table, source_owner, source_object,
+			 source_owner || '.' || source_object full_source, sequence_owner, sequence_name,
+			 sequence_owner || '.' || sequence_name full_sequence, NVL( staging_owner, owner ) staging_owner,
+			 NVL( staging_table, 'TD$' || table_name ) staging_table,
+			 CASE
                          WHEN staging_table IS NULL
-                            THEN 'no'
+                         THEN 'no'
                          ELSE 'yes'
-                      END constant_staging, direct_load, replace_method, STATISTICS, concurrent
-                FROM dimension_conf
-               WHERE owner = l_owner AND table_name = l_table );
+			 END constant_staging, direct_load, replace_method, STATISTICS, concurrent
+                    FROM dimension_conf
+		   WHERE owner = l_owner AND table_name = l_table );
+      EXCEPTION
+	 WHEN no_data_found
+	 THEN
+	 evolve_log.raise_err( 'no_dim',full_table );
+      END;
 
       -- need to construct the column lists of the different column types
       -- first get the current indicator
@@ -173,13 +180,13 @@ AS
 	 -- any differences are too many, so this should raise an error
 	 WHEN too_many_rows
 	 THEN
-	 evolve_log.raise_err( 'dim_load_mismatch' );
+	 evolve_log.raise_err( 'dim_mismatch',full_table );
       END;
       
       -- if even one difference is found, then it's too many
       IF l_col_except = 'Y'
       THEN
-	 evolve_log.raise_err( 'dim_load_mismatch' );
+	 evolve_log.raise_err( 'dim_load_mismatch',full_table );
       END IF;
 
       -- check that the sequence exists
