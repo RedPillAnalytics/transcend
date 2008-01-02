@@ -338,19 +338,19 @@ AS
                           )
          || REGEXP_REPLACE( l_scd2_chars,
                             '(\w+)(,|$)',
-                            'when nvl(\1,'||l_nvl_chars||') <> nvl(lag(\1) over (partition by '
+                            'when nvl(\1,'||l_char_nvl||') <> nvl(lag(\1) over (partition by '
                             || natural_key_list
                             || ' order by '
                             || effect_dt_col
-                            || '),'||l_nvl_chars||') then ''Y'' '
+                            || '),'||l_char_nvl||') then ''Y'' '
                           )
       || REGEXP_REPLACE( l_scd2_dates,
                             '(\w+)(,|$)',
-                         'when nvl(\1,'||l_nvl_dates||') <> nvl(lag(\1) over (partition by '
+                         'when nvl(\1,'||l_date_nvl||') <> nvl(lag(\1) over (partition by '
                             || natural_key_list
                             || ' order by '
                             || effect_dt_col
-                            || '),'||l_nvl_dates||') then ''Y'' '
+                            || '),'||l_date_nvl||') then ''Y'' '
                           )
          || ' else ''N'' end include';
       evolve_log.log_msg( 'The include CASE: ' || l_include_case, 5 );
@@ -512,8 +512,8 @@ AS
                                     );
 	    
 	    -- now drop the source table, which is now the previous target table
-            td_dbutils.drop_table( p_owner => p_source_owner,
-				   p_table => p_source_table );
+            td_dbutils.drop_table( p_owner => staging_owner,
+				   p_table => staging_table );
          ELSE
             NULL;
       END CASE;
