@@ -34,6 +34,45 @@ AS
 	 evolve_log.raise_err( 'no_dim',full_table );
       END;
 
+
+      -- confirm the objects related to the dimensional configuration
+      confirm_dim;
+      
+      -- reset the evolve_object
+      o_ev.clear_app_info;
+      RETURN;
+   END dimension_ot;
+   MEMBER PROCEDURE confirm_dim
+   IS
+      o_ev          evolve_ot := evolve_ot( p_module => 'confirm_dim' );
+   BEGIN
+      evolve_log.log_msg( 'Constant staging: ' || constant_staging, 5 );
+      -- check to see if the dimension table exists
+      td_utils.check_table( p_owner => owner, p_table => table_name );
+      -- check that the source object exists
+      td_utils.check_object( p_owner => source_owner, p_object => source_object, p_object_type => 'table$|view' );
+      -- check that the sequence exists
+      evolve_log.log_msg( 'The sequence owner: ' || sequence_owner, 5 );
+      evolve_log.log_msg( 'The sequence name: ' || sequence_name, 5 );
+      td_utils.check_object( p_owner => sequence_owner, p_object => sequence_name, p_object_type => 'sequence' );
+
+      -- check to see if the staging table is constant
+      IF td_core.is_true( constant_staging )
+      THEN
+         evolve_log.log_msg( 'Full stage: ' || full_stage, 5 );
+         -- if it is, then make sure that it exists
+         td_utils.check_table( p_owner => staging_owner, p_table => staging_table );
+      END IF;
+
+      -- reset the evolve_object
+      o_ev.clear_app_info;
+
+   END confirm_dim;
+   
+   MEMBER PROCEDURE initialize_cols
+   IS
+      o_ev          evolve_ot := evolve_ot( p_module => 'initialize_cols' );
+   BEGIN
       -- need to construct the column lists of the different column types
       -- first get the current indicator
       BEGIN
@@ -45,8 +84,11 @@ AS
 	    AND column_type = 'current indicator';
       EXCEPTION
 	 WHEN no_data_found
-	 THEN 
-	    NULL;
+	 THEN
+	    evolve_log.raise_err( 'no_curr_ind', full_table );
+	 WHEN too_many_rows
+	 THEN
+	    evolve_log.raise_err( 'multiple_curr_ind', full_table );
       END;
 
       evolve_log.log_msg( 'The current indicator: ' || current_ind_col, 5 );
@@ -60,7 +102,10 @@ AS
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
-            NULL;
+            evolve_log.raise_err( 'no_exp_dt', full_table );
+         WHEN too_many_rows
+         THEN
+            evolve_log.raise_err( 'multiple_exp_dt', full_table );
       END;
 
       evolve_log.log_msg( 'The expiration date: ' || expire_dt_col, 5 );
@@ -74,23 +119,27 @@ AS
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
-            NULL;
+            evolve_log.raise_err( 'no_eff_dt', full_table );
+         WHEN too_many_rows
+         THEN
+            evolve_log.raise_err( 'multiple_eff_dt', full_table );
       END;
 
       evolve_log.log_msg( 'The effective date: ' || effect_dt_col, 5 );
 
       -- get a comma separated list of natural keys
       -- use the STRAGG function for this
-      BEGIN
-         SELECT stragg( column_name )
-           INTO natural_key_list
-           FROM column_conf
-          WHERE owner = SELF.owner AND table_name = SELF.table_name AND column_type = 'natural key';
-      EXCEPTION
-         WHEN NO_DATA_FOUND
-         THEN
-            NULL;
-      END;
+      SELECT stragg( column_name )
+        INTO natural_key_list
+        FROM column_conf
+       WHERE owner = SELF.owner AND table_name = SELF.table_name AND column_type = 'natural key';
+
+      -- NO_DATA_FOUND exception does not work with STRAGG, as returning a null it fine
+      -- have to do the logic programiatically
+      IF natural_key_list IS NULL
+      THEN
+	 evolve_log.raise_err( 'no_nat_key', full_table );
+      END IF;
 
       evolve_log.log_msg( 'The natural key list: ' || natural_key_list, 5 );
 
@@ -103,75 +152,85 @@ AS
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
-            NULL;
+            evolve_log.raise_err( 'no_surr_key', full_table );
+         WHEN too_many_rows
+         THEN
+            evolve_log.raise_err( 'multiple_surr_key', full_table );
       END;
 
       evolve_log.log_msg( 'The surrogate key: ' || surrogate_key_col, 5 );
 
+      -- reset the evolve_object
+      o_ev.clear_app_info;
 
-      -- every time the dimension object is loaded, it should confirm the objects
-      confirm_objects;
-      RETURN;
-   END dimension_ot;
-   MEMBER PROCEDURE confirm_objects
+   END initialize_cols;
+
+   MEMBER PROCEDURE confirm_dim_cols
    IS
       l_col_except  VARCHAR2(1);
-      o_ev          evolve_ot := evolve_ot( p_module => 'confirm_objects' );
+      l_col_name    all_tab_columns.column_name%type;
+      l_data_type   all_tab_columns.data_type%type;
+      l_data_length all_tab_columns.data_length%type;
+      o_ev          evolve_ot := evolve_ot( p_module => 'confirm_dim_cols' );
    BEGIN
-      evolve_log.log_msg( 'Constant staging: ' || constant_staging, 5 );
-      -- check to see if the dimension table exists
-      td_utils.check_table( p_owner => owner, p_table => table_name );
-      -- check that the source object exists
-      td_utils.check_object( p_owner => source_owner, p_object => source_object, p_object_type => 'table$|view' );
+      -- first need to initialize the column value attributes
+      initialize_cols;
+
       -- check and make sure that the correct columns exist in the source table compared to the target table
       BEGIN
-      SELECT EXCEPT
-	INTO l_col_except
-	FROM ( SELECT CASE
-		      -- these are the only exceptable differences between the two tables
-		      WHEN column_name =surrogate_key_col AND source='D'
-		      THEN 'N'
-		      WHEN column_name=effect_dt_col AND source='D'
-		      THEN 'N'
-		      WHEN column_name=current_ind_col AND source='D'
-		      THEN 'N'
-		      -- everything else is a problem
-		      ELSE 'Y'
-		      END EXCEPT,
-		      src.*
-		 FROM (SELECT column_name,
-			      data_type,
-			      data_length,
-			      CASE
-			      WHEN count(src1) = 1 THEN 'D'
-			      WHEN count(src2) = 1 THEN 'S'
-			      END source,
-			      count(src1) cnt1, 
-			      count(src2) cnt2
-			 FROM 
-			      ( SELECT column_name,
-				       data_type,
-				       data_length,
-				       1 src1, 
-				       to_number(NULL) src2 
-				  FROM all_tab_columns
-				 WHERE owner='WHDATA'
-				   AND table_name='CUSTOMER_DIM'
-				       UNION ALL
-				SELECT column_name,
-				       data_type,
-				       data_length, 
-				       to_number(NULL) src1,
-				       2 src2
-				  FROM all_tab_columns
-				 WHERE owner='WHSTAGE'
-				   AND table_name='CUSTOMER_STG'
-			      )
-			GROUP BY column_name,
-			      data_type,
-			      data_length
-		       HAVING count(src1) <> count(src2)) src )
-       WHERE EXCEPT='Y';
+	 SELECT EXCEPT,
+		column_name,
+		data_type,
+		data_length
+	   INTO l_col_except,
+		l_col_name,
+		l_data_type,
+		l_data_length
+	   FROM ( SELECT CASE
+			 -- these are the only exceptable differences between the two tables
+			 WHEN column_name =self.surrogate_key_col AND source='D'
+			 THEN 'N'
+			 WHEN column_name=self.expire_dt_col AND source='D'
+			 THEN 'N'
+			 WHEN column_name=self.current_ind_col AND source='D'
+			 THEN 'N'
+			 -- everything else is a problem
+			 ELSE 'Y'
+			 END EXCEPT,
+			 src.*
+		    FROM (SELECT column_name,
+				 data_type,
+				 data_length,
+				 CASE
+				 WHEN count(src1) = 1 THEN 'D'
+				 WHEN count(src2) = 1 THEN 'S'
+				 END source,
+				 count(src1) cnt1, 
+				 count(src2) cnt2
+			    FROM 
+				 ( SELECT column_name,
+					  data_type,
+					  data_length,
+					  1 src1, 
+					  to_number(NULL) src2 
+				     FROM all_tab_columns
+				    WHERE owner=self.owner
+				      AND table_name=self.table_name
+					  UNION ALL
+				   SELECT column_name,
+					  data_type,
+					  data_length, 
+					  to_number(NULL) src1,
+					  2 src2
+				     FROM all_tab_columns
+				    WHERE owner=self.source_owner
+				      AND table_name=self.source_object
+				 )
+			   GROUP BY column_name,
+				 data_type,
+				 data_length
+			  HAVING count(src1) <> count(src2)) src )
+	  WHERE EXCEPT='Y';
       EXCEPTION
 	 -- no differences is fine
 	 WHEN no_data_found
@@ -180,28 +239,22 @@ AS
 	 -- any differences are too many, so this should raise an error
 	 WHEN too_many_rows
 	 THEN
+	 evolve_log.log_msg('More than one row found while comparing source and target columns',5);
 	 evolve_log.raise_err( 'dim_mismatch',full_table );
       END;
       
       -- if even one difference is found, then it's too many
       IF l_col_except = 'Y'
       THEN
-	 evolve_log.raise_err( 'dim_load_mismatch',full_table );
+	 evolve_log.log_msg('Column '||l_col_name||' of data_type '||l_data_type||' and data_length '||l_data_length||' found as mismatch',5);
+	 evolve_log.raise_err( 'dim_mismatch',full_table );
       END IF;
 
-      -- check that the sequence exists
-      evolve_log.log_msg( 'The sequence owner: ' || sequence_owner, 5 );
-      evolve_log.log_msg( 'The sequence name: ' || sequence_name, 5 );
-      td_utils.check_object( p_owner => sequence_owner, p_object => sequence_name, p_object_type => 'sequence' );
+      -- reset the evolve_object
+      o_ev.clear_app_info;
 
-      -- check to see if the staging table is constant
-      IF td_core.is_true( constant_staging )
-      THEN
-         evolve_log.log_msg( 'Full stage: ' || full_stage, 5 );
-         -- if it is, then make sure that it exists
-         td_utils.check_table( p_owner => staging_owner, p_table => staging_table );
-      END IF;
-   END confirm_objects;
+   END confirm_dim_cols;
+
    MEMBER PROCEDURE LOAD
    IS
       -- default comparision types
@@ -219,9 +272,12 @@ AS
       l_scd_list         LONG;
       l_include_case     LONG;
       l_scd1_analytics   LONG;
-      o_ev               evolve_ot                      := evolve_ot( p_module => 'load' );
       l_rows             BOOLEAN;
+      o_ev               evolve_ot                      := evolve_ot( p_module => 'load' );
    BEGIN
+      -- first, confirm that the column values are as they should be
+      confirm_dim_cols;
+
       -- need to get some of the default comparision values
       BEGIN
          SELECT char_nvl_default,
@@ -345,19 +401,19 @@ AS
                           )
          || REGEXP_REPLACE( l_scd2_chars,
                             '(\w+)(,|$)',
-                            'when nvl(\1,'||l_char_nvl||') <> nvl(lag(\1) over (partition by '
+                            'when nvl(\1,'''||l_char_nvl||''') <> nvl(lag(\1) over (partition by '
                             || natural_key_list
                             || ' order by '
                             || effect_dt_col
-                            || '),'||l_char_nvl||') then ''Y'' '
+                            || '),'''||l_char_nvl||''') then ''Y'' '
                           )
       || REGEXP_REPLACE( l_scd2_dates,
                             '(\w+)(,|$)',
-                         'when nvl(\1,'||l_date_nvl||') <> nvl(lag(\1) over (partition by '
+                         'when nvl(\1,'''||l_date_nvl||''') <> nvl(lag(\1) over (partition by '
                             || natural_key_list
                             || ' order by '
                             || effect_dt_col
-                            || '),'||l_date_nvl||') then ''Y'' '
+                            || '),'''||l_date_nvl||''') then ''Y'' '
                           )
          || ' else ''N'' end include';
       evolve_log.log_msg( 'The include CASE: ' || l_include_case, 5 );
@@ -523,7 +579,11 @@ AS
 				   p_table => staging_table );
          ELSE
             NULL;
-      END CASE;
+   END CASE;
+   
+   -- reset the evolve_object
+   o_ev.clear_app_info;
+
    END LOAD;
 END;
 /

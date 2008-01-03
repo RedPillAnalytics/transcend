@@ -25,7 +25,9 @@ AS OBJECT(
    natural_key_list   VARCHAR2( 4000 ),
    CONSTRUCTOR FUNCTION dimension_ot( p_owner VARCHAR2, p_table VARCHAR2 )
       RETURN SELF AS RESULT,
-   MEMBER PROCEDURE confirm_objects,
+   MEMBER PROCEDURE confirm_dim,
+   MEMBER PROCEDURE initialize_cols,
+   MEMBER PROCEDURE confirm_dim_cols,
    MEMBER PROCEDURE LOAD
 );
 /

@@ -505,10 +505,13 @@ IS
    )
    IS
       l_results    NUMBER;
-      o_dim        dimension_ot;
+      -- a dimension table should have already been configured
+      o_dim 	   dimension_ot := dimension_ot( p_owner => p_owner,
+						 p_table => p_table );
       e_dup_conf   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_conf, -1 );
    BEGIN
+
       -- do the first merge to update any changed column_types from the parameters
       MERGE INTO column_conf t
          USING ( SELECT *
@@ -551,62 +554,6 @@ IS
             INSERT( t.owner, t.table_name, t.column_name, t.column_type )
             VALUES( s.owner, s.table_name, s.column_name, s.column_type );
 
-      -- do checks to make sure rules concerning numbers of column types is are valid
-      -- check to make sure there is one and only one surrogate key column
-      SELECT COUNT( * )
-        INTO l_results
-        FROM column_conf
-       WHERE owner = UPPER( p_owner ) AND table_name = UPPER( table_name ) AND column_type = 'surrogate key';
-
-      IF l_results <> 1
-      THEN
-         evolve_log.raise_err( 'surr_key' );
-      END IF;
-
-      -- check to make sure there is one and only one expiration date column
-      SELECT COUNT( * )
-        INTO l_results
-        FROM column_conf
-       WHERE owner = UPPER( p_owner ) AND table_name = UPPER( table_name ) AND column_type = 'expiration date';
-
-      IF l_results <> 1
-      THEN
-         evolve_log.raise_err( 'exp_dt' );
-      END IF;
-
-      -- check to make sure there is one and only one effective date column
-      SELECT COUNT( * )
-        INTO l_results
-        FROM column_conf
-       WHERE owner = UPPER( p_owner ) AND table_name = UPPER( table_name ) AND column_type = 'effective date';
-
-      IF l_results <> 1
-      THEN
-         evolve_log.raise_err( 'effect_dt' );
-      END IF;
-
-      -- check to make sure there is no more than one current indicator
-      SELECT COUNT( * )
-        INTO l_results
-        FROM column_conf
-       WHERE owner = UPPER( p_owner ) AND table_name = UPPER( table_name ) AND column_type = 'current indicator';
-
-      IF l_results > 1
-      THEN
-         evolve_log.raise_err( 'curr_ind' );
-      END IF;
-
-      -- check to make sure there is at least one natural key
-      SELECT COUNT( * )
-        INTO l_results
-        FROM column_conf
-       WHERE owner = UPPER( p_owner ) AND table_name = UPPER( table_name ) AND column_type = 'natural key';
-
-      IF l_results < 1
-      THEN
-         evolve_log.raise_err( 'nat_key' );
-      END IF;
-
       -- do the second merge to write any columns that have been left off
       MERGE INTO column_conf t
          USING ( SELECT owner, table_name, column_name,
@@ -621,7 +568,11 @@ IS
          WHEN NOT MATCHED THEN
             INSERT( t.owner, t.table_name, t.column_name, t.column_type )
             VALUES( s.owner, s.table_name, s.column_name, s.column_type );
-      NULL;
+      
+      -- confirm the dimension columns
+      o_dim.confirm_dim_cols;
+
+
    END configure_dim_cols;
 END trans_adm;
 /

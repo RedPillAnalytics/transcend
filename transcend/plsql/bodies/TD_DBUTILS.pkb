@@ -234,13 +234,15 @@ AS
          l_ddl    :=
             REGEXP_REPLACE( l_ddl, '(tablespace)(\s*)([^ ]+)([[:space:]]*)', '\1\2' || p_tablespace || '\4', 1, 0, 'i' );
       END IF;
-
+      
+      o_ev.change_action( 'execute DDL' );
       evolve_app.exec_sql( p_sql => l_ddl, p_auto => 'yes' );
       evolve_log.log_msg( 'Table ' || l_tab_name || ' created' );
 
       -- if you want the records as well
       IF td_core.is_true( p_rows )
       THEN
+	 o_ev.change_action( 'insert rows' );
          insert_table( p_source_owner       => p_source_owner,
                        p_source_object      => p_source_table,
                        p_owner              => p_owner,
@@ -2814,6 +2816,7 @@ AS
                                                                            ),
                                                options               => p_options
                                              );
+ 
             -- if the table name is not null, then we are only collecting stats on a particular table
             -- will call GATHER_TABLE_STATS as opposed to GATHER_SCHEMA_STATS
             ELSE
