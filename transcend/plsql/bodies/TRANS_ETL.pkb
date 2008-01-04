@@ -215,6 +215,7 @@ AS
       p_source_table        VARCHAR2,
       p_constraint_type     VARCHAR2 DEFAULT NULL,
       p_constraint_regexp   VARCHAR2 DEFAULT NULL,
+      p_basis               VARCHAR2 DEFAULT 'table',
       p_seg_attributes      VARCHAR2 DEFAULT 'no',
       p_tablespace          VARCHAR2 DEFAULT NULL,
       p_partname            VARCHAR2 DEFAULT NULL,
@@ -228,6 +229,7 @@ AS
                                     p_source_table           => p_source_table,
                                     p_constraint_type        => p_constraint_type,
                                     p_constraint_regexp      => p_constraint_regexp,
+				    p_basis		     => p_basis,
                                     p_seg_attributes         => p_seg_attributes,
                                     p_tablespace             => p_tablespace,
                                     p_partname               => p_partname,
@@ -322,14 +324,16 @@ AS
       p_owner               VARCHAR2,
       p_table               VARCHAR2,
       p_constraint_type     VARCHAR2 DEFAULT NULL,
-      p_constraint_regexp   VARCHAR2 DEFAULT NULL
+      p_constraint_regexp   VARCHAR2 DEFAULT NULL,
+      p_basis               VARCHAR2 DEFAULT 'table'
    )
    IS
    BEGIN
       td_dbutils.drop_constraints (p_owner                  => p_owner,
                                    p_table                  => p_table,
                                    p_constraint_type        => p_constraint_type,
-                                   p_constraint_regexp      => p_constraint_regexp
+                                   p_constraint_regexp      => p_constraint_regexp,
+				   p_basis		     => p_basis
                                   );
    EXCEPTION
       WHEN OTHERS

@@ -51,7 +51,6 @@ SELECT   constraint_owner, CASE generic_con
                          0,
                          'i'
                        ) constraint_ddl,
-         con_rename, con_rename_adj,
             
             -- this column was added for the REPLACE_TABLE procedure
             -- IN that procedure, after cloning the indexes, the table is renamed
@@ -80,7 +79,7 @@ SELECT   constraint_owner, CASE generic_con
             END
          || ' renamed to '
          || constraint_name rename_msg,
-         basis_source, generic_con, con_rename
+         basis_source, generic_con
     FROM ( SELECT
                   -- IF con_rename already exists (constructed below), then we will try to rename the constraint to something generic
                   -- this name will only be used when con_rename name already exists
