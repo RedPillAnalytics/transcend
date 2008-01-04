@@ -34,21 +34,24 @@ EXEC dbms_metadata.set_transform_param( dbms_metadata.session_transform,'SEGMENT
 SET termout on
 -- this case statement uses GENERIC_CON column to determine the final index name
 -- IF we are using a generic name, then perform the replace
-SELECT constraint_owner,
-       CASE generic_con
-       WHEN 'Y'
-       THEN con_rename_adj
-       ELSE con_rename
-       END constraint_name, owner source_owner, table_name, constraint_name source_constraint,
-       constraint_type, index_owner, index_name, generic_con,
-       regexp_replace( constraint_ddl,
-                            '(\."?)(\w)+(")?( on)',
-                            '.' || CASE generic_con WHEN 'Y' THEN con_rename_adj ELSE con_rename end || ' \4',
+SELECT constraint_owner
+--        ,CASE generic_con WHEN 'Y' THEN con_rename_adj ELSE con_rename END constraint_name
+--        ,owner source_owner
+--        ,table_name
+--        ,constraint_name source_constraint
+--        ,constraint_type
+--        ,index_owner
+--        ,index_name
+--        ,generic_con
+       ,regexp_replace( constraint_ddl,
+			'(constraint )("?)(\w+)("?)',
+                        '\1\2' || CASE generic_con WHEN 'Y' THEN con_rename_adj ELSE con_rename end || '\4',
                             1,
                             0,
                             'i'
-                     ) constraint_ddl,
-       
+                      ) constraint_ddl,
+       con_rename,
+       con_rename_adj,
        -- this column was added for the REPLACE_TABLE procedure
        -- IN that procedure, after cloning the indexes, the table is renamed
        -- we have to rename the indexes back to their original names
@@ -79,7 +82,7 @@ SELECT constraint_owner,
   FROM ( SELECT
                 -- IF con_rename already exists (constructed below), then we will try to rename the constraint to something generic
                 -- this name will only be used when con_rename name already exists
-                upper(    substr( con.table_name, 1, 24 )
+                upper(    substr( CASE basis_source WHEN 'reference' THEN table_name ELSE upper( :p_table ) end, 1, 24 )
                        || '_'
                        || con_ext
                        -- rank function gives us the constraint number by specific constraint extension (formulated below)
@@ -89,7 +92,11 @@ SELECT constraint_owner,
 		-- it is possible that these owners are the same
 		-- the regexp_replace still technically works, but it has no technical effect on the DDL
                 regexp_replace( 
-
+				-- this regexp_replace will replace the source table with the target table
+				-- this only has an effect when P_BASIS is 'table'
+				-- when P_BASIS is 'reference', we are gauranteed to have a match for P_SOURCE_TABLE
+				-- that's because this constraint was found because it references P_SOURCE_TABLE
+				-- a reference cannot be to itself
 				regexp_replace(
 						-- this regexp_replace simply removes any "ATLER CONSTRAINT..." commands that might be in here
 						-- DBMS_METADATA can append ALTER CONSTRAINT commands after the ADD CONSTRAINT commands
@@ -101,7 +108,7 @@ SELECT constraint_owner,
                                                                 0,
                                                                 'i'
                                                               ),
-                                                '(\.|constraint +)("?)('
+                                                '(\.)("?)('
                                                 || upper( :p_source_table )
                                                 || ')(\w*)("?)',
                                                 '\1' || upper( :p_table ) || '\4',
