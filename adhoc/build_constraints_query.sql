@@ -41,17 +41,13 @@ SELECT constraint_owner,
        ELSE con_rename
        END constraint_name, owner source_owner, table_name, constraint_name source_constraint,
        constraint_type, index_owner, index_name, generic_con,
-       CASE generic_con
-       WHEN 'Y'
-       THEN regexp_replace( constraint_ddl,
+       regexp_replace( constraint_ddl,
                             '(\."?)(\w)+(")?( on)',
-                            '.' || con_rename_adj || ' \4',
+                            '.' || CASE generic_con WHEN 'Y' THEN con_rename_adj ELSE con_rename end || ' \4',
                             1,
                             0,
                             'i'
-                          )
-       ELSE constraint_ddl
-       END constraint_ddl,
+                     ) constraint_ddl,
        
        -- this column was added for the REPLACE_TABLE procedure
        -- IN that procedure, after cloning the indexes, the table is renamed
@@ -89,8 +85,15 @@ SELECT constraint_owner,
                        -- rank function gives us the constraint number by specific constraint extension (formulated below)
                        || rank( ) OVER( partition BY con_ext ORDER BY constraint_name )
                      ) con_rename_adj,
+		-- this regexp_replace replaces the current owner of the table with the new owner of the table
+		-- it is possible that these owners are the same
+		-- the regexp_replace still technically works, but it has no technical effect on the DDL
                 regexp_replace( 
-				regexp_replace( 
+
+				regexp_replace(
+						-- this regexp_replace simply removes any "ATLER CONSTRAINT..." commands that might be in here
+						-- DBMS_METADATA can append ALTER CONSTRAINT commands after the ADD CONSTRAINT commands
+						-- we don't want that
 						regexp_replace( constraint_ddl,
                                                                 '(alter constraint).+',
                                                                 NULL,
