@@ -79,31 +79,33 @@ SELECT   constraint_owner, CASE generic_con
             END
          || ' renamed to '
          || constraint_name rename_msg,
-       basis_source, generic_con, rename_constraint
+         basis_source, generic_con, rename_constraint
     FROM ( SELECT
                   -- IF con_rename already exists (constructed below), then we will try to rename the constraint to something generic
                   -- this name will only be used when con_rename name already exists
                   UPPER(    CASE basis_source
                                WHEN 'reference'
-                                  THEN 'TD$_CON_' || SYS_CONTEXT( 'USERENV', 'SESSIONID' )
+                                  THEN 'TD$_CON' || TO_char( systimestamp, 'mmddyyyyHHMISS' )
                                ELSE SUBSTR( :p_table, 1, 24 ) || '_' || con_ext
                             END
-                         -- rank function gives us the constraint number by specific constraint extension (formulated below)
                          || CASE constraint_type
                                WHEN 'P'
                                   THEN NULL
                                ELSE RANK( ) OVER( PARTITION BY con_ext ORDER BY constraint_name )
                             END
+                       
+                       -- rank function gives us the constraint number by specific constraint extension (formulated below)
                        ) con_rename_adj,
                   
                   -- this regexp_replace replaces the current owner of the table with the new owner of the table
-                  -- it is possible that these owners are the same
-                  -- the regexp_replace still technically works, but it has no technical effect on the DDL
+		  -- when P_BASIS is 'table', then it replaces the owner for the table being altered
+		  -- when P_BASIS is 'reference', then it replaces it for the table being referenced
+		  -- the CASE statement looks for either 'TABLE' or 'REFERENCES' before the owner name
                   REGEXP_REPLACE(
                                   -- this regexp_replace will replace the source table with the target table
-                                  -- this only has an effect when P_BASIS is 'table'
-                                  -- when P_BASIS is 'reference', we are gauranteed to have a match for P_SOURCE_TABLE
-                                  -- that's because this constraint was found because it references P_SOURCE_TABLE
+                                  -- this only has an effect when :p_BASIS is 'table'
+                                  -- when :p_BASIS is 'reference', we are gauranteed to have a match for :p_SOURCE_TABLE
+                                  -- that's because this constraint was found because it references :p_SOURCE_TABLE
                                   -- a reference cannot be to itself
                                   REGEXP_REPLACE(
                                                   -- this regexp_replace simply removes any "ATLER CONSTRAINT..." commands that might be in here
@@ -122,8 +124,16 @@ SELECT   constraint_owner, CASE generic_con
                                                   0,
                                                   'i'
                                                 ),
-                                  '(table )(")?(' || con.owner || ')("?\.)',
-                                  '\1' || UPPER( constraint_owner ) || '.',
+                                     '('
+                                  || CASE basis_source
+                                        WHEN 'table'
+                                           THEN 'table'
+                                        ELSE 'references'
+                                     END
+                                  || ' )(")?('
+                                  || con.owner
+                                  || ')("?\.)',
+                                  '\1' || UPPER( :p_owner ) || '.',
                                   1,
                                   0,
                                   'i'
@@ -139,7 +149,11 @@ SELECT   constraint_owner, CASE generic_con
                         THEN 'N'
                      ELSE 'Y'
                   END generic_con, basis_source, constraint_owner,
-		  CASE WHEN to_char( regexp_substr(constraint_ddl,'constraint',1,1,'i')) IS NULL THEN 'N' ELSE 'Y' end rename_constraint
+                  CASE
+                     WHEN TO_CHAR( REGEXP_SUBSTR( constraint_ddl, 'constraint', 1, 1, 'i' )) IS NULL
+                        THEN 'N'
+                     ELSE 'Y'
+                  END rename_constraint
             FROM ( SELECT    REGEXP_REPLACE
                                 
                                 -- dbms_metadata pulls the metadata for the source object out of the dictionary
@@ -181,7 +195,7 @@ SELECT   constraint_owner, CASE generic_con
                                   'in'
                                 )
                           -- this case statement will append tablespace information on the end where applicable
-                          -- anytime a value is passed for P_TABLESPACE, then other tablespace information is stripped off
+                          -- anytime a value is passed for :p_TABLESPACE, then other tablespace information is stripped off
                           || CASE
                                 -- if the INDEX_NAME column is null, then there is no index associated with this constraint
                                 -- that means that tablespace information would be meaningless.
