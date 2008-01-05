@@ -79,7 +79,7 @@ SELECT   constraint_owner, CASE generic_con
             END
          || ' renamed to '
          || constraint_name rename_msg,
-         basis_source, generic_con
+       basis_source, generic_con, rename_constraint
     FROM ( SELECT
                   -- IF con_rename already exists (constructed below), then we will try to rename the constraint to something generic
                   -- this name will only be used when con_rename name already exists
@@ -138,7 +138,8 @@ SELECT   constraint_owner, CASE generic_con
                      WHEN( constraint_name_confirm IS NULL AND LENGTH( con_rename ) < 31 )
                         THEN 'N'
                      ELSE 'Y'
-                  END generic_con, basis_source, constraint_owner
+                  END generic_con, basis_source, constraint_owner,
+		  CASE WHEN to_char( regexp_substr(constraint_ddl,'constraint',1,1,'i')) IS NULL THEN 'N' ELSE 'Y' end rename_constraint
             FROM ( SELECT    REGEXP_REPLACE
                                 
                                 -- dbms_metadata pulls the metadata for the source object out of the dictionary
