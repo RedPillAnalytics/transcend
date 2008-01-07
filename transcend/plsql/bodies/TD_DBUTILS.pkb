@@ -58,7 +58,7 @@ AS
               FROM all_part_key_columns
              WHERE NAME = UPPER( p_table ) AND owner = UPPER( p_owner );
          ELSE
-            l_source_column    := p_source_column;
+            l_source_column := p_source_column;
          END IF;
 
          o_ev.change_action( 'dynamic insert into td_part_gtt' );
@@ -231,7 +231,7 @@ AS
       -- if a tablespace is provided then replace that
       IF p_tablespace IS NOT NULL
       THEN
-         l_ddl    :=
+         l_ddl :=
             REGEXP_REPLACE( l_ddl, '(tablespace)(\s*)([^ ]+)([[:space:]]*)', '\1\2' || p_tablespace || '\4', 1, 0, 'i' );
       END IF;
 
@@ -366,7 +366,7 @@ AS
 
       IF td_core.is_true( p_concurrent )
       THEN
-         l_concurrent_id    := evolve_app.get_concurrent_id;
+         l_concurrent_id := evolve_app.get_concurrent_id;
       END IF;
 
       -- create a cursor containing the DDL from the target indexes
@@ -379,17 +379,17 @@ AS
                        THEN idx_rename_adj
                     ELSE idx_rename
                  END index_name, owner source_owner, index_name source_index, partitioned, uniqueness, index_type,
-                 CASE generic_idx
-                    WHEN 'Y'
-                       THEN REGEXP_REPLACE( index_ddl,
-                                            '(\."?)(\w)+(")?( on)',
-                                            '.' || idx_rename_adj || ' \4',
-                                            1,
-                                            0,
-                                            'i'
-                                          )
-                    ELSE index_ddl
-                 END index_ddl,
+                 REGEXP_REPLACE( index_ddl,
+                                 '(\.)("?)(\w+)("?)(\s+)(on)',
+                                 '\1' || CASE generic_idx
+                                    WHEN 'Y'
+                                       THEN idx_rename_adj
+                                    ELSE idx_rename
+                                 END || '\5\6',
+                                 1,
+                                 0,
+                                 'i'
+                               ) index_ddl,
                     
                     -- this column was added for the REPLACE_TABLE procedure
                     -- in that procedure, after cloning the indexes, the table is renamed
@@ -419,29 +419,30 @@ AS
                  || ' renamed to '
                  || index_name rename_msg
             FROM ( SELECT
-                          -- IF idx_rename already exists (constructed below), then we will try to rename the index to something generic
-                          -- this name will only be used when idx_rename name already exists
+                          -- if idx_rename already exists (constructed below), then we will try to rename the index to something generic
                           UPPER(    SUBSTR( p_table, 1, 24 )
                                  || '_'
                                  || idx_ext
                                  -- rank function gives us the index number by specific index extension (formulated below)
                                  || RANK( ) OVER( PARTITION BY idx_ext ORDER BY index_name )
                                ) idx_rename_adj,
-                          REGEXP_REPLACE( REGEXP_REPLACE( REGEXP_REPLACE( index_ddl, '(alter index).+',
+                          
+                          -- this regexp_replace replaces the current owner of the table with the new owner of the table
+                          REGEXP_REPLACE(
+                                          -- this regexp_replace will replace the source table with the target table
+                                          REGEXP_REPLACE( REGEXP_REPLACE( index_ddl, '(alter index).+',
                                                                           -- first remove any ALTER INDEX statements that may be included
                                                                           -- this could occur if the indexes are in an unusable state, for instance
                                                                           -- we don't care if they are unusable or not
                                                                           NULL, 1, 0, 'i' ),
-                                                          '(\."?)(' || UPPER( p_source_table ) || ')(\w*)("?)',
-                                                          '.' || UPPER( p_table ) || '\3',
-                                                          -- replace source table name with target table
+                                                          '(\.)("?)(' || p_source_table || ')("?)(\s+)(\()',
+                                                          '\1' || UPPER( p_table ) || '\5\6',
                                                           1,
                                                           0,
                                                           'i'
                                                         ),
                                           '(")?(' || ind.owner || ')("?\.)',
                                           UPPER( p_owner ) || '.',
-                                          -- replace source owner with target owner
                                           1,
                                           0,
                                           'i'
@@ -454,35 +455,35 @@ AS
                           -- below we are right joining with USER_OBJECTS to see if the standard name is already used
                           -- if we match, then we need to use the generic index name
                           CASE
-                             WHEN( ao.object_name IS NULL AND LENGTH( idx_rename ) < 31 )
+                             WHEN( index_name_confirm IS NULL AND LENGTH( idx_rename ) < 31 )
                                 THEN 'N'
                              ELSE 'Y'
-                          END generic_idx, object_name
+                          END generic_idx
                     FROM ( SELECT    REGEXP_REPLACE
                                         
                                         -- dbms_metadata pulls the metadata for the source object out of the dictionary
                                      (    DBMS_METADATA.get_ddl( 'INDEX', index_name, owner ),
                                           -- this CASE expression determines whether to strip partitioning information and tablespace information
-                                          -- tablespace desisions are based on the P_TABLESPACE parameter
+                                          -- tablespace desisions are based on the p_TABLESPACE parameter
                                           -- partitioning decisions are based on the structure of the target table
                                           CASE
-                                             -- target is not partitioned and neither P_TABLESPACE or P_PARTNAME are provided
+                                             -- target is not partitioned and neither p_TABLESPACE or p_PARTNAME are provided
                                           WHEN l_targ_part = 'NO' AND p_tablespace IS NULL AND p_partname IS NULL
                                                 -- remove all partitioning and the local keyword
                                           THEN '\s*(\(\s*partition.+\))|local\s*'
-                                             -- target is not partitioned but P_TABLESPACE or P_PARTNAME is provided
+                                             -- target is not partitioned but p_TABLESPACE or p_PARTNAME is provided
                                           WHEN l_targ_part = 'NO'
                                           AND ( p_tablespace IS NOT NULL OR p_partname IS NOT NULL )
                                                 -- strip out partitioned info and local keyword and tablespace clause
                                           THEN '\s*(\(\s*partition.+\))|local|(tablespace)\s*\S+\s*'
-                                             -- target is partitioned and P_TABLESPACE or P_PARTNAME is provided
+                                             -- target is partitioned and p_TABLESPACE or p_PARTNAME is provided
                                           WHEN l_targ_part = 'YES'
                                           AND ( p_tablespace IS NOT NULL OR p_partname IS NOT NULL )
                                                 -- strip out partitioned info keeping local keyword and remove tablespace clause
                                           THEN '\s*(\(\s*partition.+\))|(tablespace)\s*\S+\s*'
                                              -- target is partitioned
-                                             -- P_TABLESPACE is null
-                                             -- P_PARTNAME is null
+                                             -- p_TABLESPACE is null
+                                             -- p_PARTNAME is null
                                           WHEN l_targ_part = 'YES' AND p_tablespace IS NULL AND p_partname IS NULL
                                                 -- leave partitioning and tablespace information as it is
                                                 -- this implies a one-to-one mapping of partitioned names from source to target
@@ -499,7 +500,7 @@ AS
                                         -- now just need to not put in the 'TABLESPACE' information here
                                      WHEN LOWER( p_tablespace ) = 'default'
                                            THEN NULL
-                                        -- if P_TABLESPACE is provided, then previous tablespace information was stripped (above)
+                                        -- if p_TABLESPACE is provided, then previous tablespace information was stripped (above)
                                         -- now we can just tack the new tablespace information on the end
                                      WHEN p_tablespace IS NOT NULL
                                            THEN ' TABLESPACE ' || UPPER( p_tablespace )
@@ -557,17 +558,29 @@ AS
                                             )
                              AND table_name = UPPER( p_source_table )
                              AND table_owner = UPPER( p_source_owner )
+                             -- iot indexes provide a problem when in CONCURRENT mode
+                             -- the code just handles the errors with exceptions
+                             -- but CONCURRENT processes are subject to exceptions in the flow of the program
+                             -- so we just don't support certain paradigms in concurrent mode
+                             -- one of them is building having a mismatch between table types when considering IOT's
+                             AND index_type <> CASE td_core.get_yn_ind( p_concurrent )
+                                                 WHEN 'yes'
+                                                    THEN 'IOT - TOP'
+                                                 ELSE '~'
+                                              END
                              -- USE an NVL'd regular expression to determine the specific indexes to work on
-                             -- when nothing is passed for P_INDEX_TYPE, then that is the same as passing a wildcard
+                             -- when nothing is passed for p_INDEX_TYPE, then that is the same as passing a wildcard
                              AND REGEXP_LIKE( index_name, NVL( p_index_regexp, '.' ), 'i' )
                              -- USE an NVL'd regular expression to determine the index types to worked on
-                             -- when nothing is passed for P_INDEX_TYPE, then that is the same as passing a wildcard
+                             -- when nothing is passed for p_INDEX_TYPE, then that is the same as passing a wildcard
                              AND REGEXP_LIKE( index_type, '^' || NVL( p_index_type, '.' ), 'i' )) ind
                          LEFT JOIN
-                         all_objects ao ON ao.object_name = ind.idx_rename AND ao.owner = UPPER( p_owner )
-                   WHERE subobject_name IS NULL ))
+                         ( SELECT index_name index_name_confirm, owner index_owner_confirm
+                            FROM all_indexes ) aii
+                         ON aii.index_name_confirm = ind.idx_rename AND aii.index_owner_confirm = UPPER( p_owner )
+                         ))
       LOOP
-         l_rows    := TRUE;
+         l_rows := TRUE;
          o_ev.change_action( 'format index DDL' );
          o_ev.change_action( 'execute index DDL' );
 
@@ -583,17 +596,15 @@ AS
                                    END,
                                 2
                               );
-            l_idx_cnt    := l_idx_cnt + 1;
+            l_idx_cnt := l_idx_cnt + 1;
             o_ev.change_action( 'insert into td_build_idx_gtt' );
 
             INSERT INTO td_build_idx_gtt
                         ( index_owner, index_name, src_index_owner, src_index_name,
-                          create_ddl, rename_ddl,
-                          rename_msg
+                          create_ddl, rename_ddl, rename_msg
                         )
                  VALUES ( c_indexes.index_owner, c_indexes.index_name, c_indexes.source_owner, c_indexes.source_index,
-                          SUBSTR( c_indexes.index_ddl, 1, 4000 ), c_indexes.rename_ddl,
-                          c_indexes.rename_msg
+                          SUBSTR( c_indexes.index_ddl, 1, 4000 ), c_indexes.rename_ddl, c_indexes.rename_msg
                         );
          EXCEPTION
             -- if a duplicate column list of indexes already exist, log it, but continue
@@ -656,10 +667,10 @@ AS
                        FROM td_build_idx_gtt )
       LOOP
          BEGIN
-            l_rows       := TRUE;
+            l_rows := TRUE;
             evolve_app.exec_sql( p_sql => c_idxs.rename_ddl, p_auto => 'yes' );
             evolve_log.log_msg( c_idxs.rename_msg, 3 );
-            l_idx_cnt    := l_idx_cnt + 1;
+            l_idx_cnt := l_idx_cnt + 1;
          END;
       END LOOP;
 
@@ -765,7 +776,7 @@ AS
 
       IF td_core.is_true( p_concurrent )
       THEN
-         l_concurrent_id    := evolve_app.get_concurrent_id;
+         l_concurrent_id := evolve_app.get_concurrent_id;
       END IF;
 
       o_ev.change_action( 'build constraints' );
@@ -1025,7 +1036,7 @@ AS
           ORDER BY basis_source DESC )
       LOOP
          -- catch empty cursor sets
-         l_rows    := TRUE;
+         l_rows := TRUE;
 
          BEGIN
             evolve_app.exec_sql( p_sql                => c_constraints.constraint_ddl,
@@ -1042,7 +1053,7 @@ AS
                                    END,
                                 2
                               );
-            l_con_cnt    := l_con_cnt + 1;
+            l_con_cnt := l_con_cnt + 1;
             o_ev.change_action( 'insert into td_build_idx_gtt' );
 
             INSERT INTO td_build_con_gtt
@@ -1140,10 +1151,10 @@ AS
                        FROM td_build_con_gtt )
       LOOP
          BEGIN
-            l_rows       := TRUE;
+            l_rows := TRUE;
             evolve_app.exec_sql( p_sql => c_cons.rename_ddl, p_auto => 'yes' );
             evolve_log.log_msg( c_cons.rename_msg, 3 );
-            l_con_cnt    := l_con_cnt + 1;
+            l_con_cnt := l_con_cnt + 1;
          END;
       END LOOP;
 
@@ -1201,7 +1212,7 @@ AS
 
       IF td_core.is_true( p_concurrent )
       THEN
-         l_concurrent_id    := evolve_app.get_concurrent_id;
+         l_concurrent_id := evolve_app.get_concurrent_id;
       END IF;
 
       -- disable both table and reference constraints for this particular table
@@ -1309,7 +1320,7 @@ AS
            WHERE include = 'Y' )
       LOOP
          -- catch empty cursor sets
-         l_rows    := TRUE;
+         l_rows := TRUE;
 
          BEGIN
             evolve_app.exec_sql( p_sql                => CASE
@@ -1347,7 +1358,7 @@ AS
                                 END,
                                 2
                               );
-            l_con_cnt    := l_con_cnt + 1;
+            l_con_cnt := l_con_cnt + 1;
          EXCEPTION
             WHEN e_iot_shc
             THEN
@@ -1432,7 +1443,7 @@ AS
 
       IF td_core.is_true( p_concurrent )
       THEN
-         l_concurrent_id    := evolve_app.get_concurrent_id;
+         l_concurrent_id := evolve_app.get_concurrent_id;
       END IF;
 
       -- looping through records in the TD_CON_MAINT_GTT table
@@ -1443,11 +1454,11 @@ AS
                        FROM td_con_maint_gtt )
       LOOP
          BEGIN
-            l_rows       := TRUE;
+            l_rows := TRUE;
             -- execute the DDL either in this session or a background session
             evolve_app.exec_sql( p_sql => c_cons.enable_ddl, p_auto => 'yes', p_concurrent_id => l_concurrent_id );
             evolve_log.log_msg( c_cons.enable_msg );
-            l_con_cnt    := l_con_cnt + 1;
+            l_con_cnt := l_con_cnt + 1;
          END;
       END LOOP;
 
@@ -1521,11 +1532,11 @@ AS
                                             'i'
                                           ))
       LOOP
-         l_rows    := TRUE;
+         l_rows := TRUE;
 
          BEGIN
             evolve_app.exec_sql( p_sql => c_indexes.index_ddl, p_auto => 'yes' );
-            l_idx_cnt    := l_idx_cnt + 1;
+            l_idx_cnt := l_idx_cnt + 1;
             evolve_log.log_msg( 'Index ' || c_indexes.index_name || ' dropped', 3 );
          EXCEPTION
             WHEN e_pk_idx
@@ -1614,11 +1625,11 @@ AS
                              WHERE include = 'Y' )
       LOOP
          -- catch empty cursor sets
-         l_rows    := TRUE;
+         l_rows := TRUE;
 
          BEGIN
             evolve_app.exec_sql( p_sql => c_constraints.constraint_ddl, p_auto => 'yes' );
-            l_con_cnt    := l_con_cnt + 1;
+            l_con_cnt := l_con_cnt + 1;
             evolve_log.log_msg( 'Constraint ' || c_constraints.constraint_name || ' dropped', 2 );
          EXCEPTION
             WHEN e_iot_pk
@@ -1721,7 +1732,7 @@ AS
          -- if a duplicate column list of indexes already exist, log it, but continue
          WHEN e_no_grants
          THEN
-	    l_grants := FALSE;
+            l_grants := FALSE;
             evolve_log.log_msg( l_none_msg, 3 );
       END;
 
@@ -1731,12 +1742,12 @@ AS
       FOR c_grants IN ( SELECT *
                          FROM TABLE( td_core.SPLIT( l_ddl, ';' )))
       LOOP
-	 IF l_grants
-	 THEN
-	    evolve_app.exec_sql( p_sql => c_grants.COLUMN_VALUE, p_auto => 'yes' );
-	 END IF;
+         IF l_grants
+         THEN
+            evolve_app.exec_sql( p_sql => c_grants.COLUMN_VALUE, p_auto => 'yes' );
+         END IF;
 
-         l_grant_cnt    := l_grant_cnt + 1;
+         l_grant_cnt := l_grant_cnt + 1;
       END LOOP;
 
       IF l_grants
@@ -2003,7 +2014,7 @@ AS
       ORDER BY column_name;
 
       o_ev.change_action( 'construct merge values clause' );
-      l_values    := REGEXP_REPLACE( l_insert, 'target.', 'source.' );
+      l_values := REGEXP_REPLACE( l_insert, 'target.', 'source.' );
 
       BEGIN
          o_ev.change_action( 'alter parallel dml' );
@@ -2140,7 +2151,7 @@ AS
                                         THEN 'YES'
                                   END )
       LOOP
-         l_rows    := TRUE;
+         l_rows := TRUE;
 
          -- use the load_tab or merge_tab procedure depending on P_MERGE
          CASE
@@ -2299,7 +2310,7 @@ AS
       -- if an exception that we handle is raised, then we want to rerun the exchange
       -- will try the exchange multiple times until it either succeeds, or an unrecognized exception is raised
       LOOP
-         l_retry_ddl    := FALSE;
+         l_retry_ddl := FALSE;
 
          BEGIN
             evolve_app.exec_sql( p_sql       =>    'alter table '
@@ -2319,8 +2330,8 @@ AS
                -- disable foreign keys related to the table
                -- this will enable the exchange to occur
                o_ev.change_action( 'disable foreign keys' );
-               l_dis_fkeys    := TRUE;
-               l_retry_ddl    := TRUE;
+               l_dis_fkeys := TRUE;
+               l_retry_ddl := TRUE;
                constraint_maint( p_owner           => p_owner,
                                  p_table           => p_table,
                                  p_maint_type      => 'disable',
@@ -2329,15 +2340,15 @@ AS
             WHEN e_compress
             THEN
                -- need to compress the staging table
-               l_compress     := TRUE;
-               l_retry_ddl    := TRUE;
+               l_compress := TRUE;
+               l_retry_ddl := TRUE;
                evolve_app.exec_sql( p_sql => 'alter table ' || l_src_name || ' move compress', p_auto => 'yes' );
                evolve_log.log_msg( l_src_name || ' compressed to facilitate exchange', 3 );
             WHEN e_uk_mismatch
             THEN
                -- need to create unique constraints
-               l_constraints    := TRUE;
-               l_retry_ddl      := TRUE;
+               l_constraints := TRUE;
+               l_retry_ddl := TRUE;
                constraint_maint( p_owner                => p_owner,
                                  p_table                => p_table,
                                  p_maint_type           => 'disable',
@@ -2470,7 +2481,7 @@ AS
                          p_source_owner      => p_owner,
                          p_source_table      => p_table,
                          p_tablespace        => p_tablespace,
-			 p_basis	     => 'all',
+                         p_basis             => 'all',
                          p_concurrent        => p_concurrent
                        );
       -- grant privileges
@@ -2659,10 +2670,10 @@ AS
                      WHERE status IN( 'VALID', 'USABLE', 'N/A' ))
       LOOP
          o_ev.change_action( 'execute index DDL' );
-         l_rows        := TRUE;
+         l_rows := TRUE;
          evolve_app.exec_sql( p_sql => c_idx.DDL, p_auto => 'yes' );
-         l_pidx_cnt    := c_idx.num_partitions;
-         l_idx_cnt     := c_idx.num_indexes;
+         l_pidx_cnt := c_idx.num_partitions;
+         l_idx_cnt := c_idx.num_indexes;
       END LOOP;
 
       IF l_rows
@@ -2721,7 +2732,7 @@ AS
 
          IF td_core.is_true( p_concurrent )
          THEN
-            l_concurrent_id    := evolve_app.get_concurrent_id;
+            l_concurrent_id := evolve_app.get_concurrent_id;
          END IF;
 
          -- rebuild local indexes first
@@ -2741,7 +2752,7 @@ AS
                        ORDER BY table_name, partition_position )
          LOOP
             evolve_app.exec_sql( p_sql => c_idx.DDL, p_auto => 'yes', p_concurrent_id => l_concurrent_id );
-            l_cnt    := l_cnt + 1;
+            l_cnt := l_cnt + 1;
          END LOOP;
 
          evolve_log.log_msg(    'Rebuild processes for any unusable indexes on '
@@ -2771,14 +2782,14 @@ AS
       END IF;
 
       -- reset variables
-      l_cnt     := 0;
-      l_rows    := FALSE;
+      l_cnt := 0;
+      l_rows := FALSE;
       -- get another concurrent_id
       o_ev.change_action( 'get concurrent id' );
 
       IF td_core.is_true( p_concurrent )
       THEN
-         l_concurrent_id    := evolve_app.get_concurrent_id;
+         l_concurrent_id := evolve_app.get_concurrent_id;
       END IF;
 
       -- now see if any global are still unusable
@@ -2793,9 +2804,9 @@ AS
                           AND partitioned = 'NO'
                      ORDER BY table_name )
       LOOP
-         l_rows    := TRUE;
+         l_rows := TRUE;
          evolve_app.exec_sql( p_sql => c_gidx.DDL, p_auto => 'yes', p_concurrent_id => l_concurrent_id );
-         l_cnt     := l_cnt + 1;
+         l_cnt := l_cnt + 1;
       END LOOP;
 
       IF l_rows
