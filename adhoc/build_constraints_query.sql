@@ -39,7 +39,7 @@ SELECT   constraint_owner, CASE generic_con
                THEN con_rename_adj
             ELSE con_rename
          END constraint_name, owner source_owner, table_name, constraint_name source_constraint, constraint_type,
-         index_owner, index_name, generic_con,
+         index_owner, index_name,
          REGEXP_REPLACE( constraint_ddl,
                          '(constraint )("?)(\w+)("?)',
                          '\1' || CASE generic_con
