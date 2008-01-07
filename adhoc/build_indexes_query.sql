@@ -123,10 +123,10 @@ SELECT UPPER( :p_owner ) index_owner, CASE generic_idx
                            -- below we are right joining with USER_OBJECTS to see if the standard name is already used
                            -- if we match, then we need to use the generic index name
                 CASE
-                   WHEN( ao.object_name IS NULL AND LENGTH( idx_rename ) < 31 )
+                   WHEN( index_name_confirm IS NULL AND LENGTH( idx_rename ) < 31 )
                       THEN 'N'
                    ELSE 'Y'
-                END generic_idx, object_name
+                END generic_idx
           FROM ( SELECT    REGEXP_REPLACE
                               
                               -- dbms_metadata pulls the metadata for the source object out of the dictionary
@@ -227,6 +227,8 @@ SELECT UPPER( :p_owner ) index_owner, CASE generic_idx
                    -- USE an NVL'd regular expression to determine the index types to worked on
                    -- when nothing is passed for :p_INDEX_TYPE, then that is the same as passing a wildcard
                    AND REGEXP_LIKE( index_type, '^' || NVL( :p_index_type, '.' ), 'i' )) ind
-               LEFT JOIN
-               all_objects ao ON ao.object_name = ind.idx_rename AND ao.owner = UPPER( :p_owner )
-         WHERE subobject_name IS NULL )
+           LEFT JOIN
+		(SELECT index_name index_name_confirm,
+			owner index_owner_confirm
+		   FROM all_indexes) aii
+               ON aii.index_name_confirm = ind.idx_rename AND aii.index_owner_confirm = UPPER( :p_owner ))
