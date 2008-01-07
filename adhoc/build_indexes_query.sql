@@ -26,7 +26,7 @@ VAR p_table VARCHAR2(30)
 VAR l_targ_part VARCHAR2(30)
 VAR p_partname VARCHAR2(30)
 VAR l_part_position number
-var p_concurrent VARCHAR2(3)
+VAR p_concurrent VARCHAR2(3)
 
 EXEC :p_tablespace := null;
 EXEC :p_constraint_regexp := NULL;
@@ -186,6 +186,7 @@ SELECT UPPER( :p_owner ) index_owner, CASE generic_idx
                               ELSE NULL
                            END index_ddl,
                         table_owner, table_name, owner, index_name,
+                        
                         -- this is the index name that will be used in the first attempt
                         -- basically, all cases of the previous table name are replaced with the new table name
                         UPPER( REGEXP_REPLACE( index_name, '(")?' || :p_source_table || '(")?', :p_table, 1, 0, 'i' )
@@ -220,13 +221,17 @@ SELECT UPPER( :p_owner ) index_owner, CASE generic_idx
                                     'i'
                                   )
                    AND table_name = UPPER( :p_source_table )
-                    AND table_owner = UPPER( :p_source_owner )
-			-- iot indexes provide a problem when in CONCURRENT mode
-			-- the code just handles the errors with exceptions
-			-- but CONCURRENT processes are subject to exceptions in the flow of the program
-			-- so we just don't support certain paradigms in concurrent mode
-			-- one of them is building having a mismatch between table types when considering IOT's
-		    AND index_type <> CASE td_core.get_yn_ind( :p_concurrent ) WHEN 'yes' THEN 'IOT - TOP' ELSE '~' END
+                   AND table_owner = UPPER( :p_source_owner )
+                   -- iot indexes provide a problem when in CONCURRENT mode
+                   -- the code just handles the errors with exceptions
+                   -- but CONCURRENT processes are subject to exceptions in the flow of the program
+                   -- so we just don't support certain paradigms in concurrent mode
+                   -- one of them is building having a mismatch between table types when considering IOT's
+                   AND index_type <> CASE td_core.get_yn_ind( :p_concurrent )
+                                       WHEN 'yes'
+                                          THEN 'IOT - TOP'
+                                       ELSE '~'
+                                    END
                    -- USE an NVL'd regular expression to determine the specific indexes to work on
                    -- when nothing is passed for :p_INDEX_TYPE, then that is the same as passing a wildcard
                    AND REGEXP_LIKE( index_name, NVL( :p_index_regexp, '.' ), 'i' )
