@@ -26,10 +26,11 @@ VAR p_table VARCHAR2(30)
 VAR l_targ_part VARCHAR2(30)
 VAR p_partname VARCHAR2(30)
 VAR l_part_position number
+var p_concurrent VARCHAR2(3)
 
 EXEC :p_tablespace := null;
 EXEC :p_constraint_regexp := NULL;
-EXEC :p_owner := 'whdata';
+EXEC :p_owner := 'whstage';
 EXEC :p_table := 'td$customer_dim';
 EXEC :p_source_owner := 'whdata';
 EXEC :p_source_table := 'customer_dim';
@@ -39,6 +40,7 @@ EXEC :p_part_type := NULL;
 EXEC :p_index_type := NULL;
 EXEC :p_index_regexp := NULL;
 EXEC :l_targ_part := 'YES';
+EXEC :p_concurrent := 'no'
 
 SET termout on
 
@@ -49,17 +51,17 @@ SELECT UPPER( :p_owner ) index_owner, CASE generic_idx
              THEN idx_rename_adj
           ELSE idx_rename
        END index_name, owner source_owner, index_name source_index, partitioned, uniqueness, index_type,
-       CASE generic_idx
-          WHEN 'Y'
-             THEN REGEXP_REPLACE( index_ddl,
-                                  '(\."?)(\w)+(")?( on)',
-                                  '.' || idx_rename_adj || ' \4',
-                                  1,
-                                  0,
-                                  'i'
-                                )
-          ELSE index_ddl
-       END index_ddl,
+       REGEXP_REPLACE( index_ddl,
+                       '(\.)("?)(\w+)("?)(\s+)(on)',
+                       '\1' || CASE generic_idx
+                          WHEN 'Y'
+                             THEN idx_rename_adj
+                          ELSE idx_rename
+                       END || '\5\6',
+                       1,
+                       0,
+                       'i'
+                     ) index_ddl,
           
           -- this column was added for the REPLACE_TABLE procedure
           -- in that procedure, after cloning the indexes, the table is renamed
@@ -89,39 +91,41 @@ SELECT UPPER( :p_owner ) index_owner, CASE generic_idx
        || ' renamed to '
        || index_name rename_msg
   FROM ( SELECT
-                -- IF idx_rename already exists (constructed below), then we will try to rename the index to something generic
-                -- this name will only be used when idx_rename name already exists
+                -- if idx_rename already exists (constructed below), then we will try to rename the index to something generic
                 UPPER(    SUBSTR( :p_table, 1, 24 )
                        || '_'
                        || idx_ext
                        -- rank function gives us the index number by specific index extension (formulated below)
                        || RANK( ) OVER( PARTITION BY idx_ext ORDER BY index_name )
                      ) idx_rename_adj,
-                REGEXP_REPLACE( REGEXP_REPLACE( REGEXP_REPLACE( index_ddl, '(alter index).+',
+                
+                -- this regexp_replace replaces the current owner of the table with the new owner of the table
+                REGEXP_REPLACE(
+                                -- this regexp_replace will replace the source table with the target table
+                                REGEXP_REPLACE( REGEXP_REPLACE( index_ddl, '(alter index).+',
                                                                 -- first remove any ALTER INDEX statements that may be included
                                                                 -- this could occur if the indexes are in an unusable state, for instance
                                                                 -- we don't care if they are unusable or not
                                                                 NULL, 1, 0, 'i' ),
-                                                '(\."?)(' || UPPER( :p_source_table ) || ')(\w*)("?)',
-                                                '.' || UPPER( :p_table ) || '\3',
-                                                -- replace source table name with target table
+                                                '(\.)("?)(' || :p_source_table || ')("?)(\s+)(\()',
+                                                '\1' || UPPER( :p_table ) || '\5\6',
                                                 1,
                                                 0,
                                                 'i'
                                               ),
                                 '(")?(' || ind.owner || ')("?\.)',
                                 UPPER( :p_owner ) || '.',
-                                -- replace source owner with target owner
                                 1,
                                 0,
                                 'i'
                               ) index_ddl,
                 table_owner, table_name, ind.owner, index_name, idx_rename, partitioned, uniqueness, idx_ext,
                 index_type,
-                           -- this case expression determines whether to use the standard renamed index name
-                           -- or whether to use the generic index name based on table name
-                           -- below we are right joining with USER_OBJECTS to see if the standard name is already used
-                           -- if we match, then we need to use the generic index name
+                
+                -- this case expression determines whether to use the standard renamed index name
+                -- or whether to use the generic index name based on table name
+                -- below we are right joining with USER_OBJECTS to see if the standard name is already used
+                -- if we match, then we need to use the generic index name
                 CASE
                    WHEN( index_name_confirm IS NULL AND LENGTH( idx_rename ) < 31 )
                       THEN 'N'
@@ -182,7 +186,6 @@ SELECT UPPER( :p_owner ) index_owner, CASE generic_idx
                               ELSE NULL
                            END index_ddl,
                         table_owner, table_name, owner, index_name,
-                        
                         -- this is the index name that will be used in the first attempt
                         -- basically, all cases of the previous table name are replaced with the new table name
                         UPPER( REGEXP_REPLACE( index_name, '(")?' || :p_source_table || '(")?', :p_table, 1, 0, 'i' )
@@ -217,18 +220,21 @@ SELECT UPPER( :p_owner ) index_owner, CASE generic_idx
                                     'i'
                                   )
                    AND table_name = UPPER( :p_source_table )
-                   AND table_owner = UPPER( :p_source_owner )
-                   -- will never want to try and build IOT indexes
-                   -- we just eliminate them
-                   AND index_type <> 'IOT - TOP'
+                    AND table_owner = UPPER( :p_source_owner )
+			-- iot indexes provide a problem when in CONCURRENT mode
+			-- the code just handles the errors with exceptions
+			-- but CONCURRENT processes are subject to exceptions in the flow of the program
+			-- so we just don't support certain paradigms in concurrent mode
+			-- one of them is building having a mismatch between table types when considering IOT's
+		    AND index_type <> CASE td_core.get_yn_ind( :p_concurrent ) WHEN 'yes' THEN 'IOT - TOP' ELSE '~' END
                    -- USE an NVL'd regular expression to determine the specific indexes to work on
                    -- when nothing is passed for :p_INDEX_TYPE, then that is the same as passing a wildcard
                    AND REGEXP_LIKE( index_name, NVL( :p_index_regexp, '.' ), 'i' )
                    -- USE an NVL'd regular expression to determine the index types to worked on
                    -- when nothing is passed for :p_INDEX_TYPE, then that is the same as passing a wildcard
                    AND REGEXP_LIKE( index_type, '^' || NVL( :p_index_type, '.' ), 'i' )) ind
-           LEFT JOIN
-		(SELECT index_name index_name_confirm,
-			owner index_owner_confirm
-		   FROM all_indexes) aii
-               ON aii.index_name_confirm = ind.idx_rename AND aii.index_owner_confirm = UPPER( :p_owner ))
+               LEFT JOIN
+               ( SELECT index_name index_name_confirm, owner index_owner_confirm
+                  FROM all_indexes ) aii
+               ON aii.index_name_confirm = ind.idx_rename AND aii.index_owner_confirm = UPPER( :p_owner )
+               )
