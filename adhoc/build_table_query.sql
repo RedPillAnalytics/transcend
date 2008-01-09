@@ -12,7 +12,6 @@ VAR p_owner VARCHAR2(30)
 VAR p_table VARCHAR2(30)
 VAR p_partitioning VARCHAR2(3)
 VAR p_tablespace VARCHAR2(30)
-VAR l_tab_name VARCHAR2(60)
 
 EXEC :p_tablespace := NULL;
 EXEC :p_owner := 'whstage';
@@ -22,7 +21,6 @@ EXEC :p_source_table := 'customer_dim';
 EXEC :p_seg_attributes := 'no';
 EXEC :p_partitioning := 'yes';
 EXEC :p_tablespace := 'default';
-EXEC :l_tab_name := upper( :p_owner || '.' || :p_table );
 
 -- don't want any constraints pulled
 EXEC dbms_metadata.set_transform_param( dbms_metadata.session_transform, 'CONSTRAINTS', FALSE );
@@ -35,15 +33,7 @@ EXEC dbms_metadata.set_transform_param( dbms_metadata.session_transform, 'SEGMEN
 EXEC dbms_metadata.set_transform_param( dbms_metadata.session_transform, 'STORAGE', FALSE );
 
 SET termout on
-SELECT UPPER( :p_owner ) table_owner, UPPER( :p_table ) table_name,
-       CASE generic_con
-          WHEN 'Y'
-             THEN con_rename_adj
-          ELSE con_rename
-       END constraint_name, source_constraint, index_name,
-       index_owner, 'Table ' || :l_tab_name || ' created' create_msg,
-       -- this regular expression replaces the source owner with the target owner
-       REGEXP_REPLACE(
+SELECT REGEXP_REPLACE(
                        -- replace the source table name with the target table name
                        REGEXP_REPLACE(
                                        -- this regular expression evaluates whether to use a modified version of the current constraint name
@@ -79,7 +69,7 @@ SELECT UPPER( :p_owner ) table_owner, UPPER( :p_table ) table_name,
           -- IN that procedure, after cloning the indexes, the table is renamed
           -- we have to rename the indexes back to their original names
           ' alter table '
-       || UPPER( :p_owner || '.' || :p_table )
+       || UPPER( :p_source_owner || '.' || :p_source_table )
        || ' rename constraint '
        || CASE generic_con
              WHEN 'Y'
@@ -99,14 +89,11 @@ SELECT UPPER( :p_owner ) table_owner, UPPER( :p_table ) table_name,
              ELSE con_rename
           END
        || ' on table '
-       || UPPER( :p_owner || '.' || :p_table )
+       || UPPER( :p_source_owner || '.' || :p_source_table )
        || ' renamed to '
        || source_constraint rename_msg,
        iot_type
-  INTO :l_tab_owner, :l_tab_name,
-       :l_con_name, :l_src_con, :l_idx_name,
-       :l_idx_owner, :l_create_msg,
-       :l_table_ddl,
+  INTO :l_table_ddl,
        :l_rename_ddl,
        :l_rename_msg,
        :l_iot_type
