@@ -56,17 +56,9 @@ SELECT   constraint_owner, CASE generic_con
             -- IN that procedure, after cloning the indexes, the table is renamed
             -- we have to rename the indexes back to their original names
             ' alter table '
-         || CASE basis_source
-               WHEN 'reference'
-                  THEN source_owner
-               ELSE UPPER( :p_owner )
-            END
+         || source_owner
          || '.'
-         || CASE basis_source
-               WHEN 'reference'
-                  THEN source_table
-               ELSE UPPER( :p_table )
-            END
+         || source_table
          || ' rename constraint '
          || CASE generic_con
                WHEN 'Y'
@@ -86,17 +78,9 @@ SELECT   constraint_owner, CASE generic_con
                ELSE con_rename
             END
          || ' on table '
-         || CASE basis_source
-               WHEN 'reference'
-                  THEN source_owner
-               ELSE UPPER( :p_owner )
-            END
+         || source_owner
          || '.'
-         || CASE basis_source
-               WHEN 'reference'
-                  THEN source_table
-               ELSE UPPER( :p_table )
-            END
+         || source_table
          || ' renamed to '
          || source_constraint rename_msg,
          basis_source, generic_con, rename_constraint
