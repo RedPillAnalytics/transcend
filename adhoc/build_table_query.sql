@@ -1,5 +1,7 @@
 SET echo off
 SET termout off
+COLUMN rename_msg format a50
+COLUMN table_ddl format a100
 
 VAR p_table VARCHAR2(30)
 VAR p_tablespace VARCHAR2(30)
@@ -10,15 +12,17 @@ VAR p_owner VARCHAR2(30)
 VAR p_table VARCHAR2(30)
 VAR p_partitioning VARCHAR2(3)
 VAR p_tablespace VARCHAR2(30)
+VAR l_tab_name VARCHAR2(60)
 
 EXEC :p_tablespace := NULL;
-EXEC :p_owner := 'whdata';
+EXEC :p_owner := 'whstage';
 EXEC :p_table := 'td$customer_dim';
 EXEC :p_source_owner := 'whdata';
 EXEC :p_source_table := 'customer_dim';
 EXEC :p_seg_attributes := 'no';
 EXEC :p_partitioning := 'yes';
-EXEC :p_tablespace := 'whimportd';
+EXEC :p_tablespace := 'default';
+EXEC :l_tab_name := upper( :p_owner || '.' || :p_table );
 
 -- don't want any constraints pulled
 EXEC dbms_metadata.set_transform_param( dbms_metadata.session_transform, 'CONSTRAINTS', FALSE );
@@ -31,18 +35,41 @@ EXEC dbms_metadata.set_transform_param( dbms_metadata.session_transform, 'SEGMEN
 EXEC dbms_metadata.set_transform_param( dbms_metadata.session_transform, 'STORAGE', FALSE );
 
 SET termout on
--- SELECT DDL into a variable
-SELECT
-       -- this regular expression evaluates whether to use a modified version of the current constraint name
-       -- or a generic constraint_name based on the table name
-       -- this is only important when the table is an IOT
-       REGEXP_REPLACE( table_ddl,
-                       '(constraint )("?)(\w+)("?)',
-                       '\1' || CASE generic_con
-                          WHEN 'Y'
-                             THEN con_rename_adj
-                          ELSE con_rename
-                       END,
+SELECT UPPER( :p_owner ) table_owner, UPPER( :p_table ) table_name,
+       CASE generic_con
+          WHEN 'Y'
+             THEN con_rename_adj
+          ELSE con_rename
+       END constraint_name, source_constraint, index_name,
+       index_owner, 'Table ' || :l_tab_name || ' created' create_msg,
+       -- this regular expression replaces the source owner with the target owner
+       REGEXP_REPLACE(
+                       -- replace the source table name with the target table name
+                       REGEXP_REPLACE(
+                                       -- this regular expression evaluates whether to use a modified version of the current constraint name
+                                       -- or a generic constraint_name based on the table name
+                                           -- this is only important when the table is an IOT
+                                           -- GENERIC_CON is an expression constructed below
+                                           -- it uses the join to ALL_CONSTRAINTS to see whether the proposed constraint name is available
+                                       REGEXP_REPLACE( table_ddl,
+                                                       '(constraint )("?)(\w+)("?)',
+                                                       '\1' || CASE generic_con
+                                                          WHEN 'Y'
+                                                             THEN con_rename_adj
+                                                          ELSE con_rename
+                                                       END,
+                                                       1,
+                                                       0,
+                                                       'i'
+                                                     ),
+                                       '(\.)("?)(' || :p_source_table || ')("?)',
+                                       '\1' || UPPER( :p_table ),
+                                       1,
+                                       0,
+                                       'i'
+                                     ),
+                       '(table)(\s+)("?)(' || :p_source_owner || ')("?)(\.)',
+                       '\1\2' || UPPER( :p_owner ) || '\6',
                        1,
                        0,
                        'i'
@@ -51,57 +78,69 @@ SELECT
               -- this column was added for the REPLACE_TABLE procedure
           -- IN that procedure, after cloning the indexes, the table is renamed
           -- we have to rename the indexes back to their original names
-          ' alter constraint '
-       || source_owner
-       || '.'
+          ' alter table '
+       || UPPER( :p_owner || '.' || :p_table )
+       || ' rename constraint '
        || CASE generic_con
              WHEN 'Y'
                 THEN con_rename_adj
              ELSE con_rename
           END
-       || ' rename to '
+       || ' to '
        || source_constraint rename_ddl,
           
           -- this column was added for the REPLACE_TABLE procedure
           -- IN that procedure, after cloning the indexes, the table is renamed
           -- we have to rename the indexes back to their original names
           'Constraint '
-       || source_owner
-       || '.'
        || CASE generic_con
              WHEN 'Y'
                 THEN con_rename_adj
              ELSE con_rename
           END
+       || ' on table '
+       || UPPER( :p_owner || '.' || :p_table )
        || ' renamed to '
        || source_constraint rename_msg,
        iot_type
+  INTO :l_tab_owner, :l_tab_name,
+       :l_con_name, :l_src_con, :l_idx_name,
+       :l_idx_owner, :l_create_msg,
+       :l_table_ddl,
+       :l_rename_ddl,
+       :l_rename_msg,
+       :l_iot_type
   FROM ( SELECT
                 -- this regular expression evaluates :p_TABLESPACE and modifies the DDL accordingly
                 REGEXP_REPLACE
-                   (
-                     -- this regular expression evaluates :p_PARTITIONING paramater and removes partitioning information if necessary
-                     REGEXP_REPLACE
-                        ( table_ddl,
-                          CASE
-                             -- don't want partitioning
-                          WHEN td_core.get_yn_ind( :p_partitioning ) = 'no'
-                                -- remove all partitioning
-                          THEN '(\(\s*partition.+\))\s*|(partition by).+\)\s*'
-                             ELSE NULL
-                          END,
-                          NULL,
-                          1,
-                          0,
-                          'in'
-                        ),
-                     '(tablespace)(\s*)([^ ]+)([[:space:]]*)',
-                     '\1\2' || :p_tablespace || '\4',
-                     1,
-                     0,
-                     'i'
-                   ) table_ddl,
-                con_rename, con_rename_adj, iot_type, source_owner, source_constraint,
+                          (
+                            -- this regular expression evaluates :p_PARTITIONING paramater and removes partitioning information if necessary
+                            REGEXP_REPLACE( table_ddl,
+                                            CASE td_core.get_yn_ind( :p_partitioning )
+                                               -- don't want partitioning
+                                            WHEN 'no'
+                                                  -- remove all partitioning
+                                            THEN '(\(\s*partition.+\))\s*|(partition by).+\)\s*'
+                                               ELSE NULL
+                                            END,
+                                            NULL,
+                                            1,
+                                            0,
+                                            'in'
+                                          ),
+                            '(tablespace)(\s*)([^ ]+)([[:space:]]*)',
+                            CASE
+                               WHEN :p_tablespace IS NULL
+                                  THEN '\1\2\3\4'
+                               WHEN :p_tablespace = 'default'
+                                  THEN NULL
+                               ELSE '\1\2' || UPPER( :p_tablespace ) || '\4'
+                            END,
+                            1,
+                            0,
+                            'i'
+                          ) table_ddl,
+                con_rename, con_rename_adj, iot_type, source_owner, source_constraint, index_owner, index_name,
                 
                 -- this case expression determines whether to use the standard renamed constraint name
                 -- OR whether to use the generic constraint name based on table name
@@ -126,9 +165,11 @@ SELECT
                              
                              -- rank function gives us the constraint number by specific constraint extension (formulated below)
                              ) con_rename_adj,
-                        iot_type, con_rename, table_ddl, constraint_name_confirm, source_owner, source_constraint
+                        iot_type, con_rename, table_ddl, constraint_name_confirm, source_owner, source_constraint,
+                        index_owner, index_name
                   FROM ( SELECT DBMS_METADATA.get_ddl( 'TABLE', table_name, owner ) table_ddl, iot_type,
-                                owner source_owner, constraint_name source_constraint, constraint_type,
+                                owner source_owner, constraint_name source_constraint, constraint_type, index_owner,
+                                index_name,
                                 
                                 -- this is the constraint name that will be used if it doesn't already exist
                                           -- basically, all cases of the previous table name are replaced with the new table name
