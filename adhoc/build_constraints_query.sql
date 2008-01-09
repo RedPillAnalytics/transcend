@@ -33,13 +33,13 @@ EXEC dbms_metadata.set_transform_param( dbms_metadata.session_transform,'SEGMENT
 
 SET termout on
 -- this case statement uses GENERIC_CON column to determine the final index name
+-- GENERIC_CON is a case statement that is generated below
 -- IF we are using a generic name, then perform the replace
 SELECT   constraint_owner, CASE generic_con
             WHEN 'Y'
                THEN con_rename_adj
             ELSE con_rename
-         END constraint_name, owner source_owner, table_name, constraint_name source_constraint, constraint_type,
-         index_owner, index_name,
+         END constraint_name, source_owner, source_table, source_constraint, constraint_type, index_owner, index_name,
          REGEXP_REPLACE( constraint_ddl,
                          '(constraint )("?)(\w+)("?)',
                          '\1' || CASE generic_con
@@ -55,37 +55,57 @@ SELECT   constraint_owner, CASE generic_con
             -- this column was added for the REPLACE_TABLE procedure
             -- IN that procedure, after cloning the indexes, the table is renamed
             -- we have to rename the indexes back to their original names
-            ' alter constraint '
-         || owner
+            ' alter table '
+         || CASE basis_source
+               WHEN 'reference'
+                  THEN source_owner
+               ELSE UPPER( :p_owner )
+            END
          || '.'
+         || CASE basis_source
+               WHEN 'reference'
+                  THEN source_table
+               ELSE UPPER( :p_table )
+            END
+         || ' rename constraint '
          || CASE generic_con
                WHEN 'Y'
                   THEN con_rename_adj
                ELSE con_rename
             END
-         || ' rename to '
-         || constraint_name rename_ddl,
+         || ' to '
+         || source_constraint rename_ddl,
             
             -- this column was added for the REPLACE_TABLE procedure
             -- IN that procedure, after cloning the indexes, the table is renamed
             -- we have to rename the indexes back to their original names
             'Constraint '
-         || owner
-         || '.'
          || CASE generic_con
                WHEN 'Y'
                   THEN con_rename_adj
                ELSE con_rename
             END
+         || ' on table '
+         || CASE basis_source
+               WHEN 'reference'
+                  THEN source_owner
+               ELSE UPPER( :p_owner )
+            END
+         || '.'
+         || CASE basis_source
+               WHEN 'reference'
+                  THEN source_table
+               ELSE UPPER( :p_table )
+            END
          || ' renamed to '
-         || constraint_name rename_msg,
+         || source_constraint rename_msg,
          basis_source, generic_con, rename_constraint
     FROM ( SELECT
                   -- IF con_rename already exists (constructed below), then we will try to rename the constraint to something generic
                   -- this name will only be used when con_rename name already exists
                   UPPER(    CASE basis_source
                                WHEN 'reference'
-                                  THEN 'TD$_CON' || TO_char( systimestamp, 'mmddyyyyHHMISS' )
+                                  THEN 'TD$_CON' || TO_CHAR( SYSTIMESTAMP, 'mmddyyyyHHMISS' )
                                ELSE SUBSTR( :p_table, 1, 24 ) || '_' || con_ext
                             END
                          || CASE constraint_type
@@ -97,10 +117,10 @@ SELECT   constraint_owner, CASE generic_con
                        -- rank function gives us the constraint number by specific constraint extension (formulated below)
                        ) con_rename_adj,
                   
-                  -- this regexp_replace replaces the current owner of the table with the new owner of the table
-		  -- when P_BASIS is 'table', then it replaces the owner for the table being altered
-		  -- when P_BASIS is 'reference', then it replaces it for the table being referenced
-		  -- the CASE statement looks for either 'TABLE' or 'REFERENCES' before the owner name
+                            -- this regexp_replace replaces the current owner of the table with the new owner of the table
+                  -- when P_BASIS is 'table', then it replaces the owner for the table being altered
+                  -- when P_BASIS is 'reference', then it replaces it for the table being referenced
+                  -- the CASE statement looks for either 'TABLE' or 'REFERENCES' before the owner name
                   REGEXP_REPLACE(
                                   -- this regexp_replace will replace the source table with the target table
                                   -- this only has an effect when :p_BASIS is 'table'
@@ -138,7 +158,8 @@ SELECT   constraint_owner, CASE generic_con
                                   0,
                                   'i'
                                 ) constraint_ddl,
-                  con.owner, table_name, constraint_name, con_rename, index_owner, index_name, con_ext, constraint_type,
+                  con.owner source_owner, table_name source_table, constraint_name source_constraint, con_rename,
+                  index_owner, index_name, con_ext, constraint_type,
                   
                   -- this case expression determines whether to use the standard renamed constraint name
                   -- OR whether to use the generic constraint name based on table name
