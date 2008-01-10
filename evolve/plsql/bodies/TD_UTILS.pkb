@@ -182,12 +182,7 @@ AS
          o_ev.change_action( 'Check for extracted file' );
          -- check and make sure the unzip process worked
          -- do this by checking to see if the expected file exists
-         UTL_FILE.fgetattr( td_utils.get_dir_name( p_dirpath ),
-                            l_return,
-                            l_file_exists,
-                            l_file_size,
-                            l_blocksize
-                          );
+         UTL_FILE.fgetattr( td_utils.get_dir_name( p_dirpath ), l_return, l_file_exists, l_file_size, l_blocksize );
 
          IF NOT l_file_exists
          THEN
@@ -224,9 +219,7 @@ AS
       CASE l_filesuf
          WHEN 'gpg'
          THEN
-            host_cmd(    'gpg --no-tty --passphrase-fd 0 --batch --decrypt --output '
-                      || l_filepath
-                      || ' '
+            host_cmd( 'gpg --no-tty --passphrase-fd 0 --batch --decrypt --output ' || l_filepath || ' '
                       || l_filebasepath,
                       p_passphrase
                     );
@@ -251,12 +244,7 @@ AS
          o_ev.change_action( 'Check for decrypted file' );
          -- check and make sure the unzip process worked
          -- do this by checking to see if the expected file exists
-         UTL_FILE.fgetattr( td_utils.get_dir_name( p_dirpath ),
-                            l_return,
-                            l_file_exists,
-                            l_file_size,
-                            l_blocksize
-                          );
+         UTL_FILE.fgetattr( td_utils.get_dir_name( p_dirpath ), l_return, l_file_exists, l_file_size, l_blocksize );
 
          IF NOT l_file_exists
          THEN
@@ -280,8 +268,7 @@ AS
       p_external      VARCHAR2 DEFAULT NULL
    )
    AS
-      l_tab_name         VARCHAR2( 61 )                         := UPPER( p_owner ) || '.'
-                                                                   || UPPER( p_table );
+      l_tab_name         VARCHAR2( 61 )                           := UPPER( p_owner ) || '.' || UPPER( p_table );
       l_part_name        VARCHAR2( 92 )                           := l_tab_name || ':' || UPPER( p_partname );
       l_partitioned      VARCHAR2( 3 );
       l_iot              VARCHAR2( 3 );
@@ -318,8 +305,7 @@ AS
       IF l_partitioned = 'yes' AND p_partname IS NULL AND p_compressed IS NOT NULL
       THEN
          evolve_log.raise_err( 'parms_not_compatible',
-                               'P_COMPRESSED requires P_PARTNAME when the table is partitioned'
-                             );
+                               'P_COMPRESSED requires P_PARTNAME when the table is partitioned' );
       END IF;
 
       IF p_partname IS NOT NULL
@@ -358,12 +344,10 @@ AS
          WHEN NOT td_core.is_true( p_partitioned, TRUE ) AND td_core.is_true( l_partitioned )
          THEN
             evolve_log.raise_err( 'partitioned', l_tab_name );
-         WHEN     td_core.is_true( p_external, TRUE )
-              AND NOT ext_table_exists( p_owner => p_owner, p_table => p_table )
+         WHEN td_core.is_true( p_external, TRUE ) AND NOT ext_table_exists( p_owner => p_owner, p_table => p_table )
          THEN
             evolve_log.raise_err( 'not_external', l_tab_name );
-         WHEN     NOT td_core.is_true( p_external, TRUE )
-              AND ext_table_exists( p_owner => p_owner, p_table => p_table )
+         WHEN NOT td_core.is_true( p_external, TRUE ) AND ext_table_exists( p_owner => p_owner, p_table => p_table )
          THEN
             evolve_log.raise_err( 'external', l_tab_name );
          WHEN td_core.is_true( p_iot, TRUE ) AND NOT td_core.is_true( l_iot )
@@ -524,6 +508,36 @@ AS
       THEN
          RETURN FALSE;
    END is_part_table;
+
+   -- returns a boolean
+   -- does a check to see if table is index-organized
+   FUNCTION is_iot( p_owner VARCHAR2, p_table VARCHAR2 )
+      RETURN BOOLEAN
+   AS
+      l_iot   all_tables.iot_type%TYPE;
+   BEGIN
+      IF NOT table_exists( UPPER( p_owner ), UPPER( p_table ))
+      THEN
+         evolve_log.raise_err( 'no_tab', p_owner || '.' || p_table );
+      END IF;
+
+      SELECT iot_type
+        INTO l_iot
+        FROM all_tables
+       WHERE owner = UPPER( p_owner ) AND table_name = UPPER( p_table );
+
+      CASE l_iot
+         WHEN 'IOT'
+         THEN
+            RETURN TRUE;
+         ELSE
+            RETURN FALSE;
+      END CASE;
+   EXCEPTION
+      WHEN NO_DATA_FOUND
+      THEN
+         RETURN FALSE;
+   END is_iot;
 
    -- returns a boolean
    -- does a check to see if a object exists

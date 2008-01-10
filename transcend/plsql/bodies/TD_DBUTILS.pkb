@@ -168,7 +168,10 @@ AS
       p_statistics     VARCHAR2 DEFAULT 'ignore'
    )
    IS
-      l_ddl            LONG;
+      l_table_ddl      LONG;
+      l_rename_ddl     VARCHAR2( 4000 );
+      l_rename_msg     VARCHAR2( 4000 );
+      l_iot_type       all_tables.iot_type%TYPE;
       l_idx_cnt        NUMBER                        := 0;
       l_tab_name       VARCHAR2( 61 )                := UPPER( p_owner || '.' || p_table );
       l_src_name       VARCHAR2( 61 )                := UPPER( p_source_owner || '.' || p_source_table );
@@ -195,48 +198,167 @@ AS
       DBMS_METADATA.set_transform_param( DBMS_METADATA.session_transform, 'STORAGE', FALSE );
       o_ev.change_action( 'extract DDL' );
 
-      -- select DDL into a variable
-      SELECT REGEXP_REPLACE
-                ( REGEXP_REPLACE
-                     ( REGEXP_REPLACE
-                          ( DBMS_METADATA.get_ddl( 'TABLE', table_name, owner ),
+-- SELECT DDL into a variable
+      SELECT REGEXP_REPLACE(
+                             -- replace the source table name with the target table name
+                             REGEXP_REPLACE(
+                                             -- this regular expression evaluates whether to use a modified version of the current constraint name
+                                             -- or a generic constraint_name based on the table name
+                                                 -- this is only important when the table is an IOT
+                                                 -- GENERIC_CON is an expression constructed below
+                                                 -- it uses the join to ALL_CONSTRAINTS to see whether the proposed constraint name is available
+                                             REGEXP_REPLACE( table_ddl,
+                                                             '(constraint )("?)(\w+)("?)',
+                                                                '\1'
+                                                             || CASE generic_con
+                                                                   WHEN 'Y'
+                                                                      THEN con_rename_adj
+                                                                   ELSE con_rename
+                                                                END,
+                                                             1,
+                                                             0,
+                                                             'i'
+                                                           ),
+                                             '(\.)("?)(' || p_source_table || ')("?)',
+                                             '\1' || UPPER( p_table ),
+                                             1,
+                                             0,
+                                             'i'
+                                           ),
+                             '(table)(\s+)("?)(' || p_source_owner || ')("?)(\.)',
+                             '\1\2' || UPPER( p_owner ) || '\6',
+                             1,
+                             0,
+                             'i'
+                           ) table_ddl,
+                
+                    -- this column was added for the REPLACE_TABLE procedure
+                -- IN that procedure, after cloning the indexes, the table is renamed
+                -- we have to rename the indexes back to their original names
+                ' alter table '
+             || UPPER( p_source_owner || '.' || p_source_table )
+             || ' rename constraint '
+             || CASE generic_con
+                   WHEN 'Y'
+                      THEN con_rename_adj
+                   ELSE con_rename
+                END
+             || ' to '
+             || source_constraint rename_ddl,
+                
+                -- this column was added for the REPLACE_TABLE procedure
+                -- IN that procedure, after cloning the indexes, the table is renamed
+                -- we have to rename the indexes back to their original names
+                'Constraint '
+             || CASE generic_con
+                   WHEN 'Y'
+                      THEN con_rename_adj
+                   ELSE con_rename
+                END
+             || ' on table '
+             || UPPER( p_source_owner || '.' || p_source_table )
+             || ' renamed to '
+             || source_constraint rename_msg,
+             iot_type
+        INTO l_table_ddl,
+             l_rename_ddl,
+             l_rename_msg,
+             l_iot_type
+        FROM ( SELECT
+                      -- this regular expression evaluates p_TABLESPACE and modifies the DDL accordingly
+                      REGEXP_REPLACE
+                          (
+                            -- this regular expression evaluates p_PARTITIONING paramater and removes partitioning information if necessary
+                            REGEXP_REPLACE( table_ddl,
+                                            CASE td_core.get_yn_ind( p_partitioning )
+                                               -- don't want partitioning
+                                            WHEN 'no'
+                                                  -- remove all partitioning
+                                            THEN '(\(\s*partition.+\))\s*|(partition by).+\)\s*'
+                                               ELSE NULL
+                                            END,
+                                            NULL,
+                                            1,
+                                            0,
+                                            'in'
+                                          ),
+                            '(tablespace)(\s*)([^ ]+)([[:space:]]*)',
                             CASE
-                               -- don't want partitioning
-                            WHEN td_core.get_yn_ind( p_partitioning ) = 'no'
-                                  -- remove all partitioning
-                            THEN '(\(\s*partition.+\))\s*|(partition by).+\)\s*'
-                               ELSE NULL
+                               WHEN p_tablespace IS NULL
+                                  THEN '\1\2\3\4'
+                               WHEN p_tablespace = 'default'
+                                  THEN NULL
+                               ELSE '\1\2' || UPPER( p_tablespace ) || '\4'
                             END,
-                            NULL,
                             1,
                             0,
-                            'in'
-                          ),
-                       '(\.|constraint )("?)(' || p_source_table || ')(\w*)("?)',
-                       '\1' || p_table || '\4',
-                       1,
-                       0,
-                       'i'
-                     ),
-                  '(")?(' || p_source_owner || ')("?\.)',
-                  p_owner || '.',
-                  1,
-                  0,
-                  'i'
-                ) table_ddl
-        INTO l_ddl
-        FROM all_tables
-       WHERE owner = UPPER( p_source_owner ) AND table_name = UPPER( p_source_table );
-
-      -- if a tablespace is provided then replace that
-      IF p_tablespace IS NOT NULL
-      THEN
-         l_ddl :=
-            REGEXP_REPLACE( l_ddl, '(tablespace)(\s*)([^ ]+)([[:space:]]*)', '\1\2' || p_tablespace || '\4', 1, 0, 'i' );
-      END IF;
+                            'i'
+                          ) table_ddl,
+                      con_rename, con_rename_adj, iot_type, source_owner, source_constraint, index_owner, index_name,
+                      
+                      -- this case expression determines whether to use the standard renamed constraint name
+                      -- OR whether to use the generic constraint name based on table name
+                      -- below we are right joining with USER_OBJECTS to see if the standard name is already used
+                      -- IF we match, then we need to use the generic constraint name
+                      CASE
+                         WHEN( constraint_name_confirm IS NULL AND LENGTH( con_rename ) < 31 )
+                            THEN 'N'
+                         ELSE 'Y'
+                      END generic_con
+                FROM ( SELECT
+                              -- IF con_rename already exists (constructed below), then we will try to rename the constraint to something generic
+                                   -- this name will only be used when con_rename name already exists
+                              UPPER(    SUBSTR( p_table, 1, 24 )
+                                     || '_'
+                                     || con_ext
+                                     || CASE constraint_type
+                                           WHEN 'P'
+                                              THEN NULL
+                                           ELSE RANK( ) OVER( PARTITION BY con_ext ORDER BY source_constraint )
+                                        END
+                                   
+                                   -- rank function gives us the constraint number by specific constraint extension (formulated below)
+                                   ) con_rename_adj,
+                              iot_type, con_rename, table_ddl, constraint_name_confirm, source_owner, source_constraint,
+                              index_owner, index_name
+                        FROM ( SELECT DBMS_METADATA.get_ddl( 'TABLE', table_name, owner ) table_ddl, iot_type,
+                                      owner source_owner, constraint_name source_constraint, constraint_type,
+                                      index_owner, index_name,
+                                      
+                                      -- this is the constraint name that will be used if it doesn't already exist
+                                                -- basically, all cases of the previous table name are replaced with the new table name
+                                      UPPER( REGEXP_REPLACE( constraint_name,
+                                                             '(")?' || p_source_table || '(")?',
+                                                             p_table,
+                                                             1,
+                                                             0,
+                                                             'i'
+                                                           )
+                                           ) con_rename,
+                                      CASE constraint_type
+                                         -- devise a specific constraint extention based on information about it
+                                      WHEN 'R'
+                                            THEN 'F'
+                                         ELSE constraint_type || 'K'
+                                      END con_ext
+                                FROM all_tables
+                                               -- joining here to get the primary key for the table (if it exists)
+                                               -- this is used to handle IOT's correctly
+                                     LEFT JOIN all_constraints USING( owner, table_name )
+                               WHERE owner = UPPER( p_source_owner )
+                                 AND table_name = UPPER( p_source_table )
+                                 AND constraint_type = 'P' ) g1
+                             LEFT JOIN
+                             
+                             -- joining here to see if the proposed constraint_name (con_rename) actually exists
+                             ( SELECT owner constraint_owner_confirm, constraint_name constraint_name_confirm
+                                FROM all_constraints ) g2
+                             ON g1.con_rename = g2.constraint_name_confirm
+                           AND g2.constraint_owner_confirm = UPPER( p_owner )
+                             ));
 
       o_ev.change_action( 'execute DDL' );
-      evolve_app.exec_sql( p_sql => l_ddl, p_auto => 'yes' );
+      evolve_app.exec_sql( p_sql => l_table_ddl, p_auto => 'yes' );
       evolve_log.log_msg( 'Table ' || l_tab_name || ' created' );
 
       -- if you want the records as well
@@ -600,11 +722,9 @@ AS
             o_ev.change_action( 'insert into td_build_idx_gtt' );
 
             INSERT INTO td_build_idx_gtt
-                        ( index_owner, index_name, src_index_owner, src_index_name,
-                          create_ddl, rename_ddl, rename_msg
+                        ( rename_ddl, rename_msg
                         )
-                 VALUES ( c_indexes.index_owner, c_indexes.index_name, c_indexes.source_owner, c_indexes.source_index,
-                          SUBSTR( c_indexes.index_ddl, 1, 4000 ), c_indexes.rename_ddl, c_indexes.rename_msg
+                 VALUES ( c_indexes.rename_ddl, c_indexes.rename_msg
                         );
          EXCEPTION
             -- if a duplicate column list of indexes already exist, log it, but continue
@@ -685,8 +805,6 @@ AS
                              END || ' renamed' );
       END IF;
 
-      -- commit is required to clear out the contents of the global temporary table
-      COMMIT;
       o_ev.clear_app_info;
    EXCEPTION
       WHEN OTHERS
@@ -782,14 +900,16 @@ AS
       o_ev.change_action( 'build constraints' );
 
       FOR c_constraints IN
-         (                              -- this case statement uses GENERIC_CON column to determine the final index name
+         (
+-- this case statement uses GENERIC_CON column to determine the final index name
+-- GENERIC_CON is a case statement that is generated below
 -- IF we are using a generic name, then perform the replace
           SELECT   constraint_owner, CASE generic_con
                       WHEN 'Y'
                          THEN con_rename_adj
                       ELSE con_rename
-                   END constraint_name, owner source_owner, table_name, constraint_name source_constraint,
-                   constraint_type, index_owner, index_name,
+                   END constraint_name, source_owner, source_table, source_constraint, constraint_type, index_owner,
+                   index_name,
                    REGEXP_REPLACE( constraint_ddl,
                                    '(constraint )("?)(\w+)("?)',
                                    '\1' || CASE generic_con
@@ -805,31 +925,35 @@ AS
                       -- this column was added for the REPLACE_TABLE procedure
                       -- IN that procedure, after cloning the indexes, the table is renamed
                       -- we have to rename the indexes back to their original names
-                      ' alter constraint '
-                   || owner
+                      ' alter table '
+                   || source_owner
                    || '.'
+                   || source_table
+                   || ' rename constraint '
                    || CASE generic_con
                          WHEN 'Y'
                             THEN con_rename_adj
                          ELSE con_rename
                       END
-                   || ' rename to '
-                   || constraint_name rename_ddl,
+                   || ' to '
+                   || source_constraint rename_ddl,
                       
                       -- this column was added for the REPLACE_TABLE procedure
                       -- IN that procedure, after cloning the indexes, the table is renamed
                       -- we have to rename the indexes back to their original names
                       'Constraint '
-                   || owner
-                   || '.'
                    || CASE generic_con
                          WHEN 'Y'
                             THEN con_rename_adj
                          ELSE con_rename
                       END
+                   || ' on table '
+                   || source_owner
+                   || '.'
+                   || source_table
                    || ' renamed to '
-                   || constraint_name rename_msg,
-                   basis_source, generic_con, rename_constraint
+                   || source_constraint rename_msg,
+                   basis_source, generic_con, named_constraint
               FROM ( SELECT
                             -- IF con_rename already exists (constructed below), then we will try to rename the constraint to something generic
                             -- this name will only be used when con_rename name already exists
@@ -848,8 +972,8 @@ AS
                                  ) con_rename_adj,
                             
                                       -- this regexp_replace replaces the current owner of the table with the new owner of the table
-                            -- when P_BASIS is 'table', then it replaces the owner for the table being altered
-                            -- when P_BASIS is 'reference', then it replaces it for the table being referenced
+                            -- when p_BASIS is 'table', then it replaces the owner for the table being altered
+                            -- when p_BASIS is 'reference', then it replaces it for the table being referenced
                             -- the CASE statement looks for either 'TABLE' or 'REFERENCES' before the owner name
                             REGEXP_REPLACE(
                                             -- this regexp_replace will replace the source table with the target table
@@ -888,8 +1012,8 @@ AS
                                             0,
                                             'i'
                                           ) constraint_ddl,
-                            con.owner, table_name, constraint_name, con_rename, index_owner, index_name, con_ext,
-                            constraint_type,
+                            con.owner source_owner, table_name source_table, constraint_name source_constraint,
+                            con_rename, index_owner, index_name, con_ext, constraint_type,
                             
                             -- this case expression determines whether to use the standard renamed constraint name
                             -- OR whether to use the generic constraint name based on table name
@@ -905,7 +1029,7 @@ AS
                                WHEN TO_CHAR( REGEXP_SUBSTR( constraint_ddl, 'constraint', 1, 1, 'i' )) IS NULL
                                   THEN 'N'
                                ELSE 'Y'
-                            END rename_constraint
+                            END named_constraint
                       FROM ( SELECT    REGEXP_REPLACE
                                           
                                           -- dbms_metadata pulls the metadata for the source object out of the dictionary
@@ -1038,69 +1162,65 @@ AS
          -- catch empty cursor sets
          l_rows := TRUE;
 
-         BEGIN
-            evolve_app.exec_sql( p_sql                => c_constraints.constraint_ddl,
-                                 p_auto               => 'yes',
-                                 p_concurrent_id      => l_concurrent_id
-                               );
-            evolve_log.log_msg(    'Creation of constraint '
-                                || c_constraints.constraint_name
-                                || ' '
-                                || CASE
-                                      WHEN td_core.is_true( p_concurrent )
-                                         THEN 'submitted to the Oracle scheduler'
-                                      ELSE 'executed'
-                                   END,
-                                2
-                              );
-            l_con_cnt := l_con_cnt + 1;
-            o_ev.change_action( 'insert into td_build_idx_gtt' );
+         -- if the target table is index-organized and the constraint is a primary key
+         -- then we don't want to build the constraint
+         IF NOT( td_utils.is_iot( p_owner, p_table ) AND c_constraints.constraint_type = 'P' )
+         THEN
+            BEGIN
+               evolve_app.exec_sql( p_sql                => c_constraints.constraint_ddl,
+                                    p_auto               => 'yes',
+                                    p_concurrent_id      => l_concurrent_id
+                                  );
+               evolve_log.log_msg(    'Creation of '
+                                   || CASE c_constraints.named_constraint
+                                         WHEN 'Y'
+                                            THEN 'constraint ' || c_constraints.constraint_name
+                                         ELSE 'unnamed constraint'
+                                      END
+                                   || ' '
+                                   || CASE
+                                         WHEN td_core.is_true( p_concurrent )
+                                            THEN 'submitted to the Oracle scheduler'
+                                         ELSE 'executed'
+                                      END,
+                                   2
+                                 );
+               l_con_cnt := l_con_cnt + 1;
+               o_ev.change_action( 'insert into td_build_idx_gtt' );
 
-            INSERT INTO td_build_con_gtt
-                        ( table_owner, table_name, constraint_name,
-                          src_constraint_name, index_name, index_owner,
-                          create_ddl, create_msg, rename_ddl, rename_msg
-                        )
-                 VALUES ( c_constraints.source_owner, c_constraints.table_name, c_constraints.constraint_name,
-                          c_constraints.source_constraint, c_constraints.index_name, c_constraints.index_owner,
-                          c_constraints.constraint_ddl, NULL, c_constraints.rename_ddl, c_constraints.rename_msg
-                        );
-         EXCEPTION
-            WHEN e_dup_pk
-            THEN
-               evolve_log.log_msg( 'Primary key constraint already exists on table ' || l_tab_name, 3 );
-
-               IF l_iot_type = 'IOT'
+               -- only insert for rename if the constraint is a named constraint
+               IF c_constraints.named_constraint = 'Y'
                THEN
                   INSERT INTO td_build_con_gtt
-                              ( table_owner, table_name, constraint_name,
-                                src_constraint_name, index_name, index_owner,
-                                create_ddl, create_msg, rename_ddl, rename_msg
+                              ( rename_ddl, rename_msg
                               )
-                       VALUES ( c_constraints.source_owner, c_constraints.table_name, c_constraints.constraint_name,
-                                c_constraints.source_constraint, c_constraints.index_name, c_constraints.index_owner,
-                                c_constraints.constraint_ddl, NULL, c_constraints.rename_ddl, c_constraints.rename_msg
+                       VALUES ( c_constraints.rename_ddl, c_constraints.rename_msg
                               );
                END IF;
-            WHEN e_dup_fk
-            THEN
-               evolve_log.log_msg(    'Constraint comparable to '
-                                   || c_constraints.constraint_name
-                                   || ' already exists on table '
-                                   || l_tab_name,
-                                   3
-                                 );
-            WHEN e_dup_not_null
-            THEN
-               evolve_log.log_msg( 'Referenced not null constraint already exists on table ' || l_tab_name, 3 );
-            WHEN OTHERS
-            THEN
-               -- first log the error
-               -- provide a backtrace from this exception handler to the next exception
-               evolve_log.log_err;
-               o_ev.clear_app_info;
-               RAISE;
-         END;
+            EXCEPTION
+               WHEN e_dup_pk
+               THEN
+                  evolve_log.log_msg( 'Primary key constraint already exists on table ' || l_tab_name, 3 );
+               WHEN e_dup_fk
+               THEN
+                  evolve_log.log_msg(    'Constraint comparable to '
+                                      || c_constraints.constraint_name
+                                      || ' already exists on table '
+                                      || l_tab_name,
+                                      3
+                                    );
+               WHEN e_dup_not_null
+               THEN
+                  evolve_log.log_msg( 'Referenced not null constraint already exists on table ' || l_tab_name, 3 );
+               WHEN OTHERS
+               THEN
+                  -- first log the error
+                  -- provide a backtrace from this exception handler to the next exception
+                  evolve_log.log_err;
+                  o_ev.clear_app_info;
+                  RAISE;
+            END;
+         END IF;
       END LOOP;
 
       IF NOT l_rows
@@ -1169,8 +1289,6 @@ AS
                              END || ' renamed' );
       END IF;
 
-      -- commit is required to clear out the contents of the global temporary table
-      COMMIT;
       o_ev.clear_app_info;
    EXCEPTION
       WHEN OTHERS
@@ -1340,12 +1458,10 @@ AS
                o_ev.change_action( 'insert into td_con_maint_gtt' );
 
                INSERT INTO td_con_maint_gtt
-                           ( table_owner, table_name, constraint_name,
-                             disable_ddl, disable_msg, enable_ddl,
+                           ( disable_ddl, disable_msg, enable_ddl,
                              enable_msg
                            )
-                    VALUES ( c_constraints.table_owner, c_constraints.table_name, c_constraints.constraint_name,
-                             c_constraints.disable_ddl, c_constraints.disable_msg, c_constraints.enable_ddl,
+                    VALUES ( c_constraints.disable_ddl, c_constraints.disable_msg, c_constraints.enable_ddl,
                              c_constraints.enable_msg
                            );
             END IF;
@@ -1488,8 +1604,6 @@ AS
                            );
       END IF;
 
-      -- commit is required to clear out the contents of the global temporary table
-      COMMIT;
       o_ev.clear_app_info;
    EXCEPTION
       WHEN OTHERS
@@ -1577,10 +1691,15 @@ AS
       l_con_cnt    NUMBER         := 0;
       l_tab_name   VARCHAR2( 61 ) := p_owner || '.' || p_table;
       l_rows       BOOLEAN        := FALSE;
+      l_iot_pk     BOOLEAN        := FALSE;
       e_iot_pk     EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_iot_pk, -25188 );
       o_ev         evolve_ot      := evolve_ot( p_module => 'drop_constraints' );
    BEGIN
+      -- confirm that the table exists
+      -- raise an error if it doesn't
+      td_utils.check_table( p_owner => p_owner, p_table => p_table );
+
       -- drop constraints
       FOR c_constraints IN ( SELECT *
                               FROM ( SELECT    'alter table '
@@ -1628,17 +1747,18 @@ AS
          l_rows := TRUE;
 
          BEGIN
+            o_ev.change_action( 'execute table alter' );
             evolve_app.exec_sql( p_sql => c_constraints.constraint_ddl, p_auto => 'yes' );
             l_con_cnt := l_con_cnt + 1;
             evolve_log.log_msg( 'Constraint ' || c_constraints.constraint_name || ' dropped', 2 );
          EXCEPTION
             WHEN e_iot_pk
             THEN
-               evolve_log.log_msg(    'Constraint '
-                                   || c_constraints.constraint_name
-                                   || 'ignored because it is the primary key of an iot or cluster',
+               evolve_log.log_msg(    c_constraints.constraint_name
+                                   || ' cannot be dropped because it is the primary key of an iot or cluster',
                                    3
                                  );
+               l_iot_pk := TRUE;
          END;
       END LOOP;
 
@@ -1656,6 +1776,11 @@ AS
                              || ' dropped on '
                              || l_tab_name
                            );
+      END IF;
+
+      IF l_iot_pk
+      THEN
+         RAISE e_drop_iot_key;
       END IF;
 
       o_ev.clear_app_info;
@@ -2408,21 +2533,161 @@ AS
          RAISE;
    END exchange_partition;
 
+   -- procedure to "swap" two tables by renaming
+   -- this does nothing special... just renames the tables
+   -- REPLACE_TABLE does true swapping of two tables, including constraints, indexes, grants
+   PROCEDURE rename_tables( p_owner VARCHAR2, p_table VARCHAR2, p_source_table VARCHAR2 )
+   IS
+      l_src_name     VARCHAR2( 61 )               := UPPER( p_owner || '.' || p_source_table );
+      l_tab_name     VARCHAR2( 61 )               := UPPER( p_owner || '.' || p_table );
+      l_temp_table   all_tables.table_name%TYPE   := 'TD$_TBL' || TO_CHAR( SYSTIMESTAMP, 'mmddyyyyHHMISS' );
+      l_temp_name    VARCHAR2( 61 )               := UPPER( p_owner || '.' || l_temp_table );
+      o_ev           evolve_ot                    := evolve_ot( p_module => 'rename_tables' );
+   BEGIN
+      o_ev.change_action( 'perform object checks' );
+      evolve_log.log_msg( 'The temporary table name: ' || l_temp_table, 5 );
+      -- check to make sure the target table exists
+      td_utils.check_table( p_owner => p_owner, p_table => p_table );
+      -- check to make sure the source table exists
+      td_utils.check_table( p_owner => p_owner, p_table => p_source_table );
+      -- first rename the target table to temporary table
+      o_ev.change_action( 'rename target table' );
+      evolve_app.exec_sql( p_sql => 'alter table ' || l_tab_name || ' rename to ' || l_temp_table, p_auto => 'yes' );
+      -- now rename source to target
+      o_ev.change_action( 'rename source table' );
+      evolve_app.exec_sql( p_sql       => 'alter table ' || l_src_name || ' rename to ' || UPPER( p_table ),
+                           p_auto      => 'yes' );
+      -- now rename temporary to source
+      o_ev.change_action( 'rename temp table' );
+      evolve_app.exec_sql( p_sql       => 'alter table ' || l_temp_name || ' rename to ' || UPPER( p_source_table ),
+                           p_auto      => 'yes'
+                         );
+      o_ev.clear_app_info;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         o_ev.clear_app_info;
+         RAISE;
+   END rename_tables;
+
+   -- procedure to "swap" two primary key names
+   -- both tables have to have primary keys enabled
+   PROCEDURE rename_primary_keys( p_owner VARCHAR2, p_table VARCHAR2, p_source_owner VARCHAR2, p_source_table VARCHAR2 )
+   IS
+      l_src_name          VARCHAR2( 61 )                         := UPPER( p_source_owner || '.' || p_source_table );
+      l_tab_name          VARCHAR2( 61 )                         := UPPER( p_owner || '.' || p_table );
+      l_temp_key          all_constraints.constraint_name%TYPE := 'TD$_PK' || TO_CHAR( SYSTIMESTAMP, 'mmddyyyyHHMISS' );
+      l_temp_idx          all_indexes.index_name%TYPE            := l_temp_key;
+      l_temp_idx_name     VARCHAR2( 61 )                         := UPPER( p_owner || '.' || l_temp_idx );
+      l_source_key        all_constraints.constraint_name%TYPE;
+      l_source_idx        all_indexes.index_name%TYPE;
+      l_source_idx_own    all_indexes.owner%TYPE;
+      l_source_idx_name   VARCHAR2( 61 );
+      l_targ_key          all_constraints.constraint_name%TYPE;
+      l_targ_idx          all_indexes.index_name%TYPE;
+      l_targ_idx_own      all_indexes.owner%TYPE;
+      l_targ_idx_name     VARCHAR2( 61 );
+      o_ev                evolve_ot                              := evolve_ot( p_module => 'rename_primary_keys' );
+   BEGIN
+      o_ev.change_action( 'perform object checks' );
+      evolve_log.log_msg( 'The temporary key name: ' || l_temp_key, 5 );
+      -- check to make sure the target table exists
+      td_utils.check_table( p_owner => p_owner, p_table => p_table );
+      -- check to make sure the source table exists
+      td_utils.check_table( p_owner => p_source_owner, p_table => p_source_table );
+      o_ev.change_action( 'determine key names' );
+
+      -- get the source key
+      BEGIN
+         SELECT constraint_name, ac.index_name, NVL( ac.index_owner, ac.owner )
+           INTO l_source_key, l_source_idx, l_source_idx_own
+           FROM all_constraints ac JOIN all_indexes ai
+                ON ac.index_name = ai.index_name AND NVL( ac.index_owner, ac.owner ) = ai.owner
+          WHERE ac.table_name = UPPER( p_source_table )
+            AND ac.owner = UPPER( p_source_owner )
+            AND ac.constraint_type = 'P';
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            evolve_log.raise_err( 'no_pk', l_src_name );
+      END;
+
+      -- get the target key
+      BEGIN
+         SELECT constraint_name, ac.index_name, NVL( ac.index_owner, ac.owner )
+           INTO l_targ_key, l_targ_idx, l_targ_idx_own
+           FROM all_constraints ac JOIN all_indexes ai
+                ON ac.index_name = ai.index_name AND NVL( ac.index_owner, ac.owner ) = ai.owner
+          WHERE ac.table_name = UPPER( p_table ) AND ac.owner = UPPER( p_owner ) AND ac.constraint_type = 'P';
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            evolve_log.raise_err( 'no_pk', l_src_name );
+      END;
+
+      l_source_idx_name := UPPER( l_source_idx_own || '.' || l_source_idx );
+      l_targ_idx_name := UPPER( l_targ_idx_own || '.' || l_targ_idx );
+      -- first rename the target key to temporary key
+      o_ev.change_action( 'rename target key' );
+      evolve_app.exec_sql( p_sql       =>    'alter table '
+                                          || l_tab_name
+                                          || ' rename constraint '
+                                          || l_targ_key
+                                          || ' to '
+                                          || l_temp_key,
+                           p_auto      => 'yes'
+                         );
+      -- now rename source to target
+      o_ev.change_action( 'rename source key' );
+      evolve_app.exec_sql( p_sql       =>    'alter table '
+                                          || l_src_name
+                                          || ' rename constraint '
+                                          || l_source_key
+                                          || ' to '
+                                          || l_targ_key,
+                           p_auto      => 'yes'
+                         );
+      -- now rename temporary to source
+      o_ev.change_action( 'rename temp key' );
+      evolve_app.exec_sql( p_sql       =>    'alter table '
+                                          || l_tab_name
+                                          || ' rename constraint '
+                                          || l_temp_key
+                                          || ' to '
+                                          || l_source_key,
+                           p_auto      => 'yes'
+                         );
+      -- first rename the target idx to temporary idx
+      o_ev.change_action( 'rename target index' );
+      evolve_app.exec_sql( p_sql => 'alter index ' || l_targ_idx_name || ' rename to ' || l_temp_idx, p_auto => 'yes' );
+      -- now rename the source index to the target index
+      o_ev.change_action( 'rename source index' );
+      evolve_app.exec_sql( p_sql       => 'alter index ' || l_source_idx_name || ' rename to ' || l_targ_idx,
+                           p_auto      => 'yes' );
+      -- now rename the temporary index to the source index
+      o_ev.change_action( 'rename temporary index' );
+      evolve_app.exec_sql( p_sql       => 'alter index ' || l_temp_idx_name || ' rename to ' || l_source_idx,
+                           p_auto      => 'yes' );
+      o_ev.clear_app_info;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         o_ev.clear_app_info;
+         RAISE;
+   END rename_primary_keys;
+
    -- procedure to "swap" two tables using rename
    PROCEDURE replace_table(
       p_owner          VARCHAR2,
       p_table          VARCHAR2,
       p_source_table   VARCHAR2,
       p_tablespace     VARCHAR2 DEFAULT NULL,
-      p_index_drop     VARCHAR2 DEFAULT 'yes',
       p_concurrent     VARCHAR2 DEFAULT 'no',
       p_statistics     VARCHAR2 DEFAULT 'transfer'
    )
    IS
       l_src_name   VARCHAR2( 61 ) := UPPER( p_owner || '.' || p_source_table );
       l_tab_name   VARCHAR2( 61 ) := UPPER( p_owner || '.' || p_table );
-      l_tab_rn     VARCHAR2( 30 ) := UPPER( 'td$' || SUBSTR( p_table, 1, 25 ) || '_rn' );
-      l_ren_name   VARCHAR2( 61 ) := UPPER( p_owner || '.' || l_tab_rn );
       l_rows       BOOLEAN        := FALSE;
       l_ddl        LONG;
       e_no_stats   EXCEPTION;
@@ -2450,7 +2715,7 @@ AS
          -- will be building indexes later, which gather their own statistics
          -- so P_CASCADE is fales
          update_stats( p_owner             => p_owner,
-                       p_table             => p_table,
+                       p_table             => p_source_table,
                        p_source_owner      => CASE
                           WHEN REGEXP_LIKE( 'gather', p_statistics, 'i' )
                              THEN NULL
@@ -2467,7 +2732,7 @@ AS
                      );
       END IF;
 
-      -- build the indexes
+      -- build the indexes on the source table
       build_indexes( p_owner             => p_owner,
                      p_table             => p_source_table,
                      p_source_owner      => p_owner,
@@ -2475,7 +2740,7 @@ AS
                      p_tablespace        => p_tablespace,
                      p_concurrent        => p_concurrent
                    );
-      -- build the constraints
+      -- build the constraints on the source table
       build_constraints( p_owner             => p_owner,
                          p_table             => p_source_table,
                          p_source_owner      => p_owner,
@@ -2484,35 +2749,43 @@ AS
                          p_basis             => 'all',
                          p_concurrent        => p_concurrent
                        );
-      -- grant privileges
+      -- grant privileges on the source table
       object_grants( p_owner              => p_owner,
                      p_object             => p_source_table,
                      p_source_owner       => p_owner,
                      p_source_object      => p_table
                    );
-      -- now replace the table
-      -- using a table rename for this
-      o_ev.change_action( 'rename tables' );
-      -- first name the current table to another name
-      evolve_app.exec_sql( p_sql => 'alter table ' || l_tab_name || ' rename to ' || l_tab_rn, p_auto => 'yes' );
-      -- now rename to source table to the target table
-      evolve_app.exec_sql( p_sql       => 'alter table ' || l_src_name || ' rename to ' || UPPER( p_table ),
-                           p_auto      => 'yes' );
-      -- now rename to previous target table to the source table name
-      evolve_app.exec_sql( p_sql       => 'alter table ' || l_ren_name || ' rename to ' || UPPER( p_source_table ),
-                           p_auto      => 'yes'
-                         );
 
-      -- drop the indexes on the stage table
-      IF td_core.is_true( p_index_drop )
-      THEN
-         drop_indexes( p_owner => p_owner, p_table => p_source_table );
-      END IF;
+      -- drop constraints on the target table
+      BEGIN
+         drop_constraints( p_owner => p_owner, p_table => p_table, p_basis => 'all' );
+      EXCEPTION
+         -- if we try to drop the constraints on an IOT, then we know we need to swap them afterwards
+         WHEN e_drop_iot_key
+         THEN
+            rename_primary_keys( p_owner             => p_owner,
+                                 p_table             => p_table,
+                                 p_source_owner      => p_owner,
+                                 p_source_table      => p_source_table
+                               );
+      END;
+
+      -- drop indexes on the target table
+      drop_indexes( p_owner => p_owner, p_table => p_table );
+
+      -- rename the tables
+      BEGIN
+         rename_tables( p_owner => p_owner, p_table => p_table, p_source_table => p_source_table );
+      END;
 
       -- rename the indexes
       rename_indexes;
+
       -- rename the constraints
-      rename_constraints;
+      BEGIN
+         rename_constraints;
+      END;
+
       -- clear out temporary table holding index and constraint statements
       COMMIT;
       o_ev.clear_app_info;
@@ -2703,8 +2976,6 @@ AS
          evolve_log.log_msg( 'No matching usable indexes found on ' || l_tab_name );
       END IF;
 
-      -- commit needed to clear the contents of the global temporary table
-      COMMIT;
       o_ev.clear_app_info;
    EXCEPTION
       WHEN OTHERS
@@ -2950,6 +3221,7 @@ AS
             ELSE
                DBMS_STATS.gather_table_stats( ownname               => p_owner,
                                               tabname               => p_table,
+                                              partname              => p_partname,
                                               estimate_percent      => NVL( p_percent, DBMS_STATS.auto_sample_size ),
                                               method_opt            => p_method,
                                               DEGREE                => NVL( p_degree, DBMS_STATS.auto_degree ),
@@ -3043,7 +3315,6 @@ AS
                              END
                           || UPPER( p_table )
                         );
-      COMMIT;
       o_ev.clear_app_info;
    EXCEPTION
       WHEN OTHERS

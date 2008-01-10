@@ -64,6 +64,7 @@ AS
          td_utils.check_table( p_owner => staging_owner, p_table => staging_table );
       END IF;
 
+      evolve_log.log_msg( 'Dimension confirmation completed successfully', 5 );
       -- reset the evolve_object
       o_ev.clear_app_info;
    END confirm_dim;
@@ -155,6 +156,7 @@ AS
       END;
 
       evolve_log.log_msg( 'The surrogate key: ' || surrogate_key_col, 5 );
+      evolve_log.log_msg( 'Column initialization completed successfully', 5 );
       -- reset the evolve_object
       o_ev.clear_app_info;
    END initialize_cols;
@@ -229,6 +231,7 @@ AS
          evolve_log.raise_err( 'dim_mismatch', full_table );
       END IF;
 
+      evolve_log.log_msg( 'Dimension column confirmation completed successfully', 5 );
       -- reset the evolve_object
       o_ev.clear_app_info;
    END confirm_dim_cols;
@@ -339,23 +342,32 @@ AS
       -- construct a list of all scd2 attributes
       -- if any of the variables are null, we may get a ',,' or a ',' at the end of the list
       -- use the regexp_replace to remove that
-      l_scd2_list         :=
-                           REGEXP_REPLACE( l_scd2_dates || ',' || l_scd2_nums || ',' || l_scd2_chars, '(,)(,|$)', '\2' );
+      l_scd2_list := REGEXP_REPLACE( l_scd2_dates || ',' || l_scd2_nums || ',' || l_scd2_chars, '(,)(,|$)', '\2' );
       -- construct a list of all scd attributes
       -- this is a combined list of all scd1 and scd2 attributes
       -- if any of the variables are null, we may get a ',,'
       -- use the regexp_replace to remove that
       -- also need the regexp to remove an extra comma at the end if that appears
-      l_scd_list          := REGEXP_REPLACE( l_scd2_list || ',' || l_scd1_list, '(,)(,|$)', '\2' );
+      l_scd_list := REGEXP_REPLACE( l_scd2_list || ',' || l_scd1_list, '(,)(,|$)', '\2' );
       evolve_log.log_msg( 'The SCD list: ' || l_scd_list, 5 );
       -- construct the include case statement
       -- this case statement determines which records from the staging table are included as new rows
-      l_include_case      :=
+      l_include_case :=
             'CASE WHEN '
          || surrogate_key_col
          || ' <> '
          || l_stage_key
-         || ' THEN ''Y'''
+         || ' THEN ''Y'' WHEN '
+         || effect_dt_col
+         || ' = lag('
+         || effect_dt_col
+         || ') over (partition by '
+         || natural_key_list
+         || ' order by '
+         || effect_dt_col
+         || ','
+         || surrogate_key_col
+         || ' desc) then ''N'' '
          || REGEXP_REPLACE( l_scd2_nums,
                             '(\w+)(,|$)',
                                'when nvl(\1,'
@@ -396,7 +408,7 @@ AS
       evolve_log.log_msg( 'The include CASE: ' || l_include_case, 5 );
       -- construct the scd1 analytics list
       -- this is a list of all the LAST_VALUE statements needed for the final statement
-      l_scd1_analytics    :=
+      l_scd1_analytics :=
          REGEXP_REPLACE( l_scd1_list,
                          '(\w+)(,|$)',
                             'last_value(\1) over (partition by '
@@ -407,7 +419,7 @@ AS
                        );
       evolve_log.log_msg( 'The scd1 analytics clause: ' || l_scd1_analytics, 5 );
       -- now, put the statement together
-      l_sql               :=
+      l_sql :=
             'insert '
          || CASE td_core.get_yn_ind( SELF.direct_load )
                WHEN 'yes'
@@ -527,6 +539,8 @@ AS
       -- now run the insert statement to load the staging table
       o_ev.change_action( 'load staging table' );
       evolve_app.exec_sql( l_sql );
+      evolve_log.log_cnt_msg( p_count      => SQL%ROWCOUNT,
+                              p_msg        => 'Number of records inserted into ' || SELF.full_stage );
       -- perform the replace method
       o_ev.change_action( 'replace table' );
 

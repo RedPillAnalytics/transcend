@@ -88,6 +88,9 @@ AS
 
    FUNCTION is_part_table( p_owner VARCHAR2, p_table VARCHAR2 )
       RETURN BOOLEAN;
+      
+   FUNCTION is_iot( p_owner VARCHAR2, p_table VARCHAR2 )
+      RETURN BOOLEAN;
 
    FUNCTION object_exists( p_owner VARCHAR2, p_object VARCHAR2 )
       RETURN BOOLEAN;

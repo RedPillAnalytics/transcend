@@ -52,14 +52,14 @@ SELECT REGEXP_REPLACE(
                                                        0,
                                                        'i'
                                                      ),
-                                       '(\.)("?)(' || :p_source_table || ')("?)',
-                                       '\1' || UPPER( :p_table ),
+                                       '(\.)("?)(' || p_source_table || ')("?)',
+                                       '\1' || UPPER( p_table ),
                                        1,
                                        0,
                                        'i'
                                      ),
-                       '(table)(\s+)("?)(' || :p_source_owner || ')("?)(\.)',
-                       '\1\2' || UPPER( :p_owner ) || '\6',
+                       '(table)(\s+)("?)(' || p_source_owner || ')("?)(\.)',
+                       '\1\2' || UPPER( p_owner ) || '\6',
                        1,
                        0,
                        'i'
@@ -69,7 +69,7 @@ SELECT REGEXP_REPLACE(
           -- IN that procedure, after cloning the indexes, the table is renamed
           -- we have to rename the indexes back to their original names
           ' alter table '
-       || UPPER( :p_source_owner || '.' || :p_source_table )
+       || UPPER( p_source_owner || '.' || p_source_table )
        || ' rename constraint '
        || CASE generic_con
              WHEN 'Y'
@@ -89,21 +89,21 @@ SELECT REGEXP_REPLACE(
              ELSE con_rename
           END
        || ' on table '
-       || UPPER( :p_source_owner || '.' || :p_source_table )
+       || UPPER( p_source_owner || '.' || p_source_table )
        || ' renamed to '
        || source_constraint rename_msg,
        iot_type
-  INTO :l_table_ddl,
-       :l_rename_ddl,
-       :l_rename_msg,
-       :l_iot_type
+  INTO l_table_ddl,
+       l_rename_ddl,
+       l_rename_msg,
+       l_iot_type
   FROM ( SELECT
-                -- this regular expression evaluates :p_TABLESPACE and modifies the DDL accordingly
+                -- this regular expression evaluates p_TABLESPACE and modifies the DDL accordingly
                 REGEXP_REPLACE
                           (
-                            -- this regular expression evaluates :p_PARTITIONING paramater and removes partitioning information if necessary
+                            -- this regular expression evaluates p_PARTITIONING paramater and removes partitioning information if necessary
                             REGEXP_REPLACE( table_ddl,
-                                            CASE td_core.get_yn_ind( :p_partitioning )
+                                            CASE td_core.get_yn_ind( p_partitioning )
                                                -- don't want partitioning
                                             WHEN 'no'
                                                   -- remove all partitioning
@@ -117,11 +117,11 @@ SELECT REGEXP_REPLACE(
                                           ),
                             '(tablespace)(\s*)([^ ]+)([[:space:]]*)',
                             CASE
-                               WHEN :p_tablespace IS NULL
+                               WHEN p_tablespace IS NULL
                                   THEN '\1\2\3\4'
-                               WHEN :p_tablespace = 'default'
+                               WHEN p_tablespace = 'default'
                                   THEN NULL
-                               ELSE '\1\2' || UPPER( :p_tablespace ) || '\4'
+                               ELSE '\1\2' || UPPER( p_tablespace ) || '\4'
                             END,
                             1,
                             0,
@@ -141,7 +141,7 @@ SELECT REGEXP_REPLACE(
           FROM ( SELECT
                         -- IF con_rename already exists (constructed below), then we will try to rename the constraint to something generic
                              -- this name will only be used when con_rename name already exists
-                        UPPER(    SUBSTR( :p_table, 1, 24 )
+                        UPPER(    SUBSTR( p_table, 1, 24 )
                                || '_'
                                || con_ext
                                || CASE constraint_type
@@ -161,8 +161,8 @@ SELECT REGEXP_REPLACE(
                                 -- this is the constraint name that will be used if it doesn't already exist
                                           -- basically, all cases of the previous table name are replaced with the new table name
                                 UPPER( REGEXP_REPLACE( constraint_name,
-                                                       '(")?' || :p_source_table || '(")?',
-                                                       :p_table,
+                                                       '(")?' || p_source_table || '(")?',
+                                                       p_table,
                                                        1,
                                                        0,
                                                        'i'
@@ -178,13 +178,13 @@ SELECT REGEXP_REPLACE(
                                          -- joining here to get the primary key for the table (if it exists)
                                          -- this is used to handle IOT's correctly
                                LEFT JOIN all_constraints USING( owner, table_name )
-                         WHERE owner = UPPER( :p_source_owner )
-                           AND table_name = UPPER( :p_source_table )
+                         WHERE owner = UPPER( p_source_owner )
+                           AND table_name = UPPER( p_source_table )
                            AND constraint_type = 'P' ) g1
                        LEFT JOIN
                        
                        -- joining here to see if the proposed constraint_name (con_rename) actually exists
                        ( SELECT owner constraint_owner_confirm, constraint_name constraint_name_confirm
                           FROM all_constraints ) g2
-                       ON g1.con_rename = g2.constraint_name_confirm AND g2.constraint_owner_confirm = UPPER( :p_owner )
+                       ON g1.con_rename = g2.constraint_name_confirm AND g2.constraint_owner_confirm = UPPER( p_owner )
                        ))

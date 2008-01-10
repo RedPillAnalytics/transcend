@@ -336,6 +336,9 @@ AS
 				   p_basis		     => p_basis
                                   );
    EXCEPTION
+      WHEN td_dbutils.e_drop_iot_key
+      THEN
+      NULL;
       WHEN OTHERS
       THEN
          evolve_log.log_err;
@@ -501,7 +504,6 @@ AS
       p_table          VARCHAR2,
       p_source_table   VARCHAR2,
       p_tablespace     VARCHAR2 DEFAULT NULL,
-      p_index_drop     VARCHAR2 DEFAULT 'yes',
       p_concurrent     VARCHAR2 DEFAULT 'no',
       p_statistics     VARCHAR2 DEFAULT 'transfer'
    )
@@ -511,7 +513,6 @@ AS
                                 p_table             => p_table,
                                 p_source_table      => p_source_table,
                                 p_tablespace        => p_tablespace,
-                                p_index_drop        => p_index_drop,
                                 p_concurrent        => p_concurrent,
                                 p_statistics        => p_statistics
                                );

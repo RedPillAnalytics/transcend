@@ -18,8 +18,8 @@ VAR l_part_position NUMBER
 
 EXEC :p_tablespace := 'WHDATA';
 EXEC :p_constraint_regexp := NULL;
-EXEC :p_owner := 'whstage';
-EXEC :p_table := 'customer_scd';
+EXEC :p_owner := 'whdata';
+EXEC :p_table := 'td$customer_dim';
 EXEC :p_source_owner := 'whdata';
 EXEC :p_source_table := 'customer_dim';
 EXEC :p_constraint_type := NULL;
@@ -102,8 +102,8 @@ SELECT   constraint_owner, CASE generic_con
                        ) con_rename_adj,
                   
                             -- this regexp_replace replaces the current owner of the table with the new owner of the table
-                  -- when P_BASIS is 'table', then it replaces the owner for the table being altered
-                  -- when P_BASIS is 'reference', then it replaces it for the table being referenced
+                  -- when :p_BASIS is 'table', then it replaces the owner for the table being altered
+                  -- when :p_BASIS is 'reference', then it replaces it for the table being referenced
                   -- the CASE statement looks for either 'TABLE' or 'REFERENCES' before the owner name
                   REGEXP_REPLACE(
                                   -- this regexp_replace will replace the source table with the target table

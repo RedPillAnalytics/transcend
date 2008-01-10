@@ -1,5 +1,7 @@
 CREATE OR REPLACE PACKAGE td_dbutils AUTHID CURRENT_USER
 IS
+   e_drop_iot_key   EXCEPTION;
+
    PROCEDURE populate_partname(
       p_owner           VARCHAR2,
       p_table           VARCHAR2,
@@ -144,7 +146,6 @@ IS
       p_table          VARCHAR2,
       p_source_table   VARCHAR2,
       p_tablespace     VARCHAR2 DEFAULT NULL,
-      p_index_drop     VARCHAR2 DEFAULT 'yes',
       p_concurrent     VARCHAR2 DEFAULT 'no',
       p_statistics     VARCHAR2 DEFAULT 'transfer'
    );
