@@ -154,9 +154,13 @@ SELECT REGEXP_REPLACE(
                              ) con_rename_adj,
                         iot_type, con_rename, table_ddl, constraint_name_confirm, source_owner, source_constraint,
                         index_owner, index_name
-                  FROM ( SELECT DBMS_METADATA.get_ddl( 'TABLE', at.table_name, at.owner ) table_ddl, iot_type,
-                                at.owner source_owner, constraint_name source_constraint, constraint_type, index_owner,
-                                index_name, CASE WHEN constraint_name IS NULL THEN 'N' ELSE 'Y' END key_exists,
+                  FROM ( SELECT DBMS_METADATA.get_ddl( 'TABLE', AT.table_name, AT.owner ) table_ddl, iot_type,
+                                AT.owner source_owner, constraint_name source_constraint, constraint_type, index_owner,
+                                index_name, CASE
+                                   WHEN constraint_name IS NULL
+                                      THEN 'N'
+                                   ELSE 'Y'
+                                END key_exists,
                                 
                                 -- this is the constraint name that will be used if it doesn't already exist
                                           -- basically, all cases of the previous table name are replaced with the new table name
@@ -174,15 +178,12 @@ SELECT REGEXP_REPLACE(
                                       THEN 'F'
                                    ELSE constraint_type || 'K'
                                 END con_ext
-                           FROM all_tables at
-                                         -- joining here to get the primary key for the table (if it exists)
-                                         -- this is used to handle IOT's correctly
-                           LEFT JOIN all_constraints ac
-				ON at.table_name = ac.table_name AND
-				at.owner = ac.owner AND
-				ac.constraint_type='P'
-                         WHERE at.owner = UPPER( :p_source_owner )
-                           AND at.table_name = UPPER( :p_source_table )) g1
+                          FROM all_tables AT
+                                            -- joining here to get the primary key for the table (if it exists)
+                                            -- this is used to handle IOT's correctly
+                               LEFT JOIN all_constraints ac
+                               ON AT.table_name = ac.table_name AND AT.owner = ac.owner AND ac.constraint_type = 'P'
+                         WHERE AT.owner = UPPER( :p_source_owner ) AND AT.table_name = UPPER( :p_source_table )) g1
                        LEFT JOIN
                        
                        -- joining here to see if the proposed constraint_name (con_rename) actually exists

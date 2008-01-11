@@ -321,9 +321,14 @@ AS
                                    ) con_rename_adj,
                               iot_type, con_rename, table_ddl, constraint_name_confirm, source_owner, source_constraint,
                               index_owner, index_name
-                        FROM ( SELECT DBMS_METADATA.get_ddl( 'TABLE', table_name, owner ) table_ddl, iot_type,
-                                      owner source_owner, constraint_name source_constraint, constraint_type,
+                        FROM ( SELECT DBMS_METADATA.get_ddl( 'TABLE', AT.table_name, AT.owner ) table_ddl, iot_type,
+                                      AT.owner source_owner, constraint_name source_constraint, constraint_type,
                                       index_owner, index_name,
+                                      CASE
+                                         WHEN constraint_name IS NULL
+                                            THEN 'N'
+                                         ELSE 'Y'
+                                      END key_exists,
                                       
                                       -- this is the constraint name that will be used if it doesn't already exist
                                                 -- basically, all cases of the previous table name are replaced with the new table name
@@ -341,13 +346,13 @@ AS
                                             THEN 'F'
                                          ELSE constraint_type || 'K'
                                       END con_ext
-                                FROM all_tables
-                                               -- joining here to get the primary key for the table (if it exists)
-                                               -- this is used to handle IOT's correctly
-                                     LEFT JOIN all_constraints USING( owner, table_name )
-                               WHERE owner = UPPER( p_source_owner )
-                                 AND table_name = UPPER( p_source_table )
-                                 AND constraint_type = 'P' ) g1
+                                FROM all_tables AT
+                                                  -- joining here to get the primary key for the table (if it exists)
+                                                  -- this is used to handle IOT's correctly
+                                     LEFT JOIN all_constraints ac
+                                     ON AT.table_name = ac.table_name AND AT.owner = ac.owner
+                                        AND ac.constraint_type = 'P'
+                               WHERE AT.owner = UPPER( p_source_owner ) AND AT.table_name = UPPER( p_source_table )) g1
                              LEFT JOIN
                              
                              -- joining here to see if the proposed constraint_name (con_rename) actually exists
@@ -2562,6 +2567,7 @@ AS
       evolve_app.exec_sql( p_sql       => 'alter table ' || l_temp_name || ' rename to ' || UPPER( p_source_table ),
                            p_auto      => 'yes'
                          );
+      evolve_log.log_msg( l_src_name || ' and ' || l_tab_name || ' table names interchanged' );
       o_ev.clear_app_info;
    EXCEPTION
       WHEN OTHERS
@@ -2668,6 +2674,14 @@ AS
       o_ev.change_action( 'rename temporary index' );
       evolve_app.exec_sql( p_sql       => 'alter index ' || l_temp_idx_name || ' rename to ' || l_source_idx,
                            p_auto      => 'yes' );
+      evolve_log.log_msg(    'Constraints '
+                          || l_source_key
+                          || ' and '
+                          || l_targ_key
+                          || ' for owner '
+                          || UPPER( p_owner )
+                          || ' interchanged'
+                        );
       o_ev.clear_app_info;
    EXCEPTION
       WHEN OTHERS

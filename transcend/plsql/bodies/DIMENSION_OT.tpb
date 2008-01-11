@@ -249,10 +249,11 @@ AS
       l_scd2_list        LONG;
       l_scd1_list        LONG;
       l_scd_list         LONG;
+      l_all_col_list     LONG;
       l_include_case     LONG;
       l_scd1_analytics   LONG;
       l_rows             BOOLEAN;
-      o_ev               evolve_ot                                := evolve_ot( p_module => 'load' );
+      o_ev               evolve_ot                                := evolve_ot( p_module => 'load_dim' );
    BEGIN
       -- first, confirm that the column values are as they should be
       confirm_dim_cols;
@@ -322,7 +323,7 @@ AS
             NULL;
       END;
 
-      evolve_log.log_msg( 'The SCD 2 DATE list: ' || l_scd2_chars, 5 );
+      evolve_log.log_msg( 'The SCD 2 char list: ' || l_scd2_chars, 5 );
 
       -- get a comma separated list of scd1 columns
       -- use the STRAGG function for this
@@ -338,18 +339,23 @@ AS
             NULL;
       END;
 
-      evolve_log.log_msg( 'The SCD 2 complete list: ' || l_scd1_list, 5 );
+      evolve_log.log_msg( 'The SCD 1 list: ' || l_scd1_list, 5 );
       -- construct a list of all scd2 attributes
-      -- if any of the variables are null, we may get a ',,' or a ',' at the end of the list
-      -- use the regexp_replace to remove that
-      l_scd2_list := REGEXP_REPLACE( l_scd2_dates || ',' || l_scd2_nums || ',' || l_scd2_chars, '(,)(,|$)', '\2' );
+      -- if any of the variables are null, we may get a ',,' or a ',' at the end or beginning of the list
+      -- use the regexp_replaces to remove that
+      l_scd2_list :=
+         REGEXP_REPLACE( REGEXP_REPLACE( l_scd2_dates || ',' || l_scd2_nums || ',' || l_scd2_chars, '(^,)?(,$)?', NULL ),
+                         ',,',
+                         ','
+                       );
+      evolve_log.log_msg( 'The SCD 2 complete list: ' || l_scd2_list, 5 );
       -- construct a list of all scd attributes
       -- this is a combined list of all scd1 and scd2 attributes
       -- if any of the variables are null, we may get a ',,'
       -- use the regexp_replace to remove that
-      -- also need the regexp to remove an extra comma at the end if that appears
-      l_scd_list := REGEXP_REPLACE( l_scd2_list || ',' || l_scd1_list, '(,)(,|$)', '\2' );
-      evolve_log.log_msg( 'The SCD list: ' || l_scd_list, 5 );
+      -- also need a regexp to remove an extra comma at the end or beginning if they appears
+      l_scd_list := REGEXP_REPLACE( REGEXP_REPLACE( l_scd2_list || ',' || l_scd1_list, '(^,)?(,$)?', NULL ), ',,', ',' );
+      evolve_log.log_msg( 'The SCD complete list: ' || l_scd_list, 5 );
       -- construct the include case statement
       -- this case statement determines which records from the staging table are included as new rows
       l_include_case :=
@@ -418,6 +424,15 @@ AS
                          || ' ROWS BETWEEN unbounded preceding AND unbounded following) \1'
                        );
       evolve_log.log_msg( 'The scd1 analytics clause: ' || l_scd1_analytics, 5 );
+      -- construct a list of all the columns in the table
+      l_all_col_list :=
+         REGEXP_REPLACE( REGEXP_REPLACE( natural_key_list || ',' || l_scd_list || ',' || effect_dt_col,
+                                         '(^,)?(,$)?',
+                                         NULL
+                                       ),
+                         ',,',
+                         ','
+                       );
       -- now, put the statement together
       l_sql :=
             'insert '
@@ -431,11 +446,7 @@ AS
          || '('
          || surrogate_key_col
          || ','
-         || natural_key_list
-         || ','
-         || l_scd_list
-         || ','
-         || effect_dt_col
+         || l_all_col_list
          || ','
          || expire_dt_col
          || ','
@@ -453,10 +464,8 @@ AS
          || surrogate_key_col
          || ','
          || natural_key_list
-         || ','
-         || l_scd_list
-         || ','
-         || effect_dt_col
+         -- make sure there are no ',,' in the list
+         || REGEXP_REPLACE( ',' || l_scd_list || ',' || effect_dt_col, ',,', ',' )
          || ','
          || 'nvl( lead('
          || effect_dt_col
@@ -477,36 +486,33 @@ AS
          || current_ind_col
          || ' from ('
          || 'SELECT '
-         || surrogate_key_col
-         || ','
-         || natural_key_list
-         || ','
-         || l_scd1_analytics
-         || l_scd2_list
-         || ','
-         || effect_dt_col
-         || ','
+         -- make sure there are no ',,' in the lists
+         || REGEXP_REPLACE(    surrogate_key_col
+                            || ','
+                            || natural_key_list
+                            || ','
+                            || l_scd1_analytics
+                            || ','
+                            || l_scd2_list
+                            || ','
+                            || effect_dt_col
+                            || ',',
+                            ',,',
+                            ','
+                          )
          || l_include_case
          || ' from (select '
          || l_stage_key
          || ' '
          || surrogate_key_col
          || ','
-         || natural_key_list
-         || ','
-         || effect_dt_col
-         || ','
-         || l_scd_list
+         || l_all_col_list
          || ' from '
          || SELF.full_source
          || ' union select '
          || surrogate_key_col
          || ','
-         || natural_key_list
-         || ','
-         || effect_dt_col
-         || ','
-         || l_scd_list
+         || l_all_col_list
          || ' from '
          || SELF.full_table
          || ')'
