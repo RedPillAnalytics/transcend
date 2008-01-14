@@ -375,6 +375,38 @@ AS
       END CASE;
    END check_table;
 
+   -- checks to see if a particular column is part of a table
+   -- raises an exception if the specified things are not true
+   PROCEDURE check_column( p_owner VARCHAR2, p_table VARCHAR2, p_column VARCHAR2, p_data_type VARCHAR2 DEFAULT NULL )
+   AS
+      l_tab_name      VARCHAR2( 61 )                     := UPPER( p_owner ) || '.' || UPPER( p_table );
+      l_column_name   all_tab_columns.column_name%TYPE;
+   BEGIN
+      SELECT DISTINCT column_name
+                 INTO l_column_name
+                 FROM all_tab_columns
+                WHERE owner = UPPER( p_owner )
+                  AND table_name = UPPER( p_table )
+                  AND column_name = UPPER( p_column )
+                  AND REGEXP_LIKE( data_type, NVL( p_data_type, '.' ), 'i' );
+   EXCEPTION
+      WHEN NO_DATA_FOUND
+      THEN
+         evolve_log.raise_err( 'no_column',
+                                  UPPER( p_column )
+                               || CASE
+                                     WHEN p_data_type IS NULL
+                                        THEN NULL
+                                     ELSE ' of data type ' || UPPER( p_data_type )
+                                  END
+                               || ' for table '
+                               || l_tab_name
+                             );
+      WHEN TOO_MANY_ROWS
+      THEN
+         evolve_log.raise_err( 'too_many_objects' );
+   END check_column;
+
    -- checks things about an object depending on the parameters passed
    -- raises an exception if the specified things are not true
    PROCEDURE check_object( p_owner VARCHAR2, p_object VARCHAR2, p_object_type VARCHAR2 DEFAULT NULL )
