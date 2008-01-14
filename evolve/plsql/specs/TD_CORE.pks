@@ -6,7 +6,10 @@ AS
    FUNCTION get_yn_ind( p_parm VARCHAR2 )
       RETURN VARCHAR2;
 
-   FUNCTION SPLIT( p_text VARCHAR2, p_delimiter VARCHAR2 DEFAULT ',' )
+   FUNCTION SPLIT( p_list VARCHAR2, p_delimiter VARCHAR2 DEFAULT ',' )
       RETURN split_ot PIPELINED;
+
+   FUNCTION format_list( p_list VARCHAR2, p_delimiter VARCHAR2 DEFAULT ',' )
+      RETURN VARCHAR2;
 END td_core;
 /

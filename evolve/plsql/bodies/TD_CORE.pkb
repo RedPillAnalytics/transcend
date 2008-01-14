@@ -20,8 +20,7 @@ AS
             THEN
                RETURN NULL;
             ELSE
-               raise_application_error( -20030,
-                                        'The specified parameter value is not recognized: ' || p_parm );
+               raise_application_error( -20030, 'The specified parameter value is not recognized: ' || p_parm );
             END IF;
       END CASE;
    END is_true;
@@ -50,11 +49,11 @@ AS
 
    -- function takes a text string and a delimiter and parses the string
    -- should only be used as a pipelined table function
-   FUNCTION SPLIT( p_text VARCHAR2, p_delimiter VARCHAR2 := ',' )
+   FUNCTION SPLIT( p_list VARCHAR2, p_delimiter VARCHAR2 DEFAULT ',' )
       RETURN split_ot PIPELINED
    IS
       l_idx     PLS_INTEGER;
-      l_list    VARCHAR2( 32767 ) := p_text;
+      l_list    VARCHAR2( 32767 ) := p_list;
       l_value   VARCHAR2( 32767 );
    BEGIN
       LOOP
@@ -72,6 +71,21 @@ AS
 
       RETURN;
    END SPLIT;
+
+   -- function takes a text string and a delimiter and parses the string
+   -- should only be used as a pipelined table function
+   FUNCTION format_list( p_list VARCHAR2, p_delimiter VARCHAR2 DEFAULT ',' )
+      RETURN VARCHAR2
+   IS
+      l_list   LONG;
+   BEGIN
+      l_list :=
+         REGEXP_REPLACE( REGEXP_REPLACE( p_list, '(^\' || p_delimiter || '+)?(\' || p_delimiter || '+$)?', NULL ),
+                         '\' || p_delimiter || '{2,}',
+                         p_delimiter
+                       );
+      RETURN l_list;
+   END format_list;
 END td_core;
 /
 
