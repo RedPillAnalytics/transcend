@@ -58,9 +58,10 @@ IS
       evolve_adm.set_error_conf( p_name         => 'no_dim',
                                  p_message      => 'The specified table is not a configured dimension table'
                                );
-      evolve_adm.set_error_conf( p_name         => 'dim_mismatch',
-                                 p_message      => 'There is a mismatch between columns in the source object and dimension table for the specified dimension table'
-                               );
+      evolve_adm.set_error_conf
+         ( p_name         => 'dim_mismatch',
+           p_message      => 'There is a mismatch between columns in the source object and dimension table for the specified dimension table'
+         );
    END set_default_configs;
 
    PROCEDURE configure_feed(
@@ -102,8 +103,8 @@ IS
          WHEN p_table_owner IS NOT NULL
          THEN
             -- table information is provided, so use that
-            l_owner    := UPPER( p_table_owner );
-            l_table    := UPPER( p_table_name );
+            l_owner := UPPER( p_table_owner );
+            l_table := UPPER( p_table_name );
             -- now check the external table
             td_utils.check_table( p_owner => p_table_owner, p_table => p_table_name, p_external => 'yes' );
          WHEN p_table_owner IS NULL
@@ -122,12 +123,12 @@ IS
          -- if they aren't, the GET_DIR_PATH function raises an error
          IF p_arch_directory IS NOT NULL
          THEN
-            l_dir_path    := td_utils.get_dir_path( p_arch_directory );
+            l_dir_path := td_utils.get_dir_path( p_arch_directory );
          END IF;
 
          IF p_source_directory IS NOT NULL
          THEN
-            l_dir_path    := td_utils.get_dir_path( p_source_directory );
+            l_dir_path := td_utils.get_dir_path( p_source_directory );
          END IF;
 
          -- get the directory from the external table
@@ -266,12 +267,12 @@ IS
          -- if they aren't, the GET_DIR_PATH function raises an error
          IF p_arch_directory IS NOT NULL
          THEN
-            l_dir_path    := td_utils.get_dir_path( p_arch_directory );
+            l_dir_path := td_utils.get_dir_path( p_arch_directory );
          END IF;
 
          IF p_directory IS NOT NULL
          THEN
-            l_dir_path    := td_utils.get_dir_path( p_directory );
+            l_dir_path := td_utils.get_dir_path( p_directory );
          END IF;
       END IF;
 
@@ -408,7 +409,7 @@ IS
           WHERE owner = UPPER( p_owner ) AND table_name = UPPER( p_table );
 
          -- get the SQL rowcount
-         l_num_rows    := SQL%ROWCOUNT;
+         l_num_rows := SQL%ROWCOUNT;
       END IF;
 
       -- updating a current config has failed, or an insert was specified
@@ -456,7 +457,7 @@ IS
                         );
 
             -- get the SQL rowcount
-            l_num_rows    := SQL%ROWCOUNT;
+            l_num_rows := SQL%ROWCOUNT;
          EXCEPTION
             WHEN e_dup_conf
             THEN
@@ -474,14 +475,14 @@ IS
                WHERE owner = UPPER( p_owner ) AND table_name = UPPER( p_table );
 
          -- get the SQL rowcount
-         l_num_rows    := SQL%ROWCOUNT;
+         l_num_rows := SQL%ROWCOUNT;
       ELSE
               -- as long as P_MODE wasn't 'delete', then we should validate the new structure of the dimension
               -- now use the dimension object to validate the new structure
          -- just constructing the object calls the CONFIRM_OBJECTS procedure
          BEGIN
             NULL;
-            o_dim    := dimension_ot( p_owner => p_owner, p_table => p_table );
+            o_dim := dimension_ot( p_owner => p_owner, p_table => p_table );
          END;
       END IF;
 
@@ -505,12 +506,37 @@ IS
    )
    IS
       l_results    NUMBER;
+      l_col_list   LONG;
       -- a dimension table should have already been configured
-      o_dim 	   dimension_ot := dimension_ot( p_owner => p_owner,
-						 p_table => p_table );
+      o_dim        dimension_ot := dimension_ot( p_owner => p_owner, p_table => p_table );
       e_dup_conf   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_conf, -1 );
    BEGIN
+      -- construct the list for instrumentation purposes
+      l_col_list :=
+         UPPER( td_core.format_list(    p_surrogate
+                                     || ','
+                                     || p_nat_key
+                                     || ','
+                                     || p_scd1
+                                     || ','
+                                     || p_scd2
+                                     || ','
+                                     || p_effective_dt
+                                     || ','
+                                     || p_expiration_dt
+                                     || ','
+                                     || p_current_ind
+                                   )
+              );
+      evolve_log.log_msg( 'The column list: ' || l_col_list, 5 );
+
+      -- check and make sure all the columns specified are legitimate
+      FOR c_cols IN ( SELECT COLUMN_VALUE column_name
+                       FROM TABLE( CAST( td_core.SPLIT( l_col_list, ',' ) AS split_ot )))
+      LOOP
+         td_utils.check_column( p_owner => p_owner, p_table => p_table, p_column => c_cols.column_name );
+      END LOOP;
 
       -- do the first merge to update any changed column_types from the parameters
       MERGE INTO column_conf t
@@ -553,7 +579,6 @@ IS
          WHEN NOT MATCHED THEN
             INSERT( t.owner, t.table_name, t.column_name, t.column_type )
             VALUES( s.owner, s.table_name, s.column_name, s.column_type );
-
       -- do the second merge to write any columns that have been left off
       MERGE INTO column_conf t
          USING ( SELECT owner, table_name, column_name,
@@ -568,11 +593,8 @@ IS
          WHEN NOT MATCHED THEN
             INSERT( t.owner, t.table_name, t.column_name, t.column_type )
             VALUES( s.owner, s.table_name, s.column_name, s.column_type );
-      
       -- confirm the dimension columns
       o_dim.confirm_dim_cols;
-
-
    END configure_dim_cols;
 END trans_adm;
 /
