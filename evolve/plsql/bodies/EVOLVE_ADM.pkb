@@ -557,6 +557,7 @@ IS
          set_error_conf( p_name => 'iot', p_message => 'The specified table is index-organized' );
          set_error_conf( p_name => 'compressed', p_message => 'The specified segment is compresed' );
          set_error_conf( p_name => 'no_pk', p_message => 'The specified table has no primary key' );
+         set_error_conf( p_name => 'no_column', p_message => 'The specified column does not exist or cannot be seen' );
          set_error_conf( p_name         => 'no_or_wrong_object',
                          p_message      => 'The specified object does not exist or is of the wrong type'
                        );
