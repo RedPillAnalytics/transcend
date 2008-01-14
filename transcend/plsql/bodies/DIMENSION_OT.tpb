@@ -343,18 +343,14 @@ AS
       -- construct a list of all scd2 attributes
       -- if any of the variables are null, we may get a ',,' or a ',' at the end or beginning of the list
       -- use the regexp_replaces to remove that
-      l_scd2_list :=
-         REGEXP_REPLACE( REGEXP_REPLACE( l_scd2_dates || ',' || l_scd2_nums || ',' || l_scd2_chars, '(^,)?(,$)?', NULL ),
-                         ',,',
-                         ','
-                       );
+      l_scd2_list := td_core.format_list( l_scd2_dates || ',' || l_scd2_nums || ',' || l_scd2_chars );
       evolve_log.log_msg( 'The SCD 2 complete list: ' || l_scd2_list, 5 );
       -- construct a list of all scd attributes
       -- this is a combined list of all scd1 and scd2 attributes
       -- if any of the variables are null, we may get a ',,'
       -- use the regexp_replace to remove that
       -- also need a regexp to remove an extra comma at the end or beginning if they appears
-      l_scd_list := REGEXP_REPLACE( REGEXP_REPLACE( l_scd2_list || ',' || l_scd1_list, '(^,)?(,$)?', NULL ), ',,', ',' );
+      l_scd_list := td_core.format_list( l_scd2_list || ',' || l_scd1_list );
       evolve_log.log_msg( 'The SCD complete list: ' || l_scd_list, 5 );
       -- construct the include case statement
       -- this case statement determines which records from the staging table are included as new rows
@@ -425,14 +421,7 @@ AS
                        );
       evolve_log.log_msg( 'The scd1 analytics clause: ' || l_scd1_analytics, 5 );
       -- construct a list of all the columns in the table
-      l_all_col_list :=
-         REGEXP_REPLACE( REGEXP_REPLACE( natural_key_list || ',' || l_scd_list || ',' || effect_dt_col,
-                                         '(^,)?(,$)?',
-                                         NULL
-                                       ),
-                         ',,',
-                         ','
-                       );
+      l_all_col_list := td_core.format_list( natural_key_list || ',' || l_scd_list || ',' || effect_dt_col );
       -- now, put the statement together
       l_sql :=
             'insert '
@@ -465,7 +454,8 @@ AS
          || ','
          || natural_key_list
          -- make sure there are no ',,' in the list
-         || REGEXP_REPLACE( ',' || l_scd_list || ',' || effect_dt_col, ',,', ',' )
+         || ','
+         || td_core.format_list( l_scd_list || ',' || effect_dt_col )
          || ','
          || 'nvl( lead('
          || effect_dt_col
@@ -487,19 +477,17 @@ AS
          || ' from ('
          || 'SELECT '
          -- make sure there are no ',,' in the lists
-         || REGEXP_REPLACE(    surrogate_key_col
-                            || ','
-                            || natural_key_list
-                            || ','
-                            || l_scd1_analytics
-                            || ','
-                            || l_scd2_list
-                            || ','
-                            || effect_dt_col
-                            || ',',
-                            ',,',
-                            ','
-                          )
+         || td_core.format_list(    surrogate_key_col
+                                 || ','
+                                 || natural_key_list
+                                 || ','
+                                 || l_scd1_analytics
+                                 || ','
+                                 || l_scd2_list
+                                 || ','
+                                 || effect_dt_col
+                               )
+         || ','
          || l_include_case
          || ' from (select '
          || l_stage_key
