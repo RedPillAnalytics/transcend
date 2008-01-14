@@ -46,17 +46,37 @@ AS
             raise_application_error( -20030, 'The specified parameter value is not recognized: ' || p_parm );
       END CASE;
    END get_yn_ind;
+   
+   -- function takes a text string and a delimiter and parses the string
+   -- should only be used as a pipelined table function
+   FUNCTION format_list( p_list VARCHAR2, p_delimiter VARCHAR2 DEFAULT ',' )
+      RETURN VARCHAR2
+   IS
+      l_list   LONG;
+   BEGIN
+      l_list :=
+         REGEXP_REPLACE( REGEXP_REPLACE( p_list, '(^\' || p_delimiter || '+)?(\' || p_delimiter || '+$)?', NULL ),
+                         '\' || p_delimiter || '{2,}',
+                         p_delimiter
+                       );
+      RETURN l_list;
+   END format_list;   
 
    -- function takes a text string and a delimiter and parses the string
    -- should only be used as a pipelined table function
-   FUNCTION SPLIT( p_list VARCHAR2, p_delimiter VARCHAR2 DEFAULT ',' )
+   FUNCTION SPLIT( p_list VARCHAR2, p_delimiter VARCHAR2 DEFAULT ',', p_format VARCHAR2 DEFAULT 'no' )
       RETURN split_ot PIPELINED
    IS
       l_idx     PLS_INTEGER;
-      l_list    VARCHAR2( 32767 ) := p_list;
+      l_list    VARCHAR2( 32767 ) := CASE
+                            WHEN td_core.is_true( p_format )
+                               THEN format_list( p_list )
+                            ELSE p_list
+                         END;
       l_value   VARCHAR2( 32767 );
    BEGIN
       LOOP
+         -- we need to format the list (using the FORMAT_LIST function) if P_FORMAT is true
          l_idx := INSTR( l_list, p_delimiter );
 
          IF l_idx > 0
@@ -72,20 +92,6 @@ AS
       RETURN;
    END SPLIT;
 
-   -- function takes a text string and a delimiter and parses the string
-   -- should only be used as a pipelined table function
-   FUNCTION format_list( p_list VARCHAR2, p_delimiter VARCHAR2 DEFAULT ',' )
-      RETURN VARCHAR2
-   IS
-      l_list   LONG;
-   BEGIN
-      l_list :=
-         REGEXP_REPLACE( REGEXP_REPLACE( p_list, '(^\' || p_delimiter || '+)?(\' || p_delimiter || '+$)?', NULL ),
-                         '\' || p_delimiter || '{2,}',
-                         p_delimiter
-                       );
-      RETURN l_list;
-   END format_list;
 END td_core;
 /
 

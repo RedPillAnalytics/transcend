@@ -5,11 +5,12 @@ AS
 
    FUNCTION get_yn_ind( p_parm VARCHAR2 )
       RETURN VARCHAR2;
-
-   FUNCTION SPLIT( p_list VARCHAR2, p_delimiter VARCHAR2 DEFAULT ',' )
-      RETURN split_ot PIPELINED;
-
+   
    FUNCTION format_list( p_list VARCHAR2, p_delimiter VARCHAR2 DEFAULT ',' )
       RETURN VARCHAR2;
+
+   FUNCTION SPLIT( p_list VARCHAR2, p_delimiter VARCHAR2 DEFAULT ',', p_format VARCHAR2 DEFAULT 'no' )
+      RETURN split_ot PIPELINED;
+
 END td_core;
 /
