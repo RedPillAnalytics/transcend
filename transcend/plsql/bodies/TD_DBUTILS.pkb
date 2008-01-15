@@ -747,7 +747,7 @@ AS
          THEN
             evolve_log.log_msg( 'P_CONCURRENT is true', 5 );
 
-            IF evolve_log.is_debugmode
+            IF NOT evolve_log.is_debugmode
             THEN
                -- now simply waiting for all the concurrent processes to complete
                o_ev.change_action( 'wait on concurrent processes' );
@@ -1234,9 +1234,12 @@ AS
       ELSE
          IF td_core.is_true( p_concurrent )
          THEN
-            -- now simply waiting for all the concurrent processes to complete
-            o_ev.change_action( 'wait on concurrent processes' );
-            evolve_app.coordinate_sql( p_concurrent_id => l_concurrent_id, p_raise_err => 'no' );
+            IF NOT evolve_log.is_debugmode
+            THEN
+               -- now simply waiting for all the concurrent processes to complete
+               o_ev.change_action( 'wait on concurrent processes' );
+               evolve_app.coordinate_sql( p_concurrent_id => l_concurrent_id, p_raise_err => 'no' );
+            END IF;
          END IF;
 
          evolve_log.log_msg(    l_con_cnt
@@ -2674,11 +2677,10 @@ AS
       o_ev.change_action( 'rename temporary index' );
       evolve_app.exec_sql( p_sql       => 'alter index ' || l_temp_idx_name || ' rename to ' || l_source_idx,
                            p_auto      => 'yes' );
-      evolve_log.log_msg(    'Constraints '
-                          || l_source_key
+      evolve_log.log_msg(    l_source_key
                           || ' and '
                           || l_targ_key
-                          || ' for owner '
+                          || ' constraint names for owner '
                           || UPPER( p_owner )
                           || ' interchanged'
                         );
