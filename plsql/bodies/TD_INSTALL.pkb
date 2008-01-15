@@ -1322,7 +1322,7 @@ IS
 	 )|';
 
 	 EXECUTE IMMEDIATE q'|INSERT INTO replace_method_list (replace_method) VALUES ('exchange')|';
-	 EXECUTE IMMEDIATE q'|INSERT INTO replace_method_list (replace_method) VALUES ('replace')|';
+	 EXECUTE IMMEDIATE q'|INSERT INTO replace_method_list (replace_method) VALUES ('rename')|';
 	 
 	 -- COLUMN_TYPE_LIST table
 	 EXECUTE IMMEDIATE 
@@ -1366,7 +1366,7 @@ IS
 	   staging_table	VARCHAR2(30) DEFAULT NULL,
 	   default_scd_type	NUMBER(1,0) DEFAULT 2,
 	   direct_load		VARCHAR2(3) DEFAULT 'yes' NOT NULL,
-	   replace_method	VARCHAR2(10) DEFAULT 'replace' NOT NULL,
+	   replace_method	VARCHAR2(10) DEFAULT 'rename' NOT NULL,
 	   statistics		VARCHAR2(10) DEFAULT 'transfer',
 	   concurrent		VARCHAR2(3) DEFAULT 'yes' NOT NULL,
 	   stage_key_default	NUMBER DEFAULT -.01 NOT NULL,
@@ -1401,7 +1401,7 @@ IS
 	 EXECUTE IMMEDIATE 
 	 q'|ALTER TABLE dimension_conf ADD 
 	 ( CONSTRAINT replace_method_ck
-	   CHECK ( upper(staging_owner) = CASE WHEN replace_method = 'replace' THEN upper(owner) ELSE staging_owner end )
+	   CHECK ( upper(staging_owner) = CASE WHEN replace_method = 'rename' THEN upper(owner) ELSE staging_owner end )
 	 )|';
 
 	 -- COLUMN_CONF table

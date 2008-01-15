@@ -452,7 +452,7 @@ IS
                  VALUES ( UPPER( p_owner ), UPPER( p_table ), UPPER( p_source_owner ), UPPER( p_source_object ),
                           UPPER( p_sequence_owner ), UPPER( p_sequence_name ), UPPER( p_staging_owner ),
                           UPPER( p_staging_table ), NVL( p_default_scd_type, 2 ), LOWER( NVL( p_direct_load, 'yes' )),
-                          LOWER( NVL( p_replace_method, 'replace' )), LOWER( NVL( p_statistics, 'transfer' )),
+                          LOWER( NVL( p_replace_method, 'rename' )), LOWER( NVL( p_statistics, 'transfer' )),
                           LOWER( NVL( p_concurrent, 'yes' )), p_description
                         );
 

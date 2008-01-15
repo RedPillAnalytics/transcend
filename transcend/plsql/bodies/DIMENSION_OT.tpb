@@ -10,19 +10,19 @@ AS
       o_ev         evolve_ot                        := evolve_ot( p_module => 'dimension_ot' );
    BEGIN
       BEGIN
-         SELECT owner, table_name, full_table, source_owner, source_object, full_source, sequence_owner,
-                sequence_name, full_sequence, staging_owner, staging_table,
+         SELECT owner, table_name, full_table, source_owner, source_object, full_source,
+                sequence_owner, sequence_name, full_sequence, staging_owner, staging_table,
                 staging_owner || '.' || staging_table full_stage, constant_staging, direct_load, replace_method,
                 STATISTICS, concurrent
-           INTO owner, table_name, full_table, source_owner, source_object, full_source, sequence_owner,
-                sequence_name, full_sequence, staging_owner, staging_table,
-                full_stage, constant_staging, direct_load, replace_method,
-                STATISTICS, concurrent
+           INTO SELF.owner, SELF.table_name, SELF.full_table, SELF.source_owner, SELF.source_object, SELF.full_source,
+                SELF.sequence_owner, SELF.sequence_name, SELF.full_sequence, SELF.staging_owner, SELF.staging_table,
+                SELF.full_stage, SELF.constant_staging, SELF.direct_load, SELF.replace_method,
+                SELF.STATISTICS, SELF.concurrent
            FROM ( SELECT owner, table_name, owner || '.' || table_name full_table, source_owner, source_object,
                          source_owner || '.' || source_object full_source, sequence_owner, sequence_name,
                          sequence_owner || '.' || sequence_name full_sequence, NVL( staging_owner, owner )
                                                                                                           staging_owner,
-                         NVL( staging_table, 'TD$' || table_name ) staging_table,
+                         NVL( staging_table, 'TD$_TBL' || TO_CHAR( SYSTIMESTAMP, 'mmddyyyyHHMISS' )) staging_table,
                          CASE
                             WHEN staging_table IS NULL
                                THEN 'no'
@@ -33,7 +33,7 @@ AS
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
-            evolve_log.raise_err( 'no_dim', full_table );
+            evolve_log.raise_err( 'no_dim', SELF.full_table );
       END;
 
       -- confirm the objects related to the dimensional configuration
@@ -46,22 +46,26 @@ AS
    IS
       o_ev   evolve_ot := evolve_ot( p_module => 'confirm_dim' );
    BEGIN
-      evolve_log.log_msg( 'Constant staging: ' || constant_staging, 5 );
+      evolve_log.log_msg( 'Constant staging: ' || SELF.constant_staging, 5 );
       -- check to see if the dimension table exists
-      td_utils.check_table( p_owner => owner, p_table => table_name );
+      td_utils.check_table( p_owner => SELF.owner, p_table => SELF.table_name );
       -- check that the source object exists
-      td_utils.check_object( p_owner => source_owner, p_object => source_object, p_object_type => 'table$|view' );
+      td_utils.check_object( p_owner            => SELF.source_owner,
+                             p_object           => SELF.source_object,
+                             p_object_type      => 'table$|view'
+                           );
       -- check that the sequence exists
-      evolve_log.log_msg( 'The sequence owner: ' || sequence_owner, 5 );
-      evolve_log.log_msg( 'The sequence name: ' || sequence_name, 5 );
-      td_utils.check_object( p_owner => sequence_owner, p_object => sequence_name, p_object_type => 'sequence' );
+      evolve_log.log_msg( 'The sequence owner: ' || SELF.sequence_owner, 5 );
+      evolve_log.log_msg( 'The sequence name: ' || SELF.sequence_name, 5 );
+      td_utils.check_object( p_owner            => SELF.sequence_owner, p_object => SELF.sequence_name,
+                             p_object_type      => 'sequence' );
 
       -- check to see if the staging table is constant
-      IF td_core.is_true( constant_staging )
+      IF td_core.is_true( SELF.constant_staging )
       THEN
-         evolve_log.log_msg( 'Full stage: ' || full_stage, 5 );
+         evolve_log.log_msg( 'Full stage: ' || SELF.full_stage, 5 );
          -- if it is, then make sure that it exists
-         td_utils.check_table( p_owner => staging_owner, p_table => staging_table );
+         td_utils.check_table( p_owner => SELF.staging_owner, p_table => SELF.staging_table );
       END IF;
 
       evolve_log.log_msg( 'Dimension confirmation completed successfully', 5 );
@@ -76,86 +80,86 @@ AS
       -- first get the current indicator
       BEGIN
          SELECT column_name
-           INTO current_ind_col
+           INTO SELF.current_ind_col
            FROM column_conf
           WHERE owner = SELF.owner AND table_name = SELF.table_name AND column_type = 'current indicator';
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
-            evolve_log.raise_err( 'no_curr_ind', full_table );
+            evolve_log.raise_err( 'no_curr_ind', SELF.full_table );
          WHEN TOO_MANY_ROWS
          THEN
-            evolve_log.raise_err( 'multiple_curr_ind', full_table );
+            evolve_log.raise_err( 'multiple_curr_ind', SELF.full_table );
       END;
 
-      evolve_log.log_msg( 'The current indicator: ' || current_ind_col, 5 );
+      evolve_log.log_msg( 'The current indicator: ' || SELF.current_ind_col, 5 );
 
       -- get an expiration date
       BEGIN
          SELECT column_name
-           INTO expire_dt_col
+           INTO SELF.expire_dt_col
            FROM column_conf
           WHERE owner = SELF.owner AND table_name = SELF.table_name AND column_type = 'expiration date';
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
-            evolve_log.raise_err( 'no_exp_dt', full_table );
+            evolve_log.raise_err( 'no_exp_dt', SELF.full_table );
          WHEN TOO_MANY_ROWS
          THEN
-            evolve_log.raise_err( 'multiple_exp_dt', full_table );
+            evolve_log.raise_err( 'multiple_exp_dt', SELF.full_table );
       END;
 
-      evolve_log.log_msg( 'The expiration date: ' || expire_dt_col, 5 );
+      evolve_log.log_msg( 'The expiration date: ' || SELF.expire_dt_col, 5 );
 
       -- get an effective date
       BEGIN
          SELECT column_name
-           INTO effect_dt_col
+           INTO SELF.effect_dt_col
            FROM column_conf
           WHERE owner = SELF.owner AND table_name = SELF.table_name AND column_type = 'effective date';
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
-            evolve_log.raise_err( 'no_eff_dt', full_table );
+            evolve_log.raise_err( 'no_eff_dt', SELF.full_table );
          WHEN TOO_MANY_ROWS
          THEN
-            evolve_log.raise_err( 'multiple_eff_dt', full_table );
+            evolve_log.raise_err( 'multiple_eff_dt', SELF.full_table );
       END;
 
-      evolve_log.log_msg( 'The effective date: ' || effect_dt_col, 5 );
+      evolve_log.log_msg( 'The effective date: ' || SELF.effect_dt_col, 5 );
 
       -- get a comma separated list of natural keys
       -- use the STRAGG function for this
       SELECT stragg( column_name )
-        INTO natural_key_list
+        INTO SELF.natural_key_list
         FROM column_conf
        WHERE owner = SELF.owner AND table_name = SELF.table_name AND column_type = 'natural key';
 
       -- NO_DATA_FOUND exception does not work with STRAGG, as returning a null it fine
       -- have to do the logic programiatically
-      IF natural_key_list IS NULL
+      IF SELF.natural_key_list IS NULL
       THEN
          evolve_log.raise_err( 'no_nat_key', full_table );
       END IF;
 
-      evolve_log.log_msg( 'The natural key list: ' || natural_key_list, 5 );
+      evolve_log.log_msg( 'The natural key list: ' || SELF.natural_key_list, 5 );
 
       -- get the surrogate key column
       BEGIN
          SELECT column_name
-           INTO surrogate_key_col
+           INTO SELF.surrogate_key_col
            FROM column_conf
           WHERE owner = SELF.owner AND table_name = SELF.table_name AND column_type = 'surrogate key';
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
-            evolve_log.raise_err( 'no_surr_key', full_table );
+            evolve_log.raise_err( 'no_surr_key', SELF.full_table );
          WHEN TOO_MANY_ROWS
          THEN
-            evolve_log.raise_err( 'multiple_surr_key', full_table );
+            evolve_log.raise_err( 'multiple_surr_key', SELF.full_table );
       END;
 
-      evolve_log.log_msg( 'The surrogate key: ' || surrogate_key_col, 5 );
+      evolve_log.log_msg( 'The surrogate key: ' || SELF.surrogate_key_col, 5 );
       evolve_log.log_msg( 'Column initialization completed successfully', 5 );
       -- reset the evolve_object
       o_ev.clear_app_info;
@@ -213,7 +217,7 @@ AS
          WHEN TOO_MANY_ROWS
          THEN
             evolve_log.log_msg( 'More than one row found while comparing source and target columns', 5 );
-            evolve_log.raise_err( 'dim_mismatch', full_table );
+            evolve_log.raise_err( 'dim_mismatch', SELF.full_table );
       END;
 
       -- if even one difference is found, then it's too many
@@ -228,7 +232,7 @@ AS
                              || ' found as mismatch',
                              5
                            );
-         evolve_log.raise_err( 'dim_mismatch', full_table );
+         evolve_log.raise_err( 'dim_mismatch', SELF.full_table );
       END IF;
 
       evolve_log.log_msg( 'Dimension column confirmation completed successfully', 5 );
@@ -356,28 +360,28 @@ AS
       -- this case statement determines which records from the staging table are included as new rows
       l_include_case :=
             'CASE WHEN '
-         || surrogate_key_col
+         || SELF.surrogate_key_col
          || ' <> '
          || l_stage_key
          || ' THEN ''Y'' WHEN '
-         || effect_dt_col
+         || SELF.effect_dt_col
          || ' = lag('
-         || effect_dt_col
+         || SELF.effect_dt_col
          || ') over (partition by '
-         || natural_key_list
+         || SELF.natural_key_list
          || ' order by '
-         || effect_dt_col
+         || SELF.effect_dt_col
          || ','
-         || surrogate_key_col
+         || SELF.surrogate_key_col
          || ' desc) then ''N'' '
          || REGEXP_REPLACE( l_scd2_nums,
                             '(\w+)(,|$)',
                                'when nvl(\1,'
                             || l_num_nvl
                             || ') <> nvl(lag(\1) over (partition by '
-                            || natural_key_list
+                            || SELF.natural_key_list
                             || ' order by '
-                            || effect_dt_col
+                            || SELF.effect_dt_col
                             || '),'
                             || l_num_nvl
                             || ') then ''Y'' '
@@ -387,9 +391,9 @@ AS
                                'when nvl(\1,'''
                             || l_char_nvl
                             || ''') <> nvl(lag(\1) over (partition by '
-                            || natural_key_list
+                            || SELF.natural_key_list
                             || ' order by '
-                            || effect_dt_col
+                            || SELF.effect_dt_col
                             || '),'''
                             || l_char_nvl
                             || ''') then ''Y'' '
@@ -399,9 +403,9 @@ AS
                                'when nvl(\1,'''
                             || l_date_nvl
                             || ''') <> nvl(lag(\1) over (partition by '
-                            || natural_key_list
+                            || SELF.natural_key_list
                             || ' order by '
-                            || effect_dt_col
+                            || SELF.effect_dt_col
                             || '),'''
                             || l_date_nvl
                             || ''') then ''Y'' '
@@ -414,14 +418,14 @@ AS
          REGEXP_REPLACE( l_scd1_list,
                          '(\w+)(,|$)',
                             'last_value(\1) over (partition by '
-                         || natural_key_list
+                         || SELF.natural_key_list
                          || ' order by '
-                         || effect_dt_col
+                         || SELF.effect_dt_col
                          || ' ROWS BETWEEN unbounded preceding AND unbounded following) \1'
                        );
       evolve_log.log_msg( 'The scd1 analytics clause: ' || l_scd1_analytics, 5 );
       -- construct a list of all the columns in the table
-      l_all_col_list := td_core.format_list( natural_key_list || ',' || l_scd_list || ',' || effect_dt_col );
+      l_all_col_list := td_core.format_list( SELF.natural_key_list || ',' || l_scd_list || ',' || SELF.effect_dt_col );
       -- now, put the statement together
       l_sql :=
             'insert '
@@ -433,101 +437,119 @@ AS
          || 'into '
          || SELF.full_stage
          || '('
-         || surrogate_key_col
+         || SELF.surrogate_key_col
          || ','
          || l_all_col_list
          || ','
-         || expire_dt_col
+         || SELF.expire_dt_col
          || ','
-         || current_ind_col
+         || SELF.current_ind_col
          || ') '
          || ' SELECT case '
-         || surrogate_key_col
+         || SELF.surrogate_key_col
          || ' when '
          || l_stage_key
          || ' then '
          || SELF.full_sequence
          || '.nextval else '
-         || surrogate_key_col
+         || SELF.surrogate_key_col
          || ' end '
-         || surrogate_key_col
+         || SELF.surrogate_key_col
          || ','
-         || natural_key_list
+         || SELF.natural_key_list
          -- make sure there are no ',,' in the list
          || ','
          || td_core.format_list( l_scd_list || ',' || effect_dt_col )
          || ','
          || 'nvl( lead('
-         || effect_dt_col
+         || SELF.effect_dt_col
          || ') OVER ( partition BY '
-         || natural_key_list
+         || SELF.natural_key_list
          || ' ORDER BY '
-         || effect_dt_col
+         || SELF.effect_dt_col
          || '), to_date(''12/31/9999'',''mm/dd/yyyy'')) '
-         || expire_dt_col
+         || SELF.expire_dt_col
          || ','
          || ' CASE MAX('
-         || effect_dt_col
+         || SELF.effect_dt_col
          || ') OVER (partition BY '
-         || natural_key_list
+         || SELF.natural_key_list
          || ') WHEN '
-         || effect_dt_col
+         || SELF.effect_dt_col
          || ' THEN ''Y'' ELSE ''N'' END '
-         || current_ind_col
+         || SELF.current_ind_col
          || ' from ('
          || 'SELECT '
          -- make sure there are no ',,' in the lists
-         || td_core.format_list(    surrogate_key_col
+         || td_core.format_list(    SELF.surrogate_key_col
                                  || ','
-                                 || natural_key_list
+                                 || SELF.natural_key_list
                                  || ','
                                  || l_scd1_analytics
                                  || ','
                                  || l_scd2_list
                                  || ','
-                                 || effect_dt_col
+                                 || SELF.effect_dt_col
                                )
          || ','
          || l_include_case
          || ' from (select '
          || l_stage_key
          || ' '
-         || surrogate_key_col
+         || SELF.surrogate_key_col
          || ','
          || l_all_col_list
          || ' from '
          || SELF.full_source
          || ' union select '
-         || surrogate_key_col
+         || SELF.surrogate_key_col
          || ','
          || l_all_col_list
          || ' from '
          || SELF.full_table
          || ')'
          || ' order by '
-         || natural_key_list
+         || SELF.natural_key_list
          || ','
-         || effect_dt_col
+         || SELF.effect_dt_col
          || ')'
          || ' where include=''Y''';
 
       -- check to see if the staging table is constant
-      IF NOT td_core.is_true( constant_staging )
+      IF NOT td_core.is_true( SELF.constant_staging )
       THEN
          -- if it isn't, then create the staging table for temporary use
          o_ev.change_action( 'create staging table' );
-         td_dbutils.build_table( p_source_owner      => owner,
-                                 p_source_table      => table_name,
-                                 p_owner             => owner,
-                                 p_table             => staging_table,
+         td_dbutils.build_table( p_source_owner      => SELF.owner,
+                                 p_source_table      => SELF.table_name,
+                                 p_owner             => SELF.owner,
+                                 p_table             => SELF.staging_table,
                                  -- if the data will be replaced in using an exchange, then need the table to not be partitioned
                                  -- everything else can be created just like the source table
-                                 p_partitioning      => CASE replace_method
+                                 p_partitioning      => CASE SELF.replace_method
                                     WHEN 'exchange'
                                        THEN 'no'
                                     ELSE 'yes'
                                  END
                                );
+      ELSE
+         -- drop constraints and indexes on this segment
+         o_ev.change_action( 'drop constraints on staging' );
+
+         BEGIN
+            td_dbutils.drop_constraints( p_owner => SELF.staging_owner, p_table => SELF.staging_table );
+         EXCEPTION
+            WHEN td_dbutils.e_drop_iot_key
+            THEN
+               NULL;
+         END;
+
+         -- drop indexes and indexes on this segment
+         o_ev.change_action( 'drop indexes on staging' );
+         td_dbutils.drop_indexes( p_owner => SELF.staging_owner, p_table => SELF.staging_table );
+         -- truncate the staging table to get ready for a new run
+         o_ev.change_action( 'truncate staging table' );
+         td_dbutils.truncate_table( p_owner => SELF.staging_owner, p_table => SELF.staging_table );
       END IF;
 
       -- now run the insert statement to load the staging table
@@ -535,39 +557,46 @@ AS
       evolve_app.exec_sql( l_sql );
       evolve_log.log_cnt_msg( p_count      => SQL%ROWCOUNT,
                               p_msg        => 'Number of records inserted into ' || SELF.full_stage );
+      COMMIT;
       -- perform the replace method
       o_ev.change_action( 'replace table' );
 
       CASE
-         WHEN replace_method = 'exchange'
+         WHEN SELF.replace_method = 'exchange'
          THEN
             -- partition exchange the staging table into the max partition of the target table
             -- this requires that the dimension table is a single partition table
-            td_dbutils.exchange_partition( p_source_owner      => staging_owner,
-                                           p_source_table      => staging_table,
-                                           p_owner             => owner,
-                                           p_table             => table_name,
-                                           p_statistics        => STATISTICS,
-                                           p_concurrent        => concurrent
+            td_dbutils.exchange_partition( p_source_owner      => SELF.staging_owner,
+                                           p_source_table      => SELF.staging_table,
+                                           p_owner             => SELF.owner,
+                                           p_table             => SELF.table_name,
+                                           p_statistics        => SELF.STATISTICS,
+                                           p_concurrent        => SELF.concurrent,
+                                           p_index_drop        => 'no'
                                          );
-         WHEN replace_method = 'replace' AND NOT evolve_log.is_debugmode
+         WHEN SELF.replace_method = 'rename' AND NOT evolve_log.is_debugmode
          THEN
             -- switch the two tables using rename
             -- requires that the tables both exist in the same schema
-            td_dbutils.replace_table( p_owner             => owner,
-                                      p_table             => table_name,
-                                      p_source_table      => staging_table,
-                                      p_statistics        => STATISTICS,
-                                      p_concurrent        => concurrent
+            td_dbutils.replace_table( p_owner             => SELF.owner,
+                                      p_table             => SELF.table_name,
+                                      p_source_table      => SELF.staging_table,
+                                      p_statistics        => SELF.STATISTICS,
+                                      p_concurrent        => SELF.concurrent
                                     );
-            -- now drop the source table, which is now the previous target table
-            td_dbutils.drop_table( p_owner => staging_owner, p_table => staging_table );
-         WHEN replace_method = 'replace' AND evolve_log.is_debugmode
+         WHEN SELF.replace_method = 'rename' AND evolve_log.is_debugmode
          THEN
-            evolve_log.log_msg( 'Cannot simulate a REPLACE_METHOD of "replace" when in DEBUGMODE', 4 );
+            evolve_log.log_msg( 'Cannot simulate a REPLACE_METHOD of "rename" when in DEBUGMODE', 4 );
          ELSE
             NULL;
       END CASE;
+
+      IF NOT td_core.is_true( SELF.constant_staging )
+      THEN
+         -- now drop the source table, which is now the previous target table
+         o_ev.change_action( 'drop staging table' );
+         td_dbutils.drop_table( p_owner => SELF.staging_owner, p_table => SELF.staging_table );
+      END IF;
 
       -- reset the evolve_object
       o_ev.clear_app_info;
