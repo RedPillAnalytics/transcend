@@ -1709,47 +1709,48 @@ AS
       td_utils.check_table( p_owner => p_owner, p_table => p_table );
 
       -- drop constraints
-      FOR c_constraints IN ( SELECT *
-                              FROM ( SELECT    'alter table '
-                                            || owner
-                                            || '.'
-                                            || table_name
-                                            || ' drop constraint '
-                                            || constraint_name constraint_ddl,
-                                            constraint_name, table_name,
-                                            CASE
-                                               WHEN REGEXP_LIKE( 'table|all', p_basis, 'i' )
-                                                  THEN 'Y'
-                                               ELSE 'N'
-                                            END include
-                                      FROM all_constraints
-                                     WHERE table_name = UPPER( p_table )
-                                       AND owner = UPPER( p_owner )
-                                       AND REGEXP_LIKE( constraint_name, NVL( p_constraint_regexp, '.' ), 'i' )
-                                       AND REGEXP_LIKE( constraint_type, NVL( p_constraint_type, '.' ), 'i' )
-                                    UNION
-                                    SELECT    'alter table '
-                                           || owner
-                                           || '.'
-                                           || table_name
-                                           || ' drop constraint '
-                                           || constraint_name constraint_ddl,
-                                           constraint_name, table_name,
-                                           CASE
-                                              WHEN REGEXP_LIKE( 'reference|all', p_basis, 'i' )
-                                                 THEN 'Y'
-                                              ELSE 'N'
-                                           END include
-                                      FROM all_constraints
-                                     WHERE constraint_type = 'R'
-                                       AND REGEXP_LIKE( constraint_name, NVL( p_constraint_regexp, '.' ), 'i' )
-                                       AND r_constraint_name IN(
-                                              SELECT constraint_name
-                                                FROM all_constraints
-                                               WHERE table_name = UPPER( p_table )
-                                                 AND owner = UPPER( p_owner )
-                                                 AND constraint_type = 'P' ))
-                             WHERE include = 'Y' )
+      FOR c_constraints IN ( SELECT  *
+                                FROM ( SELECT    'alter table '
+                                              || owner
+                                              || '.'
+                                              || table_name
+                                              || ' drop constraint '
+                                              || constraint_name constraint_ddl,
+                                              constraint_name, table_name,
+                                              CASE
+                                                 WHEN REGEXP_LIKE( 'table|all', p_basis, 'i' )
+                                                    THEN 'Y'
+                                                 ELSE 'N'
+                                              END include, 'table' basis_source
+                                        FROM all_constraints
+                                       WHERE table_name = UPPER( p_table )
+                                         AND owner = UPPER( p_owner )
+                                         AND REGEXP_LIKE( constraint_name, NVL( p_constraint_regexp, '.' ), 'i' )
+                                         AND REGEXP_LIKE( constraint_type, NVL( p_constraint_type, '.' ), 'i' )
+                                      UNION
+                                      SELECT    'alter table '
+                                             || owner
+                                             || '.'
+                                             || table_name
+                                             || ' drop constraint '
+                                             || constraint_name constraint_ddl,
+                                             constraint_name, table_name,
+                                             CASE
+                                                WHEN REGEXP_LIKE( 'reference|all', p_basis, 'i' )
+                                                   THEN 'Y'
+                                                ELSE 'N'
+                                             END include, 'reference' basis_source
+                                        FROM all_constraints
+                                       WHERE constraint_type = 'R'
+                                         AND REGEXP_LIKE( constraint_name, NVL( p_constraint_regexp, '.' ), 'i' )
+                                         AND r_constraint_name IN(
+                                                SELECT constraint_name
+                                                  FROM all_constraints
+                                                 WHERE table_name = UPPER( p_table )
+                                                   AND owner = UPPER( p_owner )
+                                                   AND constraint_type = 'P' ))
+                               WHERE include = 'Y'
+                            ORDER BY basis_source )
       LOOP
          -- catch empty cursor sets
          l_rows := TRUE;
