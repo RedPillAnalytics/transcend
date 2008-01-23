@@ -473,10 +473,7 @@ AS
       p_index_space    VARCHAR2 DEFAULT NULL,
       p_index_drop     VARCHAR2 DEFAULT 'yes',
       p_concurrent     VARCHAR2 DEFAULT 'no',
-      p_statistics     VARCHAR2 DEFAULT 'transfer',
-      p_statpercent    NUMBER DEFAULT NULL,
-      p_statdegree     NUMBER DEFAULT NULL,
-      p_statmethod     VARCHAR2 DEFAULT NULL
+      p_statistics     VARCHAR2 DEFAULT 'transfer'
    )
    IS
    BEGIN
@@ -487,10 +484,7 @@ AS
                                      p_index_space       => p_index_space,
                                      p_index_drop        => p_index_drop,
                                      p_concurrent        => p_concurrent,
-                                     p_statistics        => p_statistics,
-                                     p_statpercent       => p_statpercent,
-                                     p_statdegree        => p_statdegree,
-                                     p_statmethod        => p_statmethod
+                                     p_statistics        => p_statistics
                                    );
    EXCEPTION
       WHEN OTHERS
@@ -543,8 +537,6 @@ AS
       p_source_owner    VARCHAR2 DEFAULT NULL,
       p_source_object   VARCHAR2 DEFAULT NULL,
       p_source_column   VARCHAR2 DEFAULT NULL,
-      p_d_num           NUMBER DEFAULT 0,
-      p_p_num           NUMBER DEFAULT 65535,
       p_index_regexp    VARCHAR2 DEFAULT NULL,
       p_index_type      VARCHAR2 DEFAULT NULL,
       p_part_type       VARCHAR2 DEFAULT NULL
@@ -557,8 +549,6 @@ AS
                                    p_source_owner       => p_source_owner,
                                    p_source_object      => p_source_object,
                                    p_source_column      => p_source_column,
-                                   p_d_num              => p_d_num,
-                                   p_p_num              => p_p_num,
                                    p_index_regexp       => p_index_regexp,
                                    p_index_type         => p_index_type,
                                    p_part_type          => p_part_type

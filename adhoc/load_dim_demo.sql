@@ -1,3 +1,7 @@
+COLUMN first_name format a10
+COLUMN last_name format a9
+COLUMN zip format 99999
+
 SET echo on
 -- before we start, I need to delete configurations from previous runs
 BEGIN

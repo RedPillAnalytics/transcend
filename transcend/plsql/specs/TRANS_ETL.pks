@@ -156,10 +156,7 @@ IS
       p_index_space    VARCHAR2 DEFAULT NULL,
       p_index_drop     VARCHAR2 DEFAULT 'yes',
       p_concurrent     VARCHAR2 DEFAULT 'no',
-      p_statistics     VARCHAR2 DEFAULT 'transfer',
-      p_statpercent    NUMBER DEFAULT NULL,
-      p_statdegree     NUMBER DEFAULT NULL,
-      p_statmethod     VARCHAR2 DEFAULT NULL
+      p_statistics     VARCHAR2 DEFAULT 'transfer'
    );
 
    PROCEDURE load_dim( p_owner VARCHAR2, p_table VARCHAR2 );
@@ -180,8 +177,6 @@ IS
       p_source_owner    VARCHAR2 DEFAULT NULL,
       p_source_object   VARCHAR2 DEFAULT NULL,
       p_source_column   VARCHAR2 DEFAULT NULL,
-      p_d_num           NUMBER DEFAULT 0,
-      p_p_num           NUMBER DEFAULT 65535,
       p_index_regexp    VARCHAR2 DEFAULT NULL,
       p_index_type      VARCHAR2 DEFAULT NULL,
       p_part_type       VARCHAR2 DEFAULT NULL
