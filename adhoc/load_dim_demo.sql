@@ -89,7 +89,22 @@ DROP TABLE testdim.sales_fact CASCADE CONSTRAINTS PURGE
 CREATE TABLE testdim.sales_fact
        ( customer_key NUMBER,
 	 quantity NUMBER,
-	 amount NUMBER)
+	 amount NUMBER,
+	 transaction_dt DATE)
+       partition BY range (transaction_dt)
+       (
+	 partition sf2005  VALUES less than (to_date(' 2006-01-01 00:00:00', 'SYYYY-MM-DD HH24:MI:SS', 'NLS_CALENDAR=GREGORIAN')) 
+	 COMPRESS,
+	 partition sf2006  VALUES less than (to_date(' 2007-01-01 00:00:00', 'SYYYY-MM-DD HH24:MI:SS', 'NLS_CALENDAR=GREGORIAN')) 
+	 COMPRESS,
+	 partition sf2007  VALUES less than (to_date(' 2008-01-01 00:00:00', 'SYYYY-MM-DD HH24:MI:SS', 'NLS_CALENDAR=GREGORIAN')) 
+	 COMPRESS,
+	 partition sf2008  VALUES less than (to_date(' 2009-01-01 00:00:00', 'SYYYY-MM-DD HH24:MI:SS', 'NLS_CALENDAR=GREGORIAN')) 
+	 COMPRESS,
+	 partition MAX  VALUES less than (MAXVALUE) 
+	 COMPRESS
+       )
+       PARALLEL
 /
 
 -- add the foreign key constraint that references the dimension table
@@ -97,11 +112,19 @@ ALTER TABLE testdim.sales_fact ADD CONSTRAINT sales_fact_fk1 FOREIGN KEY (custom
 /
 
 -- insert the fact records
-insert into testdim.sales_fact VALUES (21, 4, 37.49);
-insert into testdim.sales_fact VALUES (21, 5, 50.99);
-insert into testdim.sales_fact VALUES (22, 3, 22.14);
-insert into testdim.sales_fact VALUES (23, 12, 117.55);
+insert into testdim.sales_fact VALUES (21, 4, 37.49, '04/02/2005');
+insert into testdim.sales_fact VALUES (21, 5, 50.99, '07/19/2006');
+insert into testdim.sales_fact VALUES (22, 3, 22.14, '03/01/2007');
+insert into testdim.sales_fact VALUES (23, 12, 117.55, '01/04/2008');
 
+-- add bitmap indexes
+CREATE BITMAP INDEX testdim.sales_fact_bi1 on testdim.sales_fact (customer_key)
+       LOCAL
+/
+
+CREATE BITMAP INDEX testdim.sales_fact_bi2 on testdim.sales_fact (transaction_dt)
+       LOCAL
+/
 
 -- create a source table and populate it with records
 -- these are the new changes that need to be applied to the dimension table
