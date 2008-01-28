@@ -16,9 +16,9 @@ AS
    AS
       o_ev   evolve_ot;
    BEGIN
-      o_ev := evolve_ot( p_module => 'start_etl_mapping', p_action => 'mapping ' || p_mapping );
+      o_ev := evolve_ot( p_module => 'etl_mapping', p_action => 'mapping ' || p_mapping );
       td_inst.batch_id( p_batch_id );
-      evolve_log.log_msg( 'Beginning OWB mapping' );
+      evolve_log.log_msg( 'Beginning ETL mapping' );
 
       -- see whether or not to call UNUSABLE_INDEXES
       IF p_owner IS NOT NULL AND p_table IS NOT NULL
@@ -55,7 +55,7 @@ AS
    AS
       o_ev   evolve_ot;
    BEGIN
-      o_ev := evolve_ot( p_module => 'end_etl_mapping', p_action => 'mapping ' || p_mapping );
+      o_ev := evolve_ot( p_module => 'etl_mapping', p_action => 'mapping ' || p_mapping );
 
       CASE
          WHEN p_source_owner IS NOT NULL AND p_source_table IS NOT NULL
@@ -75,7 +75,7 @@ AS
             NULL;
       END CASE;
 
-      evolve_log.log_msg( 'Ending OWB mapping' );
+      evolve_log.log_msg( 'Ending ETL mapping' );
       o_ev.clear_app_info;
    END end_etl_mapping;
 
