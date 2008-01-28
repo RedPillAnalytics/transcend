@@ -571,8 +571,7 @@ AS
                                            p_owner             => SELF.owner,
                                            p_table             => SELF.table_name,
                                            p_statistics        => SELF.STATISTICS,
-                                           p_concurrent        => SELF.concurrent,
-                                           p_index_drop        => 'no'
+                                           p_concurrent        => SELF.concurrent
                                          );
          WHEN SELF.replace_method = 'rename' AND NOT evolve_log.is_debugmode
          THEN

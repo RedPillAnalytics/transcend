@@ -24,6 +24,7 @@ AS
       l_results         NUMBER;
       l_part_position   all_tab_partitions.partition_position%TYPE;
       l_high_value      all_tab_partitions.high_value%TYPE;
+      l_num_rows	NUMBER;
    BEGIN
       td_utils.check_table( p_owner => p_owner, p_table => p_table, p_partname => p_partname, p_partitioned => 'yes' );
 
@@ -40,7 +41,7 @@ AS
 
          -- if P_PARTNAME is null, then we want the max partition
          -- go ahead and write that single record
-         o_ev.change_action( 'static insert into td_part_gtt' );
+         o_ev.change_action( 'static insert' );
 
          INSERT INTO td_part_gtt
                      ( table_owner, table_name, partition_name, partition_position
@@ -61,7 +62,7 @@ AS
             l_source_column := p_source_column;
          END IF;
 
-         o_ev.change_action( 'dynamic insert into td_part_gtt' );
+         o_ev.change_action( 'dynamic insert' );
 
          EXECUTE IMMEDIATE    'insert into td_part_gtt (table_owner, table_name, partition_name, partition_position) '
                            || ' SELECT table_owner, table_name, partition_name, partition_position'
@@ -90,11 +91,19 @@ AS
 
          evolve_log.log_cnt_msg( SQL%ROWCOUNT, l_num_msg, 4 );
       END IF;
+      
+      -- get count of records affected
+      SELECT count(*)
+	INTO l_num_rows
+	FROM td_part_gtt;
+      
+      evolve_log.log_msg('Number of records currently in TD_PART_GTT:'||l_num_rows, 5);
 
       o_ev.clear_app_info;
    EXCEPTION
       WHEN OTHERS
       THEN
+         evolve_log.log_err;
          o_ev.clear_app_info;
          RAISE;
    END populate_partname;
@@ -123,6 +132,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
+         evolve_log.log_err;
          o_ev.clear_app_info;
          RAISE;
    END truncate_table;
@@ -152,6 +162,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
+         evolve_log.log_err;
          o_ev.clear_app_info;
          RAISE;
    END drop_table;
@@ -410,6 +421,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
+         evolve_log.log_err;
          o_ev.clear_app_info;
          RAISE;
    END build_table;
@@ -777,6 +789,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
+         evolve_log.log_err;
          o_ev.clear_app_info;
          RAISE;
    END build_indexes;
@@ -814,6 +827,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
+         evolve_log.log_err;
          o_ev.clear_app_info;
          RAISE;
    END rename_indexes;
@@ -1264,6 +1278,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
+         evolve_log.log_err;
          o_ev.clear_app_info;
          RAISE;
    END build_constraints;
@@ -1301,6 +1316,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
+         evolve_log.log_err;
          o_ev.clear_app_info;
          RAISE;
    END rename_constraints;
@@ -1319,6 +1335,7 @@ AS
       l_con_cnt         NUMBER         := 0;
       l_tab_name        VARCHAR2( 61 ) := UPPER( p_owner || '.' || p_table );
       l_concurrent_id   NUMBER;
+      l_rows_num	NUMBER;
       l_rows            BOOLEAN        := FALSE;
       e_iot_shc         EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_iot_shc, -25188 );
@@ -1472,6 +1489,7 @@ AS
                     VALUES ( c_constraints.disable_ddl, c_constraints.disable_msg, c_constraints.enable_ddl,
                              c_constraints.enable_msg
                            );
+	       evolve_log.log_cnt_msg(sql%rowcount,'Number of records inserted into td_con_maint_gtt',5);
             END IF;
 
             evolve_log.log_msg( CASE
@@ -1549,6 +1567,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
+         evolve_log.log_err;
          o_ev.clear_app_info;
          RAISE;
    END constraint_maint;
@@ -1616,6 +1635,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
+         evolve_log.log_err;
          o_ev.clear_app_info;
          RAISE;
    END enable_constraints;
@@ -1683,6 +1703,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
+         evolve_log.log_err;
          o_ev.clear_app_info;
          RAISE;
    END drop_indexes;
@@ -1796,6 +1817,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
+         evolve_log.log_err;
          o_ev.clear_app_info;
          RAISE;
    END drop_constraints;
@@ -1902,6 +1924,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
+         evolve_log.log_err;
          o_ev.clear_app_info;
          RAISE;
    END object_grants;
@@ -1998,6 +2021,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
+         evolve_log.log_err;
          o_ev.clear_app_info;
          RAISE;
    END insert_table;
@@ -2229,6 +2253,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
+         evolve_log.log_err;
          o_ev.clear_app_info;
          RAISE;
    END merge_table;
@@ -2327,6 +2352,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
+         evolve_log.log_err;
          o_ev.clear_app_info;
          RAISE;
    END load_tables;
@@ -2339,7 +2365,6 @@ AS
       p_source_table   VARCHAR2,
       p_partname       VARCHAR2 DEFAULT NULL,
       p_index_space    VARCHAR2 DEFAULT NULL,
-      p_index_drop     VARCHAR2 DEFAULT 'yes',
       p_concurrent     VARCHAR2 DEFAULT 'no',
       p_statistics     VARCHAR2 DEFAULT 'transfer',
       p_statpercent    NUMBER DEFAULT NULL,
@@ -2356,7 +2381,6 @@ AS
       l_build_cons     BOOLEAN                                  := FALSE;
       l_compress       BOOLEAN                                  := FALSE;
       l_constraints    BOOLEAN                                  := FALSE;
-      l_dis_fkeys      BOOLEAN                                  := FALSE;
       l_retry_ddl      BOOLEAN                                  := FALSE;
       e_no_stats       EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_stats, -20000 );
@@ -2366,6 +2390,8 @@ AS
       PRAGMA EXCEPTION_INIT( e_fkeys, -2266 );
       e_uk_mismatch    EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_uk_mismatch, -14130 );
+      e_fk_mismatch    EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_fk_mismatch, -14128 );
       o_ev             evolve_ot                                := evolve_ot( p_module => 'exchange_partition' );
    BEGIN
       o_ev.change_action( 'determine partition to use' );
@@ -2464,7 +2490,7 @@ AS
                -- disable foreign keys related to the table
                -- this will enable the exchange to occur
                o_ev.change_action( 'disable foreign keys' );
-               l_dis_fkeys := TRUE;
+               l_constraints := TRUE;
                l_retry_ddl := TRUE;
                constraint_maint( p_owner           => p_owner,
                                  p_table           => p_table,
@@ -2488,6 +2514,19 @@ AS
                                  p_maint_type           => 'disable',
                                  p_constraint_type      => 'u'
                                );
+            WHEN e_fk_mismatch
+            THEN
+            -- need to create foreign key constraints
+               l_constraints := TRUE;
+               l_retry_ddl := TRUE;
+            build_constraints( p_owner                => p_source_owner,
+                               p_table                => p_source_table,
+			       p_source_owner	      => p_owner,
+			       p_source_table	      => p_table,
+			       p_constraint_type      => 'r',
+			       p_basis		      => 'table',
+			       p_concurrent	      => p_concurrent
+                               );
             WHEN OTHERS
             THEN
                -- first log the error
@@ -2496,15 +2535,12 @@ AS
 
                -- need to drop indexes if there is an exception
                -- this is for rerunability
-               IF td_core.is_true( p_index_drop )
-               THEN
-                  -- now record the reason for the index drops
-                  evolve_log.log_msg( 'Dropping indexes for restartability', 3 );
-                  drop_indexes( p_owner => p_source_owner, p_table => p_source_table );
-               END IF;
+            -- now record the reason for the index drops
+            evolve_log.log_msg( 'Dropping indexes for restartability', 3 );
+            drop_indexes( p_owner => p_source_owner, p_table => p_source_table );
 
-               -- need to put the disabled foreign keys back if we disabled them
-               IF l_dis_fkeys
+               -- any constraints need to be enabled
+               IF l_constraints
                THEN
                   enable_constraints( p_concurrent => p_concurrent );
                END IF;
@@ -2516,28 +2552,25 @@ AS
          EXIT WHEN NOT l_retry_ddl;
       END LOOP;
 
-      -- enable any foreign keys on other tables that reference this table
-      IF l_dis_fkeys
+      -- any constraints need to be enabled
+      IF l_constraints
       THEN
-         o_ev.change_action( 'enable foreign keys' );
-         constraint_maint( p_owner           => p_owner,
-                           p_table           => p_table,
-                           p_maint_type      => 'enable',
-                           p_basis           => 'reference',
-                           p_concurrent      => p_concurrent
-                         );
+	 enable_constraints( p_concurrent => p_concurrent );
       END IF;
-
-      -- drop the indexes on the stage table
-      IF td_core.is_true( p_index_drop )
-      THEN
-         drop_indexes( p_owner => p_source_owner, p_table => p_source_table );
-      END IF;
+      
+      -- drop constraints on the stage table
+      drop_constraints( p_owner => p_source_owner,
+			p_table => p_source_table,
+			p_basis => 'all' );
+      
+      -- drop indexes on the staging table
+      drop_indexes( p_owner => p_source_owner, p_table => p_source_table );
 
       o_ev.clear_app_info;
    EXCEPTION
       WHEN OTHERS
       THEN
+         evolve_log.log_err;
          o_ev.clear_app_info;
          RAISE;
    END exchange_partition;
@@ -2576,6 +2609,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
+         evolve_log.log_err;
          o_ev.clear_app_info;
          RAISE;
    END rename_tables;
@@ -2689,6 +2723,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
+         evolve_log.log_err;
          o_ev.clear_app_info;
          RAISE;
    END rename_primary_keys;
@@ -2809,6 +2844,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
+         evolve_log.log_err;
          o_ev.clear_app_info;
          RAISE;
    END replace_table;
@@ -2997,6 +3033,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
+         evolve_log.log_err;
          o_ev.clear_app_info;
          RAISE;
    END unusable_indexes;
@@ -3142,6 +3179,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
+         evolve_log.log_err;
          o_ev.clear_app_info;
          RAISE;
    END usable_indexes;
@@ -3336,6 +3374,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
+         evolve_log.log_err;
          o_ev.clear_app_info;
          RAISE;
    END update_stats;
