@@ -24,7 +24,7 @@ AS
       l_results         NUMBER;
       l_part_position   all_tab_partitions.partition_position%TYPE;
       l_high_value      all_tab_partitions.high_value%TYPE;
-      l_num_rows	NUMBER;
+      l_num_rows        NUMBER;
    BEGIN
       td_utils.check_table( p_owner => p_owner, p_table => p_table, p_partname => p_partname, p_partitioned => 'yes' );
 
@@ -91,14 +91,13 @@ AS
 
          evolve_log.log_cnt_msg( SQL%ROWCOUNT, l_num_msg, 4 );
       END IF;
-      
-      -- get count of records affected
-      SELECT count(*)
-	INTO l_num_rows
-	FROM td_part_gtt;
-      
-      evolve_log.log_msg('Number of records currently in TD_PART_GTT:'||l_num_rows, 5);
 
+      -- get count of records affected
+      SELECT COUNT( * )
+        INTO l_num_rows
+        FROM td_part_gtt;
+
+      evolve_log.log_msg( 'Number of records currently in TD_PART_GTT:' || l_num_rows, 5 );
       o_ev.clear_app_info;
    EXCEPTION
       WHEN OTHERS
@@ -440,7 +439,8 @@ AS
       p_part_type      VARCHAR2 DEFAULT NULL,
       p_tablespace     VARCHAR2 DEFAULT NULL,
       p_partname       VARCHAR2 DEFAULT NULL,
-      p_concurrent     VARCHAR2 DEFAULT 'no'
+      p_concurrent     VARCHAR2 DEFAULT 'no',
+      p_enable_queue   VARCHAR2 DEFAULT 'no'
    )
    IS
       l_ddl             LONG;
@@ -510,220 +510,212 @@ AS
 
       -- create a cursor containing the DDL from the target indexes
       FOR c_indexes IN
-         (
-          -- this case statement uses GENERIC_IDX column to determine the final index name
-          -- if we are using a generic name, then perform the replace
-          SELECT UPPER( p_owner ) index_owner, CASE generic_idx
-                    WHEN 'Y'
-                       THEN idx_rename_adj
-                    ELSE idx_rename
-                 END index_name, owner source_owner, index_name source_index, partitioned, uniqueness, index_type,
-                 REGEXP_REPLACE( index_ddl,
-                                 '(\.)("?)(\w+)("?)(\s+)(on)',
-                                 '\1' || CASE generic_idx
-                                    WHEN 'Y'
-                                       THEN idx_rename_adj
-                                    ELSE idx_rename
-                                 END || '\5\6',
-                                 1,
-                                 0,
-                                 'i'
-                               ) index_ddl,
-                    
-                    -- this column was added for the REPLACE_TABLE procedure
-                    -- in that procedure, after cloning the indexes, the table is renamed
-                    -- we have to rename the indexes back to their original names
-                    ' alter index '
-                 || owner
-                 || '.'
-                 || CASE generic_idx
-                       WHEN 'Y'
-                          THEN idx_rename_adj
-                       ELSE idx_rename
-                    END
-                 || ' rename to '
-                 || index_name rename_ddl,
-                    
-                    -- this column was added for the REPLACE_TABLE procedure
-                    -- in that procedure, after cloning the indexes, the table is renamed
-                    -- we have to rename the indexes back to their original names
-                    'Index '
-                 || owner
-                 || '.'
-                 || CASE generic_idx
-                       WHEN 'Y'
-                          THEN idx_rename_adj
-                       ELSE idx_rename
-                    END
-                 || ' renamed to '
-                 || index_name rename_msg
-            FROM ( SELECT
-                          -- if idx_rename already exists (constructed below), then we will try to rename the index to something generic
-                          UPPER(    SUBSTR( p_table, 1, 24 )
-                                 || '_'
-                                 || idx_ext
-                                 -- rank function gives us the index number by specific index extension (formulated below)
-                                 || RANK( ) OVER( PARTITION BY idx_ext ORDER BY index_name )
-                               ) idx_rename_adj,
-                          
-                          -- this regexp_replace replaces the current owner of the table with the new owner of the table
-                          REGEXP_REPLACE(
-                                          -- this regexp_replace will replace the source table with the target table
-                                          REGEXP_REPLACE( REGEXP_REPLACE( index_ddl, '(alter index).+',
-                                                                          -- first remove any ALTER INDEX statements that may be included
-                                                                          -- this could occur if the indexes are in an unusable state, for instance
-                                                                          -- we don't care if they are unusable or not
-                                                                          NULL, 1, 0, 'i' ),
-                                                          '(\.)("?)(' || p_source_table || ')("?)(\s+)(\()',
-                                                          '\1' || UPPER( p_table ) || '\5\6',
-                                                          1,
-                                                          0,
-                                                          'i'
-                                                        ),
-                                          '(")?(' || ind.owner || ')("?\.)',
-                                          UPPER( p_owner ) || '.',
-                                          1,
-                                          0,
-                                          'i'
-                                        ) index_ddl,
-                          table_owner, table_name, ind.owner, index_name, idx_rename, partitioned, uniqueness, idx_ext,
-                          index_type,
-                          
-                          -- this case expression determines whether to use the standard renamed index name
-                          -- or whether to use the generic index name based on table name
-                          -- below we are right joining with USER_OBJECTS to see if the standard name is already used
-                          -- if we match, then we need to use the generic index name
-                          CASE
-                             WHEN( index_name_confirm IS NULL AND LENGTH( idx_rename ) < 31 )
-                                THEN 'N'
-                             ELSE 'Y'
-                          END generic_idx
-                    FROM ( SELECT    REGEXP_REPLACE
-                                        
-                                        -- dbms_metadata pulls the metadata for the source object out of the dictionary
-                                     (    DBMS_METADATA.get_ddl( 'INDEX', index_name, owner ),
-                                          -- this CASE expression determines whether to strip partitioning information and tablespace information
-                                          -- tablespace desisions are based on the p_TABLESPACE parameter
-                                          -- partitioning decisions are based on the structure of the target table
-                                          CASE
-                                             -- target is not partitioned and neither p_TABLESPACE or p_PARTNAME are provided
-                                          WHEN l_targ_part = 'NO' AND p_tablespace IS NULL AND p_partname IS NULL
-                                                -- remove all partitioning and the local keyword
-                                          THEN '\s*(\(\s*partition.+\))|local\s*'
-                                             -- target is not partitioned but p_TABLESPACE or p_PARTNAME is provided
-                                          WHEN l_targ_part = 'NO'
-                                          AND ( p_tablespace IS NOT NULL OR p_partname IS NOT NULL )
-                                                -- strip out partitioned info and local keyword and tablespace clause
-                                          THEN '\s*(\(\s*partition.+\))|local|(tablespace)\s*\S+\s*'
-                                             -- target is partitioned and p_TABLESPACE or p_PARTNAME is provided
-                                          WHEN l_targ_part = 'YES'
-                                          AND ( p_tablespace IS NOT NULL OR p_partname IS NOT NULL )
-                                                -- strip out partitioned info keeping local keyword and remove tablespace clause
-                                          THEN '\s*(\(\s*partition.+\))|(tablespace)\s*\S+\s*'
-                                             -- target is partitioned
-                                             -- p_TABLESPACE is null
-                                             -- p_PARTNAME is null
-                                          WHEN l_targ_part = 'YES' AND p_tablespace IS NULL AND p_partname IS NULL
-                                                -- leave partitioning and tablespace information as it is
-                                                -- this implies a one-to-one mapping of partitioned names from source to target
-                                          THEN NULL
-                                          END,
-                                          ' ',
-                                          1,
-                                          0,
-                                          'in'
-                                        )
-                                  || CASE
-                                        -- if 'default' is passed, then use the users default tablespace
-                                        -- a non-null value for p_tablespace already stripped all tablespace information above
-                                        -- now just need to not put in the 'TABLESPACE' information here
-                                     WHEN LOWER( p_tablespace ) = 'default'
-                                           THEN NULL
-                                        -- if p_TABLESPACE is provided, then previous tablespace information was stripped (above)
-                                        -- now we can just tack the new tablespace information on the end
-                                     WHEN p_tablespace IS NOT NULL
-                                           THEN ' TABLESPACE ' || UPPER( p_tablespace )
-                                        WHEN p_partname IS NOT NULL
-                                           THEN    ' TABLESPACE '
-                                                || NVL( ai.tablespace_name,
-                                                        ( SELECT tablespace_name
-                                                           FROM all_ind_partitions
-                                                          WHERE index_name = ai.index_name
-                                                            AND index_owner = ai.owner
-                                                            AND partition_position = l_part_position )
-                                                      )
-                                        ELSE NULL
-                                     END index_ddl,
-                                  table_owner, table_name, owner, index_name,
+         ( SELECT UPPER( p_owner ) index_owner, new_index_name index_name, owner source_owner, index_name source_index,
+                  partitioned, uniqueness, index_type,
+                  REGEXP_REPLACE( index_ddl,
+                                  '(\.)("?)(\w+)("?)(\s+)(on)',
+                                  '\1' || new_index_name || '\5\6',
+                                  1,
+                                  0,
+                                  'i'
+                                ) index_ddl,
+                  
+                  -- this column was added for the REPLACE_TABLE procedure
+                  -- in that procedure, after cloning the indexes, the table is renamed
+                  -- we have to rename the indexes back to their original names
+                  ' alter index ' || owner || '.' || new_index_name || ' rename to ' || index_name rename_ddl,
+                  
+                  -- this column was added for the REPLACE_TABLE procedure
+                  -- in that procedure, after cloning the indexes, the table is renamed
+                  -- we have to rename the indexes back to their original names
+                  'Index ' || owner || '.' || new_index_name || ' renamed to ' || index_name rename_msg
+            FROM ( SELECT CASE
+                             -- this case statement uses GENERIC_IDX plus other factors to determine what the new index name will be
+                             -- IDX_RENAME is simply the current index name replacing any mentions of the source_table with target_table
+                             --IDX_RENAME_ADJ is the index name using generic naming standards, such as <source_table>_<idx>2.
+                             -- if both of these index names are already taken, then use a completely generic name, such as 'TD$_IDX' plus a timestamp.
+                          WHEN idx_rename_adj = idx_rename AND generic_idx = 'Y'
+                                THEN 'TD$_IDX' || TO_CHAR( SYSTIMESTAMP, 'mmddyyyyHHMISS' )
+                             WHEN generic_idx = 'N'
+                                THEN idx_rename
+                             ELSE idx_rename_adj
+                          END new_index_name,
+                          owner, index_name, partitioned, uniqueness, index_type, index_ddl
+                    FROM ( SELECT
+                                  -- if idx_rename already exists (constructed below), then we will try to rename the index to something generic
+                                  UPPER(    SUBSTR( p_table, 1, 24 )
+                                         || '_'
+                                         || idx_ext
+                                         -- rank function gives us the index number by specific index extension (formulated below)
+                                         || RANK( ) OVER( PARTITION BY idx_ext ORDER BY index_name )
+                                       ) idx_rename_adj,
                                   
-                                  -- this is the index name that will be used in the first attempt
-                                  -- basically, all cases of the previous table name are replaced with the new table name
-                                  UPPER( REGEXP_REPLACE( index_name,
-                                                         '(")?' || p_source_table || '(")?',
-                                                         p_table,
-                                                         1,
-                                                         0,
-                                                         'i'
-                                                       )
-                                       ) idx_rename,
+                                  -- this regexp_replace replaces the current owner of the table with the new owner of the table
+                                  REGEXP_REPLACE(
+                                                  -- this regexp_replace will replace the source table with the target table
+                                                  REGEXP_REPLACE( REGEXP_REPLACE( index_ddl,
+                                                                                  '(alter index).+',
+                                                                                  -- first remove any ALTER INDEX statements that may be included
+                                                                                  -- this could occur if the indexes are in an unusable state, for instance
+                                                                                  -- we don't care if they are unusable or not
+                                                                                  NULL,
+                                                                                  1,
+                                                                                  0,
+                                                                                  'i'
+                                                                                ),
+                                                                  '(\.)("?)(' || p_source_table || ')("?)(\s+)(\()',
+                                                                  '\1' || UPPER( p_table ) || '\5\6',
+                                                                  1,
+                                                                  0,
+                                                                  'i'
+                                                                ),
+                                                  '(")?(' || ind.owner || ')("?\.)',
+                                                  UPPER( p_owner ) || '.',
+                                                  1,
+                                                  0,
+                                                  'i'
+                                                ) index_ddl,
+                                  table_owner, table_name, ind.owner, index_name, idx_rename, partitioned, uniqueness,
+                                  idx_ext, index_type,
+                                  
+                                  -- this case expression determines whether to use the standard renamed index name
+                                  -- or whether to use the generic index name based on table name
+                                  -- below we are right joining with USER_OBJECTS to see if the standard name is already used
+                                  -- if we match, then we need to use the generic index name
                                   CASE
-                                     -- construct index extensions for the different index types
-                                     -- this will be used to construct generic index names
-                                     -- if the index name that we attempt to use first is already taken
-                                     -- then we'll construct generic index names based on table name and type
-                                  WHEN index_type = 'BITMAP'
-                                        THEN 'BI'
-                                     WHEN REGEXP_LIKE( index_type, '^function', 'i' )
-                                        THEN 'FI'
-                                     WHEN uniqueness = 'UNIQUE'
-                                        THEN 'UK'
-                                     ELSE 'IK'
-                                  END idx_ext,
-                                  partitioned, uniqueness, index_type
-                            FROM all_indexes ai
-                           -- USE an NVL'd regular expression to determine the partition types to worked on
-                           -- when a regexp matching 'global' is passed, then do only global
-                           -- when a regexp matching 'local' is passed, then do only local
-                           -- when nothing is passed, it's a wildcard, so do all
-                          WHERE  REGEXP_LIKE( partitioned,
-                                              CASE
-                                                 WHEN REGEXP_LIKE( 'global', p_part_type, 'i' )
-                                                    THEN 'NO'
-                                                 WHEN REGEXP_LIKE( 'local', p_part_type, 'i' )
-                                                    THEN 'YES'
-                                                 ELSE '.'
-                                              END,
-                                              'i'
-                                            )
-                             AND table_name = UPPER( p_source_table )
-                             AND table_owner = UPPER( p_source_owner )
-                             -- iot indexes provide a problem when in CONCURRENT mode
-                             -- the code just handles the errors with exceptions
-                             -- but CONCURRENT processes are subject to exceptions in the flow of the program
-                             -- so we just don't support certain paradigms in concurrent mode
-                             -- one of them is building having a mismatch between table types when considering IOT's
-                             AND index_type <> CASE td_core.get_yn_ind( p_concurrent )
-                                                 WHEN 'yes'
-                                                    THEN 'IOT - TOP'
-                                                 ELSE '~'
-                                              END
-                             -- USE an NVL'd regular expression to determine the specific indexes to work on
-                             -- when nothing is passed for p_INDEX_TYPE, then that is the same as passing a wildcard
-                             AND REGEXP_LIKE( index_name, NVL( p_index_regexp, '.' ), 'i' )
-                             -- USE an NVL'd regular expression to determine the index types to worked on
-                             -- when nothing is passed for p_INDEX_TYPE, then that is the same as passing a wildcard
-                             AND REGEXP_LIKE( index_type, '^' || NVL( p_index_type, '.' ), 'i' )) ind
-                         LEFT JOIN
-                         ( SELECT index_name index_name_confirm, owner index_owner_confirm
-                            FROM all_indexes ) aii
-                         ON aii.index_name_confirm = ind.idx_rename AND aii.index_owner_confirm = UPPER( p_owner )
-                         ))
+                                     WHEN( index_name_confirm IS NULL AND LENGTH( idx_rename ) < 31 )
+                                        THEN 'N'
+                                     ELSE 'Y'
+                                  END generic_idx
+                            FROM ( SELECT    REGEXP_REPLACE
+                                                
+                                                -- dbms_metadata pulls the metadata for the source object out of the dictionary
+                                             (    DBMS_METADATA.get_ddl( 'INDEX', index_name, owner ),
+                                                  -- this CASE expression determines whether to strip partitioning information and tablespace information
+                                                  -- tablespace desisions are based on the p_TABLESPACE parameter
+                                                  -- partitioning decisions are based on the structure of the target table
+                                                  CASE
+                                                     -- target is not partitioned and neither p_TABLESPACE or p_PARTNAME are provided
+                                                  WHEN l_targ_part = 'NO' AND p_tablespace IS NULL
+                                                       AND p_partname IS NULL
+                                                        -- remove all partitioning and the local keyword
+                                                  THEN '\s*(\(\s*partition.+\))|local\s*'
+                                                     -- target is not partitioned but p_TABLESPACE or p_PARTNAME is provided
+                                                  WHEN l_targ_part = 'NO'
+                                                  AND ( p_tablespace IS NOT NULL OR p_partname IS NOT NULL )
+                                                        -- strip out partitioned info and local keyword and tablespace clause
+                                                  THEN '\s*(\(\s*partition.+\))|local|(tablespace)\s*\S+\s*'
+                                                     -- target is partitioned and p_TABLESPACE or p_PARTNAME is provided
+                                                  WHEN l_targ_part = 'YES'
+                                                  AND ( p_tablespace IS NOT NULL OR p_partname IS NOT NULL )
+                                                        -- strip out partitioned info keeping local keyword and remove tablespace clause
+                                                  THEN '\s*(\(\s*partition.+\))|(tablespace)\s*\S+\s*'
+                                                     -- target is partitioned
+                                                     -- p_TABLESPACE is null
+                                                     -- p_PARTNAME is null
+                                                  WHEN l_targ_part = 'YES' AND p_tablespace IS NULL
+                                                       AND p_partname IS NULL
+                                                        -- leave partitioning and tablespace information as it is
+                                                        -- this implies a one-to-one mapping of partitioned names from source to target
+                                                  THEN NULL
+                                                  END,
+                                                  ' ',
+                                                  1,
+                                                  0,
+                                                  'in'
+                                                )
+                                          || CASE
+                                                -- if 'default' is passed, then use the users default tablespace
+                                                -- a non-null value for p_tablespace already stripped all tablespace information above
+                                                -- now just need to not put in the 'TABLESPACE' information here
+                                             WHEN LOWER( p_tablespace ) = 'default'
+                                                   THEN NULL
+                                                -- if p_TABLESPACE is provided, then previous tablespace information was stripped (above)
+                                                -- now we can just tack the new tablespace information on the end
+                                             WHEN p_tablespace IS NOT NULL
+                                                   THEN ' TABLESPACE ' || UPPER( p_tablespace )
+                                                WHEN p_partname IS NOT NULL
+                                                   THEN    ' TABLESPACE '
+                                                        || NVL( ai.tablespace_name,
+                                                                ( SELECT tablespace_name
+                                                                   FROM all_ind_partitions
+                                                                  WHERE index_name = ai.index_name
+                                                                    AND index_owner = ai.owner
+                                                                    AND partition_position = l_part_position )
+                                                              )
+                                                ELSE NULL
+                                             END index_ddl,
+                                          table_owner, table_name, owner, index_name,
+                                          
+                                          -- this is the index name that will be used in the first attempt
+                                          -- basically, all cases of the previous table name are replaced with the new table name
+                                          UPPER( REGEXP_REPLACE( index_name,
+                                                                 '(")?' || p_source_table || '(")?',
+                                                                 p_table,
+                                                                 1,
+                                                                 0,
+                                                                 'i'
+                                                               )
+                                               ) idx_rename,
+                                          CASE
+                                             -- construct index extensions for the different index types
+                                             -- this will be used to construct generic index names
+                                             -- if the index name that we attempt to use first is already taken
+                                             -- then we'll construct generic index names based on table name and type
+                                          WHEN index_type = 'BITMAP'
+                                                THEN 'BI'
+                                             WHEN REGEXP_LIKE( index_type, '^function', 'i' )
+                                                THEN 'FI'
+                                             WHEN uniqueness = 'UNIQUE'
+                                                THEN 'UK'
+                                             ELSE 'IK'
+                                          END idx_ext,
+                                          partitioned, uniqueness, index_type
+                                    FROM all_indexes ai
+                                   -- USE an NVL'd regular expression to determine the partition types to worked on
+                                   -- when a regexp matching 'global' is passed, then do only global
+                                   -- when a regexp matching 'local' is passed, then do only local
+                                   -- when nothing is passed, it's a wildcard, so do all
+                                  WHERE  REGEXP_LIKE( partitioned,
+                                                      CASE
+                                                         WHEN REGEXP_LIKE( 'global', p_part_type, 'i' )
+                                                            THEN 'NO'
+                                                         WHEN REGEXP_LIKE( 'local', p_part_type, 'i' )
+                                                            THEN 'YES'
+                                                         ELSE '.'
+                                                      END,
+                                                      'i'
+                                                    )
+                                     AND table_name = UPPER( p_source_table )
+                                     AND table_owner = UPPER( p_source_owner )
+                                     -- iot indexes provide a problem when in CONCURRENT mode
+                                     -- the code just handles the errors with exceptions
+                                     -- but CONCURRENT processes are subject to exceptions in the flow of the program
+                                     -- so we just don't support certain paradigms in concurrent mode
+                                     -- one of them is building having a mismatch between table types when considering IOT's
+                                     AND index_type <>
+                                                  CASE td_core.get_yn_ind( p_concurrent )
+                                                     WHEN 'yes'
+                                                        THEN 'IOT - TOP'
+                                                     ELSE '~'
+                                                  END
+                                     -- USE an NVL'd regular expression to determine the specific indexes to work on
+                                     -- when nothing is passed for p_INDEX_TYPE, then that is the same as passing a wildcard
+                                     AND REGEXP_LIKE( index_name, NVL( p_index_regexp, '.' ), 'i' )
+                                     -- USE an NVL'd regular expression to determine the index types to worked on
+                                     -- when nothing is passed for p_INDEX_TYPE, then that is the same as passing a wildcard
+                                     AND REGEXP_LIKE( index_type, '^' || NVL( p_index_type, '.' ), 'i' )) ind
+                                 LEFT JOIN
+                                 ( SELECT index_name index_name_confirm, owner index_owner_confirm
+                                    FROM all_indexes ) aii
+                                 ON aii.index_name_confirm = ind.idx_rename
+                               AND aii.index_owner_confirm = UPPER( p_owner )
+                                 )))
       LOOP
          l_rows := TRUE;
-         o_ev.change_action( 'format index DDL' );
-         o_ev.change_action( 'execute index DDL' );
 
          BEGIN
+            o_ev.change_action( 'execute index DDL' );
             evolve_app.exec_sql( p_sql => c_indexes.index_ddl, p_auto => 'yes', p_concurrent_id => l_concurrent_id );
             evolve_log.log_msg(    'Index '
                                 || c_indexes.index_name
@@ -738,11 +730,17 @@ AS
             l_idx_cnt := l_idx_cnt + 1;
             o_ev.change_action( 'insert into td_build_idx_gtt' );
 
-            INSERT INTO td_build_idx_gtt
-                        ( rename_ddl, rename_msg
-                        )
-                 VALUES ( c_indexes.rename_ddl, c_indexes.rename_msg
-                        );
+            -- queue up alternative DDL statements for later use
+            -- in this case, queue up index rename statements
+            -- these statements are used by RENAME_INDEXES
+            IF td_core.is_true( p_enable_queue )
+            THEN
+               INSERT INTO td_build_idx_gtt
+                           ( rename_ddl, rename_msg
+                           )
+                    VALUES ( c_indexes.rename_ddl, c_indexes.rename_msg
+                           );
+            END IF;
          EXCEPTION
             -- if a duplicate column list of indexes already exist, log it, but continue
             WHEN e_dup_col_list
@@ -844,7 +842,8 @@ AS
       p_seg_attributes      VARCHAR2 DEFAULT 'no',
       p_tablespace          VARCHAR2 DEFAULT NULL,
       p_partname            VARCHAR2 DEFAULT NULL,
-      p_concurrent          VARCHAR2 DEFAULT 'no'
+      p_concurrent          VARCHAR2 DEFAULT 'no',
+      p_enable_queue        VARCHAR2 DEFAULT 'no'
    )
    IS
       l_targ_part       all_tables.partitioned%TYPE;
@@ -1207,8 +1206,11 @@ AS
                l_con_cnt := l_con_cnt + 1;
                o_ev.change_action( 'insert into td_build_idx_gtt' );
 
-               -- only insert for rename if the constraint is a named constraint
-               IF c_constraints.named_constraint = 'Y'
+                    -- only insert for rename if the constraint is a named constraint
+               -- queue up alternative DDL statements for later use
+               -- in this case, queue up constraint rename statements
+               -- these statements are used by RENAME_CONSTRAINTS
+               IF c_constraints.named_constraint = 'Y' AND td_core.is_true( p_enable_queue )
                THEN
                   INSERT INTO td_build_con_gtt
                               ( rename_ddl, rename_msg
@@ -1329,13 +1331,14 @@ AS
       p_constraint_type     VARCHAR2 DEFAULT NULL,
       p_constraint_regexp   VARCHAR2 DEFAULT NULL,
       p_basis               VARCHAR2 DEFAULT 'table',
-      p_concurrent          VARCHAR2 DEFAULT 'no'
+      p_concurrent          VARCHAR2 DEFAULT 'no',
+      p_enable_queue        VARCHAR2 DEFAULT 'no'
    )
    IS
       l_con_cnt         NUMBER         := 0;
       l_tab_name        VARCHAR2( 61 ) := UPPER( p_owner || '.' || p_table );
       l_concurrent_id   NUMBER;
-      l_rows_num	NUMBER;
+      l_rows_num        NUMBER;
       l_rows            BOOLEAN        := FALSE;
       e_iot_shc         EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_iot_shc, -25188 );
@@ -1476,9 +1479,9 @@ AS
                                  p_concurrent_id      => l_concurrent_id
                                );
 
-            -- insert records into a GTT
-            -- this allows a call to ENABLE_CONSTRAINTS without parameters to only work on those that were previously disabled
-            IF REGEXP_LIKE( 'disable', p_maint_type, 'i' )
+            -- queue up alternative DDL statements for later use
+                 -- this allows a call to ENABLE_CONSTRAINTS without parameters to only work on those that were previously disabled
+            IF REGEXP_LIKE( 'disable', p_maint_type, 'i' ) AND td_core.is_true( p_enable_queue )
             THEN
                o_ev.change_action( 'insert into td_con_maint_gtt' );
 
@@ -1489,7 +1492,8 @@ AS
                     VALUES ( c_constraints.disable_ddl, c_constraints.disable_msg, c_constraints.enable_ddl,
                              c_constraints.enable_msg
                            );
-	       evolve_log.log_cnt_msg(sql%rowcount,'Number of records inserted into td_con_maint_gtt',5);
+
+               evolve_log.log_cnt_msg( SQL%ROWCOUNT, 'Number of records inserted into td_con_maint_gtt', 5 );
             END IF;
 
             evolve_log.log_msg( CASE
@@ -2415,6 +2419,7 @@ AS
       -- the indexes will collect there own statistics when they are built
       -- that is why we don't cascade
       o_ev.change_action( 'manage statistics' );
+
       CASE
          WHEN REGEXP_LIKE( 'gather', p_statistics, 'i' )
          THEN
@@ -2464,7 +2469,6 @@ AS
                         ELSE l_partname
                      END
                    );
-
       -- now exchange the table
       o_ev.change_action( 'exchange table' );
 
@@ -2490,21 +2494,29 @@ AS
             WHEN e_fkeys
             THEN
                evolve_log.log_msg( 'ORA-02266 raised involving enabled foreign keys', 4 );
-               -- disable foreign keys related to the table
+               -- disable foreign keys related to both tables
                -- this will enable the exchange to occur
-               o_ev.change_action( 'disable foreign keys' );
                l_constraints := TRUE;
                l_retry_ddl := TRUE;
-               constraint_maint( p_owner           => p_owner,
-                                 p_table           => p_table,
-                                 p_maint_type      => 'disable',
-                                 p_basis           => 'reference'
+               o_ev.change_action( 'disable target foreign keys' );
+               constraint_maint( p_owner             => p_owner,
+                                 p_table             => p_table,
+                                 p_maint_type        => 'disable',
+                                 p_basis             => 'reference',
+                                 p_enable_queue      => 'yes'
+                               );
+               o_ev.change_action( 'disable source foreign keys' );
+               constraint_maint( p_owner             => p_source_owner,
+                                 p_table             => p_source_table,
+                                 p_maint_type        => 'disable',
+                                 p_basis             => 'reference',
+                                 p_enable_queue      => 'no'
                                );
             WHEN e_compress
             THEN
                evolve_log.log_msg( 'ORA-14646 raised involving compression', 4 );
                -- need to compress the staging table
-	       o_ev.change_action( 'compress source table' );
+               o_ev.change_action( 'compress source table' );
                l_compress := TRUE;
                l_retry_ddl := TRUE;
                evolve_app.exec_sql( p_sql => 'alter table ' || l_src_name || ' move compress', p_auto => 'yes' );
@@ -2512,9 +2524,9 @@ AS
             WHEN e_uk_mismatch
             THEN
                evolve_log.log_msg( 'ORA-14130 raised involving unique constraint mismatch', 4 );
-               -- need to disable unique constraints on the target table
-	       -- this really should only disable unique constraints attached to global indexes
-	       o_ev.change_action( 'disable unique constraints' );
+                    -- need to disable unique constraints on the target table
+               -- this really should only disable unique constraints attached to global indexes
+               o_ev.change_action( 'disable unique constraints' );
                l_constraints := TRUE;
                l_retry_ddl := TRUE;
                constraint_maint( p_owner                => p_owner,
@@ -2527,29 +2539,27 @@ AS
                -- need to create foreign key constraints
                evolve_log.log_msg( 'ORA-14128 raised involving foreign constraint mismatch', 4 );
                -- need to build a foreign keys on the source table
-	       o_ev.change_action( 'build foreign keys' );
-
+               o_ev.change_action( 'build foreign keys' );
                l_constraints := TRUE;
                l_retry_ddl := TRUE;
                build_constraints( p_owner                => p_source_owner,
-				  p_table                => p_source_table,
-				  p_source_owner	      => p_owner,
-				  p_source_table	      => p_table,
-				  p_constraint_type      => 'r',
-				  p_basis		      => 'table',
-				  p_concurrent	      => p_concurrent
-				);
+                                  p_table                => p_source_table,
+                                  p_source_owner         => p_owner,
+                                  p_source_table         => p_table,
+                                  p_constraint_type      => 'r',
+                                  p_basis                => 'table',
+                                  p_concurrent           => p_concurrent
+                                );
             WHEN OTHERS
             THEN
                -- first log the error
                -- provide a backtrace from this exception handler to the next exception
                evolve_log.log_err;
-
-               -- need to drop indexes if there is an exception
-               -- this is for rerunability
-            -- now record the reason for the index drops
-            evolve_log.log_msg( 'Dropping indexes for restartability', 3 );
-            drop_indexes( p_owner => p_source_owner, p_table => p_source_table );
+                  -- need to drop indexes if there is an exception
+                  -- this is for rerunability
+               -- now record the reason for the index drops
+               evolve_log.log_msg( 'Dropping indexes for restartability', 3 );
+               drop_indexes( p_owner => p_source_owner, p_table => p_source_table );
 
                -- any constraints need to be enabled
                IF l_constraints
@@ -2567,17 +2577,20 @@ AS
       -- any constraints need to be enabled
       IF l_constraints
       THEN
-	 enable_constraints( p_concurrent => p_concurrent );
+         enable_constraints( p_concurrent => p_concurrent );
       END IF;
-      
+
       -- drop constraints on the stage table
-      drop_constraints( p_owner => p_source_owner,
-			p_table => p_source_table,
-			p_basis => 'all' );
-      
+      BEGIN
+         drop_constraints( p_owner => p_source_owner, p_table => p_source_table, p_basis => 'all' );
+      EXCEPTION
+         WHEN e_drop_iot_key
+         THEN
+            NULL;
+      END;
+
       -- drop indexes on the staging table
       drop_indexes( p_owner => p_source_owner, p_table => p_source_table );
-
       o_ev.clear_app_info;
    EXCEPTION
       WHEN OTHERS
@@ -2802,7 +2815,8 @@ AS
                      p_source_owner      => p_owner,
                      p_source_table      => p_table,
                      p_tablespace        => p_tablespace,
-                     p_concurrent        => p_concurrent
+                     p_concurrent        => p_concurrent,
+                     p_enable_queue      => 'yes'
                    );
       -- build the constraints on the source table
       build_constraints( p_owner             => p_owner,
@@ -2811,7 +2825,8 @@ AS
                          p_source_table      => p_table,
                          p_tablespace        => p_tablespace,
                          p_basis             => 'all',
-                         p_concurrent        => p_concurrent
+                         p_concurrent        => p_concurrent,
+                         p_enable_queue      => 'yes'
                        );
       -- grant privileges on the source table
       object_grants( p_owner              => p_owner,
