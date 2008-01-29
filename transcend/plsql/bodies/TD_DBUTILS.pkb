@@ -2527,19 +2527,18 @@ AS
                -- need to create foreign key constraints
                evolve_log.log_msg( 'ORA-14128 raised involving foreign constraint mismatch', 4 );
                -- need to build a foreign keys on the source table
-	       -- this really should only disable unique constraints attached to global indexes
 	       o_ev.change_action( 'build foreign keys' );
 
                l_constraints := TRUE;
                l_retry_ddl := TRUE;
-            build_constraints( p_owner                => p_source_owner,
-                               p_table                => p_source_table,
-			       p_source_owner	      => p_owner,
-			       p_source_table	      => p_table,
-			       p_constraint_type      => 'r',
-			       p_basis		      => 'table',
-			       p_concurrent	      => p_concurrent
-                               );
+               build_constraints( p_owner                => p_source_owner,
+				  p_table                => p_source_table,
+				  p_source_owner	      => p_owner,
+				  p_source_table	      => p_table,
+				  p_constraint_type      => 'r',
+				  p_basis		      => 'table',
+				  p_concurrent	      => p_concurrent
+				);
             WHEN OTHERS
             THEN
                -- first log the error
