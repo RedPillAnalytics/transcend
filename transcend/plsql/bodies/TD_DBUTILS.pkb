@@ -753,7 +753,7 @@ AS
 
       IF NOT l_rows
       THEN
-         evolve_log.log_msg( 'No matching indexes found on ' || l_src_name, 2 );
+         evolve_log.log_msg( 'No matching indexes found on ' || l_src_name );
       ELSE
          IF td_core.is_true( p_concurrent )
          THEN
@@ -2414,6 +2414,7 @@ AS
       -- we gather statistics first before the indexes are built
       -- the indexes will collect there own statistics when they are built
       -- that is why we don't cascade
+      o_ev.change_action( 'manage statistics' );
       CASE
          WHEN REGEXP_LIKE( 'gather', p_statistics, 'i' )
          THEN
@@ -2449,6 +2450,7 @@ AS
       -- now build the indexes
       -- indexes will get fresh new statistics
       -- that is why we didn't mess with these above
+      o_ev.change_action( 'build indexes' );
       build_indexes( p_owner             => p_source_owner,
                      p_table             => p_source_table,
                      p_source_owner      => p_owner,
@@ -2462,6 +2464,7 @@ AS
                         ELSE l_partname
                      END
                    );
+
       -- now exchange the table
       o_ev.change_action( 'exchange table' );
 
@@ -2499,7 +2502,9 @@ AS
                                );
             WHEN e_compress
             THEN
+               evolve_log.log_msg( 'ORA-14646 raised involving compression', 4 );
                -- need to compress the staging table
+	       o_ev.change_action( 'compress source table' );
                l_compress := TRUE;
                l_retry_ddl := TRUE;
                evolve_app.exec_sql( p_sql => 'alter table ' || l_src_name || ' move compress', p_auto => 'yes' );
@@ -2507,6 +2512,10 @@ AS
             WHEN e_uk_mismatch
             THEN
                -- need to create unique constraints
+               evolve_log.log_msg( 'ORA-14130 raised involving unique constraint mismatch', 4 );
+               -- need to disable unique constraints on the target table
+	       -- this really should only disable unique constraints attached to global indexes
+	       o_ev.change_action( 'disable unique constraints' );
                l_constraints := TRUE;
                l_retry_ddl := TRUE;
                constraint_maint( p_owner                => p_owner,
@@ -2516,7 +2525,12 @@ AS
                                );
             WHEN e_fk_mismatch
             THEN
-            -- need to create foreign key constraints
+               -- need to create foreign key constraints
+               evolve_log.log_msg( 'ORA-14128 raised involving foreign constraint mismatch', 4 );
+               -- need to build a foreign keys on the source table
+	       -- this really should only disable unique constraints attached to global indexes
+	       o_ev.change_action( 'build foreign keys' );
+
                l_constraints := TRUE;
                l_retry_ddl := TRUE;
             build_constraints( p_owner                => p_source_owner,
