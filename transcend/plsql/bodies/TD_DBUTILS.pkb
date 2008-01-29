@@ -2511,7 +2511,6 @@ AS
                evolve_log.log_msg( l_src_name || ' compressed to facilitate exchange', 3 );
             WHEN e_uk_mismatch
             THEN
-               -- need to create unique constraints
                evolve_log.log_msg( 'ORA-14130 raised involving unique constraint mismatch', 4 );
                -- need to disable unique constraints on the target table
 	       -- this really should only disable unique constraints attached to global indexes
