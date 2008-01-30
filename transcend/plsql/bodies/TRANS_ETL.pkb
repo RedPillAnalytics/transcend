@@ -1,27 +1,28 @@
 CREATE OR REPLACE PACKAGE BODY trans_etl
 AS
    PROCEDURE start_etl_mapping(
-      p_mapping         VARCHAR2 DEFAULT $$plsql_unit,
-      p_owner           VARCHAR2 DEFAULT NULL,
+      p_mapping         VARCHAR2 DEFAULT sys_context('USERENV','ACTION'),
+      p_options		VARCHAR2 DEFAULT 'logging',
+      p_owner           VARCHAR2 DEFAULT sys_context('USERENV','SESSION_USER'),
       p_table           VARCHAR2 DEFAULT NULL,
       p_partname        VARCHAR2 DEFAULT NULL,
-      p_source_owner    VARCHAR2 DEFAULT NULL,
+      p_source_owner    VARCHAR2 DEFAULT sys_context('USERENV','SESSION_USER'),
       p_source_object   VARCHAR2 DEFAULT NULL,
       p_source_column   VARCHAR2 DEFAULT NULL,
-      p_index_regexp    VARCHAR2 DEFAULT NULL,
-      p_index_type      VARCHAR2 DEFAULT NULL,
+      p_regexp          VARCHAR2 DEFAULT NULL,
+      p_type            VARCHAR2 DEFAULT NULL,
       p_part_type       VARCHAR2 DEFAULT NULL,
-      p_batch_id        NUMBER DEFAULT NULL
+      p_batch_id        NUMBER   DEFAULT NULL
    )
    AS
       o_ev   evolve_ot;
    BEGIN
-      o_ev := evolve_ot( p_module => 'etl_mapping', p_action => 'mapping ' || p_mapping );
+      o_ev := evolve_ot( p_module => 'etl_mapping', p_action => p_mapping );
       td_inst.batch_id( p_batch_id );
-      evolve_log.log_msg( 'Beginning ETL mapping' );
+      evolve_log.log_msg( 'Starting ETL mapping' );
 
       -- see whether or not to call UNUSABLE_INDEXES
-      IF p_owner IS NOT NULL AND p_table IS NOT NULL
+      IF lower(p_options) IN ('indexes','all')
       THEN
          td_dbutils.unusable_indexes( p_owner              => p_owner,
                                       p_table              => p_table,
@@ -29,11 +30,24 @@ AS
                                       p_source_owner       => p_source_owner,
                                       p_source_object      => p_source_object,
                                       p_source_column      => p_source_column,
-                                      p_index_regexp       => p_index_regexp,
-                                      p_index_type         => p_index_type,
+                                      p_index_regexp       => p_regexp,
+                                      p_index_type         => p_type,
                                       p_part_type          => p_part_type
                                     );
       END IF;
+
+      -- see whether or not to call DISABLE_CONSTRAINTS
+      IF lower(p_options) IN ('constraints','all')
+      THEN
+         td_dbutils.constraint_maint ( p_owner              => p_owner,
+				       p_table              => p_table,
+				       p_constraint_regexp  => p_regexp,
+				       p_constraint_type    => p_type,
+				       p_maint_type	    => 'disable',
+				       p_enable_queue	    => 'yes'
+                                    );
+      END IF;
+
    EXCEPTION
       WHEN OTHERS
       THEN
@@ -43,40 +57,46 @@ AS
    END start_etl_mapping;
 
    PROCEDURE end_etl_mapping(
-      p_mapping        VARCHAR2 DEFAULT $$plsql_unit,
-      p_owner          VARCHAR2 DEFAULT NULL,
+      p_options	       VARCHAR2 DEFAULT 'logging',
+      p_owner          VARCHAR2 DEFAULT sys_context('USERENV','SESSION_USER'),
       p_table          VARCHAR2 DEFAULT NULL,
-      p_source_owner   VARCHAR2 DEFAULT NULL,
+      p_source_owner   VARCHAR2 DEFAULT sys_context('USERENV','SESSION_USER'),
       p_source_table   VARCHAR2 DEFAULT NULL,
       p_partname       VARCHAR2 DEFAULT NULL,
       p_index_space    VARCHAR2 DEFAULT NULL,
-      p_statistics     VARCHAR2 DEFAULT NULL
+      p_statistics     VARCHAR2 DEFAULT 'transfer',
+      p_concurrent     VARCHAR2 DEFAULT 'no'
    )
    AS
-      o_ev   evolve_ot;
    BEGIN
-      o_ev := evolve_ot( p_module => 'etl_mapping', p_action => 'mapping ' || p_mapping );
-
-      CASE
-         WHEN p_source_owner IS NOT NULL AND p_source_table IS NOT NULL
-         THEN
+      IF lower(p_options) = 'exchange'
+      THEN	 
             td_dbutils.exchange_partition( p_source_owner      => p_source_owner,
                                            p_source_table      => p_source_table,
                                            p_owner             => p_owner,
                                            p_table             => p_table,
                                            p_partname          => p_partname,
                                            p_index_space       => p_index_space,
-                                           p_statistics        => p_statistics
+                                           p_statistics        => p_statistics,
+					   p_concurrent	       => p_concurrent
                                          );
-         WHEN p_owner IS NOT NULL AND p_table IS NOT NULL
-         THEN
-            td_dbutils.usable_indexes( p_owner, p_table );
-         ELSE
-            NULL;
-      END CASE;
+      END IF;
+      
+      IF lower(p_options) in ('indexes','all')
+      THEN
+	 td_dbutils.usable_indexes( p_owner => p_owner,
+				    p_table => p_table,
+				    p_concurrent => p_concurrent );
+      END IF;
+      
+      IF lower(p_options) in ('constraints','all')
+      THEN
+	 td_dbutils.enable_constraints( p_concurrent => p_concurrent );
+      END IF;
+
+      COMMIT;
 
       evolve_log.log_msg( 'Ending ETL mapping' );
-      o_ev.clear_app_info;
    END end_etl_mapping;
 
    PROCEDURE truncate_table( p_owner VARCHAR2, p_table VARCHAR2, p_reuse VARCHAR2 DEFAULT 'no' )
@@ -502,6 +522,9 @@ AS
                                 p_concurrent        => p_concurrent,
                                 p_statistics        => p_statistics
                               );
+      -- clear out temporary table holding index and constraint statements
+      COMMIT;
+
    EXCEPTION
       WHEN OTHERS
       THEN

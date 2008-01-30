@@ -1592,7 +1592,8 @@ AS
       THEN
          l_concurrent_id := evolve_app.get_concurrent_id;
       END IF;
-
+      
+      o_ev.change_action( 'looping through' );
       -- looping through records in the TD_CON_MAINT_GTT table
       -- this table only gets populated by CONSTRAINT_MAINT
       evolve_log.log_msg( 'Enabling constraints disabled previously' );
@@ -1603,6 +1604,7 @@ AS
          BEGIN
             l_rows := TRUE;
             -- execute the DDL either in this session or a background session
+	    o_ev.change_action( 'executing DDL' );
             evolve_app.exec_sql( p_sql => c_cons.enable_ddl, p_auto => 'yes', p_concurrent_id => l_concurrent_id );
             evolve_log.log_msg( c_cons.enable_msg );
             l_con_cnt := l_con_cnt + 1;
@@ -1614,6 +1616,7 @@ AS
          evolve_log.log_msg( 'No previously disabled constraints found' );
       ELSE
          -- wait for the concurrent processes to complete or fail
+	 o_ev.change_action( 'wait on concurrent processes' );
          IF td_core.is_true( p_concurrent )
          THEN
             evolve_app.coordinate_sql( p_concurrent_id => l_concurrent_id, p_raise_err => 'no' );
@@ -2865,8 +2868,6 @@ AS
          rename_constraints;
       END;
 
-      -- clear out temporary table holding index and constraint statements
-      COMMIT;
       o_ev.clear_app_info;
    EXCEPTION
       WHEN OTHERS
@@ -2910,10 +2911,6 @@ AS
          THEN
             o_ev.clear_app_info;
             evolve_log.raise_err( 'parms_not_compatible', 'P_PARTNAME with either P_SOURCE_OWNER or P_SOURCE_OBJECT' );
-         WHEN p_source_owner IS NOT NULL AND p_source_object IS NULL
-         THEN
-            o_ev.clear_app_info;
-            evolve_log.raise_err( 'parms_not_compatible', 'P_SOURCE_OWNER without P_SOURCE_OBJECT' );
          WHEN p_source_owner IS NULL AND p_source_object IS NOT NULL
          THEN
             o_ev.clear_app_info;

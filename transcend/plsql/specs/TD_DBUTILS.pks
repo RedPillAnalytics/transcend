@@ -67,6 +67,8 @@ IS
       p_concurrent          VARCHAR2 DEFAULT 'no',
       p_enable_queue        VARCHAR2 DEFAULT 'no'
    );
+      
+   PROCEDURE enable_constraints( p_concurrent VARCHAR2 DEFAULT 'no' );
 
    PROCEDURE drop_indexes(
       p_owner          VARCHAR2,

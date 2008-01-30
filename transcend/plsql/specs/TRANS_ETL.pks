@@ -1,28 +1,30 @@
 CREATE OR REPLACE PACKAGE trans_etl AUTHID CURRENT_USER
 IS
    PROCEDURE start_etl_mapping(
-      p_mapping         VARCHAR2 DEFAULT $$plsql_unit,
-      p_owner           VARCHAR2 DEFAULT NULL,
+      p_mapping         VARCHAR2 DEFAULT sys_context('USERENV','ACTION'),
+      p_options		VARCHAR2 DEFAULT 'logging',
+      p_owner           VARCHAR2 DEFAULT sys_context('USERENV','SESSION_USER'),
       p_table           VARCHAR2 DEFAULT NULL,
       p_partname        VARCHAR2 DEFAULT NULL,
-      p_source_owner    VARCHAR2 DEFAULT NULL,
+      p_source_owner    VARCHAR2 DEFAULT sys_context('USERENV','SESSION_USER'),
       p_source_object   VARCHAR2 DEFAULT NULL,
       p_source_column   VARCHAR2 DEFAULT NULL,
-      p_index_regexp    VARCHAR2 DEFAULT NULL,
-      p_index_type      VARCHAR2 DEFAULT NULL,
+      p_regexp          VARCHAR2 DEFAULT NULL,
+      p_type            VARCHAR2 DEFAULT NULL,
       p_part_type       VARCHAR2 DEFAULT NULL,
-      p_batch_id        NUMBER DEFAULT NULL
+      p_batch_id        NUMBER   DEFAULT NULL
    );
 
    PROCEDURE end_etl_mapping(
-      p_mapping        VARCHAR2 DEFAULT $$plsql_unit,
-      p_owner          VARCHAR2 DEFAULT NULL,
+      p_options	       VARCHAR2 DEFAULT 'logging',
+      p_owner          VARCHAR2 DEFAULT sys_context('USERENV','SESSION_USER'),
       p_table          VARCHAR2 DEFAULT NULL,
-      p_source_owner   VARCHAR2 DEFAULT NULL,
+      p_source_owner   VARCHAR2 DEFAULT sys_context('USERENV','SESSION_USER'),
       p_source_table   VARCHAR2 DEFAULT NULL,
       p_partname       VARCHAR2 DEFAULT NULL,
       p_index_space    VARCHAR2 DEFAULT NULL,
-      p_statistics     VARCHAR2 DEFAULT NULL
+      p_statistics     VARCHAR2 DEFAULT 'transfer',
+      p_concurrent     VARCHAR2 DEFAULT 'no'
    );
 
    PROCEDURE truncate_table( p_owner VARCHAR2, p_table VARCHAR2, p_reuse VARCHAR2 DEFAULT 'no' );
