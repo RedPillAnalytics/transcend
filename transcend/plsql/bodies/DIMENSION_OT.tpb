@@ -279,11 +279,14 @@ AS
       -- get a comma separated list of scd2 columns that are dates
       -- use the STRAGG function for this
       BEGIN
-         SELECT stragg( column_name )
+         SELECT stragg( cc.column_name )
            INTO l_scd2_dates
-           FROM column_conf ic JOIN all_tab_columns USING( table_owner, table_name, column_name )
-          WHERE table_owner = SELF.table_owner
-            AND table_name = SELF.table_name
+           FROM column_conf cc JOIN all_tab_columns atc
+		ON cc.table_owner = atc.owner
+	    AND cc.table_name = atc.table_name
+	    AND cc.column_name = atc.column_name
+          WHERE cc.table_owner = SELF.table_owner
+            AND cc.table_name = SELF.table_name
             AND column_type = 'scd type 2'
             AND data_type = 'DATE';
       EXCEPTION
@@ -298,11 +301,14 @@ AS
       -- get a comma separated list of scd2 attributes that are numbers
       -- use the STRAGG function for this
       BEGIN
-         SELECT stragg( column_name )
+         SELECT stragg( cc.column_name )
            INTO l_scd2_nums
-           FROM column_conf ic JOIN all_tab_columns USING( table_owner, table_name, column_name )
+           FROM column_conf cc JOIN all_tab_columns atc
+		ON cc.table_owner = atc.owner
+	    AND cc.table_name = atc.table_name
+	    AND cc.column_name = atc.column_name
           WHERE table_owner = SELF.table_owner
-            AND table_name = SELF.table_name
+            AND cc.table_name = SELF.table_name
             AND column_type = 'scd type 2'
             AND data_type = 'NUMBER';
       EXCEPTION
@@ -317,11 +323,14 @@ AS
       -- get a comma separated list of scd2 date columns
       -- use the STRAGG function for this
       BEGIN
-         SELECT stragg( column_name )
+         SELECT stragg( cc.column_name )
            INTO l_scd2_chars
-           FROM column_conf ic JOIN all_tab_columns USING( table_owner, table_name, column_name )
-          WHERE table_owner = SELF.table_owner
-            AND table_name = SELF.table_name
+            FROM column_conf cc JOIN all_tab_columns atc
+		ON cc.table_owner = atc.owner
+	    AND cc.table_name = atc.table_name
+	    AND cc.column_name = atc.column_name
+         WHERE table_owner = SELF.table_owner
+            AND cc.table_name = SELF.table_name
             AND column_type = 'scd type 2'
             AND data_type NOT IN( 'DATE', 'NUMBER' );
       EXCEPTION
@@ -525,7 +534,7 @@ AS
       THEN
          -- if it isn't, then create the staging table for temporary use
          o_ev.change_action( 'create staging table' );
-         td_dbutils.build_table( p_source_owner      => SELF.owner,
+         td_dbutils.build_table( p_source_owner      => SELF.table_owner,
                                  p_source_table      => SELF.table_name,
                                  p_owner             => SELF.table_owner,
                                  p_table             => SELF.staging_table,
