@@ -363,6 +363,9 @@ IS
 	    EXECUTE IMMEDIATE 'GRANT SELECT ON DIMENSION_CONF TO '||l_sel_grant;
 	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON DIMENSION_CONF TO '||l_adm_grant;
 
+	    EXECUTE IMMEDIATE 'GRANT SELECT ON MAPPING_CONF TO '||l_sel_grant;
+	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON MAPPING_CONF TO '||l_adm_grant;
+
 	    EXECUTE IMMEDIATE 'GRANT SELECT ON COLUMN_CONF TO '||l_sel_grant;
 	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON COLUMN_CONF TO '||l_adm_grant;
 
@@ -1039,6 +1042,14 @@ IS
 	 END;
 
 	 BEGIN
+	    EXECUTE IMMEDIATE q'|DROP TABLE mapping_conf|';
+	 EXCEPTION
+	    WHEN e_no_tab
+	    THEN
+	    NULL;
+	 END;
+
+	 BEGIN
 	    EXECUTE IMMEDIATE q'|DROP TABLE column_type_list|';
 	 EXCEPTION
 	    WHEN e_no_tab
@@ -1352,11 +1363,52 @@ IS
 	 EXECUTE IMMEDIATE q'|INSERT INTO column_type_list (column_type) VALUES ('expiration date')|';
 	 EXECUTE IMMEDIATE q'|INSERT INTO column_type_list (column_type) VALUES ('current indicator')|';
 	 
+	 -- MAPPING_CONF table
+	 EXECUTE IMMEDIATE
+	 q'|CREATE TABLE mapping_conf
+	 ( 
+	   mapping_name		VARCHAR2(30),
+	   manage_indexes 	VARCHAR2(3),
+	   manage_constraints 	VARCHAR2(3),
+	   exchange_partition 	VARCHAR2(3),
+	   statistics 		VARCHAR2(10),
+	   concurrent 		VARCHAR2(3),
+	   table_owner 		VARCHAR2(61),
+	   table_name 		VARCHAR2(30),
+	   partition_name	VARCHAR2(30),
+	   source_owner 	VARCHAR2(30),
+	   source_object 	VARCHAR2(30),
+	   source_column 	VARCHAR2(30),
+	   index_regexp 	VARCHAR2(30),
+	   index_type 		VARCHAR2(30),
+	   partition_type	VARCHAR2(30),
+	   constraint_regexp 	VARCHAR2(100),
+	   constraint_type 	VARCHAR2(100),
+	   description		VARCHAR2(2000) DEFAULT NULL,
+	   created_user	     	VARCHAR2(30) DEFAULT sys_context('USERENV','SESSION_USER') NOT NULL,
+	   created_dt	     	DATE DEFAULT SYSDATE NOT NULL,
+	   modified_user  	VARCHAR2(30),
+	   modified_dt    	DATE
+	 )|';
+
+	 EXECUTE IMMEDIATE 
+	 q'|ALTER TABLE mapping_conf ADD 
+	 (
+	   CONSTRAINT mapping_conf_pk
+	   PRIMARY KEY
+	   ( mapping_name )
+	   USING INDEX
+	 )|';
+	 
+	 EXECUTE IMMEDIATE 
+	 q'|ALTER TABLE mapping_conf ADD CONSTRAINT mapping_conf_ck1 CHECK (mapping_name=lower(mapping_name))|';
+
+	 
 	 -- DIMENSION_CONF table
 	 EXECUTE IMMEDIATE
 	 q'|CREATE TABLE dimension_conf
 	 ( 
-	   owner		VARCHAR2(30) NOT NULL,
+	   table_owner		VARCHAR2(30) NOT NULL,
 	   table_name		VARCHAR2(30) NOT NULL,
 	   source_owner		VARCHAR2(30) NOT NULL,
 	   source_object	VARCHAR2(30) NOT NULL,
@@ -1378,14 +1430,14 @@ IS
 	   created_dt	     	DATE DEFAULT SYSDATE NOT NULL,
 	   modified_user  	VARCHAR2(30),
 	   modified_dt    	DATE
-	 )|';
-	 
+	 )|';	 
+	 	 
 	 EXECUTE IMMEDIATE 
 	 q'|ALTER TABLE dimension_conf ADD 
 	 (
 	   CONSTRAINT dimension_conf_pk
 	   PRIMARY KEY
-	   ( owner, table_name )
+	   ( table_owner, table_name )
 	   USING INDEX
 	 )|';
 	 
@@ -1401,14 +1453,14 @@ IS
 	 EXECUTE IMMEDIATE 
 	 q'|ALTER TABLE dimension_conf ADD 
 	 ( CONSTRAINT replace_method_ck
-	   CHECK ( upper(staging_owner) = CASE WHEN replace_method = 'rename' THEN upper(owner) ELSE staging_owner end )
+	   CHECK ( upper(staging_owner) = CASE WHEN replace_method = 'rename' THEN upper(table_owner) ELSE staging_owner end )
 	 )|';
 
 	 -- COLUMN_CONF table
 	 EXECUTE IMMEDIATE
 	 q'|CREATE TABLE column_conf
 	 ( 
-	   owner		VARCHAR2(30) NOT NULL,
+	   table_owner		VARCHAR2(30) NOT NULL,
 	   table_name	VARCHAR2(30) NOT NULL,
 	   column_name	VARCHAR2(30) NOT NULL,
 	   column_type	VARCHAR2(30) NOT NULL,
@@ -1423,7 +1475,7 @@ IS
 	 (
 	   CONSTRAINT column_conf_pk
 	   PRIMARY KEY
-	   ( owner, table_name, column_name )
+	   ( table_owner, table_name, column_name )
 	   USING INDEX
 	 )|';
 	 
@@ -1440,9 +1492,9 @@ IS
 	 q'|ALTER TABLE column_conf ADD 
 	 (
 	   CONSTRAINT column_conf_fk2
-	   FOREIGN KEY ( owner, table_name )
+	   FOREIGN KEY ( table_owner, table_name )
 	   REFERENCES dimension_conf  
-	   ( owner, table_name )
+	   ( table_owner, table_name )
 	 )|';
 	 
 	 -- grant the privileges to the repository tables to the roles
@@ -1793,6 +1845,14 @@ IS
 
       BEGIN
 	 EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.DIMENSION_CONF for '||p_schema||'.DIMENSION_CONF';
+      EXCEPTION
+	 WHEN e_same_name
+	 THEN
+	 NULL;
+      END;
+
+      BEGIN
+	 EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.MAPPING_CONF for '||p_schema||'.MAPPING_CONF';
       EXCEPTION
 	 WHEN e_same_name
 	 THEN

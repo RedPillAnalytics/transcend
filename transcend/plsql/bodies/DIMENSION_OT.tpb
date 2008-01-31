@@ -3,25 +3,25 @@ AS
    CONSTRUCTOR FUNCTION dimension_ot( p_owner VARCHAR2, p_table VARCHAR2 )
       RETURN SELF AS RESULT
    AS
-      l_tab_name   VARCHAR2( 61 )                   := UPPER( p_owner || '.' || p_table );
-      l_owner      dimension_conf.owner%TYPE        := UPPER( p_owner );
-      l_table      dimension_conf.table_name%TYPE   := UPPER( p_table );
+      l_tab_name   VARCHAR2( 61 )                    := UPPER( p_owner || '.' || p_table );
+      l_owner      dimension_conf.table_owner%TYPE   := UPPER( p_owner );
+      l_table      dimension_conf.table_name%TYPE    := UPPER( p_table );
       l_load_sql   LONG;
-      o_ev         evolve_ot                        := evolve_ot( p_module => 'dimension_ot' );
+      o_ev         evolve_ot                         := evolve_ot( p_module => 'dimension_ot' );
    BEGIN
       BEGIN
-         SELECT owner, table_name, full_table, source_owner, source_object, full_source,
-                sequence_owner, sequence_name, full_sequence, staging_owner, staging_table,
-                staging_owner || '.' || staging_table full_stage, constant_staging, direct_load, replace_method,
-                STATISTICS, concurrent
-           INTO SELF.owner, SELF.table_name, SELF.full_table, SELF.source_owner, SELF.source_object, SELF.full_source,
-                SELF.sequence_owner, SELF.sequence_name, SELF.full_sequence, SELF.staging_owner, SELF.staging_table,
-                SELF.full_stage, SELF.constant_staging, SELF.direct_load, SELF.replace_method,
-                SELF.STATISTICS, SELF.concurrent
-           FROM ( SELECT owner, table_name, owner || '.' || table_name full_table, source_owner, source_object,
-                         source_owner || '.' || source_object full_source, sequence_owner, sequence_name,
-                         sequence_owner || '.' || sequence_name full_sequence, NVL( staging_owner, owner )
-                                                                                                          staging_owner,
+         SELECT table_owner, table_name, full_table, source_owner, source_object,
+                full_source, sequence_owner, sequence_name, full_sequence, staging_owner,
+                staging_table, staging_owner || '.' || staging_table full_stage, constant_staging, direct_load,
+                replace_method, STATISTICS, concurrent
+           INTO SELF.table_owner, SELF.table_name, SELF.full_table, SELF.source_owner, SELF.source_object,
+                SELF.full_source, SELF.sequence_owner, SELF.sequence_name, SELF.full_sequence, SELF.staging_owner,
+                SELF.staging_table, SELF.full_stage, SELF.constant_staging, SELF.direct_load,
+                SELF.replace_method, SELF.STATISTICS, SELF.concurrent
+           FROM ( SELECT table_owner, table_name, table_owner || '.' || table_name full_table, source_owner,
+                         source_object, source_owner || '.' || source_object full_source, sequence_owner, sequence_name,
+                         sequence_owner || '.' || sequence_name full_sequence,
+                         NVL( staging_owner, table_owner ) staging_owner,
                          NVL( staging_table, 'TD$_TBL' || TO_CHAR( SYSTIMESTAMP, 'mmddyyyyHHMISS' )) staging_table,
                          CASE
                             WHEN staging_table IS NULL
@@ -29,7 +29,7 @@ AS
                             ELSE 'yes'
                          END constant_staging, direct_load, replace_method, STATISTICS, concurrent
                    FROM dimension_conf
-                  WHERE owner = l_owner AND table_name = l_table );
+                  WHERE table_owner = l_owner AND table_name = l_table );
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
@@ -48,7 +48,7 @@ AS
    BEGIN
       evolve_log.log_msg( 'Constant staging: ' || SELF.constant_staging, 5 );
       -- check to see if the dimension table exists
-      td_utils.check_table( p_owner => SELF.owner, p_table => SELF.table_name );
+      td_utils.check_table( p_owner => SELF.table_owner, p_table => SELF.table_name );
       -- check that the source object exists
       td_utils.check_object( p_owner            => SELF.source_owner,
                              p_object           => SELF.source_object,
@@ -82,7 +82,7 @@ AS
          SELECT column_name
            INTO SELF.current_ind_col
            FROM column_conf
-          WHERE owner = SELF.owner AND table_name = SELF.table_name AND column_type = 'current indicator';
+          WHERE table_owner = SELF.table_owner AND table_name = SELF.table_name AND column_type = 'current indicator';
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
@@ -99,7 +99,7 @@ AS
          SELECT column_name
            INTO SELF.expire_dt_col
            FROM column_conf
-          WHERE owner = SELF.owner AND table_name = SELF.table_name AND column_type = 'expiration date';
+          WHERE table_owner = SELF.table_owner AND table_name = SELF.table_name AND column_type = 'expiration date';
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
@@ -116,7 +116,7 @@ AS
          SELECT column_name
            INTO SELF.effect_dt_col
            FROM column_conf
-          WHERE owner = SELF.owner AND table_name = SELF.table_name AND column_type = 'effective date';
+          WHERE table_owner = SELF.table_owner AND table_name = SELF.table_name AND column_type = 'effective date';
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
@@ -133,7 +133,7 @@ AS
       SELECT stragg( column_name )
         INTO SELF.natural_key_list
         FROM column_conf
-       WHERE owner = SELF.owner AND table_name = SELF.table_name AND column_type = 'natural key';
+       WHERE table_owner = SELF.table_owner AND table_name = SELF.table_name AND column_type = 'natural key';
 
       -- NO_DATA_FOUND exception does not work with STRAGG, as returning a null it fine
       -- have to do the logic programiatically
@@ -149,7 +149,7 @@ AS
          SELECT column_name
            INTO SELF.surrogate_key_col
            FROM column_conf
-          WHERE owner = SELF.owner AND table_name = SELF.table_name AND column_type = 'surrogate key';
+          WHERE table_owner = SELF.table_owner AND table_name = SELF.table_name AND column_type = 'surrogate key';
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
@@ -200,11 +200,11 @@ AS
                                   END SOURCE, COUNT( src1 ) cnt1, COUNT( src2 ) cnt2
                              FROM ( SELECT column_name, data_type, data_length, 1 src1, TO_NUMBER( NULL ) src2
                                      FROM all_tab_columns
-                                    WHERE owner = SELF.owner AND table_name = SELF.table_name
+                                    WHERE table_owner = SELF.table_owner AND table_name = SELF.table_name
                                    UNION ALL
                                    SELECT column_name, data_type, data_length, TO_NUMBER( NULL ) src1, 2 src2
                                      FROM all_tab_columns
-                                    WHERE owner = SELF.source_owner AND table_name = SELF.source_object )
+                                    WHERE table_owner = SELF.source_owner AND table_name = SELF.source_object )
                          GROUP BY column_name, data_type, data_length
                            HAVING COUNT( src1 ) <> COUNT( src2 )) src )
           WHERE EXCEPT = 'Y';
@@ -267,7 +267,7 @@ AS
          SELECT char_nvl_default, number_nvl_default, date_nvl_default, stage_key_default
            INTO l_char_nvl, l_num_nvl, l_date_nvl, l_stage_key
            FROM dimension_conf
-          WHERE owner = SELF.owner AND table_name = SELF.table_name;
+          WHERE table_owner = SELF.table_owner AND table_name = SELF.table_name;
       EXCEPTION
          -- if there is no current indicator, that's okay
          -- it's not necessary
@@ -281,9 +281,11 @@ AS
       BEGIN
          SELECT stragg( column_name )
            INTO l_scd2_dates
-           FROM column_conf ic JOIN all_tab_columns USING( owner, table_name, column_name )
-          WHERE owner = SELF.owner AND table_name = SELF.table_name AND column_type = 'scd type 2'
-                AND data_type = 'DATE';
+           FROM column_conf ic JOIN all_tab_columns USING( table_owner, table_name, column_name )
+          WHERE table_owner = SELF.table_owner
+            AND table_name = SELF.table_name
+            AND column_type = 'scd type 2'
+            AND data_type = 'DATE';
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
@@ -298,9 +300,11 @@ AS
       BEGIN
          SELECT stragg( column_name )
            INTO l_scd2_nums
-           FROM column_conf ic JOIN all_tab_columns USING( owner, table_name, column_name )
-          WHERE owner = SELF.owner AND table_name = SELF.table_name AND column_type = 'scd type 2'
-                AND data_type = 'NUMBER';
+           FROM column_conf ic JOIN all_tab_columns USING( table_owner, table_name, column_name )
+          WHERE table_owner = SELF.table_owner
+            AND table_name = SELF.table_name
+            AND column_type = 'scd type 2'
+            AND data_type = 'NUMBER';
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
@@ -315,8 +319,8 @@ AS
       BEGIN
          SELECT stragg( column_name )
            INTO l_scd2_chars
-           FROM column_conf ic JOIN all_tab_columns USING( owner, table_name, column_name )
-          WHERE owner = SELF.owner
+           FROM column_conf ic JOIN all_tab_columns USING( table_owner, table_name, column_name )
+          WHERE table_owner = SELF.table_owner
             AND table_name = SELF.table_name
             AND column_type = 'scd type 2'
             AND data_type NOT IN( 'DATE', 'NUMBER' );
@@ -335,7 +339,7 @@ AS
          SELECT stragg( column_name )
            INTO l_scd1_list
            FROM column_conf ic
-          WHERE ic.owner = SELF.owner AND ic.table_name = SELF.table_name AND ic.column_type = 'scd type 1';
+          WHERE ic.table_owner = SELF.table_owner AND ic.table_name = SELF.table_name AND ic.column_type = 'scd type 1';
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
@@ -347,18 +351,18 @@ AS
       -- construct a list of all scd2 attributes
       -- if any of the variables are null, we may get a ',,' or a ',' at the end or beginning of the list
       -- use the regexp_replaces to remove that
-      l_scd2_list := td_core.format_list( l_scd2_dates || ',' || l_scd2_nums || ',' || l_scd2_chars );
+      l_scd2_list         := td_core.format_list( l_scd2_dates || ',' || l_scd2_nums || ',' || l_scd2_chars );
       evolve_log.log_msg( 'The SCD 2 complete list: ' || l_scd2_list, 5 );
       -- construct a list of all scd attributes
       -- this is a combined list of all scd1 and scd2 attributes
       -- if any of the variables are null, we may get a ',,'
       -- use the regexp_replace to remove that
       -- also need a regexp to remove an extra comma at the end or beginning if they appears
-      l_scd_list := td_core.format_list( l_scd2_list || ',' || l_scd1_list );
+      l_scd_list          := td_core.format_list( l_scd2_list || ',' || l_scd1_list );
       evolve_log.log_msg( 'The SCD complete list: ' || l_scd_list, 5 );
       -- construct the include case statement
       -- this case statement determines which records from the staging table are included as new rows
-      l_include_case :=
+      l_include_case      :=
             'CASE WHEN '
          || SELF.surrogate_key_col
          || ' <> '
@@ -414,7 +418,7 @@ AS
       evolve_log.log_msg( 'The include CASE: ' || l_include_case, 5 );
       -- construct the scd1 analytics list
       -- this is a list of all the LAST_VALUE statements needed for the final statement
-      l_scd1_analytics :=
+      l_scd1_analytics    :=
          REGEXP_REPLACE( l_scd1_list,
                          '(\w+)(,|$)',
                             'last_value(\1) over (partition by '
@@ -425,9 +429,10 @@ AS
                        );
       evolve_log.log_msg( 'The scd1 analytics clause: ' || l_scd1_analytics, 5 );
       -- construct a list of all the columns in the table
-      l_all_col_list := td_core.format_list( SELF.natural_key_list || ',' || l_scd_list || ',' || SELF.effect_dt_col );
+      l_all_col_list      :=
+                          td_core.format_list( SELF.natural_key_list || ',' || l_scd_list || ',' || SELF.effect_dt_col );
       -- now, put the statement together
-      l_sql :=
+      l_sql               :=
             'insert '
          || CASE td_core.get_yn_ind( SELF.direct_load )
                WHEN 'yes'
@@ -522,7 +527,7 @@ AS
          o_ev.change_action( 'create staging table' );
          td_dbutils.build_table( p_source_owner      => SELF.owner,
                                  p_source_table      => SELF.table_name,
-                                 p_owner             => SELF.owner,
+                                 p_owner             => SELF.table_owner,
                                  p_table             => SELF.staging_table,
                                  -- if the data will be replaced in using an exchange, then need the table to not be partitioned
                                  -- everything else can be created just like the source table
@@ -568,7 +573,7 @@ AS
             -- this requires that the dimension table is a single partition table
             td_dbutils.exchange_partition( p_source_owner      => SELF.staging_owner,
                                            p_source_table      => SELF.staging_table,
-                                           p_owner             => SELF.owner,
+                                           p_owner             => SELF.table_owner,
                                            p_table             => SELF.table_name,
                                            p_statistics        => SELF.STATISTICS,
                                            p_concurrent        => SELF.concurrent
@@ -577,7 +582,7 @@ AS
          THEN
             -- switch the two tables using rename
             -- requires that the tables both exist in the same schema
-            td_dbutils.replace_table( p_owner             => SELF.owner,
+            td_dbutils.replace_table( p_owner             => SELF.table_owner,
                                       p_table             => SELF.table_name,
                                       p_source_table      => SELF.staging_table,
                                       p_statistics        => SELF.STATISTICS,
