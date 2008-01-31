@@ -282,9 +282,7 @@ AS
          SELECT stragg( cc.column_name )
            INTO l_scd2_dates
            FROM column_conf cc JOIN all_tab_columns atc
-		ON cc.table_owner = atc.owner
-	    AND cc.table_name = atc.table_name
-	    AND cc.column_name = atc.column_name
+                ON cc.table_owner = atc.owner AND cc.table_name = atc.table_name AND cc.column_name = atc.column_name
           WHERE cc.table_owner = SELF.table_owner
             AND cc.table_name = SELF.table_name
             AND column_type = 'scd type 2'
@@ -304,9 +302,7 @@ AS
          SELECT stragg( cc.column_name )
            INTO l_scd2_nums
            FROM column_conf cc JOIN all_tab_columns atc
-		ON cc.table_owner = atc.owner
-	    AND cc.table_name = atc.table_name
-	    AND cc.column_name = atc.column_name
+                ON cc.table_owner = atc.owner AND cc.table_name = atc.table_name AND cc.column_name = atc.column_name
           WHERE table_owner = SELF.table_owner
             AND cc.table_name = SELF.table_name
             AND column_type = 'scd type 2'
@@ -325,11 +321,9 @@ AS
       BEGIN
          SELECT stragg( cc.column_name )
            INTO l_scd2_chars
-            FROM column_conf cc JOIN all_tab_columns atc
-		ON cc.table_owner = atc.owner
-	    AND cc.table_name = atc.table_name
-	    AND cc.column_name = atc.column_name
-         WHERE table_owner = SELF.table_owner
+           FROM column_conf cc JOIN all_tab_columns atc
+                ON cc.table_owner = atc.owner AND cc.table_name = atc.table_name AND cc.column_name = atc.column_name
+          WHERE table_owner = SELF.table_owner
             AND cc.table_name = SELF.table_name
             AND column_type = 'scd type 2'
             AND data_type NOT IN( 'DATE', 'NUMBER' );
@@ -360,18 +354,18 @@ AS
       -- construct a list of all scd2 attributes
       -- if any of the variables are null, we may get a ',,' or a ',' at the end or beginning of the list
       -- use the regexp_replaces to remove that
-      l_scd2_list         := td_core.format_list( l_scd2_dates || ',' || l_scd2_nums || ',' || l_scd2_chars );
+      l_scd2_list := td_core.format_list( l_scd2_dates || ',' || l_scd2_nums || ',' || l_scd2_chars );
       evolve_log.log_msg( 'The SCD 2 complete list: ' || l_scd2_list, 5 );
       -- construct a list of all scd attributes
       -- this is a combined list of all scd1 and scd2 attributes
       -- if any of the variables are null, we may get a ',,'
       -- use the regexp_replace to remove that
       -- also need a regexp to remove an extra comma at the end or beginning if they appears
-      l_scd_list          := td_core.format_list( l_scd2_list || ',' || l_scd1_list );
+      l_scd_list := td_core.format_list( l_scd2_list || ',' || l_scd1_list );
       evolve_log.log_msg( 'The SCD complete list: ' || l_scd_list, 5 );
       -- construct the include case statement
       -- this case statement determines which records from the staging table are included as new rows
-      l_include_case      :=
+      l_include_case :=
             'CASE WHEN '
          || SELF.surrogate_key_col
          || ' <> '
@@ -427,7 +421,7 @@ AS
       evolve_log.log_msg( 'The include CASE: ' || l_include_case, 5 );
       -- construct the scd1 analytics list
       -- this is a list of all the LAST_VALUE statements needed for the final statement
-      l_scd1_analytics    :=
+      l_scd1_analytics :=
          REGEXP_REPLACE( l_scd1_list,
                          '(\w+)(,|$)',
                             'last_value(\1) over (partition by '
@@ -438,10 +432,9 @@ AS
                        );
       evolve_log.log_msg( 'The scd1 analytics clause: ' || l_scd1_analytics, 5 );
       -- construct a list of all the columns in the table
-      l_all_col_list      :=
-                          td_core.format_list( SELF.natural_key_list || ',' || l_scd_list || ',' || SELF.effect_dt_col );
+      l_all_col_list := td_core.format_list( SELF.natural_key_list || ',' || l_scd_list || ',' || SELF.effect_dt_col );
       -- now, put the statement together
-      l_sql               :=
+      l_sql :=
             'insert '
          || CASE td_core.get_yn_ind( SELF.direct_load )
                WHEN 'yes'
