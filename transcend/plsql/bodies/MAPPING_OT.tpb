@@ -1,13 +1,19 @@
 CREATE OR REPLACE TYPE BODY mapping_ot
 AS
-   CONSTRUCTOR FUNCTION mapping_ot( p_mapping VARCHAR2, p_batch_id NUMBER )
+   CONSTRUCTOR FUNCTION mapping_ot( p_mapping VARCHAR2, p_batch_id NUMBER DEFAULT NULL )
       RETURN SELF AS RESULT
    AS
    BEGIN
       -- store the mapping name
-      SELF.mapping_name    := LOWER( p_mapping );
+      SELF.mapping_name := LOWER( p_mapping );
+
       -- store the batch_id
-      td_inst.batch_id( p_batch_id );
+      -- only want to do this if the value is provided
+      -- otherwise, keep the previous value
+      IF p_batch_id IS NOT NULL
+      THEN
+         td_inst.batch_id( p_batch_id );
+      END IF;
 
       BEGIN
          SELECT manage_indexes, manage_constraints, exchange_partition, STATISTICS,

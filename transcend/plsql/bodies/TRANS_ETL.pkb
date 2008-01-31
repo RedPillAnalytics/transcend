@@ -17,7 +17,7 @@ AS
 
    PROCEDURE end_etl_mapping( p_mapping VARCHAR2 DEFAULT SYS_CONTEXT( 'USERENV', 'ACTION' ))
    AS
-      o_map   mapping_ot := mapping_ot( p_mapping => p_mapping, p_batch_id => p_batch_id );
+      o_map   mapping_ot := mapping_ot( p_mapping => p_mapping );
    BEGIN
       o_map.end_map;
       COMMIT;

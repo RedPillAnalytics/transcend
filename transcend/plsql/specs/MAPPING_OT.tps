@@ -19,7 +19,8 @@ AS OBJECT(
    constraint_regexp    VARCHAR2( 100 ),
    constraint_type      VARCHAR2( 100 ),
    batch_id             NUMBER,
-   CONSTRUCTOR FUNCTION mapping_ot( p_mapping VARCHAR2, p_batch_id NUMBER )
+CONSTRUCTOR FUNCTION mapping_ot( p_mapping VARCHAR2, 
+				 p_batch_id NUMBER DEFAULT NULL )
       RETURN SELF AS RESULT,
    MEMBER PROCEDURE start_map,
    MEMBER PROCEDURE end_map
