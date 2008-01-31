@@ -188,7 +188,7 @@ END;
 
 -- all this really entails is an entry in a configuration table
 -- using T Kyte's PRINT package to make this a little easier to see
-exec print.tbl(q'|select * from dimension_conf where owner='TESTDIM' and table_name='CUSTOMER_DIM'|');
+exec print.tbl(q'|select * from dimension_conf where table_owner='TESTDIM' and table_name='CUSTOMER_DIM'|');
 
 -- now, configure the columns for the dimension
 BEGIN
@@ -204,7 +204,7 @@ END;
 /
 -- a new entry is created in the COLUMN_CONF table for every column of the specified table
 -- if a column is not specified, then it defaults to an SCD of type DEFAULT_SCD_TYPE
-select column_name, column_type from column_conf WHERE owner='TESTDIM' AND table_name='CUSTOMER_DIM';
+select column_name, column_type from column_conf WHERE table_owner='TESTDIM' AND table_name='CUSTOMER_DIM';
 
 -- now, execute the load
 BEGIN
