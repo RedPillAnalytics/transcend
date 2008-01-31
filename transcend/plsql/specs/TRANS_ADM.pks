@@ -47,6 +47,28 @@ IS
       p_mode               VARCHAR2 DEFAULT 'upsert'
    );
 
+   PROCEDURE configure_mapping(
+      p_mapping             VARCHAR2,
+      p_owner               VARCHAR2 DEFAULT NULL,
+      p_table               VARCHAR2 DEFAULT NULL,
+      p_partname            VARCHAR2 DEFAULT NULL,
+      p_indexes             VARCHAR2 DEFAULT 'no',
+      p_constraints         VARCHAR2 DEFAULT 'no',
+      p_source_owner        VARCHAR2 DEFAULT NULL,
+      p_source_object       VARCHAR2 DEFAULT NULL,
+      p_source_column       VARCHAR2 DEFAULT NULL,
+      p_exchange            VARCHAR2 DEFAULT 'no',
+      p_statistics          VARCHAR2 DEFAULT 'transfer',
+      p_concurrent          VARCHAR2 DEFAULT 'no',
+      p_index_regexp        VARCHAR2 DEFAULT NULL,
+      p_index_type          VARCHAR2 DEFAULT NULL,
+      p_part_type           VARCHAR2 DEFAULT NULL,
+      p_constraint_regexp   VARCHAR2 DEFAULT NULL,
+      p_constraint_type     VARCHAR2 DEFAULT NULL,
+      p_description         VARCHAR2 DEFAULT NULL,
+      p_mode                VARCHAR2 DEFAULT 'upsert'
+   );
+
    PROCEDURE configure_dim(
       p_owner              VARCHAR2,
       p_table              VARCHAR2,

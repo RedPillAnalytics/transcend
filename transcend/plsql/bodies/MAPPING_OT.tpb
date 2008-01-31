@@ -32,9 +32,42 @@ AS
             evolve_log.raise_err( 'no_mapping', p_mapping );
       END;
 
+      -- confirm the properties of the mapping
+      confirm_mapping;
       td_inst.batch_id( p_batch_id );
       RETURN;
    END mapping_ot;
+   MEMBER PROCEDURE confirm_mapping
+   IS
+      o_ev   evolve_ot := evolve_ot( p_module => 'confirm_mapping' );
+   BEGIN
+      -- check to see that the specified table exists
+      CASE
+         WHEN SELF.table_name IS NOT NULL
+         THEN
+            td_utils.check_table( p_owner => SELF.table_owner, p_table => SELF.table_name );
+         WHEN SELF.source_object IS NOT NULL AND td_core.is_true( SELF.exchange_partition )
+         THEN
+            td_utils.check_table( p_owner => SELF.table_owner, p_table => SELF.table_name, p_partitioned => 'yes' );
+            td_utils.check_object( p_owner            => SELF.source_owner,
+                                   p_object           => SELF.source_object,
+                                   p_object_type      => 'table'
+                                 );
+         WHEN SELF.source_object IS NOT NULL AND NOT td_core.is_true( SELF.exchange_partition )
+         THEN
+            td_utils.check_table( p_owner => SELF.table_owner, p_table => SELF.table_name, p_partitioned => 'yes' );
+            td_utils.check_object( p_owner            => SELF.source_owner,
+                                   p_object           => SELF.source_object,
+                                   p_object_type      => 'view|table'
+                                 );
+         ELSE
+            NULL;
+      END CASE;
+
+      evolve_log.log_msg( 'Mapping confirmation completed successfully', 5 );
+      -- reset the evolve_object
+      o_ev.clear_app_info;
+   END confirm_mapping;
    MEMBER PROCEDURE start_map
    AS
       o_ev   evolve_ot := evolve_ot( p_module => 'etl_mapping', p_action => SELF.mapping_name );

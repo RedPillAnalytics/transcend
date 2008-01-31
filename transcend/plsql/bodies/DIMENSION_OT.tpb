@@ -200,11 +200,11 @@ AS
                                   END SOURCE, COUNT( src1 ) cnt1, COUNT( src2 ) cnt2
                              FROM ( SELECT column_name, data_type, data_length, 1 src1, TO_NUMBER( NULL ) src2
                                      FROM all_tab_columns
-                                    WHERE table_owner = SELF.table_owner AND table_name = SELF.table_name
+                                    WHERE owner = SELF.table_owner AND table_name = SELF.table_name
                                    UNION ALL
                                    SELECT column_name, data_type, data_length, TO_NUMBER( NULL ) src1, 2 src2
                                      FROM all_tab_columns
-                                    WHERE table_owner = SELF.source_owner AND table_name = SELF.source_object )
+                                    WHERE owner = SELF.source_owner AND table_name = SELF.source_object )
                          GROUP BY column_name, data_type, data_length
                            HAVING COUNT( src1 ) <> COUNT( src2 )) src )
           WHERE EXCEPT = 'Y';

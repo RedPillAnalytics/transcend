@@ -361,6 +361,128 @@ IS
       END IF;
    END configure_extract;
 
+   PROCEDURE configure_mapping(
+      p_mapping             VARCHAR2,
+      p_owner               VARCHAR2 DEFAULT NULL,
+      p_table               VARCHAR2 DEFAULT NULL,
+      p_partname            VARCHAR2 DEFAULT NULL,
+      p_indexes             VARCHAR2 DEFAULT 'no',
+      p_constraints         VARCHAR2 DEFAULT 'no',
+      p_source_owner        VARCHAR2 DEFAULT NULL,
+      p_source_object       VARCHAR2 DEFAULT NULL,
+      p_source_column       VARCHAR2 DEFAULT NULL,
+      p_exchange            VARCHAR2 DEFAULT 'no',
+      p_statistics          VARCHAR2 DEFAULT 'transfer',
+      p_concurrent          VARCHAR2 DEFAULT 'no',
+      p_index_regexp        VARCHAR2 DEFAULT NULL,
+      p_index_type          VARCHAR2 DEFAULT NULL,
+      p_part_type           VARCHAR2 DEFAULT NULL,
+      p_constraint_regexp   VARCHAR2 DEFAULT NULL,
+      p_constraint_type     VARCHAR2 DEFAULT NULL,
+      p_description         VARCHAR2 DEFAULT NULL,
+      p_mode                VARCHAR2 DEFAULT 'upsert'
+   )
+   IS
+      l_num_rows   NUMBER;
+      o_map        mapping_ot;
+      e_dup_conf   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_dup_conf, -1 );
+   BEGIN
+      IF LOWER( p_mode ) IN( 'upsert', 'update' )
+      THEN
+         evolve_log.log_msg( 'Updating configuration', 5 );
+
+         -- first try to update an existing configuration
+         UPDATE mapping_conf
+            SET mapping_name = LOWER( NVL( p_mapping, mapping_name )),
+                table_owner = UPPER( NVL( p_owner, table_owner )),
+                table_name = UPPER( NVL( p_table, table_name )),
+                partition_name = UPPER( NVL( p_partname, partition_name )),
+                manage_indexes = LOWER( NVL( p_indexes, manage_indexes )),
+                manage_constraints = LOWER( NVL( p_constraints, manage_constraints )),
+                source_owner = UPPER( NVL( p_source_owner, source_owner )),
+                source_object = UPPER( NVL( p_source_object, source_object )),
+                source_column = UPPER( NVL( p_source_column, source_column )),
+                exchange_partition = LOWER( NVL( p_exchange, exchange_partition )),
+                STATISTICS = LOWER( NVL( p_statistics, STATISTICS )),
+                concurrent = LOWER( NVL( p_concurrent, concurrent )),
+                index_regexp = NVL( p_index_regexp, index_regexp ),
+                index_type = NVL( p_index_type, index_type ),
+                partition_type = NVL( p_part_type, partition_type ),
+                constraint_regexp = NVL( p_constraint_regexp, constraint_regexp ),
+                constraint_type = NVL( p_constraint_type, constraint_type ),
+                description = NVL( p_description, description ),
+                modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
+                modified_dt = SYSDATE
+          WHERE mapping_name = LOWER( p_mapping );
+
+         -- get the SQL rowcount
+         l_num_rows := SQL%ROWCOUNT;
+      END IF;
+
+      -- updating a current config has failed, or an insert was specified
+      -- in this case, insert a new record
+      IF ( l_num_rows = 0 AND LOWER( p_mode ) = 'upsert' ) OR LOWER( p_mode ) = 'insert'
+      THEN
+         evolve_log.log_msg( 'Inserting configuration', 5 );
+
+         CASE
+            WHEN p_mapping IS NULL
+            THEN
+               evolve_log.raise_err( 'parm_req', 'P_MAPPING' );
+            ELSE
+               NULL;
+         END CASE;
+
+         BEGIN
+            INSERT INTO mapping_conf
+                        ( mapping_name, table_owner, table_name, partition_name,
+                          manage_indexes, manage_constraints, source_owner,
+                          source_object, source_column, exchange_partition,
+                          STATISTICS, concurrent, index_regexp,
+                          index_type, partition_type, constraint_regexp, constraint_type, description
+                        )
+                 VALUES ( LOWER( p_mapping ), UPPER( p_owner ), UPPER( p_table ), UPPER( p_partname ),
+                          LOWER( NVL( p_indexes, 'no' )), LOWER( NVL( p_constraints, 'no' )), UPPER( p_source_owner ),
+                          UPPER( p_source_object ), UPPER( p_source_column ), LOWER( NVL( p_exchange, 'no' )),
+                          LOWER( NVL( p_statistics, 'transfer' )), LOWER( NVL( p_concurrent, 'no' )), p_index_regexp,
+                          p_index_type, p_part_type, p_constraint_regexp, p_constraint_type, p_description
+                        );
+
+            -- get the SQL rowcount
+            l_num_rows := SQL%ROWCOUNT;
+         EXCEPTION
+            WHEN e_dup_conf
+            THEN
+               evolve_log.raise_err( 'dup_conf' );
+         END;
+      END IF;
+
+      IF LOWER( p_mode ) = 'delete'
+      THEN
+         -- if a delete is specifically requested, then do a delete
+         DELETE FROM mapping_conf
+               WHERE mapping_name = LOWER( p_mapping );
+
+         -- get the SQL rowcount
+         l_num_rows := SQL%ROWCOUNT;
+      ELSE
+              -- as long as P_MODE wasn't 'delete', then we should validate the new structure of the dimension
+              -- now use the dimension object to validate the new structure
+         -- just constructing the object calls the CONFIRM_OBJECTS procedure
+         BEGIN
+            NULL;
+            o_map := mapping_ot( p_mapping => p_mapping );
+         END;
+      END IF;
+
+      -- if we still have not affected any records, then there's a problem
+      IF l_num_rows = 0
+      THEN
+         evolve_log.raise_err( 'no_rep_obj' );
+      END IF;
+   END configure_mapping;
+
    PROCEDURE configure_dim(
       p_owner              VARCHAR2,
       p_table              VARCHAR2,
@@ -587,8 +709,8 @@ IS
                               THEN 'scd type 1'
                            ELSE 'scd type 2'
                         END column_type
-                   FROM all_tab_columns atc JOIN dimension_conf dc
-			ON atc.owner = dc.table_owner AND atc.table_name = dc.table_name
+                  FROM all_tab_columns atc JOIN dimension_conf dc
+                       ON atc.owner = dc.table_owner AND atc.table_name = dc.table_name
                  WHERE table_owner = UPPER( p_owner ) AND dc.table_name = UPPER( p_table )) s
          ON (t.table_owner = s.table_owner AND t.table_name = s.table_name AND t.column_name = s.column_name )
          WHEN NOT MATCHED THEN
