@@ -360,140 +360,9 @@ IS
          evolve_log.raise_err( 'no_rep_obj' );
       END IF;
    END configure_extract;
-   
-   PROCEDURE configure_extract(
-      p_file_group         VARCHAR2,
-      p_file_label         VARCHAR2,
-      p_filename           VARCHAR2 DEFAULT NULL,
-      p_object_owner       VARCHAR2 DEFAULT NULL,
-      p_object_name        VARCHAR2 DEFAULT NULL,
-      p_directory          VARCHAR2 DEFAULT NULL,
-      p_arch_directory     VARCHAR2 DEFAULT NULL,
-      p_min_bytes          NUMBER DEFAULT NULL,
-      p_max_bytes          NUMBER DEFAULT NULL,
-      p_file_datestamp     VARCHAR2 DEFAULT NULL,
-      p_baseurl            VARCHAR2 DEFAULT NULL,
-      p_passphrase         VARCHAR2 DEFAULT NULL,
-      p_dateformat         VARCHAR2 DEFAULT NULL,
-      p_timestampformat    VARCHAR2 DEFAULT NULL,
-      p_delimiter          VARCHAR2 DEFAULT NULL,
-      p_quotechar          VARCHAR2 DEFAULT NULL,
-      p_headers            VARCHAR2 DEFAULT NULL,
-      p_file_description   VARCHAR2 DEFAULT NULL,
-      p_mode               VARCHAR2 DEFAULT 'upsert'
-   )
-   IS
-      l_owner      all_external_tables.owner%TYPE;
-      l_object     all_objects.object_name%TYPE;
-      l_dir_path   all_directories.directory_path%TYPE;
-      l_obj_name   VARCHAR2( 61 )                        := p_object_owner || '.' || p_object_name;
-      e_dup_conf   EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_dup_conf, -1 );
-   BEGIN
-      -- do checks to make sure all the provided information is legitimate
-      IF NOT p_mode = 'delete'
-      THEN
-         -- check to see if the directories are legitimate
-         -- if they aren't, the GET_DIR_PATH function raises an error
-         IF p_arch_directory IS NOT NULL
-         THEN
-            l_dir_path := td_utils.get_dir_path( p_arch_directory );
-         END IF;
 
-         IF p_directory IS NOT NULL
-         THEN
-            l_dir_path := td_utils.get_dir_path( p_directory );
-         END IF;
-      END IF;
-
-      -- this is the default method... update if it exists or insert it
-      IF LOWER( p_mode ) IN( 'upsert', 'update' )
-      THEN
-         UPDATE files_conf
-            SET file_description = NVL( p_file_description, file_description ),
-                object_owner = UPPER( NVL( p_object_owner, object_owner )),
-                object_name = UPPER( NVL( p_object_name, object_name )),
-                DIRECTORY = UPPER( NVL( p_directory, DIRECTORY )),
-                filename = NVL( p_filename, filename ),
-                arch_directory = UPPER( NVL( p_arch_directory, arch_directory )),
-                min_bytes = NVL( p_min_bytes, min_bytes ),
-                max_bytes = NVL( p_max_bytes, max_bytes ),
-                file_datestamp = NVL( p_file_datestamp, file_datestamp ),
-                baseurl = NVL( p_baseurl, baseurl ),
-                passphrase = NVL( p_passphrase, passphrase ),
-                DATEFORMAT = NVL( p_dateformat, DATEFORMAT ),
-                timestampformat = NVL( p_timestampformat, timestampformat ),
-                delimiter = NVL( p_delimiter, delimiter ),
-                quotechar = NVL( p_quotechar, quotechar ),
-                headers = NVL( p_headers, headers ),
-                modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
-                modified_dt = SYSDATE
-          WHERE file_label = LOWER( p_file_label ) AND file_group = LOWER( p_file_group );
-      END IF;
-
-      -- if the update was unsuccessful above, or an insert it specifically requested, then do an insert
-      IF ( SQL%ROWCOUNT = 0 AND LOWER( p_mode ) = 'upsert' ) OR LOWER( p_mode ) = 'insert'
-      THEN
-         CASE
-            WHEN p_filename IS NULL
-            THEN
-               evolve_log.raise_err( 'parm_req', 'P_FILENAME' );
-            WHEN p_object_owner IS NULL
-            THEN
-               evolve_log.raise_err( 'parm_req', 'P_OBJECT_OWNER' );
-            WHEN p_object_name IS NULL
-            THEN
-               evolve_log.raise_err( 'parm_req', 'P_OBJECT_NAME' );
-            WHEN p_directory IS NULL
-            THEN
-               evolve_log.raise_err( 'parm_req', 'P_DIRECTORY' );
-            WHEN p_arch_directory IS NULL
-            THEN
-               evolve_log.raise_err( 'parm_req', 'P_ARCH_DIRECTORY' );
-            ELSE
-               NULL;
-         END CASE;
-
-         BEGIN
-            INSERT INTO files_conf
-                        ( file_label, file_group, file_type, file_description, object_owner,
-                          object_name, DIRECTORY, filename, arch_directory,
-                          min_bytes, max_bytes, file_datestamp, baseurl, passphrase,
-                          DATEFORMAT,
-                          timestampformat, delimiter,
-                          quotechar, headers
-                        )
-                 VALUES ( p_file_label, p_file_group, 'extract', p_file_description, UPPER( p_object_owner ),
-                          UPPER( p_object_name ), UPPER( p_directory ), p_filename, UPPER( p_arch_directory ),
-                          NVL( p_min_bytes, 0 ), NVL( p_max_bytes, 0 ), p_file_datestamp, p_baseurl, p_passphrase,
-                          NVL( p_dateformat, 'mm/dd/yyyy hh:mi:ss am' ),
-                          NVL( p_timestampformat, 'mm/dd/yyyy hh:mi:ss:x:ff am' ), NVL( p_delimiter, ',' ),
-                          p_quotechar, NVL( p_headers, 'yes' )
-                        );
-         EXCEPTION
-            WHEN e_dup_conf
-            THEN
-               evolve_log.raise_err( 'dup_conf' );
-         END;
-      END IF;
-
-      IF LOWER( p_mode ) = 'delete'
-      THEN
-         -- if a delete is specifically requested, then do a delete
-         DELETE FROM files_conf
-               WHERE file_label = LOWER( p_file_label ) AND file_group = LOWER( p_file_group );
-      END IF;
-
-      -- if we still have not affected any records, then there's a problem
-      IF SQL%ROWCOUNT = 0
-      THEN
-         evolve_log.raise_err( 'no_rep_obj' );
-      END IF;
-   END configure_extract;
-   
-
-   PROCEDURE configure_mapping(
-      p_mapping            VARCHAR2,
+   PROCEDURE configure_dim(
+      p_owner              VARCHAR2,
       p_table              VARCHAR2,
       p_source_owner       VARCHAR2 DEFAULT NULL,
       p_source_object      VARCHAR2 DEFAULT NULL,
@@ -521,7 +390,7 @@ IS
 
          -- first try to update an existing configuration
          UPDATE dimension_conf
-            SET owner = UPPER( NVL( p_owner, owner )),
+            SET table_owner = UPPER( NVL( p_owner, table_owner )),
                 table_name = UPPER( NVL( p_table, table_name )),
                 source_owner = UPPER( NVL( p_source_owner, source_owner )),
                 source_object = UPPER( NVL( p_source_object, source_object )),
@@ -537,7 +406,7 @@ IS
                 description = NVL( p_description, description ),
                 modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
                 modified_dt = SYSDATE
-          WHERE owner = UPPER( p_owner ) AND table_name = UPPER( p_table );
+          WHERE table_owner = UPPER( p_owner ) AND table_name = UPPER( p_table );
 
          -- get the SQL rowcount
          l_num_rows := SQL%ROWCOUNT;
@@ -574,7 +443,7 @@ IS
 
          BEGIN
             INSERT INTO dimension_conf
-                        ( owner, table_name, source_owner, source_object,
+                        ( table_owner, table_name, source_owner, source_object,
                           sequence_owner, sequence_name, staging_owner,
                           staging_table, default_scd_type, direct_load,
                           replace_method, STATISTICS,
@@ -600,10 +469,10 @@ IS
       THEN
          -- if a delete is specifically requested, then do a delete
          DELETE FROM column_conf
-               WHERE owner = UPPER( p_owner ) AND table_name = UPPER( p_table );
+               WHERE table_owner = UPPER( p_owner ) AND table_name = UPPER( p_table );
 
          DELETE FROM dimension_conf
-               WHERE owner = UPPER( p_owner ) AND table_name = UPPER( p_table );
+               WHERE table_owner = UPPER( p_owner ) AND table_name = UPPER( p_table );
 
          -- get the SQL rowcount
          l_num_rows := SQL%ROWCOUNT;
@@ -622,7 +491,7 @@ IS
       THEN
          evolve_log.raise_err( 'no_rep_obj' );
       END IF;
-   END configure_mapping;
+   END configure_dim;
 
    PROCEDURE configure_dim_cols(
       p_owner           VARCHAR2,
@@ -701,29 +570,30 @@ IS
                                ON atc.column_name = s.COLUMN_VALUE
                                )
                  WHERE owner = UPPER( p_owner ) AND table_name = UPPER( p_table )) s
-         ON (t.owner = s.owner AND t.table_name = s.table_name AND t.column_name = s.column_name )
+         ON (t.table_owner = s.owner AND t.table_name = s.table_name AND t.column_name = s.column_name )
          WHEN MATCHED THEN
             UPDATE
                SET t.column_type = s.column_type, t.modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
                    t.modified_dt = SYSDATE
                WHERE s.column_type <> t.column_type
          WHEN NOT MATCHED THEN
-            INSERT( t.owner, t.table_name, t.column_name, t.column_type )
+            INSERT( t.table_owner, t.table_name, t.column_name, t.column_type )
             VALUES( s.owner, s.table_name, s.column_name, s.column_type );
       -- do the second merge to write any columns that have been left off
       MERGE INTO column_conf t
-         USING ( SELECT owner, table_name, column_name,
+         USING ( SELECT table_owner, dc.table_name, column_name,
                         CASE default_scd_type
                            WHEN 1
                               THEN 'scd type 1'
                            ELSE 'scd type 2'
                         END column_type
-                  FROM all_tab_columns JOIN dimension_conf USING( owner, table_name )
-                 WHERE owner = UPPER( p_owner ) AND table_name = UPPER( p_table )) s
-         ON (t.owner = s.owner AND t.table_name = s.table_name AND t.column_name = s.column_name )
+                   FROM all_tab_columns atc JOIN dimension_conf dc
+			ON atc.owner = dc.table_owner AND atc.table_name = dc.table_name
+                 WHERE table_owner = UPPER( p_owner ) AND dc.table_name = UPPER( p_table )) s
+         ON (t.table_owner = s.table_owner AND t.table_name = s.table_name AND t.column_name = s.column_name )
          WHEN NOT MATCHED THEN
-            INSERT( t.owner, t.table_name, t.column_name, t.column_type )
-            VALUES( s.owner, s.table_name, s.column_name, s.column_type );
+            INSERT( t.table_owner, t.table_name, t.column_name, t.column_type )
+            VALUES( s.table_owner, s.table_name, s.column_name, s.column_type );
       -- confirm the dimension columns
       o_dim.confirm_dim_cols;
    END configure_dim_cols;
