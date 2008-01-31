@@ -12,7 +12,6 @@ AS
       WHEN OTHERS
       THEN
          evolve_log.log_err;
-         o_ev.clear_app_info;
          RAISE;
    END start_etl_mapping;
 
@@ -22,7 +21,6 @@ AS
    BEGIN
       o_map.end_map;
       COMMIT;
-      evolve_log.log_msg( 'Ending ETL mapping' );
    END end_etl_mapping;
 
    PROCEDURE truncate_table( p_owner VARCHAR2, p_table VARCHAR2, p_reuse VARCHAR2 DEFAULT 'no' )
