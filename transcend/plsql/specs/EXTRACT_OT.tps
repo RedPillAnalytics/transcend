@@ -9,6 +9,7 @@ CREATE OR REPLACE TYPE extract_ot UNDER file_ot(
       p_file_label   VARCHAR2
    )
       RETURN SELF AS RESULT,
+   MEMBER PROCEDURE verify,
    MEMBER PROCEDURE process
 )
 ;

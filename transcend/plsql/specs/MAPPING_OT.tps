@@ -10,7 +10,7 @@ AS OBJECT(
    source_owner         VARCHAR2( 30 ),
    source_object        VARCHAR2( 30 ),
    source_column        VARCHAR2( 30 ),
-   exchange_partition   VARCHAR2( 3 ),
+   replace_method       VARCHAR2( 10 ),
    STATISTICS           VARCHAR2( 10 ),
    concurrent           VARCHAR2( 3 ),
    index_regexp         VARCHAR2( 30 ),

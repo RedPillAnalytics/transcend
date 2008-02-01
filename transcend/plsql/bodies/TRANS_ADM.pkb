@@ -68,8 +68,8 @@ IS
       p_file_group         VARCHAR2,
       p_file_label         VARCHAR2,
       p_filename           VARCHAR2 DEFAULT NULL,
-      p_table_owner        VARCHAR2 DEFAULT NULL,
-      p_table_name         VARCHAR2 DEFAULT NULL,
+      p_owner              VARCHAR2 DEFAULT NULL,
+      p_table              VARCHAR2 DEFAULT NULL,
       p_arch_directory     VARCHAR2 DEFAULT NULL,
       p_min_bytes          NUMBER DEFAULT NULL,
       p_max_bytes          NUMBER DEFAULT NULL,
@@ -92,45 +92,47 @@ IS
       l_dir_path    all_directories.directory_path%TYPE;
       l_directory   all_external_tables.default_directory_name%TYPE;
       l_ext_tab     all_external_tables.table_name%TYPE;
+      l_no_conf     BOOLEAN;
       e_dup_conf    EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_conf, -1 );
+      o_ev          evolve_ot                                         := evolve_ot( p_module => 'configure_feed' );
    BEGIN
       CASE
-         WHEN    ( p_table_owner IS NULL AND p_table_name IS NOT NULL )
-              OR ( p_table_owner IS NOT NULL AND p_table_name IS NULL )
+         WHEN ( p_owner IS NULL AND p_table IS NOT NULL ) OR( p_owner IS NOT NULL AND p_table IS NULL )
          THEN
-            evolve_log.raise_err( 'parms_comb', 'P_TABLE_OWNER and P_TABLE_NAME' );
-         WHEN p_table_owner IS NOT NULL
+            evolve_log.raise_err( 'parms_comb', 'P_OWNER and P_TABLE' );
+         WHEN p_table IS NOT NULL
          THEN
-            -- table information is provided, so use that
-            l_owner := UPPER( p_table_owner );
-            l_table := UPPER( p_table_name );
+            -- directory information is not configured by the user... instead, it is pulled from the external table
+            -- but I don't want to make the configuring user have to provide the owner and name of the table for every configuration
+            -- if it's provided, we will use that to get the directory
+            -- if it isn't provided, then I will pull that information, and use it to get the directory.
+            l_owner := UPPER( p_owner );
+            l_table := UPPER( p_table );
             -- now check the external table
-            td_utils.check_table( p_owner => p_table_owner, p_table => p_table_name, p_external => 'yes' );
-         WHEN p_table_owner IS NULL
+            td_utils.check_table( p_owner => p_owner, p_table => p_table, p_external => 'yes' );
+         WHEN p_table IS NULL
          THEN
-            -- the object_owner is null, so we need to pull the table information from the configuration
-            SELECT UPPER( object_owner ), UPPER( object_name )
-              INTO l_owner, l_table
-              FROM files_conf
-             WHERE file_group = LOWER( p_file_group ) AND file_label = LOWER( p_file_label );
+            evolve_log.log_msg( 'P_TABLE is NULL', 5 );
+
+            -- the object_name is null, so we need to pull the table information from the configuration
+            BEGIN
+               SELECT UPPER( object_owner ), UPPER( object_name )
+                 INTO l_owner, l_table
+                 FROM files_conf
+                WHERE file_group = LOWER( p_file_group ) AND file_label = LOWER( p_file_label );
+            EXCEPTION
+               WHEN NO_DATA_FOUND
+               THEN
+                  l_no_conf := TRUE;
+            END;
+
+            evolve_log.log_msg( 'Values for L_OWNER and L_TABLE: ' || l_owner || ',' || l_table, 5 );
       END CASE;
 
-      -- do checks to make sure all the provided information is legitimate
+      -- as long as this is not a delete, I need the directory name
       IF NOT p_mode = 'delete'
       THEN
-         -- check to see if the directories are legitimate
-         -- if they aren't, the GET_DIR_PATH function raises an error
-         IF p_arch_directory IS NOT NULL
-         THEN
-            l_dir_path := td_utils.get_dir_path( p_arch_directory );
-         END IF;
-
-         IF p_source_directory IS NOT NULL
-         THEN
-            l_dir_path := td_utils.get_dir_path( p_source_directory );
-         END IF;
-
          -- get the directory from the external table
          BEGIN
             SELECT default_directory_name
@@ -140,8 +142,134 @@ IS
          EXCEPTION
             WHEN NO_DATA_FOUND
             THEN
-               evolve_log.raise_err( 'no_ext_tab', UPPER( l_owner || '.' || l_table ));
+               IF l_no_conf
+               THEN
+                  NULL;
+               ELSE
+                  evolve_log.raise_err( 'no_ext_tab', UPPER( l_owner || '.' || l_table ));
+               END IF;
          END;
+      END IF;
+
+      -- this step is used to nullify records when needed
+      IF LOWER( p_mode ) = 'nullify'
+      THEN
+         -- this is a list of the required parameters
+         CASE
+            WHEN p_owner = 'NULL'
+            THEN
+               evolve_log.raise_err( 'parm_req', 'P_OWNER' );
+            WHEN p_table = 'NULL'
+            THEN
+               evolve_log.raise_err( 'parm_req', 'P_TABLE' );
+            WHEN p_arch_directory = 'NULL'
+            THEN
+               evolve_log.raise_err( 'parm_req', 'P_ARCH_DIRECTORY' );
+            WHEN p_source_directory = 'NULL'
+            THEN
+               evolve_log.raise_err( 'parm_req', 'P_SOURCE_DIRECTORY' );
+            WHEN p_source_regexp = 'NULL'
+            THEN
+               evolve_log.raise_err( 'parm_req', 'P_SOURCE_REGEXP' );
+            ELSE
+               NULL;
+         END CASE;
+
+         UPDATE files_conf
+            SET file_description =
+                   CASE
+                      WHEN p_file_description IS NULL
+                         THEN file_description
+                      WHEN p_file_description = 'NULL'
+                         THEN NULL
+                      ELSE file_description
+                   END,
+                filename = CASE
+                             WHEN p_filename IS NULL
+                                THEN filename
+                             WHEN p_filename = 'NULL'
+                                THEN NULL
+                             ELSE filename
+                          END,
+                min_bytes = CASE
+                              WHEN p_min_bytes IS NULL
+                                 THEN min_bytes
+                              WHEN p_min_bytes = 'NULL'
+                                 THEN NULL
+                              ELSE min_bytes
+                           END,
+                max_bytes = CASE
+                              WHEN p_max_bytes IS NULL
+                                 THEN max_bytes
+                              WHEN p_max_bytes = 'NULL'
+                                 THEN NULL
+                              ELSE max_bytes
+                           END,
+                file_datestamp =
+                   CASE
+                      WHEN p_file_datestamp IS NULL
+                         THEN file_datestamp
+                      WHEN p_file_datestamp = 'NULL'
+                         THEN NULL
+                      ELSE file_datestamp
+                   END,
+                baseurl = CASE
+                            WHEN p_baseurl IS NULL
+                               THEN baseurl
+                            WHEN p_baseurl = 'NULL'
+                               THEN NULL
+                            ELSE baseurl
+                         END,
+                passphrase =
+                          CASE
+                             WHEN p_passphrase IS NULL
+                                THEN passphrase
+                             WHEN p_passphrase = 'NULL'
+                                THEN NULL
+                             ELSE passphrase
+                          END,
+                regexp_options =
+                   CASE
+                      WHEN p_regexp_options IS NULL
+                         THEN regexp_options
+                      WHEN p_regexp_options = 'NULL'
+                         THEN NULL
+                      ELSE regexp_options
+                   END,
+                source_policy =
+                   CASE
+                      WHEN p_source_policy IS NULL
+                         THEN source_policy
+                      WHEN p_source_policy = 'NULL'
+                         THEN NULL
+                      ELSE source_policy
+                   END,
+                required = CASE
+                             WHEN p_required IS NULL
+                                THEN required
+                             WHEN p_required = 'NULL'
+                                THEN NULL
+                             ELSE required
+                          END,
+                delete_source =
+                   CASE
+                      WHEN p_delete_source IS NULL
+                         THEN delete_source
+                      WHEN p_delete_source = 'NULL'
+                         THEN NULL
+                      ELSE delete_source
+                   END,
+                reject_limit =
+                   CASE
+                      WHEN p_reject_limit IS NULL
+                         THEN reject_limit
+                      WHEN p_reject_limit = 'NULL'
+                         THEN NULL
+                      ELSE reject_limit
+                   END,
+                modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
+                modified_dt = SYSDATE
+          WHERE file_label = LOWER( p_file_label ) AND file_group = LOWER( p_file_group );
       END IF;
 
       -- this is the default method... update if it exists or insert it
@@ -149,8 +277,8 @@ IS
       THEN
          UPDATE files_conf
             SET file_description = NVL( p_file_description, file_description ),
-                object_owner = UPPER( NVL( p_table_owner, object_owner )),
-                object_name = UPPER( NVL( p_table_name, object_name )),
+                object_owner = UPPER( NVL( p_owner, object_owner )),
+                object_name = UPPER( NVL( p_table, object_name )),
                 DIRECTORY = l_directory,
                 filename = NVL( p_filename, filename ),
                 arch_directory = UPPER( NVL( p_arch_directory, arch_directory )),
@@ -174,13 +302,14 @@ IS
       -- if the update was unsuccessful above, or an insert it specifically requested, then do an insert
       IF ( SQL%ROWCOUNT = 0 AND LOWER( p_mode ) = 'upsert' ) OR LOWER( p_mode ) = 'insert'
       THEN
+         -- this is a list of the required parameters
          CASE
-            WHEN p_table_owner IS NULL
+            WHEN p_owner IS NULL
             THEN
-               evolve_log.raise_err( 'parm_req', 'P_TABLE_OWNER' );
-            WHEN p_table_name IS NULL
+               evolve_log.raise_err( 'parm_req', 'P_OWNER' );
+            WHEN p_table IS NULL
             THEN
-               evolve_log.raise_err( 'parm_req', 'P_TABLE_NAME' );
+               evolve_log.raise_err( 'parm_req', 'P_TABLE' );
             WHEN p_arch_directory IS NULL
             THEN
                evolve_log.raise_err( 'parm_req', 'P_ARCH_DIRECTORY' );
@@ -196,16 +325,16 @@ IS
 
          BEGIN
             INSERT INTO files_conf
-                        ( file_label, file_group, file_type, file_description, object_owner,
-                          object_name, DIRECTORY, filename, arch_directory,
-                          min_bytes, max_bytes, file_datestamp, baseurl, passphrase,
+                        ( file_label, file_group, file_type, file_description, object_owner, object_name,
+                          DIRECTORY, filename, arch_directory, min_bytes,
+                          max_bytes, file_datestamp, baseurl, passphrase,
                           source_directory, source_regexp, regexp_options,
                           source_policy, required, delete_source,
                           reject_limit
                         )
-                 VALUES ( p_file_label, p_file_group, 'feed', p_file_description, UPPER( p_table_owner ),
-                          UPPER( p_table_name ), l_directory, p_filename, UPPER( p_arch_directory ),
-                          NVL( p_min_bytes, 0 ), NVL( p_max_bytes, 0 ), p_file_datestamp, p_baseurl, p_passphrase,
+                 VALUES ( p_file_label, p_file_group, 'feed', p_file_description, UPPER( p_owner ), UPPER( p_table ),
+                          l_directory, p_filename, UPPER( p_arch_directory ), NVL( p_min_bytes, 0 ),
+                          NVL( p_max_bytes, 0 ), p_file_datestamp, p_baseurl, p_passphrase,
                           UPPER( p_source_directory ), p_source_regexp, NVL( p_regexp_options, 'i' ),
                           NVL( p_source_policy, 'newest' ), NVL( p_required, 'yes' ), NVL( p_delete_source, 'yes' ),
                           NVL( p_reject_limit, 100 )
@@ -260,20 +389,116 @@ IS
       e_dup_conf   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_conf, -1 );
    BEGIN
-      -- do checks to make sure all the provided information is legitimate
-      IF NOT p_mode = 'delete'
+      -- this is the default method... update if it exists or insert it
+      IF LOWER( p_mode ) = 'nullify'
       THEN
-         -- check to see if the directories are legitimate
-         -- if they aren't, the GET_DIR_PATH function raises an error
-         IF p_arch_directory IS NOT NULL
-         THEN
-            l_dir_path := td_utils.get_dir_path( p_arch_directory );
-         END IF;
+         -- this is a list of required parameters
+         CASE
+            WHEN p_filename = 'NULL'
+            THEN
+               evolve_log.raise_err( 'parm_req', 'P_FILENAME' );
+            WHEN p_object_owner = 'NULL'
+            THEN
+               evolve_log.raise_err( 'parm_req', 'P_OBJECT_OWNER' );
+            WHEN p_object_name = 'NULL'
+            THEN
+               evolve_log.raise_err( 'parm_req', 'P_OBJECT_NAME' );
+            WHEN p_directory = 'NULL'
+            THEN
+               evolve_log.raise_err( 'parm_req', 'P_DIRECTORY' );
+            WHEN p_arch_directory = 'NULL'
+            THEN
+               evolve_log.raise_err( 'parm_req', 'P_ARCH_DIRECTORY' );
+            ELSE
+               NULL;
+         END CASE;
 
-         IF p_directory IS NOT NULL
-         THEN
-            l_dir_path := td_utils.get_dir_path( p_directory );
-         END IF;
+         UPDATE files_conf
+            SET file_description =
+                   CASE
+                      WHEN p_file_description IS NULL
+                         THEN file_description
+                      WHEN p_file_description = 'NULL'
+                         THEN NULL
+                      ELSE file_description
+                   END,
+                min_bytes = CASE
+                              WHEN p_min_bytes IS NULL
+                                 THEN min_bytes
+                              WHEN p_min_bytes = 'NULL'
+                                 THEN NULL
+                              ELSE min_bytes
+                           END,
+                max_bytes = CASE
+                              WHEN p_max_bytes IS NULL
+                                 THEN max_bytes
+                              WHEN p_max_bytes = 'NULL'
+                                 THEN NULL
+                              ELSE max_bytes
+                           END,
+                file_datestamp =
+                   CASE
+                      WHEN p_file_datestamp IS NULL
+                         THEN file_datestamp
+                      WHEN p_file_datestamp = 'NULL'
+                         THEN NULL
+                      ELSE file_datestamp
+                   END,
+                baseurl = CASE
+                            WHEN p_baseurl IS NULL
+                               THEN baseurl
+                            WHEN p_baseurl = 'NULL'
+                               THEN NULL
+                            ELSE baseurl
+                         END,
+                passphrase =
+                          CASE
+                             WHEN p_passphrase IS NULL
+                                THEN passphrase
+                             WHEN p_passphrase = 'NULL'
+                                THEN NULL
+                             ELSE passphrase
+                          END,
+                DATEFORMAT =
+                          CASE
+                             WHEN p_dateformat IS NULL
+                                THEN DATEFORMAT
+                             WHEN p_dateformat = 'NULL'
+                                THEN NULL
+                             ELSE DATEFORMAT
+                          END,
+                timestampformat =
+                   CASE
+                      WHEN p_timestampformat IS NULL
+                         THEN timestampformat
+                      WHEN p_timestampformat = 'NULL'
+                         THEN NULL
+                      ELSE timestampformat
+                   END,
+                delimiter = CASE
+                              WHEN p_delimiter IS NULL
+                                 THEN delimiter
+                              WHEN p_delimiter = 'NULL'
+                                 THEN NULL
+                              ELSE delimiter
+                           END,
+                quotechar = CASE
+                              WHEN p_quotechar IS NULL
+                                 THEN quotechar
+                              WHEN p_quotechar = 'NULL'
+                                 THEN NULL
+                              ELSE quotechar
+                           END,
+                headers = CASE
+                            WHEN p_headers IS NULL
+                               THEN headers
+                            WHEN p_headers = 'NULL'
+                               THEN NULL
+                            ELSE headers
+                         END,
+                modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
+                modified_dt = SYSDATE
+          WHERE file_label = LOWER( p_file_label ) AND file_group = LOWER( p_file_group );
       END IF;
 
       -- this is the default method... update if it exists or insert it
@@ -304,6 +529,7 @@ IS
       -- if the update was unsuccessful above, or an insert it specifically requested, then do an insert
       IF ( SQL%ROWCOUNT = 0 AND LOWER( p_mode ) = 'upsert' ) OR LOWER( p_mode ) = 'insert'
       THEN
+         -- this is a list of required parameters
          CASE
             WHEN p_filename IS NULL
             THEN
@@ -371,7 +597,7 @@ IS
       p_source_owner        VARCHAR2 DEFAULT NULL,
       p_source_object       VARCHAR2 DEFAULT NULL,
       p_source_column       VARCHAR2 DEFAULT NULL,
-      p_exchange            VARCHAR2 DEFAULT 'no',
+      p_replace_method      VARCHAR2 DEFAULT NULL,
       p_statistics          VARCHAR2 DEFAULT 'transfer',
       p_concurrent          VARCHAR2 DEFAULT 'no',
       p_index_regexp        VARCHAR2 DEFAULT NULL,
@@ -388,11 +614,164 @@ IS
       e_dup_conf   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_conf, -1 );
    BEGIN
+      -- remove null values if P_MODE is 'nullify'
+      -- any attributes specified with a 'NULL' will be nullified
+      IF LOWER( p_mode ) = 'nullify'
+      THEN
+         UPDATE mapping_conf
+                table_owner =
+                         UPPER( CASE
+                                   WHEN p_owner IS NULL
+                                      THEN table_owner
+                                   WHEN p_owner = 'NULL'
+                                      THEN NULL
+                                   ELSE table_owner
+                                END ),
+                table_name =
+                           UPPER( CASE
+                                     WHEN p_table IS NULL
+                                        THEN table_name
+                                     WHEN p_table = 'NULL'
+                                        THEN NULL
+                                     ELSE table_name
+                                  END ),
+                partition_name =
+                   UPPER( CASE
+                             WHEN p_partname IS NULL
+                                THEN partition_name
+                             WHEN p_partname = 'NULL'
+                                THEN NULL
+                             ELSE partition_name
+                          END
+                        ),
+                manage_indexes =
+                   LOWER( CASE
+                             WHEN p_indexes IS NULL
+                                THEN manage_indexes
+                             WHEN p_indexes = 'NULL'
+                                THEN NULL
+                             ELSE manage_indexes
+                          END
+                        ),
+                manage_constraints =
+                   LOWER( CASE
+                             WHEN p_constraints IS NULL
+                                THEN manage_constraints
+                             WHEN p_constraints = 'NULL'
+                                THEN NULL
+                             ELSE manage_constraints
+                          END
+                        ),
+                source_owner =
+                   UPPER( CASE
+                             WHEN p_source_owner IS NULL
+                                THEN source_owner
+                             WHEN p_source_owner = 'NULL'
+                                THEN NULL
+                             ELSE source_owner
+                          END
+                        ),
+                source_object =
+                   UPPER( CASE
+                             WHEN p_source_object IS NULL
+                                THEN source_object
+                             WHEN p_source_object = 'NULL'
+                                THEN NULL
+                             ELSE source_object
+                          END
+                        ),
+                source_column =
+                   UPPER( CASE
+                             WHEN p_source_column IS NULL
+                                THEN source_column
+                             WHEN p_source_column = 'NULL'
+                                THEN NULL
+                             ELSE source_column
+                          END
+                        ),
+                replace_method =
+                   LOWER( CASE
+                             WHEN p_replace_method IS NULL
+                                THEN replace_method
+                             WHEN p_replace_method = 'NULL'
+                                THEN NULL
+                             ELSE replace_method
+                          END
+                        ),
+                STATISTICS =
+                   LOWER( CASE
+                             WHEN p_statistics IS NULL
+                                THEN STATISTICS
+                             WHEN p_statistics = 'NULL'
+                                THEN NULL
+                             ELSE STATISTICS
+                          END ),
+                concurrent =
+                   LOWER( CASE
+                             WHEN p_concurrent IS NULL
+                                THEN concurrent
+                             WHEN p_concurrent = 'NULL'
+                                THEN NULL
+                             ELSE concurrent
+                          END ),
+                index_regexp =
+                   CASE
+                      WHEN p_index_regexp IS NULL
+                         THEN index_regexp
+                      WHEN p_index_regexp = 'NULL'
+                         THEN NULL
+                      ELSE index_regexp
+                   END,
+                index_type =
+                          CASE
+                             WHEN p_index_type IS NULL
+                                THEN index_type
+                             WHEN p_index_type = 'NULL'
+                                THEN NULL
+                             ELSE index_type
+                          END,
+                partition_type =
+                    CASE
+                       WHEN p_part_type IS NULL
+                          THEN partition_type
+                       WHEN p_part_type = 'NULL'
+                          THEN NULL
+                       ELSE partition_type
+                    END,
+                constraint_regexp =
+                   CASE
+                      WHEN p_constraint_regexp IS NULL
+                         THEN constraint_regexp
+                      WHEN p_constraint_regexp = 'NULL'
+                         THEN NULL
+                      ELSE constraint_regexp
+                   END,
+                constraint_type =
+                   CASE
+                      WHEN p_constraint_type IS NULL
+                         THEN constraint_type
+                      WHEN p_constraint_type = 'NULL'
+                         THEN NULL
+                      ELSE constraint_type
+                   END,
+                description =
+                      CASE
+                         WHEN p_description IS NULL
+                            THEN description
+                         WHEN p_description = 'NULL'
+                            THEN NULL
+                         ELSE description
+                      END,
+                modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
+                modified_dt = SYSDATE
+          WHERE mapping_name = LOWER( p_mapping );
+      END IF;
+
       IF LOWER( p_mode ) IN( 'upsert', 'update' )
       THEN
          evolve_log.log_msg( 'Updating configuration', 5 );
 
-         -- first try to update an existing configuration
+         -- try to update an existing configuration
          UPDATE mapping_conf
             SET mapping_name = LOWER( NVL( p_mapping, mapping_name )),
                 table_owner = UPPER( NVL( p_owner, table_owner )),
@@ -403,7 +782,7 @@ IS
                 source_owner = UPPER( NVL( p_source_owner, source_owner )),
                 source_object = UPPER( NVL( p_source_object, source_object )),
                 source_column = UPPER( NVL( p_source_column, source_column )),
-                exchange_partition = LOWER( NVL( p_exchange, exchange_partition )),
+                replace_method = LOWER( NVL( p_replace_method, replace_method )),
                 STATISTICS = LOWER( NVL( p_statistics, STATISTICS )),
                 concurrent = LOWER( NVL( p_concurrent, concurrent )),
                 index_regexp = NVL( p_index_regexp, index_regexp ),
@@ -438,13 +817,13 @@ IS
             INSERT INTO mapping_conf
                         ( mapping_name, table_owner, table_name, partition_name,
                           manage_indexes, manage_constraints, source_owner,
-                          source_object, source_column, exchange_partition,
+                          source_object, source_column, replace_method,
                           STATISTICS, concurrent, index_regexp,
                           index_type, partition_type, constraint_regexp, constraint_type, description
                         )
                  VALUES ( LOWER( p_mapping ), UPPER( p_owner ), UPPER( p_table ), UPPER( p_partname ),
                           LOWER( NVL( p_indexes, 'no' )), LOWER( NVL( p_constraints, 'no' )), UPPER( p_source_owner ),
-                          UPPER( p_source_object ), UPPER( p_source_column ), LOWER( NVL( p_exchange, 'no' )),
+                          UPPER( p_source_object ), UPPER( p_source_column ), p_replace_method,
                           LOWER( NVL( p_statistics, 'transfer' )), LOWER( NVL( p_concurrent, 'no' )), p_index_regexp,
                           p_index_type, p_part_type, p_constraint_regexp, p_constraint_type, p_description
                         );

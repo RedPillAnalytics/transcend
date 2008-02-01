@@ -57,7 +57,7 @@ IS
       p_source_owner        VARCHAR2 DEFAULT NULL,
       p_source_object       VARCHAR2 DEFAULT NULL,
       p_source_column       VARCHAR2 DEFAULT NULL,
-      p_exchange            VARCHAR2 DEFAULT 'no',
+      p_replace_method      VARCHAR2 DEFAULT NULL,
       p_statistics          VARCHAR2 DEFAULT 'transfer',
       p_concurrent          VARCHAR2 DEFAULT 'no',
       p_index_regexp        VARCHAR2 DEFAULT NULL,

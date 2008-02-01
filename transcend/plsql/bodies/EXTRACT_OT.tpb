@@ -49,9 +49,28 @@ AS
                WHERE REGEXP_LIKE( file_type, '^extract$', 'i' )
                  AND file_group = p_file_group
                  AND file_label = p_file_label );
-
+	     
+	     -- verify that all the parameters are correct
+	     verify;
       RETURN;
-   END extract_ot;
+	  END extract_ot;
+	  
+   MEMBER PROCEDURE verify
+   IS
+      l_dir_path    all_directories.directory_path%TYPE;
+      l_directory   all_external_tables.default_directory_name%TYPE;
+      o_ev   evolve_ot := evolve_ot( p_module => 'confirm' );
+   BEGIN
+      -- check to see if the directories are legitimate
+      -- if they aren't, the GET_DIR_PATH function raises an error
+      l_dir_path := td_utils.get_dir_path( self.arch_directory );
+      l_dir_path := td_utils.get_dir_path( self.directory );
+
+      evolve_log.log_msg( 'FEED confirmation completed successfully', 5 );
+      -- reset the evolve_object
+      o_ev.clear_app_info;
+   END verify;
+
    -- extract data to a text file, and then peform other functions as defined in the configuration table
    MEMBER PROCEDURE process
    AS

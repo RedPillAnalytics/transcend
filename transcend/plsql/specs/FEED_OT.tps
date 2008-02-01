@@ -12,6 +12,7 @@ CREATE OR REPLACE TYPE feed_ot UNDER file_ot(
       p_file_label   VARCHAR2
    )
       RETURN SELF AS RESULT,
+					      MEMBER PROCEDURE confirm_feed,
    MEMBER PROCEDURE audit_ext_tab( p_num_lines NUMBER ),
    MEMBER PROCEDURE process
 )

@@ -23,10 +23,43 @@ AS
                 FROM files_conf
                WHERE REGEXP_LIKE( file_type, '^feed$', 'i' )
                  AND file_group = p_file_group
-                 AND file_label = p_file_label );
+                  AND file_label = p_file_label );
+      
+      confirm_feed;
 
       RETURN;
    END feed_ot;
+
+   MEMBER PROCEDURE confirm_feed
+   IS
+      l_dir_path    all_directories.directory_path%TYPE;
+      l_directory   all_external_tables.default_directory_name%TYPE;
+      o_ev   evolve_ot := evolve_ot( p_module => 'confirm_feed' );
+   BEGIN
+      -- do checks to make sure all the provided information is legitimate
+      -- check to see if the directories are legitimate
+      -- if they aren't, the GET_DIR_PATH function raises an error
+      l_dir_path := td_utils.get_dir_path( self.arch_directory );
+
+      l_dir_path := td_utils.get_dir_path( self.source_directory );
+
+      -- get the directory from the external table
+      BEGIN
+         SELECT default_directory_name
+           INTO l_directory
+           FROM all_external_tables
+          WHERE owner = self.object_owner AND table_name = self.object_name;
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+         evolve_log.raise_err( 'no_ext_tab', UPPER( self.object_owner || '.' || self.object_name ));
+      END;
+
+      evolve_log.log_msg( 'FEED confirmation completed successfully', 5 );
+      -- reset the evolve_object
+      o_ev.clear_app_info;
+   END confirm_feed;
+
    -- audits information about external tables after the file(s) have been put in place
    MEMBER PROCEDURE audit_ext_tab( p_num_lines NUMBER )
    IS
