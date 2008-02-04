@@ -154,9 +154,6 @@ AS
       p_constraint_type     VARCHAR2 DEFAULT NULL,
       p_constraint_regexp   VARCHAR2 DEFAULT NULL,
       p_basis               VARCHAR2 DEFAULT 'table',
-      p_seg_attributes      VARCHAR2 DEFAULT 'no',
-      p_tablespace          VARCHAR2 DEFAULT NULL,
-      p_partname            VARCHAR2 DEFAULT NULL,
       p_concurrent          VARCHAR2 DEFAULT 'no'
    )
    IS
@@ -168,9 +165,6 @@ AS
                                     p_constraint_type        => p_constraint_type,
                                     p_constraint_regexp      => p_constraint_regexp,
                                     p_basis                  => p_basis,
-                                    p_seg_attributes         => p_seg_attributes,
-                                    p_tablespace             => p_tablespace,
-                                    p_partname               => p_partname,
                                     p_concurrent             => p_concurrent
                                   );
    EXCEPTION

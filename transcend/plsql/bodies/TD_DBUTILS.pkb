@@ -2826,7 +2826,6 @@ AS
                          p_table             => p_source_table,
                          p_source_owner      => p_owner,
                          p_source_table      => p_table,
-                         p_tablespace        => p_tablespace,
                          p_basis             => 'all',
                          p_concurrent        => p_concurrent,
                          p_enable_queue      => 'yes'

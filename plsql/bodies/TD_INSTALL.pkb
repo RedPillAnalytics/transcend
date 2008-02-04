@@ -1200,9 +1200,14 @@ IS
 	 EXECUTE IMMEDIATE 
 	 q'|ALTER TABLE files_conf ADD 
 	 (
-	   CONSTRAINT files_conf_sp_ck
+	   CONSTRAINT files_conf_ck2
 	   CHECK (source_policy IN ('oldest','newest','all','fail',NULL))
 	 )|';
+
+	 EXECUTE IMMEDIATE 
+	 q'|ALTER TABLE files_conf ADD 
+	   CONSTRAINT files_conf_ck2
+	   CHECK (file_type = case when source_directory is null or source_regexp is null then 'extract' ELSE file_type END )|';
 	 
 	 -- FILES_DETAIL table
 	 EXECUTE IMMEDIATE 
@@ -1371,20 +1376,20 @@ IS
 	   table_owner 		VARCHAR2(61),
 	   table_name 		VARCHAR2(30),
 	   partition_name	VARCHAR2(30),
-	   manage_indexes 	VARCHAR2(3),
-	   manage_constraints 	VARCHAR2(3),
+	   manage_indexes 	VARCHAR2(3) NOT NULL,
+	   manage_constraints 	VARCHAR2(3) NOT NULL,
 	   source_owner 	VARCHAR2(30),
 	   source_object 	VARCHAR2(30),
 	   source_column 	VARCHAR2(30),
 	   replace_method 	VARCHAR2(10),
 	   statistics 		VARCHAR2(10),
-	   concurrent 		VARCHAR2(3),
+	   concurrent 		VARCHAR2(3) NOT NULL,
 	   index_regexp 	VARCHAR2(30),
 	   index_type 		VARCHAR2(30),
 	   partition_type	VARCHAR2(30),
 	   constraint_regexp 	VARCHAR2(100),
 	   constraint_type 	VARCHAR2(100),
-	   description		VARCHAR2(2000) DEFAULT NULL,
+	   description		VARCHAR2(2000),
 	   created_user	     	VARCHAR2(30) DEFAULT sys_context('USERENV','SESSION_USER') NOT NULL,
 	   created_dt	     	DATE DEFAULT SYSDATE NOT NULL,
 	   modified_user  	VARCHAR2(30),
@@ -1402,7 +1407,21 @@ IS
 	 
 	 EXECUTE IMMEDIATE 
 	 q'|ALTER TABLE mapping_conf ADD CONSTRAINT mapping_conf_ck1 CHECK (mapping_name=lower(mapping_name))|';
-
+	 
+	 EXECUTE IMMEDIATE 
+	 q'|ALTER TABLE mapping_conf ADD CONSTRAINT mapping_conf_ck2 CHECK (manage_indexes in ('yes','no'))|';
+	 
+	 EXECUTE IMMEDIATE 
+	 q'|ALTER TABLE mapping_conf ADD CONSTRAINT mapping_conf_ck3 CHECK (manage_constraints in ('yes','no'))|';
+	 
+	 EXECUTE IMMEDIATE 
+	 q'|ALTER TABLE mapping_conf ADD CONSTRAINT mapping_conf_ck4 CHECK (concurrent in ('yes','no'))|';
+	 
+	 EXECUTE IMMEDIATE 
+	 q'|ALTER TABLE mapping_conf ADD CONSTRAINT mapping_conf_ck5 CHECK (replace_method in ('exchange','rename'))|';
+	 
+	 EXECUTE IMMEDIATE 
+	 q'|ALTER TABLE mapping_conf ADD CONSTRAINT mapping_conf_ck6 CHECK (replace_method = case when table_owner <> source_owner then 'exchange' else replace_method end )|';
 	 
 	 -- DIMENSION_CONF table
 	 EXECUTE IMMEDIATE

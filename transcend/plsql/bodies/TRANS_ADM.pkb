@@ -95,7 +95,7 @@ IS
       l_no_conf     BOOLEAN;
       e_dup_conf    EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_conf, -1 );
-      o_feed feed_ot;
+      o_feed        feed_ot;
       o_ev          evolve_ot                                         := evolve_ot( p_module => 'configure_feed' );
    BEGIN
       CASE
@@ -351,10 +351,9 @@ IS
       THEN
          -- if a delete is specifically requested, then do a delete
          DELETE FROM files_conf
-          WHERE file_label = LOWER( p_file_label ) AND file_group = LOWER( p_file_group );
+               WHERE file_label = LOWER( p_file_label ) AND file_group = LOWER( p_file_group );
       ELSE
-	 o_feed := feed_ot( p_file_group => p_file_group,
-			    p_file_label => p_file_label );
+         o_feed := feed_ot( p_file_group => p_file_group, p_file_label => p_file_label );
       END IF;
 
       -- if we still have not affected any records, then there's a problem
@@ -390,8 +389,10 @@ IS
       l_object     all_objects.object_name%TYPE;
       l_dir_path   all_directories.directory_path%TYPE;
       l_obj_name   VARCHAR2( 61 )                        := p_object_owner || '.' || p_object_name;
+      o_extract    extract_ot;
       e_dup_conf   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_conf, -1 );
+      o_ev         evolve_ot                             := evolve_ot( p_module => 'configure_extract' );
    BEGIN
       -- this is the default method... update if it exists or insert it
       IF LOWER( p_mode ) = 'nullify'
@@ -581,11 +582,9 @@ IS
       THEN
          -- if a delete is specifically requested, then do a delete
          DELETE FROM files_conf
-          WHERE file_label = LOWER( p_file_label ) AND file_group = LOWER( p_file_group );
+               WHERE file_label = LOWER( p_file_label ) AND file_group = LOWER( p_file_group );
       ELSE
-	 o_extract := extract_ot( p_file_group => p_file_group,
-				  p_file_label => p_file_label );
-
+         o_extract := extract_ot( p_file_group => p_file_group, p_file_label => p_file_label );
       END IF;
 
       -- if we still have not affected any records, then there's a problem
@@ -627,7 +626,7 @@ IS
       IF LOWER( p_mode ) = 'nullify'
       THEN
          UPDATE mapping_conf
-                table_owner =
+            SET table_owner =
                          UPPER( CASE
                                    WHEN p_owner IS NULL
                                       THEN table_owner
