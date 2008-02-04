@@ -95,6 +95,7 @@ IS
       l_no_conf     BOOLEAN;
       e_dup_conf    EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_conf, -1 );
+      o_feed feed_ot;
       o_ev          evolve_ot                                         := evolve_ot( p_module => 'configure_feed' );
    BEGIN
       CASE
@@ -350,7 +351,10 @@ IS
       THEN
          -- if a delete is specifically requested, then do a delete
          DELETE FROM files_conf
-               WHERE file_label = LOWER( p_file_label ) AND file_group = LOWER( p_file_group );
+          WHERE file_label = LOWER( p_file_label ) AND file_group = LOWER( p_file_group );
+      ELSE
+	 o_feed := feed_ot( p_file_group => p_file_group,
+			    p_file_label => p_file_label );
       END IF;
 
       -- if we still have not affected any records, then there's a problem
@@ -577,7 +581,11 @@ IS
       THEN
          -- if a delete is specifically requested, then do a delete
          DELETE FROM files_conf
-               WHERE file_label = LOWER( p_file_label ) AND file_group = LOWER( p_file_group );
+          WHERE file_label = LOWER( p_file_label ) AND file_group = LOWER( p_file_group );
+      ELSE
+	 o_extract := extract_ot( p_file_group => p_file_group,
+				  p_file_label => p_file_label );
+
       END IF;
 
       -- if we still have not affected any records, then there's a problem
@@ -850,7 +858,6 @@ IS
               -- now use the dimension object to validate the new structure
          -- just constructing the object calls the CONFIRM_OBJECTS procedure
          BEGIN
-            NULL;
             o_map := mapping_ot( p_mapping => p_mapping );
          END;
       END IF;
