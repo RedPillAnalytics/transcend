@@ -882,6 +882,10 @@ IS
       p_replace_method     VARCHAR2 DEFAULT NULL,
       p_statistics         VARCHAR2 DEFAULT NULL,
       p_concurrent         VARCHAR2 DEFAULT NULL,
+      p_stage_key_def      NUMBER DEFAULT NULL,
+      p_char_nvl_def       VARCHAR2 DEFAULT NULL,
+      p_date_nvl_def       DATE DEFAULT NULL,
+      p_num_nvl_def        NUMBER DEFAULT NULL,
       p_description        VARCHAR2 DEFAULT NULL,
       p_mode               VARCHAR2 DEFAULT 'upsert'
    )
@@ -891,6 +895,156 @@ IS
       e_dup_conf   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_conf, -1 );
    BEGIN
+      IF LOWER( p_mode ) = 'nullify'
+      THEN
+         evolve_log.log_msg( 'Nullifying configuration elements', 5 );
+
+         -- first try to update an existing configuration
+         UPDATE dimension_conf
+            SET source_owner =
+                   UPPER( CASE
+                             WHEN p_source_owner IS NULL
+                                THEN source_owner
+                             WHEN p_source_owner = 'NULL'
+                                THEN NULL
+                             ELSE source_owner
+                          END
+                        ),
+                source_object =
+                   UPPER( CASE
+                             WHEN p_source_object IS NULL
+                                THEN source_object
+                             WHEN p_source_object = 'NULL'
+                                THEN NULL
+                             ELSE source_object
+                          END
+                        ),
+                sequence_owner =
+                   UPPER( CASE
+                             WHEN p_sequence_owner IS NULL
+                                THEN sequence_owner
+                             WHEN p_sequence_owner = 'NULL'
+                                THEN NULL
+                             ELSE sequence_owner
+                          END
+                        ),
+                sequence_name =
+                   UPPER( CASE
+                             WHEN p_sequence_name IS NULL
+                                THEN sequence_name
+                             WHEN p_sequence_name = 'NULL'
+                                THEN NULL
+                             ELSE sequence_name
+                          END
+                        ),
+                staging_owner =
+                   UPPER( CASE
+                             WHEN p_staging_owner IS NULL
+                                THEN staging_owner
+                             WHEN p_staging_owner = 'NULL'
+                                THEN NULL
+                             ELSE staging_owner
+                          END
+                        ),
+                staging_table =
+                   UPPER( CASE
+                             WHEN p_staging_table IS NULL
+                                THEN staging_table
+                             WHEN p_staging_table = 'NULL'
+                                THEN NULL
+                             ELSE staging_table
+                          END
+                        ),
+                default_scd_type =
+                   CASE
+                      WHEN p_default_scd_type IS NULL
+                         THEN default_scd_type
+                      WHEN p_default_scd_type = 'NULL'
+                         THEN NULL
+                      ELSE default_scd_type
+                   END,
+                direct_load =
+                   LOWER( CASE
+                             WHEN p_direct_load IS NULL
+                                THEN direct_load
+                             WHEN p_direct_load = 'NULL'
+                                THEN NULL
+                             ELSE direct_load
+                          END
+                        ),
+                replace_method =
+                   LOWER( CASE
+                             WHEN p_replace_method IS NULL
+                                THEN replace_method
+                             WHEN p_replace_method = 'NULL'
+                                THEN NULL
+                             ELSE replace_method
+                          END
+                        ),
+                STATISTICS =
+                   LOWER( CASE
+                             WHEN p_statistics IS NULL
+                                THEN STATISTICS
+                             WHEN p_statistics = 'NULL'
+                                THEN NULL
+                             ELSE STATISTICS
+                          END ),
+                concurrent =
+                   LOWER( CASE
+                             WHEN p_concurrent IS NULL
+                                THEN concurrent
+                             WHEN p_concurrent = 'NULL'
+                                THEN NULL
+                             ELSE concurrent
+                          END ),
+                stage_key_default =
+                   CASE
+                      WHEN p_stage_key_def IS NULL
+                         THEN stage_key_default
+                      WHEN p_stage_key_def = 'NULL'
+                         THEN NULL
+                      ELSE stage_key_default
+                   END,
+                char_nvl_default =
+                   CASE
+                      WHEN p_char_nvl_def IS NULL
+                         THEN char_nvl_default
+                      WHEN p_char_nvl_def = 'NULL'
+                         THEN NULL
+                      ELSE char_nvl_default
+                   END,
+                date_nvl_default =
+                   CASE
+                      WHEN p_date_nvl_def IS NULL
+                         THEN date_nvl_default
+                      WHEN p_date_nvl_def = 'NULL'
+                         THEN NULL
+                      ELSE date_nvl_default
+                   END,
+                number_nvl_default =
+                   CASE
+                      WHEN p_num_nvl_def IS NULL
+                         THEN number_nvl_default
+                      WHEN p_num_nvl_def = 'NULL'
+                         THEN NULL
+                      ELSE number_nvl_default
+                   END,
+                description =
+                      CASE
+                         WHEN p_description IS NULL
+                            THEN description
+                         WHEN p_description = 'NULL'
+                            THEN NULL
+                         ELSE description
+                      END,
+                modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
+                modified_dt = SYSDATE
+          WHERE table_owner = UPPER( p_owner ) AND table_name = UPPER( p_table );
+
+         -- get the SQL rowcount
+         l_num_rows := SQL%ROWCOUNT;
+      END IF;
+
       IF LOWER( p_mode ) IN( 'upsert', 'update' )
       THEN
          evolve_log.log_msg( 'Updating configuration', 5 );
@@ -910,6 +1064,10 @@ IS
                 replace_method = LOWER( NVL( p_replace_method, replace_method )),
                 STATISTICS = LOWER( NVL( p_statistics, STATISTICS )),
                 concurrent = LOWER( NVL( p_concurrent, concurrent )),
+                stage_key_default = NVL( p_stage_key_def, stage_key_default ),
+                char_nvl_default = NVL( p_char_nvl_def, char_nvl_default ),
+                date_nvl_default = NVL( p_date_nvl_def, date_nvl_default ),
+                number_nvl_default = NVL( p_num_nvl_def, number_nvl_default ),
                 description = NVL( p_description, description ),
                 modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
                 modified_dt = SYSDATE
@@ -954,13 +1112,17 @@ IS
                           sequence_owner, sequence_name, staging_owner,
                           staging_table, default_scd_type, direct_load,
                           replace_method, STATISTICS,
-                          concurrent, description
+                          concurrent, stage_key_default, char_nvl_default,
+                          date_nvl_default, number_nvl_default,
+                          description
                         )
                  VALUES ( UPPER( p_owner ), UPPER( p_table ), UPPER( p_source_owner ), UPPER( p_source_object ),
                           UPPER( p_sequence_owner ), UPPER( p_sequence_name ), UPPER( p_staging_owner ),
                           UPPER( p_staging_table ), NVL( p_default_scd_type, 2 ), LOWER( NVL( p_direct_load, 'yes' )),
                           LOWER( NVL( p_replace_method, 'rename' )), LOWER( NVL( p_statistics, 'transfer' )),
-                          LOWER( NVL( p_concurrent, 'yes' )), p_description
+                          LOWER( NVL( p_concurrent, 'yes' )), NVL( p_stage_key_def, -.01 ), NVL( p_char_nvl_def, '~' ),
+                          NVL( p_date_nvl_def, TO_DATE( '01/01/9999', 'mm/dd/yyyy' )), NVL( p_num_nvl_def, -.01 ),
+                          p_description
                         );
 
             -- get the SQL rowcount

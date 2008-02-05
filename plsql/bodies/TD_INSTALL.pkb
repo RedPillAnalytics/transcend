@@ -1435,7 +1435,7 @@ IS
 	   sequence_name  	VARCHAR2(30) NOT NULL,
 	   staging_owner	VARCHAR2(30) DEFAULT NULL,
 	   staging_table	VARCHAR2(30) DEFAULT NULL,
-	   default_scd_type	NUMBER(1,0) DEFAULT 2,
+	   default_scd_type	NUMBER(1,0) DEFAULT 2 NOT NULL,
 	   direct_load		VARCHAR2(3) DEFAULT 'yes' NOT NULL,
 	   replace_method	VARCHAR2(10) DEFAULT 'rename' NOT NULL,
 	   statistics		VARCHAR2(10) DEFAULT 'transfer',
