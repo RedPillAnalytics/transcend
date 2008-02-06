@@ -1200,12 +1200,12 @@ IS
 	 EXECUTE IMMEDIATE 
 	 q'|ALTER TABLE files_conf ADD 
 	 (
-	   CONSTRAINT files_conf_ck2
+	   CONSTRAINT files_conf_ck1
 	   CHECK (source_policy IN ('oldest','newest','all','fail',NULL))
 	 )|';
 
 	 EXECUTE IMMEDIATE 
-	 q'|ALTER TABLE files_conf ADD 
+	 q'|ALTER TABLE files_conf ADD
 	   CONSTRAINT files_conf_ck2
 	   CHECK (file_type = case when source_directory is null or source_regexp is null then 'extract' ELSE file_type END )|';
 	 
@@ -1471,7 +1471,7 @@ IS
 
 	 EXECUTE IMMEDIATE 
 	 q'|ALTER TABLE dimension_conf ADD 
-	 ( CONSTRAINT replace_method_ck
+	 ( CONSTRAINT replace_method_ck1
 	   CHECK ( upper(staging_owner) = CASE WHEN replace_method = 'rename' THEN upper(table_owner) ELSE staging_owner end )
 	 )|';
 
