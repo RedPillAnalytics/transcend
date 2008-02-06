@@ -372,9 +372,6 @@ IS
 	    EXECUTE IMMEDIATE 'GRANT SELECT ON COLUMN_TYPE_LIST TO '||l_sel_grant;
 	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON COLUMN_TYPE_LIST TO '||l_adm_grant;
 
-	    EXECUTE IMMEDIATE 'GRANT SELECT ON REPLACE_METHOD_LIST TO '||l_sel_grant;
-	    EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON REPLACE_METHOD_LIST TO '||l_adm_grant;
-	 
       EXCEPTION
 	 WHEN e_no_grantee
 	 THEN
@@ -1058,14 +1055,6 @@ IS
 	 END;
 
 	 BEGIN
-	    EXECUTE IMMEDIATE q'|DROP TABLE replace_method_list|';
-	 EXCEPTION
-	    WHEN e_no_tab
-	    THEN
-	    NULL;
-	 END;
-
-	 BEGIN
 	    EXECUTE IMMEDIATE q'|DROP TABLE files_obj_detail|';
 	 EXCEPTION
 	    WHEN e_no_tab
@@ -1317,29 +1306,6 @@ IS
 	 )
 	 ON COMMIT DELETE ROWS|';
 
-	 -- REPLACE_METHOD_LIST table
-	 EXECUTE IMMEDIATE 
-	 q'|CREATE TABLE replace_method_list
-	 ( 
-	   replace_method	VARCHAR2(10) NOT NULL,
-	   created_user	VARCHAR2(30) DEFAULT sys_context('USERENV','SESSION_USER') NOT NULL,
-	   created_dt	DATE DEFAULT SYSDATE NOT NULL,
-	   modified_user  	VARCHAR2(30),
-	   modified_dt    	DATE
-	 )|';
-	 
-	 EXECUTE IMMEDIATE 
-	 q'|ALTER TABLE replace_method_list ADD 
-	 (
-	   CONSTRAINT replace_method_list_pk
-	   PRIMARY KEY
-	   ( replace_method )
-	   USING INDEX
-	 )|';
-
-	 EXECUTE IMMEDIATE q'|INSERT INTO replace_method_list (replace_method) VALUES ('exchange')|';
-	 EXECUTE IMMEDIATE q'|INSERT INTO replace_method_list (replace_method) VALUES ('rename')|';
-	 
 	 -- COLUMN_TYPE_LIST table
 	 EXECUTE IMMEDIATE 
 	 q'|CREATE TABLE column_type_list
@@ -1461,17 +1427,12 @@ IS
 	 )|';
 	 
 	 EXECUTE IMMEDIATE 
-	 q'|ALTER TABLE dimension_conf ADD 
-	 (
-	   CONSTRAINT dimension_conf_fk1
-	   FOREIGN KEY ( replace_method )
-	   REFERENCES replace_method_list
-	   ( replace_method )
-	 )|';
+	 q'|ALTER TABLE dimension_conf ADD CONSTRAINT dimension_conf_ck1 CHECK (replace_method in ('exchange','rename'))|';
+
 
 	 EXECUTE IMMEDIATE 
 	 q'|ALTER TABLE dimension_conf ADD 
-	 ( CONSTRAINT replace_method_ck1
+	 ( CONSTRAINT dimension_conf_ck1
 	   CHECK ( upper(staging_owner) = CASE WHEN replace_method = 'rename' THEN upper(table_owner) ELSE staging_owner end )
 	 )|';
 
@@ -1479,7 +1440,7 @@ IS
 	 EXECUTE IMMEDIATE
 	 q'|CREATE TABLE column_conf
 	 ( 
-	   table_owner		VARCHAR2(30) NOT NULL,
+	   table_owner	VARCHAR2(30) NOT NULL,
 	   table_name	VARCHAR2(30) NOT NULL,
 	   column_name	VARCHAR2(30) NOT NULL,
 	   column_type	VARCHAR2(30) NOT NULL,
@@ -1880,14 +1841,6 @@ IS
 
       BEGIN
 	 EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.COLUMN_TYPE_LIST for '||p_schema||'.COLUMN_TYPE_LIST';
-      EXCEPTION
-	 WHEN e_same_name
-	 THEN
-	 NULL;
-      END;
-
-      BEGIN
-	 EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.REPLACE_METHOD_LIST for '||p_schema||'.REPLACE_METHOD_LIST';
       EXCEPTION
 	 WHEN e_same_name
 	 THEN
