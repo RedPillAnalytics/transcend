@@ -555,7 +555,7 @@ IS
       EXCEPTION
 	 WHEN e_tab_exists
 	 THEN
-	 raise_application_error(-20003,'Repository tables exist. If you want to drop all repository tables, then specifiy a value of TRUE for P_DROP');
+	 RAISE e_repo_obj_exists;
       END;
       
       -- if the default tablespace was changed, then put it back
@@ -983,7 +983,7 @@ IS
       EXCEPTION
 	 WHEN e_tab_exists
 	 THEN
-	 raise_application_error(-20003,'Repository tables exist. If you want to drop all repository tables, then specifiy a value of TRUE for P_DROP');
+	 RAISE e_repo_obj_exists;
       END;
       
       -- if the default tablespace was changed, then put it back
@@ -1521,8 +1521,8 @@ IS
      
       EXCEPTION
       WHEN e_tab_exists OR e_stat_tab_exists
-      THEN
-	 raise_application_error(-20003,'Repository tables exist. If you want to drop all repository tables, then specifiy a value of TRUE for P_DROP');
+	 THEN
+      RAISE e_repo_obj_exists;
       END;
  
       -- if the default tablespace was changed, then put it back

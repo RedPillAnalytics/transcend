@@ -1,5 +1,7 @@
 CREATE OR REPLACE PACKAGE td_install AUTHID CURRENT_USER
 IS
+   e_repo_obj_exists EXCEPTION;
+
    PROCEDURE build_sys_repo(
       p_schema      VARCHAR2 DEFAULT 'TDSYS',
       p_tablespace  VARCHAR2 DEFAULT 'TDSYS',

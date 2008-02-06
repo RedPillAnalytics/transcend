@@ -14,15 +14,26 @@ ACCEPT rep_schema char default 'TDSYS' prompt 'Evolve repository schema to use f
 ACCEPT tablespace char default 'TDSYS' prompt 'Tablespace in which to install Transcend default repository: [tdsys]: '
 -- get the schema for the Transcend application (PL/SQL and Java code)
 ACCEPT app_schema char default 'TDSYS' prompt 'Evolve application schema for the Transcend application [tdsys]: '
+-- find out whether destructive actions are okay
+ACCEPT drop_obj char default 'N' prompt 'Do you want to issue DROP TABLE statements for any existing repository tables? [N]: '
 
 
 WHENEVER sqlerror exit sql.sqlcode
 
--- create the Transcend repository
-EXEC tdsys.td_install.build_transcend_repo( p_schema => '&rep_schema', p_tablespace => '&tablespace');
+DECLARE
+   l_drop BOOLEAN := CASE WHEN REGEXP_LIKE('yes','&drop_obj','i') THEN TRUE ELSE FALSE END;
+BEGIN
+   -- create the Transcend repository
+   tdsys.td_install.build_transcend_repo( p_schema => '&rep_schema', p_tablespace => '&tablespace', p_drop => l_drop);
+   -- create the Trancend application
+   tdsys.td_install.build_transcend_app( p_schema => '&app_schema', p_repository => '&rep_schema', p_drop => l_drop);
+EXCEPTION
+   WHEN tdsys.td_install.e_repo_obj_exists
+   THEN
+   raise_application_error(-20003,'Repository tables exist. Specify ''Y'' when prompted to issue DROP TABLE statements');
+END;
+/
 
--- create the Trancend application
-EXEC tdsys.td_install.build_transcend_app( p_schema => '&app_schema', p_repository => '&rep_schema');
 
 -- Install the Transcend Pieces
 
