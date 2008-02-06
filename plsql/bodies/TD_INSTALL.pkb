@@ -1432,7 +1432,7 @@ IS
 
 	 EXECUTE IMMEDIATE 
 	 q'|ALTER TABLE dimension_conf ADD 
-	 ( CONSTRAINT dimension_conf_ck1
+	 ( CONSTRAINT dimension_conf_ck2
 	   CHECK ( upper(staging_owner) = CASE WHEN replace_method = 'rename' THEN upper(table_owner) ELSE staging_owner end )
 	 )|';
 
