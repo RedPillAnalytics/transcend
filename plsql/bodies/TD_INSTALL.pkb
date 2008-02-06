@@ -1006,6 +1006,7 @@ IS
       p_drop	    BOOLEAN  DEFAULT FALSE
    ) 
    IS
+      o_ev evolve_ot := evolve_ot( p_module => 'build_transcend_repo' );
       e_tab_exists   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_tab_exists, -955 );
       e_stat_tab_exists   EXCEPTION;
@@ -1494,6 +1495,7 @@ IS
    EXCEPTION
    WHEN others
       THEN
+      evolve_log.log_err;
       -- if the default tablespace was changed, then put it back
       reset_default_tablespace;
       
