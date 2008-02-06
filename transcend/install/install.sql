@@ -1,3 +1,4 @@
+SET echo off
 PROMPT 'Running install.sql'
 SET serveroutput on size unlimited
 SET timing off
