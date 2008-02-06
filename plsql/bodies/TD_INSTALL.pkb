@@ -2186,6 +2186,9 @@ IS
       -- grant application privileges to the roles
       grant_transcend_sys_privs( p_schema => p_schema );
       
+      -- drop all the transcend types in order to make sure they can be recreated
+      drop_transcend_types;
+      
    END build_transcend_app;
    
    PROCEDURE drop_evolve_types
@@ -2231,6 +2234,14 @@ IS
 
       BEGIN
 	 EXECUTE IMMEDIATE 'DROP TYPE dimension_ot';
+      EXCEPTION
+	 WHEN e_obj_exists
+	 THEN
+	 NULL;
+      END;
+      
+      BEGIN
+	 EXECUTE IMMEDIATE 'DROP TYPE mapping_ot';
       EXCEPTION
 	 WHEN e_obj_exists
 	 THEN
