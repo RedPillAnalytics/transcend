@@ -279,6 +279,8 @@ IS
       END;
 
       BEGIN
+	 -- first grant the TDSYS stuff
+	 EXECUTE IMMEDIATE 'grant execute on TDSYS.TD_INSTALL to '||l_app_role;
 	 -- types
 	 EXECUTE IMMEDIATE 'grant execute on APP_OT to '||l_app_role;
 	 EXECUTE IMMEDIATE 'grant execute on EVOLVE_OT to '||l_app_role;
@@ -1631,6 +1633,15 @@ IS
       PRAGMA EXCEPTION_INIT( e_same_name, -1471 );
    BEGIN
       -- create the synonyms
+      -- first, the TDSYS synonym
+	 BEGIN
+	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.TD_INSTALL for '||p_schema||'.TD_INSTALL';
+	 EXCEPTION
+	    WHEN e_same_name
+	    THEN
+	    NULL;
+	 END;
+
       -- types
 	 BEGIN
 	    EXECUTE IMMEDIATE 'create or replace synonym '||p_user||'.APP_OT for '||p_schema||'.APP_OT';
