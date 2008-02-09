@@ -51,6 +51,8 @@ IS
 	 EXECUTE IMMEDIATE 'ALTER USER '||p_user||' QUOTA 50M ON '||p_tablespace;
       END IF;
       
+      EXECUTE IMMEDIATE 'grant connect to '||p_user;
+      
    END create_user;
    
    PROCEDURE set_current_schema(
