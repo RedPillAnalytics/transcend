@@ -41,8 +41,8 @@ GRANT SELECT ANY dictionary TO tdsys;
 ALTER SESSION SET current_schema=tdsys;
 
 -- install the installation package
-@../../plsql/specs/TD_INSTALL.pks
-@../../plsql/wrapped_bodies/TD_INSTALL.plb
+@../plsql/specs/TD_INSTALL.pks
+@../plsql/wrapped_bodies/TD_INSTALL.plb
 
 BEGIN
    EXECUTE IMMEDIATE 'ALTER SESSION SET current_schema='||:current_schema;
