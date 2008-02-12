@@ -1165,7 +1165,7 @@ IS
 	   passphrase          VARCHAR2(100),
 	   source_directory    VARCHAR2(50),
 	   source_regexp       VARCHAR2(100),
-	   regexp_options      VARCHAR2(10),
+	   match_parameter     VARCHAR2(10),
 	   source_policy       VARCHAR2(10),
 	   required            VARCHAR2(3),
 	   delete_source       VARCHAR2(3),
