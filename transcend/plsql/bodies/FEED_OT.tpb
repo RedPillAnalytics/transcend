@@ -7,18 +7,18 @@ AS
       SELECT file_label, file_group, file_type, object_owner, object_name, DIRECTORY, dirpath, filename,
              dirpath || '/' || filename filepath, arch_directory, arch_dirpath, NULL arch_filename,
              NULL arch_filepath, file_datestamp, min_bytes, max_bytes, baseurl, NULL file_url, passphrase,
-             source_directory, source_dirpath, source_regexp, regexp_options, source_policy, required,
+             source_directory, source_dirpath, source_regexp, match_parameter, source_policy, required,
              delete_source, reject_limit
         INTO file_label, file_group, file_type, object_owner, object_name, DIRECTORY, dirpath, filename,
              filepath, arch_directory, arch_dirpath, arch_filename,
              arch_filepath, file_datestamp, min_bytes, max_bytes, baseurl, file_url, passphrase,
-             source_directory, source_dirpath, source_regexp, regexp_options, source_policy, required,
+             source_directory, source_dirpath, source_regexp, match_parameter, source_policy, required,
              delete_source, reject_limit
         FROM ( SELECT file_label, file_group, file_type, object_owner, object_name, DIRECTORY,
                       td_utils.get_dir_path( DIRECTORY ) dirpath, filename, arch_directory,
                       td_utils.get_dir_path( arch_directory ) arch_dirpath, file_datestamp, min_bytes,
                       max_bytes, baseurl, passphrase, source_directory,
-                      td_utils.get_dir_path( source_directory ) source_dirpath, source_regexp, regexp_options,
+                      td_utils.get_dir_path( source_directory ) source_dirpath, source_regexp, match_parameter,
                       source_policy, required, delete_source, reject_limit
                 FROM files_conf
                WHERE REGEXP_LIKE( file_type, '^feed$', 'i' )
@@ -320,8 +320,8 @@ AS
                                    UPPER( SELF.object_name ) object_name,
                                    UPPER( SELF.object_owner ) object_owner
                               FROM dir_list
-                             -- matching regexp and regexp_options to find matching source files
-                            WHERE  REGEXP_LIKE( filename, SELF.source_regexp, SELF.regexp_options )))
+                             -- matching regexp and match_parameter to find matching source files
+                            WHERE  REGEXP_LIKE( filename, SELF.source_regexp, SELF.match_parameter )))
           ORDER BY ext_tab_ind ASC )
       LOOP
          o_ev.change_action( 'process feed' );

@@ -78,7 +78,7 @@ IS
       p_passphrase         VARCHAR2 DEFAULT NULL,
       p_source_directory   VARCHAR2 DEFAULT NULL,
       p_source_regexp      VARCHAR2 DEFAULT NULL,
-      p_regexp_options     VARCHAR2 DEFAULT NULL,
+      p_match_parameter     VARCHAR2 DEFAULT NULL,
       p_source_policy      VARCHAR2 DEFAULT NULL,
       p_required           VARCHAR2 DEFAULT NULL,
       p_delete_source      VARCHAR2 DEFAULT NULL,
@@ -229,13 +229,13 @@ IS
                                 THEN NULL
                              ELSE passphrase
                           END,
-                regexp_options =
+                match_parameter =
                    CASE
-                      WHEN p_regexp_options IS NULL
-                         THEN regexp_options
-                      WHEN p_regexp_options = 'NULL'
+                      WHEN p_match_parameter IS NULL
+                         THEN match_parameter
+                      WHEN p_match_parameter = 'NULL'
                          THEN NULL
-                      ELSE regexp_options
+                      ELSE match_parameter
                    END,
                 source_policy =
                    CASE
@@ -290,7 +290,7 @@ IS
                 passphrase = NVL( p_passphrase, passphrase ),
                 source_directory = UPPER( NVL( p_source_directory, source_directory )),
                 source_regexp = NVL( p_source_regexp, source_regexp ),
-                regexp_options = NVL( p_regexp_options, regexp_options ),
+                match_parameter = NVL( p_match_parameter, match_parameter ),
                 source_policy = NVL( p_source_policy, source_policy ),
                 required = NVL( p_required, required ),
                 delete_source = NVL( p_delete_source, delete_source ),
@@ -329,14 +329,14 @@ IS
                         ( file_label, file_group, file_type, file_description, object_owner, object_name,
                           DIRECTORY, filename, arch_directory, min_bytes,
                           max_bytes, file_datestamp, baseurl, passphrase,
-                          source_directory, source_regexp, regexp_options,
+                          source_directory, source_regexp, match_parameter,
                           source_policy, required, delete_source,
                           reject_limit
                         )
                  VALUES ( p_file_label, p_file_group, 'feed', p_file_description, UPPER( p_owner ), UPPER( p_table ),
                           l_directory, p_filename, UPPER( p_arch_directory ), NVL( p_min_bytes, 0 ),
                           NVL( p_max_bytes, 0 ), p_file_datestamp, p_baseurl, p_passphrase,
-                          UPPER( p_source_directory ), p_source_regexp, NVL( p_regexp_options, 'i' ),
+                          UPPER( p_source_directory ), p_source_regexp, NVL( p_match_parameter, 'i' ),
                           NVL( p_source_policy, 'newest' ), NVL( p_required, 'yes' ), NVL( p_delete_source, 'yes' ),
                           NVL( p_reject_limit, 100 )
                         );
