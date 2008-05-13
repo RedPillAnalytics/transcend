@@ -25,16 +25,16 @@ AS
                  AND file_group = p_file_group
                   AND file_label = p_file_label );
       
-      confirm_feed;
+      verify;
 
       RETURN;
    END feed_ot;
 
-   MEMBER PROCEDURE confirm_feed
+   MEMBER PROCEDURE verify
    IS
       l_dir_path    all_directories.directory_path%TYPE;
       l_directory   all_external_tables.default_directory_name%TYPE;
-      o_ev   evolve_ot := evolve_ot( p_module => 'confirm_feed' );
+      o_ev   evolve_ot := evolve_ot( p_module => 'verify' );
    BEGIN
       -- do checks to make sure all the provided information is legitimate
       -- check to see if the directories are legitimate
@@ -58,7 +58,7 @@ AS
       evolve_log.log_msg( 'FEED confirmation completed successfully', 5 );
       -- reset the evolve_object
       o_ev.clear_app_info;
-   END confirm_feed;
+   END verify;
 
    -- audits information about external tables after the file(s) have been put in place
    MEMBER PROCEDURE audit_ext_tab( p_num_lines NUMBER )

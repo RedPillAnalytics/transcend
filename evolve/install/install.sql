@@ -22,16 +22,22 @@ ACCEPT drop_obj char default 'N' prompt 'Do you want to issue DROP TABLE stateme
 WHENEVER sqlerror exit sql.sqlcode
 
 DECLARE
-   e_user_exists EXCEPTION;
+   l_user           all_users.username%TYPE;
+   e_user_exists    EXCEPTION;
    PRAGMA EXCEPTION_INIT( e_user_exists, -1920 );
+   -- find out if the user exists
+   -- also get the current default tablespace of the user
 BEGIN
-   BEGIN
-      EXECUTE IMMEDIATE 'CREATE USER tdsys identified by no2tdsys';
-   EXCEPTION
-      WHEN e_user_exists
-      THEN
-        NULL;
-   END;
+   SELECT username
+     INTO l_user
+     FROM dba_users
+    WHERE username = 'TDSYS';
+
+EXCEPTION
+   -- the user does not exist
+   WHEN NO_DATA_FOUND
+   THEN
+      EXECUTE IMMEDIATE 'CREATE USER tdsys identified by no2tdsys default tablespace &tablespace quota unlimited on &tablespace';
 END;
 /
 

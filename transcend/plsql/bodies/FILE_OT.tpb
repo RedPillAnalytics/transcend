@@ -33,16 +33,12 @@ AS
          THEN
 	    o_ev.change_action( 'file too large');
             o_ev.send( p_label => file_label );
-            raise_application_error( td_inst.get_err_cd( 'file_too_large' ),
-                                     td_inst.get_err_msg( 'file_too_large' )
-                                   );
+	    evolve_log.raise_err( 'file_too_large' );
          ELSIF p_num_bytes < min_bytes
          THEN
 	    o_ev.change_action( 'file too small');
             o_ev.send( p_label => file_label );
-            raise_application_error( td_inst.get_err_cd( 'file_too_small' ),
-                                     td_inst.get_err_msg( 'file_too_small' )
-                                   );
+	    evolve_log.raise_err( 'file_too_small' );
          END IF;
       END IF;
 

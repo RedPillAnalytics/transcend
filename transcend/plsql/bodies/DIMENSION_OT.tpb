@@ -37,14 +37,14 @@ AS
       END;
 
       -- confirm the objects related to the dimensional configuration
-      confirm_dim;
+      verify;
       -- reset the evolve_object
       o_ev.clear_app_info;
       RETURN;
    END dimension_ot;
-   MEMBER PROCEDURE confirm_dim
+   MEMBER PROCEDURE verify
    IS
-      o_ev   evolve_ot := evolve_ot( p_module => 'confirm_dim' );
+      o_ev   evolve_ot := evolve_ot( p_module => 'verify' );
    BEGIN
       evolve_log.log_msg( 'Constant staging: ' || SELF.constant_staging, 5 );
       -- check to see if the dimension table exists
@@ -71,7 +71,7 @@ AS
       evolve_log.log_msg( 'Dimension confirmation completed successfully', 5 );
       -- reset the evolve_object
       o_ev.clear_app_info;
-   END confirm_dim;
+   END verify;
    MEMBER PROCEDURE initialize_cols
    IS
       o_ev   evolve_ot := evolve_ot( p_module => 'initialize_cols' );

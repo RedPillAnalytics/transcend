@@ -163,6 +163,9 @@ IS
             WHEN p_table = 'NULL'
             THEN
                evolve_log.raise_err( 'parm_req', 'P_TABLE' );
+            WHEN p_filename IS NULL
+            THEN
+               evolve_log.raise_err( 'parm_req', 'P_FILENAME' );
             WHEN p_arch_directory = 'NULL'
             THEN
                evolve_log.raise_err( 'parm_req', 'P_ARCH_DIRECTORY' );
@@ -311,6 +314,9 @@ IS
             WHEN p_table IS NULL
             THEN
                evolve_log.raise_err( 'parm_req', 'P_TABLE' );
+            WHEN p_filename IS NULL
+            THEN
+               evolve_log.raise_err( 'parm_req', 'P_FILENAME' );
             WHEN p_arch_directory IS NULL
             THEN
                evolve_log.raise_err( 'parm_req', 'P_ARCH_DIRECTORY' );
