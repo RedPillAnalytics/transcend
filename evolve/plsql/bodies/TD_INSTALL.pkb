@@ -1305,6 +1305,7 @@ IS
          EXECUTE IMMEDIATE q'|CREATE TABLE mapping_conf
 	 ( 
 	   mapping_name		VARCHAR2(30),
+	   mapping_type		VARCHAR2(10),
 	   table_owner 		VARCHAR2(61),
 	   table_name 		VARCHAR2(30),
 	   partition_name	VARCHAR2(30),
@@ -1347,23 +1348,19 @@ IS
          EXECUTE IMMEDIATE q'|ALTER TABLE mapping_conf ADD CONSTRAINT mapping_conf_ck5 CHECK (replace_method in ('exchange','rename'))|';
 
          EXECUTE IMMEDIATE q'|ALTER TABLE mapping_conf ADD CONSTRAINT mapping_conf_ck6 CHECK (replace_method = case when table_owner <> source_owner then 'exchange' else replace_method end )|';
+	 
+         EXECUTE IMMEDIATE q'|ALTER TABLE mapping_conf ADD CONSTRAINT mapping_conf_ck7 CHECK (mapping_type in ('dimension','table'))|';
 
          -- DIMENSION_CONF table
          EXECUTE IMMEDIATE q'|CREATE TABLE dimension_conf
 	 ( 
-	   table_owner		VARCHAR2(30) NOT NULL,
-	   table_name		VARCHAR2(30) NOT NULL,
-	   source_owner		VARCHAR2(30) NOT NULL,
-	   source_object	VARCHAR2(30) NOT NULL,
+	   mapping_name		VARCHAR2(30) NOT NULL,
 	   sequence_owner  	VARCHAR2(30) NOT NULL,
 	   sequence_name  	VARCHAR2(30) NOT NULL,
 	   staging_owner	VARCHAR2(30) DEFAULT NULL,
 	   staging_table	VARCHAR2(30) DEFAULT NULL,
 	   default_scd_type	NUMBER(1,0) DEFAULT 2 NOT NULL,
 	   direct_load		VARCHAR2(3) DEFAULT 'yes' NOT NULL,
-	   replace_method	VARCHAR2(10) DEFAULT 'rename' NOT NULL,
-	   statistics		VARCHAR2(10) DEFAULT 'transfer',
-	   concurrent		VARCHAR2(3) DEFAULT 'yes' NOT NULL,
 	   stage_key_default	NUMBER DEFAULT -.01 NOT NULL,
 	   char_nvl_default	VARCHAR2(1000) DEFAULT '~' NOT NULL,
 	   date_nvl_default	DATE DEFAULT to_date('01/01/9999','mm/dd/yyyy') NOT NULL,
@@ -1379,15 +1376,8 @@ IS
 	 (
 	   CONSTRAINT dimension_conf_pk
 	   PRIMARY KEY
-	   ( table_owner, table_name )
+	   ( mapping name )
 	   USING INDEX
-	 )|';
-
-         EXECUTE IMMEDIATE q'|ALTER TABLE dimension_conf ADD CONSTRAINT dimension_conf_ck1 CHECK (replace_method in ('exchange','rename'))|';
-
-         EXECUTE IMMEDIATE q'|ALTER TABLE dimension_conf ADD 
-	 ( CONSTRAINT dimension_conf_ck2
-	   CHECK ( upper(staging_owner) = CASE WHEN replace_method = 'rename' THEN upper(table_owner) ELSE staging_owner end )
 	 )|';
 
          -- COLUMN_CONF table
