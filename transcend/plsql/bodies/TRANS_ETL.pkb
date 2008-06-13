@@ -6,8 +6,25 @@ AS
    )
    AS
       o_map   mapping_ot := mapping_ot( p_mapping => p_mapping, p_batch_id => p_batch_id );
+      o_dim   dimension_ot := dimension_ot( p_mapping => p_mapping, p_batch_id => p_batch_id );
+      l_map_type  mapping_conf.mapping_type%type;
    BEGIN
+      -- first, find out what kind of mapping we have
+      -- there are currently two types supported... table and dimension
+      SELECT mapping_type
+	INTO l_map_type
+	FROM mapping_conf
+       WHERE mapping = p_mapping;
+      
+      -- polymorph the type based on the results
+      IF lower( l_map_type ) = 'dimension'
+      THEN
+	 o_map := o_dim;
+      END IF;
+
+      -- now, start the mapping      
       o_map.start_map;
+
    EXCEPTION
       WHEN OTHERS
       THEN
@@ -20,7 +37,9 @@ AS
       o_map   mapping_ot := mapping_ot( p_mapping => p_mapping );
    BEGIN
       o_map.end_map;
-      COMMIT;
+      -- used to have a commit here.
+      -- I don't think a commit should be done inside a mapping
+      -- it overrides the commit control of an ETL tool (if any)
    END end_etl_mapping;
 
    PROCEDURE truncate_table( p_owner VARCHAR2, p_table VARCHAR2, p_reuse VARCHAR2 DEFAULT 'no' )
