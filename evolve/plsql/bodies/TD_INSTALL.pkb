@@ -1376,7 +1376,7 @@ IS
 	 (
 	   CONSTRAINT dimension_conf_pk
 	   PRIMARY KEY
-	   ( mapping name )
+	   ( mapping_name )
 	   USING INDEX
 	 )|';
 
