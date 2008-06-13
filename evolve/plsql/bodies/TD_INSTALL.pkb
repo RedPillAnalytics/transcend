@@ -1354,7 +1354,8 @@ IS
          -- DIMENSION_CONF table
          EXECUTE IMMEDIATE q'|CREATE TABLE dimension_conf
 	 ( 
-	   mapping_name		VARCHAR2(30) NOT NULL,
+	   table_owner		VARCHAR2(30) NOT NULL,
+	   table_name		VARCHAR2(30) NOT NULL,
 	   sequence_owner  	VARCHAR2(30) NOT NULL,
 	   sequence_name  	VARCHAR2(30) NOT NULL,
 	   staging_owner	VARCHAR2(30) DEFAULT NULL,
@@ -1376,8 +1377,13 @@ IS
 	 (
 	   CONSTRAINT dimension_conf_pk
 	   PRIMARY KEY
-	   ( mapping_name )
+	   ( table_owner, table_name )
 	   USING INDEX
+	 )|';
+	 	 
+         EXECUTE IMMEDIATE q'|ALTER TABLE dimension_conf ADD 
+	 ( CONSTRAINT dimension_conf_ck2
+	   CHECK ( upper(staging_owner) = CASE WHEN replace_method = 'rename' THEN upper(table_owner) ELSE staging_owner end )
 	 )|';
 
          -- COLUMN_CONF table
