@@ -23,5 +23,6 @@ AS OBJECT(
    MEMBER PROCEDURE verify,
    MEMBER PROCEDURE start_map,
    MEMBER PROCEDURE end_map
-);
+)
+NOT FINAL;
 /
