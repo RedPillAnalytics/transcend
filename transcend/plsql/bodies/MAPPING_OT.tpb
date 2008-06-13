@@ -4,17 +4,11 @@ AS
       RETURN SELF AS RESULT
    AS
    BEGIN
-      -- store the mapping name
-      SELF.mapping_name := LOWER( p_mapping );
 
-      -- store the batch_id
-      -- only want to do this if the value is provided
-      -- otherwise, keep the previous value
-      IF p_batch_id IS NOT NULL
-      THEN
-         td_inst.batch_id( p_batch_id );
-      END IF;
-
+      -- set the instrumentation details
+      register;
+      
+      -- load information from the mapping_conf table
       BEGIN
          SELECT manage_indexes, manage_constraints, replace_method, STATISTICS, concurrent,
                 table_owner, table_name, partition_name, source_owner, source_object,
@@ -38,6 +32,25 @@ AS
       td_inst.batch_id( p_batch_id );
       RETURN;
    END mapping_ot;
+
+   MEMBER PROCEDURE register ( p_mapping VARCHAR2 )
+   IS
+      o_ev   evolve_ot := evolve_ot( p_module => 'register' );
+   BEGIN
+      -- store the mapping name
+      SELF.mapping_name := LOWER( p_mapping );
+
+      -- store the batch_id
+      -- only want to do this if the value is provided
+      -- otherwise, keep the previous value
+      IF p_batch_id IS NOT NULL
+      THEN
+         td_inst.batch_id( p_batch_id );
+      END IF;
+      -- reset the evolve_object
+      o_ev.clear_app_info;
+   END register;
+
    MEMBER PROCEDURE verify
    IS
       o_ev   evolve_ot := evolve_ot( p_module => 'verify' );
@@ -161,8 +174,9 @@ AS
       THEN
          td_dbutils.enable_constraints( p_concurrent => SELF.concurrent );
       END IF;
-
-      COMMIT;
+      
+      -- used to be a commit right here
+      -- removing it because I don't think a commit should exist inside mapping functionality
       evolve_log.log_msg( 'Ending ETL mapping' );
    END end_map;
 END;
