@@ -6,7 +6,7 @@ AS
    BEGIN
 
       -- set the instrumentation details
-      register;
+      register( p_mapping );
       
       -- load information from the mapping_conf table
       BEGIN
