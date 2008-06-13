@@ -7,6 +7,11 @@ AS
       o_ev         evolve_ot                         := evolve_ot( p_module => 'dimension_ot' );
    BEGIN
       BEGIN
+	 
+	 -- first register instrumentation details
+	 register;
+	 
+	 -- now load the other attributes
          SELECT table_owner, table_name, full_table, source_owner, source_object,
                 full_source, sequence_owner, sequence_name, full_sequence, staging_owner,
                 staging_table, staging_owner || '.' || staging_table full_stage, constant_staging, direct_load,
@@ -26,7 +31,7 @@ AS
                             ELSE 'yes'
                          END constant_staging, direct_load, replace_method, STATISTICS, concurrent
                     FROM dimension_conf JOIN mapping_conf USING (mapping_name)
-                   WHERE lower(mapping_name) = lower(mapping_name));
+                   WHERE mapping_name = SELF.mapping_name);
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
