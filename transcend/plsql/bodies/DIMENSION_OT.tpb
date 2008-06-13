@@ -1,11 +1,8 @@
 CREATE OR REPLACE TYPE BODY dimension_ot
 AS
-   CONSTRUCTOR FUNCTION dimension_ot( p_owner VARCHAR2, p_table VARCHAR2 )
+   CONSTRUCTOR FUNCTION dimension_ot( p_mapping VARCHAR2, p_batch_id NUMBER DEFAULT NULL )
       RETURN SELF AS RESULT
    AS
-      l_tab_name   VARCHAR2( 61 )                    := UPPER( p_owner || '.' || p_table );
-      l_owner      dimension_conf.table_owner%TYPE   := UPPER( p_owner );
-      l_table      dimension_conf.table_name%TYPE    := UPPER( p_table );
       l_load_sql   LONG;
       o_ev         evolve_ot                         := evolve_ot( p_module => 'dimension_ot' );
    BEGIN
@@ -28,8 +25,8 @@ AS
                                THEN 'no'
                             ELSE 'yes'
                          END constant_staging, direct_load, replace_method, STATISTICS, concurrent
-                   FROM dimension_conf
-                  WHERE table_owner = l_owner AND table_name = l_table );
+                    FROM dimension_conf JOIN mapping_conf USING (mapping_name)
+                   WHERE lower(mapping_name) = lower(mapping_name));
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
@@ -42,7 +39,7 @@ AS
       o_ev.clear_app_info;
       RETURN;
    END dimension_ot;
-   MEMBER PROCEDURE verify
+   OVERRIDING MEMBER PROCEDURE verify
    IS
       o_ev   evolve_ot := evolve_ot( p_module => 'verify' );
    BEGIN
@@ -398,7 +395,7 @@ AS
                                'when nvl(\1,'''
                             || l_char_nvl
                             || ''') <> nvl(lag(\1) over (partition by '
-                            || SELF.natural_key_list
+n                            || SELF.natural_key_list
                             || ' order by '
                             || SELF.effect_dt_col
                             || '),'''
@@ -607,6 +604,15 @@ AS
       -- reset the evolve_object
       o_ev.clear_app_info;
    END LOAD;
+
+   OVERRIDING MEMBER PROCEDURE start_map
+   AS
+      o_ev   evolve_ot := evolve_ot( p_module => 'etl_mapping', p_action => SELF.mapping_name );
+   BEGIN
+      evolve_log.log_msg( 'Starting ETL mapping' );
+      
+      -- now simply execute the dimension_ot.load methodj
+      load;
 END;
 /
 
