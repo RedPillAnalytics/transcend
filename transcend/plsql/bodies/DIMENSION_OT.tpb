@@ -6,20 +6,21 @@ AS
       l_load_sql   LONG;
       o_ev         evolve_ot                         := evolve_ot( p_module => 'dimension_ot' );
    BEGIN
-      BEGIN
-	 
-	 -- first register instrumentation details
+
+      -- first register instrumentation details
 	 register( p_mapping );
+	 
+      BEGIN
 	 
 	 -- now load the other attributes
          SELECT table_owner, table_name, full_table, source_owner, source_object,
                 full_source, sequence_owner, sequence_name, full_sequence, staging_owner,
                 staging_table, staging_owner || '.' || staging_table full_stage, constant_staging, direct_load,
-                replace_method, STATISTICS, concurrent
+                replace_method, STATISTICS, concurrent, mapping_name
            INTO SELF.table_owner, SELF.table_name, SELF.full_table, SELF.source_owner, SELF.source_object,
                 SELF.full_source, SELF.sequence_owner, SELF.sequence_name, SELF.full_sequence, SELF.staging_owner,
                 SELF.staging_table, SELF.full_stage, SELF.constant_staging, SELF.direct_load,
-                SELF.replace_method, SELF.STATISTICS, SELF.concurrent
+                SELF.replace_method, SELF.STATISTICS, SELF.concurrent, SELF.mapping_name
            FROM ( SELECT table_owner, table_name, table_owner || '.' || table_name full_table, source_owner,
                          source_object, source_owner || '.' || source_object full_source, sequence_owner, sequence_name,
                          sequence_owner || '.' || sequence_name full_sequence,
@@ -30,13 +31,13 @@ AS
                                THEN 'no'
                             ELSE 'yes'
                          END constant_staging, direct_load, replace_method, STATISTICS, concurrent
-                    FROM dimension_conf JOIN mapping_conf USING (mapping_name)
-                   WHERE mapping_name = SELF.mapping_name);
+                    FROM dimension_conf JOIN mapping_conf USING (table_owner, table_name)
+                   WHERE mapping_name = SELF.mapping_name );
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
             evolve_log.raise_err( 'no_dim', SELF.full_table );
-      END;
+      END;      
 
       -- confirm the objects related to the dimensional configuration
       verify;
@@ -400,7 +401,7 @@ AS
                                'when nvl(\1,'''
                             || l_char_nvl
                             || ''') <> nvl(lag(\1) over (partition by '
-n                            || SELF.natural_key_list
+                            || SELF.natural_key_list
                             || ' order by '
                             || SELF.effect_dt_col
                             || '),'''
