@@ -9,7 +9,7 @@ AS
       BEGIN
 	 
 	 -- first register instrumentation details
-	 register;
+	 register( p_mapping );
 	 
 	 -- now load the other attributes
          SELECT table_owner, table_name, full_table, source_owner, source_object,
