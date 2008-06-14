@@ -1,6 +1,4 @@
-CREATE OR REPLACE TYPE dimension_ot UNDER mapping_ot
-   AUTHID CURRENT_USER
-AS OBJECT(
+CREATE OR REPLACE TYPE dimension_ot UNDER mapping_ot(
    full_table          VARCHAR2( 61 ),
    full_source         VARCHAR2( 61 ),
    sequence_owner      VARCHAR2( 30 ),
@@ -16,11 +14,12 @@ AS OBJECT(
    expire_dt_col       VARCHAR2( 30 ),
    surrogate_key_col   VARCHAR2( 30 ),
    natural_key_list    VARCHAR2( 4000 ),
-   CONSTRUCTOR FUNCTION dimension_ot( p_owner VARCHAR2, p_table VARCHAR2 )
+   CONSTRUCTOR FUNCTION dimension_ot( p_mapping VARCHAR2, p_batch_id NUMBER DEFAULT NULL )
       RETURN SELF AS RESULT,
    OVERRIDING MEMBER PROCEDURE verify,
    MEMBER PROCEDURE initialize_cols,
    MEMBER PROCEDURE confirm_dim_cols,
+   OVERRIDING MEMBER PROCEDURE start_map,
    MEMBER PROCEDURE LOAD
 );
 /

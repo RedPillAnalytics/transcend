@@ -6,7 +6,7 @@ AS
    BEGIN
 
       -- set the instrumentation details
-      register( p_mapping );
+      register( p_mapping, p_batch_id );
       
       -- load information from the mapping_conf table
       BEGIN
@@ -33,7 +33,7 @@ AS
       RETURN;
    END mapping_ot;
 
-   MEMBER PROCEDURE register ( p_mapping VARCHAR2 )
+   MEMBER PROCEDURE register ( p_mapping VARCHAR2, p_batch_id NUMBER DEFAULT NULL )
    IS
       o_ev   evolve_ot := evolve_ot( p_module => 'register' );
    BEGIN

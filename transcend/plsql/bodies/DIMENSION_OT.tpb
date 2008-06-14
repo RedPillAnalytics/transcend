@@ -8,10 +8,9 @@ AS
    BEGIN
 
       -- first register instrumentation details
-	 register( p_mapping );
+      SELF.register( p_mapping => p_mapping, p_batch_id => p_batch_id );
 	 
       BEGIN
-	 
 	 -- now load the other attributes
          SELECT table_owner, table_name, full_table, source_owner, source_object,
                 full_source, sequence_owner, sequence_name, full_sequence, staging_owner,
@@ -619,6 +618,7 @@ AS
       
       -- now simply execute the dimension_ot.load methodj
       load;
+   END;
 END;
 /
 
