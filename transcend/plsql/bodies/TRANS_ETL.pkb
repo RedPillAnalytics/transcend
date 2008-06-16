@@ -14,7 +14,7 @@ AS
       SELECT mapping_type
 	INTO l_map_type
 	FROM mapping_conf
-       WHERE mapping = p_mapping;
+       WHERE mapping_name = p_mapping;
       
       -- polymorph the type based on the results
       IF lower( l_map_type ) = 'dimension'
@@ -471,8 +471,24 @@ AS
    -- uses SQL analytics to load a hybrid SCD dimension table
    PROCEDURE load_dim( p_owner VARCHAR2, p_table VARCHAR2 )
    IS
-      o_dim   dimension_ot := dimension_ot( p_owner => p_owner, p_table => p_table );
+      o_dim   dimension_ot;
+      l_mapping mapping_conf.mapping_name%type;
    BEGIN
+      -- get the mapping name using owner and table
+      BEGIN
+	 SELECT mapping_name
+	   INTO l_mapping
+	   FROM mapping_conf JOIN dimension_conf
+		USING (table_owner,table_name)
+	  WHERE table_owner=p_owner AND table_name=p_table;
+      EXCEPTION
+	 WHEN no_data_found
+	 THEN
+           evolve_log.raise_err( 'no_dim', p_owner||'.'||p_table );
+      END;
+      -- instantiate the dimension object
+      o_dim := dimension_ot( p_mapping => l_mapping );
+      -- execute the load
       o_dim.LOAD;
    EXCEPTION
       WHEN OTHERS

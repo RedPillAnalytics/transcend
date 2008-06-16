@@ -897,6 +897,7 @@ IS
    )
    IS
       o_dim        dimension_ot;
+      l_mapping	   mapping_conf.mapping_name%type := p_owner||'.'||p_table||' load';
       l_num_rows   NUMBER;
       e_dup_conf   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_conf, -1 );
@@ -905,27 +906,8 @@ IS
       THEN
          evolve_log.log_msg( 'Nullifying configuration elements', 5 );
 
-         -- first try to update an existing configuration
          UPDATE dimension_conf
-            SET source_owner =
-                   UPPER( CASE
-                             WHEN p_source_owner IS NULL
-                                THEN source_owner
-                             WHEN p_source_owner = 'NULL'
-                                THEN NULL
-                             ELSE source_owner
-                          END
-                        ),
-                source_object =
-                   UPPER( CASE
-                             WHEN p_source_object IS NULL
-                                THEN source_object
-                             WHEN p_source_object = 'NULL'
-                                THEN NULL
-                             ELSE source_object
-                          END
-                        ),
-                sequence_owner =
+            SET sequence_owner =
                    UPPER( CASE
                              WHEN p_sequence_owner IS NULL
                                 THEN sequence_owner
@@ -978,31 +960,6 @@ IS
                              ELSE direct_load
                           END
                         ),
-                replace_method =
-                   LOWER( CASE
-                             WHEN p_replace_method IS NULL
-                                THEN replace_method
-                             WHEN p_replace_method = 'NULL'
-                                THEN NULL
-                             ELSE replace_method
-                          END
-                        ),
-                STATISTICS =
-                   LOWER( CASE
-                             WHEN p_statistics IS NULL
-                                THEN STATISTICS
-                             WHEN p_statistics = 'NULL'
-                                THEN NULL
-                             ELSE STATISTICS
-                          END ),
-                concurrent =
-                   LOWER( CASE
-                             WHEN p_concurrent IS NULL
-                                THEN concurrent
-                             WHEN p_concurrent = 'NULL'
-                                THEN NULL
-                             ELSE concurrent
-                          END ),
                 stage_key_default =
                    CASE
                       WHEN p_stage_key_def IS NULL
@@ -1047,29 +1004,22 @@ IS
                 modified_dt = SYSDATE
           WHERE table_owner = UPPER( p_owner ) AND table_name = UPPER( p_table );
 
-         -- get the SQL rowcount
-         l_num_rows := SQL%ROWCOUNT;
+	  l_num_rows := SQL%ROWCOUNT;
       END IF;
 
+            
       IF LOWER( p_mode ) IN( 'upsert', 'update' )
       THEN
          evolve_log.log_msg( 'Updating configuration', 5 );
 
          -- first try to update an existing configuration
          UPDATE dimension_conf
-            SET table_owner = UPPER( NVL( p_owner, table_owner )),
-                table_name = UPPER( NVL( p_table, table_name )),
-                source_owner = UPPER( NVL( p_source_owner, source_owner )),
-                source_object = UPPER( NVL( p_source_object, source_object )),
-                sequence_owner = UPPER( NVL( p_sequence_owner, sequence_owner )),
+            SET sequence_owner = UPPER( NVL( p_sequence_owner, sequence_owner )),
                 sequence_name = UPPER( NVL( p_sequence_name, sequence_name )),
                 staging_owner = UPPER( NVL( p_staging_owner, staging_owner )),
                 staging_table = UPPER( NVL( p_staging_table, staging_table )),
                 default_scd_type = NVL( p_default_scd_type, default_scd_type ),
                 direct_load = LOWER( NVL( p_direct_load, direct_load )),
-                replace_method = LOWER( NVL( p_replace_method, replace_method )),
-                STATISTICS = LOWER( NVL( p_statistics, STATISTICS )),
-                concurrent = LOWER( NVL( p_concurrent, concurrent )),
                 stage_key_default = NVL( p_stage_key_def, stage_key_default ),
                 char_nvl_default = NVL( p_char_nvl_def, char_nvl_default ),
                 date_nvl_default = NVL( p_date_nvl_def, date_nvl_default ),
@@ -1114,19 +1064,14 @@ IS
 
          BEGIN
             INSERT INTO dimension_conf
-                        ( table_owner, table_name, source_owner, source_object,
-                          sequence_owner, sequence_name, staging_owner,
-                          staging_table, default_scd_type, direct_load,
-                          replace_method, STATISTICS,
-                          concurrent, stage_key_default, char_nvl_default,
-                          date_nvl_default, number_nvl_default,
-                          description
+                        ( table_owner, table_name, sequence_owner, sequence_name, 
+			  staging_owner, staging_table, default_scd_type, direct_load,
+			  stage_key_default, char_nvl_default, date_nvl_default, 
+			  number_nvl_default, description
                         )
-                 VALUES ( UPPER( p_owner ), UPPER( p_table ), UPPER( p_source_owner ), UPPER( p_source_object ),
-                          UPPER( p_sequence_owner ), UPPER( p_sequence_name ), UPPER( p_staging_owner ),
-                          UPPER( p_staging_table ), NVL( p_default_scd_type, 2 ), LOWER( NVL( p_direct_load, 'yes' )),
-                          LOWER( NVL( p_replace_method, 'rename' )), LOWER( NVL( p_statistics, 'transfer' )),
-                          LOWER( NVL( p_concurrent, 'yes' )), NVL( p_stage_key_def, -.01 ), NVL( p_char_nvl_def, '~' ),
+                 VALUES ( UPPER( p_owner ), UPPER( p_table ), UPPER( p_sequence_owner ), UPPER( p_sequence_name ), 
+			  UPPER( p_staging_owner ), UPPER( p_staging_table ), NVL( p_default_scd_type, 2 ), 
+			  LOWER( NVL( p_direct_load, 'yes' )), NVL( p_stage_key_def, -.01 ), NVL( p_char_nvl_def, '~' ),
                           NVL( p_date_nvl_def, TO_DATE( '01/01/9999', 'mm/dd/yyyy' )), NVL( p_num_nvl_def, -.01 ),
                           p_description
                         );
@@ -1151,14 +1096,28 @@ IS
 
          -- get the SQL rowcount
          l_num_rows := SQL%ROWCOUNT;
-      ELSE
-              -- as long as P_MODE wasn't 'delete', then we should validate the new structure of the dimension
-              -- now use the dimension object to validate the new structure
+      END IF;
+      
+      -- now make the call to configure the mapping
+      configure_mapping( p_mode 	  => p_mode,
+			 p_mapping	  => l_mapping,
+			 p_source_owner   => p_source_owner,
+			 p_source_object  => p_source_object,
+			 p_replace_method => p_replace_method,
+			 p_statistics 	  => p_statistics,
+			 p_concurrent 	  => p_concurrent );
+      
+      -- also update the mapping_type to show it's a dimensional mapping
+      UPDATE mapping_conf SET mapping_type = 'dimension' WHERE table_owner = p_owner AND table_name = p_table;
+      
+
+      IF lower( p_mode ) <> 'delete'
+      THEN
+
+         -- as long as P_MODE wasn't 'delete', then we should validate the new structure of the dimension
+         -- now use the dimension object to validate the new structure
          -- just constructing the object calls the CONFIRM_OBJECTS procedure
-         BEGIN
-            NULL;
-            o_dim := dimension_ot( p_owner => p_owner, p_table => p_table );
-         END;
+         o_dim := dimension_ot( l_mapping );
       END IF;
 
       -- if we still have not affected any records, then there's a problem
@@ -1180,10 +1139,11 @@ IS
       p_current_ind     VARCHAR2 DEFAULT NULL
    )
    IS
+      l_mapping	   mapping_conf.mapping_name%type := p_owner||'.'||p_table||' load';
       l_results    NUMBER;
       l_col_list   LONG;
       -- a dimension table should have already been configured
-      o_dim        dimension_ot := dimension_ot( p_owner => p_owner, p_table => p_table );
+      o_dim        dimension_ot := dimension_ot( l_mapping );
       e_dup_conf   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_conf, -1 );
    BEGIN
