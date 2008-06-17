@@ -44,7 +44,7 @@ AS
       o_ev.clear_app_info;
       RETURN;
    END dimension_ot;
-   STATIC PROCEDURE verify_dim
+   FINAL MEMBER PROCEDURE verify_dim
    IS
       o_ev   evolve_ot := evolve_ot( p_module => 'verify_dim' );
    BEGIN

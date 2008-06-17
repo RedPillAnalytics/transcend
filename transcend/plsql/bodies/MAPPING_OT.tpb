@@ -51,7 +51,7 @@ AS
       o_ev.clear_app_info;
    END register;
 
-   STATIC PROCEDURE verify_map
+   FINAL MEMBER PROCEDURE verify_map
    IS
       o_ev   evolve_ot := evolve_ot( p_module => 'verify_map' );
    BEGIN
