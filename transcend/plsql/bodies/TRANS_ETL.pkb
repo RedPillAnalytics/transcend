@@ -1,12 +1,11 @@
 CREATE OR REPLACE PACKAGE BODY trans_etl
 AS
-   PROCEDURE start_etl_mapping(
+   PROCEDURE start_mapping(
       p_mapping    VARCHAR2 DEFAULT SYS_CONTEXT( 'USERENV', 'ACTION' ),
       p_batch_id   NUMBER DEFAULT NULL
    )
    AS
       o_map   mapping_ot := mapping_ot( p_mapping => p_mapping, p_batch_id => p_batch_id );
-      o_dim   dimension_ot := dimension_ot( p_mapping => p_mapping, p_batch_id => p_batch_id );
       l_map_type  mapping_conf.mapping_type%type;
    BEGIN
       -- first, find out what kind of mapping we have
@@ -16,31 +15,52 @@ AS
 	FROM mapping_conf
        WHERE mapping_name = p_mapping;
       
-      -- polymorph the type based on the results
-      IF lower( l_map_type ) = 'dimension'
+      -- TODO: replace the conditional logic on the different object types with a call to a factory
+      -- only execute start_map if this is not a dimension load
+      -- that's because nothing should be done for a dimension load in the beginning of the mapping
+      IF lower( l_map_type ) <> 'dimension'
       THEN
-	 o_map := o_dim;
+	 -- now, start the mapping      
+	 o_map.start_map;
       END IF;
-
-      -- now, start the mapping      
-      o_map.start_map;
 
    EXCEPTION
       WHEN OTHERS
       THEN
          evolve_log.log_err;
          RAISE;
-   END start_etl_mapping;
+   END start_mapping;
 
-   PROCEDURE end_etl_mapping( p_mapping VARCHAR2 DEFAULT SYS_CONTEXT( 'USERENV', 'ACTION' ))
+   PROCEDURE end_mapping( p_mapping VARCHAR2 DEFAULT SYS_CONTEXT( 'USERENV', 'ACTION' ))
    AS
       o_map   mapping_ot := mapping_ot( p_mapping => p_mapping );
+      o_dim   dimension_ot := dimension_ot( p_mapping => p_mapping );
+      l_map_type  mapping_conf.mapping_type%type;
    BEGIN
+      -- first, find out what kind of mapping we have
+      -- there are currently two types supported... table and dimension
+      SELECT mapping_type
+	INTO l_map_type
+	FROM mapping_conf
+       WHERE lower(mapping_name) = lower(p_mapping);
+      
+      evolve_log.log_msg('Mapping type: '||l_map_type, 5);
+      
+      -- TODO: replace the conditional logic on the different object types with a call to a factory
+      -- find out if this is a dimensional mapping
+      -- choose the proper object depending on this
+      IF lower( l_map_type ) = 'dimension'
+      THEN
+	 -- polymorph the mapping object to a dimension object
+	 o_map := o_dim;
+      END IF;
+
+      -- now, regardless of which object type this is, the following call is correct      
       o_map.end_map;
       -- used to have a commit here.
       -- I don't think a commit should be done inside a mapping
       -- it overrides the commit control of an ETL tool (if any)
-   END end_etl_mapping;
+   END end_mapping;
 
    PROCEDURE truncate_table( p_owner VARCHAR2, p_table VARCHAR2, p_reuse VARCHAR2 DEFAULT 'no' )
    IS
@@ -480,7 +500,7 @@ AS
 	   INTO l_mapping
 	   FROM mapping_conf JOIN dimension_conf
 		USING (table_owner,table_name)
-	  WHERE table_owner=p_owner AND table_name=p_table;
+	  WHERE lower(table_owner)=p_owner AND lower(table_name)=p_table;
       EXCEPTION
 	 WHEN no_data_found
 	 THEN

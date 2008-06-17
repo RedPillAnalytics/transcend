@@ -316,7 +316,7 @@ AS
             NULL;
       END;
 
-      evolve_log.log_msg( 'The SCD 2 number list: ' || l_scd2_nums, 5 );
+      evolve_log.log_msg( 'The SCD2 number list: ' || l_scd2_nums, 5 );
 
       -- get a comma separated list of scd2 date columns
       -- use the STRAGG function for this
@@ -336,7 +336,7 @@ AS
             NULL;
       END;
 
-      evolve_log.log_msg( 'The SCD 2 char list: ' || l_scd2_chars, 5 );
+      evolve_log.log_msg( 'The SCD2 char list: ' || l_scd2_chars, 5 );
 
       -- get a comma separated list of scd1 columns
       -- use the STRAGG function for this
@@ -352,12 +352,12 @@ AS
             NULL;
       END;
 
-      evolve_log.log_msg( 'The SCD 1 list: ' || l_scd1_list, 5 );
+      evolve_log.log_msg( 'The SCD1 list: ' || l_scd1_list, 5 );
       -- construct a list of all scd2 attributes
       -- if any of the variables are null, we may get a ',,' or a ',' at the end or beginning of the list
       -- use the regexp_replaces to remove that
       l_scd2_list := td_core.format_list( l_scd2_dates || ',' || l_scd2_nums || ',' || l_scd2_chars );
-      evolve_log.log_msg( 'The SCD 2 complete list: ' || l_scd2_list, 5 );
+      evolve_log.log_msg( 'The SCD2 complete list: ' || l_scd2_list, 5 );
       -- construct a list of all scd attributes
       -- this is a combined list of all scd1 and scd2 attributes
       -- if any of the variables are null, we may get a ',,'
@@ -610,7 +610,7 @@ AS
       o_ev.clear_app_info;
    END LOAD;
 
-   OVERRIDING MEMBER PROCEDURE start_map
+   OVERRIDING MEMBER PROCEDURE end_map
    AS
       o_ev   evolve_ot := evolve_ot( p_module => 'etl_mapping', p_action => SELF.mapping_name );
    BEGIN

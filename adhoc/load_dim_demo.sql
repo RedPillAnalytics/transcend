@@ -186,9 +186,9 @@ BEGIN
 END;
 /
 
--- all this really entails is an entry in a configuration table
+-- all this really entails is a few entries in configuration tables
 -- using T Kyte's PRINT package to make this a little easier to see
-exec print.tbl(q'|select * from dimension_conf where table_owner='TESTDIM' and table_name='CUSTOMER_DIM'|');
+exec print.tbl(q'|select * from dimension_conf join mapping_conf using (table_name,table_owner) where table_owner='TESTDIM' and table_name='CUSTOMER_DIM'|');
 
 -- now, configure the columns for the dimension
 BEGIN

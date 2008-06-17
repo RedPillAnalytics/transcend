@@ -99,6 +99,7 @@ AS
       -- reset the evolve_object
       o_ev.clear_app_info;
    END verify;
+
    MEMBER PROCEDURE start_map
    AS
       o_ev   evolve_ot := evolve_ot( p_module => 'etl_mapping', p_action => SELF.mapping_name );

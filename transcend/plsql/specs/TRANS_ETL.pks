@@ -1,11 +1,11 @@
 CREATE OR REPLACE PACKAGE trans_etl AUTHID CURRENT_USER
 IS
-   PROCEDURE start_etl_mapping(
+   PROCEDURE start_mapping(
       p_mapping    VARCHAR2 DEFAULT SYS_CONTEXT( 'USERENV', 'ACTION' ),
       p_batch_id   NUMBER DEFAULT NULL
    );
 
-   PROCEDURE end_etl_mapping( p_mapping VARCHAR2 DEFAULT SYS_CONTEXT( 'USERENV', 'ACTION' ));
+   PROCEDURE end_mapping( p_mapping VARCHAR2 DEFAULT SYS_CONTEXT( 'USERENV', 'ACTION' ));
 
    PROCEDURE truncate_table( p_owner VARCHAR2, p_table VARCHAR2, p_reuse VARCHAR2 DEFAULT 'no' );
 

@@ -1101,6 +1101,8 @@ IS
       -- now make the call to configure the mapping
       configure_mapping( p_mode 	  => p_mode,
 			 p_mapping	  => l_mapping,
+			 p_table	  => p_table,
+			 p_owner	  => p_owner,
 			 p_source_owner   => p_source_owner,
 			 p_source_object  => p_source_object,
 			 p_replace_method => p_replace_method,
@@ -1108,7 +1110,7 @@ IS
 			 p_concurrent 	  => p_concurrent );
       
       -- also update the mapping_type to show it's a dimensional mapping
-      UPDATE mapping_conf SET mapping_type = 'dimension' WHERE table_owner = p_owner AND table_name = p_table;
+      UPDATE mapping_conf SET mapping_type = 'dimension' WHERE upper(table_owner) = upper(p_owner) AND upper(table_name) = upper(p_table);
       
 
       IF lower( p_mode ) <> 'delete'
