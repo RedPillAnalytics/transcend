@@ -48,10 +48,10 @@ END;
 @../plsql/wrapped_bodies/EXTRACT_OT.plb
 @../plsql/specs/FEED_OT.tps
 @../plsql/wrapped_bodies/FEED_OT.plb
-@../plsql/specs/DIMENSION_OT.tps
-@../plsql/wrapped_bodies/DIMENSION_OT.plb
 @../plsql/specs/MAPPING_OT.tps
 @../plsql/wrapped_bodies/MAPPING_OT.plb
+@../plsql/specs/DIMENSION_OT.tps
+@../plsql/wrapped_bodies/DIMENSION_OT.plb
 
 --CREATE callable packages
 @../plsql/specs/TRANS_ADM.pks
