@@ -16,7 +16,7 @@ CREATE OR REPLACE TYPE dimension_ot UNDER mapping_ot(
    natural_key_list    VARCHAR2( 4000 ),
    CONSTRUCTOR FUNCTION dimension_ot( p_mapping VARCHAR2, p_batch_id NUMBER DEFAULT NULL )
       RETURN SELF AS RESULT,
-   OVERRIDING MEMBER PROCEDURE verify,
+   OVERRIDING MEMBER PROCEDURE verify_map,
    MEMBER PROCEDURE initialize_cols,
    MEMBER PROCEDURE confirm_dim_cols,
    OVERRIDING MEMBER PROCEDURE end_map,

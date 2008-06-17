@@ -39,23 +39,20 @@ AS
       END;      
 
       -- confirm the objects related to the dimensional configuration
-      verify;
+      verify_dim;
       -- reset the evolve_object
       o_ev.clear_app_info;
       RETURN;
    END dimension_ot;
-   OVERRIDING MEMBER PROCEDURE verify
+   STATIC PROCEDURE verify_dim
    IS
-      o_ev   evolve_ot := evolve_ot( p_module => 'verify' );
+      o_ev   evolve_ot := evolve_ot( p_module => 'verify_dim' );
    BEGIN
+      -- first I need to verify the mapping object is valid
+      verify_map;
+
+      -- now investigate the dimensional object
       evolve_log.log_msg( 'Constant staging: ' || SELF.constant_staging, 5 );
-      -- check to see if the dimension table exists
-      td_utils.check_table( p_owner => SELF.table_owner, p_table => SELF.table_name );
-      -- check that the source object exists
-      td_utils.check_object( p_owner            => SELF.source_owner,
-                             p_object           => SELF.source_object,
-                             p_object_type      => 'table$|view'
-                           );
       -- check that the sequence exists
       evolve_log.log_msg( 'The sequence owner: ' || SELF.sequence_owner, 5 );
       evolve_log.log_msg( 'The sequence name: ' || SELF.sequence_name, 5 );
@@ -73,7 +70,7 @@ AS
       evolve_log.log_msg( 'Dimension confirmation completed successfully', 5 );
       -- reset the evolve_object
       o_ev.clear_app_info;
-   END verify;
+   END verify_dim;
    MEMBER PROCEDURE initialize_cols
    IS
       o_ev   evolve_ot := evolve_ot( p_module => 'initialize_cols' );

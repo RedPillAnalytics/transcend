@@ -27,7 +27,7 @@ AS
       END;
 
       -- confirm the properties of the mapping
-      verify;
+      verify_map;
       -- store the batch_id
       td_inst.batch_id( p_batch_id );
       RETURN;
@@ -51,9 +51,9 @@ AS
       o_ev.clear_app_info;
    END register;
 
-   MEMBER PROCEDURE verify
+   STATIC PROCEDURE verify_map
    IS
-      o_ev   evolve_ot := evolve_ot( p_module => 'verify' );
+      o_ev   evolve_ot := evolve_ot( p_module => 'verify_map' );
    BEGIN
       -- check to see that the specified table exists
       IF SELF.table_name IS NOT NULL
@@ -98,7 +98,7 @@ AS
       evolve_log.log_msg( 'Mapping confirmation completed successfully', 5 );
       -- reset the evolve_object
       o_ev.clear_app_info;
-   END verify;
+   END verify_map
 
    MEMBER PROCEDURE start_map
    AS

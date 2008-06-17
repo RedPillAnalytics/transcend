@@ -21,7 +21,7 @@ AS OBJECT(
    CONSTRUCTOR FUNCTION mapping_ot( p_mapping VARCHAR2, p_batch_id NUMBER DEFAULT NULL )
       RETURN SELF AS RESULT,
    MEMBER PROCEDURE register ( p_mapping VARCHAR2, p_batch_id NUMBER DEFAULT NULL ),
-   MEMBER PROCEDURE verify,
+   MEMBER PROCEDURE verify_map,
    MEMBER PROCEDURE start_map,
    MEMBER PROCEDURE end_map
 )
