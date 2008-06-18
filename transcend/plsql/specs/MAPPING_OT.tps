@@ -2,6 +2,7 @@ CREATE OR REPLACE TYPE mapping_ot
    AUTHID CURRENT_USER
 AS OBJECT(
    mapping_name         VARCHAR2( 30 ),
+   mapping_type		VARCHAR2( 10 ), 
    table_owner          VARCHAR2( 61 ),
    table_name           VARCHAR2( 30 ),
    partition_name       VARCHAR2( 30 ),

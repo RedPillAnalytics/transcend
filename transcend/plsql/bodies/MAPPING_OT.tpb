@@ -13,11 +13,11 @@ AS
          SELECT manage_indexes, manage_constraints, replace_method, STATISTICS, concurrent,
                 table_owner, table_name, partition_name, source_owner, source_object,
                 source_column, index_regexp, index_type, partition_type, constraint_regexp,
-                constraint_type
+                constraint_type, mapping_type
            INTO SELF.manage_indexes, SELF.manage_constraints, SELF.replace_method, SELF.STATISTICS, SELF.concurrent,
                 SELF.table_owner, SELF.table_name, SELF.partition_name, SELF.source_owner, SELF.source_object,
                 SELF.source_column, SELF.index_regexp, SELF.index_type, SELF.partition_type, SELF.constraint_regexp,
-                SELF.constraint_type
+                SELF.constraint_type, SELF.mapping_type
            FROM mapping_conf
           WHERE mapping_name = SELF.mapping_name;
       EXCEPTION
