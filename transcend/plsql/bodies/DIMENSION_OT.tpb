@@ -49,7 +49,7 @@ AS
       o_ev   evolve_ot := evolve_ot( p_module => 'verify_dim' );
    BEGIN
       -- first I need to verify the mapping object is valid
-      verify_map;
+      SELF.verify_map;
 
       -- now investigate the dimensional object
       evolve_log.log_msg( 'Constant staging: ' || SELF.constant_staging, 5 );

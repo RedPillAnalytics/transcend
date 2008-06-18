@@ -98,7 +98,7 @@ AS
       evolve_log.log_msg( 'Mapping confirmation completed successfully', 5 );
       -- reset the evolve_object
       o_ev.clear_app_info;
-   END verify_map
+   END verify_map;
 
    MEMBER PROCEDURE start_map
    AS
