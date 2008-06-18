@@ -34,27 +34,13 @@ AS
    PROCEDURE end_mapping( p_mapping VARCHAR2 DEFAULT SYS_CONTEXT( 'USERENV', 'ACTION' ))
    AS
       o_map   mapping_ot := mapping_ot( p_mapping => p_mapping );
-      o_dim   dimension_ot := dimension_ot( p_mapping => p_mapping );
-      l_map_type  mapping_conf.mapping_type%type;
    BEGIN
-      -- first, find out what kind of mapping we have
-      -- there are currently two types supported... table and dimension
-      SELECT mapping_type
-	INTO l_map_type
-	FROM mapping_conf
-       WHERE lower(mapping_name) = lower(p_mapping);
       
-      evolve_log.log_msg('Mapping type: '||l_map_type, 5);
+      -- factory to return the discreet type
+      o_map := trans_factory.get_mapping_ot( p_mapping => p_mapping );
       
-      -- TODO: replace the conditional logic on the different object types with a call to a factory
-      -- find out if this is a dimensional mapping
-      -- choose the proper object depending on this
-      IF lower( l_map_type ) = 'dimension'
-      THEN
-	 -- polymorph the mapping object to a dimension object
-	 o_map := o_dim;
-      END IF;
-
+      evolve_log.log_msg('Mapping type: '||o_map.mapping_type, 5);
+      
       -- now, regardless of which object type this is, the following call is correct      
       o_map.end_map;
       -- used to have a commit here.
