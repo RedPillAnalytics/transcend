@@ -1167,7 +1167,7 @@ IS
       -- now make the call to configure the mapping
       configure_mapping( p_mode 	  => p_mode,
 			 p_mapping	  => l_mapping,
-			 p_mapping	  => 'dimension',
+			 p_mapping_type	  => 'dimension',
 			 p_table	  => p_table,
 			 p_owner	  => p_owner,
 			 p_source_owner   => p_source_owner,

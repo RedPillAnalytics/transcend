@@ -8,7 +8,7 @@ IS
    IS
       l_map_type   mapping_conf.mapping_type%type;
       -- need object for the parent type
-      o_map   	   mapping_ot mapping_ot( p_mapping => p_mapping );
+      o_map   	   mapping_ot := mapping_ot( p_mapping => p_mapping );
       -- also need an object for any subtypes
       o_dim   	   dimension_ot;
       o_ev         evolve_ot			     := evolve_ot( p_module => 'get_mapping_ot' );
