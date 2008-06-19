@@ -912,7 +912,7 @@ IS
       -- if this is a dimensional mapping, we should not modify it.
       IF lower( l_map_type ) = 'dimension'
       THEN
-	 evolve_log.raise_err( 'dim_map_obj' );
+	 evolve_log.raise_err( 'not_map_obj' );
       END IF;
 
       -- now just configure the mapping      
@@ -1182,8 +1182,12 @@ IS
 
          -- as long as P_MODE wasn't 'delete', then we should validate the new structure of the dimension
          -- now use the dimension object to validate the new structure
-         -- just constructing the object calls the CONFIRM_OBJECTS procedure
-         o_dim := dimension_ot( l_mapping );
+         -- just constructing the object calls the VERIFY procedure
+	 o_dim := trans_factory.get_mapping_ot( l_mapping );
+	 IF o_dim.mapping_type <> 'dimension'
+	 THEN
+	    evolve_log.raise_err( 'not_dim_obj' );
+	 END IF;
       END IF;
 
       -- if we still have not affected any records, then there's a problem
@@ -1209,10 +1213,16 @@ IS
       l_results    NUMBER;
       l_col_list   LONG;
       -- a dimension table should have already been configured
-      o_dim        dimension_ot := dimension_ot( l_mapping );
+      o_dim        trans_factory.get_mapping_ot( l_mapping );
       e_dup_conf   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_conf, -1 );
    BEGIN
+      -- check to see if it's a dimension object
+      IF o_dim.mapping_type <> 'dimension'
+      THEN
+	 evolve_log.raise_err( 'not_dim_obj' );
+      END IF;
+
       -- construct the list for instrumentation purposes
       l_col_list :=
          UPPER( td_core.format_list(    p_surrogate
