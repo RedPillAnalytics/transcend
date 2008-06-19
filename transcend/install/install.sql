@@ -53,6 +53,10 @@ END;
 @../plsql/specs/DIMENSION_OT.tps
 @../plsql/wrapped_bodies/DIMENSION_OT.plb
 
+-- CREATE factory package
+@../plsql/specs/TRANS_FACTORY.pks
+@../plsql/wrapped_bodies/TRANS_FACTORY.plb
+
 --CREATE callable packages
 @../plsql/specs/TRANS_ADM.pks
 @../plsql/wrapped_bodies/TRANS_ADM.plb
