@@ -904,12 +904,19 @@ IS
    IS
       l_map_type	mapping_conf.mapping_type%type;
    BEGIN
-      --first, check to make sure that we should be modifying this record
-      SELECT mapping_type
-	INTO l_map_type
-	FROM mapping_conf
-       WHERE lower( mapping_name ) = lower( p_mapping );
-      -- if this is a dimensional mapping, we should not modify it.
+      BEGIN
+	 --first, check to make sure that we should be modifying this record
+	 SELECT mapping_type
+	   INTO l_map_type
+	   FROM mapping_conf
+	  WHERE lower( mapping_name ) = lower( p_mapping );
+      EXCEPTION
+	 WHEN no_data_found
+	 THEN
+	   -- if there is no record, then that's fine... this is a new mapping and all is well
+	   NULL;
+      END;
+	 -- if this is a dimensional mapping, we should not modify it.
       IF lower( l_map_type ) = 'dimension'
       THEN
 	 evolve_log.raise_err( 'dim_map_obj' );
