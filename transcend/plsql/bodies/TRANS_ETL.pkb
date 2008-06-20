@@ -5,7 +5,7 @@ AS
       p_batch_id   NUMBER DEFAULT NULL
    )
    AS
-      o_map   mapping_ot := mapping_ot( p_mapping => p_mapping, p_batch_id => p_batch_id );
+      o_map   mapping_ot := trans_factory.get_mapping_ot( p_mapping => p_mapping, p_batch_id => p_batch_id );
       l_map_type  mapping_conf.mapping_type%type;
    BEGIN
       -- first, find out what kind of mapping we have
@@ -33,11 +33,8 @@ AS
 
    PROCEDURE end_mapping( p_mapping VARCHAR2 DEFAULT SYS_CONTEXT( 'USERENV', 'ACTION' ))
    AS
-      o_map   mapping_ot := mapping_ot( p_mapping => p_mapping );
+      o_map   mapping_ot := trans_factory.get_mapping_ot( p_mapping => p_mapping );
    BEGIN
-      
-      -- factory to return the discreet type
-      o_map := trans_factory.get_mapping_ot( p_mapping => p_mapping );
       
       evolve_log.log_msg('Mapping type: '||o_map.mapping_type, 5);
       
@@ -477,23 +474,11 @@ AS
    -- uses SQL analytics to load a hybrid SCD dimension table
    PROCEDURE load_dim( p_owner VARCHAR2, p_table VARCHAR2 )
    IS
-      o_dim   dimension_ot;
-      l_mapping mapping_conf.mapping_name%type;
+      -- use the object factory to return a dimension object
+      o_dim   mapping_ot := trans_factory.get_mapping_ot( p_owner => p_owner,
+							  p_table => p_table );
    BEGIN
-      -- get the mapping name using owner and table
-      BEGIN
-	 SELECT mapping_name
-	   INTO l_mapping
-	   FROM mapping_conf JOIN dimension_conf
-		USING (table_owner,table_name)
-	  WHERE lower(table_owner)=p_owner AND lower(table_name)=p_table;
-      EXCEPTION
-	 WHEN no_data_found
-	 THEN
-           evolve_log.raise_err( 'no_dim', p_owner||'.'||p_table );
-      END;
-      -- instantiate the dimension object
-      o_dim := dimension_ot( p_mapping => l_mapping );
+      
       -- execute the load
       o_dim.LOAD;
    EXCEPTION
