@@ -27,7 +27,7 @@ AS
       END;
 
       -- confirm the properties of the mapping
-      verify_map;
+      verify;
       -- store the batch_id
       td_inst.batch_id( p_batch_id );
       RETURN;
@@ -51,9 +51,9 @@ AS
       o_ev.clear_app_info;
    END register;
 
-   FINAL MEMBER PROCEDURE verify_map
+   MEMBER PROCEDURE verify
    IS
-      o_ev   evolve_ot := evolve_ot( p_module => 'verify_map' );
+      o_ev   evolve_ot := evolve_ot( p_module => 'verify' );
    BEGIN
       -- check to see that the specified table exists
       IF SELF.table_name IS NOT NULL
@@ -98,7 +98,7 @@ AS
       evolve_log.log_msg( 'Mapping confirmation completed successfully', 5 );
       -- reset the evolve_object
       o_ev.clear_app_info;
-   END verify_map;
+   END verify;
 
    MEMBER PROCEDURE start_map
    AS
@@ -180,6 +180,28 @@ AS
       -- removing it because I don't think a commit should exist inside mapping functionality
       evolve_log.log_msg( 'Ending ETL mapping' );
    END end_map;
+   
+   -- null procedure for polymorphism only
+   MEMBER PROCEDURE load
+   IS
+   o_ev   evolve_ot := evolve_ot( p_module => 'load' );
+   BEGIN
+      -- simply raise an exception if this procedure ever gets called
+      -- it never should, as it is only here for inheritance
+      evolve_log.raise_err( 'wrong_map_type' );
+      o_ev.clear_app_info;
+   END load;
+
+   -- null procedure for polymorphism only
+   MEMBER PROCEDURE confirm_dim_cols
+   IS
+     o_ev   evolve_ot := evolve_ot( p_module => 'confirm_dim_cols' );
+   BEGIN
+      -- simply raise an exception if this procedure ever gets called
+      -- it never should, as it is only here for inheritance
+      evolve_log.raise_err( 'wrong_map_type' );
+      o_ev.clear_app_info;
+   END confirm_dim_cols;
 END;
 /
 

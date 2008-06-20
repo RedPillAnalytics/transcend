@@ -39,18 +39,15 @@ AS
       END;      
 
       -- confirm the objects related to the dimensional configuration
-      verify_dim;
+      verify;
       -- reset the evolve_object
       o_ev.clear_app_info;
       RETURN;
    END dimension_ot;
-   FINAL MEMBER PROCEDURE verify_dim
+   OVERRIDING MEMBER PROCEDURE verify
    IS
-      o_ev   evolve_ot := evolve_ot( p_module => 'verify_dim' );
+      o_ev   evolve_ot := evolve_ot( p_module => 'verify' );
    BEGIN
-      -- first I need to verify the mapping object is valid
-      SELF.verify_map;
-
       -- now investigate the dimensional object
       evolve_log.log_msg( 'Constant staging: ' || SELF.constant_staging, 5 );
       -- check that the sequence exists
@@ -70,7 +67,7 @@ AS
       evolve_log.log_msg( 'Dimension confirmation completed successfully', 5 );
       -- reset the evolve_object
       o_ev.clear_app_info;
-   END verify_dim;
+   END verify;
    MEMBER PROCEDURE initialize_cols
    IS
       o_ev   evolve_ot := evolve_ot( p_module => 'initialize_cols' );
@@ -163,7 +160,7 @@ AS
       -- reset the evolve_object
       o_ev.clear_app_info;
    END initialize_cols;
-   MEMBER PROCEDURE confirm_dim_cols
+   OVERRIDING MEMBER PROCEDURE confirm_dim_cols
    IS
       l_col_except    VARCHAR2( 1 );
       l_col_name      all_tab_columns.column_name%TYPE;
@@ -238,7 +235,7 @@ AS
       -- reset the evolve_object
       o_ev.clear_app_info;
    END confirm_dim_cols;
-   MEMBER PROCEDURE LOAD
+   OVERRIDING MEMBER PROCEDURE LOAD
    IS
       -- default comparision types
       l_char_nvl         dimension_conf.char_nvl_default%TYPE;

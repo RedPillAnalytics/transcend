@@ -869,7 +869,7 @@ IS
          -- now use the dimension object to validate the new structure
          -- just constructing the object calls the CONFIRM_OBJECTS procedure
          BEGIN
-            o_map := mapping_ot( p_mapping => p_mapping );
+            o_map := trans_factory.get_mapping_ot( p_mapping => p_mapping );
          END;
       END IF;
 
@@ -969,7 +969,7 @@ IS
       p_mode               VARCHAR2 DEFAULT 'upsert'
    )
    IS
-      o_dim        dimension_ot;
+      o_dim        mapping_ot;
       l_mapping	   mapping_conf.mapping_name%type := p_owner||'.'||p_table||' load';
       l_num_rows   NUMBER;
       e_dup_conf   EXCEPTION;
@@ -1189,8 +1189,8 @@ IS
 
          -- as long as P_MODE wasn't 'delete', then we should validate the new structure of the dimension
          -- now use the dimension object to validate the new structure
-         -- just constructing the object calls the CONFIRM_OBJECTS procedure
-         o_dim := dimension_ot( l_mapping );
+         -- just constructing the object calls the VERIFY procedure
+	 o_dim := trans_factory.get_mapping_ot( l_mapping );
       END IF;
 
       -- if we still have not affected any records, then there's a problem
@@ -1216,10 +1216,14 @@ IS
       l_results    NUMBER;
       l_col_list   LONG;
       -- a dimension table should have already been configured
-      o_dim        dimension_ot := dimension_ot( l_mapping );
+      o_dim        mapping_ot;
       e_dup_conf   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_conf, -1 );
    BEGIN
+      -- construct a DIMENSION_OT object
+      -- this is done using the supertype MAPPING_OT
+      o_dim := trans_factory.get_mapping_ot( l_mapping );
+      
       -- construct the list for instrumentation purposes
       l_col_list :=
          UPPER( td_core.format_list(    p_surrogate

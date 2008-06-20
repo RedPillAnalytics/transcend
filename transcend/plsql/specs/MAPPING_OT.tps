@@ -22,9 +22,11 @@ AS OBJECT(
    CONSTRUCTOR FUNCTION mapping_ot( p_mapping VARCHAR2, p_batch_id NUMBER DEFAULT NULL )
       RETURN SELF AS RESULT,
    MEMBER PROCEDURE register ( p_mapping VARCHAR2, p_batch_id NUMBER DEFAULT NULL ),
-   FINAL MEMBER PROCEDURE verify_map,
+   MEMBER PROCEDURE verify,
    MEMBER PROCEDURE start_map,
-   MEMBER PROCEDURE end_map
+   MEMBER PROCEDURE end_map,
+   MEMBER PROCEDURE load,
+   MEMBER PROCEDURE confirm_dim_cols
 )
 NOT FINAL;
 /
