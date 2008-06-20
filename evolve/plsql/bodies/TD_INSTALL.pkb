@@ -443,6 +443,8 @@ IS
          --packages
          EXECUTE IMMEDIATE 'grant execute on TD_DBUTILS to ' || l_app_role;
 
+         EXECUTE IMMEDIATE 'grant execute on TRANS_FACTORY to ' || l_app_role;
+
          EXECUTE IMMEDIATE 'grant execute on TRANS_ADM to ' || l_app_role;
 
          EXECUTE IMMEDIATE 'grant execute on TRANS_ETL to ' || l_app_role;
@@ -1887,6 +1889,14 @@ IS
       -- create the synonyms
       BEGIN
          EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.TD_DBUTILS for ' || p_schema || '.TD_DBUTILS';
+      EXCEPTION
+         WHEN e_same_name
+         THEN
+            NULL;
+      END;
+      
+      BEGIN
+         EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.TRANS_FACTORY for ' || p_schema || '.TRANS_FACTORY';
       EXCEPTION
          WHEN e_same_name
          THEN
