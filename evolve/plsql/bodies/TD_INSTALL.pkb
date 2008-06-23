@@ -1940,6 +1940,8 @@ IS
       PRAGMA EXCEPTION_INIT( e_no_role, -1919 );
       e_no_obj        EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_obj, -942 );
+      e_ins_privs        EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_ins_privs, -1031 );
    BEGIN
       -- this will drop the roles before beginning
       IF p_drop
@@ -2003,10 +2005,10 @@ IS
       EXCEPTION
          WHEN e_no_obj
          THEN
-            raise_application_error
-               ( -20009,
-                 'Either package UTL_MAIL does not exist, or the installing user does not have privileges to grant access on it.'
-               );
+	   dbms_output.put_line( 'The installing user cannot see package UTL_MAIL. EXECUTE on UTL_MAIL needs to be granted to user '||p_schema||' and role '||l_sys_role||'.' );
+	 WHEN e_ins_privs
+	 THEN
+	   dbms_output.put_line( 'The installing user cannot grant execute on UTL_MAIL. EXECUTE on UTL_MAIL needs to be granted to user '||p_schema||' and role '||l_sys_role||'.' );
       END;
 
       -- grant permissions on DBMS_LOCK
@@ -2018,10 +2020,10 @@ IS
       EXCEPTION
          WHEN e_no_obj
          THEN
-            raise_application_error
-               ( -20009,
-                 'Either package DBMS_LOCK does not exist, or the installing user does not have privileges to grant access on it.'
-               );
+	   dbms_output.put_line( 'The installing user cannot see package DBMS_LOCK. EXECUTE on DBMS_LOCK needs to be granted to user '||p_schema||' and role '||l_sys_role||'.' );
+	 WHEN e_ins_privs
+	 THEN
+	   dbms_output.put_line( 'The installing user cannot grant execute on DBMS_LOCK. EXECUTE on DBMS_LOCK needs to be granted to user '||p_schema||' and role '||l_sys_role||'.' );
       END;
 
       -- grant permissions on DBMS_FLASHBACK
@@ -2033,10 +2035,10 @@ IS
       EXCEPTION
          WHEN e_no_obj
          THEN
-            raise_application_error
-               ( -20009,
-                 'Either package DBMS_FLASHBACK does not exist, or the installing user does not have privileges to grant access on it.'
-               );
+	   dbms_output.put_line( 'The installing user cannot see package DBMS_FLASHBACK. EXECUTE on DBMS_FLASHBACK needs to be granted to user '||p_schema||' and role '||l_sys_role||'.' );
+	 WHEN e_ins_privs
+	 THEN
+	   dbms_output.put_line( 'The installing user cannot grant execute on DBMS_FLASHBACK. EXECUTE on DBMS_FLASHBACK needs to be granted to user '||p_schema||' and role '||l_sys_role||'.' );
       END;
 
       -- grant java specific privilege to the _JAVA role
