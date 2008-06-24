@@ -263,7 +263,6 @@ IS
 
    PROCEDURE grant_evolve_app_privs( p_schema VARCHAR2 DEFAULT 'TDSYS' )
    IS
-      l_app_role      VARCHAR2( 30 ) := p_schema || '_app';
       e_obj_exists    EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_obj_exists, -955 );
       e_role_exists   EXCEPTION;
@@ -272,55 +271,37 @@ IS
       PRAGMA EXCEPTION_INIT( e_no_grantee, -1919 );
       e_no_obj        EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_obj, -942 );
-      e_no_role       EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_no_role, -1919 );
    BEGIN
       BEGIN
-         EXECUTE IMMEDIATE 'DROP role ' || l_app_role;
-      EXCEPTION
-         WHEN e_no_role
-         THEN
-            NULL;
-      END;
-
-      BEGIN
-         EXECUTE IMMEDIATE 'CREATE ROLE ' || l_app_role;
-      EXCEPTION
-         WHEN e_role_exists
-         THEN
-            NULL;
-      END;
-
-      BEGIN
          -- first grant the TDSYS stuff
-         EXECUTE IMMEDIATE 'grant execute on TDSYS.TD_INSTALL to ' || l_app_role;
+         EXECUTE IMMEDIATE 'grant execute on TDSYS.TD_INSTALL to ' || p_schema;
 
          -- types
-         EXECUTE IMMEDIATE 'grant execute on APP_OT to ' || l_app_role;
+         EXECUTE IMMEDIATE 'grant execute on APP_OT to ' || p_schema;
 
-         EXECUTE IMMEDIATE 'grant execute on EVOLVE_OT to ' || l_app_role;
+         EXECUTE IMMEDIATE 'grant execute on EVOLVE_OT to ' || p_schema;
 
-         EXECUTE IMMEDIATE 'grant execute on NOTIFICATION_OT to ' || l_app_role;
+         EXECUTE IMMEDIATE 'grant execute on NOTIFICATION_OT to ' || p_schema;
 
-         EXECUTE IMMEDIATE 'grant execute on SPLIT_OT to ' || l_app_role;
+         EXECUTE IMMEDIATE 'grant execute on SPLIT_OT to ' || p_schema;
 
          -- packages
-         EXECUTE IMMEDIATE 'grant execute on STRAGG to ' || l_app_role;
+         EXECUTE IMMEDIATE 'grant execute on STRAGG to ' || p_schema;
 
-         EXECUTE IMMEDIATE 'grant execute on TD_CORE to ' || l_app_role;
+         EXECUTE IMMEDIATE 'grant execute on TD_CORE to ' || p_schema;
 
-         EXECUTE IMMEDIATE 'grant execute on TD_INST to ' || l_app_role;
+         EXECUTE IMMEDIATE 'grant execute on TD_INST to ' || p_schema;
 
-         EXECUTE IMMEDIATE 'grant execute on EVOLVE_LOG to ' || l_app_role;
+         EXECUTE IMMEDIATE 'grant execute on EVOLVE_LOG to ' || p_schema;
 
-         EXECUTE IMMEDIATE 'grant execute on TD_UTILS to ' || l_app_role;
+         EXECUTE IMMEDIATE 'grant execute on TD_UTILS to ' || p_schema;
 
-         EXECUTE IMMEDIATE 'grant execute on EVOLVE_APP to ' || l_app_role;
+         EXECUTE IMMEDIATE 'grant execute on EVOLVE_APP to ' || p_schema;
 
-         EXECUTE IMMEDIATE 'grant execute on EVOLVE_ADM to ' || l_app_role;
+         EXECUTE IMMEDIATE 'grant execute on EVOLVE_ADM to ' || p_schema;
 
          -- sequences
-         EXECUTE IMMEDIATE 'grant select on CONCURRENT_ID_SEQ to ' || l_app_role;
+         EXECUTE IMMEDIATE 'grant select on CONCURRENT_ID_SEQ to ' || p_schema;
       EXCEPTION
          WHEN e_no_obj
          THEN
@@ -420,11 +401,8 @@ IS
 
    PROCEDURE grant_transcend_app_privs( p_schema VARCHAR2 DEFAULT 'TDSYS' )
    IS
-      l_app_role      VARCHAR2( 30 ) := p_schema || '_app';
       e_obj_exists    EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_obj_exists, -955 );
-      e_role_exists   EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_role_exists, -1921 );
       e_no_grantee    EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_grantee, -1919 );
       e_no_obj        EXCEPTION;
@@ -432,24 +410,24 @@ IS
    BEGIN
       BEGIN
          -- types
-         EXECUTE IMMEDIATE 'grant execute on FILE_OT to ' || l_app_role;
+         EXECUTE IMMEDIATE 'grant execute on FILE_OT to ' || p_schema;
 
-         EXECUTE IMMEDIATE 'grant execute on FEED_OT to ' || l_app_role;
+         EXECUTE IMMEDIATE 'grant execute on FEED_OT to ' || p_schema;
 
-         EXECUTE IMMEDIATE 'grant execute on EXTRACT_OT to ' || l_app_role;
+         EXECUTE IMMEDIATE 'grant execute on EXTRACT_OT to ' || p_schema;
 
-         EXECUTE IMMEDIATE 'grant execute on DIMENSION_OT to ' || l_app_role;
+         EXECUTE IMMEDIATE 'grant execute on DIMENSION_OT to ' || p_schema;
 
          --packages
-         EXECUTE IMMEDIATE 'grant execute on TD_DBUTILS to ' || l_app_role;
+         EXECUTE IMMEDIATE 'grant execute on TD_DBUTILS to ' || p_schema;
 
-         EXECUTE IMMEDIATE 'grant execute on TRANS_FACTORY to ' || l_app_role;
+         EXECUTE IMMEDIATE 'grant execute on TRANS_FACTORY to ' || p_schema;
 
-         EXECUTE IMMEDIATE 'grant execute on TRANS_ADM to ' || l_app_role;
+         EXECUTE IMMEDIATE 'grant execute on TRANS_ADM to ' || p_schema;
 
-         EXECUTE IMMEDIATE 'grant execute on TRANS_ETL to ' || l_app_role;
+         EXECUTE IMMEDIATE 'grant execute on TRANS_ETL to ' || p_schema;
 
-         EXECUTE IMMEDIATE 'grant execute on TRANS_FILES to ' || l_app_role;
+         EXECUTE IMMEDIATE 'grant execute on TRANS_FILES to ' || p_schema;
       EXCEPTION
          WHEN e_no_obj
          THEN
@@ -1349,7 +1327,7 @@ IS
 
          EXECUTE IMMEDIATE q'|ALTER TABLE mapping_conf ADD CONSTRAINT mapping_conf_ck5 CHECK (replace_method in ('exchange','rename'))|';
 
-         EXECUTE IMMEDIATE q'|ALTER TABLE mapping_conf ADD CONSTRAINT mapping_conf_ck6 CHECK (replace_method = case when table_owner <> source_owner then 'exchange' else replace_method end )|';
+         EXECUTE IMMEDIATE q'|ALTER TABLE mapping_conf ADD CONSTRAINT mapping_conf_ck6 CHECK (replace_method = case when table_owner <> source_owner and mapping_type = 'table' then 'exchange' else replace_method end )|';
 	 
          EXECUTE IMMEDIATE q'|ALTER TABLE mapping_conf ADD CONSTRAINT mapping_conf_ck7 CHECK (mapping_type in ('dimension','table'))|';
 
@@ -2065,7 +2043,6 @@ IS
    PROCEDURE grant_transcend_sys_privs( p_schema VARCHAR2 DEFAULT 'TDSYS' )
    IS
       l_sys_role      VARCHAR2( 30 ) := p_schema || '_sys';
-      l_app_role      VARCHAR2( 30 ) := p_schema || '_app';
       l_java_role     VARCHAR2( 30 ) := p_schema || '_java';
       e_obj_exists    EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_obj_exists, -955 );
@@ -2118,6 +2095,8 @@ IS
       PRAGMA EXCEPTION_INIT( e_tab_exists, -955 );
       e_no_tab       EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_tab, -942 );
+      e_no_seq       EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_no_seq, -2289 );
    BEGIN
       -- create the user if it doesn't already exist
       create_user( p_user => p_schema );
@@ -2143,7 +2122,13 @@ IS
       -- if there were multiple repositories being used, the value generated by the sequence would need to be unique across them
       IF p_drop
       THEN
-         EXECUTE IMMEDIATE q'|DROP SEQUENCE concurrent_id_seq|';
+	 BEGIN
+            EXECUTE IMMEDIATE q'|DROP SEQUENCE concurrent_id_seq|';
+	 EXCEPTION
+	    WHEN e_no_seq
+	    THEN
+	      NULL;
+	 END;
       END IF;
 
       EXECUTE IMMEDIATE q'|CREATE SEQUENCE concurrent_id_seq|';
@@ -2292,10 +2277,10 @@ IS
       -- create the synonyms to the application
       build_evolve_app_syns( p_user => p_user, p_schema => p_application );
 
-      -- grant the appropriate roles to the application user
-      EXECUTE IMMEDIATE 'grant ' || p_repository || '_adm to ' || p_user;
+      -- grant execute on the framework to the new user
+      grant_evolve_app_privs( p_schema => p_user );
 
-      EXECUTE IMMEDIATE 'grant ' || p_application || '_app to ' || p_user;
+      EXECUTE IMMEDIATE 'grant ' || p_repository || '_adm to ' || p_user;
 
       -- write application tracking record
       EXECUTE IMMEDIATE q'|UPDATE tdsys.users
@@ -2336,6 +2321,10 @@ IS
       build_transcend_rep_syns( p_user => p_user, p_schema => p_repository );
       -- create the synonyms to the application
       build_transcend_app_syns( p_user => p_user, p_schema => p_application );
+      
+      -- grant execute on the framework to the new user
+      grant_transcend_app_privs( p_schema => p_user );
+
    END create_transcend_user;
 END td_install;
 /

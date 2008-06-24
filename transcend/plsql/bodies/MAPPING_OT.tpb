@@ -87,11 +87,11 @@ AS
 
       -- if exchange_method is 'rename' then a table rename is used
       -- in that case, the owner and source_owner need to be the same
-      IF replace_method = 'rename' AND SELF.source_owner <> SELF.table_owner
+      IF SELF.replace_method = 'rename' AND SELF.source_owner <> SELF.table_owner AND SELF.mapping_type = 'table'
       THEN
          evolve_log.raise_err
                           ( 'parm_not_supported',
-                            'A REPLACE_METHOD value of ''exchange'' when TABLE_OWNER and SOURCE_OWNER are not the same'
+                            'A REPLACE_METHOD value of ''exchange'' when MAPPING_TYPE is ''table'' and TABLE_OWNER and SOURCE_OWNER are not the same'
                           );
       END IF;
 
