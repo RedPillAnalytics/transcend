@@ -11,20 +11,24 @@ var l_tab_name VARCHAR2(61)
 var p_basis VARCHAR2(10)
 var p_maint_type VARCHAR2(10)
 
-EXEC :p_owner := 'whdata';
+EXEC :p_owner := 'mdd';
 EXEC :p_table := 'customer_dim';
 EXEC :p_constraint_type := NULL;
 EXEC :p_constraint_regexp := NULL;
 EXEC :l_tab_name := upper ( :p_owner||'.'|| :p_table );
-EXEC :p_basis := 'table';
+EXEC :p_basis := 'all';
 EXEC :p_maint_type := 'disable';
 
 SET termout on
 
--- this case statement uses GENERIC_IDX column to determine the final index name
--- if we are using a generic name, then perform the replace
 SELECT *
-  FROM ( SELECT owner table_owner,
+  FROM ( SELECT 
+		-- need this to get the order by clause right
+		-- when we are disabling, we need references to go first
+		-- when we are enabling, we need referenced (primary keys) to go first
+		CASE lower( :p_maint_type ) WHEN 'enable' THEN 1 ELSE 2 END ordering,
+		'table' basis_source,
+		owner table_owner,
 		table_name,
 		constraint_name,
 		'alter table '
@@ -66,7 +70,13 @@ SELECT *
 			     'i'
 			   )
 		UNION
-	 SELECT owner table_owner,
+	 SELECT 
+		-- need this to get the order by clause right
+		-- when we are disabling, we need references to go first
+		-- when we are enabling, we need referenced (primary keys) to go first
+		CASE lower( :p_maint_type ) WHEN 'enable' THEN 2 ELSE 1 END ordering,
+		'reference' basis_source,
+		owner table_owner,
 		table_name,
 		constraint_name,
 		'alter table '
@@ -117,3 +127,4 @@ SELECT *
 					 AND owner = UPPER( :p_owner )
 					 AND constraint_type = 'P' ))
  WHERE include='Y'
+ ORDER BY ordering

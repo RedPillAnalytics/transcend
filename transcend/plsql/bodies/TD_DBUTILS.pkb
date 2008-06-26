@@ -1366,104 +1366,112 @@ AS
 
       FOR c_constraints IN
          ( SELECT *
-            FROM ( SELECT owner table_owner, table_name, constraint_name,
-                          'alter table ' || l_tab_name || ' disable constraint ' || constraint_name disable_ddl,
-                             'Constraint '
-                          || constraint_name
-                          || ' disablement'
-                          || ' '
-                          || CASE
-                                WHEN td_core.get_yn_ind( p_concurrent ) = 'yes'
-                                   THEN 'submitted to the Oracle scheduler'
-                                ELSE 'executed'
-                             END
-                          || ' for '
-                          || l_tab_name disable_msg,
-                          'alter table ' || l_tab_name || ' enable constraint ' || constraint_name enable_ddl,
-                             'Constraint '
-                          || constraint_name
-                          || ' enablement'
-                          || ' '
-                          || CASE
-                                WHEN td_core.get_yn_ind( p_concurrent ) = 'yes'
-                                   THEN 'submitted to the Oracle scheduler'
-                                ELSE 'executed'
-                             END
-                          || ' for '
-                          || l_tab_name enable_msg,
-                          CASE
-                             WHEN REGEXP_LIKE( 'table|all', p_basis, 'i' )
-                                THEN 'Y'
-                             ELSE 'N'
-                          END include
-                    FROM all_constraints
-                   WHERE table_name = UPPER( p_table )
-                     AND owner = UPPER( p_owner )
-                     AND status =
-                            CASE
-                               WHEN REGEXP_LIKE( 'disable', p_maint_type, 'i' )
-                                  THEN 'ENABLED'
-                               WHEN REGEXP_LIKE( 'enable', p_maint_type, 'i' )
-                                  THEN 'DISABLED'
-                            END
-                     AND REGEXP_LIKE( constraint_name, NVL( p_constraint_regexp, '.' ), 'i' )
-                     AND REGEXP_LIKE( constraint_type, NVL( p_constraint_type, '.' ), 'i' )
-                  UNION
-                  SELECT owner table_owner, table_name, constraint_name,
-                            'alter table '
-                         || owner
-                         || '.'
-                         || table_name
-                         || ' disable constraint '
-                         || constraint_name disable_ddl,
-                            'Constraint '
-                         || constraint_name
-                         || ' disablement for '
-                         || owner
-                         || '.'
-                         || table_name
-                         || ' '
-                         || CASE
-                               WHEN REGEXP_LIKE( 'yes', p_concurrent, 'i' )
-                                  THEN 'submitted to the Oracle scheduler'
-                               ELSE 'executed'
-                            END disable_msg,
-                         'alter table ' || owner || '.' || table_name || ' enable constraint '
-                         || constraint_name enable_ddl,
-                            'Constraint '
-                         || constraint_name
-                         || ' enablement for '
-                         || owner
-                         || '.'
-                         || table_name
-                         || ' '
-                         || CASE
-                               WHEN REGEXP_LIKE( 'yes', p_concurrent, 'i' )
-                                  THEN 'submittted to the Oracle scheduler'
-                               ELSE 'executed'
-                            END enable_msg,
-                         CASE
-                            WHEN REGEXP_LIKE( 'reference|all', p_basis, 'i' )
-                               THEN 'Y'
-                            ELSE 'N'
-                         END include
-                    FROM all_constraints
-                   WHERE constraint_type = 'R'
-                     AND status =
-                            CASE
-                               WHEN REGEXP_LIKE( 'disable', p_maint_type, 'i' )
-                                  THEN 'ENABLED'
-                               WHEN REGEXP_LIKE( 'enable', p_maint_type, 'i' )
-                                  THEN 'DISABLED'
-                            END
-                     AND REGEXP_LIKE( constraint_name, NVL( p_constraint_regexp, '.' ), 'i' )
-                     AND r_constraint_name IN(
-                                SELECT constraint_name
-                                  FROM all_constraints
-                                 WHERE table_name = UPPER( p_table )
-                                   AND owner = UPPER( p_owner )
-                                   AND constraint_type = 'P' ))
-           WHERE include = 'Y' )
+  FROM ( SELECT 
+		-- need this to get the order by clause right
+		-- when we are disabling, we need references to go first
+		-- when we are enabling, we need referenced (primary keys) to go first
+		CASE lower( p_maint_type ) WHEN 'enable' THEN 1 ELSE 2 END ordering,
+		'table' basis_source,
+		owner table_owner,
+		table_name,
+		constraint_name,
+		'alter table '
+		|| l_tab_name
+		|| ' disable constraint '
+		|| constraint_name disable_ddl,
+		'Constraint '
+		|| constraint_name
+		|| ' disabled on '
+		|| l_tab_name disable_msg,
+		'alter table '
+		|| l_tab_name
+		|| ' enable constraint '
+		|| constraint_name enable_ddl,
+		'Constraint '
+		|| constraint_name
+		|| ' disabled on '
+		|| l_tab_name enable_msg,
+		CASE
+		WHEN REGEXP_LIKE( 'table|all', p_basis, 'i' )
+		THEN 'Y' 
+		ELSE 'N'
+		END include
+	   FROM all_constraints
+	  WHERE table_name = UPPER( p_table )
+	    AND owner = UPPER( p_owner )
+	    AND status = CASE
+	    	WHEN REGEXP_LIKE( 'disable', p_maint_type,'i')
+			     THEN 'ENABLED'
+		WHEN REGEXP_LIKE( 'enable', p_maint_type,'i')
+			     THEN 'DISABLED'
+      			     END
+	    AND REGEXP_LIKE( constraint_name,
+			     NVL( p_constraint_regexp, '.' ),
+			     'i'
+			   )
+	    AND REGEXP_LIKE( constraint_type,
+			     NVL( p_constraint_type, '.' ),
+			     'i'
+			   )
+		UNION
+	 SELECT 
+		-- need this to get the order by clause right
+		-- when we are disabling, we need references to go first
+		-- when we are enabling, we need referenced (primary keys) to go first
+		CASE lower( p_maint_type ) WHEN 'enable' THEN 2 ELSE 1 END ordering,
+		'reference' basis_source,
+		owner table_owner,
+		table_name,
+		constraint_name,
+		'alter table '
+		|| owner
+		|| '.'
+		|| table_name
+		|| ' disable constraint '
+		|| constraint_name disable_ddl,
+		'Constraint '
+		|| constraint_name
+		|| ' disabled on '
+		|| owner
+		|| '.'
+		|| table_name disable_msg,
+		'alter table '
+		|| owner
+		|| '.'
+		|| table_name
+		|| ' enable constraint '
+		|| constraint_name enable_ddl,
+		'Constraint '
+		|| constraint_name
+		|| ' enabled on '
+		|| owner
+		|| '.'
+		|| table_name enable_msg,
+		CASE
+		WHEN REGEXP_LIKE( 'reference|all', p_basis, 'i' )
+		THEN 'Y' 
+		ELSE 'N'
+		END include
+	   FROM all_constraints
+	  WHERE constraint_type = 'R'
+	    AND status = CASE
+	    	WHEN REGEXP_LIKE( 'disable', p_maint_type,'i')
+			     THEN 'ENABLED'
+		WHEN REGEXP_LIKE( 'enable', p_maint_type,'i')
+			     THEN 'DISABLED'
+      			     END
+	    AND REGEXP_LIKE( constraint_name,
+			     NVL( p_constraint_regexp, '.' ),
+			     'i'
+			   )
+	    AND r_constraint_name IN(
+				      SELECT constraint_name
+					FROM all_constraints
+				       WHERE table_name = UPPER( p_table )
+					 AND owner = UPPER( p_owner )
+					 AND constraint_type = 'P' ))
+	    WHERE include='Y'
+	    ORDER BY ordering )
       LOOP
          -- catch empty cursor sets
          l_rows := TRUE;
@@ -1555,6 +1563,8 @@ AS
                                       THEN 'for'
                                    WHEN REGEXP_LIKE( 'reference', p_basis, 'i' )
                                       THEN 'related to'
+				   ELSE
+				      'involving'
                                 END
                              || ' '
                              || l_tab_name
@@ -2272,7 +2282,6 @@ AS
       p_source_regexp   VARCHAR2,
       p_suffix          VARCHAR2 DEFAULT NULL,
       p_merge           VARCHAR2 DEFAULT 'no',
-      p_part_tabs       VARCHAR2 DEFAULT 'yes',
       p_trunc           VARCHAR2 DEFAULT 'no',
       p_direct          VARCHAR2 DEFAULT 'yes',
       p_degree          NUMBER DEFAULT NULL,
@@ -2283,59 +2292,48 @@ AS
       o_ev     evolve_ot := evolve_ot( p_module => 'load_tables' );
    BEGIN
       -- dynamic cursor contains source and target objects
-      FOR c_objects IN ( SELECT o.owner src_owner, object_name src, t.owner targ_owner, table_name targ
-                          FROM all_objects o JOIN all_tables t
-                               ON( REGEXP_REPLACE( object_name, '([^_]+)(_)([^_]+)$', '\1' ) =
-                                      REGEXP_REPLACE( table_name,
-                                                      CASE
-                                                         WHEN p_suffix IS NULL
-                                                            THEN '?'
-                                                         ELSE '_' || p_suffix || '$'
-                                                      END,
-                                                      NULL
-                                                    )
-                                 )
-                         WHERE REGEXP_LIKE( object_name, p_source_regexp, 'i' )
-                           AND REGEXP_LIKE( table_name, CASE
-                                               WHEN p_suffix IS NULL
-                                                  THEN '?'
-                                               ELSE '_' || p_suffix || '$'
-                                            END, 'i' )
-                           AND o.owner = UPPER( p_source_owner )
-                           AND t.owner = UPPER( p_owner )
-                           AND o.object_type IN( 'TABLE', 'VIEW', 'SYNONYM' )
-                           AND object_name <> CASE
-                                                WHEN o.owner = t.owner
-                                                   THEN table_name
-                                                ELSE NULL
-                                             END
-                           AND partitioned <>
-                                  CASE
-                                     WHEN REGEXP_LIKE( 'no', p_part_tabs, 'i' )
-                                        THEN NULL
-                                     WHEN REGEXP_LIKE( 'yes', p_part_tabs, 'i' )
-                                        THEN 'YES'
-                                  END )
+      FOR c_objects IN ( SELECT *
+			   FROM (SELECT owner source_owner,
+					object_name source_object,
+					object_type,
+					upper( regexp_replace( object_name, '(.+)(_)(.+)$', '\1'||CASE 
+							                                            WHEN p_suffix IS NULL 
+							                                            THEN 
+							                                              NULL 
+							                                            ELSE 
+							                                              '_'||p_suffix 
+							                                            END 
+							     )
+					     ) table_name
+				   FROM all_objects ) s
+			   JOIN ( SELECT owner table_owner,
+					 table_name 
+				    FROM all_tables ) t 
+				USING (table_name)
+			  WHERE REGEXP_LIKE( source_object, p_source_regexp, 'i' )
+			    AND source_owner = upper( p_source_owner )
+			    AND table_owner = upper( p_owner )
+			    AND s.object_type IN( 'TABLE', 'VIEW', 'SYNONYM' ) )
       LOOP
          l_rows := TRUE;
 
          -- use the load_tab or merge_tab procedure depending on P_MERGE
          CASE
-            WHEN td_core.is_true( p_trunc )
+            WHEN td_core.is_true( p_merge )
             THEN
-               merge_table( p_source_owner       => c_objects.src_owner,
-                            p_source_object      => c_objects.src,
-                            p_owner              => c_objects.targ_owner,
-                            p_table              => c_objects.targ,
+               merge_table( p_source_owner       => c_objects.source_owner,
+                            p_source_object      => c_objects.source_object,
+                            p_owner              => c_objects.table_owner,
+                            p_table              => c_objects.table_name,
                             p_direct             => p_direct,
                             p_degree             => p_degree
                           );
-            WHEN NOT td_core.is_true( p_trunc )
+            WHEN NOT td_core.is_true( p_merge )
             THEN
-               insert_table( p_source_owner       => c_objects.src_owner,
-                             p_source_object      => c_objects.src,
-                             p_owner              => c_objects.targ_owner,
-                             p_table              => c_objects.targ,
+               insert_table( p_source_owner       => c_objects.source_owner,
+                             p_source_object      => c_objects.source_object,
+                             p_owner              => c_objects.table_owner,
+                             p_table              => c_objects.table_name,
                              p_direct             => p_direct,
                              p_degree             => p_degree,
                              p_trunc              => p_trunc
@@ -2472,6 +2470,17 @@ AS
                         ELSE l_partname
                      END
                    );
+
+      -- build any constraints on the source table
+      o_ev.change_action( 'build check constraints' );
+      build_constraints( p_owner             => p_source_owner,
+			 p_table             => p_source_table,
+			 p_source_owner      => p_owner,
+			 p_source_table      => p_table,
+			 p_concurrent        => p_concurrent
+                       );
+
+
       -- now exchange the table
       o_ev.change_action( 'exchange table' );
 
@@ -2524,19 +2533,7 @@ AS
                l_retry_ddl := TRUE;
                evolve_app.exec_sql( p_sql => 'alter table ' || l_src_name || ' move compress', p_auto => 'yes' );
                evolve_log.log_msg( l_src_name || ' compressed to facilitate exchange', 3 );
-            WHEN e_uk_mismatch
-            THEN
-               evolve_log.log_msg( 'ORA-14130 raised involving unique constraint mismatch', 4 );
-                    -- need to disable unique constraints on the target table
-               -- this really should only disable unique constraints attached to global indexes
-               o_ev.change_action( 'disable unique constraints' );
-               l_constraints := TRUE;
-               l_retry_ddl := TRUE;
-               constraint_maint( p_owner                => p_owner,
-                                 p_table                => p_table,
-                                 p_maint_type           => 'disable',
-                                 p_constraint_type      => 'u'
-                               );
+
             WHEN e_fk_mismatch
             THEN
                -- need to create foreign key constraints

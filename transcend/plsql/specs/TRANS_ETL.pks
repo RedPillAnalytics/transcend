@@ -117,7 +117,6 @@ IS
       p_source_regexp   VARCHAR2,
       p_suffix          VARCHAR2 DEFAULT NULL,
       p_merge           VARCHAR2 DEFAULT 'no',
-      p_part_tabs       VARCHAR2 DEFAULT 'yes',
       p_trunc           VARCHAR2 DEFAULT 'no',
       p_direct          VARCHAR2 DEFAULT 'yes',
       p_degree          NUMBER DEFAULT NULL,

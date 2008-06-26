@@ -537,15 +537,15 @@ AS
                                );
       ELSE
          -- drop constraints and indexes on this segment
-         o_ev.change_action( 'drop constraints on staging' );
+         -- o_ev.change_action( 'drop constraints on staging' );
 
-         BEGIN
-            td_dbutils.drop_constraints( p_owner => SELF.staging_owner, p_table => SELF.staging_table );
-         EXCEPTION
-            WHEN td_dbutils.e_drop_iot_key
-            THEN
-               NULL;
-         END;
+         -- BEGIN
+         --    td_dbutils.drop_constraints( p_owner => SELF.staging_owner, p_table => SELF.staging_table );
+         -- EXCEPTION
+         --    WHEN td_dbutils.e_drop_iot_key
+         --    THEN
+         --       NULL;
+         -- END;
 
          -- drop indexes and indexes on this segment
          o_ev.change_action( 'drop indexes on staging' );
@@ -604,14 +604,22 @@ AS
       o_ev.clear_app_info;
    END LOAD;
 
-   OVERRIDING MEMBER PROCEDURE end_map
+   OVERRIDING MEMBER PROCEDURE start_map
    AS
       o_ev   evolve_ot := evolve_ot( p_module => 'etl_mapping', p_action => SELF.mapping_name );
    BEGIN
       evolve_log.log_msg( 'Starting ETL mapping' );
-      
+
+   END start_map;
+
+   OVERRIDING MEMBER PROCEDURE end_map
+   AS
+      o_ev   evolve_ot := evolve_ot( p_module => 'etl_mapping', p_action => SELF.mapping_name );
+   BEGIN      
       -- now simply execute the dimension_ot.load methodj
       load;
+      -- signify the end
+      evolve_log.log_msg( 'Ending ETL mapping' );
    END;
 END;
 /

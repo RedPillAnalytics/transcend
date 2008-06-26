@@ -6,23 +6,11 @@ AS
    )
    AS
       o_map   mapping_ot := trans_factory.get_mapping_ot( p_mapping => p_mapping, p_batch_id => p_batch_id );
-      l_map_type  mapping_conf.mapping_type%type;
    BEGIN
-      -- first, find out what kind of mapping we have
-      -- there are currently two types supported... table and dimension
-      SELECT mapping_type
-	INTO l_map_type
-	FROM mapping_conf
-       WHERE mapping_name = p_mapping;
+      evolve_log.log_msg('Mapping type: '||o_map.mapping_type, 5);
       
-      -- TODO: replace the conditional logic on the different object types with a call to a factory
-      -- only execute start_map if this is not a dimension load
-      -- that's because nothing should be done for a dimension load in the beginning of the mapping
-      IF lower( l_map_type ) <> 'dimension'
-      THEN
-	 -- now, start the mapping      
-	 o_map.start_map;
-      END IF;
+      -- now, regardless of which object type this is, the following call is correct      
+      o_map.start_map;
 
    EXCEPTION
       WHEN OTHERS
@@ -391,7 +379,6 @@ AS
       p_source_regexp   VARCHAR2,
       p_suffix          VARCHAR2 DEFAULT NULL,
       p_merge           VARCHAR2 DEFAULT 'no',
-      p_part_tabs       VARCHAR2 DEFAULT 'yes',
       p_trunc           VARCHAR2 DEFAULT 'no',
       p_direct          VARCHAR2 DEFAULT 'yes',
       p_degree          NUMBER DEFAULT NULL,
@@ -405,7 +392,6 @@ AS
                               p_source_regexp      => p_source_regexp,
                               p_suffix             => p_suffix,
                               p_merge              => p_merge,
-                              p_part_tabs          => p_part_tabs,
                               p_trunc              => p_trunc,
                               p_direct             => p_direct,
                               p_degree             => p_degree,
