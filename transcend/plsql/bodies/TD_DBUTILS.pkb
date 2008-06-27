@@ -2472,7 +2472,7 @@ AS
                    );
 
       -- build any constraints on the source table
-      o_ev.change_action( 'build check constraints' );
+      o_ev.change_action( 'build constraints' );
       build_constraints( p_owner             => p_source_owner,
 			 p_table             => p_source_table,
 			 p_source_owner      => p_owner,
@@ -2510,6 +2510,9 @@ AS
                -- this will enable the exchange to occur
                l_constraints := TRUE;
                l_retry_ddl := TRUE;
+
+	       -- disable foreign keys on the target table
+	       -- enable them for the queue to be re-enabled later
                o_ev.change_action( 'disable target foreign keys' );
                constraint_maint( p_owner             => p_owner,
                                  p_table             => p_table,
@@ -2517,6 +2520,9 @@ AS
                                  p_basis             => 'reference',
                                  p_enable_queue      => 'yes'
                                );
+
+	       -- disable constraints related to the source
+	       -- don't queue enable these, as it will be exchanged in and eventually dropped
                o_ev.change_action( 'disable source foreign keys' );
                constraint_maint( p_owner             => p_source_owner,
                                  p_table             => p_source_table,
@@ -2550,6 +2556,33 @@ AS
                                   p_basis                => 'table',
                                   p_concurrent           => p_concurrent
                                 );
+            WHEN e_uk_mismatch
+            THEN
+               evolve_log.log_msg( 'ORA-14130 raised involving unique constraint mismatch', 4 );
+               -- need to disable unique constraints on the target table
+               -- but only the ones attached to global indexes
+            o_ev.change_action( 'disable global unique constraints' );
+	    
+	    FOR c_glob_cons IN (SELECT *
+				  FROM all_constraints ac
+				  JOIN all_indexes ai
+				       ON nvl(ac.index_owner,ac.owner) = ai.owner
+				   AND ac.index_name = ai.index_name
+				 WHERE constraint_type IN ('U','P')
+				   AND ac.table_name = p_table
+				   AND ac.owner = p_owner
+				   AND partitioned='NO')
+	    LOOP	       
+               l_constraints := TRUE;
+               l_retry_ddl := TRUE;
+               constraint_maint( p_owner                => p_owner,
+                                 p_table                => p_table,
+                                 p_maint_type           => 'disable',
+                                 p_constraint_regexp    => '^'||c_glob_cons.constraint_name||'$',
+                                 p_enable_queue         => 'yes'
+                               );
+	    END LOOP;
+
             WHEN OTHERS
             THEN
                -- first log the error

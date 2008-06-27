@@ -24,4 +24,4 @@ SELECT *
  WHERE constraint_type IN ('U','P')
    AND ac.table_name = :p_table
    AND ac.owner = :p_owner
-   AND partitioned='YES'
+   AND partitioned='NO'
