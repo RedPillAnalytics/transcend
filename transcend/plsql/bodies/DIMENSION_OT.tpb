@@ -538,18 +538,18 @@ AS
                                  END
                                );
       ELSE
-         -- drop constraints and indexes on this segment
-         -- o_ev.change_action( 'drop constraints on staging' );
+         -- drop constraints on the segment in preparation for loading
+         o_ev.change_action( 'drop constraints on staging' );
 
-         -- BEGIN
-         --    td_dbutils.drop_constraints( p_owner => SELF.staging_owner, p_table => SELF.staging_table );
-         -- EXCEPTION
-         --    WHEN td_dbutils.e_drop_iot_key
-         --    THEN
-         --       NULL;
-         -- END;
+         BEGIN
+            td_dbutils.drop_constraints( p_owner => SELF.staging_owner, p_table => SELF.staging_table );
+         EXCEPTION
+            WHEN td_dbutils.e_drop_iot_key
+            THEN
+               NULL;
+         END;
 
-         -- drop indexes and indexes on this segment
+         -- drop indexes on the segment in preparation for loading
          o_ev.change_action( 'drop indexes on staging' );
          td_dbutils.drop_indexes( p_owner => SELF.staging_owner, p_table => SELF.staging_table );
          -- truncate the staging table to get ready for a new run
