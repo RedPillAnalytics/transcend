@@ -59,7 +59,7 @@ AS
               FROM all_part_key_columns
              WHERE NAME = UPPER( p_table ) AND owner = UPPER( p_owner );
          ELSE
-            l_source_column := p_source_column;
+            l_source_column    := p_source_column;
          END IF;
 
          o_ev.change_action( 'dynamic insert' );
@@ -505,7 +505,7 @@ AS
 
       IF td_core.is_true( p_concurrent )
       THEN
-         l_concurrent_id := evolve_app.get_concurrent_id;
+         l_concurrent_id    := evolve_app.get_concurrent_id;
       END IF;
 
       -- create a cursor containing the DDL from the target indexes
@@ -712,7 +712,7 @@ AS
                                AND aii.index_owner_confirm = UPPER( p_owner )
                                  )))
       LOOP
-         l_rows := TRUE;
+         l_rows    := TRUE;
 
          BEGIN
             o_ev.change_action( 'execute index DDL' );
@@ -727,7 +727,7 @@ AS
                                    END,
                                 2
                               );
-            l_idx_cnt := l_idx_cnt + 1;
+            l_idx_cnt    := l_idx_cnt + 1;
             o_ev.change_action( 'insert into td_build_idx_gtt' );
 
             -- queue up alternative DDL statements for later use
@@ -803,10 +803,10 @@ AS
                        FROM td_build_idx_gtt )
       LOOP
          BEGIN
-            l_rows := TRUE;
+            l_rows       := TRUE;
             evolve_app.exec_sql( p_sql => c_idxs.rename_ddl, p_auto => 'yes' );
             evolve_log.log_msg( c_idxs.rename_msg, 3 );
-            l_idx_cnt := l_idx_cnt + 1;
+            l_idx_cnt    := l_idx_cnt + 1;
          END;
       END LOOP;
 
@@ -912,7 +912,7 @@ AS
 
       IF td_core.is_true( p_concurrent )
       THEN
-         l_concurrent_id := evolve_app.get_concurrent_id;
+         l_concurrent_id    := evolve_app.get_concurrent_id;
       END IF;
 
       o_ev.change_action( 'build constraints' );
@@ -1178,7 +1178,7 @@ AS
           ORDER BY basis_source DESC )
       LOOP
          -- catch empty cursor sets
-         l_rows := TRUE;
+         l_rows    := TRUE;
 
          -- if the target table is index-organized and the constraint is a primary key
          -- then we don't want to build the constraint
@@ -1203,7 +1203,7 @@ AS
                                       END,
                                    2
                                  );
-               l_con_cnt := l_con_cnt + 1;
+               l_con_cnt    := l_con_cnt + 1;
                o_ev.change_action( 'insert into td_build_idx_gtt' );
 
                     -- only insert for rename if the constraint is a named constraint
@@ -1296,10 +1296,10 @@ AS
                        FROM td_build_con_gtt )
       LOOP
          BEGIN
-            l_rows := TRUE;
+            l_rows       := TRUE;
             evolve_app.exec_sql( p_sql => c_cons.rename_ddl, p_auto => 'yes' );
             evolve_log.log_msg( c_cons.rename_msg, 3 );
-            l_con_cnt := l_con_cnt + 1;
+            l_con_cnt    := l_con_cnt + 1;
          END;
       END LOOP;
 
@@ -1358,123 +1358,115 @@ AS
 
       IF td_core.is_true( p_concurrent )
       THEN
-         l_concurrent_id := evolve_app.get_concurrent_id;
+         l_concurrent_id    := evolve_app.get_concurrent_id;
       END IF;
 
       -- disable both table and reference constraints for this particular table
       o_ev.change_action( 'constraint maintenance' );
 
-      FOR c_constraints IN
-         ( SELECT *
-  FROM ( SELECT 
-		-- need this to get the order by clause right
-		-- when we are disabling, we need references to go first
-		-- when we are enabling, we need referenced (primary keys) to go first
-		CASE lower( p_maint_type ) WHEN 'enable' THEN 1 ELSE 2 END ordering,
-		'table' basis_source,
-		owner table_owner,
-		table_name,
-		constraint_name,
-		'alter table '
-		|| l_tab_name
-		|| ' disable constraint '
-		|| constraint_name disable_ddl,
-		'Constraint '
-		|| constraint_name
-		|| ' disabled on '
-		|| l_tab_name disable_msg,
-		'alter table '
-		|| l_tab_name
-		|| ' enable constraint '
-		|| constraint_name enable_ddl,
-		'Constraint '
-		|| constraint_name
-		|| ' disabled on '
-		|| l_tab_name enable_msg,
-		CASE
-		WHEN REGEXP_LIKE( 'table|all', p_basis, 'i' )
-		THEN 'Y' 
-		ELSE 'N'
-		END include
-	   FROM all_constraints
-	  WHERE table_name = UPPER( p_table )
-	    AND owner = UPPER( p_owner )
-	    AND status = CASE
-	    	WHEN REGEXP_LIKE( 'disable', p_maint_type,'i')
-			     THEN 'ENABLED'
-		WHEN REGEXP_LIKE( 'enable', p_maint_type,'i')
-			     THEN 'DISABLED'
-      			     END
-	    AND REGEXP_LIKE( constraint_name,
-			     NVL( p_constraint_regexp, '.' ),
-			     'i'
-			   )
-	    AND REGEXP_LIKE( constraint_type,
-			     NVL( p_constraint_type, '.' ),
-			     'i'
-			   )
-		UNION
-	 SELECT 
-		-- need this to get the order by clause right
-		-- when we are disabling, we need references to go first
-		-- when we are enabling, we need referenced (primary keys) to go first
-		CASE lower( p_maint_type ) WHEN 'enable' THEN 2 ELSE 1 END ordering,
-		'reference' basis_source,
-		owner table_owner,
-		table_name,
-		constraint_name,
-		'alter table '
-		|| owner
-		|| '.'
-		|| table_name
-		|| ' disable constraint '
-		|| constraint_name disable_ddl,
-		'Constraint '
-		|| constraint_name
-		|| ' disabled on '
-		|| owner
-		|| '.'
-		|| table_name disable_msg,
-		'alter table '
-		|| owner
-		|| '.'
-		|| table_name
-		|| ' enable constraint '
-		|| constraint_name enable_ddl,
-		'Constraint '
-		|| constraint_name
-		|| ' enabled on '
-		|| owner
-		|| '.'
-		|| table_name enable_msg,
-		CASE
-		WHEN REGEXP_LIKE( 'reference|all', p_basis, 'i' )
-		THEN 'Y' 
-		ELSE 'N'
-		END include
-	   FROM all_constraints
-	  WHERE constraint_type = 'R'
-	    AND status = CASE
-	    	WHEN REGEXP_LIKE( 'disable', p_maint_type,'i')
-			     THEN 'ENABLED'
-		WHEN REGEXP_LIKE( 'enable', p_maint_type,'i')
-			     THEN 'DISABLED'
-      			     END
-	    AND REGEXP_LIKE( constraint_name,
-			     NVL( p_constraint_regexp, '.' ),
-			     'i'
-			   )
-	    AND r_constraint_name IN(
-				      SELECT constraint_name
-					FROM all_constraints
-				       WHERE table_name = UPPER( p_table )
-					 AND owner = UPPER( p_owner )
-					 AND constraint_type = 'P' ))
-	    WHERE include='Y'
-	    ORDER BY ordering )
+      FOR c_constraints IN ( SELECT  *
+                                FROM ( SELECT
+                                              -- need this to get the order by clause right
+                                              -- when we are disabling, we need references to go first
+                                              -- when we are enabling, we need referenced (primary keys) to go first
+                                              CASE LOWER( p_maint_type )
+                                                 WHEN 'enable'
+                                                    THEN 1
+                                                 ELSE 2
+                                              END ordering, 'table' basis_source, owner table_owner, table_name,
+                                              constraint_name,
+                                                 'alter table '
+                                              || l_tab_name
+                                              || ' disable constraint '
+                                              || constraint_name disable_ddl,
+                                                 'Constraint '
+                                              || constraint_name
+                                              || ' disabled on '
+                                              || l_tab_name disable_msg,
+                                                 'alter table '
+                                              || l_tab_name
+                                              || ' enable constraint '
+                                              || constraint_name enable_ddl,
+                                              'Constraint ' || constraint_name || ' disabled on '
+                                              || l_tab_name enable_msg,
+                                              CASE
+                                                 WHEN REGEXP_LIKE( 'table|all', p_basis, 'i' )
+                                                    THEN 'Y'
+                                                 ELSE 'N'
+                                              END include
+                                        FROM all_constraints
+                                       WHERE table_name = UPPER( p_table )
+                                         AND owner = UPPER( p_owner )
+                                         AND status =
+                                                CASE
+                                                   WHEN REGEXP_LIKE( 'disable', p_maint_type, 'i' )
+                                                      THEN 'ENABLED'
+                                                   WHEN REGEXP_LIKE( 'enable', p_maint_type, 'i' )
+                                                      THEN 'DISABLED'
+                                                END
+                                         AND REGEXP_LIKE( constraint_name, NVL( p_constraint_regexp, '.' ), 'i' )
+                                         AND REGEXP_LIKE( constraint_type, NVL( p_constraint_type, '.' ), 'i' )
+                                      UNION
+                                      SELECT
+                                             -- need this to get the order by clause right
+                                             -- when we are disabling, we need references to go first
+                                             -- when we are enabling, we need referenced (primary keys) to go first
+                                             CASE LOWER( p_maint_type )
+                                                WHEN 'enable'
+                                                   THEN 2
+                                                ELSE 1
+                                             END ordering, 'reference' basis_source, owner table_owner, table_name,
+                                             constraint_name,
+                                                'alter table '
+                                             || owner
+                                             || '.'
+                                             || table_name
+                                             || ' disable constraint '
+                                             || constraint_name disable_ddl,
+                                                'Constraint '
+                                             || constraint_name
+                                             || ' disabled on '
+                                             || owner
+                                             || '.'
+                                             || table_name disable_msg,
+                                                'alter table '
+                                             || owner
+                                             || '.'
+                                             || table_name
+                                             || ' enable constraint '
+                                             || constraint_name enable_ddl,
+                                                'Constraint '
+                                             || constraint_name
+                                             || ' enabled on '
+                                             || owner
+                                             || '.'
+                                             || table_name enable_msg,
+                                             CASE
+                                                WHEN REGEXP_LIKE( 'reference|all', p_basis, 'i' )
+                                                   THEN 'Y'
+                                                ELSE 'N'
+                                             END include
+                                        FROM all_constraints
+                                       WHERE constraint_type = 'R'
+                                         AND status =
+                                                CASE
+                                                   WHEN REGEXP_LIKE( 'disable', p_maint_type, 'i' )
+                                                      THEN 'ENABLED'
+                                                   WHEN REGEXP_LIKE( 'enable', p_maint_type, 'i' )
+                                                      THEN 'DISABLED'
+                                                END
+                                         AND REGEXP_LIKE( constraint_name, NVL( p_constraint_regexp, '.' ), 'i' )
+                                         AND r_constraint_name IN(
+                                                SELECT constraint_name
+                                                  FROM all_constraints
+                                                 WHERE table_name = UPPER( p_table )
+                                                   AND owner = UPPER( p_owner )
+                                                   AND constraint_type = 'P' ))
+                               WHERE include = 'Y'
+                            ORDER BY ordering )
       LOOP
          -- catch empty cursor sets
-         l_rows := TRUE;
+         l_rows    := TRUE;
 
          BEGIN
             evolve_app.exec_sql( p_sql                => CASE
@@ -1512,7 +1504,7 @@ AS
                                 END,
                                 2
                               );
-            l_con_cnt := l_con_cnt + 1;
+            l_con_cnt    := l_con_cnt + 1;
          EXCEPTION
             WHEN e_iot_shc
             THEN
@@ -1563,8 +1555,7 @@ AS
                                       THEN 'for'
                                    WHEN REGEXP_LIKE( 'reference', p_basis, 'i' )
                                       THEN 'related to'
-				   ELSE
-				      'involving'
+                                   ELSE 'involving'
                                 END
                              || ' '
                              || l_tab_name
@@ -1600,9 +1591,9 @@ AS
 
       IF td_core.is_true( p_concurrent )
       THEN
-         l_concurrent_id := evolve_app.get_concurrent_id;
+         l_concurrent_id    := evolve_app.get_concurrent_id;
       END IF;
-      
+
       o_ev.change_action( 'looping through' );
       -- looping through records in the TD_CON_MAINT_GTT table
       -- this table only gets populated by CONSTRAINT_MAINT
@@ -1612,12 +1603,12 @@ AS
                        FROM td_con_maint_gtt )
       LOOP
          BEGIN
-            l_rows := TRUE;
+            l_rows       := TRUE;
             -- execute the DDL either in this session or a background session
-	    o_ev.change_action( 'executing DDL' );
+            o_ev.change_action( 'executing DDL' );
             evolve_app.exec_sql( p_sql => c_cons.enable_ddl, p_auto => 'yes', p_concurrent_id => l_concurrent_id );
             evolve_log.log_msg( c_cons.enable_msg );
-            l_con_cnt := l_con_cnt + 1;
+            l_con_cnt    := l_con_cnt + 1;
          END;
       END LOOP;
 
@@ -1626,7 +1617,8 @@ AS
          evolve_log.log_msg( 'No previously disabled constraints found' );
       ELSE
          -- wait for the concurrent processes to complete or fail
-	 o_ev.change_action( 'wait on concurrent processes' );
+         o_ev.change_action( 'wait on concurrent processes' );
+
          IF td_core.is_true( p_concurrent )
          THEN
             evolve_app.coordinate_sql( p_concurrent_id => l_concurrent_id, p_raise_err => 'no' );
@@ -1691,11 +1683,11 @@ AS
                                             'i'
                                           ))
       LOOP
-         l_rows := TRUE;
+         l_rows    := TRUE;
 
          BEGIN
             evolve_app.exec_sql( p_sql => c_indexes.index_ddl, p_auto => 'yes' );
-            l_idx_cnt := l_idx_cnt + 1;
+            l_idx_cnt    := l_idx_cnt + 1;
             evolve_log.log_msg( 'Index ' || c_indexes.index_name || ' dropped', 3 );
          EXCEPTION
             WHEN e_pk_idx
@@ -1791,12 +1783,12 @@ AS
                             ORDER BY basis_source )
       LOOP
          -- catch empty cursor sets
-         l_rows := TRUE;
+         l_rows    := TRUE;
 
          BEGIN
             o_ev.change_action( 'execute table alter' );
             evolve_app.exec_sql( p_sql => c_constraints.constraint_ddl, p_auto => 'yes' );
-            l_con_cnt := l_con_cnt + 1;
+            l_con_cnt    := l_con_cnt + 1;
             evolve_log.log_msg( 'Constraint ' || c_constraints.constraint_name || ' dropped', 2 );
          EXCEPTION
             WHEN e_iot_pk
@@ -1805,7 +1797,7 @@ AS
                                    || ' cannot be dropped because it is the primary key of an iot or cluster',
                                    3
                                  );
-               l_iot_pk := TRUE;
+               l_iot_pk    := TRUE;
          END;
       END LOOP;
 
@@ -1905,7 +1897,7 @@ AS
          -- if a duplicate column list of indexes already exist, log it, but continue
          WHEN e_no_grants
          THEN
-            l_grants := FALSE;
+            l_grants    := FALSE;
             evolve_log.log_msg( l_none_msg, 3 );
       END;
 
@@ -1920,7 +1912,7 @@ AS
             evolve_app.exec_sql( p_sql => c_grants.COLUMN_VALUE, p_auto => 'yes' );
          END IF;
 
-         l_grant_cnt := l_grant_cnt + 1;
+         l_grant_cnt    := l_grant_cnt + 1;
       END LOOP;
 
       IF l_grants
@@ -2189,7 +2181,7 @@ AS
       ORDER BY column_name;
 
       o_ev.change_action( 'construct merge values clause' );
-      l_values := REGEXP_REPLACE( l_insert, 'target.', 'source.' );
+      l_values    := REGEXP_REPLACE( l_insert, 'target.', 'source.' );
 
       BEGIN
          o_ev.change_action( 'alter parallel dml' );
@@ -2293,29 +2285,27 @@ AS
    BEGIN
       -- dynamic cursor contains source and target objects
       FOR c_objects IN ( SELECT *
-			   FROM (SELECT owner source_owner,
-					object_name source_object,
-					object_type,
-					upper( regexp_replace( object_name, '(.+)(_)(.+)$', '\1'||CASE 
-							                                            WHEN p_suffix IS NULL 
-							                                            THEN 
-							                                              NULL 
-							                                            ELSE 
-							                                              '_'||p_suffix 
-							                                            END 
-							     )
-					     ) table_name
-				   FROM all_objects ) s
-			   JOIN ( SELECT owner table_owner,
-					 table_name 
-				    FROM all_tables ) t 
-				USING (table_name)
-			  WHERE REGEXP_LIKE( source_object, p_source_regexp, 'i' )
-			    AND source_owner = upper( p_source_owner )
-			    AND table_owner = upper( p_owner )
-			    AND s.object_type IN( 'TABLE', 'VIEW', 'SYNONYM' ) )
+                          FROM ( SELECT owner source_owner, object_name source_object, object_type,
+                                        UPPER( REGEXP_REPLACE( object_name,
+                                                               '(.+)(_)(.+)$',
+                                                                  '\1'
+                                                               || CASE
+                                                                     WHEN p_suffix IS NULL
+                                                                        THEN NULL
+                                                                     ELSE '_' || p_suffix
+                                                                  END
+                                                             )
+                                             ) table_name
+                                  FROM all_objects ) s
+                               JOIN
+                               ( SELECT owner table_owner, table_name
+                                  FROM all_tables ) t USING( table_name )
+                         WHERE REGEXP_LIKE( source_object, p_source_regexp, 'i' )
+                           AND source_owner = UPPER( p_source_owner )
+                           AND table_owner = UPPER( p_owner )
+                           AND s.object_type IN( 'TABLE', 'VIEW', 'SYNONYM' ))
       LOOP
-         l_rows := TRUE;
+         l_rows    := TRUE;
 
          -- use the load_tab or merge_tab procedure depending on P_MERGE
          CASE
@@ -2470,17 +2460,14 @@ AS
                         ELSE l_partname
                      END
                    );
-
       -- build any constraints on the source table
       o_ev.change_action( 'build constraints' );
       build_constraints( p_owner             => p_source_owner,
-			 p_table             => p_source_table,
-			 p_source_owner      => p_owner,
-			 p_source_table      => p_table,
-			 p_concurrent        => p_concurrent
+                         p_table             => p_source_table,
+                         p_source_owner      => p_owner,
+                         p_source_table      => p_table,
+                         p_concurrent        => p_concurrent
                        );
-
-
       -- now exchange the table
       o_ev.change_action( 'exchange table' );
 
@@ -2489,7 +2476,7 @@ AS
       -- if an exception that we handle is raised, then we want to rerun the exchange
       -- will try the exchange multiple times until it either succeeds, or an unrecognized exception is raised
       LOOP
-         l_retry_ddl := FALSE;
+         l_retry_ddl    := FALSE;
 
          BEGIN
             evolve_app.exec_sql( p_sql       =>    'alter table '
@@ -2508,11 +2495,10 @@ AS
                evolve_log.log_msg( 'ORA-02266 raised involving enabled foreign keys', 4 );
                -- disable foreign keys related to both tables
                -- this will enable the exchange to occur
-               l_constraints := TRUE;
-               l_retry_ddl := TRUE;
-
-	       -- disable foreign keys on the target table
-	       -- enable them for the queue to be re-enabled later
+               l_constraints    := TRUE;
+               l_retry_ddl      := TRUE;
+               -- disable foreign keys on the target table
+               -- enable them for the queue to be re-enabled later
                o_ev.change_action( 'disable target foreign keys' );
                constraint_maint( p_owner             => p_owner,
                                  p_table             => p_table,
@@ -2520,9 +2506,8 @@ AS
                                  p_basis             => 'reference',
                                  p_enable_queue      => 'yes'
                                );
-
-	       -- disable constraints related to the source
-	       -- don't queue enable these, as it will be exchanged in and eventually dropped
+               -- disable constraints related to the source
+               -- don't queue enable these, as it will be exchanged in and eventually dropped
                o_ev.change_action( 'disable source foreign keys' );
                constraint_maint( p_owner             => p_source_owner,
                                  p_table             => p_source_table,
@@ -2535,19 +2520,18 @@ AS
                evolve_log.log_msg( 'ORA-14646 raised involving compression', 4 );
                -- need to compress the staging table
                o_ev.change_action( 'compress source table' );
-               l_compress := TRUE;
-               l_retry_ddl := TRUE;
+               l_compress     := TRUE;
+               l_retry_ddl    := TRUE;
                evolve_app.exec_sql( p_sql => 'alter table ' || l_src_name || ' move compress', p_auto => 'yes' );
                evolve_log.log_msg( l_src_name || ' compressed to facilitate exchange', 3 );
-
             WHEN e_fk_mismatch
             THEN
                -- need to create foreign key constraints
                evolve_log.log_msg( 'ORA-14128 raised involving foreign constraint mismatch', 4 );
                -- need to build a foreign keys on the source table
                o_ev.change_action( 'build foreign keys' );
-               l_constraints := TRUE;
-               l_retry_ddl := TRUE;
+               l_constraints    := TRUE;
+               l_retry_ddl      := TRUE;
                build_constraints( p_owner                => p_source_owner,
                                   p_table                => p_source_table,
                                   p_source_owner         => p_owner,
@@ -2561,28 +2545,26 @@ AS
                evolve_log.log_msg( 'ORA-14130 raised involving unique constraint mismatch', 4 );
                -- need to disable unique constraints on the target table
                -- but only the ones attached to global indexes
-            o_ev.change_action( 'disable global unique constraints' );
-	    
-	    FOR c_glob_cons IN (SELECT *
-				  FROM all_constraints ac
-				  JOIN all_indexes ai
-				       ON nvl(ac.index_owner,ac.owner) = ai.owner
-				   AND ac.index_name = ai.index_name
-				 WHERE constraint_type IN ('U','P')
-				   AND ac.table_name = p_table
-				   AND ac.owner = p_owner
-				   AND partitioned='NO')
-	    LOOP	       
-               l_constraints := TRUE;
-               l_retry_ddl := TRUE;
-               constraint_maint( p_owner                => p_owner,
-                                 p_table                => p_table,
-                                 p_maint_type           => 'disable',
-                                 p_constraint_regexp    => '^'||c_glob_cons.constraint_name||'$',
-                                 p_enable_queue         => 'yes'
-                               );
-	    END LOOP;
+               o_ev.change_action( 'disable global unique constraints' );
 
+               FOR c_glob_cons IN ( SELECT *
+                                     FROM all_constraints ac JOIN all_indexes ai
+                                          ON NVL( ac.index_owner, ac.owner ) = ai.owner
+                                             AND ac.index_name = ai.index_name
+                                    WHERE constraint_type IN( 'U', 'P' )
+                                      AND ac.table_name = p_table
+                                      AND ac.owner = p_owner
+                                      AND partitioned = 'NO' )
+               LOOP
+                  l_constraints    := TRUE;
+                  l_retry_ddl      := TRUE;
+                  constraint_maint( p_owner                  => p_owner,
+                                    p_table                  => p_table,
+                                    p_maint_type             => 'disable',
+                                    p_constraint_regexp      => '^' || c_glob_cons.constraint_name || '$',
+                                    p_enable_queue           => 'yes'
+                                  );
+               END LOOP;
             WHEN OTHERS
             THEN
                -- first log the error
@@ -2727,8 +2709,8 @@ AS
             evolve_log.raise_err( 'no_pk', l_src_name );
       END;
 
-      l_source_idx_name := UPPER( l_source_idx_own || '.' || l_source_idx );
-      l_targ_idx_name := UPPER( l_targ_idx_own || '.' || l_targ_idx );
+      l_source_idx_name    := UPPER( l_source_idx_own || '.' || l_source_idx );
+      l_targ_idx_name      := UPPER( l_targ_idx_own || '.' || l_targ_idx );
       -- first rename the target key to temporary key
       o_ev.change_action( 'rename target key' );
       evolve_app.exec_sql( p_sql       =>    'alter table '
@@ -3049,10 +3031,10 @@ AS
                      WHERE status IN( 'VALID', 'USABLE', 'N/A' ))
       LOOP
          o_ev.change_action( 'execute index DDL' );
-         l_rows := TRUE;
+         l_rows        := TRUE;
          evolve_app.exec_sql( p_sql => c_idx.DDL, p_auto => 'yes' );
-         l_pidx_cnt := c_idx.num_partitions;
-         l_idx_cnt := c_idx.num_indexes;
+         l_pidx_cnt    := c_idx.num_partitions;
+         l_idx_cnt     := c_idx.num_indexes;
       END LOOP;
 
       IF l_rows
@@ -3110,7 +3092,7 @@ AS
 
          IF td_core.is_true( p_concurrent )
          THEN
-            l_concurrent_id := evolve_app.get_concurrent_id;
+            l_concurrent_id    := evolve_app.get_concurrent_id;
          END IF;
 
          -- rebuild local indexes first
@@ -3130,7 +3112,7 @@ AS
                        ORDER BY table_name, partition_position )
          LOOP
             evolve_app.exec_sql( p_sql => c_idx.DDL, p_auto => 'yes', p_concurrent_id => l_concurrent_id );
-            l_cnt := l_cnt + 1;
+            l_cnt    := l_cnt + 1;
          END LOOP;
 
          evolve_log.log_msg(    'Rebuild processes for any unusable indexes on '
@@ -3160,14 +3142,14 @@ AS
       END IF;
 
       -- reset variables
-      l_cnt := 0;
-      l_rows := FALSE;
+      l_cnt     := 0;
+      l_rows    := FALSE;
       -- get another concurrent_id
       o_ev.change_action( 'get concurrent id' );
 
       IF td_core.is_true( p_concurrent )
       THEN
-         l_concurrent_id := evolve_app.get_concurrent_id;
+         l_concurrent_id    := evolve_app.get_concurrent_id;
       END IF;
 
       -- now see if any global are still unusable
@@ -3182,9 +3164,9 @@ AS
                           AND partitioned = 'NO'
                      ORDER BY table_name )
       LOOP
-         l_rows := TRUE;
+         l_rows    := TRUE;
          evolve_app.exec_sql( p_sql => c_gidx.DDL, p_auto => 'yes', p_concurrent_id => l_concurrent_id );
-         l_cnt := l_cnt + 1;
+         l_cnt     := l_cnt + 1;
       END LOOP;
 
       IF l_rows

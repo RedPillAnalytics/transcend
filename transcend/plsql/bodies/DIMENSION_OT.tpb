@@ -4,14 +4,13 @@ AS
       RETURN SELF AS RESULT
    AS
       l_load_sql   LONG;
-      o_ev         evolve_ot                         := evolve_ot( p_module => 'dimension_ot' );
+      o_ev         evolve_ot := evolve_ot( p_module => 'dimension_ot' );
    BEGIN
-
       -- first register instrumentation details
-      SELF.register( p_mapping => p_mapping, p_batch_id => p_batch_id );
-	 
+      SELF.REGISTER( p_mapping => p_mapping, p_batch_id => p_batch_id );
+
       BEGIN
-	 -- now load the other attributes
+         -- now load the other attributes
          SELECT table_owner, table_name, full_table, source_owner, source_object,
                 full_source, sequence_owner, sequence_name, full_sequence, staging_owner,
                 staging_table, staging_owner || '.' || staging_table full_stage, constant_staging, direct_load,
@@ -30,13 +29,13 @@ AS
                                THEN 'no'
                             ELSE 'yes'
                          END constant_staging, direct_load, replace_method, STATISTICS, concurrent
-                    FROM dimension_conf JOIN mapping_conf USING (table_owner, table_name)
-                   WHERE mapping_name = SELF.mapping_name );
+                   FROM dimension_conf JOIN mapping_conf USING( table_owner, table_name )
+                  WHERE mapping_name = SELF.mapping_name );
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
             evolve_log.raise_err( 'no_dim', SELF.full_table );
-      END;      
+      END;
 
       -- confirm the objects related to the dimensional configuration
       verify;
@@ -53,8 +52,10 @@ AS
       -- check that the sequence exists
       evolve_log.log_msg( 'The sequence owner: ' || SELF.sequence_owner, 5 );
       evolve_log.log_msg( 'The sequence name: ' || SELF.sequence_name, 5 );
-      td_utils.check_object( p_owner            => SELF.sequence_owner, p_object => SELF.sequence_name,
-                             p_object_type      => 'sequence' );
+      td_utils.check_object( p_owner            => SELF.sequence_owner,
+                             p_object           => SELF.sequence_name,
+                             p_object_type      => 'sequence'
+                           );
 
       -- check to see if the staging table is constant
       IF td_core.is_true( SELF.constant_staging )
@@ -350,18 +351,18 @@ AS
       -- construct a list of all scd2 attributes
       -- if any of the variables are null, we may get a ',,' or a ',' at the end or beginning of the list
       -- use the regexp_replaces to remove that
-      l_scd2_list := td_core.format_list( l_scd2_dates || ',' || l_scd2_nums || ',' || l_scd2_chars );
+      l_scd2_list         := td_core.format_list( l_scd2_dates || ',' || l_scd2_nums || ',' || l_scd2_chars );
       evolve_log.log_msg( 'The SCD2 complete list: ' || l_scd2_list, 5 );
       -- construct a list of all scd attributes
       -- this is a combined list of all scd1 and scd2 attributes
       -- if any of the variables are null, we may get a ',,'
       -- use the regexp_replace to remove that
       -- also need a regexp to remove an extra comma at the end or beginning if they appears
-      l_scd_list := td_core.format_list( l_scd2_list || ',' || l_scd1_list );
+      l_scd_list          := td_core.format_list( l_scd2_list || ',' || l_scd1_list );
       evolve_log.log_msg( 'The SCD complete list: ' || l_scd_list, 5 );
       -- construct the include case statement
       -- this case statement determines which records from the staging table are included as new rows
-      l_include_case :=
+      l_include_case      :=
             'CASE WHEN '
          || SELF.surrogate_key_col
          || ' <> '
@@ -417,7 +418,7 @@ AS
       evolve_log.log_msg( 'The include CASE: ' || l_include_case, 5 );
       -- construct the scd1 analytics list
       -- this is a list of all the LAST_VALUE statements needed for the final statement
-      l_scd1_analytics :=
+      l_scd1_analytics    :=
          REGEXP_REPLACE( l_scd1_list,
                          '(\w+)(,|$)',
                             'last_value(\1) over (partition by '
@@ -428,9 +429,10 @@ AS
                        );
       evolve_log.log_msg( 'The scd1 analytics clause: ' || l_scd1_analytics, 5 );
       -- construct a list of all the columns in the table
-      l_all_col_list := td_core.format_list( SELF.natural_key_list || ',' || l_scd_list || ',' || SELF.effect_dt_col );
+      l_all_col_list      :=
+                          td_core.format_list( SELF.natural_key_list || ',' || l_scd_list || ',' || SELF.effect_dt_col );
       -- now, put the statement together
-      l_sql :=
+      l_sql               :=
             'insert '
          || CASE td_core.get_yn_ind( SELF.direct_load )
                WHEN 'yes'
@@ -603,21 +605,18 @@ AS
       -- reset the evolve_object
       o_ev.clear_app_info;
    END LOAD;
-
    OVERRIDING MEMBER PROCEDURE start_map
    AS
       o_ev   evolve_ot := evolve_ot( p_module => 'etl_mapping', p_action => SELF.mapping_name );
    BEGIN
       evolve_log.log_msg( 'Starting ETL mapping' );
-
    END start_map;
-
    OVERRIDING MEMBER PROCEDURE end_map
    AS
       o_ev   evolve_ot := evolve_ot( p_module => 'etl_mapping', p_action => SELF.mapping_name );
-   BEGIN      
+   BEGIN
       -- now simply execute the dimension_ot.load methodj
-      load;
+      LOAD;
       -- signify the end
       evolve_log.log_msg( 'Ending ETL mapping' );
    END;

@@ -7,11 +7,9 @@ AS
    AS
       o_map   mapping_ot := trans_factory.get_mapping_ot( p_mapping => p_mapping, p_batch_id => p_batch_id );
    BEGIN
-      evolve_log.log_msg('Mapping type: '||o_map.mapping_type, 5);
-      
-      -- now, regardless of which object type this is, the following call is correct      
+      evolve_log.log_msg( 'Mapping type: ' || o_map.mapping_type, 5 );
+      -- now, regardless of which object type this is, the following call is correct
       o_map.start_map;
-
    EXCEPTION
       WHEN OTHERS
       THEN
@@ -23,14 +21,12 @@ AS
    AS
       o_map   mapping_ot := trans_factory.get_mapping_ot( p_mapping => p_mapping );
    BEGIN
-      
-      evolve_log.log_msg('Mapping type: '||o_map.mapping_type, 5);
-      
-      -- now, regardless of which object type this is, the following call is correct      
+      evolve_log.log_msg( 'Mapping type: ' || o_map.mapping_type, 5 );
+      -- now, regardless of which object type this is, the following call is correct
       o_map.end_map;
-      -- used to have a commit here.
-      -- I don't think a commit should be done inside a mapping
-      -- it overrides the commit control of an ETL tool (if any)
+   -- used to have a commit here.
+   -- I don't think a commit should be done inside a mapping
+   -- it overrides the commit control of an ETL tool (if any)
    END end_mapping;
 
    PROCEDURE truncate_table( p_owner VARCHAR2, p_table VARCHAR2, p_reuse VARCHAR2 DEFAULT 'no' )
@@ -461,10 +457,8 @@ AS
    PROCEDURE load_dim( p_owner VARCHAR2, p_table VARCHAR2 )
    IS
       -- use the object factory to return a dimension object
-      o_dim   mapping_ot := trans_factory.get_mapping_ot( p_owner => p_owner,
-							  p_table => p_table );
+      o_dim   mapping_ot := trans_factory.get_mapping_ot( p_owner => p_owner, p_table => p_table );
    BEGIN
-      
       -- execute the load
       o_dim.LOAD;
    EXCEPTION

@@ -4,10 +4,9 @@ AS
       RETURN SELF AS RESULT
    AS
    BEGIN
-
       -- set the instrumentation details
-      register( p_mapping, p_batch_id );
-      
+      REGISTER( p_mapping, p_batch_id );
+
       -- load information from the mapping_conf table
       BEGIN
          SELECT manage_indexes, manage_constraints, replace_method, STATISTICS, concurrent,
@@ -32,13 +31,12 @@ AS
       td_inst.batch_id( p_batch_id );
       RETURN;
    END mapping_ot;
-
-   MEMBER PROCEDURE register ( p_mapping VARCHAR2, p_batch_id NUMBER DEFAULT NULL )
+   MEMBER PROCEDURE REGISTER( p_mapping VARCHAR2, p_batch_id NUMBER DEFAULT NULL )
    IS
       o_ev   evolve_ot := evolve_ot( p_module => 'register' );
    BEGIN
       -- store the mapping name
-      SELF.mapping_name := LOWER( p_mapping );
+      SELF.mapping_name    := LOWER( p_mapping );
 
       -- store the batch_id
       -- only want to do this if the value is provided
@@ -47,10 +45,10 @@ AS
       THEN
          td_inst.batch_id( p_batch_id );
       END IF;
+
       -- reset the evolve_object
       o_ev.clear_app_info;
-   END register;
-
+   END REGISTER;
    MEMBER PROCEDURE verify
    IS
       o_ev   evolve_ot := evolve_ot( p_module => 'verify' );
@@ -90,16 +88,15 @@ AS
       IF SELF.replace_method = 'rename' AND SELF.source_owner <> SELF.table_owner AND SELF.mapping_type = 'table'
       THEN
          evolve_log.raise_err
-                          ( 'parm_not_supported',
-                            'A REPLACE_METHOD value of ''exchange'' when MAPPING_TYPE is ''table'' and TABLE_OWNER and SOURCE_OWNER are not the same'
-                          );
+            ( 'parm_not_supported',
+              'A REPLACE_METHOD value of ''exchange'' when MAPPING_TYPE is ''table'' and TABLE_OWNER and SOURCE_OWNER are not the same'
+            );
       END IF;
 
       evolve_log.log_msg( 'Mapping confirmation completed successfully', 5 );
       -- reset the evolve_object
       o_ev.clear_app_info;
    END verify;
-
    MEMBER PROCEDURE start_map
    AS
       o_ev   evolve_ot := evolve_ot( p_module => 'etl_mapping', p_action => SELF.mapping_name );
@@ -175,27 +172,25 @@ AS
       THEN
          td_dbutils.enable_constraints( p_concurrent => SELF.concurrent );
       END IF;
-      
+
       -- used to be a commit right here
       -- removing it because I don't think a commit should exist inside mapping functionality
       evolve_log.log_msg( 'Ending ETL mapping' );
    END end_map;
-   
    -- null procedure for polymorphism only
-   MEMBER PROCEDURE load
+   MEMBER PROCEDURE LOAD
    IS
-   o_ev   evolve_ot := evolve_ot( p_module => 'load' );
+      o_ev   evolve_ot := evolve_ot( p_module => 'load' );
    BEGIN
       -- simply raise an exception if this procedure ever gets called
       -- it never should, as it is only here for inheritance
       evolve_log.raise_err( 'wrong_map_type' );
       o_ev.clear_app_info;
-   END load;
-
+   END LOAD;
    -- null procedure for polymorphism only
    MEMBER PROCEDURE confirm_dim_cols
    IS
-     o_ev   evolve_ot := evolve_ot( p_module => 'confirm_dim_cols' );
+      o_ev   evolve_ot := evolve_ot( p_module => 'confirm_dim_cols' );
    BEGIN
       -- simply raise an exception if this procedure ever gets called
       -- it never should, as it is only here for inheritance

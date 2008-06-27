@@ -58,9 +58,10 @@ IS
       evolve_adm.set_error_conf( p_name         => 'no_dim',
                                  p_message      => 'The specified table is not a configured dimension table'
                                );
-      evolve_adm.set_error_conf( p_name         => 'dim_map_conf',
-                                 p_message      => 'The mapping you are trying to configure is a dimensional load mapping. Use the procedure CONFIGURE_DIM to modify this configuration.'
-                               );
+      evolve_adm.set_error_conf
+         ( p_name         => 'dim_map_conf',
+           p_message      => 'The mapping you are trying to configure is a dimensional load mapping. Use the procedure CONFIGURE_DIM to modify this configuration.'
+         );
       evolve_adm.set_error_conf
          ( p_name         => 'dim_mismatch',
            p_message      => 'There is a mismatch between columns in the source object and dimension table for the specified dimension table'
@@ -81,7 +82,7 @@ IS
       p_passphrase         VARCHAR2 DEFAULT NULL,
       p_source_directory   VARCHAR2 DEFAULT NULL,
       p_source_regexp      VARCHAR2 DEFAULT NULL,
-      p_match_parameter     VARCHAR2 DEFAULT NULL,
+      p_match_parameter    VARCHAR2 DEFAULT NULL,
       p_source_policy      VARCHAR2 DEFAULT NULL,
       p_required           VARCHAR2 DEFAULT NULL,
       p_delete_source      VARCHAR2 DEFAULT NULL,
@@ -111,8 +112,8 @@ IS
             -- but I don't want to make the configuring user have to provide the owner and name of the table for every configuration
             -- if it's provided, we will use that to get the directory
             -- if it isn't provided, then I will pull that information, and use it to get the directory.
-            l_owner := UPPER( p_owner );
-            l_table := UPPER( p_table );
+            l_owner    := UPPER( p_owner );
+            l_table    := UPPER( p_table );
             -- now check the external table
             td_utils.check_table( p_owner => p_owner, p_table => p_table, p_external => 'yes' );
          WHEN p_table IS NULL
@@ -128,7 +129,7 @@ IS
             EXCEPTION
                WHEN NO_DATA_FOUND
                THEN
-                  l_no_conf := TRUE;
+                  l_no_conf    := TRUE;
             END;
 
             evolve_log.log_msg( 'Values for L_OWNER and L_TABLE: ' || l_owner || ',' || l_table, 5 );
@@ -362,7 +363,7 @@ IS
          DELETE FROM files_conf
                WHERE file_label = LOWER( p_file_label ) AND file_group = LOWER( p_file_group );
       ELSE
-         o_feed := feed_ot( p_file_group => p_file_group, p_file_label => p_file_label );
+         o_feed    := feed_ot( p_file_group => p_file_group, p_file_label => p_file_label );
       END IF;
 
       -- if we still have not affected any records, then there's a problem
@@ -593,7 +594,7 @@ IS
          DELETE FROM files_conf
                WHERE file_label = LOWER( p_file_label ) AND file_group = LOWER( p_file_group );
       ELSE
-         o_extract := extract_ot( p_file_group => p_file_group, p_file_label => p_file_label );
+         o_extract    := extract_ot( p_file_group => p_file_group, p_file_label => p_file_label );
       END IF;
 
       -- if we still have not affected any records, then there's a problem
@@ -605,7 +606,7 @@ IS
 
    PROCEDURE configure_mapping(
       p_mapping             VARCHAR2,
-      p_mapping_type	    VARCHAR2,
+      p_mapping_type        VARCHAR2,
       p_owner               VARCHAR2 DEFAULT NULL,
       p_table               VARCHAR2 DEFAULT NULL,
       p_partname            VARCHAR2 DEFAULT NULL,
@@ -635,9 +636,9 @@ IS
       -- any attributes specified with a 'NULL' will be nullified
       IF LOWER( p_mode ) = 'nullify'
       THEN
-        UPDATE mapping_conf
-           SET mapping_type = lower( p_mapping_type ),
-	       table_owner =
+         UPDATE mapping_conf
+            SET mapping_type = LOWER( p_mapping_type ),
+                table_owner =
                          UPPER( CASE
                                    WHEN p_owner IS NULL
                                       THEN table_owner
@@ -792,7 +793,7 @@ IS
          -- try to update an existing configuration
          UPDATE mapping_conf
             SET mapping_name = LOWER( NVL( p_mapping, mapping_name )),
-		mapping_type = LOWER( NVL( p_mapping_type, mapping_type )),
+                mapping_type = LOWER( NVL( p_mapping_type, mapping_type )),
                 table_owner = UPPER( NVL( p_owner, table_owner )),
                 table_name = UPPER( NVL( p_table, table_name )),
                 partition_name = UPPER( NVL( p_partname, partition_name )),
@@ -815,7 +816,7 @@ IS
           WHERE mapping_name = LOWER( p_mapping );
 
          -- get the SQL rowcount
-         l_num_rows := SQL%ROWCOUNT;
+         l_num_rows    := SQL%ROWCOUNT;
       END IF;
 
       -- updating a current config has failed, or an insert was specified
@@ -834,21 +835,23 @@ IS
 
          BEGIN
             INSERT INTO mapping_conf
-                        ( mapping_name, mapping_type, table_owner, table_name, partition_name,
-                          manage_indexes, manage_constraints, source_owner,
-                          source_object, source_column, replace_method,
-                          STATISTICS, concurrent, index_regexp,
-                          index_type, partition_type, constraint_regexp, constraint_type, description
+                        ( mapping_name, mapping_type, table_owner, table_name,
+                          partition_name, manage_indexes, manage_constraints,
+                          source_owner, source_object, source_column,
+                          replace_method, STATISTICS,
+                          concurrent, index_regexp, index_type, partition_type,
+                          constraint_regexp, constraint_type, description
                         )
-                 VALUES ( LOWER( p_mapping ), LOWER( p_mapping_type ), UPPER( p_owner ), UPPER( p_table ), UPPER( p_partname ),
-                          LOWER( NVL( p_indexes, 'no' )), LOWER( NVL( p_constraints, 'no' )), UPPER( p_source_owner ),
-                          UPPER( p_source_object ), UPPER( p_source_column ), p_replace_method,
-                          LOWER( NVL( p_statistics, 'transfer' )), LOWER( NVL( p_concurrent, 'no' )), p_index_regexp,
-                          p_index_type, p_part_type, p_constraint_regexp, p_constraint_type, p_description
+                 VALUES ( LOWER( p_mapping ), LOWER( p_mapping_type ), UPPER( p_owner ), UPPER( p_table ),
+                          UPPER( p_partname ), LOWER( NVL( p_indexes, 'no' )), LOWER( NVL( p_constraints, 'no' )),
+                          UPPER( p_source_owner ), UPPER( p_source_object ), UPPER( p_source_column ),
+                          p_replace_method, LOWER( NVL( p_statistics, 'transfer' )),
+                          LOWER( NVL( p_concurrent, 'no' )), p_index_regexp, p_index_type, p_part_type,
+                          p_constraint_regexp, p_constraint_type, p_description
                         );
 
             -- get the SQL rowcount
-            l_num_rows := SQL%ROWCOUNT;
+            l_num_rows    := SQL%ROWCOUNT;
          EXCEPTION
             WHEN e_dup_conf
             THEN
@@ -863,13 +866,13 @@ IS
                WHERE mapping_name = LOWER( p_mapping );
 
          -- get the SQL rowcount
-         l_num_rows := SQL%ROWCOUNT;
+         l_num_rows    := SQL%ROWCOUNT;
       ELSE
          -- as long as P_MODE wasn't 'delete', then we should validate the new structure of the dimension
          -- now use the dimension object to validate the new structure
          -- just constructing the object calls the CONFIRM_OBJECTS procedure
          BEGIN
-            o_map := trans_factory.get_mapping_ot( p_mapping => p_mapping );
+            o_map    := trans_factory.get_mapping_ot( p_mapping => p_mapping );
          END;
       END IF;
 
@@ -879,7 +882,7 @@ IS
          evolve_log.raise_err( 'no_rep_obj' );
       END IF;
    END configure_mapping;
-   
+
    PROCEDURE configure_mapping(
       p_mapping             VARCHAR2,
       p_owner               VARCHAR2 DEFAULT NULL,
@@ -902,50 +905,50 @@ IS
       p_mode                VARCHAR2 DEFAULT 'upsert'
    )
    IS
-      l_map_type	mapping_conf.mapping_type%type;
+      l_map_type   mapping_conf.mapping_type%TYPE;
    BEGIN
       BEGIN
-	 --first, check to make sure that we should be modifying this record
-	 SELECT mapping_type
-	   INTO l_map_type
-	   FROM mapping_conf
-	  WHERE lower( mapping_name ) = lower( p_mapping );
+         --first, check to make sure that we should be modifying this record
+         SELECT mapping_type
+           INTO l_map_type
+           FROM mapping_conf
+          WHERE LOWER( mapping_name ) = LOWER( p_mapping );
       EXCEPTION
-	 WHEN no_data_found
-	 THEN
-	   -- if there is no record, then that's fine... this is a new mapping and all is well
-	   NULL;
+         WHEN NO_DATA_FOUND
+         THEN
+            -- if there is no record, then that's fine... this is a new mapping and all is well
+            NULL;
       END;
-	 -- if this is a dimensional mapping, we should not modify it.
-      IF lower( l_map_type ) = 'dimension'
+
+      -- if this is a dimensional mapping, we should not modify it.
+      IF LOWER( l_map_type ) = 'dimension'
       THEN
-	 evolve_log.raise_err( 'dim_map_obj' );
+         evolve_log.raise_err( 'dim_map_obj' );
       END IF;
 
-      -- now just configure the mapping      
-      configure_mapping( p_mapping	         => p_mapping,
-			 p_mapping_type		 => 'table',
-			 p_owner		 => p_owner,
-			 p_table		 => p_table,
-			 p_partname		 => p_partname,
-			 p_indexes		 => p_indexes,
-			 p_constraints		 => p_constraints,
-			 p_source_owner		 => p_source_owner,
-			 p_source_object   	 => p_source_object,
-			 p_source_column   	 => p_source_column,
-			 p_replace_method  	 => p_replace_method,
-			 p_statistics	   	 => p_statistics,
-			 p_concurrent	   	 => p_concurrent,
-			 p_index_regexp	   	 => p_index_regexp,
-			 p_index_type	   	 => p_index_type,
-			 p_part_type	   	 => p_part_type,
-			 p_constraint_regexp  	 => p_constraint_regexp,
-			 p_constraint_type    	 => p_constraint_type,
-			 p_description	      	 => p_description,
-			 p_mode              	 => p_mode );
-
+      -- now just configure the mapping
+      configure_mapping( p_mapping                => p_mapping,
+                         p_mapping_type           => 'table',
+                         p_owner                  => p_owner,
+                         p_table                  => p_table,
+                         p_partname               => p_partname,
+                         p_indexes                => p_indexes,
+                         p_constraints            => p_constraints,
+                         p_source_owner           => p_source_owner,
+                         p_source_object          => p_source_object,
+                         p_source_column          => p_source_column,
+                         p_replace_method         => p_replace_method,
+                         p_statistics             => p_statistics,
+                         p_concurrent             => p_concurrent,
+                         p_index_regexp           => p_index_regexp,
+                         p_index_type             => p_index_type,
+                         p_part_type              => p_part_type,
+                         p_constraint_regexp      => p_constraint_regexp,
+                         p_constraint_type        => p_constraint_type,
+                         p_description            => p_description,
+                         p_mode                   => p_mode
+                       );
    END configure_mapping;
-   
 
    PROCEDURE configure_dim(
       p_owner              VARCHAR2,
@@ -970,7 +973,7 @@ IS
    )
    IS
       o_dim        mapping_ot;
-      l_mapping	   mapping_conf.mapping_name%type := p_owner||'.'||p_table||' load';
+      l_mapping    mapping_conf.mapping_name%TYPE   := p_owner || '.' || p_table || ' load';
       l_num_rows   NUMBER;
       e_dup_conf   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_conf, -1 );
@@ -1077,10 +1080,9 @@ IS
                 modified_dt = SYSDATE
           WHERE table_owner = UPPER( p_owner ) AND table_name = UPPER( p_table );
 
-	  l_num_rows := SQL%ROWCOUNT;
+         l_num_rows    := SQL%ROWCOUNT;
       END IF;
 
-            
       IF LOWER( p_mode ) IN( 'upsert', 'update' )
       THEN
          evolve_log.log_msg( 'Updating configuration', 5 );
@@ -1103,7 +1105,7 @@ IS
           WHERE table_owner = UPPER( p_owner ) AND table_name = UPPER( p_table );
 
          -- get the SQL rowcount
-         l_num_rows := SQL%ROWCOUNT;
+         l_num_rows    := SQL%ROWCOUNT;
       END IF;
 
       -- updating a current config has failed, or an insert was specified
@@ -1137,20 +1139,21 @@ IS
 
          BEGIN
             INSERT INTO dimension_conf
-                        ( table_owner, table_name, sequence_owner, sequence_name, 
-			  staging_owner, staging_table, default_scd_type, direct_load,
-			  stage_key_default, char_nvl_default, date_nvl_default, 
-			  number_nvl_default, description
+                        ( table_owner, table_name, sequence_owner, sequence_name,
+                          staging_owner, staging_table, default_scd_type,
+                          direct_load, stage_key_default,
+                          char_nvl_default, date_nvl_default,
+                          number_nvl_default, description
                         )
-                 VALUES ( UPPER( p_owner ), UPPER( p_table ), UPPER( p_sequence_owner ), UPPER( p_sequence_name ), 
-			  UPPER( p_staging_owner ), UPPER( p_staging_table ), NVL( p_default_scd_type, 2 ), 
-			  LOWER( NVL( p_direct_load, 'yes' )), NVL( p_stage_key_def, -.01 ), NVL( p_char_nvl_def, '~' ),
-                          NVL( p_date_nvl_def, TO_DATE( '01/01/9999', 'mm/dd/yyyy' )), NVL( p_num_nvl_def, -.01 ),
-                          p_description
+                 VALUES ( UPPER( p_owner ), UPPER( p_table ), UPPER( p_sequence_owner ), UPPER( p_sequence_name ),
+                          UPPER( p_staging_owner ), UPPER( p_staging_table ), NVL( p_default_scd_type, 2 ),
+                          LOWER( NVL( p_direct_load, 'yes' )), NVL( p_stage_key_def, -.01 ),
+                          NVL( p_char_nvl_def, '~' ), NVL( p_date_nvl_def, TO_DATE( '01/01/9999', 'mm/dd/yyyy' )),
+                          NVL( p_num_nvl_def, -.01 ), p_description
                         );
 
             -- get the SQL rowcount
-            l_num_rows := SQL%ROWCOUNT;
+            l_num_rows    := SQL%ROWCOUNT;
          EXCEPTION
             WHEN e_dup_conf
             THEN
@@ -1168,29 +1171,28 @@ IS
                WHERE table_owner = UPPER( p_owner ) AND table_name = UPPER( p_table );
 
          -- get the SQL rowcount
-         l_num_rows := SQL%ROWCOUNT;
+         l_num_rows    := SQL%ROWCOUNT;
       END IF;
-      
+
       -- now make the call to configure the mapping
-      configure_mapping( p_mode 	  => p_mode,
-			 p_mapping	  => l_mapping,
-			 p_mapping_type	  => 'dimension',
-			 p_table	  => p_table,
-			 p_owner	  => p_owner,
-			 p_source_owner   => p_source_owner,
-			 p_source_object  => p_source_object,
-			 p_replace_method => p_replace_method,
-			 p_statistics 	  => p_statistics,
-			 p_concurrent 	  => p_concurrent );
-      
+      configure_mapping( p_mode                => p_mode,
+                         p_mapping             => l_mapping,
+                         p_mapping_type        => 'dimension',
+                         p_table               => p_table,
+                         p_owner               => p_owner,
+                         p_source_owner        => p_source_owner,
+                         p_source_object       => p_source_object,
+                         p_replace_method      => p_replace_method,
+                         p_statistics          => p_statistics,
+                         p_concurrent          => p_concurrent
+                       );
 
-      IF lower( p_mode ) <> 'delete'
+      IF LOWER( p_mode ) <> 'delete'
       THEN
-
          -- as long as P_MODE wasn't 'delete', then we should validate the new structure of the dimension
          -- now use the dimension object to validate the new structure
          -- just constructing the object calls the VERIFY procedure
-	 o_dim := trans_factory.get_mapping_ot( l_mapping );
+         o_dim    := trans_factory.get_mapping_ot( l_mapping );
       END IF;
 
       -- if we still have not affected any records, then there's a problem
@@ -1212,7 +1214,7 @@ IS
       p_current_ind     VARCHAR2 DEFAULT NULL
    )
    IS
-      l_mapping	   mapping_conf.mapping_name%type := p_owner||'.'||p_table||' load';
+      l_mapping    mapping_conf.mapping_name%TYPE   := p_owner || '.' || p_table || ' load';
       l_results    NUMBER;
       l_col_list   LONG;
       -- a dimension table should have already been configured
@@ -1222,10 +1224,9 @@ IS
    BEGIN
       -- construct a DIMENSION_OT object
       -- this is done using the supertype MAPPING_OT
-      o_dim := trans_factory.get_mapping_ot( l_mapping );
-      
+      o_dim         := trans_factory.get_mapping_ot( l_mapping );
       -- construct the list for instrumentation purposes
-      l_col_list :=
+      l_col_list    :=
          UPPER( td_core.format_list(    p_surrogate
                                      || ','
                                      || p_nat_key
