@@ -261,12 +261,10 @@ IS
       END;
    END grant_evolve_rep_privs;
 
-   PROCEDURE grant_evolve_app_privs( p_schema VARCHAR2 DEFAULT 'TDSYS' )
+   PROCEDURE grant_evolve_app_privs( p_user VARCHAR2, p_schema VARCHAR2 DEFAULT 'TDSYS' )
    IS
       e_obj_exists    EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_obj_exists, -955 );
-      e_role_exists   EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_role_exists, -1921 );
       e_no_grantee    EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_grantee, -1919 );
       e_no_obj        EXCEPTION;
@@ -274,34 +272,34 @@ IS
    BEGIN
       BEGIN
          -- first grant the TDSYS stuff
-         EXECUTE IMMEDIATE 'grant execute on TDSYS.TD_INSTALL to ' || p_schema;
+         EXECUTE IMMEDIATE 'grant execute on TDSYS.TD_INSTALL to ' || p_user;
 
          -- types
-         EXECUTE IMMEDIATE 'grant execute on APP_OT to ' || p_schema;
+         EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.APP_OT to ' || p_user;
 
-         EXECUTE IMMEDIATE 'grant execute on EVOLVE_OT to ' || p_schema;
+         EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.EVOLVE_OT to ' || p_user;
 
-         EXECUTE IMMEDIATE 'grant execute on NOTIFICATION_OT to ' || p_schema;
+         EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.NOTIFICATION_OT to ' || p_user;
 
-         EXECUTE IMMEDIATE 'grant execute on SPLIT_OT to ' || p_schema;
+         EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.SPLIT_OT to ' || p_user;
 
          -- packages
-         EXECUTE IMMEDIATE 'grant execute on STRAGG to ' || p_schema;
+         EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.STRAGG to ' || p_user;
 
-         EXECUTE IMMEDIATE 'grant execute on TD_CORE to ' || p_schema;
+         EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.TD_CORE to ' || p_user;
 
-         EXECUTE IMMEDIATE 'grant execute on TD_INST to ' || p_schema;
+         EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.TD_INST to ' || p_user;
 
-         EXECUTE IMMEDIATE 'grant execute on EVOLVE_LOG to ' || p_schema;
+         EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.EVOLVE_LOG to ' || p_user;
 
-         EXECUTE IMMEDIATE 'grant execute on TD_UTILS to ' || p_schema;
+         EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.TD_UTILS to ' || p_user;
 
-         EXECUTE IMMEDIATE 'grant execute on EVOLVE_APP to ' || p_schema;
+         EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.EVOLVE_APP to ' || p_user;
 
-         EXECUTE IMMEDIATE 'grant execute on EVOLVE_ADM to ' || p_schema;
+         EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.EVOLVE_ADM to ' || p_user;
 
          -- sequences
-         EXECUTE IMMEDIATE 'grant select on CONCURRENT_ID_SEQ to ' || p_schema;
+         EXECUTE IMMEDIATE 'grant select on '||p_schema||'.CONCURRENT_ID_SEQ to ' || p_user;
       EXCEPTION
          WHEN e_no_obj
          THEN
@@ -399,7 +397,7 @@ IS
       END;
    END grant_transcend_rep_privs;
 
-   PROCEDURE grant_transcend_app_privs( p_schema VARCHAR2 DEFAULT 'TDSYS' )
+   PROCEDURE grant_transcend_app_privs( p_user VARCHAR2, p_schema VARCHAR2 DEFAULT 'TDSYS' )
    IS
       e_obj_exists    EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_obj_exists, -955 );
@@ -410,24 +408,24 @@ IS
    BEGIN
       BEGIN
          -- types
-         EXECUTE IMMEDIATE 'grant execute on FILE_OT to ' || p_schema;
+         EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.FILE_OT to ' || p_user;
 
-         EXECUTE IMMEDIATE 'grant execute on FEED_OT to ' || p_schema;
+         EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.FEED_OT to ' || p_user;
 
-         EXECUTE IMMEDIATE 'grant execute on EXTRACT_OT to ' || p_schema;
+         EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.EXTRACT_OT to ' || p_user;
 
-         EXECUTE IMMEDIATE 'grant execute on DIMENSION_OT to ' || p_schema;
+         EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.DIMENSION_OT to ' || p_user;
 
          --packages
-         EXECUTE IMMEDIATE 'grant execute on TD_DBUTILS to ' || p_schema;
+         EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.TD_DBUTILS to ' || p_user;
 
-         EXECUTE IMMEDIATE 'grant execute on TRANS_FACTORY to ' || p_schema;
+         EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.TRANS_FACTORY to ' || p_user;
 
-         EXECUTE IMMEDIATE 'grant execute on TRANS_ADM to ' || p_schema;
+         EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.TRANS_ADM to ' || p_user;
 
-         EXECUTE IMMEDIATE 'grant execute on TRANS_ETL to ' || p_schema;
+         EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.TRANS_ETL to ' || p_user;
 
-         EXECUTE IMMEDIATE 'grant execute on TRANS_FILES to ' || p_schema;
+         EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.TRANS_FILES to ' || p_user;
       EXCEPTION
          WHEN e_no_obj
          THEN
@@ -2278,7 +2276,7 @@ IS
       build_evolve_app_syns( p_user => p_user, p_schema => p_application );
 
       -- grant execute on the framework to the new user
-      grant_evolve_app_privs( p_schema => p_user );
+      grant_evolve_app_privs( p_user=> p_user, p_schema => p_application );
 
       EXECUTE IMMEDIATE 'grant ' || p_repository || '_adm to ' || p_user;
 
@@ -2323,7 +2321,7 @@ IS
       build_transcend_app_syns( p_user => p_user, p_schema => p_application );
       
       -- grant execute on the framework to the new user
-      grant_transcend_app_privs( p_schema => p_user );
+      grant_transcend_app_privs( p_user=> p_user, p_schema => p_application );
 
    END create_transcend_user;
 END td_install;
