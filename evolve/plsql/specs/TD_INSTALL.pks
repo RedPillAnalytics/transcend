@@ -33,11 +33,13 @@ IS
    );
 
    PROCEDURE grant_evolve_app_privs(
+      p_user     VARCHAR2,
       p_schema   VARCHAR2 DEFAULT 'TDSYS'    
    );
 
    PROCEDURE grant_transcend_app_privs(
-      p_schema   VARCHAR2 DEFAULT 'TDSYS' 
+      p_user     VARCHAR2,
+      p_schema   VARCHAR2 DEFAULT 'TDSYS'    
    );
 
    PROCEDURE drop_evolve_types;
