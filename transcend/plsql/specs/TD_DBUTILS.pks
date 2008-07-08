@@ -65,7 +65,7 @@ IS
       p_constraint_regexp   VARCHAR2 DEFAULT NULL,
       p_basis               VARCHAR2 DEFAULT 'table',
       p_concurrent          VARCHAR2 DEFAULT 'no',
-      p_enable_queue        VARCHAR2 DEFAULT 'no'
+      p_enable_queue        VARCHAR2 DEFAULT 'yes'
    );
       
    PROCEDURE enable_constraints( p_concurrent VARCHAR2 DEFAULT 'no' );

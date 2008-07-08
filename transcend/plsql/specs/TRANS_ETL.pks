@@ -62,6 +62,10 @@ IS
       p_basis               VARCHAR2 DEFAULT 'table',
       p_concurrent          VARCHAR2 DEFAULT 'no'
    );
+      
+   PROCEDURE enable_constraints(
+      p_concurrent          VARCHAR2 DEFAULT 'no'
+   );
 
    PROCEDURE drop_indexes(
       p_owner          VARCHAR2,

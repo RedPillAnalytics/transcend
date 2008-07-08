@@ -1243,7 +1243,8 @@ IS
 	   disable_ddl 	    VARCHAR2(4000),
 	   disable_msg 	    VARCHAR2(4000),
 	   enable_ddl 	    VARCHAR2(4000),
-	   enable_msg 	    VARCHAR2(4000)
+	   enable_msg 	    VARCHAR2(4000),
+	   order_seq	    NUMBER
 	 )
 	 ON COMMIT DELETE ROWS|';
 

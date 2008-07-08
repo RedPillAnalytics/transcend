@@ -198,7 +198,6 @@ AS
                                    p_constraint_regexp      => p_constraint_regexp,
                                    p_basis                  => p_basis
                                  );
-      COMMIT;
    EXCEPTION
       WHEN OTHERS
       THEN
@@ -224,9 +223,23 @@ AS
                                    p_constraint_type        => p_constraint_type,
                                    p_constraint_regexp      => p_constraint_regexp,
                                    p_basis                  => p_basis,
-                                   p_concurrent             => p_concurrent
+                                   p_concurrent             => p_concurrent,
+				   p_enable_queue	    => 'no'
                                  );
-      COMMIT;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         evolve_log.log_err;
+         RAISE;
+   END enable_constraints;
+   
+   -- enables constraints previously disabled using the P_ENABLE_QUEUE parameter
+   PROCEDURE enable_constraints(
+      p_concurrent          VARCHAR2 DEFAULT 'no'
+   )
+   IS
+   BEGIN
+      td_dbutils.enable_constraints( p_concurrent => p_concurrent );
    EXCEPTION
       WHEN OTHERS
       THEN

@@ -1332,7 +1332,7 @@ AS
       p_constraint_regexp   VARCHAR2 DEFAULT NULL,
       p_basis               VARCHAR2 DEFAULT 'table',
       p_concurrent          VARCHAR2 DEFAULT 'no',
-      p_enable_queue        VARCHAR2 DEFAULT 'no'
+      p_enable_queue        VARCHAR2 DEFAULT 'yes'
    )
    IS
       l_con_cnt         NUMBER         := 0;
@@ -1387,7 +1387,7 @@ AS
                                               || l_tab_name
                                               || ' enable constraint '
                                               || constraint_name enable_ddl,
-                                              'Constraint ' || constraint_name || ' disabled on '
+                                              'Constraint ' || constraint_name || ' enabled on '
                                               || l_tab_name enable_msg,
                                               CASE
                                                  WHEN REGEXP_LIKE( 'table|all', p_basis, 'i' )
@@ -1487,10 +1487,10 @@ AS
 
                INSERT INTO td_con_maint_gtt
                            ( disable_ddl, disable_msg, enable_ddl,
-                             enable_msg
+                             enable_msg, order_seq
                            )
                     VALUES ( c_constraints.disable_ddl, c_constraints.disable_msg, c_constraints.enable_ddl,
-                             c_constraints.enable_msg
+                             c_constraints.enable_msg, c_constraints.ordering
                            );
 
                evolve_log.log_cnt_msg( SQL%ROWCOUNT, 'Number of records inserted into td_con_maint_gtt', 5 );
@@ -1600,7 +1600,8 @@ AS
       evolve_log.log_msg( 'Enabling constraints disabled previously' );
 
       FOR c_cons IN ( SELECT *
-                       FROM td_con_maint_gtt )
+			FROM td_con_maint_gtt
+		       ORDER BY order_seq desc )
       LOOP
          BEGIN
             l_rows       := TRUE;
@@ -1639,6 +1640,9 @@ AS
                                 END
                            );
       END IF;
+      
+      -- commit to clear the queue
+      COMMIT;
 
       o_ev.clear_app_info;
    EXCEPTION
