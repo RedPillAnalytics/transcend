@@ -10,23 +10,24 @@ var p_part_tabs VARCHAR2(3)
 
 EXEC :p_owner := 'staging';
 EXEC :p_source_owner := 'source_data';
-EXEC :p_source_regexp := '^wps_.+_vw$';
+EXEC :p_source_regexp := '^src_.+_vw$';
 EXEC :p_suffix := 't';
-EXEC :p_part_tabs := 'no';
 
 SET termout on
 
 SELECT *
   FROM (SELECT owner source_owner,
 	       object_name source_object,
-	       object_type,
-	       upper( regexp_replace( object_name, '(.+)(_)(.+)$', '\1'||CASE WHEN :p_suffix IS NULL THEN NULL ELSE '_'||:p_suffix END )) table_name
-	  FROM all_objects ) s
-  JOIN ( SELECT owner table_owner,
-		table_name 
-	   FROM all_tables ) t 
-       USING (table_name)
+	       object_type source_object_type,
+	       upper( regexp_replace( object_name, '(.+)(_)(.+)$', '\1'||CASE WHEN :p_suffix IS NULL THEN NULL ELSE '_'||:p_suffix END )) target_name
+	  FROM all_objects 
+	 WHERE object_type IN ( 'TABLE', 'VIEW', 'SYNONYM' )) s
+  JOIN ( SELECT owner target_owner,
+  		object_name target_name,
+		object_type target_oject_type
+  	   FROM all_objects
+	  WHERE object_type IN ( 'TABLE' ) ) t 
+       USING (target_name)
  WHERE REGEXP_LIKE( source_object, :p_source_regexp, 'i' )
    AND source_owner = upper( :p_source_owner )
-   AND table_owner = upper( :p_owner )
-   AND s.object_type IN( 'TABLE', 'VIEW', 'SYNONYM' )
+   AND target_owner = upper( :p_owner )

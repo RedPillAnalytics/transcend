@@ -1959,7 +1959,7 @@ AS
       -- check information about the table
       td_utils.check_table( p_owner => p_owner, p_table => p_table );
       -- check that the source object exists.
-      td_utils.check_object( p_owner => p_source_owner, p_object => p_source_object, p_object_type => 'table$|view' );
+      td_utils.check_object( p_owner => p_source_owner, p_object => p_source_object, p_object_type => 'table|view|synonym' );
       o_ev.change_action( 'issue log_errors warning' );
 
       -- warning concerning using LOG ERRORS clause and the APPEND hint
@@ -2285,25 +2285,22 @@ AS
    BEGIN
       -- dynamic cursor contains source and target objects
       FOR c_objects IN ( SELECT *
-                          FROM ( SELECT owner source_owner, object_name source_object, object_type,
-                                        UPPER( REGEXP_REPLACE( object_name,
-                                                               '(.+)(_)(.+)$',
-                                                                  '\1'
-                                                               || CASE
-                                                                     WHEN p_suffix IS NULL
-                                                                        THEN NULL
-                                                                     ELSE '_' || p_suffix
-                                                                  END
-                                                             )
-                                             ) table_name
-                                  FROM all_objects ) s
-                               JOIN
-                               ( SELECT owner table_owner, table_name
-                                  FROM all_tables ) t USING( table_name )
-                         WHERE REGEXP_LIKE( source_object, p_source_regexp, 'i' )
-                           AND source_owner = UPPER( p_source_owner )
-                           AND table_owner = UPPER( p_owner )
-                           AND s.object_type IN( 'TABLE', 'VIEW', 'SYNONYM' ))
+			   FROM (SELECT owner source_owner,
+					object_name source_object,
+					object_type source_object_type,
+					upper( regexp_replace( object_name, '(.+)(_)(.+)$', '\1'|| CASE WHEN p_suffix IS NULL THEN NULL ELSE '_'|| p_suffix END )) target_name
+				   FROM all_objects 
+				  WHERE object_type IN ( 'TABLE', 'VIEW', 'SYNONYM' )) s
+			   JOIN ( SELECT owner target_owner,
+  					 object_name target_name,
+					 object_type target_oject_type
+  				    FROM all_objects
+				   WHERE object_type IN ( 'TABLE' ) ) t 
+				USING (target_name)
+			  WHERE REGEXP_LIKE( source_object, p_source_regexp, 'i' )
+			    AND source_owner = upper( p_source_owner )
+			    AND target_owner = upper( p_owner )
+		       )
       LOOP
          l_rows    := TRUE;
 
@@ -2313,8 +2310,8 @@ AS
             THEN
                merge_table( p_source_owner       => c_objects.source_owner,
                             p_source_object      => c_objects.source_object,
-                            p_owner              => c_objects.table_owner,
-                            p_table              => c_objects.table_name,
+                            p_owner              => c_objects.target_owner,
+                            p_table              => c_objects.target_name,
                             p_direct             => p_direct,
                             p_degree             => p_degree
                           );
@@ -2322,8 +2319,8 @@ AS
             THEN
                insert_table( p_source_owner       => c_objects.source_owner,
                              p_source_object      => c_objects.source_object,
-                             p_owner              => c_objects.table_owner,
-                             p_table              => c_objects.table_name,
+                             p_owner              => c_objects.target_owner,
+                             p_table              => c_objects.target_name,
                              p_direct             => p_direct,
                              p_degree             => p_degree,
                              p_trunc              => p_trunc
