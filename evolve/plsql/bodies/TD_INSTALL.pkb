@@ -49,7 +49,6 @@ IS
                            ELSE ' default tablespace ' || p_tablespace
                         END;
 			
-	    dbms_output.put_line('DDL statement: '||l_ddl);
             -- therefore, we need to create it
 	    EXECUTE IMMEDIATE l_ddl;
 				 -- if we had to create the user, then it won't have CONNECT or a quote
