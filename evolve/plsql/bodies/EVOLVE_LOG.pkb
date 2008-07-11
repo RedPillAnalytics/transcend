@@ -142,6 +142,46 @@ AS
          COMMIT;
       END IF;
    END log_err;
+   
+      -- used to return a distinct error message number by label
+   FUNCTION get_err_cd( p_name VARCHAR2 )
+      RETURN NUMBER
+   AS
+      l_code   error_conf.code%TYPE;
+   BEGIN
+      BEGIN
+         SELECT (0 - code)
+           INTO l_code
+           FROM error_conf
+          WHERE NAME = p_name;
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            raise_application_error( -20001, 'The specified error has not been configured: '||p_name );
+      END;
+
+      RETURN l_code;
+   END get_err_cd;
+
+   -- used to return a distinct error message text string by label
+   FUNCTION get_err_msg( p_name VARCHAR2 )
+      RETURN VARCHAR2
+   AS
+      l_msg   error_conf.MESSAGE%TYPE;
+   BEGIN
+      BEGIN
+         SELECT MESSAGE
+           INTO l_msg
+           FROM error_conf
+          WHERE NAME = p_name;
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            raise_application_error( -20001, 'The specified error has not been configured: '||p_name );
+      END;
+
+      RETURN l_msg;
+   END get_err_msg;
 
    -- raises an error using RAISE_APPLICATION_ERROR
    -- uses a configuration table to find the error code and the message
