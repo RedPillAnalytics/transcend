@@ -189,8 +189,8 @@ AS
    AS
    BEGIN
       log_msg( 'The error name passed: "' || p_name || '"', 5 );
-      raise_application_error( td_inst.get_err_cd( p_name ),
-                               td_inst.get_err_msg( p_name ) || CASE
+      raise_application_error( get_err_cd( p_name ),
+                               get_err_msg( p_name ) || CASE
                                   WHEN p_add_msg IS NULL
                                      THEN NULL
                                   ELSE ': ' || p_add_msg

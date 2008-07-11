@@ -137,6 +137,26 @@ AS
 
       RETURN;
    END evolve_ot;
+   
+   OVERRIDING MEMBER PROCEDURE change_action( p_action VARCHAR2 )
+   AS
+   BEGIN
+      td_inst.action( p_action );
+      evolve_log.log_msg( 'ACTION attribute changed to "' || td_inst.action || '"', 4 );
+      td_inst.REGISTER;
+   END change_action;
+   
+   OVERRIDING MEMBER PROCEDURE clear_app_info
+   AS
+   BEGIN
+      td_inst.action( prev_action );
+      td_inst.module( prev_module );
+      td_inst.client_info( prev_client_info );
+      evolve_log.log_msg( 'ACTION attribute changed to "' || td_inst.action || '"', 4 );
+      evolve_log.log_msg( 'MODULE attribute changed to "' || td_inst.module || '"', 4 );
+      td_inst.REGISTER;
+   END clear_app_info;
+
    MEMBER PROCEDURE send( p_label     VARCHAR2, 
 			  p_message   VARCHAR2 DEFAULT NULL )
    AS

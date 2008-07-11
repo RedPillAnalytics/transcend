@@ -18,14 +18,6 @@ AS
       -- read previous app_info settings
       -- populate attributes with new app_info settings
       td_inst.client_info( NVL( p_client_info, td_inst.client_info ));
-      evolve_log.log_msg(    'MODULE "'
-                          || td_inst.module
-                          || '" beginning in RUNMODE "'
-                          || td_inst.runmode
-                          || '"',
-                          4
-                        );
-      evolve_log.log_msg( 'Inital ACTION attribute set to "' || td_inst.action || '"', 4 );
       RETURN;
    END app_ot;
    MEMBER FUNCTION get_package_name
@@ -96,23 +88,23 @@ AS
 
       RETURN LOWER( l_name );
    END get_package_name;
+
    MEMBER PROCEDURE change_action( p_action VARCHAR2 )
    AS
    BEGIN
       td_inst.action( p_action );
-      evolve_log.log_msg( 'ACTION attribute changed to "' || td_inst.action || '"', 4 );
       td_inst.REGISTER;
    END change_action;
+
    MEMBER PROCEDURE clear_app_info
    AS
    BEGIN
       td_inst.action( prev_action );
       td_inst.module( prev_module );
       td_inst.client_info( prev_client_info );
-      evolve_log.log_msg( 'ACTION attribute changed to "' || td_inst.action || '"', 4 );
-      evolve_log.log_msg( 'MODULE attribute changed to "' || td_inst.module || '"', 4 );
       td_inst.REGISTER;
    END clear_app_info;
+
    MEMBER PROCEDURE read_prev_info
    AS
    BEGIN
