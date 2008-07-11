@@ -76,30 +76,39 @@ END;
 -- first drop the types
 EXEC tdsys.td_install.drop_evolve_types;
 
--- CREATE java stored procedure
-@../evolve/java/TdCore.jvs
+-- create collection of libraries that make no use of the Evolve repository
+-- these don't perform any real SQL at all
+-- simply a series of reusable functions that don't have any external dependencies
+@../evolve/plsql/specs/TD_CORE.pks
+@../evolve/plsql/wrapped_bodies/TD_CORE.plb
 
--- CREATE core pieces needed by types
+-- non-packaged functions because STRAGG cannot be packaged
 @../evolve/plsql/specs/SPLIT_OT.tps
 @../evolve/plsql/specs/STRING_AGG_OT.tps
 @../evolve/plsql/wrapped_bodies/STRING_AGG_OT.plb
 @../evolve/plsql/wrapped_bodies/STRAGG.plb
-@../evolve/plsql/specs/TD_CORE.pks
-@../evolve/plsql/wrapped_bodies/TD_CORE.plb
+
+-- create java stored procedures
+-- this contains OS and file level utilites that aren't available in other API's
+@../evolve/java/TdCore.jvs
+
+-- create Evolve pieces that don't use any repository objects
+-- this in essence becomes "Evolve-lite" where no configuration or audit tables are required
 @../evolve/plsql/specs/TD_INST.pks
 @../evolve/plsql/wrapped_bodies/TD_INST.plb
-@../evolve/plsql/specs/EVOLVE_LOG.pks
-@../evolve/plsql/wrapped_bodies/EVOLVE_LOG.plb
-
--- create the types
 @../evolve/plsql/specs/APP_OT.tps
 @../evolve/plsql/wrapped_bodies/APP_OT.plb
+
+-- layer in the utilities that require repository objects
+-- this starts to move past "Evolve-lite"
+@../evolve/plsql/specs/EVOLVE_LOG.pks
+@../evolve/plsql/wrapped_bodies/EVOLVE_LOG.plb
 @../evolve/plsql/specs/NOTIFICATION_OT.tps
 @../evolve/plsql/wrapped_bodies/NOTIFICATION_OT.plb
 @../evolve/plsql/specs/EVOLVE_OT.tps
 @../evolve/plsql/wrapped_bodies/EVOLVE_OT.plb
 
--- create the packages that use the types
+-- create utilities package that uses the main Evolve framework
 @../evolve/plsql/specs/TD_UTILS.pks
 @../evolve/plsql/wrapped_bodies/TD_UTILS.plb
 

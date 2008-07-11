@@ -69,7 +69,7 @@ AS
    IS
       l_idx     PLS_INTEGER;
       l_list    VARCHAR2( 32767 ) := CASE
-                            WHEN td_core.is_true( p_format )
+                            WHEN is_true( p_format )
                                THEN format_list( p_list )
                             ELSE p_list
                          END;
