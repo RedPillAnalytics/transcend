@@ -250,38 +250,6 @@ AS
 
    -- OTHER PROGRAM UNITS
 
-   -- used to pull the calling block from the dictionary
-   -- used to populate CALL_STACK column in the LOG_TABLE
-   FUNCTION whence
-      RETURN VARCHAR2
-   AS
-      l_call_stack    VARCHAR2( 4096 )
-                                      DEFAULT DBMS_UTILITY.format_call_stack || CHR( 10 );
-      l_num           NUMBER;
-      l_found_stack   BOOLEAN          DEFAULT FALSE;
-      l_line          VARCHAR2( 255 );
-      l_cnt           NUMBER           := 0;
-   BEGIN
-      LOOP
-         l_num := INSTR( l_call_stack, CHR( 10 ));
-         EXIT WHEN( l_cnt = 4 OR l_num IS NULL OR l_num = 0 );
-         l_line := SUBSTR( l_call_stack, 1, l_num - 1 );
-         l_call_stack := SUBSTR( l_call_stack, l_num + 1 );
-
-         IF ( NOT l_found_stack )
-         THEN
-            IF ( l_line LIKE '%handle%number%name%' )
-            THEN
-               l_found_stack := TRUE;
-            END IF;
-         ELSE
-            l_cnt := l_cnt + 1;
-         END IF;
-      END LOOP;
-
-      RETURN l_line;
-   END whence;
-
    -- the standard methods to set up the session aren't applicable for those submitted in the background with DBMS_SCHEDULER
    -- that is why this method has to be used
    PROCEDURE set_scheduler_info( p_session_id NUMBER, p_module VARCHAR2, p_action VARCHAR2 )
