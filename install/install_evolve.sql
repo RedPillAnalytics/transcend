@@ -1,6 +1,6 @@
 SET echo off
 SET verify off
-PROMPT 'Running install.sql'
+PROMPT 'Running install_evolve.sql'
 SET serveroutput on size unlimited
 SET timing off
 ALTER SESSION SET nls_date_format = 'yyyymmdd_hhmiss';
@@ -11,11 +11,11 @@ VARIABLE current_schema char(30)
 EXEC :current_schema := sys_context('USERENV','CURRENT_SCHEMA');
 
 -- get the schema for the Evolve repository (tables)
-ACCEPT rep_schema char default 'TDSYS' prompt 'Schema name for the Evolve default repository [tdsys]: '
+ACCEPT rep_schema char default 'TDSYS' prompt 'Schema name for the default repository [tdsys]: '
 -- get the tablespace for the repository
-ACCEPT tablespace char default 'TDSYS' prompt 'Tablespace in which to install Evolve default repository: [tdsys]: '
+ACCEPT tablespace char default 'TDSYS' prompt 'Tablespace in which to install default repository: [tdsys]: '
 -- get the schema for the Evolve application (PL/SQL and Java code)
-ACCEPT app_schema char default 'TDSYS' prompt 'Schema name for the Evolve application [tdsys]: '
+ACCEPT app_schema char default 'TDSYS' prompt 'Schema name for the application [tdsys]: '
 -- find out whether destructive actions are okay
 ACCEPT drop_obj char default 'N' prompt 'Do you want to issue DROP TABLE statements for any existing repository tables? [N]: '
 
@@ -47,8 +47,8 @@ GRANT SELECT ANY dictionary TO tdsys;
 ALTER SESSION SET current_schema=tdsys;
 
 -- install the installation package
-@../plsql/specs/TD_INSTALL.pks
-@../plsql/wrapped_bodies/TD_INSTALL.plb
+@../plsql/specs/TD_ADM.pks
+@../plsql/wrapped_bodies/TD_ADM.plb
 
 BEGIN
    EXECUTE IMMEDIATE 'ALTER SESSION SET current_schema='||:current_schema;
@@ -76,41 +76,38 @@ END;
 -- first drop the types
 EXEC tdsys.td_install.drop_evolve_types;
 
---CREATE java stored procedure
-@../java/TdCore.jvs
+-- CREATE java stored procedure
+@../evolve/java/TdCore.jvs
 
---CREATE core pieces needed by types
-@../plsql/specs/SPLIT_OT.tps
-@../plsql/specs/STRING_AGG_OT.tps
-@../plsql/wrapped_bodies/STRING_AGG_OT.plb
-@../plsql/wrapped_bodies/STRAGG.plb
-@../plsql/specs/TD_CORE.pks
-@../plsql/wrapped_bodies/TD_CORE.plb
-@../plsql/specs/TD_INST.pks
-@../plsql/wrapped_bodies/TD_INST.plb
-@../plsql/specs/EVOLVE_LOG.pks
-@../plsql/wrapped_bodies/EVOLVE_LOG.plb
+-- CREATE core pieces needed by types
+@../evolve/plsql/specs/SPLIT_OT.tps
+@../evolve/plsql/specs/STRING_AGG_OT.tps
+@../evolve/plsql/wrapped_bodies/STRING_AGG_OT.plb
+@../evolve/plsql/wrapped_bodies/STRAGG.plb
+@../evolve/plsql/specs/TD_CORE.pks
+@../evolve/plsql/wrapped_bodies/TD_CORE.plb
+@../evolve/plsql/specs/TD_INST.pks
+@../evolve/plsql/wrapped_bodies/TD_INST.plb
+@../evolve/plsql/specs/EVOLVE_LOG.pks
+@../evolve/plsql/wrapped_bodies/EVOLVE_LOG.plb
 
--- crate the types
-@../plsql/specs/APP_OT.tps
-@../plsql/wrapped_bodies/APP_OT.plb
-@../plsql/specs/NOTIFICATION_OT.tps
-@../plsql/wrapped_bodies/NOTIFICATION_OT.plb
-@../plsql/specs/EVOLVE_OT.tps
-@../plsql/wrapped_bodies/EVOLVE_OT.plb
+-- create the types
+@../evolve/plsql/specs/APP_OT.tps
+@../evolve/plsql/wrapped_bodies/APP_OT.plb
+@../evolve/plsql/specs/NOTIFICATION_OT.tps
+@../evolve/plsql/wrapped_bodies/NOTIFICATION_OT.plb
+@../evolve/plsql/specs/EVOLVE_OT.tps
+@../evolve/plsql/wrapped_bodies/EVOLVE_OT.plb
 
 -- create the packages that use the types
-@../plsql/specs/TD_UTILS.pks
-@../plsql/wrapped_bodies/TD_UTILS.plb
+@../evolve/plsql/specs/TD_UTILS.pks
+@../evolve/plsql/wrapped_bodies/TD_UTILS.plb
 
 -- create callable packages
-@../plsql/specs/EVOLVE_APP.pks
-@../plsql/wrapped_bodies/EVOLVE_APP.plb
-@../plsql/specs/EVOLVE_ADM.pks
-@../plsql/wrapped_bodies/EVOLVE_ADM.plb
-
--- grant execute on all the callable packages to the _APP role
-EXEC tdsys.td_install.grant_evolve_app_privs( p_schema => '&app_schema' );
+@../evolve/plsql/specs/EVOLVE_APP.pks
+@../evolve/plsql/wrapped_bodies/EVOLVE_APP.plb
+@../evolve/plsql/specs/EVOLVE_ADM.pks
+@../evolve/plsql/wrapped_bodies/EVOLVE_ADM.plb
 
 -- set the default logging, registration and runmodes
 EXEC evolve_adm.set_default_configs;
