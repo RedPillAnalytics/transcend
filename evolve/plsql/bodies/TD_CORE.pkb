@@ -34,7 +34,8 @@ AS
       RETURN VARCHAR2
    AS
    BEGIN
-      -- use the load_tab or merge_tab procedure depending on P_MERGE
+      -- returns a 'yes' or 'no' in a function
+      -- useful for being called inside a SQL statement where Booleans are not allowed.
       CASE
          WHEN REGEXP_LIKE( 'yes', p_parm, 'i' )
          THEN
