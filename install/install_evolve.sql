@@ -1,4 +1,4 @@
-SET echo off
+--SET echo off
 SET verify off
 PROMPT 'Running install_evolve.sql'
 SET serveroutput on size unlimited
@@ -59,13 +59,13 @@ DECLARE
    l_drop BOOLEAN := CASE WHEN REGEXP_LIKE('yes','&drop_obj','i') THEN TRUE ELSE FALSE END;
 BEGIN
    -- build the system repository
-   tdsys.td_install.build_sys_repo( p_schema=> 'tdsys', p_tablespace => '&tablespace', p_drop => l_drop );
+   tdsys.td_adm.build_sys_repo( p_schema=> 'tdsys', p_tablespace => '&tablespace', p_drop => l_drop );
    -- create the Evolve repository
-   tdsys.td_install.build_evolve_repo( p_schema => '&rep_schema', p_tablespace => '&tablespace', p_drop => l_drop);
+   tdsys.td_adm.build_evolve_repo( p_schema => '&rep_schema', p_tablespace => '&tablespace', p_drop => l_drop);
    -- create the Evolve application
-   tdsys.td_install.build_evolve_app( p_schema => '&app_schema', p_repository => '&rep_schema', p_drop => l_drop);   
+   tdsys.td_adm.build_evolve_app( p_schema => '&app_schema', p_repository => '&rep_schema', p_drop => l_drop);   
 EXCEPTION
-   WHEN tdsys.td_install.e_repo_obj_exists
+   WHEN tdsys.td_adm.e_repo_obj_exists
    THEN
    raise_application_error(-20003,'Repository tables exist. Specify ''Y'' when prompted to issue DROP TABLE statements');
 END;
@@ -74,7 +74,11 @@ END;
 
 -- now install the Evolve code
 -- first drop the types
-EXEC tdsys.td_install.drop_evolve_types;
+EXEC tdsys.td_adm.drop_evolve_types;
+
+
+-- this type is created first as it's needed for the TD_CORE
+@../evolve/plsql/specs/SPLIT_OT.tps
 
 -- create collection of libraries that make no use of the Evolve repository
 -- these don't perform any real SQL at all
@@ -83,7 +87,6 @@ EXEC tdsys.td_install.drop_evolve_types;
 @../evolve/plsql/wrapped_bodies/TD_CORE.plb
 
 -- non-packaged functions because STRAGG cannot be packaged
-@../evolve/plsql/specs/SPLIT_OT.tps
 @../evolve/plsql/specs/STRING_AGG_OT.tps
 @../evolve/plsql/wrapped_bodies/STRING_AGG_OT.plb
 @../evolve/plsql/wrapped_bodies/STRAGG.plb
