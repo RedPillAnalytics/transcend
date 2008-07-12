@@ -26,19 +26,19 @@ AS
                   );
 
       -- the job fails when size threshholds are not met
-      IF NOT evolve_log.is_debugmode
+      IF NOT evolve.is_debugmode
       THEN
 
          IF p_num_bytes >= max_bytes AND max_bytes <> 0
          THEN
 	    o_ev.change_action( 'file too large');
             o_ev.send( p_label => file_label );
-	    evolve_log.raise_err( 'file_too_large' );
+	    evolve.raise_err( 'file_too_large' );
          ELSIF p_num_bytes < min_bytes
          THEN
 	    o_ev.change_action( 'file too small');
             o_ev.send( p_label => file_label );
-	    evolve_log.raise_err( 'file_too_small' );
+	    evolve.raise_err( 'file_too_small' );
          END IF;
       END IF;
 

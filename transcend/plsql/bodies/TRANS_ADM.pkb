@@ -108,7 +108,7 @@ IS
       CASE
          WHEN ( p_owner IS NULL AND p_table IS NOT NULL ) OR( p_owner IS NOT NULL AND p_table IS NULL )
          THEN
-            evolve_log.raise_err( 'parms_comb', 'P_OWNER and P_TABLE' );
+            evolve.raise_err( 'parms_comb', 'P_OWNER and P_TABLE' );
          WHEN p_table IS NOT NULL
          THEN
             -- directory information is not configured by the user... instead, it is pulled from the external table
@@ -121,7 +121,7 @@ IS
             td_utils.check_table( p_owner => p_owner, p_table => p_table, p_external => 'yes' );
          WHEN p_table IS NULL
          THEN
-            evolve_log.log_msg( 'P_TABLE is NULL', 5 );
+            evolve.log_msg( 'P_TABLE is NULL', 5 );
 
             -- the object_name is null, so we need to pull the table information from the configuration
             BEGIN
@@ -135,7 +135,7 @@ IS
                   l_no_conf    := TRUE;
             END;
 
-            evolve_log.log_msg( 'Values for L_OWNER and L_TABLE: ' || l_owner || ',' || l_table, 5 );
+            evolve.log_msg( 'Values for L_OWNER and L_TABLE: ' || l_owner || ',' || l_table, 5 );
       END CASE;
 
       -- as long as this is not a delete, I need the directory name
@@ -154,7 +154,7 @@ IS
                THEN
                   NULL;
                ELSE
-                  evolve_log.raise_err( 'no_ext_tab', UPPER( l_owner || '.' || l_table ));
+                  evolve.raise_err( 'no_ext_tab', UPPER( l_owner || '.' || l_table ));
                END IF;
          END;
       END IF;
@@ -166,22 +166,22 @@ IS
          CASE
             WHEN p_owner = 'NULL'
             THEN
-               evolve_log.raise_err( 'parm_req', 'P_OWNER' );
+               evolve.raise_err( 'parm_req', 'P_OWNER' );
             WHEN p_table = 'NULL'
             THEN
-               evolve_log.raise_err( 'parm_req', 'P_TABLE' );
+               evolve.raise_err( 'parm_req', 'P_TABLE' );
             WHEN p_filename IS NULL
             THEN
-               evolve_log.raise_err( 'parm_req', 'P_FILENAME' );
+               evolve.raise_err( 'parm_req', 'P_FILENAME' );
             WHEN p_arch_directory = 'NULL'
             THEN
-               evolve_log.raise_err( 'parm_req', 'P_ARCH_DIRECTORY' );
+               evolve.raise_err( 'parm_req', 'P_ARCH_DIRECTORY' );
             WHEN p_source_directory = 'NULL'
             THEN
-               evolve_log.raise_err( 'parm_req', 'P_SOURCE_DIRECTORY' );
+               evolve.raise_err( 'parm_req', 'P_SOURCE_DIRECTORY' );
             WHEN p_source_regexp = 'NULL'
             THEN
-               evolve_log.raise_err( 'parm_req', 'P_SOURCE_REGEXP' );
+               evolve.raise_err( 'parm_req', 'P_SOURCE_REGEXP' );
             ELSE
                NULL;
          END CASE;
@@ -317,22 +317,22 @@ IS
          CASE
             WHEN p_owner IS NULL
             THEN
-               evolve_log.raise_err( 'parm_req', 'P_OWNER' );
+               evolve.raise_err( 'parm_req', 'P_OWNER' );
             WHEN p_table IS NULL
             THEN
-               evolve_log.raise_err( 'parm_req', 'P_TABLE' );
+               evolve.raise_err( 'parm_req', 'P_TABLE' );
             WHEN p_filename IS NULL
             THEN
-               evolve_log.raise_err( 'parm_req', 'P_FILENAME' );
+               evolve.raise_err( 'parm_req', 'P_FILENAME' );
             WHEN p_arch_directory IS NULL
             THEN
-               evolve_log.raise_err( 'parm_req', 'P_ARCH_DIRECTORY' );
+               evolve.raise_err( 'parm_req', 'P_ARCH_DIRECTORY' );
             WHEN p_source_directory IS NULL
             THEN
-               evolve_log.raise_err( 'parm_req', 'P_SOURCE_DIRECTORY' );
+               evolve.raise_err( 'parm_req', 'P_SOURCE_DIRECTORY' );
             WHEN p_source_regexp IS NULL
             THEN
-               evolve_log.raise_err( 'parm_req', 'P_SOURCE_REGEXP' );
+               evolve.raise_err( 'parm_req', 'P_SOURCE_REGEXP' );
             ELSE
                NULL;
          END CASE;
@@ -356,7 +356,7 @@ IS
          EXCEPTION
             WHEN e_dup_conf
             THEN
-               evolve_log.raise_err( 'dup_conf' );
+               evolve.raise_err( 'dup_conf' );
          END;
       END IF;
 
@@ -372,7 +372,7 @@ IS
       -- if we still have not affected any records, then there's a problem
       IF SQL%ROWCOUNT = 0
       THEN
-         evolve_log.raise_err( 'no_rep_obj' );
+         evolve.raise_err( 'no_rep_obj' );
       END IF;
    END configure_feed;
 
@@ -414,19 +414,19 @@ IS
          CASE
             WHEN p_filename = 'NULL'
             THEN
-               evolve_log.raise_err( 'parm_req', 'P_FILENAME' );
+               evolve.raise_err( 'parm_req', 'P_FILENAME' );
             WHEN p_object_owner = 'NULL'
             THEN
-               evolve_log.raise_err( 'parm_req', 'P_OBJECT_OWNER' );
+               evolve.raise_err( 'parm_req', 'P_OBJECT_OWNER' );
             WHEN p_object_name = 'NULL'
             THEN
-               evolve_log.raise_err( 'parm_req', 'P_OBJECT_NAME' );
+               evolve.raise_err( 'parm_req', 'P_OBJECT_NAME' );
             WHEN p_directory = 'NULL'
             THEN
-               evolve_log.raise_err( 'parm_req', 'P_DIRECTORY' );
+               evolve.raise_err( 'parm_req', 'P_DIRECTORY' );
             WHEN p_arch_directory = 'NULL'
             THEN
-               evolve_log.raise_err( 'parm_req', 'P_ARCH_DIRECTORY' );
+               evolve.raise_err( 'parm_req', 'P_ARCH_DIRECTORY' );
             ELSE
                NULL;
          END CASE;
@@ -551,19 +551,19 @@ IS
          CASE
             WHEN p_filename IS NULL
             THEN
-               evolve_log.raise_err( 'parm_req', 'P_FILENAME' );
+               evolve.raise_err( 'parm_req', 'P_FILENAME' );
             WHEN p_object_owner IS NULL
             THEN
-               evolve_log.raise_err( 'parm_req', 'P_OBJECT_OWNER' );
+               evolve.raise_err( 'parm_req', 'P_OBJECT_OWNER' );
             WHEN p_object_name IS NULL
             THEN
-               evolve_log.raise_err( 'parm_req', 'P_OBJECT_NAME' );
+               evolve.raise_err( 'parm_req', 'P_OBJECT_NAME' );
             WHEN p_directory IS NULL
             THEN
-               evolve_log.raise_err( 'parm_req', 'P_DIRECTORY' );
+               evolve.raise_err( 'parm_req', 'P_DIRECTORY' );
             WHEN p_arch_directory IS NULL
             THEN
-               evolve_log.raise_err( 'parm_req', 'P_ARCH_DIRECTORY' );
+               evolve.raise_err( 'parm_req', 'P_ARCH_DIRECTORY' );
             ELSE
                NULL;
          END CASE;
@@ -587,7 +587,7 @@ IS
          EXCEPTION
             WHEN e_dup_conf
             THEN
-               evolve_log.raise_err( 'dup_conf' );
+               evolve.raise_err( 'dup_conf' );
          END;
       END IF;
 
@@ -603,7 +603,7 @@ IS
       -- if we still have not affected any records, then there's a problem
       IF SQL%ROWCOUNT = 0
       THEN
-         evolve_log.raise_err( 'no_rep_obj' );
+         evolve.raise_err( 'no_rep_obj' );
       END IF;
    END configure_extract;
 
@@ -791,7 +791,7 @@ IS
 
       IF LOWER( p_mode ) IN( 'upsert', 'update' )
       THEN
-         evolve_log.log_msg( 'Updating configuration', 5 );
+         evolve.log_msg( 'Updating configuration', 5 );
 
          -- try to update an existing configuration
          UPDATE mapping_conf
@@ -826,12 +826,12 @@ IS
       -- in this case, insert a new record
       IF ( l_num_rows = 0 AND LOWER( p_mode ) = 'upsert' ) OR LOWER( p_mode ) = 'insert'
       THEN
-         evolve_log.log_msg( 'Inserting configuration', 5 );
+         evolve.log_msg( 'Inserting configuration', 5 );
 
          CASE
             WHEN p_mapping IS NULL
             THEN
-               evolve_log.raise_err( 'parm_req', 'P_MAPPING' );
+               evolve.raise_err( 'parm_req', 'P_MAPPING' );
             ELSE
                NULL;
          END CASE;
@@ -858,7 +858,7 @@ IS
          EXCEPTION
             WHEN e_dup_conf
             THEN
-               evolve_log.raise_err( 'dup_conf' );
+               evolve.raise_err( 'dup_conf' );
          END;
       END IF;
 
@@ -882,7 +882,7 @@ IS
       -- if we still have not affected any records, then there's a problem
       IF l_num_rows = 0
       THEN
-         evolve_log.raise_err( 'no_rep_obj' );
+         evolve.raise_err( 'no_rep_obj' );
       END IF;
    END configure_mapping;
 
@@ -926,7 +926,7 @@ IS
       -- if this is a dimensional mapping, we should not modify it.
       IF LOWER( l_map_type ) = 'dimension'
       THEN
-         evolve_log.raise_err( 'dim_map_obj' );
+         evolve.raise_err( 'dim_map_obj' );
       END IF;
 
       -- now just configure the mapping
@@ -983,7 +983,7 @@ IS
    BEGIN
       IF LOWER( p_mode ) = 'nullify'
       THEN
-         evolve_log.log_msg( 'Nullifying configuration elements', 5 );
+         evolve.log_msg( 'Nullifying configuration elements', 5 );
 
          UPDATE dimension_conf
             SET sequence_owner =
@@ -1088,7 +1088,7 @@ IS
 
       IF LOWER( p_mode ) IN( 'upsert', 'update' )
       THEN
-         evolve_log.log_msg( 'Updating configuration', 5 );
+         evolve.log_msg( 'Updating configuration', 5 );
 
          -- first try to update an existing configuration
          UPDATE dimension_conf
@@ -1115,27 +1115,27 @@ IS
       -- in this case, insert a new record
       IF ( l_num_rows = 0 AND LOWER( p_mode ) = 'upsert' ) OR LOWER( p_mode ) = 'insert'
       THEN
-         evolve_log.log_msg( 'Inserting configuration', 5 );
+         evolve.log_msg( 'Inserting configuration', 5 );
 
          CASE
             WHEN p_owner IS NULL
             THEN
-               evolve_log.raise_err( 'parm_req', 'P_OWNER' );
+               evolve.raise_err( 'parm_req', 'P_OWNER' );
             WHEN p_table IS NULL
             THEN
-               evolve_log.raise_err( 'parm_req', 'P_TABLE_NAME' );
+               evolve.raise_err( 'parm_req', 'P_TABLE_NAME' );
             WHEN p_source_owner IS NULL
             THEN
-               evolve_log.raise_err( 'parm_req', 'P_SOURCE_OWNER' );
+               evolve.raise_err( 'parm_req', 'P_SOURCE_OWNER' );
             WHEN p_source_object IS NULL
             THEN
-               evolve_log.raise_err( 'parm_req', 'P_SOURCE_OBJECT' );
+               evolve.raise_err( 'parm_req', 'P_SOURCE_OBJECT' );
             WHEN p_sequence_owner IS NULL
             THEN
-               evolve_log.raise_err( 'parm_req', 'P_SEQUENCE_OWNER' );
+               evolve.raise_err( 'parm_req', 'P_SEQUENCE_OWNER' );
             WHEN p_sequence_name IS NULL
             THEN
-               evolve_log.raise_err( 'parm_req', 'P_SEQUENCE_NAME' );
+               evolve.raise_err( 'parm_req', 'P_SEQUENCE_NAME' );
             ELSE
                NULL;
          END CASE;
@@ -1160,7 +1160,7 @@ IS
          EXCEPTION
             WHEN e_dup_conf
             THEN
-               evolve_log.raise_err( 'dup_conf' );
+               evolve.raise_err( 'dup_conf' );
          END;
       END IF;
 
@@ -1201,7 +1201,7 @@ IS
       -- if we still have not affected any records, then there's a problem
       IF l_num_rows = 0
       THEN
-         evolve_log.raise_err( 'no_rep_obj' );
+         evolve.raise_err( 'no_rep_obj' );
       END IF;
    END configure_dim;
 
@@ -1245,7 +1245,7 @@ IS
                                      || p_current_ind
                                    )
               );
-      evolve_log.log_msg( 'The column list: ' || l_col_list, 5 );
+      evolve.log_msg( 'The column list: ' || l_col_list, 5 );
 
       -- check and make sure all the columns specified are legitimate
       FOR c_cols IN ( SELECT COLUMN_VALUE column_name

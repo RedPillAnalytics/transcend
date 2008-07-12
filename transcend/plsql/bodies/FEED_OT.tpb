@@ -52,10 +52,10 @@ AS
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
-         evolve_log.raise_err( 'no_ext_tab', UPPER( self.object_owner || '.' || self.object_name ));
+         evolve.raise_err( 'no_ext_tab', UPPER( self.object_owner || '.' || self.object_name ));
       END;
 
-      evolve_log.log_msg( 'FEED confirmation completed successfully', 5 );
+      evolve.log_msg( 'FEED confirmation completed successfully', 5 );
       -- reset the evolve_object
       o_ev.clear_app_info;
    END verify;
@@ -79,10 +79,10 @@ AS
       -- defaults to registering with DBMS_APPLICATION_INFO
       o_ev.change_action( 'get count from table' );
       l_sql := 'SELECT count(*) FROM ' || l_ext_tab;
-      evolve_log.log_msg( 'Count SQL: ' || l_sql, 3 );
+      evolve.log_msg( 'Count SQL: ' || l_sql, 3 );
       o_ev.change_action( 'get external table count' );
 
-      IF NOT evolve_log.is_debugmode
+      IF NOT evolve.is_debugmode
       THEN
          BEGIN
             EXECUTE IMMEDIATE l_sql
@@ -92,7 +92,7 @@ AS
             THEN
                -- no matter what happens, we want to log the error
                -- this is prior to the case on purpose
-               evolve_log.log_err;
+               evolve.log_err;
 
                     -- use a regular expression to pull the KUP error out of SQLERRM
                -- this tells us the explicit issue with the external table
@@ -104,11 +104,11 @@ AS
                      o_ev.change_action( 'external file missing' );
                      o_ev.send( p_label => SELF.file_label );
                      o_ev.clear_app_info;
-                     evolve_log.raise_err( 'ext_file_missing', l_ext_tab );
+                     evolve.raise_err( 'ext_file_missing', l_ext_tab );
                   -- All other errors get routed here
                ELSE
                      o_ev.clear_app_info;
-                     evolve_log.raise_err( 'data_cartridge', l_ext_tab );
+                     evolve.raise_err( 'data_cartridge', l_ext_tab );
                END CASE;
          END;
 
@@ -122,12 +122,12 @@ AS
                -- notify if reject limit is exceeded
                o_ev.send( p_label => SELF.file_label );
                o_ev.clear_app_info;
-               evolve_log.raise_err( 'reject_limit_exceeded' );
+               evolve.raise_err( 'reject_limit_exceeded' );
             END IF;
          EXCEPTION
             WHEN ZERO_DIVIDE
             THEN
-               evolve_log.log_msg( 'External table location is an empty file', 3 );
+               evolve.log_msg( 'External table location is an empty file', 3 );
          END;
 
          INSERT INTO files_obj_detail
@@ -143,7 +143,7 @@ AS
    EXCEPTION
       WHEN e_no_table
       THEN
-         evolve_log.raise_err( 'no_tab', SELF.object_owner || '.' || SELF.object_name );
+         evolve.raise_err( 'no_tab', SELF.object_owner || '.' || SELF.object_name );
    END audit_ext_tab;
    MEMBER PROCEDURE process
    IS
@@ -165,7 +165,7 @@ AS
       PRAGMA EXCEPTION_INIT( e_no_files, -1756 );
       o_ev             evolve_ot                          := evolve_ot( p_module => 'process' );
    BEGIN
-      evolve_log.log_msg( 'Processing feed "' || file_label || '"', 3 );
+      evolve.log_msg( 'Processing feed "' || file_label || '"', 3 );
       o_ev.change_action( 'evaluate source directory' );
       -- we are about to copy files into place
       -- before that, we need to remove files placed in on previous runs
@@ -185,7 +185,7 @@ AS
 
       IF l_rows_delete
       THEN
-         evolve_log.log_msg( 'Previous external table location files removed', 3 );
+         evolve.log_msg( 'Previous external table location files removed', 3 );
       END IF;
 
       -- now we need to see all the source files in the source directory that match the regular expression
@@ -325,7 +325,7 @@ AS
           ORDER BY ext_tab_ind ASC )
       LOOP
          o_ev.change_action( 'process feed' );
-         evolve_log.log_msg( 'Processing file ' || c_dir_list.source_filepath, 3 );
+         evolve.log_msg( 'Processing file ' || c_dir_list.source_filepath, 3 );
          -- catch empty cursor sets
          l_rows_dirlist := TRUE;
          -- reset variables used in the cursor
@@ -333,7 +333,7 @@ AS
          -- copy file to the archive location
          o_ev.change_action( 'copy archivefile' );
          td_utils.copy_file( c_dir_list.source_filepath, c_dir_list.arch_filepath );
-         evolve_log.log_msg( 'Archive file ' || c_dir_list.arch_filepath || ' created', 3 );
+         evolve.log_msg( 'Archive file ' || c_dir_list.arch_filepath || ' created', 3 );
          -- copy the file to the external table
          o_ev.change_action( 'copy external table files' );
 
@@ -367,7 +367,7 @@ AS
             THEN
                td_utils.copy_file( dirpath || '/' || l_filepath, c_dir_list.filepath );
                td_utils.delete_file( DIRECTORY, l_filepath );
-               evolve_log.log_msg(    'Source file '
+               evolve.log_msg(    'Source file '
                                    || c_dir_list.source_filepath
                                    || ' moved to destination '
                                    || c_dir_list.filepath
@@ -388,7 +388,7 @@ AS
          END IF;
 
          -- WRITE an audit record for the file that was just archived
-         IF NOT evolve_log.is_debugmode
+         IF NOT evolve.is_debugmode
          THEN
             o_ev.change_action( 'audit feed' );
             SELF.audit_file( p_source_filepath      => c_dir_list.source_filepath,
@@ -412,10 +412,10 @@ AS
 
       -- series of debug statements
       o_ev.change_action( 'check for matching files' );
-      evolve_log.log_msg( 'Attribute REQUIRED is: ' || required, 5 );
-      evolve_log.log_msg( 'Attribute SOURCE_POLICY is: ' || source_policy, 5 );
-      evolve_log.log_msg( 'The number of files moved to target: ' || l_ext_file_cnt, 5 );
-      evolve_log.log_msg( 'Variable L_ROWS_DIRLIST is: ' || CASE
+      evolve.log_msg( 'Attribute REQUIRED is: ' || required, 5 );
+      evolve.log_msg( 'Attribute SOURCE_POLICY is: ' || source_policy, 5 );
+      evolve.log_msg( 'The number of files moved to target: ' || l_ext_file_cnt, 5 );
+      evolve.log_msg( 'Variable L_ROWS_DIRLIST is: ' || CASE
                              WHEN l_rows_dirlist
                                 THEN 'TRUE'
                              ELSE 'FALSE'
@@ -426,7 +426,7 @@ AS
          -- then we should fail
       WHEN NOT l_rows_dirlist AND td_core.is_true( required )
          THEN
-            evolve_log.raise_err( 'no_files_found' );
+            evolve.raise_err( 'no_files_found' );
          -- there were no files found
          -- however, the REQUIRED attribute is "no"
          -- therefore, any load process dependent on this job should proceed
@@ -435,7 +435,7 @@ AS
          -- an external table with a zero-byte file gives "no rows returned"
       WHEN NOT l_rows_dirlist AND NOT td_core.is_true( required )
          THEN
-            evolve_log.log_msg( 'No files found... but none are required', 3 );
+            evolve.log_msg( 'No files found... but none are required', 3 );
             o_ev.change_action( 'empty previous files' );
 
             FOR c_location IN ( SELECT DIRECTORY, LOCATION
@@ -451,12 +451,12 @@ AS
             o_ev.change_action( 'alter external table' );
 
             BEGIN
-               l_results := evolve_log.exec_sql( p_sql => l_ext_tab_ddl, p_auto => 'yes' );
-               evolve_log.log_msg( 'External table ' || l_ext_tab || ' altered', 3 );
+               l_results := evolve.exec_sql( p_sql => l_ext_tab_ddl, p_auto => 'yes' );
+               evolve.log_msg( 'External table ' || l_ext_tab || ' altered', 3 );
             EXCEPTION
                WHEN e_no_files
                THEN
-                  evolve_log.raise_err( 'no_ext_files', l_ext_tab );
+                  evolve.raise_err( 'no_ext_files', l_ext_tab );
             END;
 
             -- audit the external table
@@ -470,7 +470,7 @@ AS
          -- and the SOURCE_POLICY is 'fail'
       THEN
             o_ev.change_action( 'fail source policy enacted' );
-            evolve_log.raise_err( 'fail_source_policy' );
+            evolve.raise_err( 'fail_source_policy' );
          ELSE
             NULL;
       END CASE;

@@ -22,7 +22,7 @@ AS
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
-            evolve_log.raise_err( 'no_mapping', p_mapping );
+            evolve.raise_err( 'no_mapping', p_mapping );
       END;
 
       -- confirm the properties of the mapping
@@ -87,13 +87,13 @@ AS
       -- in that case, the owner and source_owner need to be the same
       IF SELF.replace_method = 'rename' AND SELF.source_owner <> SELF.table_owner AND SELF.mapping_type = 'table'
       THEN
-         evolve_log.raise_err
+         evolve.raise_err
             ( 'parm_not_supported',
               'A REPLACE_METHOD value of ''exchange'' when MAPPING_TYPE is ''table'' and TABLE_OWNER and SOURCE_OWNER are not the same'
             );
       END IF;
 
-      evolve_log.log_msg( 'Mapping confirmation completed successfully', 5 );
+      evolve.log_msg( 'Mapping confirmation completed successfully', 5 );
       -- reset the evolve_object
       o_ev.clear_app_info;
    END verify;
@@ -101,7 +101,7 @@ AS
    AS
       o_ev   evolve_ot := evolve_ot( p_module => 'etl_mapping', p_action => SELF.mapping_name );
    BEGIN
-      evolve_log.log_msg( 'Starting ETL mapping' );
+      evolve.log_msg( 'Starting ETL mapping' );
 
       -- mark indexes unusable
       IF td_core.is_true( SELF.manage_indexes ) AND SELF.replace_method IS NULL
@@ -175,7 +175,7 @@ AS
 
       -- used to be a commit right here
       -- removing it because I don't think a commit should exist inside mapping functionality
-      evolve_log.log_msg( 'Ending ETL mapping' );
+      evolve.log_msg( 'Ending ETL mapping' );
    END end_map;
    -- null procedure for polymorphism only
    MEMBER PROCEDURE LOAD
@@ -184,7 +184,7 @@ AS
    BEGIN
       -- simply raise an exception if this procedure ever gets called
       -- it never should, as it is only here for inheritance
-      evolve_log.raise_err( 'wrong_map_type' );
+      evolve.raise_err( 'wrong_map_type' );
       o_ev.clear_app_info;
    END LOAD;
    -- null procedure for polymorphism only
@@ -194,7 +194,7 @@ AS
    BEGIN
       -- simply raise an exception if this procedure ever gets called
       -- it never should, as it is only here for inheritance
-      evolve_log.raise_err( 'wrong_map_type' );
+      evolve.raise_err( 'wrong_map_type' );
       o_ev.clear_app_info;
    END confirm_dim_cols;
 END;

@@ -34,7 +34,7 @@ AS
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
-            evolve_log.raise_err( 'no_dim', SELF.full_table );
+            evolve.raise_err( 'no_dim', SELF.full_table );
       END;
 
       -- confirm the objects related to the dimensional configuration
@@ -48,10 +48,10 @@ AS
       o_ev   evolve_ot := evolve_ot( p_module => 'verify' );
    BEGIN
       -- now investigate the dimensional object
-      evolve_log.log_msg( 'Constant staging: ' || SELF.constant_staging, 5 );
+      evolve.log_msg( 'Constant staging: ' || SELF.constant_staging, 5 );
       -- check that the sequence exists
-      evolve_log.log_msg( 'The sequence owner: ' || SELF.sequence_owner, 5 );
-      evolve_log.log_msg( 'The sequence name: ' || SELF.sequence_name, 5 );
+      evolve.log_msg( 'The sequence owner: ' || SELF.sequence_owner, 5 );
+      evolve.log_msg( 'The sequence name: ' || SELF.sequence_name, 5 );
       td_utils.check_object( p_owner            => SELF.sequence_owner,
                              p_object           => SELF.sequence_name,
                              p_object_type      => 'sequence'
@@ -60,12 +60,12 @@ AS
       -- check to see if the staging table is constant
       IF td_core.is_true( SELF.constant_staging )
       THEN
-         evolve_log.log_msg( 'Full stage: ' || SELF.full_stage, 5 );
+         evolve.log_msg( 'Full stage: ' || SELF.full_stage, 5 );
          -- if it is, then make sure that it exists
          td_utils.check_table( p_owner => SELF.staging_owner, p_table => SELF.staging_table );
       END IF;
 
-      evolve_log.log_msg( 'Dimension confirmation completed successfully', 5 );
+      evolve.log_msg( 'Dimension confirmation completed successfully', 5 );
       -- reset the evolve_object
       o_ev.clear_app_info;
    END verify;
@@ -83,13 +83,13 @@ AS
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
-            evolve_log.raise_err( 'no_curr_ind', SELF.full_table );
+            evolve.raise_err( 'no_curr_ind', SELF.full_table );
          WHEN TOO_MANY_ROWS
          THEN
-            evolve_log.raise_err( 'multiple_curr_ind', SELF.full_table );
+            evolve.raise_err( 'multiple_curr_ind', SELF.full_table );
       END;
 
-      evolve_log.log_msg( 'The current indicator: ' || SELF.current_ind_col, 5 );
+      evolve.log_msg( 'The current indicator: ' || SELF.current_ind_col, 5 );
 
       -- get an expiration date
       BEGIN
@@ -100,13 +100,13 @@ AS
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
-            evolve_log.raise_err( 'no_exp_dt', SELF.full_table );
+            evolve.raise_err( 'no_exp_dt', SELF.full_table );
          WHEN TOO_MANY_ROWS
          THEN
-            evolve_log.raise_err( 'multiple_exp_dt', SELF.full_table );
+            evolve.raise_err( 'multiple_exp_dt', SELF.full_table );
       END;
 
-      evolve_log.log_msg( 'The expiration date: ' || SELF.expire_dt_col, 5 );
+      evolve.log_msg( 'The expiration date: ' || SELF.expire_dt_col, 5 );
 
       -- get an effective date
       BEGIN
@@ -117,13 +117,13 @@ AS
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
-            evolve_log.raise_err( 'no_eff_dt', SELF.full_table );
+            evolve.raise_err( 'no_eff_dt', SELF.full_table );
          WHEN TOO_MANY_ROWS
          THEN
-            evolve_log.raise_err( 'multiple_eff_dt', SELF.full_table );
+            evolve.raise_err( 'multiple_eff_dt', SELF.full_table );
       END;
 
-      evolve_log.log_msg( 'The effective date: ' || SELF.effect_dt_col, 5 );
+      evolve.log_msg( 'The effective date: ' || SELF.effect_dt_col, 5 );
 
       -- get a comma separated list of natural keys
       -- use the STRAGG function for this
@@ -136,10 +136,10 @@ AS
       -- have to do the logic programiatically
       IF SELF.natural_key_list IS NULL
       THEN
-         evolve_log.raise_err( 'no_nat_key', full_table );
+         evolve.raise_err( 'no_nat_key', full_table );
       END IF;
 
-      evolve_log.log_msg( 'The natural key list: ' || SELF.natural_key_list, 5 );
+      evolve.log_msg( 'The natural key list: ' || SELF.natural_key_list, 5 );
 
       -- get the surrogate key column
       BEGIN
@@ -150,14 +150,14 @@ AS
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
-            evolve_log.raise_err( 'no_surr_key', SELF.full_table );
+            evolve.raise_err( 'no_surr_key', SELF.full_table );
          WHEN TOO_MANY_ROWS
          THEN
-            evolve_log.raise_err( 'multiple_surr_key', SELF.full_table );
+            evolve.raise_err( 'multiple_surr_key', SELF.full_table );
       END;
 
-      evolve_log.log_msg( 'The surrogate key: ' || SELF.surrogate_key_col, 5 );
-      evolve_log.log_msg( 'Column initialization completed successfully', 5 );
+      evolve.log_msg( 'The surrogate key: ' || SELF.surrogate_key_col, 5 );
+      evolve.log_msg( 'Column initialization completed successfully', 5 );
       -- reset the evolve_object
       o_ev.clear_app_info;
    END initialize_cols;
@@ -213,14 +213,14 @@ AS
          -- any differences are too many, so this should raise an error
          WHEN TOO_MANY_ROWS
          THEN
-            evolve_log.log_msg( 'More than one row found while comparing source and target columns', 5 );
-            evolve_log.raise_err( 'dim_mismatch', SELF.full_table );
+            evolve.log_msg( 'More than one row found while comparing source and target columns', 5 );
+            evolve.raise_err( 'dim_mismatch', SELF.full_table );
       END;
 
       -- if even one difference is found, then it's too many
       IF l_col_except = 'Y'
       THEN
-         evolve_log.log_msg(    'Column '
+         evolve.log_msg(    'Column '
                              || l_col_name
                              || ' of data_type '
                              || l_data_type
@@ -229,10 +229,10 @@ AS
                              || ' found as mismatch',
                              5
                            );
-         evolve_log.raise_err( 'dim_mismatch', SELF.full_table );
+         evolve.raise_err( 'dim_mismatch', SELF.full_table );
       END IF;
 
-      evolve_log.log_msg( 'Dimension column confirmation completed successfully', 5 );
+      evolve.log_msg( 'Dimension column confirmation completed successfully', 5 );
       -- reset the evolve_object
       o_ev.clear_app_info;
    END confirm_dim_cols;
@@ -291,7 +291,7 @@ AS
             NULL;
       END;
 
-      evolve_log.log_msg( 'The SCD2 date list: ' || l_scd2_dates, 5 );
+      evolve.log_msg( 'The SCD2 date list: ' || l_scd2_dates, 5 );
 
       -- get a comma separated list of scd2 attributes that are numbers
       -- use the STRAGG function for this
@@ -311,7 +311,7 @@ AS
             NULL;
       END;
 
-      evolve_log.log_msg( 'The SCD2 number list: ' || l_scd2_nums, 5 );
+      evolve.log_msg( 'The SCD2 number list: ' || l_scd2_nums, 5 );
 
       -- get a comma separated list of scd2 date columns
       -- use the STRAGG function for this
@@ -331,7 +331,7 @@ AS
             NULL;
       END;
 
-      evolve_log.log_msg( 'The SCD2 char list: ' || l_scd2_chars, 5 );
+      evolve.log_msg( 'The SCD2 char list: ' || l_scd2_chars, 5 );
 
       -- get a comma separated list of scd1 columns
       -- use the STRAGG function for this
@@ -347,19 +347,19 @@ AS
             NULL;
       END;
 
-      evolve_log.log_msg( 'The SCD1 list: ' || l_scd1_list, 5 );
+      evolve.log_msg( 'The SCD1 list: ' || l_scd1_list, 5 );
       -- construct a list of all scd2 attributes
       -- if any of the variables are null, we may get a ',,' or a ',' at the end or beginning of the list
       -- use the regexp_replaces to remove that
       l_scd2_list         := td_core.format_list( l_scd2_dates || ',' || l_scd2_nums || ',' || l_scd2_chars );
-      evolve_log.log_msg( 'The SCD2 complete list: ' || l_scd2_list, 5 );
+      evolve.log_msg( 'The SCD2 complete list: ' || l_scd2_list, 5 );
       -- construct a list of all scd attributes
       -- this is a combined list of all scd1 and scd2 attributes
       -- if any of the variables are null, we may get a ',,'
       -- use the regexp_replace to remove that
       -- also need a regexp to remove an extra comma at the end or beginning if they appears
       l_scd_list          := td_core.format_list( l_scd2_list || ',' || l_scd1_list );
-      evolve_log.log_msg( 'The SCD complete list: ' || l_scd_list, 5 );
+      evolve.log_msg( 'The SCD complete list: ' || l_scd_list, 5 );
       -- construct the include case statement
       -- this case statement determines which records from the staging table are included as new rows
       l_include_case      :=
@@ -415,7 +415,7 @@ AS
                             || ''') then ''Y'' '
                           )
          || ' else ''N'' end include';
-      evolve_log.log_msg( 'The include CASE: ' || l_include_case, 5 );
+      evolve.log_msg( 'The include CASE: ' || l_include_case, 5 );
       -- construct the scd1 analytics list
       -- this is a list of all the LAST_VALUE statements needed for the final statement
       l_scd1_analytics    :=
@@ -427,7 +427,7 @@ AS
                          || SELF.effect_dt_col
                          || ' ROWS BETWEEN unbounded preceding AND unbounded following) \1'
                        );
-      evolve_log.log_msg( 'The scd1 analytics clause: ' || l_scd1_analytics, 5 );
+      evolve.log_msg( 'The scd1 analytics clause: ' || l_scd1_analytics, 5 );
       -- construct a list of all the columns in the table
       l_all_col_list      :=
                           td_core.format_list( SELF.natural_key_list || ',' || l_scd_list || ',' || SELF.effect_dt_col );
@@ -559,8 +559,8 @@ AS
 
       -- now run the insert statement to load the staging table
       o_ev.change_action( 'load staging table' );
-      evolve_log.exec_sql( l_sql );
-      evolve_log.log_cnt_msg( p_count      => SQL%ROWCOUNT,
+      evolve.exec_sql( l_sql );
+      evolve.log_cnt_msg( p_count      => SQL%ROWCOUNT,
                               p_msg        => 'Number of records inserted into ' || SELF.full_stage );
       COMMIT;
       -- perform the replace method
@@ -578,7 +578,7 @@ AS
                                            p_statistics        => SELF.STATISTICS,
                                            p_concurrent        => SELF.concurrent
                                          );
-         WHEN SELF.replace_method = 'rename' AND NOT evolve_log.is_debugmode
+         WHEN SELF.replace_method = 'rename' AND NOT evolve.is_debugmode
          THEN
             -- switch the two tables using rename
             -- requires that the tables both exist in the same schema
@@ -588,9 +588,9 @@ AS
                                       p_statistics        => SELF.STATISTICS,
                                       p_concurrent        => SELF.concurrent
                                     );
-         WHEN SELF.replace_method = 'rename' AND evolve_log.is_debugmode
+         WHEN SELF.replace_method = 'rename' AND evolve.is_debugmode
          THEN
-            evolve_log.log_msg( 'Cannot simulate a REPLACE_METHOD of "rename" when in DEBUGMODE', 4 );
+            evolve.log_msg( 'Cannot simulate a REPLACE_METHOD of "rename" when in DEBUGMODE', 4 );
          ELSE
             NULL;
       END CASE;
@@ -609,7 +609,7 @@ AS
    AS
       o_ev   evolve_ot := evolve_ot( p_module => 'etl_mapping', p_action => SELF.mapping_name );
    BEGIN
-      evolve_log.log_msg( 'Starting ETL mapping' );
+      evolve.log_msg( 'Starting ETL mapping' );
    END start_map;
    OVERRIDING MEMBER PROCEDURE end_map
    AS
@@ -618,7 +618,7 @@ AS
       -- now simply execute the dimension_ot.load methodj
       LOAD;
       -- signify the end
-      evolve_log.log_msg( 'Ending ETL mapping' );
+      evolve.log_msg( 'Ending ETL mapping' );
    END;
 END;
 /

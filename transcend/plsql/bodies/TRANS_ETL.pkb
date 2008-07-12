@@ -7,13 +7,13 @@ AS
    AS
       o_map   mapping_ot := trans_factory.get_mapping_ot( p_mapping => p_mapping, p_batch_id => p_batch_id );
    BEGIN
-      evolve_log.log_msg( 'Mapping type: ' || o_map.mapping_type, 5 );
+      evolve.log_msg( 'Mapping type: ' || o_map.mapping_type, 5 );
       -- now, regardless of which object type this is, the following call is correct
       o_map.start_map;
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+         evolve.log_err;
          RAISE;
    END start_mapping;
 
@@ -21,7 +21,7 @@ AS
    AS
       o_map   mapping_ot := trans_factory.get_mapping_ot( p_mapping => p_mapping );
    BEGIN
-      evolve_log.log_msg( 'Mapping type: ' || o_map.mapping_type, 5 );
+      evolve.log_msg( 'Mapping type: ' || o_map.mapping_type, 5 );
       -- now, regardless of which object type this is, the following call is correct
       o_map.end_map;
    -- used to have a commit here.
@@ -36,7 +36,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+         evolve.log_err;
          RAISE;
    END truncate_table;
 
@@ -47,7 +47,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+         evolve.log_err;
          RAISE;
    END drop_table;
 
@@ -75,7 +75,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+         evolve.log_err;
          RAISE;
    END build_table;
 
@@ -107,7 +107,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+         evolve.log_err;
          RAISE;
    END build_indexes;
 
@@ -123,17 +123,17 @@ AS
       LOOP
          BEGIN
             l_rows       := TRUE;
-            evolve_log.exec_sql( p_sql => c_idxs.rename_ddl, p_auto => 'yes' );
-            evolve_log.log_msg( c_idxs.rename_msg, 3 );
+            evolve.exec_sql( p_sql => c_idxs.rename_ddl, p_auto => 'yes' );
+            evolve.log_msg( c_idxs.rename_msg, 3 );
             l_idx_cnt    := l_idx_cnt + 1;
          END;
       END LOOP;
 
       IF NOT l_rows
       THEN
-         evolve_log.log_msg( 'No previously cloned indexes identified' );
+         evolve.log_msg( 'No previously cloned indexes identified' );
       ELSE
-         evolve_log.log_msg( l_idx_cnt || ' index' || CASE
+         evolve.log_msg( l_idx_cnt || ' index' || CASE
                                 WHEN l_idx_cnt = 1
                                    THEN NULL
                                 ELSE 'es'
@@ -146,7 +146,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+         evolve.log_err;
          o_ev.clear_app_info;
          RAISE;
    END rename_indexes;
@@ -176,7 +176,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+         evolve.log_err;
          RAISE;
    END build_constraints;
 
@@ -201,7 +201,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+         evolve.log_err;
          RAISE;
    END disable_constraints;
 
@@ -229,7 +229,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+         evolve.log_err;
          RAISE;
    END enable_constraints;
    
@@ -243,7 +243,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+         evolve.log_err;
          RAISE;
    END enable_constraints;
 
@@ -266,7 +266,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+         evolve.log_err;
          RAISE;
    END drop_indexes;
 
@@ -292,7 +292,7 @@ AS
          NULL;
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+         evolve.log_err;
          RAISE;
    END drop_constraints;
 
@@ -315,7 +315,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+         evolve.log_err;
          RAISE;
    END object_grants;
 
@@ -346,7 +346,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+         evolve.log_err;
          RAISE;
    END insert_table;
 
@@ -377,7 +377,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+         evolve.log_err;
          RAISE;
    END merge_table;
 
@@ -409,7 +409,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+         evolve.log_err;
          RAISE;
    END load_tables;
 
@@ -436,7 +436,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+         evolve.log_err;
          RAISE;
    END exchange_partition;
 
@@ -462,7 +462,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+         evolve.log_err;
          RAISE;
    END replace_table;
 
@@ -477,7 +477,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+         evolve.log_err;
          RAISE;
    END load_dim;
 
@@ -514,7 +514,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+         evolve.log_err;
          RAISE;
    END usable_indexes;
 
@@ -550,7 +550,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+         evolve.log_err;
          RAISE;
    END update_stats;
 END trans_etl;

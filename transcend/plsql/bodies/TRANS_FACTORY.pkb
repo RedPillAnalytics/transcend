@@ -26,7 +26,7 @@ IS
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+         evolve.log_err;
          RAISE;
    END get_mapping_ot;
 
@@ -56,7 +56,7 @@ IS
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+         evolve.log_err;
          RAISE;
    END get_mapping_ot;
 END trans_factory;

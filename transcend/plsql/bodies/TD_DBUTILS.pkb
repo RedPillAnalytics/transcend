@@ -49,7 +49,7 @@ AS
               VALUES ( UPPER( p_owner ), UPPER( p_table ), UPPER( p_partname ), l_part_position
                      );
 
-         evolve_log.log_cnt_msg( SQL%ROWCOUNT, l_num_msg, 4 );
+         evolve.log_cnt_msg( SQL%ROWCOUNT, l_num_msg, 4 );
       ELSE
          -- if P_SOURCE_COLUMN is null, then use the same name as the partitioning source column on the target
          IF p_source_column IS NULL
@@ -89,7 +89,7 @@ AS
                            || ') '
                            || 'ORDER By partition_position';
 
-         evolve_log.log_cnt_msg( SQL%ROWCOUNT, l_num_msg, 4 );
+         evolve.log_cnt_msg( SQL%ROWCOUNT, l_num_msg, 4 );
       END IF;
 
       -- get count of records affected
@@ -97,12 +97,12 @@ AS
         INTO l_num_rows
         FROM td_part_gtt;
 
-      evolve_log.log_msg( 'Number of records currently in TD_PART_GTT:' || l_num_rows, 5 );
+      evolve.log_msg( 'Number of records currently in TD_PART_GTT:' || l_num_rows, 5 );
       o_ev.clear_app_info;
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+         evolve.log_err;
          o_ev.clear_app_info;
          RAISE;
    END populate_partname;
@@ -115,7 +115,7 @@ AS
       -- confirm that the table exists
       -- raise an error if it doesn't
       td_utils.check_table( p_owner => p_owner, p_table => p_table );
-      evolve_log.exec_sql( p_sql       =>    'truncate table '
+      evolve.exec_sql( p_sql       =>    'truncate table '
                                           || p_owner
                                           || '.'
                                           || p_table
@@ -126,12 +126,12 @@ AS
                                              END,
                            p_auto      => 'yes'
                          );
-      evolve_log.log_msg( l_tab_name || ' truncated' );
+      evolve.log_msg( l_tab_name || ' truncated' );
       o_ev.clear_app_info;
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+         evolve.log_err;
          o_ev.clear_app_info;
          RAISE;
    END truncate_table;
@@ -145,7 +145,7 @@ AS
       -- confirm that the table exists
       -- raise an error if it doesn't
       td_utils.check_table( p_owner => p_owner, p_table => p_table );
-      evolve_log.exec_sql( p_sql       =>    'drop table '
+      evolve.exec_sql( p_sql       =>    'drop table '
                                           || p_owner
                                           || '.'
                                           || p_table
@@ -156,12 +156,12 @@ AS
                                              END,
                            p_auto      => 'yes'
                          );
-      evolve_log.log_msg( l_tab_name || ' dropped' );
+      evolve.log_msg( l_tab_name || ' dropped' );
       o_ev.clear_app_info;
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+         evolve.log_err;
          o_ev.clear_app_info;
          RAISE;
    END drop_table;
@@ -373,8 +373,8 @@ AS
                              ));
 
       o_ev.change_action( 'execute DDL' );
-      evolve_log.exec_sql( p_sql => l_table_ddl, p_auto => 'yes' );
-      evolve_log.log_msg( 'Table ' || l_tab_name || ' created' );
+      evolve.exec_sql( p_sql => l_table_ddl, p_auto => 'yes' );
+      evolve.log_msg( 'Table ' || l_tab_name || ' created' );
 
       -- if you want the records as well
       IF td_core.is_true( p_rows )
@@ -413,14 +413,14 @@ AS
             NULL;
          ELSE
             o_ev.clear_app_info;
-            evolve_log.raise_err( 'unrecognized_parm', p_statistics );
+            evolve.raise_err( 'unrecognized_parm', p_statistics );
       END CASE;
 
       o_ev.clear_app_info;
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+         evolve.log_err;
          o_ev.clear_app_info;
          RAISE;
    END build_table;
@@ -464,7 +464,7 @@ AS
          WHEN p_tablespace IS NOT NULL AND p_partname IS NOT NULL
          THEN
             o_ev.clear_app_info;
-            evolve_log.raise_err( 'parms_not_compatible', 'P_TABLESPACE and P_PARTNAME' );
+            evolve.raise_err( 'parms_not_compatible', 'P_TABLESPACE and P_PARTNAME' );
          ELSE
             NULL;
       END CASE;
@@ -505,7 +505,7 @@ AS
 
       IF td_core.is_true( p_concurrent )
       THEN
-         l_concurrent_id    := evolve_log.get_concurrent_id;
+         l_concurrent_id    := evolve.get_concurrent_id;
       END IF;
 
       -- create a cursor containing the DDL from the target indexes
@@ -716,8 +716,8 @@ AS
 
          BEGIN
             o_ev.change_action( 'execute index DDL' );
-            evolve_log.exec_sql( p_sql => c_indexes.index_ddl, p_auto => 'yes', p_concurrent_id => l_concurrent_id );
-            evolve_log.log_msg(    'Index '
+            evolve.exec_sql( p_sql => c_indexes.index_ddl, p_auto => 'yes', p_concurrent_id => l_concurrent_id );
+            evolve.log_msg(    'Index '
                                 || c_indexes.index_name
                                 || ' '
                                 || CASE
@@ -745,27 +745,27 @@ AS
             -- if a duplicate column list of indexes already exist, log it, but continue
             WHEN e_dup_col_list
             THEN
-               evolve_log.log_msg( 'Index comparable to ' || c_indexes.source_index || ' already exists', 3 );
+               evolve.log_msg( 'Index comparable to ' || c_indexes.source_index || ' already exists', 3 );
          END;
       END LOOP;
 
       IF NOT l_rows
       THEN
-         evolve_log.log_msg( 'No matching indexes found on ' || l_src_name );
+         evolve.log_msg( 'No matching indexes found on ' || l_src_name );
       ELSE
          IF td_core.is_true( p_concurrent )
          THEN
-            evolve_log.log_msg( 'P_CONCURRENT is true', 5 );
+            evolve.log_msg( 'P_CONCURRENT is true', 5 );
 
-            IF NOT evolve_log.is_debugmode
+            IF NOT evolve.is_debugmode
             THEN
                -- now simply waiting for all the concurrent processes to complete
                o_ev.change_action( 'wait on concurrent processes' );
-               evolve_log.coordinate_sql( p_concurrent_id => l_concurrent_id, p_raise_err => 'no' );
+               evolve.coordinate_sql( p_concurrent_id => l_concurrent_id, p_raise_err => 'no' );
             END IF;
          END IF;
 
-         evolve_log.log_msg(    l_idx_cnt
+         evolve.log_msg(    l_idx_cnt
                              || ' index creation process'
                              || CASE
                                    WHEN l_idx_cnt = 1
@@ -787,7 +787,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+         evolve.log_err;
          o_ev.clear_app_info;
          RAISE;
    END build_indexes;
@@ -804,17 +804,17 @@ AS
       LOOP
          BEGIN
             l_rows       := TRUE;
-            evolve_log.exec_sql( p_sql => c_idxs.rename_ddl, p_auto => 'yes' );
-            evolve_log.log_msg( c_idxs.rename_msg, 3 );
+            evolve.exec_sql( p_sql => c_idxs.rename_ddl, p_auto => 'yes' );
+            evolve.log_msg( c_idxs.rename_msg, 3 );
             l_idx_cnt    := l_idx_cnt + 1;
          END;
       END LOOP;
 
       IF NOT l_rows
       THEN
-         evolve_log.log_msg( 'No previously cloned indexes identified', 2 );
+         evolve.log_msg( 'No previously cloned indexes identified', 2 );
       ELSE
-         evolve_log.log_msg( l_idx_cnt || ' index' || CASE
+         evolve.log_msg( l_idx_cnt || ' index' || CASE
                                 WHEN l_idx_cnt = 1
                                    THEN NULL
                                 ELSE 'es'
@@ -825,7 +825,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+         evolve.log_err;
          o_ev.clear_app_info;
          RAISE;
    END rename_indexes;
@@ -912,7 +912,7 @@ AS
 
       IF td_core.is_true( p_concurrent )
       THEN
-         l_concurrent_id    := evolve_log.get_concurrent_id;
+         l_concurrent_id    := evolve.get_concurrent_id;
       END IF;
 
       o_ev.change_action( 'build constraints' );
@@ -1185,11 +1185,11 @@ AS
          IF NOT( td_utils.is_iot( p_owner, p_table ) AND c_constraints.constraint_type = 'P' )
          THEN
             BEGIN
-               evolve_log.exec_sql( p_sql                => c_constraints.constraint_ddl,
+               evolve.exec_sql( p_sql                => c_constraints.constraint_ddl,
                                     p_auto               => 'yes',
                                     p_concurrent_id      => l_concurrent_id
                                   );
-               evolve_log.log_msg(    'Creation of '
+               evolve.log_msg(    'Creation of '
                                    || CASE c_constraints.named_constraint
                                          WHEN 'Y'
                                             THEN 'constraint ' || c_constraints.constraint_name
@@ -1221,10 +1221,10 @@ AS
             EXCEPTION
                WHEN e_dup_pk
                THEN
-                  evolve_log.log_msg( 'Primary key constraint already exists on table ' || l_tab_name, 3 );
+                  evolve.log_msg( 'Primary key constraint already exists on table ' || l_tab_name, 3 );
                WHEN e_dup_fk
                THEN
-                  evolve_log.log_msg(    'Constraint comparable to '
+                  evolve.log_msg(    'Constraint comparable to '
                                       || c_constraints.constraint_name
                                       || ' already exists on table '
                                       || l_tab_name,
@@ -1232,12 +1232,12 @@ AS
                                     );
                WHEN e_dup_not_null
                THEN
-                  evolve_log.log_msg( 'Referenced not null constraint already exists on table ' || l_tab_name, 3 );
+                  evolve.log_msg( 'Referenced not null constraint already exists on table ' || l_tab_name, 3 );
                WHEN OTHERS
                THEN
                   -- first log the error
                   -- provide a backtrace from this exception handler to the next exception
-                  evolve_log.log_err;
+                  evolve.log_err;
                   o_ev.clear_app_info;
                   RAISE;
             END;
@@ -1246,19 +1246,19 @@ AS
 
       IF NOT l_rows
       THEN
-         evolve_log.log_msg( 'No matching constraints found on ' || l_src_name );
+         evolve.log_msg( 'No matching constraints found on ' || l_src_name );
       ELSE
          IF td_core.is_true( p_concurrent )
          THEN
-            IF NOT evolve_log.is_debugmode
+            IF NOT evolve.is_debugmode
             THEN
                -- now simply waiting for all the concurrent processes to complete
                o_ev.change_action( 'wait on concurrent processes' );
-               evolve_log.coordinate_sql( p_concurrent_id => l_concurrent_id, p_raise_err => 'no' );
+               evolve.coordinate_sql( p_concurrent_id => l_concurrent_id, p_raise_err => 'no' );
             END IF;
          END IF;
 
-         evolve_log.log_msg(    l_con_cnt
+         evolve.log_msg(    l_con_cnt
                              || ' constraint'
                              || CASE
                                    WHEN l_con_cnt = 1
@@ -1280,7 +1280,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+         evolve.log_err;
          o_ev.clear_app_info;
          RAISE;
    END build_constraints;
@@ -1297,17 +1297,17 @@ AS
       LOOP
          BEGIN
             l_rows       := TRUE;
-            evolve_log.exec_sql( p_sql => c_cons.rename_ddl, p_auto => 'yes' );
-            evolve_log.log_msg( c_cons.rename_msg, 3 );
+            evolve.exec_sql( p_sql => c_cons.rename_ddl, p_auto => 'yes' );
+            evolve.log_msg( c_cons.rename_msg, 3 );
             l_con_cnt    := l_con_cnt + 1;
          END;
       END LOOP;
 
       IF NOT l_rows
       THEN
-         evolve_log.log_msg( 'No previously cloned constraints identified', 2 );
+         evolve.log_msg( 'No previously cloned constraints identified', 2 );
       ELSE
-         evolve_log.log_msg( l_con_cnt || ' constraint' || CASE
+         evolve.log_msg( l_con_cnt || ' constraint' || CASE
                                 WHEN l_con_cnt = 1
                                    THEN NULL
                                 ELSE 's'
@@ -1318,7 +1318,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+         evolve.log_err;
          o_ev.clear_app_info;
          RAISE;
    END rename_constraints;
@@ -1347,7 +1347,7 @@ AS
       -- P_CONSTRAINT_TYPE only relates to constraints based on the table, not the reference
       IF REGEXP_LIKE( 'reference|all', p_basis, 'i' ) AND p_constraint_type IS NOT NULL
       THEN
-         evolve_log.log_msg( 'A value provided in P_CONSTRAINT_TYPE is ignored for constraints based on references' );
+         evolve.log_msg( 'A value provided in P_CONSTRAINT_TYPE is ignored for constraints based on references' );
       END IF;
 
       -- confirm that the table exists
@@ -1358,7 +1358,7 @@ AS
 
       IF td_core.is_true( p_concurrent )
       THEN
-         l_concurrent_id    := evolve_log.get_concurrent_id;
+         l_concurrent_id    := evolve.get_concurrent_id;
       END IF;
 
       -- disable both table and reference constraints for this particular table
@@ -1469,7 +1469,7 @@ AS
          l_rows    := TRUE;
 
          BEGIN
-            evolve_log.exec_sql( p_sql                => CASE
+            evolve.exec_sql( p_sql                => CASE
                                     WHEN REGEXP_LIKE( 'disable', p_maint_type, 'i' )
                                        THEN c_constraints.disable_ddl
                                     WHEN REGEXP_LIKE( 'enable', p_maint_type, 'i' )
@@ -1493,10 +1493,10 @@ AS
                              c_constraints.enable_msg, c_constraints.ordering
                            );
 
-               evolve_log.log_cnt_msg( SQL%ROWCOUNT, 'Number of records inserted into td_con_maint_gtt', 5 );
+               evolve.log_cnt_msg( SQL%ROWCOUNT, 'Number of records inserted into td_con_maint_gtt', 5 );
             END IF;
 
-            evolve_log.log_msg( CASE
+            evolve.log_msg( CASE
                                    WHEN REGEXP_LIKE( 'disable', p_maint_type, 'i' )
                                       THEN c_constraints.disable_msg
                                    WHEN REGEXP_LIKE( 'enable', p_maint_type, 'i' )
@@ -1508,7 +1508,7 @@ AS
          EXCEPTION
             WHEN e_iot_shc
             THEN
-               evolve_log.log_msg(    'Constraint '
+               evolve.log_msg(    'Constraint '
                                    || c_constraints.constraint_name
                                    || ' is the primary key for either an IOT or a sorted hash cluster',
                                    3
@@ -1518,7 +1518,7 @@ AS
 
       IF NOT l_rows
       THEN
-         evolve_log.log_msg(    'No matching '
+         evolve.log_msg(    'No matching '
                              || CASE
                                    WHEN REGEXP_LIKE( 'disable', p_maint_type, 'i' )
                                       THEN 'enabled'
@@ -1529,13 +1529,13 @@ AS
                            );
       ELSE
          -- wait for the concurrent processes to complete or fail
-         IF td_core.is_true( p_concurrent ) AND NOT evolve_log.is_debugmode
+         IF td_core.is_true( p_concurrent ) AND NOT evolve.is_debugmode
          THEN
-            evolve_log.coordinate_sql( p_concurrent_id => l_concurrent_id, p_raise_err => 'no' );
+            evolve.coordinate_sql( p_concurrent_id => l_concurrent_id, p_raise_err => 'no' );
          END IF;
 
-         evolve_log.log_msg( 'Value for P_MAINT_TYPE: ' || p_maint_type, 5 );
-         evolve_log.log_msg(    l_con_cnt
+         evolve.log_msg( 'Value for P_MAINT_TYPE: ' || p_maint_type, 5 );
+         evolve.log_msg(    l_con_cnt
                              || ' constraint '
                              || CASE
                                    WHEN REGEXP_LIKE( 'disable', p_maint_type, 'i' )
@@ -1572,7 +1572,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+         evolve.log_err;
          o_ev.clear_app_info;
          RAISE;
    END constraint_maint;
@@ -1591,13 +1591,13 @@ AS
 
       IF td_core.is_true( p_concurrent )
       THEN
-         l_concurrent_id    := evolve_log.get_concurrent_id;
+         l_concurrent_id    := evolve.get_concurrent_id;
       END IF;
 
       o_ev.change_action( 'looping through' );
       -- looping through records in the TD_CON_MAINT_GTT table
       -- this table only gets populated by CONSTRAINT_MAINT
-      evolve_log.log_msg( 'Enabling constraints disabled previously' );
+      evolve.log_msg( 'Enabling constraints disabled previously' );
 
       FOR c_cons IN ( SELECT *
 			FROM td_con_maint_gtt
@@ -1607,25 +1607,25 @@ AS
             l_rows       := TRUE;
             -- execute the DDL either in this session or a background session
             o_ev.change_action( 'executing DDL' );
-            evolve_log.exec_sql( p_sql => c_cons.enable_ddl, p_auto => 'yes', p_concurrent_id => l_concurrent_id );
-            evolve_log.log_msg( c_cons.enable_msg );
+            evolve.exec_sql( p_sql => c_cons.enable_ddl, p_auto => 'yes', p_concurrent_id => l_concurrent_id );
+            evolve.log_msg( c_cons.enable_msg );
             l_con_cnt    := l_con_cnt + 1;
          END;
       END LOOP;
 
       IF NOT l_rows
       THEN
-         evolve_log.log_msg( 'No previously disabled constraints found' );
+         evolve.log_msg( 'No previously disabled constraints found' );
       ELSE
          -- wait for the concurrent processes to complete or fail
          o_ev.change_action( 'wait on concurrent processes' );
 
          IF td_core.is_true( p_concurrent )
          THEN
-            evolve_log.coordinate_sql( p_concurrent_id => l_concurrent_id, p_raise_err => 'no' );
+            evolve.coordinate_sql( p_concurrent_id => l_concurrent_id, p_raise_err => 'no' );
          END IF;
 
-         evolve_log.log_msg(    l_con_cnt
+         evolve.log_msg(    l_con_cnt
                              || ' constraint enablement process'
                              || CASE
                                    WHEN l_con_cnt = 1
@@ -1648,7 +1648,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+         evolve.log_err;
          o_ev.clear_app_info;
          RAISE;
    END enable_constraints;
@@ -1690,9 +1690,9 @@ AS
          l_rows    := TRUE;
 
          BEGIN
-            evolve_log.exec_sql( p_sql => c_indexes.index_ddl, p_auto => 'yes' );
+            evolve.exec_sql( p_sql => c_indexes.index_ddl, p_auto => 'yes' );
             l_idx_cnt    := l_idx_cnt + 1;
-            evolve_log.log_msg( 'Index ' || c_indexes.index_name || ' dropped', 3 );
+            evolve.log_msg( 'Index ' || c_indexes.index_name || ' dropped', 3 );
          EXCEPTION
             WHEN e_pk_idx
             THEN
@@ -1702,9 +1702,9 @@ AS
 
       IF NOT l_rows
       THEN
-         evolve_log.log_msg( 'No matching indexes found on ' || l_tab_name );
+         evolve.log_msg( 'No matching indexes found on ' || l_tab_name );
       ELSE
-         evolve_log.log_msg( l_idx_cnt || ' index' || CASE
+         evolve.log_msg( l_idx_cnt || ' index' || CASE
                                 WHEN l_idx_cnt = 1
                                    THEN NULL
                                 ELSE 'es'
@@ -1716,7 +1716,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+         evolve.log_err;
          o_ev.clear_app_info;
          RAISE;
    END drop_indexes;
@@ -1791,13 +1791,13 @@ AS
 
          BEGIN
             o_ev.change_action( 'execute table alter' );
-            evolve_log.exec_sql( p_sql => c_constraints.constraint_ddl, p_auto => 'yes' );
+            evolve.exec_sql( p_sql => c_constraints.constraint_ddl, p_auto => 'yes' );
             l_con_cnt    := l_con_cnt + 1;
-            evolve_log.log_msg( 'Constraint ' || c_constraints.constraint_name || ' dropped', 2 );
+            evolve.log_msg( 'Constraint ' || c_constraints.constraint_name || ' dropped', 2 );
          EXCEPTION
             WHEN e_iot_pk
             THEN
-               evolve_log.log_msg(    c_constraints.constraint_name
+               evolve.log_msg(    c_constraints.constraint_name
                                    || ' cannot be dropped because it is the primary key of an iot or cluster',
                                    3
                                  );
@@ -1807,9 +1807,9 @@ AS
 
       IF NOT l_rows
       THEN
-         evolve_log.log_msg( 'No matching constraints found on ' || l_tab_name );
+         evolve.log_msg( 'No matching constraints found on ' || l_tab_name );
       ELSE
-         evolve_log.log_msg(    l_con_cnt
+         evolve.log_msg(    l_con_cnt
                              || ' constraint'
                              || CASE
                                    WHEN l_con_cnt = 1
@@ -1830,7 +1830,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+         evolve.log_err;
          o_ev.clear_app_info;
          RAISE;
    END drop_constraints;
@@ -1902,7 +1902,7 @@ AS
          WHEN e_no_grants
          THEN
             l_grants    := FALSE;
-            evolve_log.log_msg( l_none_msg, 3 );
+            evolve.log_msg( l_none_msg, 3 );
       END;
 
       -- now, parse the string to work on the different values in it
@@ -1913,7 +1913,7 @@ AS
       LOOP
          IF l_grants
          THEN
-            evolve_log.exec_sql( p_sql => c_grants.COLUMN_VALUE, p_auto => 'yes' );
+            evolve.exec_sql( p_sql => c_grants.COLUMN_VALUE, p_auto => 'yes' );
          END IF;
 
          l_grant_cnt    := l_grant_cnt + 1;
@@ -1921,7 +1921,7 @@ AS
 
       IF l_grants
       THEN
-         evolve_log.log_msg(    l_grant_cnt
+         evolve.log_msg(    l_grant_cnt
                              || ' privilege'
                              || CASE
                                    WHEN l_grant_cnt = 1
@@ -1937,7 +1937,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+         evolve.log_err;
          o_ev.clear_app_info;
          RAISE;
    END object_grants;
@@ -1969,7 +1969,7 @@ AS
       -- warning concerning using LOG ERRORS clause and the APPEND hint
       IF td_core.is_true( p_direct ) AND p_log_table IS NOT NULL
       THEN
-         evolve_log.log_msg
+         evolve.log_msg
                  ( 'Unique constraints can still be violated when using P_LOG_TABLE in conjunction with P_DIRECT mode',
                    3
                  );
@@ -1985,7 +1985,7 @@ AS
 
       -- enable|disable parallel dml depending on the parameter for P_DIRECT
       o_ev.change_action( 'alter parallel dml' );
-      evolve_log.exec_sql(    'ALTER SESSION '
+      evolve.exec_sql(    'ALTER SESSION '
                            || CASE
                                  WHEN REGEXP_LIKE( 'yes', p_direct, 'i' )
                                     THEN 'ENABLE'
@@ -1994,7 +1994,7 @@ AS
                            || ' PARALLEL DML'
                          );
       o_ev.change_action( 'issue insert statement' );
-      evolve_log.exec_sql( p_sql      =>    'insert '
+      evolve.exec_sql( p_sql      =>    'insert '
                                          || CASE
                                                WHEN td_core.is_true( p_direct )
                                                   THEN '/*+ APPEND */ '
@@ -2024,9 +2024,9 @@ AS
                          );
 
       -- record the number of rows affected
-      IF NOT evolve_log.is_debugmode
+      IF NOT evolve.is_debugmode
       THEN
-         evolve_log.log_cnt_msg( p_count      => SQL%ROWCOUNT,
+         evolve.log_cnt_msg( p_count      => SQL%ROWCOUNT,
                                  p_msg        => 'Number of records inserted into ' || l_trg_name );
       END IF;
 
@@ -2034,7 +2034,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+         evolve.log_err;
          o_ev.clear_app_info;
          RAISE;
    END insert_table;
@@ -2073,7 +2073,7 @@ AS
       -- warning concerning using LOG ERRORS clause and the APPEND hint
       IF REGEXP_LIKE( 'yes', p_direct, 'i' ) AND p_log_table IS NOT NULL
       THEN
-         evolve_log.log_msg
+         evolve.log_msg
                  ( 'Unique constraints can still be violated when using P_LOG_TABLE in conjunction with P_DIRECT mode',
                    3
                  );
@@ -2190,7 +2190,7 @@ AS
       BEGIN
          o_ev.change_action( 'alter parallel dml' );
          -- ENABLE|DISABLE parallel dml depending on the value of P_DIRECT
-         evolve_log.exec_sql( p_sql      =>    'ALTER SESSION '
+         evolve.exec_sql( p_sql      =>    'ALTER SESSION '
                                             || CASE
                                                   WHEN REGEXP_LIKE( 'yes', p_direct, 'i' )
                                                      THEN 'ENABLE'
@@ -2200,7 +2200,7 @@ AS
                             );
          o_ev.change_action( 'execute merge statement' );
          -- we put the merge statement together using all the different clauses constructed above
-         evolve_log.exec_sql( p_sql      =>    'MERGE INTO '
+         evolve.exec_sql( p_sql      =>    'MERGE INTO '
                                             || p_owner
                                             || '.'
                                             || p_table
@@ -2253,20 +2253,20 @@ AS
          WHEN e_no_on_columns
          THEN
             o_ev.clear_app_info;
-            evolve_log.raise_err( 'on_clause_missing' );
+            evolve.raise_err( 'on_clause_missing' );
       END;
 
       -- record the number of rows affected
-      IF NOT evolve_log.is_debugmode
+      IF NOT evolve.is_debugmode
       THEN
-         evolve_log.log_cnt_msg( p_count => SQL%ROWCOUNT, p_msg => 'Number of records merged into ' || l_trg_name );
+         evolve.log_cnt_msg( p_count => SQL%ROWCOUNT, p_msg => 'Number of records merged into ' || l_trg_name );
       END IF;
 
       o_ev.clear_app_info;
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+         evolve.log_err;
          o_ev.clear_app_info;
          RAISE;
    END merge_table;
@@ -2341,14 +2341,14 @@ AS
       IF NOT l_rows
       THEN
          o_ev.clear_app_info;
-         evolve_log.raise_err( 'incorrect_parameters' );
+         evolve.raise_err( 'incorrect_parameters' );
       END IF;
 
       o_ev.clear_app_info;
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+         evolve.log_err;
          o_ev.clear_app_info;
          RAISE;
    END load_tables;
@@ -2441,7 +2441,7 @@ AS
             NULL;
          ELSE
             o_ev.clear_app_info;
-            evolve_log.raise_err( 'unrecognized_parm', p_statistics );
+            evolve.raise_err( 'unrecognized_parm', p_statistics );
       END CASE;
 
       -- now build the indexes
@@ -2480,7 +2480,7 @@ AS
          l_retry_ddl    := FALSE;
 
          BEGIN
-            evolve_log.exec_sql( p_sql       =>    'alter table '
+            evolve.exec_sql( p_sql       =>    'alter table '
                                                 || l_tab_name
                                                 || ' exchange partition '
                                                 || l_partname
@@ -2489,11 +2489,11 @@ AS
                                                 || ' including indexes without validation update global indexes',
                                  p_auto      => 'yes'
                                );
-            evolve_log.log_msg( l_src_name || ' exchanged for partition ' || l_partname || ' of table ' || l_tab_name );
+            evolve.log_msg( l_src_name || ' exchanged for partition ' || l_partname || ' of table ' || l_tab_name );
          EXCEPTION
             WHEN e_fkeys
             THEN
-               evolve_log.log_msg( 'ORA-02266 raised involving enabled foreign keys', 4 );
+               evolve.log_msg( 'ORA-02266 raised involving enabled foreign keys', 4 );
                -- disable foreign keys related to both tables
                -- this will enable the exchange to occur
                l_constraints    := TRUE;
@@ -2518,17 +2518,17 @@ AS
                                );
             WHEN e_compress
             THEN
-               evolve_log.log_msg( 'ORA-14646 raised involving compression', 4 );
+               evolve.log_msg( 'ORA-14646 raised involving compression', 4 );
                -- need to compress the staging table
                o_ev.change_action( 'compress source table' );
                l_compress     := TRUE;
                l_retry_ddl    := TRUE;
-               evolve_log.exec_sql( p_sql => 'alter table ' || l_src_name || ' move compress', p_auto => 'yes' );
-               evolve_log.log_msg( l_src_name || ' compressed to facilitate exchange', 3 );
+               evolve.exec_sql( p_sql => 'alter table ' || l_src_name || ' move compress', p_auto => 'yes' );
+               evolve.log_msg( l_src_name || ' compressed to facilitate exchange', 3 );
             WHEN e_fk_mismatch
             THEN
                -- need to create foreign key constraints
-               evolve_log.log_msg( 'ORA-14128 raised involving foreign constraint mismatch', 4 );
+               evolve.log_msg( 'ORA-14128 raised involving foreign constraint mismatch', 4 );
                -- need to build a foreign keys on the source table
                o_ev.change_action( 'build foreign keys' );
                l_constraints    := TRUE;
@@ -2543,7 +2543,7 @@ AS
                                 );
             WHEN e_uk_mismatch
             THEN
-               evolve_log.log_msg( 'ORA-14130 raised involving unique constraint mismatch', 4 );
+               evolve.log_msg( 'ORA-14130 raised involving unique constraint mismatch', 4 );
                -- need to disable unique constraints on the target table
                -- but only the ones attached to global indexes
                o_ev.change_action( 'disable global unique constraints' );
@@ -2570,11 +2570,11 @@ AS
             THEN
                -- first log the error
                -- provide a backtrace from this exception handler to the next exception
-               evolve_log.log_err;
+               evolve.log_err;
                   -- need to drop indexes if there is an exception
                   -- this is for rerunability
                -- now record the reason for the index drops
-               evolve_log.log_msg( 'Dropping indexes for restartability', 3 );
+               evolve.log_msg( 'Dropping indexes for restartability', 3 );
                drop_indexes( p_owner => p_source_owner, p_table => p_source_table );
 
                -- any constraints need to be enabled
@@ -2611,7 +2611,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+         evolve.log_err;
          o_ev.clear_app_info;
          RAISE;
    END exchange_partition;
@@ -2628,29 +2628,29 @@ AS
       o_ev           evolve_ot                    := evolve_ot( p_module => 'rename_tables' );
    BEGIN
       o_ev.change_action( 'perform object checks' );
-      evolve_log.log_msg( 'The temporary table name: ' || l_temp_table, 5 );
+      evolve.log_msg( 'The temporary table name: ' || l_temp_table, 5 );
       -- check to make sure the target table exists
       td_utils.check_table( p_owner => p_owner, p_table => p_table );
       -- check to make sure the source table exists
       td_utils.check_table( p_owner => p_owner, p_table => p_source_table );
       -- first rename the target table to temporary table
       o_ev.change_action( 'rename target table' );
-      evolve_log.exec_sql( p_sql => 'alter table ' || l_tab_name || ' rename to ' || l_temp_table, p_auto => 'yes' );
+      evolve.exec_sql( p_sql => 'alter table ' || l_tab_name || ' rename to ' || l_temp_table, p_auto => 'yes' );
       -- now rename source to target
       o_ev.change_action( 'rename source table' );
-      evolve_log.exec_sql( p_sql       => 'alter table ' || l_src_name || ' rename to ' || UPPER( p_table ),
+      evolve.exec_sql( p_sql       => 'alter table ' || l_src_name || ' rename to ' || UPPER( p_table ),
                            p_auto      => 'yes' );
       -- now rename temporary to source
       o_ev.change_action( 'rename temp table' );
-      evolve_log.exec_sql( p_sql       => 'alter table ' || l_temp_name || ' rename to ' || UPPER( p_source_table ),
+      evolve.exec_sql( p_sql       => 'alter table ' || l_temp_name || ' rename to ' || UPPER( p_source_table ),
                            p_auto      => 'yes'
                          );
-      evolve_log.log_msg( l_src_name || ' and ' || l_tab_name || ' table names interchanged' );
+      evolve.log_msg( l_src_name || ' and ' || l_tab_name || ' table names interchanged' );
       o_ev.clear_app_info;
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+         evolve.log_err;
          o_ev.clear_app_info;
          RAISE;
    END rename_tables;
@@ -2675,7 +2675,7 @@ AS
       o_ev                evolve_ot                              := evolve_ot( p_module => 'rename_primary_keys' );
    BEGIN
       o_ev.change_action( 'perform object checks' );
-      evolve_log.log_msg( 'The temporary key name: ' || l_temp_key, 5 );
+      evolve.log_msg( 'The temporary key name: ' || l_temp_key, 5 );
       -- check to make sure the target table exists
       td_utils.check_table( p_owner => p_owner, p_table => p_table );
       -- check to make sure the source table exists
@@ -2694,7 +2694,7 @@ AS
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
-            evolve_log.raise_err( 'no_pk', l_src_name );
+            evolve.raise_err( 'no_pk', l_src_name );
       END;
 
       -- get the target key
@@ -2707,14 +2707,14 @@ AS
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
-            evolve_log.raise_err( 'no_pk', l_src_name );
+            evolve.raise_err( 'no_pk', l_src_name );
       END;
 
       l_source_idx_name    := UPPER( l_source_idx_own || '.' || l_source_idx );
       l_targ_idx_name      := UPPER( l_targ_idx_own || '.' || l_targ_idx );
       -- first rename the target key to temporary key
       o_ev.change_action( 'rename target key' );
-      evolve_log.exec_sql( p_sql       =>    'alter table '
+      evolve.exec_sql( p_sql       =>    'alter table '
                                           || l_tab_name
                                           || ' rename constraint '
                                           || l_targ_key
@@ -2724,7 +2724,7 @@ AS
                          );
       -- now rename source to target
       o_ev.change_action( 'rename source key' );
-      evolve_log.exec_sql( p_sql       =>    'alter table '
+      evolve.exec_sql( p_sql       =>    'alter table '
                                           || l_src_name
                                           || ' rename constraint '
                                           || l_source_key
@@ -2734,7 +2734,7 @@ AS
                          );
       -- now rename temporary to source
       o_ev.change_action( 'rename temp key' );
-      evolve_log.exec_sql( p_sql       =>    'alter table '
+      evolve.exec_sql( p_sql       =>    'alter table '
                                           || l_tab_name
                                           || ' rename constraint '
                                           || l_temp_key
@@ -2744,16 +2744,16 @@ AS
                          );
       -- first rename the target idx to temporary idx
       o_ev.change_action( 'rename target index' );
-      evolve_log.exec_sql( p_sql => 'alter index ' || l_targ_idx_name || ' rename to ' || l_temp_idx, p_auto => 'yes' );
+      evolve.exec_sql( p_sql => 'alter index ' || l_targ_idx_name || ' rename to ' || l_temp_idx, p_auto => 'yes' );
       -- now rename the source index to the target index
       o_ev.change_action( 'rename source index' );
-      evolve_log.exec_sql( p_sql       => 'alter index ' || l_source_idx_name || ' rename to ' || l_targ_idx,
+      evolve.exec_sql( p_sql       => 'alter index ' || l_source_idx_name || ' rename to ' || l_targ_idx,
                            p_auto      => 'yes' );
       -- now rename the temporary index to the source index
       o_ev.change_action( 'rename temporary index' );
-      evolve_log.exec_sql( p_sql       => 'alter index ' || l_temp_idx_name || ' rename to ' || l_source_idx,
+      evolve.exec_sql( p_sql       => 'alter index ' || l_temp_idx_name || ' rename to ' || l_source_idx,
                            p_auto      => 'yes' );
-      evolve_log.log_msg(    l_source_key
+      evolve.log_msg(    l_source_key
                           || ' and '
                           || l_targ_key
                           || ' constraint names for owner '
@@ -2764,7 +2764,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+         evolve.log_err;
          o_ev.clear_app_info;
          RAISE;
    END rename_primary_keys;
@@ -2884,7 +2884,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+         evolve.log_err;
          o_ev.clear_app_info;
          RAISE;
    END replace_table;
@@ -2922,11 +2922,11 @@ AS
          WHEN p_partname IS NOT NULL AND( p_source_owner IS NOT NULL OR p_source_object IS NOT NULL )
          THEN
             o_ev.clear_app_info;
-            evolve_log.raise_err( 'parms_not_compatible', 'P_PARTNAME with either P_SOURCE_OWNER or P_SOURCE_OBJECT' );
+            evolve.raise_err( 'parms_not_compatible', 'P_PARTNAME with either P_SOURCE_OWNER or P_SOURCE_OBJECT' );
          WHEN p_source_owner IS NULL AND p_source_object IS NOT NULL
          THEN
             o_ev.clear_app_info;
-            evolve_log.raise_err( 'parms_not_compatible', 'P_SOURCE_OBJECT without P_SOURCE_OWNEW' );
+            evolve.raise_err( 'parms_not_compatible', 'P_SOURCE_OBJECT without P_SOURCE_OWNEW' );
          ELSE
             NULL;
       END CASE;
@@ -3033,7 +3033,7 @@ AS
       LOOP
          o_ev.change_action( 'execute index DDL' );
          l_rows        := TRUE;
-         evolve_log.exec_sql( p_sql => c_idx.DDL, p_auto => 'yes' );
+         evolve.exec_sql( p_sql => c_idx.DDL, p_auto => 'yes' );
          l_pidx_cnt    := c_idx.num_partitions;
          l_idx_cnt     := c_idx.num_indexes;
       END LOOP;
@@ -3042,7 +3042,7 @@ AS
       THEN
          IF l_idx_cnt > 0 OR l_pidx_cnt > 0
          THEN
-            evolve_log.log_msg(    l_idx_cnt
+            evolve.log_msg(    l_idx_cnt
                                 || ' index'
                                 || CASE l_idx_cnt
                                       WHEN 1
@@ -3062,14 +3062,14 @@ AS
                               );
          END IF;
       ELSE
-         evolve_log.log_msg( 'No matching usable indexes found on ' || l_tab_name );
+         evolve.log_msg( 'No matching usable indexes found on ' || l_tab_name );
       END IF;
 
       o_ev.clear_app_info;
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+         evolve.log_err;
          o_ev.clear_app_info;
          RAISE;
    END unusable_indexes;
@@ -3093,7 +3093,7 @@ AS
 
          IF td_core.is_true( p_concurrent )
          THEN
-            l_concurrent_id    := evolve_log.get_concurrent_id;
+            l_concurrent_id    := evolve.get_concurrent_id;
          END IF;
 
          -- rebuild local indexes first
@@ -3112,11 +3112,11 @@ AS
                           WHERE table_name = UPPER( p_table ) AND table_owner = UPPER( p_owner )
                        ORDER BY table_name, partition_position )
          LOOP
-            evolve_log.exec_sql( p_sql => c_idx.DDL, p_auto => 'yes', p_concurrent_id => l_concurrent_id );
+            evolve.exec_sql( p_sql => c_idx.DDL, p_auto => 'yes', p_concurrent_id => l_concurrent_id );
             l_cnt    := l_cnt + 1;
          END LOOP;
 
-         evolve_log.log_msg(    'Rebuild processes for any unusable indexes on '
+         evolve.log_msg(    'Rebuild processes for any unusable indexes on '
                              || l_cnt
                              || ' partition'
                              || CASE
@@ -3139,7 +3139,7 @@ AS
       THEN
          -- now simply waiting for all the concurrent processes to complete
          o_ev.change_action( 'wait on concurrent processes' );
-         evolve_log.coordinate_sql( p_concurrent_id => l_concurrent_id, p_raise_err => 'no' );
+         evolve.coordinate_sql( p_concurrent_id => l_concurrent_id, p_raise_err => 'no' );
       END IF;
 
       -- reset variables
@@ -3150,7 +3150,7 @@ AS
 
       IF td_core.is_true( p_concurrent )
       THEN
-         l_concurrent_id    := evolve_log.get_concurrent_id;
+         l_concurrent_id    := evolve.get_concurrent_id;
       END IF;
 
       -- now see if any global are still unusable
@@ -3166,7 +3166,7 @@ AS
                      ORDER BY table_name )
       LOOP
          l_rows    := TRUE;
-         evolve_log.exec_sql( p_sql => c_gidx.DDL, p_auto => 'yes', p_concurrent_id => l_concurrent_id );
+         evolve.exec_sql( p_sql => c_gidx.DDL, p_auto => 'yes', p_concurrent_id => l_concurrent_id );
          l_cnt     := l_cnt + 1;
       END LOOP;
 
@@ -3176,10 +3176,10 @@ AS
          THEN
             -- now simply waiting for all the concurrent processes to complete
             o_ev.change_action( 'wait on concurrent processes' );
-            evolve_log.coordinate_sql( p_concurrent_id => l_concurrent_id, p_raise_err => 'no' );
+            evolve.coordinate_sql( p_concurrent_id => l_concurrent_id, p_raise_err => 'no' );
          END IF;
 
-         evolve_log.log_msg(    l_cnt
+         evolve.log_msg(    l_cnt
                              || CASE
                                    WHEN td_utils.is_part_table( p_owner, p_table )
                                       THEN ' global'
@@ -3201,7 +3201,7 @@ AS
                                 END
                            );
       ELSE
-         evolve_log.log_msg(    'No matching unusable '
+         evolve.log_msg(    'No matching unusable '
                              || CASE
                                    WHEN td_utils.is_part_table( p_owner, p_table )
                                       THEN 'global '
@@ -3215,7 +3215,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+         evolve.log_err;
          o_ev.clear_app_info;
          RAISE;
    END usable_indexes;
@@ -3254,17 +3254,17 @@ AS
               OR ( p_source_owner IS NULL AND p_source_table IS NOT NULL )
          THEN
             o_ev.clear_app_info;
-            evolve_log.raise_err( 'parms_not_compatible', 'P_SOURCE_OWNER and P_SOURCE_OBJECT are mutually inclusive' );
+            evolve.raise_err( 'parms_not_compatible', 'P_SOURCE_OWNER and P_SOURCE_OBJECT are mutually inclusive' );
          WHEN p_source_partname IS NOT NULL AND( p_source_owner IS NULL OR p_source_table IS NULL )
          THEN
             o_ev.clear_app_info;
-            evolve_log.raise_err( 'parms_not_compatible',
+            evolve.raise_err( 'parms_not_compatible',
                                   'P_SOURCE_PARTNAME requires P_SOURCE_OWNER and P_SOURCE_OBJECT'
                                 );
          WHEN p_partname IS NOT NULL AND( p_owner IS NULL OR p_table IS NULL )
          THEN
             o_ev.clear_app_info;
-            evolve_log.raise_err( 'parms_not_compatible', 'P_PARTNAME requires P_OWNER and P_OBJECT' );
+            evolve.raise_err( 'parms_not_compatible', 'P_PARTNAME requires P_OWNER and P_OBJECT' );
          ELSE
             NULL;
       END CASE;
@@ -3285,7 +3285,7 @@ AS
       o_ev.change_action( 'gathering statistics' );
 
       -- check to see if we are in debug mode
-      IF NOT evolve_log.is_debugmode
+      IF NOT evolve.is_debugmode
       THEN
          -- check to see if source owner is null
          -- if source owner is null, then we know we aren't transferring statistics
@@ -3374,7 +3374,7 @@ AS
          END IF;
       END IF;
 
-      evolve_log.log_msg(    'Statistics '
+      evolve.log_msg(    'Statistics '
                           || CASE
                                 WHEN p_source_table IS NULL
                                    THEN 'gathered on '
@@ -3410,7 +3410,7 @@ AS
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+         evolve.log_err;
          o_ev.clear_app_info;
          RAISE;
    END update_stats;

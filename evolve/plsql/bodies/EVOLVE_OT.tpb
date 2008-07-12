@@ -46,7 +46,7 @@ AS
          EXCEPTION
             WHEN NO_DATA_FOUND
             THEN
-	       evolve_log.raise_err( 'parm_not_configured','RUNMODE' );
+	       evolve.raise_err( 'parm_not_configured','RUNMODE' );
          END;
 
          td_inst.runmode( l_runmode );
@@ -71,7 +71,7 @@ AS
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
-	    evolve_log.raise_err( 'parm_not_configured','REGISTRATION' );
+	    evolve.raise_err( 'parm_not_configured','REGISTRATION' );
       END;
 
       -- set the registration value
@@ -98,24 +98,24 @@ AS
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
-   	    evolve_log.raise_err( 'parm_not_configured','LOGGING_LEVEL or DEBUG_LEVEL' );
+   	    evolve.raise_err( 'parm_not_configured','LOGGING_LEVEL or DEBUG_LEVEL' );
       END;
 
       td_inst.logging_level( CASE
-                                WHEN evolve_log.is_debugmode
+                                WHEN evolve.is_debugmode
                                    THEN l_debug_level
                                 ELSE l_logging_level
                              END
                            );
       -- log module and action changes to a high logging level
-      evolve_log.log_msg(    'MODULE "'
+      evolve.log_msg(    'MODULE "'
                           || td_inst.module
                           || '" beginning in RUNMODE "'
                           || td_inst.runmode
                           || '"',
                           4
                         );
-      evolve_log.log_msg( 'Inital ACTION attribute set to "' || td_inst.action || '"', 4 );
+      evolve.log_msg( 'Inital ACTION attribute set to "' || td_inst.action || '"', 4 );
 
       -- set session level parameters
       FOR c_params IN
@@ -127,9 +127,9 @@ AS
             FROM parameter_conf
            WHERE LOWER( module ) = td_inst.module )
       LOOP
-         IF evolve_log.is_debugmode
+         IF evolve.is_debugmode
          THEN
-            evolve_log.log_msg( 'Session SQL: ' || c_params.DDL );
+            evolve.log_msg( 'Session SQL: ' || c_params.DDL );
          ELSE
             EXECUTE IMMEDIATE ( c_params.DDL );
          END IF;
@@ -142,7 +142,7 @@ AS
    AS
    BEGIN
       td_inst.action( p_action );
-      evolve_log.log_msg( 'ACTION attribute changed to "' || td_inst.action || '"', 4 );
+      evolve.log_msg( 'ACTION attribute changed to "' || td_inst.action || '"', 4 );
       td_inst.REGISTER;
    END change_action;
    
@@ -152,8 +152,8 @@ AS
       td_inst.action( prev_action );
       td_inst.module( prev_module );
       td_inst.client_info( prev_client_info );
-      evolve_log.log_msg( 'ACTION attribute changed to "' || td_inst.action || '"', 4 );
-      evolve_log.log_msg( 'MODULE attribute changed to "' || td_inst.module || '"', 4 );
+      evolve.log_msg( 'ACTION attribute changed to "' || td_inst.action || '"', 4 );
+      evolve.log_msg( 'MODULE attribute changed to "' || td_inst.module || '"', 4 );
       td_inst.REGISTER;
    END clear_app_info;
 

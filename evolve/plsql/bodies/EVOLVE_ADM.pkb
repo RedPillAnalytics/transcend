@@ -33,7 +33,7 @@ IS
          EXCEPTION
             WHEN e_dup_conf
             THEN
-	       evolve_log.raise_err( 'dup_conf' );
+	       evolve.raise_err( 'dup_conf' );
          END;
       END IF;
 
@@ -47,7 +47,7 @@ IS
       -- if we still have not affected any records, then there's a problem
       IF SQL%ROWCOUNT = 0
       THEN
-	 evolve_log.raise_err( 'no_rep_obj' );
+	 evolve.raise_err( 'no_rep_obj' );
       END IF;
    END set_logging_level;
 
@@ -82,7 +82,7 @@ IS
          EXCEPTION
             WHEN e_dup_conf
             THEN
-	       evolve_log.raise_err( 'dup_conf' );
+	       evolve.raise_err( 'dup_conf' );
          END;
       END IF;
 
@@ -96,7 +96,7 @@ IS
       -- if we still have not affected any records, then there's a problem
       IF SQL%ROWCOUNT = 0
       THEN
-	 evolve_log.raise_err( 'no_rep_obj' );
+	 evolve.raise_err( 'no_rep_obj' );
       END IF;
    END set_runmode;
 
@@ -131,7 +131,7 @@ IS
          EXCEPTION
             WHEN e_dup_conf
             THEN
- 	       evolve_log.raise_err( 'dup_conf' );
+ 	       evolve.raise_err( 'dup_conf' );
          END;
       END IF;
 
@@ -145,12 +145,12 @@ IS
       -- if we still have not affected any records, then there's a problem
       IF SQL%ROWCOUNT = 0
       THEN
- 	 evolve_log.raise_err( 'no_rep_obj' );
+ 	 evolve.raise_err( 'no_rep_obj' );
       END IF;
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+         evolve.log_err;
          RAISE;
    END set_registration;
 
@@ -179,15 +179,15 @@ IS
       -- if the update was unsuccessful above, or an insert it specifically requested, then do an insert
       IF ( SQL%ROWCOUNT = 0 AND LOWER( p_mode ) = 'upsert' ) OR LOWER( p_mode ) = 'insert'
       THEN
-         evolve_log.log_msg( 'Update was unsuccessful or insert was specified', 5 );
+         evolve.log_msg( 'Update was unsuccessful or insert was specified', 5 );
 	 
          CASE
             WHEN p_subject IS NULL
             THEN
-               evolve_log.raise_err( 'parm_req', 'P_SUBJECT' );
+               evolve.raise_err( 'parm_req', 'P_SUBJECT' );
             WHEN p_message IS NULL
             THEN
-               evolve_log.raise_err( 'parm_req', 'P_MESSAGE' );
+               evolve.raise_err( 'parm_req', 'P_MESSAGE' );
             ELSE
                NULL;
          END CASE;
@@ -201,7 +201,7 @@ IS
          EXCEPTION
             WHEN e_dup_conf
             THEN
-               evolve_log.raise_err( 'dup_conf' );
+               evolve.raise_err( 'dup_conf' );
          END;
       END IF;
 
@@ -215,7 +215,7 @@ IS
       -- if we still have not affected any records, then there's a problem
       IF SQL%ROWCOUNT = 0
       THEN
-	 evolve_log.raise_err( 'no_rep_obj' );
+	 evolve.raise_err( 'no_rep_obj' );
       END IF;
    END set_notification_event;
 
@@ -255,19 +255,19 @@ IS
          CASE
             WHEN p_method IS NULL
             THEN
-               evolve_log.raise_err( 'parm_req', 'P_METHOD' );
+               evolve.raise_err( 'parm_req', 'P_METHOD' );
             WHEN p_enabled IS NULL
             THEN
-               evolve_log.raise_err( 'parm_req', 'P_ENABLED' );
+               evolve.raise_err( 'parm_req', 'P_ENABLED' );
             WHEN p_required IS NULL
             THEN
-               evolve_log.raise_err( 'parm_req', 'P_REQUIRED' );
+               evolve.raise_err( 'parm_req', 'P_REQUIRED' );
             WHEN p_sender IS NULL
             THEN
-               evolve_log.raise_err( 'parm_req', 'P_SENDER' );
+               evolve.raise_err( 'parm_req', 'P_SENDER' );
             WHEN p_recipients IS NULL
             THEN
-               evolve_log.raise_err( 'parm_req', 'P_RECIPIENTS' );
+               evolve.raise_err( 'parm_req', 'P_RECIPIENTS' );
             ELSE
                NULL;
          END CASE;
@@ -283,7 +283,7 @@ IS
          EXCEPTION
             WHEN e_dup_conf
             THEN
-               evolve_log.raise_err( 'dup_conf' );
+               evolve.raise_err( 'dup_conf' );
          END;
       END IF;
 
@@ -297,7 +297,7 @@ IS
       -- if we still have not affected any records, then there's a problem
       IF SQL%ROWCOUNT = 0
       THEN
-	 evolve_log.raise_err( 'no_rep_obj' );
+	 evolve.raise_err( 'no_rep_obj' );
       END IF;
    END set_notification;
 
@@ -331,10 +331,10 @@ IS
          CASE
             WHEN p_name IS NULL
             THEN
-               evolve_log.raise_err( 'parm_req', 'P_NAME' );
+               evolve.raise_err( 'parm_req', 'P_NAME' );
             WHEN p_message IS NULL
             THEN
-               evolve_log.raise_err( 'parm_req', 'P_MESSAGE' );
+               evolve.raise_err( 'parm_req', 'P_MESSAGE' );
             ELSE
                NULL;
          END CASE;
@@ -374,7 +374,7 @@ IS
          EXCEPTION
             WHEN e_dup_conf
             THEN
-               evolve_log.raise_err( 'dup_conf' );
+               evolve.raise_err( 'dup_conf' );
          END;
       END IF;
 
@@ -388,7 +388,7 @@ IS
       -- if we still have not affected any records, then there's a problem
       IF SQL%ROWCOUNT = 0
       THEN
-	 evolve_log.raise_err( 'no_rep_obj' );
+	 evolve.raise_err( 'no_rep_obj' );
       END IF;
    END set_error_conf;
 
@@ -415,7 +415,7 @@ IS
             THEN
                NULL;
             ELSE
-	       evolve_log.raise_err( 'no_db_parm',p_name);
+	       evolve.raise_err( 'no_db_parm',p_name);
             END IF;
       END;
 
@@ -450,7 +450,7 @@ IS
          EXCEPTION
             WHEN e_dup_conf
             THEN
-               evolve_log.raise_err( 'dup_conf' );
+               evolve.raise_err( 'dup_conf' );
          END;
       END IF;
 
@@ -464,7 +464,7 @@ IS
       -- if we still have not affected any records, then there's a problem
       IF SQL%ROWCOUNT = 0
       THEN
-	 evolve_log.raise_err( 'no_rep_obj' );
+	 evolve.raise_err( 'no_rep_obj' );
       END IF;
    END set_session_parameter;
 

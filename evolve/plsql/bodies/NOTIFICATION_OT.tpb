@@ -4,9 +4,9 @@ AS
       RETURN SELF AS RESULT
    AS
    BEGIN
-      evolve_log.log_msg( 'Notification module: ' || module, 5 );
-      evolve_log.log_msg( 'Notification action: ' || action, 5 );
-      evolve_log.print_query(    'SELECT label,'
+      evolve.log_msg( 'Notification module: ' || module, 5 );
+      evolve.log_msg( 'Notification action: ' || action, 5 );
+      evolve.print_query(    'SELECT label,'
                               || 'method,'
                               || 'enabled,'
                               || 'required,'
@@ -36,7 +36,7 @@ AS
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
-            evolve_log.log_msg(    'No notification configured for label "'
+            evolve.log_msg(    'No notification configured for label "'
                                 || p_label
                                 || '" with module "'
                                 || td_inst.module
@@ -47,7 +47,7 @@ AS
                               );
          WHEN TOO_MANY_ROWS
          THEN
-            evolve_log.raise_err( 'notify_err',
+            evolve.raise_err( 'notify_err',
                                      'label "'
                                   || p_label
                                   || '" with module "'
@@ -69,11 +69,11 @@ AS
       e_smtp_error3   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_smtp_error3, -29261 );
    BEGIN
-      evolve_log.log_msg( 'Value for ENABLED: ' || enabled, 5 );
+      evolve.log_msg( 'Value for ENABLED: ' || enabled, 5 );
 
       IF td_core.is_true( enabled, TRUE )
       THEN
-         IF NOT evolve_log.is_debugmode
+         IF NOT evolve.is_debugmode
          THEN
             CASE method
                WHEN 'email'
@@ -85,8 +85,8 @@ AS
                                     MESSAGE         => NVL( p_message, MESSAGE ),
                                     mime_type       => 'text/html'
                                   );
-                     evolve_log.log_msg( 'Email sent to: ' || recipients );
-                     evolve_log.log_msg(    'Email Information:'
+                     evolve.log_msg( 'Email sent to: ' || recipients );
+                     evolve.log_msg(    'Email Information:'
                                          || CHR( 10 )
                                          || 'Sender: '
                                          || sender
@@ -106,13 +106,13 @@ AS
                      THEN
                         IF td_core.is_true( required )
                         THEN
-                           evolve_log.raise_err( 'utl_mail_err', SQLERRM );
+                           evolve.raise_err( 'utl_mail_err', SQLERRM );
                         ELSE
-                           evolve_log.log_msg( 'The following SMTP error occured: ' || SQLERRM );
+                           evolve.log_msg( 'The following SMTP error occured: ' || SQLERRM );
                         END IF;
                   END;
                ELSE
-                  evolve_log.raise_err( 'notify_method_invalid' );
+                  evolve.raise_err( 'notify_method_invalid' );
             END CASE;
          END IF;
       END IF;

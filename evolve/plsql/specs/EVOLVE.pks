@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE evolve_log AUTHID CURRENT_USER
+CREATE OR REPLACE PACKAGE evolve AUTHID CURRENT_USER
 AS
    PROCEDURE log_msg( p_msg VARCHAR2, p_level NUMBER DEFAULT 1 );
 
@@ -45,5 +45,5 @@ AS
 
    PROCEDURE consume_sql( p_session_id NUMBER, p_module VARCHAR2, p_action VARCHAR2, p_sql VARCHAR2 );
 
-END evolve_log;
+END evolve;
 /

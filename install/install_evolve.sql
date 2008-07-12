@@ -1,4 +1,4 @@
---SET echo off
+SET echo off
 SET verify off
 PROMPT 'Running install_evolve.sql'
 SET serveroutput on size unlimited
@@ -104,8 +104,8 @@ EXEC tdsys.td_adm.drop_evolve_types;
 
 -- layer in the utilities that require repository objects
 -- this starts to move past "Evolve-lite"
-@../evolve/plsql/specs/EVOLVE_LOG.pks
-@../evolve/plsql/wrapped_bodies/EVOLVE_LOG.plb
+@../evolve/plsql/specs/EVOLVE.pks
+@../evolve/plsql/wrapped_bodies/EVOLVE.plb
 @../evolve/plsql/specs/NOTIFICATION_OT.tps
 @../evolve/plsql/wrapped_bodies/NOTIFICATION_OT.plb
 @../evolve/plsql/specs/EVOLVE_OT.tps

@@ -33,7 +33,7 @@ IS
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+         evolve.log_err;
          o_ev.clear_app_info;
          RAISE;
    END calc_rej_ind;
@@ -67,7 +67,7 @@ IS
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+         evolve.log_err;
          o_ev.clear_app_info;
          RAISE;
    END extract_object;
@@ -119,14 +119,14 @@ IS
       IF NOT l_rows
       THEN
          o_ev.clear_app_info;
-	 evolve_log.raise_err( 'incorrect_parameters' );
+	 evolve.raise_err( 'incorrect_parameters' );
       END IF;
 
       o_ev.clear_app_info;
    EXCEPTION
       WHEN OTHERS
       THEN
-         evolve_log.log_err;
+         evolve.log_err;
          ROLLBACK;
          o_ev.clear_app_info;
          RAISE;
