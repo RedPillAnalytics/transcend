@@ -115,7 +115,7 @@ AS
       -- confirm that the table exists
       -- raise an error if it doesn't
       td_utils.check_table( p_owner => p_owner, p_table => p_table );
-      evolve_app.exec_sql( p_sql       =>    'truncate table '
+      evolve_log.exec_sql( p_sql       =>    'truncate table '
                                           || p_owner
                                           || '.'
                                           || p_table
@@ -145,7 +145,7 @@ AS
       -- confirm that the table exists
       -- raise an error if it doesn't
       td_utils.check_table( p_owner => p_owner, p_table => p_table );
-      evolve_app.exec_sql( p_sql       =>    'drop table '
+      evolve_log.exec_sql( p_sql       =>    'drop table '
                                           || p_owner
                                           || '.'
                                           || p_table
@@ -373,7 +373,7 @@ AS
                              ));
 
       o_ev.change_action( 'execute DDL' );
-      evolve_app.exec_sql( p_sql => l_table_ddl, p_auto => 'yes' );
+      evolve_log.exec_sql( p_sql => l_table_ddl, p_auto => 'yes' );
       evolve_log.log_msg( 'Table ' || l_tab_name || ' created' );
 
       -- if you want the records as well
@@ -505,7 +505,7 @@ AS
 
       IF td_core.is_true( p_concurrent )
       THEN
-         l_concurrent_id    := evolve_app.get_concurrent_id;
+         l_concurrent_id    := evolve_log.get_concurrent_id;
       END IF;
 
       -- create a cursor containing the DDL from the target indexes
@@ -716,7 +716,7 @@ AS
 
          BEGIN
             o_ev.change_action( 'execute index DDL' );
-            evolve_app.exec_sql( p_sql => c_indexes.index_ddl, p_auto => 'yes', p_concurrent_id => l_concurrent_id );
+            evolve_log.exec_sql( p_sql => c_indexes.index_ddl, p_auto => 'yes', p_concurrent_id => l_concurrent_id );
             evolve_log.log_msg(    'Index '
                                 || c_indexes.index_name
                                 || ' '
@@ -761,7 +761,7 @@ AS
             THEN
                -- now simply waiting for all the concurrent processes to complete
                o_ev.change_action( 'wait on concurrent processes' );
-               evolve_app.coordinate_sql( p_concurrent_id => l_concurrent_id, p_raise_err => 'no' );
+               evolve_log.coordinate_sql( p_concurrent_id => l_concurrent_id, p_raise_err => 'no' );
             END IF;
          END IF;
 
@@ -804,7 +804,7 @@ AS
       LOOP
          BEGIN
             l_rows       := TRUE;
-            evolve_app.exec_sql( p_sql => c_idxs.rename_ddl, p_auto => 'yes' );
+            evolve_log.exec_sql( p_sql => c_idxs.rename_ddl, p_auto => 'yes' );
             evolve_log.log_msg( c_idxs.rename_msg, 3 );
             l_idx_cnt    := l_idx_cnt + 1;
          END;
@@ -912,7 +912,7 @@ AS
 
       IF td_core.is_true( p_concurrent )
       THEN
-         l_concurrent_id    := evolve_app.get_concurrent_id;
+         l_concurrent_id    := evolve_log.get_concurrent_id;
       END IF;
 
       o_ev.change_action( 'build constraints' );
@@ -1185,7 +1185,7 @@ AS
          IF NOT( td_utils.is_iot( p_owner, p_table ) AND c_constraints.constraint_type = 'P' )
          THEN
             BEGIN
-               evolve_app.exec_sql( p_sql                => c_constraints.constraint_ddl,
+               evolve_log.exec_sql( p_sql                => c_constraints.constraint_ddl,
                                     p_auto               => 'yes',
                                     p_concurrent_id      => l_concurrent_id
                                   );
@@ -1254,7 +1254,7 @@ AS
             THEN
                -- now simply waiting for all the concurrent processes to complete
                o_ev.change_action( 'wait on concurrent processes' );
-               evolve_app.coordinate_sql( p_concurrent_id => l_concurrent_id, p_raise_err => 'no' );
+               evolve_log.coordinate_sql( p_concurrent_id => l_concurrent_id, p_raise_err => 'no' );
             END IF;
          END IF;
 
@@ -1297,7 +1297,7 @@ AS
       LOOP
          BEGIN
             l_rows       := TRUE;
-            evolve_app.exec_sql( p_sql => c_cons.rename_ddl, p_auto => 'yes' );
+            evolve_log.exec_sql( p_sql => c_cons.rename_ddl, p_auto => 'yes' );
             evolve_log.log_msg( c_cons.rename_msg, 3 );
             l_con_cnt    := l_con_cnt + 1;
          END;
@@ -1358,7 +1358,7 @@ AS
 
       IF td_core.is_true( p_concurrent )
       THEN
-         l_concurrent_id    := evolve_app.get_concurrent_id;
+         l_concurrent_id    := evolve_log.get_concurrent_id;
       END IF;
 
       -- disable both table and reference constraints for this particular table
@@ -1469,7 +1469,7 @@ AS
          l_rows    := TRUE;
 
          BEGIN
-            evolve_app.exec_sql( p_sql                => CASE
+            evolve_log.exec_sql( p_sql                => CASE
                                     WHEN REGEXP_LIKE( 'disable', p_maint_type, 'i' )
                                        THEN c_constraints.disable_ddl
                                     WHEN REGEXP_LIKE( 'enable', p_maint_type, 'i' )
@@ -1531,7 +1531,7 @@ AS
          -- wait for the concurrent processes to complete or fail
          IF td_core.is_true( p_concurrent ) AND NOT evolve_log.is_debugmode
          THEN
-            evolve_app.coordinate_sql( p_concurrent_id => l_concurrent_id, p_raise_err => 'no' );
+            evolve_log.coordinate_sql( p_concurrent_id => l_concurrent_id, p_raise_err => 'no' );
          END IF;
 
          evolve_log.log_msg( 'Value for P_MAINT_TYPE: ' || p_maint_type, 5 );
@@ -1591,7 +1591,7 @@ AS
 
       IF td_core.is_true( p_concurrent )
       THEN
-         l_concurrent_id    := evolve_app.get_concurrent_id;
+         l_concurrent_id    := evolve_log.get_concurrent_id;
       END IF;
 
       o_ev.change_action( 'looping through' );
@@ -1607,7 +1607,7 @@ AS
             l_rows       := TRUE;
             -- execute the DDL either in this session or a background session
             o_ev.change_action( 'executing DDL' );
-            evolve_app.exec_sql( p_sql => c_cons.enable_ddl, p_auto => 'yes', p_concurrent_id => l_concurrent_id );
+            evolve_log.exec_sql( p_sql => c_cons.enable_ddl, p_auto => 'yes', p_concurrent_id => l_concurrent_id );
             evolve_log.log_msg( c_cons.enable_msg );
             l_con_cnt    := l_con_cnt + 1;
          END;
@@ -1622,7 +1622,7 @@ AS
 
          IF td_core.is_true( p_concurrent )
          THEN
-            evolve_app.coordinate_sql( p_concurrent_id => l_concurrent_id, p_raise_err => 'no' );
+            evolve_log.coordinate_sql( p_concurrent_id => l_concurrent_id, p_raise_err => 'no' );
          END IF;
 
          evolve_log.log_msg(    l_con_cnt
@@ -1690,7 +1690,7 @@ AS
          l_rows    := TRUE;
 
          BEGIN
-            evolve_app.exec_sql( p_sql => c_indexes.index_ddl, p_auto => 'yes' );
+            evolve_log.exec_sql( p_sql => c_indexes.index_ddl, p_auto => 'yes' );
             l_idx_cnt    := l_idx_cnt + 1;
             evolve_log.log_msg( 'Index ' || c_indexes.index_name || ' dropped', 3 );
          EXCEPTION
@@ -1791,7 +1791,7 @@ AS
 
          BEGIN
             o_ev.change_action( 'execute table alter' );
-            evolve_app.exec_sql( p_sql => c_constraints.constraint_ddl, p_auto => 'yes' );
+            evolve_log.exec_sql( p_sql => c_constraints.constraint_ddl, p_auto => 'yes' );
             l_con_cnt    := l_con_cnt + 1;
             evolve_log.log_msg( 'Constraint ' || c_constraints.constraint_name || ' dropped', 2 );
          EXCEPTION
@@ -1913,7 +1913,7 @@ AS
       LOOP
          IF l_grants
          THEN
-            evolve_app.exec_sql( p_sql => c_grants.COLUMN_VALUE, p_auto => 'yes' );
+            evolve_log.exec_sql( p_sql => c_grants.COLUMN_VALUE, p_auto => 'yes' );
          END IF;
 
          l_grant_cnt    := l_grant_cnt + 1;
@@ -1985,7 +1985,7 @@ AS
 
       -- enable|disable parallel dml depending on the parameter for P_DIRECT
       o_ev.change_action( 'alter parallel dml' );
-      evolve_app.exec_sql(    'ALTER SESSION '
+      evolve_log.exec_sql(    'ALTER SESSION '
                            || CASE
                                  WHEN REGEXP_LIKE( 'yes', p_direct, 'i' )
                                     THEN 'ENABLE'
@@ -1994,7 +1994,7 @@ AS
                            || ' PARALLEL DML'
                          );
       o_ev.change_action( 'issue insert statement' );
-      evolve_app.exec_sql( p_sql      =>    'insert '
+      evolve_log.exec_sql( p_sql      =>    'insert '
                                          || CASE
                                                WHEN td_core.is_true( p_direct )
                                                   THEN '/*+ APPEND */ '
@@ -2190,7 +2190,7 @@ AS
       BEGIN
          o_ev.change_action( 'alter parallel dml' );
          -- ENABLE|DISABLE parallel dml depending on the value of P_DIRECT
-         evolve_app.exec_sql( p_sql      =>    'ALTER SESSION '
+         evolve_log.exec_sql( p_sql      =>    'ALTER SESSION '
                                             || CASE
                                                   WHEN REGEXP_LIKE( 'yes', p_direct, 'i' )
                                                      THEN 'ENABLE'
@@ -2200,7 +2200,7 @@ AS
                             );
          o_ev.change_action( 'execute merge statement' );
          -- we put the merge statement together using all the different clauses constructed above
-         evolve_app.exec_sql( p_sql      =>    'MERGE INTO '
+         evolve_log.exec_sql( p_sql      =>    'MERGE INTO '
                                             || p_owner
                                             || '.'
                                             || p_table
@@ -2480,7 +2480,7 @@ AS
          l_retry_ddl    := FALSE;
 
          BEGIN
-            evolve_app.exec_sql( p_sql       =>    'alter table '
+            evolve_log.exec_sql( p_sql       =>    'alter table '
                                                 || l_tab_name
                                                 || ' exchange partition '
                                                 || l_partname
@@ -2523,7 +2523,7 @@ AS
                o_ev.change_action( 'compress source table' );
                l_compress     := TRUE;
                l_retry_ddl    := TRUE;
-               evolve_app.exec_sql( p_sql => 'alter table ' || l_src_name || ' move compress', p_auto => 'yes' );
+               evolve_log.exec_sql( p_sql => 'alter table ' || l_src_name || ' move compress', p_auto => 'yes' );
                evolve_log.log_msg( l_src_name || ' compressed to facilitate exchange', 3 );
             WHEN e_fk_mismatch
             THEN
@@ -2635,14 +2635,14 @@ AS
       td_utils.check_table( p_owner => p_owner, p_table => p_source_table );
       -- first rename the target table to temporary table
       o_ev.change_action( 'rename target table' );
-      evolve_app.exec_sql( p_sql => 'alter table ' || l_tab_name || ' rename to ' || l_temp_table, p_auto => 'yes' );
+      evolve_log.exec_sql( p_sql => 'alter table ' || l_tab_name || ' rename to ' || l_temp_table, p_auto => 'yes' );
       -- now rename source to target
       o_ev.change_action( 'rename source table' );
-      evolve_app.exec_sql( p_sql       => 'alter table ' || l_src_name || ' rename to ' || UPPER( p_table ),
+      evolve_log.exec_sql( p_sql       => 'alter table ' || l_src_name || ' rename to ' || UPPER( p_table ),
                            p_auto      => 'yes' );
       -- now rename temporary to source
       o_ev.change_action( 'rename temp table' );
-      evolve_app.exec_sql( p_sql       => 'alter table ' || l_temp_name || ' rename to ' || UPPER( p_source_table ),
+      evolve_log.exec_sql( p_sql       => 'alter table ' || l_temp_name || ' rename to ' || UPPER( p_source_table ),
                            p_auto      => 'yes'
                          );
       evolve_log.log_msg( l_src_name || ' and ' || l_tab_name || ' table names interchanged' );
@@ -2714,7 +2714,7 @@ AS
       l_targ_idx_name      := UPPER( l_targ_idx_own || '.' || l_targ_idx );
       -- first rename the target key to temporary key
       o_ev.change_action( 'rename target key' );
-      evolve_app.exec_sql( p_sql       =>    'alter table '
+      evolve_log.exec_sql( p_sql       =>    'alter table '
                                           || l_tab_name
                                           || ' rename constraint '
                                           || l_targ_key
@@ -2724,7 +2724,7 @@ AS
                          );
       -- now rename source to target
       o_ev.change_action( 'rename source key' );
-      evolve_app.exec_sql( p_sql       =>    'alter table '
+      evolve_log.exec_sql( p_sql       =>    'alter table '
                                           || l_src_name
                                           || ' rename constraint '
                                           || l_source_key
@@ -2734,7 +2734,7 @@ AS
                          );
       -- now rename temporary to source
       o_ev.change_action( 'rename temp key' );
-      evolve_app.exec_sql( p_sql       =>    'alter table '
+      evolve_log.exec_sql( p_sql       =>    'alter table '
                                           || l_tab_name
                                           || ' rename constraint '
                                           || l_temp_key
@@ -2744,14 +2744,14 @@ AS
                          );
       -- first rename the target idx to temporary idx
       o_ev.change_action( 'rename target index' );
-      evolve_app.exec_sql( p_sql => 'alter index ' || l_targ_idx_name || ' rename to ' || l_temp_idx, p_auto => 'yes' );
+      evolve_log.exec_sql( p_sql => 'alter index ' || l_targ_idx_name || ' rename to ' || l_temp_idx, p_auto => 'yes' );
       -- now rename the source index to the target index
       o_ev.change_action( 'rename source index' );
-      evolve_app.exec_sql( p_sql       => 'alter index ' || l_source_idx_name || ' rename to ' || l_targ_idx,
+      evolve_log.exec_sql( p_sql       => 'alter index ' || l_source_idx_name || ' rename to ' || l_targ_idx,
                            p_auto      => 'yes' );
       -- now rename the temporary index to the source index
       o_ev.change_action( 'rename temporary index' );
-      evolve_app.exec_sql( p_sql       => 'alter index ' || l_temp_idx_name || ' rename to ' || l_source_idx,
+      evolve_log.exec_sql( p_sql       => 'alter index ' || l_temp_idx_name || ' rename to ' || l_source_idx,
                            p_auto      => 'yes' );
       evolve_log.log_msg(    l_source_key
                           || ' and '
@@ -3033,7 +3033,7 @@ AS
       LOOP
          o_ev.change_action( 'execute index DDL' );
          l_rows        := TRUE;
-         evolve_app.exec_sql( p_sql => c_idx.DDL, p_auto => 'yes' );
+         evolve_log.exec_sql( p_sql => c_idx.DDL, p_auto => 'yes' );
          l_pidx_cnt    := c_idx.num_partitions;
          l_idx_cnt     := c_idx.num_indexes;
       END LOOP;
@@ -3093,7 +3093,7 @@ AS
 
          IF td_core.is_true( p_concurrent )
          THEN
-            l_concurrent_id    := evolve_app.get_concurrent_id;
+            l_concurrent_id    := evolve_log.get_concurrent_id;
          END IF;
 
          -- rebuild local indexes first
@@ -3112,7 +3112,7 @@ AS
                           WHERE table_name = UPPER( p_table ) AND table_owner = UPPER( p_owner )
                        ORDER BY table_name, partition_position )
          LOOP
-            evolve_app.exec_sql( p_sql => c_idx.DDL, p_auto => 'yes', p_concurrent_id => l_concurrent_id );
+            evolve_log.exec_sql( p_sql => c_idx.DDL, p_auto => 'yes', p_concurrent_id => l_concurrent_id );
             l_cnt    := l_cnt + 1;
          END LOOP;
 
@@ -3139,7 +3139,7 @@ AS
       THEN
          -- now simply waiting for all the concurrent processes to complete
          o_ev.change_action( 'wait on concurrent processes' );
-         evolve_app.coordinate_sql( p_concurrent_id => l_concurrent_id, p_raise_err => 'no' );
+         evolve_log.coordinate_sql( p_concurrent_id => l_concurrent_id, p_raise_err => 'no' );
       END IF;
 
       -- reset variables
@@ -3150,7 +3150,7 @@ AS
 
       IF td_core.is_true( p_concurrent )
       THEN
-         l_concurrent_id    := evolve_app.get_concurrent_id;
+         l_concurrent_id    := evolve_log.get_concurrent_id;
       END IF;
 
       -- now see if any global are still unusable
@@ -3166,7 +3166,7 @@ AS
                      ORDER BY table_name )
       LOOP
          l_rows    := TRUE;
-         evolve_app.exec_sql( p_sql => c_gidx.DDL, p_auto => 'yes', p_concurrent_id => l_concurrent_id );
+         evolve_log.exec_sql( p_sql => c_gidx.DDL, p_auto => 'yes', p_concurrent_id => l_concurrent_id );
          l_cnt     := l_cnt + 1;
       END LOOP;
 
@@ -3176,7 +3176,7 @@ AS
          THEN
             -- now simply waiting for all the concurrent processes to complete
             o_ev.change_action( 'wait on concurrent processes' );
-            evolve_app.coordinate_sql( p_concurrent_id => l_concurrent_id, p_raise_err => 'no' );
+            evolve_log.coordinate_sql( p_concurrent_id => l_concurrent_id, p_raise_err => 'no' );
          END IF;
 
          evolve_log.log_msg(    l_cnt

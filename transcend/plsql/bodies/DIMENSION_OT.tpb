@@ -559,7 +559,7 @@ AS
 
       -- now run the insert statement to load the staging table
       o_ev.change_action( 'load staging table' );
-      evolve_app.exec_sql( l_sql );
+      evolve_log.exec_sql( l_sql );
       evolve_log.log_cnt_msg( p_count      => SQL%ROWCOUNT,
                               p_msg        => 'Number of records inserted into ' || SELF.full_stage );
       COMMIT;

@@ -103,8 +103,8 @@ AS
       evolve_log.log_msg( 'Processing extract "' || file_label || '"', 3 );
       o_ev.change_action( 'Configure NLS formats' );
       -- set date and timestamp NLS formats
-      evolve_app.exec_sql( p_sql => dateformat_ddl, p_msg => 'nls_date_format DDL: ' );
-      evolve_app.exec_sql( p_sql => tsformat_ddl, p_msg => 'nls_timestamp_format DDL: ' );
+      evolve_log.exec_sql( p_sql => dateformat_ddl, p_msg => 'nls_date_format DDL: ' );
+      evolve_log.exec_sql( p_sql => tsformat_ddl, p_msg => 'nls_timestamp_format DDL: ' );
       o_ev.change_action( 'Extract data' );
       -- extract data to arch location first
       l_numlines :=
@@ -156,10 +156,10 @@ AS
       o_ev.change_action( 'Notify success' );
       SELF.announce_file( p_files_url => file_url, p_num_lines => l_numlines );
       -- set date and timestamp NLS formats back to original
-      evolve_app.exec_sql( p_sql      => 'alter session set nls_date_format=''' || l_curr_df || '''',
+      evolve_log.exec_sql( p_sql      => 'alter session set nls_date_format=''' || l_curr_df || '''',
                            p_msg      => 'nls_date_format DDL: '
                          );
-      evolve_app.exec_sql( p_sql      => 'alter session set nls_timestamp_format=''' || l_curr_tsf || '''',
+      evolve_log.exec_sql( p_sql      => 'alter session set nls_timestamp_format=''' || l_curr_tsf || '''',
                            p_msg      => 'nls_timestamp_format DDL: '
                          );
       o_ev.clear_app_info;

@@ -451,7 +451,7 @@ AS
             o_ev.change_action( 'alter external table' );
 
             BEGIN
-               l_results := evolve_app.exec_sql( p_sql => l_ext_tab_ddl, p_auto => 'yes' );
+               l_results := evolve_log.exec_sql( p_sql => l_ext_tab_ddl, p_auto => 'yes' );
                evolve_log.log_msg( 'External table ' || l_ext_tab || ' altered', 3 );
             EXCEPTION
                WHEN e_no_files

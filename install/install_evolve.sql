@@ -113,8 +113,6 @@ EXEC tdsys.td_install.drop_evolve_types;
 @../evolve/plsql/wrapped_bodies/TD_UTILS.plb
 
 -- create callable packages
-@../evolve/plsql/specs/EVOLVE_APP.pks
-@../evolve/plsql/wrapped_bodies/EVOLVE_APP.plb
 @../evolve/plsql/specs/EVOLVE_ADM.pks
 @../evolve/plsql/wrapped_bodies/EVOLVE_ADM.plb
 
