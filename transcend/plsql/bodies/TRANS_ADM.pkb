@@ -58,6 +58,9 @@ IS
       evolve_adm.set_error_conf( p_name         => 'no_dim',
                                  p_message      => 'The specified table is not a configured dimension table'
                                );
+      evolve_adm.set_error_conf( p_name         => 'no_mapping',
+                                 p_message      => 'The specified mapping has not been configured'
+                               );
       evolve_adm.set_error_conf
          ( p_name         => 'dim_map_conf',
            p_message      => 'The mapping you are trying to configure is a dimensional load mapping. Use the procedure CONFIGURE_DIM to modify this configuration.'

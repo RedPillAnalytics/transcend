@@ -73,15 +73,6 @@ AS
    FUNCTION is_registered
       RETURN BOOLEAN;
 
-   FUNCTION get_err_cd( p_name VARCHAR2 )
-      RETURN NUMBER;
-
-   FUNCTION get_err_msg( p_name VARCHAR2 )
-      RETURN VARCHAR2;
-   
-   FUNCTION whence
-      RETURN VARCHAR2;
-
    PROCEDURE set_scheduler_info(
       p_session_id  NUMBER,
       p_module	    VARCHAR2,
