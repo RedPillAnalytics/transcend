@@ -14,12 +14,12 @@ AS
    g_dbuser          VARCHAR2( 30 ) := SYS_CONTEXT( 'USERENV', 'SESSION_USER' );
    g_osuser          VARCHAR2( 30 ) := SYS_CONTEXT( 'USERENV', 'OS_USER' );
 -- variables for holding information used to register an application with some other framework, such as DBMS_APPLCIATION_INFO
-   g_client_info     VARCHAR2( 30 ) := SYS_CONTEXT( 'USERENV', 'CLIENT_INFO' );
-   g_module          VARCHAR2( 30 ) := SYS_CONTEXT( 'USERENV', 'MODULE' );
-   g_action          VARCHAR2( 30 ) := SYS_CONTEXT( 'USERENV', 'ACTION' );
+   g_client_info     VARCHAR2( 64 ) := SYS_CONTEXT( 'USERENV', 'CLIENT_INFO' );
+   g_module          VARCHAR2( 48 ) := SYS_CONTEXT( 'USERENV', 'MODULE' );
+   g_action          VARCHAR2( 32 ) := SYS_CONTEXT( 'USERENV', 'ACTION' );
    g_batch_id        NUMBER;
    g_registration    VARCHAR2( 30 ) := 'appinfo';
-   g_logging_level   VARCHAR2( 30 ) := 2;
+   g_logging_level   number := 2;
    g_runmode         VARCHAR2( 10 ) := 'runtime';
 
    -- registers the application
