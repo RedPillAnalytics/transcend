@@ -434,7 +434,7 @@ AS
       DBMS_SESSION.set_identifier( p_concurrent_id );
       -- generate the job action
       l_job_action :=
-            'begin consume_sql('
+            'begin evolve.consume_sql('
          || l_session_id
          || ','''
          || l_module

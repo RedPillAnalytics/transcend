@@ -248,6 +248,12 @@ IS
          EXECUTE IMMEDIATE 'GRANT SELECT ON ERROR_CONF TO ' || l_sel_grant;
 
          EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON ERROR_CONF TO ' || l_adm_grant;
+	 
+         -- sequences
+         EXECUTE IMMEDIATE 'grant select on CONCURRENT_ID_SEQ to ' || l_sel_grant;
+	 
+         EXECUTE IMMEDIATE 'grant select on CONCURRENT_ID_SEQ to ' || l_adm_grant;
+
       EXCEPTION
          WHEN e_no_grantee
          THEN
@@ -297,8 +303,6 @@ IS
 
          EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.EVOLVE_ADM to ' || p_user;
 
-         -- sequences
-         EXECUTE IMMEDIATE 'grant select on '||p_schema||'.CONCURRENT_ID_SEQ to ' || p_user;
       EXCEPTION
          WHEN e_no_obj
          THEN
@@ -1491,6 +1495,20 @@ IS
          THEN
             NULL;
       END;
+      
+      -- sequences
+      BEGIN
+         EXECUTE IMMEDIATE    'create or replace synonym '
+                           || p_user
+                           || '.CONCURRENT_ID_SEQ for '
+                           || p_schema
+                           || '.CONCURRENT_ID_SEQ';
+      EXCEPTION
+         WHEN e_same_name
+         THEN
+            NULL;
+      END;
+
 
       BEGIN
          EXECUTE IMMEDIATE    'create or replace synonym '
@@ -1661,18 +1679,6 @@ IS
             NULL;
       END;
 
-      -- sequences
-      BEGIN
-         EXECUTE IMMEDIATE    'create or replace synonym '
-                           || p_user
-                           || '.CONCURRENT_ID_SEQ for '
-                           || p_schema
-                           || '.CONCURRENT_ID_SEQ';
-      EXCEPTION
-         WHEN e_same_name
-         THEN
-            NULL;
-      END;
    END build_evolve_app_syns;
 
    PROCEDURE build_transcend_rep_syns( p_user VARCHAR2, p_schema VARCHAR2 )
