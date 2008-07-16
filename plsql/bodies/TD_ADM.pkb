@@ -4,15 +4,33 @@ IS
    g_tablespace       dba_users.default_tablespace%TYPE;
    g_current_schema   dba_users.username%TYPE := SYS_CONTEXT( 'USERENV', 'CURRENT_SCHEMA' );
 
+   -- exceptions used over and over agaoin
+   -- define them only once
+   e_no_user          EXCEPTION;
+   PRAGMA EXCEPTION_INIT( e_no_user, -1435 );
+   e_obj_exists    EXCEPTION;
+   PRAGMA EXCEPTION_INIT( e_obj_exists, -955 );
+   e_role_exists   EXCEPTION;
+   PRAGMA EXCEPTION_INIT( e_role_exists, -1921 );
+   e_no_grantee    EXCEPTION;
+   PRAGMA EXCEPTION_INIT( e_no_grantee, -1919 );
+   e_no_obj        EXCEPTION;
+   PRAGMA EXCEPTION_INIT( e_no_obj, -942 );
+   e_tab_exists   EXCEPTION;
+   PRAGMA EXCEPTION_INIT( e_tab_exists, -955 );
+   e_no_tab       EXCEPTION;
+   PRAGMA EXCEPTION_INIT( e_no_tab, -942 );
+   e_no_seq       EXCEPTION;
+   PRAGMA EXCEPTION_INIT( e_no_seq, -2289 );
+   e_same_name    EXCEPTION;
+   PRAGMA EXCEPTION_INIT( e_same_name, -1471 );
+
+
    PROCEDURE create_user( p_user VARCHAR2 DEFAULT 'TDSYS', p_tablespace VARCHAR2 DEFAULT NULL )
    IS
       l_user           all_users.username%TYPE;
       l_def_tbs        database_properties.property_value%TYPE;
       l_ddl	       LONG;
-      e_user_exists    EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_user_exists, -1920 );
-      e_no_tbspace     EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_no_tbspace, -959 );
    BEGIN
       -- get the default tablespace
       SELECT property_value
@@ -63,8 +81,6 @@ IS
    PROCEDURE set_current_schema( p_schema VARCHAR2 DEFAULT 'TDSYS' )
    IS
       l_current_schema   dba_users.username%TYPE;
-      e_no_user          EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_no_user, -1435 );
    BEGIN
       BEGIN
          -- get the current schema before this
@@ -123,142 +139,54 @@ IS
    END create_scheduler_metadata;
 
    PROCEDURE grant_evolve_rep_privs(
-      p_schema   VARCHAR2 DEFAULT NULL,
-      p_user     VARCHAR2 DEFAULT NULL,
-      p_drop     BOOLEAN DEFAULT FALSE
+      p_grantee   VARCHAR2,
+      -- 'select' OR 'admin'
+      p_mode	  VARCHAR2 DEFAULT 'admin'
    )
    IS
-      l_sel_grant     VARCHAR2( 30 );
-      l_adm_grant     VARCHAR2( 30 );
-      e_obj_exists    EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_obj_exists, -955 );
-      e_role_exists   EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_role_exists, -1921 );
-      e_no_grantee    EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_no_grantee, -1919 );
-      e_no_obj        EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_no_obj, -942 );
-   BEGIN
-      CASE
-         WHEN p_schema IS NOT NULL AND p_user IS NOT NULL
-         THEN
-            raise_application_error( -20006, 'Parameters P_SCHEMA and P_USER are mutually exclusive' );
-         WHEN p_user IS NOT NULL AND p_drop
-         THEN
-            raise_application_error( -20007, 'Specifying P_USER with a value of TRUE for P_DROP is not compatible' );
-         WHEN p_schema IS NOT NULL
-         THEN
-            l_sel_grant := p_schema || '_sel';
-            l_adm_grant := p_schema || '_adm';
-         WHEN p_user IS NOT NULL
-         THEN
-            l_sel_grant := p_user;
-            l_adm_grant := p_user;
-         ELSE
-            NULL;
-      END CASE;
-
-      -- this will drop the roles before beginning
-      IF p_drop AND p_schema IS NOT NULL
-      THEN
-         BEGIN
-            EXECUTE IMMEDIATE 'DROP role ' || l_sel_grant;
-         EXCEPTION
-            WHEN e_no_grantee
-            THEN
-               NULL;
-         END;
-
-         BEGIN
-            EXECUTE IMMEDIATE 'DROP role ' || l_adm_grant;
-         EXCEPTION
-            WHEN e_no_grantee
-            THEN
-               NULL;
-         END;
-      END IF;
-
-      BEGIN
-         EXECUTE IMMEDIATE 'CREATE ROLE ' || l_sel_grant;
-      EXCEPTION
-         WHEN e_role_exists
-         THEN
-            NULL;
-      END;
-
-      BEGIN
-         EXECUTE IMMEDIATE 'CREATE ROLE ' || l_adm_grant;
-      EXCEPTION
-         WHEN e_role_exists
-         THEN
-            NULL;
-      END;
+      l_grant	VARCHAR2(20);
+   BEGIN      
+      -- if p_mode is 'select', then only grant select privilege
+      -- if it's 'admin', then grant all privileges
+      l_grant := CASE p_mode WHEN 'select' THEN 'SELECT' ELSE 'SELECT,UPDATE,INSERT,DELETE' END;
 
       BEGIN
          -- first, the TDSYS tables
-         EXECUTE IMMEDIATE 'GRANT SELECT ON TDSYS.REPOSITORIES TO ' || l_sel_grant;
+         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON TDSYS.REPOSITORIES TO ' || p_grantee;
 
-         EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON TDSYS.REPOSITORIES TO ' || l_adm_grant;
+         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON TDSYS.APPLICATIONS TO ' || p_grantee;
 
-         EXECUTE IMMEDIATE 'GRANT SELECT ON TDSYS.APPLICATIONS TO ' || l_sel_grant;
-
-         EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON TDSYS.APPLICATIONS TO ' || l_adm_grant;
-
-         EXECUTE IMMEDIATE 'GRANT SELECT ON TDSYS.USERS TO ' || l_sel_grant;
-
-         EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON TDSYS.USERS TO ' || l_adm_grant;
+         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON TDSYS.USERS TO ' || p_grantee;
 
          -- now the evolve repository tables
-         EXECUTE IMMEDIATE 'GRANT SELECT ON COUNT_TABLE TO ' || l_sel_grant;
+         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON COUNT_TABLE TO ' || p_grantee;
 
-         EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON COUNT_TABLE TO ' || l_adm_grant;
+         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON DIR_LIST TO ' || p_grantee;
 
-         EXECUTE IMMEDIATE 'GRANT SELECT ON DIR_LIST TO ' || l_sel_grant;
+         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON LOGGING_CONF TO ' || p_grantee;
 
-         EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON DIR_LIST TO ' || l_adm_grant;
+         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON LOG_TABLE TO ' || p_grantee;
 
-         EXECUTE IMMEDIATE 'GRANT SELECT ON LOGGING_CONF TO ' || l_sel_grant;
+         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON NOTIFICATION_CONF TO ' || p_grantee;
 
-         EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON LOGGING_CONF TO ' || l_adm_grant;
+         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON NOTIFICATION_EVENTS TO ' || p_grantee;
 
-         EXECUTE IMMEDIATE 'GRANT SELECT ON LOG_TABLE TO ' || l_sel_grant;
+         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON PARAMETER_CONF TO ' || p_grantee;
 
-         EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON LOG_TABLE TO ' || l_adm_grant;
+         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON REGISTRATION_CONF TO ' || p_grantee;
 
-         EXECUTE IMMEDIATE 'GRANT SELECT ON NOTIFICATION_CONF TO ' || l_sel_grant;
+         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON RUNMODE_CONF TO ' || p_grantee;
 
-         EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON NOTIFICATION_CONF TO ' || l_adm_grant;
-
-         EXECUTE IMMEDIATE 'GRANT SELECT ON NOTIFICATION_EVENTS TO ' || l_sel_grant;
-
-         EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON NOTIFICATION_EVENTS TO ' || l_adm_grant;
-
-         EXECUTE IMMEDIATE 'GRANT SELECT ON PARAMETER_CONF TO ' || l_sel_grant;
-
-         EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON PARAMETER_CONF TO ' || l_adm_grant;
-
-         EXECUTE IMMEDIATE 'GRANT SELECT ON REGISTRATION_CONF TO ' || l_sel_grant;
-
-         EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON REGISTRATION_CONF TO ' || l_adm_grant;
-
-         EXECUTE IMMEDIATE 'GRANT SELECT ON RUNMODE_CONF TO ' || l_sel_grant;
-
-         EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON RUNMODE_CONF TO ' || l_adm_grant;
-
-         EXECUTE IMMEDIATE 'GRANT SELECT ON ERROR_CONF TO ' || l_sel_grant;
-
-         EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON ERROR_CONF TO ' || l_adm_grant;
+         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON ERROR_CONF TO ' || p_grantee;
 	 
          -- sequences
-         EXECUTE IMMEDIATE 'grant select on CONCURRENT_ID_SEQ to ' || l_sel_grant;
-	 
-         EXECUTE IMMEDIATE 'grant select on CONCURRENT_ID_SEQ to ' || l_adm_grant;
+         EXECUTE IMMEDIATE 'grant select on CONCURRENT_ID_SEQ to ' || p_grantee;
 
       EXCEPTION
          WHEN e_no_grantee
          THEN
             raise_application_error( -20005,
-                                     'The grantees ' || l_sel_grant || ' and ' || l_adm_grant || ' do not exist.'
+                                     'Grantees ' || p_grantee || ' does not exist.'
                                    );
          WHEN e_no_obj
          THEN
@@ -268,15 +196,8 @@ IS
 
    PROCEDURE grant_evolve_app_privs( p_user VARCHAR2, p_schema VARCHAR2 DEFAULT 'TDSYS' )
    IS
-      e_obj_exists    EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_obj_exists, -955 );
-      e_no_grantee    EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_no_grantee, -1919 );
-      e_no_obj        EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_no_obj, -942 );
    BEGIN
       BEGIN
-         -- first grant the TDSYS stuff
          EXECUTE IMMEDIATE 'grant execute on TDSYS.TD_ADM to ' || p_user;
 
          -- types
@@ -284,22 +205,14 @@ IS
 
          EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.EVOLVE_OT to ' || p_user;
 
-         EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.NOTIFICATION_OT to ' || p_user;
-
          EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.SPLIT_OT to ' || p_user;
 
-         -- packages
          EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.STRAGG to ' || p_user;
 
-         EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.TD_CORE to ' || p_user;
-
+         -- packages
          EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.TD_INST to ' || p_user;
-
-         EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.EVOLVE_LOG to ' || p_user;
-
-         EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.TD_UTILS to ' || p_user;
-
-         EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.EVOLVE_APP to ' || p_user;
+	 
+         EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.EVOLVE to ' || p_user;
 
          EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.EVOLVE_ADM to ' || p_user;
 
@@ -314,10 +227,6 @@ IS
    IS
       l_sel_grant    VARCHAR2( 30 );
       l_adm_grant    VARCHAR2( 30 );
-      e_no_obj       EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_no_obj, -942 );
-      e_no_grantee   EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_no_grantee, -1917 );
    BEGIN
       CASE
          WHEN p_schema IS NOT NULL AND p_user IS NOT NULL
@@ -402,28 +311,9 @@ IS
 
    PROCEDURE grant_transcend_app_privs( p_user VARCHAR2, p_schema VARCHAR2 DEFAULT 'TDSYS' )
    IS
-      e_obj_exists    EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_obj_exists, -955 );
-      e_no_grantee    EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_no_grantee, -1919 );
-      e_no_obj        EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_no_obj, -942 );
    BEGIN
       BEGIN
-         -- types
-         EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.FILE_OT to ' || p_user;
-
-         EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.FEED_OT to ' || p_user;
-
-         EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.EXTRACT_OT to ' || p_user;
-
-         EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.DIMENSION_OT to ' || p_user;
-
          --packages
-         EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.TD_DBUTILS to ' || p_user;
-
-         EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.TRANS_FACTORY to ' || p_user;
-
          EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.TRANS_ADM to ' || p_user;
 
          EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.TRANS_ETL to ' || p_user;
@@ -438,48 +328,15 @@ IS
 
    PROCEDURE build_sys_repo(
       p_schema       VARCHAR2 DEFAULT 'TDSYS',
-      p_tablespace   VARCHAR2 DEFAULT 'TDSYS',
-      p_drop         BOOLEAN DEFAULT FALSE
+      p_tablespace   VARCHAR2 DEFAULT 'TDSYS'
    )
    IS
-      e_tab_exists   EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_tab_exists, -955 );
-      e_no_tab       EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_no_tab, -942 );
    BEGIN
       -- create the user if it doesn't already exist
       -- if it does, then simply change the default tablespace for that user
       create_user( p_user => p_schema, p_tablespace => p_tablespace );
       -- alter session to CURRENT_SCHEMA
       set_current_schema( p_schema => p_schema );
-
-      -- this will drop all the tables before beginning
-      IF p_drop
-      THEN
-         BEGIN
-            EXECUTE IMMEDIATE q'|DROP TABLE users|';
-         EXCEPTION
-            WHEN e_no_tab
-            THEN
-               NULL;
-         END;
-
-         BEGIN
-            EXECUTE IMMEDIATE q'|DROP TABLE applications|';
-         EXCEPTION
-            WHEN e_no_tab
-            THEN
-               NULL;
-         END;
-
-         BEGIN
-            EXECUTE IMMEDIATE q'|DROP TABLE repositories|';
-         EXCEPTION
-            WHEN e_no_tab
-            THEN
-               NULL;
-         END;
-      END IF;
 
       -- create all the tables
       BEGIN
@@ -500,6 +357,14 @@ IS
 	   USING INDEX
 	 )|';
 
+      EXCEPTION
+         WHEN e_tab_exists
+         THEN
+            NULL;
+      END;
+
+
+      BEGIN
          EXECUTE IMMEDIATE q'|CREATE TABLE applications
 	 ( 
 	   application_name    VARCHAR2(30) NOT NULL,
@@ -526,6 +391,14 @@ IS
 	   ( repository_name )
 	 )|';
 
+      EXCEPTION
+         WHEN e_tab_exists
+         THEN
+            NULL;
+      END;
+
+
+      BEGIN
          EXECUTE IMMEDIATE q'|CREATE TABLE users
 	 ( 
 	   user_name           VARCHAR2(30) NOT NULL,
@@ -560,10 +433,11 @@ IS
 	   REFERENCES applications 
 	   ( application_name )
 	 )|';
+
       EXCEPTION
          WHEN e_tab_exists
          THEN
-            RAISE e_repo_obj_exists;
+            NULL;
       END;
 
       -- if the default tablespace was changed, then put it back
@@ -580,18 +454,142 @@ IS
          RAISE;
    END build_sys_repo;
 
+   PROCEDURE drop_evolve_repo(
+      p_schema       VARCHAR2 DEFAULT 'TDSYS'
+   )
+   IS
+      l_sel_role	VARCHAR2(30) := p_schema || '_sel';
+      l_adm_role 	VARCHAR2(30) := p_schema || '_adm';
+   BEGIN
+      -- alter session to CURRENT_SCHEMA
+      set_current_schema( p_schema => p_schema );
+
+      -- drop repository tables
+      BEGIN
+         EXECUTE IMMEDIATE q'|DROP TABLE dir_list|';
+      EXCEPTION
+         WHEN e_no_tab
+         THEN
+         NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE q'|DROP TABLE runmode_conf|';
+      EXCEPTION
+         WHEN e_no_tab
+         THEN
+         NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE q'|DROP TABLE parameter_conf|';
+      EXCEPTION
+         WHEN e_no_tab
+         THEN
+         NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE q'|DROP TABLE count_table|';
+      EXCEPTION
+         WHEN e_no_tab
+         THEN
+         NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE q'|DROP TABLE error_conf|';
+      EXCEPTION
+         WHEN e_no_tab
+         THEN
+         NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE q'|DROP TABLE log_table|';
+      EXCEPTION
+         WHEN e_no_tab
+         THEN
+         NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE q'|DROP TABLE logging_conf|';
+      EXCEPTION
+         WHEN e_no_tab
+         THEN
+         NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE q'|DROP TABLE notification_conf|';
+      EXCEPTION
+         WHEN e_no_tab
+         THEN
+         NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE q'|DROP TABLE notification_events|';
+      EXCEPTION
+         WHEN e_no_tab
+         THEN
+         NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE q'|DROP TABLE registration_conf|';
+      EXCEPTION
+         WHEN e_no_tab
+         THEN
+         NULL;
+      END;
+      
+      -- create a sequence for concurrent ids
+      BEGIN
+         EXECUTE IMMEDIATE q'|DROP SEQUENCE concurrent_id_seq|';
+      EXCEPTION
+	 WHEN e_no_seq
+	 THEN
+	 NULL;
+      END;
+      
+      -- drop repository roles
+      BEGIN
+         EXECUTE IMMEDIATE 'DROP role ' || l_sel_role;
+      EXCEPTION
+         WHEN e_no_grantee
+         THEN
+         NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE 'DROP role ' || l_adm_role;
+      EXCEPTION
+         WHEN e_no_grantee
+         THEN
+         NULL;
+      END;
+
+
+      -- set current_schema back to where it started
+      reset_current_schema;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         -- set current_schema back to where it started
+         reset_current_schema;
+         RAISE;
+   END drop_evolve_repo;
+
    PROCEDURE build_evolve_repo(
       p_schema       VARCHAR2 DEFAULT 'TDSYS',
       p_tablespace   VARCHAR2 DEFAULT 'TDSYS',
       p_drop         BOOLEAN DEFAULT FALSE
    )
    IS
-      e_tab_exists   EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_tab_exists, -955 );
-      e_no_tab       EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_no_tab, -942 );
-      e_no_seq       EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_no_seq, -2289 );
+      l_sel_role	VARCHAR2(30) := upper(p_schema)||'_SEL';
+      l_adm_role	VARCHAR2(30) := upper(p_schema)||'_ADM';
    BEGIN
       -- create the user if it doesn't already exist
       -- if it does, then simply change the default tablespace for that user
@@ -600,90 +598,33 @@ IS
       set_current_schema( p_schema => p_schema );
 
       -- this will drop all the tables before beginning
+      -- also drops the repository roles
       IF p_drop
       THEN
-         BEGIN
-            EXECUTE IMMEDIATE q'|DROP TABLE dir_list|';
-         EXCEPTION
-            WHEN e_no_tab
-            THEN
-               NULL;
-         END;
-
-         BEGIN
-            EXECUTE IMMEDIATE q'|DROP TABLE runmode_conf|';
-         EXCEPTION
-            WHEN e_no_tab
-            THEN
-               NULL;
-         END;
-
-         BEGIN
-            EXECUTE IMMEDIATE q'|DROP TABLE parameter_conf|';
-         EXCEPTION
-            WHEN e_no_tab
-            THEN
-               NULL;
-         END;
-
-         BEGIN
-            EXECUTE IMMEDIATE q'|DROP TABLE count_table|';
-         EXCEPTION
-            WHEN e_no_tab
-            THEN
-               NULL;
-         END;
-
-         BEGIN
-            EXECUTE IMMEDIATE q'|DROP TABLE error_conf|';
-         EXCEPTION
-            WHEN e_no_tab
-            THEN
-               NULL;
-         END;
-
-         BEGIN
-            EXECUTE IMMEDIATE q'|DROP TABLE log_table|';
-         EXCEPTION
-            WHEN e_no_tab
-            THEN
-               NULL;
-         END;
-
-         BEGIN
-            EXECUTE IMMEDIATE q'|DROP TABLE logging_conf|';
-         EXCEPTION
-            WHEN e_no_tab
-            THEN
-               NULL;
-         END;
-
-         BEGIN
-            EXECUTE IMMEDIATE q'|DROP TABLE notification_conf|';
-         EXCEPTION
-            WHEN e_no_tab
-            THEN
-               NULL;
-         END;
-
-         BEGIN
-            EXECUTE IMMEDIATE q'|DROP TABLE notification_events|';
-         EXCEPTION
-            WHEN e_no_tab
-            THEN
-               NULL;
-         END;
-
-         BEGIN
-            EXECUTE IMMEDIATE q'|DROP TABLE registration_conf|';
-         EXCEPTION
-            WHEN e_no_tab
-            THEN
-               NULL;
-         END;
+	drop_evolve_repo( p_schema => p_schema );
       END IF;
 
+      -- create the repository roles      
       BEGIN
+         EXECUTE IMMEDIATE 'CREATE ROLE ' || l_sel_role;
+      EXCEPTION
+         WHEN e_role_exists
+         THEN
+            NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE 'CREATE ROLE ' || l_adm_role;
+      EXCEPTION
+         WHEN e_role_exists
+         THEN
+            NULL;
+      END;
+
+      BEGIN
+	 
+	 EXECUTE IMMEDIATE q'|CREATE SEQUENCE concurrent_id_seq|';
+
          -- DIR_LIST table
          EXECUTE IMMEDIATE q'|CREATE global TEMPORARY TABLE dir_list
 	 ( 
@@ -923,11 +864,16 @@ IS
          EXECUTE IMMEDIATE q'|ALTER TABLE parameter_conf ADD CONSTRAINT parameter_conf_ck2 CHECK (value=lower(value))|';
 
          EXECUTE IMMEDIATE q'|ALTER TABLE parameter_conf ADD CONSTRAINT parameter_conf_ck3 CHECK (module=lower(module))|';
+	 
+	 -- grant select privileges to the select role
+	 grant_evolve_rep_privs( p_grantee=> l_sel_role, p_mode => 'select');
 
-         -- grant the privileges to the repository tables to the roles
-         grant_evolve_rep_privs( p_schema => p_schema, p_drop => p_drop );
-
-         -- write application tracking record
+	 -- grant all privileges to the admin role
+	 grant_evolve_rep_privs( p_grantee=> l_adm_role, p_mode => 'admin');
+	 
+	 -- write the audit record for creating or modifying the repository
+	 -- doe this as an EXECUTE IMMEDIATE because the package won't compile otherwise
+	 -- that's because the package itself creates the table
          EXECUTE IMMEDIATE q'|UPDATE tdsys.repositories
 	 SET modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
 	 modified_dt = SYSDATE
@@ -968,14 +914,8 @@ IS
       p_drop         BOOLEAN DEFAULT FALSE
    )
    IS
-      e_tab_exists        EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_tab_exists, -955 );
       e_stat_tab_exists   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_stat_tab_exists, -20002 );
-      e_no_tab            EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_no_tab, -942 );
-      e_no_seq            EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_no_seq, -2289 );
    BEGIN
       -- alter session to CURRENT_SCHEMA
       set_current_schema( p_schema => p_schema );
@@ -1424,10 +1364,6 @@ IS
 
    PROCEDURE build_evolve_rep_syns( p_user VARCHAR2, p_schema VARCHAR2 )
    IS
-      e_tab_exists   EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_tab_exists, -955 );
-      e_same_name    EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_same_name, -1471 );
    BEGIN
       -- create TDSYS synonyms
       BEGIN
@@ -1570,10 +1506,6 @@ IS
 
    PROCEDURE build_evolve_app_syns( p_user VARCHAR2, p_schema VARCHAR2 )
    IS
-      e_tab_exists   EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_tab_exists, -955 );
-      e_same_name    EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_same_name, -1471 );
    BEGIN
       -- create the synonyms
       -- first, the TDSYS synonym
@@ -1683,10 +1615,6 @@ IS
 
    PROCEDURE build_transcend_rep_syns( p_user VARCHAR2, p_schema VARCHAR2 )
    IS
-      e_tab_exists   EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_tab_exists, -955 );
-      e_same_name    EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_same_name, -1471 );
    BEGIN
       -- create the synonyms
       BEGIN
@@ -1863,10 +1791,6 @@ IS
 
    PROCEDURE build_transcend_app_syns( p_user VARCHAR2, p_schema VARCHAR2 )
    IS
-      e_tab_exists   EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_tab_exists, -955 );
-      e_same_name    EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_same_name, -1471 );
    BEGIN
       -- create the synonyms
       BEGIN
@@ -1914,14 +1838,8 @@ IS
    IS
       l_sys_role      VARCHAR2( 30 ) := p_schema || '_sys';
       l_java_role     VARCHAR2( 30 ) := p_schema || '_java';
-      e_obj_exists    EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_obj_exists, -955 );
-      e_role_exists   EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_role_exists, -1921 );
       e_no_role       EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_role, -1919 );
-      e_no_obj        EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_no_obj, -942 );
       e_ins_privs        EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_ins_privs, -1031 );
    BEGIN
@@ -2048,14 +1966,8 @@ IS
    IS
       l_sys_role      VARCHAR2( 30 ) := p_schema || '_sys';
       l_java_role     VARCHAR2( 30 ) := p_schema || '_java';
-      e_obj_exists    EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_obj_exists, -955 );
-      e_role_exists   EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_role_exists, -1921 );
       e_no_role       EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_role, -1919 );
-      e_no_obj        EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_no_obj, -942 );
    BEGIN
       BEGIN
          -- for each system privilege, grant it to the application owner and the _SYS role
@@ -2095,12 +2007,6 @@ IS
       p_drop         BOOLEAN DEFAULT FALSE
    )
    IS
-      e_tab_exists   EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_tab_exists, -955 );
-      e_no_tab       EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_no_tab, -942 );
-      e_no_seq       EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_no_seq, -2289 );
    BEGIN
       -- create the user if it doesn't already exist
       create_user( p_user => p_schema );
@@ -2120,22 +2026,6 @@ IS
       grant_evolve_sys_privs( p_schema => p_schema );
       -- create the dbms_scheduler program
       create_scheduler_metadata;
-
-      -- create a sequence for concurrent ids
-      -- this is created in the application schema because it is not associated with any tables
-      -- if there were multiple repositories being used, the value generated by the sequence would need to be unique across them
-      IF p_drop
-      THEN
-	 BEGIN
-            EXECUTE IMMEDIATE q'|DROP SEQUENCE concurrent_id_seq|';
-	 EXCEPTION
-	    WHEN e_no_seq
-	    THEN
-	      NULL;
-	 END;
-      END IF;
-
-      EXECUTE IMMEDIATE q'|CREATE SEQUENCE concurrent_id_seq|';
 
       -- write application tracking record
       EXECUTE IMMEDIATE q'|UPDATE tdsys.applications
@@ -2168,10 +2058,6 @@ IS
       p_drop         BOOLEAN DEFAULT FALSE
    )
    IS
-      e_tab_exists   EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_tab_exists, -955 );
-      e_no_tab       EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_no_tab, -942 );
    BEGIN
       -- set CURRENT_SCHEMA to the owner of the repository
       set_current_schema( p_schema => p_repository );
@@ -2189,13 +2075,74 @@ IS
       drop_transcend_types;
    END build_transcend_app;
 
-   PROCEDURE drop_evolve_types
+   PROCEDURE drop_evolve_app
    IS
-      e_obj_exists   EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_obj_exists, -4043 );
    BEGIN
-      -- there are Transcend types that inherit from Evolve types
-      -- so we need to drop any Transcend types first
+      
+      -- this type is created first as it's needed for the TD_CORE
+      BEGIN
+         EXECUTE IMMEDIATE 'DROP TYPE split_ot';
+      EXCEPTION
+         WHEN e_obj_exists
+         THEN
+         NULL;
+      END;
+
+
+      -- td_core package
+      BEGIN
+         EXECUTE IMMEDIATE 'DROP package td_core';
+      EXCEPTION
+         WHEN e_obj_exists
+         THEN
+         NULL;
+      END;
+
+      -- STRAGG function
+      BEGIN
+         EXECUTE IMMEDIATE 'DROP package string_agg_ot';
+      EXCEPTION
+         WHEN e_obj_exists
+         THEN
+         NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE 'DROP function stragg';
+      EXCEPTION
+         WHEN e_obj_exists
+         THEN
+         NULL;
+      END;
+      
+      -- java stored procedures
+      BEGIN
+         EXECUTE IMMEDIATE 'DROP java source TdCore';
+      EXCEPTION
+         WHEN e_obj_exists
+         THEN
+         NULL;
+      END;
+      
+      -- td_inst package
+      BEGIN
+         EXECUTE IMMEDIATE 'DROP package td_inst';
+      EXCEPTION
+         WHEN e_obj_exists
+         THEN
+         NULL;
+      END;
+      
+      -- evolve package
+      BEGIN
+         EXECUTE IMMEDIATE 'DROP package evolve';
+      EXCEPTION
+         WHEN e_obj_exists
+         THEN
+         NULL;
+      END;
+      
+      -- types need to be dropped in a specific order
       BEGIN
          EXECUTE IMMEDIATE 'DROP TYPE notification_ot';
       EXCEPTION
@@ -2219,12 +2166,37 @@ IS
          THEN
             NULL;
       END;
-   END drop_evolve_types;
+
+      -- utilities package
+      BEGIN
+         EXECUTE IMMEDIATE 'DROP package td_utils';
+      EXCEPTION
+         WHEN e_obj_exists
+         THEN
+            NULL;
+      END;
+      
+      -- evolve callable packages
+      BEGIN
+         EXECUTE IMMEDIATE 'DROP package evolve';
+      EXCEPTION
+         WHEN e_obj_exists
+         THEN
+            NULL;
+      END;
+      
+      BEGIN
+         EXECUTE IMMEDIATE 'DROP package evolve_adm';
+      EXCEPTION
+         WHEN e_obj_exists
+         THEN
+            NULL;
+      END;
+
+   END drop_evolve_app;
 
    PROCEDURE drop_transcend_types
    IS
-      e_obj_exists   EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_obj_exists, -4043 );
    BEGIN
       BEGIN
          EXECUTE IMMEDIATE 'DROP TYPE dimension_ot';
@@ -2286,7 +2258,8 @@ IS
 
       EXECUTE IMMEDIATE 'grant ' || p_repository || '_adm to ' || p_user;
 
-      -- write application tracking record
+      -- write audit record for creating or modifying a user record
+      -- use EXECUTE IMMEDIATE because the table does not exist when this package is created
       EXECUTE IMMEDIATE q'|UPDATE tdsys.users
       SET application_name = upper(:v_app_schema),
       repository_name = upper(:v_rep_schema),

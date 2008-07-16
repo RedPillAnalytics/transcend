@@ -28,7 +28,7 @@ AS
    );
 
    FUNCTION get_concurrent_id
-      RETURN NUMBER;
+      RETURN VARCHAR2;
 
    PROCEDURE submit_sql(
       p_sql             VARCHAR2,

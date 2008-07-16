@@ -393,15 +393,20 @@ AS
    -- uses a sequence to generate a unique concurrent id for concurrent processes
    -- this id is set with DBMS_SESSION.SET_IDENTIFIER
    FUNCTION get_concurrent_id
-      RETURN NUMBER
+      RETURN VARCHAR2
    AS
-      l_concurrent_id   NUMBER;
+      l_seq_value     NUMBER;
+      l_concurrent_id VARCHAR2(20);
    BEGIN
       -- select the sequence nextval
       SELECT concurrent_id_seq.NEXTVAL
-        INTO l_concurrent_id
+        INTO l_seq_value
         FROM DUAL;
-
+      
+      -- print the concurrent id to the log
+      log_msg( 'The value from the sequence: ' || l_concurrent_id, 5 );
+      
+      l_concurrent_id := sys_context('USERENV','SESSION_ID')||'-'||l_seq_value;
       -- print the concurrent id to the log
       log_msg( 'The generated concurrent_id is: ' || l_concurrent_id, 5 );
       RETURN l_concurrent_id;
@@ -417,7 +422,6 @@ AS
       l_session_id        NUMBER                               := SYS_CONTEXT( 'USERENV', 'SESSIONID' );
       l_job_action        all_scheduler_jobs.job_action%TYPE;
       l_client_id         all_scheduler_jobs.client_id%TYPE    := l_module || '-' || l_action || '-' || l_session_id;
-      l_app_schema        users.application_name%TYPE;
       e_invalid_jobname   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_invalid_jobname, -23481 );
    BEGIN
