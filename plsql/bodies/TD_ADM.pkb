@@ -1507,8 +1507,6 @@ IS
    PROCEDURE build_evolve_app_syns( p_user VARCHAR2, p_schema VARCHAR2 )
    IS
    BEGIN
-      -- create the synonyms
-      -- first, the TDSYS synonym
       BEGIN
          EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.TD_ADM for ' || p_schema || '.TD_ADM';
       EXCEPTION
@@ -1517,7 +1515,6 @@ IS
             NULL;
       END;
 
-      -- types
       BEGIN
          EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.APP_OT for ' || p_schema || '.APP_OT';
       EXCEPTION
@@ -1528,18 +1525,6 @@ IS
 
       BEGIN
          EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.EVOLVE_OT for ' || p_schema || '.EVOLVE_OT';
-      EXCEPTION
-         WHEN e_same_name
-         THEN
-            NULL;
-      END;
-
-      BEGIN
-         EXECUTE IMMEDIATE    'create or replace synonym '
-                           || p_user
-                           || '.NOTIFICATION_OT for '
-                           || p_schema
-                           || '.NOTIFICATION_OT';
       EXCEPTION
          WHEN e_same_name
          THEN
@@ -1564,14 +1549,6 @@ IS
       END;
 
       BEGIN
-         EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.TD_CORE for ' || p_schema || '.TD_CORE';
-      EXCEPTION
-         WHEN e_same_name
-         THEN
-            NULL;
-      END;
-
-      BEGIN
          EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.TD_INST for ' || p_schema || '.TD_INST';
       EXCEPTION
          WHEN e_same_name
@@ -1580,23 +1557,7 @@ IS
       END;
 
       BEGIN
-         EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.EVOLVE_LOG for ' || p_schema || '.EVOLVE_LOG';
-      EXCEPTION
-         WHEN e_same_name
-         THEN
-            NULL;
-      END;
-
-      BEGIN
-         EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.TD_UTILS for ' || p_schema || '.TD_UTILS';
-      EXCEPTION
-         WHEN e_same_name
-         THEN
-            NULL;
-      END;
-
-      BEGIN
-         EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.EVOLVE_APP for ' || p_schema || '.EVOLVE_APP';
+         EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.EVOLVE for ' || p_schema || '.EVOLVE';
       EXCEPTION
          WHEN e_same_name
          THEN
@@ -1792,23 +1753,6 @@ IS
    PROCEDURE build_transcend_app_syns( p_user VARCHAR2, p_schema VARCHAR2 )
    IS
    BEGIN
-      -- create the synonyms
-      BEGIN
-         EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.TD_DBUTILS for ' || p_schema || '.TD_DBUTILS';
-      EXCEPTION
-         WHEN e_same_name
-         THEN
-            NULL;
-      END;
-      
-      BEGIN
-         EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.TRANS_FACTORY for ' || p_schema || '.TRANS_FACTORY';
-      EXCEPTION
-         WHEN e_same_name
-         THEN
-            NULL;
-      END;
-
       BEGIN
          EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.TRANS_ETL for ' || p_schema || '.TRANS_ETL';
       EXCEPTION
