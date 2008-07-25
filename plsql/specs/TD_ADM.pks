@@ -3,9 +3,8 @@ IS
    e_repo_obj_exists EXCEPTION;
 
    PROCEDURE build_sys_repo(
-      p_schema      VARCHAR2 DEFAULT 'TDSYS',
-      p_tablespace  VARCHAR2 DEFAULT 'TDSYS',
-      p_drop	    BOOLEAN  DEFAULT FALSE
+      p_schema       VARCHAR2 DEFAULT 'TDSYS',
+      p_tablespace   VARCHAR2 DEFAULT 'TDSYS'
    );
       
    PROCEDURE build_evolve_repo(
@@ -42,7 +41,11 @@ IS
       p_schema   VARCHAR2 DEFAULT 'TDSYS'    
    );
 
-   PROCEDURE drop_evolve_types;
+   PROCEDURE drop_evolve_repo(
+      p_schema   VARCHAR2 DEFAULT 'TDSYS'
+   );
+
+   PROCEDURE drop_evolve_app;
 
    PROCEDURE drop_transcend_types;
 

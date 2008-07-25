@@ -15,7 +15,7 @@ IS
    e_no_grantee    EXCEPTION;
    PRAGMA EXCEPTION_INIT( e_no_grantee, -1919 );
    e_no_obj        EXCEPTION;
-   PRAGMA EXCEPTION_INIT( e_no_obj, -942 );
+   PRAGMA EXCEPTION_INIT( e_no_obj, -4043 );
    e_tab_exists   EXCEPTION;
    PRAGMA EXCEPTION_INIT( e_tab_exists, -955 );
    e_no_tab       EXCEPTION;
@@ -144,7 +144,7 @@ IS
       p_mode	  VARCHAR2 DEFAULT 'admin'
    )
    IS
-      l_grant	VARCHAR2(20);
+      l_grant	VARCHAR2(100);
    BEGIN      
       -- if p_mode is 'select', then only grant select privilege
       -- if it's 'admin', then grant all privileges
@@ -188,7 +188,7 @@ IS
             raise_application_error( -20005,
                                      'Grantees ' || p_grantee || ' does not exist.'
                                    );
-         WHEN e_no_obj
+         WHEN e_no_tab
          THEN
             raise_application_error( -20004, 'Some repository objects do not exist.' );
       END;
@@ -1847,7 +1847,7 @@ IS
 
          EXECUTE IMMEDIATE 'GRANT EXECUTE ON sys.utl_mail TO ' || p_schema;
       EXCEPTION
-         WHEN e_no_obj
+         WHEN e_no_obj OR e_no_tab
          THEN
 	   dbms_output.put_line( 'The installing user cannot see package UTL_MAIL. EXECUTE on UTL_MAIL needs to be granted to user '||p_schema||' and role '||l_sys_role||'.' );
 	 WHEN e_ins_privs
@@ -1862,7 +1862,7 @@ IS
 
          EXECUTE IMMEDIATE 'GRANT EXECUTE ON sys.dbms_lock TO ' || p_schema;
       EXCEPTION
-         WHEN e_no_obj
+         WHEN e_no_obj OR e_no_tab
          THEN
 	   dbms_output.put_line( 'The installing user cannot see package DBMS_LOCK. EXECUTE on DBMS_LOCK needs to be granted to user '||p_schema||' and role '||l_sys_role||'.' );
 	 WHEN e_ins_privs
@@ -1877,7 +1877,7 @@ IS
 
          EXECUTE IMMEDIATE 'GRANT EXECUTE ON sys.dbms_flashback TO ' || p_schema;
       EXCEPTION
-         WHEN e_no_obj
+         WHEN e_no_obj OR e_no_tab
          THEN
 	   dbms_output.put_line( 'The installing user cannot see package DBMS_FLASHBACK. EXECUTE on DBMS_FLASHBACK needs to be granted to user '||p_schema||' and role '||l_sys_role||'.' );
 	 WHEN e_ins_privs
@@ -1958,8 +1958,12 @@ IS
 
       -- set CURRENT_SCHEMA to the owner of the repository
       set_current_schema( p_schema => p_repository );
+
+      -- drop all the code objects if they exist
+      drop_evolve_app;
+      
       -- create grants to the application owner to all the tables in the repository
-      grant_evolve_rep_privs( p_user => p_schema );
+      grant_evolve_rep_privs( p_grantee => p_schema );
       -- set the CURRENT_SCHEMA back
       reset_current_schema;
       -- set the CURRENT_SCHEMA to the application owner
@@ -2027,7 +2031,7 @@ IS
       BEGIN
          EXECUTE IMMEDIATE 'DROP TYPE split_ot';
       EXCEPTION
-         WHEN e_obj_exists
+         when e_obj_exists or e_no_obj
          THEN
          NULL;
       END;
@@ -2037,7 +2041,7 @@ IS
       BEGIN
          EXECUTE IMMEDIATE 'DROP package td_core';
       EXCEPTION
-         WHEN e_obj_exists
+         when e_obj_exists or e_no_obj
          THEN
          NULL;
       END;
@@ -2046,7 +2050,7 @@ IS
       BEGIN
          EXECUTE IMMEDIATE 'DROP package string_agg_ot';
       EXCEPTION
-         WHEN e_obj_exists
+         when e_obj_exists or e_no_obj
          THEN
          NULL;
       END;
@@ -2054,7 +2058,7 @@ IS
       BEGIN
          EXECUTE IMMEDIATE 'DROP function stragg';
       EXCEPTION
-         WHEN e_obj_exists
+         when e_obj_exists or e_no_obj
          THEN
          NULL;
       END;
@@ -2063,7 +2067,7 @@ IS
       BEGIN
          EXECUTE IMMEDIATE 'DROP java source TdCore';
       EXCEPTION
-         WHEN e_obj_exists
+         when e_obj_exists or e_no_obj
          THEN
          NULL;
       END;
@@ -2072,7 +2076,7 @@ IS
       BEGIN
          EXECUTE IMMEDIATE 'DROP package td_inst';
       EXCEPTION
-         WHEN e_obj_exists
+         when e_obj_exists or e_no_obj
          THEN
          NULL;
       END;
@@ -2081,7 +2085,7 @@ IS
       BEGIN
          EXECUTE IMMEDIATE 'DROP package evolve';
       EXCEPTION
-         WHEN e_obj_exists
+         when e_obj_exists or e_no_obj
          THEN
          NULL;
       END;
@@ -2090,7 +2094,7 @@ IS
       BEGIN
          EXECUTE IMMEDIATE 'DROP TYPE notification_ot';
       EXCEPTION
-         WHEN e_obj_exists
+         when e_obj_exists or e_no_obj
          THEN
             NULL;
       END;
@@ -2098,7 +2102,7 @@ IS
       BEGIN
          EXECUTE IMMEDIATE 'DROP TYPE evolve_ot';
       EXCEPTION
-         WHEN e_obj_exists
+         when e_obj_exists or e_no_obj
          THEN
             NULL;
       END;
@@ -2106,7 +2110,7 @@ IS
       BEGIN
          EXECUTE IMMEDIATE 'DROP TYPE app_ot';
       EXCEPTION
-         WHEN e_obj_exists
+         when e_obj_exists or e_no_obj
          THEN
             NULL;
       END;
@@ -2115,7 +2119,7 @@ IS
       BEGIN
          EXECUTE IMMEDIATE 'DROP package td_utils';
       EXCEPTION
-         WHEN e_obj_exists
+         when e_obj_exists or e_no_obj
          THEN
             NULL;
       END;
@@ -2124,7 +2128,7 @@ IS
       BEGIN
          EXECUTE IMMEDIATE 'DROP package evolve';
       EXCEPTION
-         WHEN e_obj_exists
+         when e_obj_exists or e_no_obj
          THEN
             NULL;
       END;
@@ -2132,7 +2136,7 @@ IS
       BEGIN
          EXECUTE IMMEDIATE 'DROP package evolve_adm';
       EXCEPTION
-         WHEN e_obj_exists
+         when e_obj_exists or e_no_obj
          THEN
             NULL;
       END;

@@ -59,7 +59,7 @@ DECLARE
    l_drop BOOLEAN := CASE WHEN REGEXP_LIKE('yes','&drop_obj','i') THEN TRUE ELSE FALSE END;
 BEGIN
    -- build the system repository
-   tdsys.td_adm.build_sys_repo( p_schema=> 'tdsys', p_tablespace => '&tablespace', p_drop => l_drop );
+   tdsys.td_adm.build_sys_repo( p_schema=> 'tdsys', p_tablespace => '&tablespace' );
    -- create the Evolve repository
    tdsys.td_adm.build_evolve_repo( p_schema => '&rep_schema', p_tablespace => '&tablespace', p_drop => l_drop);
    -- create the Evolve application
@@ -70,12 +70,6 @@ EXCEPTION
    raise_application_error(-20003,'Repository tables exist. Specify ''Y'' when prompted to issue DROP TABLE statements');
 END;
 /
-
-
--- now install the Evolve code
--- first drop the types
-EXEC tdsys.td_adm.drop_evolve_types;
-
 
 -- this type is created first as it's needed for the TD_CORE
 @../evolve/plsql/specs/SPLIT_OT.tps
