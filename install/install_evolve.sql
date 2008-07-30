@@ -78,11 +78,9 @@ END;
 -- these don't perform any real SQL at all
 -- simply a series of reusable functions that don't have any external dependencies
 @../evolve/plsql/specs/TD_CORE.pks
-@../evolve/plsql/wrapped_bodies/TD_CORE.plb
 
 -- non-packaged functions because STRAGG cannot be packaged
 @../evolve/plsql/specs/STRING_AGG_OT.tps
-@../evolve/plsql/wrapped_bodies/STRING_AGG_OT.plb
 @../evolve/plsql/wrapped_bodies/STRAGG.plb
 
 -- create java stored procedures
@@ -92,25 +90,29 @@ END;
 -- create Evolve pieces that don't use any repository objects
 -- this in essence becomes "Evolve-lite" where no configuration or audit tables are required
 @../evolve/plsql/specs/TD_INST.pks
-@../evolve/plsql/wrapped_bodies/TD_INST.plb
 @../evolve/plsql/specs/APP_OT.tps
-@../evolve/plsql/wrapped_bodies/APP_OT.plb
 
 -- layer in the utilities that require repository objects
 -- this starts to move past "Evolve-lite"
 @../evolve/plsql/specs/EVOLVE.pks
-@../evolve/plsql/wrapped_bodies/EVOLVE.plb
 @../evolve/plsql/specs/NOTIFICATION_OT.tps
-@../evolve/plsql/wrapped_bodies/NOTIFICATION_OT.plb
 @../evolve/plsql/specs/EVOLVE_OT.tps
-@../evolve/plsql/wrapped_bodies/EVOLVE_OT.plb
 
 -- create utilities package that uses the main Evolve framework
 @../evolve/plsql/specs/TD_UTILS.pks
-@../evolve/plsql/wrapped_bodies/TD_UTILS.plb
 
 -- create callable packages
 @../evolve/plsql/specs/EVOLVE_ADM.pks
+
+-- now compile all the package bodies
+@../evolve/plsql/wrapped_bodies/STRING_AGG_OT.plb
+@../evolve/plsql/wrapped_bodies/TD_CORE.plb
+@../evolve/plsql/wrapped_bodies/TD_INST.plb
+@../evolve/plsql/wrapped_bodies/APP_OT.plb
+@../evolve/plsql/wrapped_bodies/EVOLVE.plb
+@../evolve/plsql/wrapped_bodies/NOTIFICATION_OT.plb
+@../evolve/plsql/wrapped_bodies/EVOLVE_OT.plb
+@../evolve/plsql/wrapped_bodies/TD_UTILS.plb
 @../evolve/plsql/wrapped_bodies/EVOLVE_ADM.plb
 
 -- set the default logging, registration and runmodes

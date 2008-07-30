@@ -607,13 +607,13 @@ AS
    END LOAD;
    OVERRIDING MEMBER PROCEDURE start_map
    AS
-      o_ev   evolve_ot := evolve_ot( p_module => 'etl_mapping', p_action => SELF.mapping_name );
+      o_ev   evolve_ot := evolve_ot( p_module => 'mapping '||SELF.mapping_name, p_action => 'execute dimension mapping' );
    BEGIN
       evolve.log_msg( 'Starting ETL mapping' );
    END start_map;
    OVERRIDING MEMBER PROCEDURE end_map
    AS
-      o_ev   evolve_ot := evolve_ot( p_module => 'etl_mapping', p_action => SELF.mapping_name );
+      o_ev   evolve_ot := evolve_ot( p_module => 'mapping '||SELF.mapping_name, p_action => 'execute dimension mapping' );
    BEGIN
       -- now simply execute the dimension_ot.load methodj
       LOAD;

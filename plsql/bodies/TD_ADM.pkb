@@ -1226,7 +1226,7 @@ IS
          -- MAPPING_CONF table
          EXECUTE IMMEDIATE q'|CREATE TABLE mapping_conf
 	 ( 
-	   mapping_name		VARCHAR2(30),
+	   mapping_name		VARCHAR2(40),
 	   mapping_type		VARCHAR2(10),
 	   table_owner 		VARCHAR2(61),
 	   table_name 		VARCHAR2(30),

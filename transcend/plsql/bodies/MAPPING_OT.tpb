@@ -99,7 +99,7 @@ AS
    END verify;
    MEMBER PROCEDURE start_map
    AS
-      o_ev   evolve_ot := evolve_ot( p_module => 'etl_mapping', p_action => SELF.mapping_name );
+      o_ev   evolve_ot := evolve_ot( p_module => 'mapping '||SELF.mapping_name, p_action => 'execute mapping' );
    BEGIN
       evolve.log_msg( 'Starting ETL mapping' );
 
@@ -132,6 +132,7 @@ AS
    END start_map;
    MEMBER PROCEDURE end_map
    AS
+      o_ev   evolve_ot := evolve_ot( p_module => 'mapping '||SELF.mapping_name, p_action => 'execute mapping' );
    BEGIN
       -- exchange in the partition
       CASE SELF.replace_method
