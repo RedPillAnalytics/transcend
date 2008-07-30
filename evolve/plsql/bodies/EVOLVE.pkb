@@ -359,7 +359,7 @@ AS
       p_sql             VARCHAR2,
       p_msg             VARCHAR2 DEFAULT NULL,
       p_auto            VARCHAR2 DEFAULT 'no',
-      p_concurrent_id   NUMBER DEFAULT NULL
+      p_concurrent_id   VARCHAR2 DEFAULT NULL
    )
    AS
       l_results   NUMBER;
@@ -396,7 +396,7 @@ AS
       RETURN VARCHAR2
    AS
       l_seq_value     NUMBER;
-      l_concurrent_id VARCHAR2(20);
+      l_concurrent_id VARCHAR2(100);
    BEGIN
       -- select the sequence nextval
       SELECT concurrent_id_seq.NEXTVAL
@@ -404,16 +404,16 @@ AS
         FROM DUAL;
       
       -- print the concurrent id to the log
-      log_msg( 'The value from the sequence: ' || l_concurrent_id, 5 );
+      log_msg( 'The value from the sequence: ' || l_seq_value, 5 );
       
-      l_concurrent_id := sys_context('USERENV','SESSION_ID')||'-'||l_seq_value;
+      l_concurrent_id := to_char(sys_context('USERENV','SESSIONID')||'-'||l_seq_value);
       -- print the concurrent id to the log
       log_msg( 'The generated concurrent_id is: ' || l_concurrent_id, 5 );
       RETURN l_concurrent_id;
    END get_concurrent_id;
 
    -- this process will execute through DBMS_SCHEDULER
-   PROCEDURE submit_sql( p_sql VARCHAR2, p_concurrent_id NUMBER, p_job_class VARCHAR2 DEFAULT 'EVOLVE_DEFAULT_CLASS' )
+   PROCEDURE submit_sql( p_sql VARCHAR2, p_concurrent_id VARCHAR2, p_job_class VARCHAR2 DEFAULT 'EVOLVE_DEFAULT_CLASS' )
    AS
       PRAGMA AUTONOMOUS_TRANSACTION;
       l_job_name          all_scheduler_jobs.job_name%TYPE;
@@ -460,7 +460,7 @@ AS
 
    -- this process will execute through DBMS_SCHEDULER
    PROCEDURE coordinate_sql(
-      p_concurrent_id   NUMBER,
+      p_concurrent_id   VARCHAR2,
       p_raise_err       VARCHAR2 DEFAULT 'yes',
       p_sleep           NUMBER DEFAULT 5,
       p_timeout         NUMBER DEFAULT 0

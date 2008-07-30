@@ -450,7 +450,7 @@ AS
       l_part_type       VARCHAR2( 6 );
       l_targ_part       all_tables.partitioned%TYPE;
       l_part_position   all_tab_partitions.partition_position%TYPE;
-      l_concurrent_id   NUMBER;
+      l_concurrent_id   VARCHAR2( 100 );
       l_rows            BOOLEAN                                      := FALSE;
       e_dup_idx_name    EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_idx_name, -955 );
@@ -852,7 +852,7 @@ AS
       l_con_cnt         NUMBER                                       := 0;
       l_tab_name        VARCHAR2( 61 )                               := UPPER( p_owner || '.' || p_table );
       l_src_name        VARCHAR2( 61 )                              := UPPER( p_source_owner || '.' || p_source_table );
-      l_concurrent_id   NUMBER;
+      l_concurrent_id   VARCHAR2(100);
       l_rows            BOOLEAN                                      := FALSE;
       l_retry_ddl       BOOLEAN                                      := FALSE;
       e_dup_con_name    EXCEPTION;
@@ -1337,7 +1337,7 @@ AS
    IS
       l_con_cnt         NUMBER         := 0;
       l_tab_name        VARCHAR2( 61 ) := UPPER( p_owner || '.' || p_table );
-      l_concurrent_id   NUMBER;
+      l_concurrent_id   VARCHAR2( 100 );
       l_rows_num        NUMBER;
       l_rows            BOOLEAN        := FALSE;
       e_iot_shc         EXCEPTION;
@@ -1582,7 +1582,7 @@ AS
    PROCEDURE enable_constraints( p_concurrent VARCHAR2 DEFAULT 'no' )
    IS
       l_con_cnt         NUMBER    := 0;
-      l_concurrent_id   NUMBER;
+      l_concurrent_id   VARCHAR2( 100 );
       l_rows            BOOLEAN   := FALSE;
       o_ev              evolve_ot := evolve_ot( p_module => 'enable_constraints' );
    BEGIN
@@ -3081,7 +3081,7 @@ AS
       l_rows            BOOLEAN          := FALSE;                                            -- to catch empty cursors
       l_cnt             NUMBER           := 0;
       l_tab_name        VARCHAR2( 61 )   := UPPER( p_owner || '.' || p_table );
-      l_concurrent_id   NUMBER;
+      l_concurrent_id   VARCHAR2( 100 );
       o_ev              evolve_ot        := evolve_ot( p_module => 'usable_indexes', p_action => 'Rebuild indexes' );
    BEGIN
       td_utils.check_table( p_owner => p_owner, p_table => p_table );

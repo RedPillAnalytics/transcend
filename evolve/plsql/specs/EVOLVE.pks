@@ -24,7 +24,7 @@ AS
       p_sql             VARCHAR2,
       p_msg             VARCHAR2 DEFAULT NULL,
       p_auto            VARCHAR2 DEFAULT 'no',
-      p_concurrent_id   NUMBER DEFAULT NULL
+      p_concurrent_id   VARCHAR2 DEFAULT NULL
    );
 
    FUNCTION get_concurrent_id
@@ -32,12 +32,12 @@ AS
 
    PROCEDURE submit_sql(
       p_sql             VARCHAR2,
-      p_concurrent_id   NUMBER,
+      p_concurrent_id   VARCHAR2,
       p_job_class       VARCHAR2 DEFAULT 'EVOLVE_DEFAULT_CLASS'
    );
 
    PROCEDURE coordinate_sql(
-      p_concurrent_id   NUMBER,
+      p_concurrent_id   VARCHAR2,
       p_raise_err       VARCHAR2 DEFAULT 'yes',
       p_sleep           NUMBER DEFAULT 5,
       p_timeout         NUMBER DEFAULT 0
