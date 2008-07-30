@@ -393,9 +393,9 @@ IS
    END set_error_conf;
 
    PROCEDURE set_session_parameter(
-      p_module   VARCHAR2,
       p_name     VARCHAR2,
       p_value    VARCHAR2,
+      p_module   VARCHAR2 DEFAULT all_modules,
       p_mode     VARCHAR2 DEFAULT 'upsert'
    )
    IS
@@ -411,7 +411,7 @@ IS
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
-            IF REGEXP_LIKE( p_name, 'enable|disable', 'i' )
+            IF REGEXP_LIKE( p_value, 'enable|disable', 'i' )
             THEN
                NULL;
             ELSE
@@ -422,20 +422,11 @@ IS
       -- this is the default method... update if it exists or insert it
       IF LOWER( p_mode ) IN( 'upsert', 'update' )
       THEN
-         IF REGEXP_LIKE( p_name, 'disable|enable', 'i' )
-         THEN
-            UPDATE parameter_conf
-               SET NAME = LOWER( p_name ),
-                   modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
-                   modified_dt = SYSDATE
-             WHERE module = LOWER( p_module ) AND VALUE = LOWER( p_value );
-         ELSE
-            UPDATE parameter_conf
-               SET VALUE = LOWER( p_value ),
-                   modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
-                   modified_dt = SYSDATE
-             WHERE module = LOWER( p_module ) AND NAME = LOWER( p_name );
-         END IF;
+         UPDATE parameter_conf
+            SET VALUE = LOWER( p_value ),
+                modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
+                modified_dt = SYSDATE
+          WHERE module = LOWER( p_module ) AND NAME = LOWER( p_name );
       END IF;
 
       -- if the update was unsuccessful above, or an insert it specifically requested, then do an insert

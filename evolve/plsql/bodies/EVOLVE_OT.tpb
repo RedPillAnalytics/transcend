@@ -36,12 +36,12 @@ AS
                                                                       max_parameter_level
                       FROM ( SELECT default_runmode, module,
                                     CASE
-                                       WHEN module = 'default'
+                                       WHEN module = evolve_adm.all_modules
                                           THEN 1
                                        ELSE 2
                                     END parameter_level
                               FROM runmode_conf )
-                     WHERE ( module = td_inst.module OR module = 'default' ))
+                     WHERE ( module = td_inst.module OR module = evolve_adm.all_modules ))
              WHERE parameter_level = max_parameter_level;
          EXCEPTION
             WHEN NO_DATA_FOUND
@@ -61,12 +61,12 @@ AS
                                                                       max_parameter_level
                    FROM ( SELECT registration, module,
                                  CASE
-                                    WHEN module = 'default'
+                                    WHEN module = evolve_adm.all_modules
                                        THEN 1
                                     ELSE 2
                                  END parameter_level
                            FROM registration_conf )
-                  WHERE ( module = td_inst.module OR module = 'default' ))
+                  WHERE ( module = td_inst.module OR module = evolve_adm.all_modules ))
           WHERE parameter_level = max_parameter_level;
       EXCEPTION
          WHEN NO_DATA_FOUND
@@ -88,12 +88,12 @@ AS
                                                                       max_parameter_level
                    FROM ( SELECT logging_level, debug_level, module,
                                  CASE
-                                    WHEN module = 'default'
+                                    WHEN module = evolve_adm.all_modules
                                        THEN 1
                                     ELSE 2
                                  END parameter_level
                            FROM logging_conf )
-                  WHERE ( module = td_inst.module OR module = 'default' ))
+                  WHERE ( module = td_inst.module OR module = evolve_adm.all_modules ))
           WHERE parameter_level = max_parameter_level;
       EXCEPTION
          WHEN NO_DATA_FOUND
@@ -118,11 +118,16 @@ AS
       evolve.log_msg( 'Inital ACTION attribute set to "' || td_inst.action || '"', 4 );
 
       -- set session level parameters
+      -- also have to allow for the session level parameters that don't have a value, but instead are simply "enabled" or "disabled"
+      -- examples: parallel dml, resumable
+      -- do this by setting the value for that parameter as either "enabled" or "disabled"
       FOR c_params IN
          ( SELECT CASE
-                     WHEN REGEXP_LIKE( NAME, 'enable|disable', 'i' )
-                        THEN 'alter session ' || NAME || ' ' || VALUE
-                     ELSE 'alter session set ' || NAME || '=' || VALUE
+                     WHEN REGEXP_LIKE( name, 'enabled', 'i' )
+                        THEN 'alter session enable '||name
+                     WHEN REGEXP_LIKE( name, 'disabled', 'i' )
+                        THEN 'alter session disable '||name
+                     ELSE 'alter session set ' || name || '=' || value
                   END DDL
             FROM parameter_conf
            WHERE LOWER( module ) = td_inst.module )

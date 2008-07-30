@@ -1,20 +1,23 @@
 CREATE OR REPLACE PACKAGE evolve_adm AUTHID CURRENT_USER
 IS
+
+   all_modules	CONSTANT VARCHAR2(13) := '*all_modules*';
+
    PROCEDURE set_logging_level(
-      p_module          VARCHAR2 DEFAULT 'default',
+      p_module          VARCHAR2 DEFAULT all_modules,
       p_logging_level   NUMBER DEFAULT 1,
       p_debug_level     NUMBER DEFAULT 3,
       p_mode		VARCHAR2 DEFAULT 'upsert'
    );
 
    PROCEDURE set_runmode(
-      p_module            VARCHAR2 DEFAULT 'default',
+      p_module            VARCHAR2 DEFAULT all_modules,
       p_default_runmode   VARCHAR2 DEFAULT 'runtime',
       p_mode		  VARCHAR2 DEFAULT 'upsert'
    );
 
    PROCEDURE set_registration(
-      p_module            VARCHAR2 DEFAULT 'default',
+      p_module            VARCHAR2 DEFAULT all_modules,
       p_registration      VARCHAR2 DEFAULT 'appinfo',
       p_mode		  VARCHAR2 DEFAULT 'upsert'
    );
@@ -47,9 +50,9 @@ IS
    );
 
    PROCEDURE set_session_parameter(
-      p_module       VARCHAR2,
       p_name         VARCHAR2,
       p_value        VARCHAR2,
+      p_module       VARCHAR2 DEFAULT all_modules,
       p_mode	     VARCHAR2 DEFAULT 'upsert'
    );
 
