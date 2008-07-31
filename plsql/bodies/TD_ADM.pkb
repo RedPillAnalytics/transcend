@@ -197,109 +197,72 @@ IS
    PROCEDURE grant_evolve_app_privs( p_user VARCHAR2, p_schema VARCHAR2 DEFAULT 'TDSYS' )
    IS
    BEGIN
-      BEGIN
-         EXECUTE IMMEDIATE 'grant execute on TDSYS.TD_ADM to ' || p_user;
+      EXECUTE IMMEDIATE 'grant execute on TDSYS.TD_ADM to ' || p_user;
 
-         -- types
-         EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.APP_OT to ' || p_user;
+      -- types
+      EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.APP_OT to ' || p_user;
 
-         EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.EVOLVE_OT to ' || p_user;
+      EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.EVOLVE_OT to ' || p_user;
 
-         EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.SPLIT_OT to ' || p_user;
+      EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.SPLIT_OT to ' || p_user;
 
-         EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.STRAGG to ' || p_user;
+      EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.STRAGG to ' || p_user;
 
-         -- packages
-         EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.TD_INST to ' || p_user;
-	 
-         EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.EVOLVE to ' || p_user;
+      -- packages
+      EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.TD_INST to ' || p_user;
+      
+      EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.EVOLVE to ' || p_user;
 
-         EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.EVOLVE_ADM to ' || p_user;
+      EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.EVOLVE_ADM to ' || p_user;
 
-      EXCEPTION
-         WHEN e_no_obj
-         THEN
-            raise_application_error( -20004, 'Some application objects do not exist.' );
-      END;
+   EXCEPTION
+      WHEN e_no_obj
+      THEN
+      raise_application_error( -20004, 'Some application objects do not exist.' );
    END grant_evolve_app_privs;
 
-   PROCEDURE grant_transcend_rep_privs( p_schema VARCHAR2 DEFAULT NULL, p_user VARCHAR2 DEFAULT NULL )
-   IS
-      l_sel_grant    VARCHAR2( 30 );
-      l_adm_grant    VARCHAR2( 30 );
+   PROCEDURE grant_transcend_rep_privs(
+      p_grantee   VARCHAR2,
+      -- 'select' OR 'admin'
+      p_mode	  VARCHAR2 DEFAULT 'admin'
    BEGIN
-      CASE
-         WHEN p_schema IS NOT NULL AND p_user IS NOT NULL
-         THEN
-            raise_application_error( -20006, 'Parameters P_SCHEMA and P_USER are mutually exclusive' );
-         WHEN p_schema IS NOT NULL
-         THEN
-            l_sel_grant := p_schema || '_sel';
-            l_adm_grant := p_schema || '_adm';
-         WHEN p_user IS NOT NULL
-         THEN
-            l_sel_grant := p_user;
-            l_adm_grant := p_user;
-         ELSE
-            NULL;
-      END CASE;
 
+      -- if p_mode is 'select', then only grant select privilege
+      -- if it's 'admin', then grant all privileges
+      l_grant := CASE p_mode WHEN 'select' THEN 'SELECT' ELSE 'SELECT,UPDATE,INSERT,DELETE' END;
+	 
       BEGIN
-         EXECUTE IMMEDIATE 'GRANT SELECT ON FILES_CONF TO ' || l_sel_grant;
+	 
+	 -- tables
+         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON FILES_CONF TO ' || p_grantee;
 
-         EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON FILES_CONF TO ' || l_adm_grant;
+         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON FILES_DETAIL TO ' || p_grantee;
 
-         EXECUTE IMMEDIATE 'GRANT SELECT ON FILES_DETAIL TO ' || l_sel_grant;
+         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON FILES_OBJ_DETAIL TO ' || p_grantee;
 
-         EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON FILES_DETAIL TO ' || l_adm_grant;
+         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON TD_PART_GTT TO ' || p_grantee;
 
-         EXECUTE IMMEDIATE 'GRANT SELECT ON files_detail_seq TO ' || l_sel_grant;
+         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON TD_BUILD_IDX_GTT TO ' || p_grantee;
 
-         EXECUTE IMMEDIATE 'GRANT SELECT ON files_detail_seq TO ' || l_adm_grant;
+         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON TD_BUILD_CON_GTT TO ' || p_grantee;
 
-         EXECUTE IMMEDIATE 'GRANT SELECT ON FILES_OBJ_DETAIL TO ' || l_sel_grant;
+         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON TD_CON_MAINT_GTT TO ' || p_grantee;
 
-         EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON FILES_OBJ_DETAIL TO ' || l_adm_grant;
+         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON OPT_STATS TO ' || p_grantee;
 
-         EXECUTE IMMEDIATE 'GRANT SELECT ON files_obj_detail_seq TO ' || l_sel_grant;
+         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON DIMENSION_CONF TO ' || p_grantee;
 
-         EXECUTE IMMEDIATE 'GRANT SELECT ON files_obj_detail_seq TO ' || l_adm_grant;
+         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON MAPPING_CONF TO ' || p_grantee;
 
-         EXECUTE IMMEDIATE 'GRANT SELECT ON TD_PART_GTT TO ' || l_sel_grant;
+         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON COLUMN_CONF TO ' || p_grantee;
 
-         EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON TD_PART_GTT TO ' || l_adm_grant;
+         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON COLUMN_TYPE_LIST TO ' || p_grantee;
+	 
+	 -- sequence
+         EXECUTE IMMEDIATE 'GRANT SELECT ON files_detail_seq TO ' || p_grantee;
 
-         EXECUTE IMMEDIATE 'GRANT SELECT ON TD_BUILD_IDX_GTT TO ' || l_sel_grant;
+         EXECUTE IMMEDIATE 'GRANT SELECT ON files_obj_detail_seq TO ' || p_grantee;
 
-         EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON TD_BUILD_IDX_GTT TO ' || l_adm_grant;
-
-         EXECUTE IMMEDIATE 'GRANT SELECT ON TD_BUILD_CON_GTT TO ' || l_sel_grant;
-
-         EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON TD_BUILD_CON_GTT TO ' || l_adm_grant;
-
-         EXECUTE IMMEDIATE 'GRANT SELECT ON TD_CON_MAINT_GTT TO ' || l_sel_grant;
-
-         EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON TD_CON_MAINT_GTT TO ' || l_adm_grant;
-
-         EXECUTE IMMEDIATE 'GRANT SELECT ON OPT_STATS TO ' || l_sel_grant;
-
-         EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON OPT_STATS TO ' || l_adm_grant;
-
-         EXECUTE IMMEDIATE 'GRANT SELECT ON DIMENSION_CONF TO ' || l_sel_grant;
-
-         EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON DIMENSION_CONF TO ' || l_adm_grant;
-
-         EXECUTE IMMEDIATE 'GRANT SELECT ON MAPPING_CONF TO ' || l_sel_grant;
-
-         EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON MAPPING_CONF TO ' || l_adm_grant;
-
-         EXECUTE IMMEDIATE 'GRANT SELECT ON COLUMN_CONF TO ' || l_sel_grant;
-
-         EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON COLUMN_CONF TO ' || l_adm_grant;
-
-         EXECUTE IMMEDIATE 'GRANT SELECT ON COLUMN_TYPE_LIST TO ' || l_sel_grant;
-
-         EXECUTE IMMEDIATE 'GRANT SELECT,UPDATE,DELETE,INSERT ON COLUMN_TYPE_LIST TO ' || l_adm_grant;
       EXCEPTION
          WHEN e_no_grantee
          THEN
@@ -312,18 +275,16 @@ IS
    PROCEDURE grant_transcend_app_privs( p_user VARCHAR2, p_schema VARCHAR2 DEFAULT 'TDSYS' )
    IS
    BEGIN
-      BEGIN
-         --packages
-         EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.TRANS_ADM to ' || p_user;
+      --packages
+      EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.TRANS_ADM to ' || p_user;
 
-         EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.TRANS_ETL to ' || p_user;
+      EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.TRANS_ETL to ' || p_user;
 
-         EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.TRANS_FILES to ' || p_user;
-      EXCEPTION
-         WHEN e_no_obj
-         THEN
-            raise_application_error( -20004, 'Some application objects do not exist.' );
-      END;
+      EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.TRANS_FILES to ' || p_user;
+   EXCEPTION
+      WHEN e_no_obj
+      THEN
+      raise_application_error( -20004, 'Some application objects do not exist.' );
    END grant_transcend_app_privs;
 
    PROCEDURE build_sys_repo(
@@ -571,12 +532,13 @@ IS
          NULL;
       END;
 
-
       -- set current_schema back to where it started
       reset_current_schema;
    EXCEPTION
       WHEN OTHERS
       THEN
+         -- if the default tablespace was changed, then put it back
+         reset_default_tablespace;
          -- set current_schema back to where it started
          reset_current_schema;
          RAISE;
@@ -908,6 +870,146 @@ IS
          RAISE;
    END build_evolve_repo;
 
+   PROCEDURE drop_transcend_repo(
+      p_schema       VARCHAR2 DEFAULT 'TDSYS'
+   )
+   IS
+      PRAGMA EXCEPTION_INIT( e_stat_tab_exists, -20002 );
+   BEGIN
+      -- alter session to CURRENT_SCHEMA
+      set_current_schema( p_schema => p_schema );
+
+      -- this will drop all the tables before beginning
+      BEGIN
+         EXECUTE IMMEDIATE q'|DROP TABLE column_conf|';
+      EXCEPTION
+         WHEN e_no_tab
+         THEN
+         NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE q'|DROP TABLE dimension_conf|';
+      EXCEPTION
+         WHEN e_no_tab
+         THEN
+         NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE q'|DROP TABLE mapping_conf|';
+      EXCEPTION
+         WHEN e_no_tab
+         THEN
+         NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE q'|DROP TABLE column_type_list|';
+      EXCEPTION
+         WHEN e_no_tab
+         THEN
+         NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE q'|DROP TABLE files_obj_detail|';
+      EXCEPTION
+         WHEN e_no_tab
+         THEN
+         NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE q'|DROP TABLE files_detail|';
+      EXCEPTION
+         WHEN e_no_tab
+         THEN
+         NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE q'|DROP TABLE files_conf|';
+      EXCEPTION
+         WHEN e_no_tab
+         THEN
+         NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE q'|DROP TABLE td_part_gtt|';
+      EXCEPTION
+         WHEN e_no_tab
+         THEN
+         NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE q'|DROP TABLE td_build_idx_gtt|';
+      EXCEPTION
+         WHEN e_no_tab
+         THEN
+         NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE q'|DROP TABLE td_build_con_gtt|';
+      EXCEPTION
+         WHEN e_no_tab
+         THEN
+         NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE q'|DROP TABLE td_con_maint_gtt|';
+      EXCEPTION
+         WHEN e_no_tab
+         THEN
+         NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE q'|DROP TABLE opt_stats|';
+      EXCEPTION
+         WHEN e_no_tab
+         THEN
+         NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE q'|DROP sequence files_detail_seq|';
+      EXCEPTION
+         WHEN e_no_seq
+         THEN
+         NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE q'|DROP sequence files_obj_detail_seq|';
+      EXCEPTION
+         WHEN e_no_seq
+         THEN
+         NULL;
+      END;
+
+      EXCEPTION
+         WHEN e_tab_exists OR e_stat_tab_exists
+         THEN
+            RAISE e_repo_obj_exists;
+      END;
+
+      -- set current_schema back to where it started
+      reset_current_schema;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         -- if the default tablespace was changed, then put it back
+         reset_default_tablespace;
+         -- set current_schema back to where it started
+         reset_current_schema;
+         RAISE;
+   END drop_transcend_repo;
+   
    PROCEDURE build_transcend_repo(
       p_schema       VARCHAR2 DEFAULT 'TDSYS',
       p_tablespace   VARCHAR2 DEFAULT 'TDSYS',
@@ -923,117 +1025,8 @@ IS
       -- this will drop all the tables before beginning
       IF p_drop
       THEN
-         BEGIN
-            EXECUTE IMMEDIATE q'|DROP TABLE column_conf|';
-         EXCEPTION
-            WHEN e_no_tab
-            THEN
-               NULL;
-         END;
-
-         BEGIN
-            EXECUTE IMMEDIATE q'|DROP TABLE dimension_conf|';
-         EXCEPTION
-            WHEN e_no_tab
-            THEN
-               NULL;
-         END;
-
-         BEGIN
-            EXECUTE IMMEDIATE q'|DROP TABLE mapping_conf|';
-         EXCEPTION
-            WHEN e_no_tab
-            THEN
-               NULL;
-         END;
-
-         BEGIN
-            EXECUTE IMMEDIATE q'|DROP TABLE column_type_list|';
-         EXCEPTION
-            WHEN e_no_tab
-            THEN
-               NULL;
-         END;
-
-         BEGIN
-            EXECUTE IMMEDIATE q'|DROP TABLE files_obj_detail|';
-         EXCEPTION
-            WHEN e_no_tab
-            THEN
-               NULL;
-         END;
-
-         BEGIN
-            EXECUTE IMMEDIATE q'|DROP TABLE files_detail|';
-         EXCEPTION
-            WHEN e_no_tab
-            THEN
-               NULL;
-         END;
-
-         BEGIN
-            EXECUTE IMMEDIATE q'|DROP TABLE files_conf|';
-         EXCEPTION
-            WHEN e_no_tab
-            THEN
-               NULL;
-         END;
-
-         BEGIN
-            EXECUTE IMMEDIATE q'|DROP TABLE td_part_gtt|';
-         EXCEPTION
-            WHEN e_no_tab
-            THEN
-               NULL;
-         END;
-
-         BEGIN
-            EXECUTE IMMEDIATE q'|DROP TABLE td_build_idx_gtt|';
-         EXCEPTION
-            WHEN e_no_tab
-            THEN
-               NULL;
-         END;
-
-         BEGIN
-            EXECUTE IMMEDIATE q'|DROP TABLE td_build_con_gtt|';
-         EXCEPTION
-            WHEN e_no_tab
-            THEN
-               NULL;
-         END;
-
-         BEGIN
-            EXECUTE IMMEDIATE q'|DROP TABLE td_con_maint_gtt|';
-         EXCEPTION
-            WHEN e_no_tab
-            THEN
-               NULL;
-         END;
-
-         BEGIN
-            EXECUTE IMMEDIATE q'|DROP TABLE opt_stats|';
-         EXCEPTION
-            WHEN e_no_tab
-            THEN
-               NULL;
-         END;
-
-         BEGIN
-            EXECUTE IMMEDIATE q'|DROP sequence files_detail_seq|';
-         EXCEPTION
-            WHEN e_no_seq
-            THEN
-               NULL;
-         END;
-
-         BEGIN
-            EXECUTE IMMEDIATE q'|DROP sequence files_obj_detail_seq|';
-         EXCEPTION
-            WHEN e_no_seq
-            THEN
-               NULL;
-         END;
+	 -- drop the repository objects
+	 drop_transcend_repo( p_schema => p_schema );
       END IF;
 
       BEGIN
@@ -1340,8 +1333,12 @@ IS
 	   ( table_owner, table_name )
 	 )|';
 
-         -- grant the privileges to the repository tables to the roles
-         grant_transcend_rep_privs( p_schema => p_schema );
+	 -- grant select privileges to the select role
+	 grant_transcend_rep_privs( p_grantee=> l_sel_role, p_mode => 'select');
+
+	 -- grant all privileges to the admin role
+	 grant_transcend_rep_privs( p_grantee=> l_adm_role, p_mode => 'admin');
+
       EXCEPTION
          WHEN e_tab_exists OR e_stat_tab_exists
          THEN
@@ -2031,7 +2028,7 @@ IS
       BEGIN
          EXECUTE IMMEDIATE 'DROP TYPE split_ot';
       EXCEPTION
-         when e_obj_exists or e_no_obj
+         when e_no_obj
          THEN
          NULL;
       END;
@@ -2041,7 +2038,7 @@ IS
       BEGIN
          EXECUTE IMMEDIATE 'DROP package td_core';
       EXCEPTION
-         when e_obj_exists or e_no_obj
+         when e_no_obj
          THEN
          NULL;
       END;
@@ -2050,7 +2047,7 @@ IS
       BEGIN
          EXECUTE IMMEDIATE 'DROP package string_agg_ot';
       EXCEPTION
-         when e_obj_exists or e_no_obj
+         when e_no_obj
          THEN
          NULL;
       END;
@@ -2058,7 +2055,7 @@ IS
       BEGIN
          EXECUTE IMMEDIATE 'DROP function stragg';
       EXCEPTION
-         when e_obj_exists or e_no_obj
+         when e_no_obj
          THEN
          NULL;
       END;
@@ -2067,7 +2064,7 @@ IS
       BEGIN
          EXECUTE IMMEDIATE 'DROP java source TdCore';
       EXCEPTION
-         when e_obj_exists or e_no_obj
+         when e_no_obj
          THEN
          NULL;
       END;
@@ -2076,7 +2073,7 @@ IS
       BEGIN
          EXECUTE IMMEDIATE 'DROP package td_inst';
       EXCEPTION
-         when e_obj_exists or e_no_obj
+         when e_no_obj
          THEN
          NULL;
       END;
@@ -2085,7 +2082,7 @@ IS
       BEGIN
          EXECUTE IMMEDIATE 'DROP package evolve';
       EXCEPTION
-         when e_obj_exists or e_no_obj
+         when e_no_obj
          THEN
          NULL;
       END;
@@ -2094,7 +2091,7 @@ IS
       BEGIN
          EXECUTE IMMEDIATE 'DROP TYPE notification_ot';
       EXCEPTION
-         when e_obj_exists or e_no_obj
+         when e_no_obj
          THEN
             NULL;
       END;
@@ -2102,7 +2099,7 @@ IS
       BEGIN
          EXECUTE IMMEDIATE 'DROP TYPE evolve_ot';
       EXCEPTION
-         when e_obj_exists or e_no_obj
+         when e_no_obj
          THEN
             NULL;
       END;
@@ -2110,7 +2107,7 @@ IS
       BEGIN
          EXECUTE IMMEDIATE 'DROP TYPE app_ot';
       EXCEPTION
-         when e_obj_exists or e_no_obj
+         when e_no_obj
          THEN
             NULL;
       END;
@@ -2119,7 +2116,7 @@ IS
       BEGIN
          EXECUTE IMMEDIATE 'DROP package td_utils';
       EXCEPTION
-         when e_obj_exists or e_no_obj
+         when e_no_obj
          THEN
             NULL;
       END;
@@ -2128,7 +2125,7 @@ IS
       BEGIN
          EXECUTE IMMEDIATE 'DROP package evolve';
       EXCEPTION
-         when e_obj_exists or e_no_obj
+         when e_no_obj
          THEN
             NULL;
       END;
@@ -2136,20 +2133,20 @@ IS
       BEGIN
          EXECUTE IMMEDIATE 'DROP package evolve_adm';
       EXCEPTION
-         when e_obj_exists or e_no_obj
+         when e_no_obj
          THEN
             NULL;
       END;
 
    END drop_evolve_app;
 
-   PROCEDURE drop_transcend_types
+   PROCEDURE drop_transcend_app
    IS
    BEGIN
       BEGIN
          EXECUTE IMMEDIATE 'DROP TYPE dimension_ot';
       EXCEPTION
-         WHEN e_obj_exists
+         WHEN e_no_obj
          THEN
             NULL;
       END;
@@ -2157,7 +2154,7 @@ IS
       BEGIN
          EXECUTE IMMEDIATE 'DROP TYPE mapping_ot';
       EXCEPTION
-         WHEN e_obj_exists
+         WHEN e_no_obj
          THEN
             NULL;
       END;
@@ -2165,7 +2162,7 @@ IS
       BEGIN
          EXECUTE IMMEDIATE 'DROP TYPE feed_ot';
       EXCEPTION
-         WHEN e_obj_exists
+         WHEN e_no_obj
          THEN
             NULL;
       END;
@@ -2173,7 +2170,7 @@ IS
       BEGIN
          EXECUTE IMMEDIATE 'DROP TYPE extract_ot';
       EXCEPTION
-         WHEN e_obj_exists
+         WHEN e_no_obj
          THEN
             NULL;
       END;
@@ -2181,11 +2178,44 @@ IS
       BEGIN
          EXECUTE IMMEDIATE 'DROP TYPE file_ot';
       EXCEPTION
-         WHEN e_obj_exists
+         WHEN e_no_obj
          THEN
             NULL;
       END;
-   END drop_transcend_types;
+
+      BEGIN
+         EXECUTE IMMEDIATE 'DROP package td_dbutils';
+      EXCEPTION
+         WHEN e_no_obj
+         THEN
+            NULL;
+      END;
+      
+      BEGIN
+         EXECUTE IMMEDIATE 'DROP package trans_adm';
+      EXCEPTION
+         WHEN e_no_obj
+         THEN
+            NULL;
+      END;
+      
+      BEGIN
+         EXECUTE IMMEDIATE 'DROP package trans_etl';
+      EXCEPTION
+         WHEN e_no_obj
+         THEN
+            NULL;
+      END;
+      
+      BEGIN
+         EXECUTE IMMEDIATE 'DROP package trans_files';
+      EXCEPTION
+         WHEN e_no_obj
+         THEN
+            NULL;
+      END;
+
+   END drop_transcend_app;
 
    PROCEDURE create_evolve_user(
       p_user          VARCHAR2,
