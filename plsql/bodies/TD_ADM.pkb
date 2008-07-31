@@ -2006,6 +2006,10 @@ IS
    BEGIN
       -- set CURRENT_SCHEMA to the owner of the repository
       set_current_schema( p_schema => p_repository );
+
+      -- drop all the transcend application objects in order to make sure they can be recreated
+      drop_transcend_app;
+
       -- create grants to the application owner to all the tables in the repository
       grant_transcend_rep_privs( p_user => p_schema );
       -- set the CURRENT_SCHEMA back
@@ -2016,8 +2020,6 @@ IS
       build_transcend_rep_syns( p_user => p_schema, p_schema => p_repository );
       -- grant application privileges to the roles
       grant_transcend_sys_privs( p_schema => p_schema );
-      -- drop all the transcend types in order to make sure they can be recreated
-      drop_transcend_types;
    END build_transcend_app;
 
    PROCEDURE drop_evolve_app
