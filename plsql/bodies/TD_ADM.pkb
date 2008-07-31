@@ -26,7 +26,7 @@ IS
    PRAGMA EXCEPTION_INIT( e_same_name, -1471 );
 
 
-   PROCEDURE create_user( p_user VARCHAR2 DEFAULT 'TDSYS', p_tablespace VARCHAR2 DEFAULT NULL )
+   PROCEDURE create_user( p_user VARCHAR2 DEFAULT DEFAULT_REPOSITORY, p_tablespace VARCHAR2 DEFAULT NULL )
    IS
       l_user           all_users.username%TYPE;
       l_def_tbs        database_properties.property_value%TYPE;
@@ -78,7 +78,7 @@ IS
 
    END create_user;
 
-   PROCEDURE set_current_schema( p_schema VARCHAR2 DEFAULT 'TDSYS' )
+   PROCEDURE set_current_schema( p_schema VARCHAR2 DEFAULT DEFAULT_REPOSITORY )
    IS
       l_current_schema   dba_users.username%TYPE;
    BEGIN
@@ -194,7 +194,7 @@ IS
       END;
    END grant_evolve_rep_privs;
 
-   PROCEDURE grant_evolve_app_privs( p_user VARCHAR2, p_schema VARCHAR2 DEFAULT 'TDSYS' )
+   PROCEDURE grant_evolve_app_privs( p_user VARCHAR2, p_schema VARCHAR2 DEFAULT DEFAULT_REPOSITORY )
    IS
    BEGIN
       EXECUTE IMMEDIATE 'grant execute on TDSYS.TD_ADM to ' || p_user;
@@ -272,7 +272,7 @@ IS
       END;
    END grant_transcend_rep_privs;
 
-   PROCEDURE grant_transcend_app_privs( p_user VARCHAR2, p_schema VARCHAR2 DEFAULT 'TDSYS' )
+   PROCEDURE grant_transcend_app_privs( p_user VARCHAR2, p_schema VARCHAR2 DEFAULT DEFAULT_REPOSITORY )
    IS
    BEGIN
       --packages
@@ -288,8 +288,8 @@ IS
    END grant_transcend_app_privs;
 
    PROCEDURE build_sys_repo(
-      p_schema       VARCHAR2 DEFAULT 'TDSYS',
-      p_tablespace   VARCHAR2 DEFAULT 'TDSYS'
+      p_schema       VARCHAR2 DEFAULT DEFAULT_REPOSITORY,
+      p_tablespace   VARCHAR2 DEFAULT DEFAULT_REPOSITORY
    )
    IS
    BEGIN
@@ -416,7 +416,7 @@ IS
    END build_sys_repo;
 
    PROCEDURE drop_evolve_repo(
-      p_schema       VARCHAR2 DEFAULT 'TDSYS'
+      p_schema       VARCHAR2 DEFAULT DEFAULT_REPOSITORY
    )
    IS
       l_sel_role	VARCHAR2(30) := p_schema || '_sel';
@@ -545,8 +545,8 @@ IS
    END drop_evolve_repo;
 
    PROCEDURE build_evolve_repo(
-      p_schema       VARCHAR2 DEFAULT 'TDSYS',
-      p_tablespace   VARCHAR2 DEFAULT 'TDSYS',
+      p_schema       VARCHAR2 DEFAULT DEFAULT_REPOSITORY,
+      p_tablespace   VARCHAR2 DEFAULT DEFAULT_REPOSITORY,
       p_drop         BOOLEAN DEFAULT FALSE
    )
    IS
@@ -871,7 +871,7 @@ IS
    END build_evolve_repo;
 
    PROCEDURE drop_transcend_repo(
-      p_schema       VARCHAR2 DEFAULT 'TDSYS'
+      p_schema       VARCHAR2 DEFAULT DEFAULT_REPOSITORY
    )
    IS
       PRAGMA EXCEPTION_INIT( e_stat_tab_exists, -20002 );
@@ -1011,8 +1011,8 @@ IS
    END drop_transcend_repo;
    
    PROCEDURE build_transcend_repo(
-      p_schema       VARCHAR2 DEFAULT 'TDSYS',
-      p_tablespace   VARCHAR2 DEFAULT 'TDSYS',
+      p_schema       VARCHAR2 DEFAULT DEFAULT_REPOSITORY,
+      p_tablespace   VARCHAR2 DEFAULT DEFAULT_REPOSITORY,
       p_drop         BOOLEAN DEFAULT FALSE
    )
    IS
@@ -1775,7 +1775,7 @@ IS
       END;
    END build_transcend_app_syns;
 
-   PROCEDURE grant_evolve_sys_privs( p_schema VARCHAR2 DEFAULT 'TDSYS', p_drop BOOLEAN DEFAULT FALSE )
+   PROCEDURE grant_evolve_sys_privs( p_schema VARCHAR2 DEFAULT DEFAULT_REPOSITORY, p_drop BOOLEAN DEFAULT FALSE )
    IS
       l_sys_role      VARCHAR2( 30 ) := p_schema || '_sys';
       l_java_role     VARCHAR2( 30 ) := p_schema || '_java';
@@ -1903,7 +1903,7 @@ IS
          RAISE;
    END grant_evolve_sys_privs;
 
-   PROCEDURE grant_transcend_sys_privs( p_schema VARCHAR2 DEFAULT 'TDSYS' )
+   PROCEDURE grant_transcend_sys_privs( p_schema VARCHAR2 DEFAULT DEFAULT_REPOSITORY )
    IS
       l_sys_role      VARCHAR2( 30 ) := p_schema || '_sys';
       l_java_role     VARCHAR2( 30 ) := p_schema || '_java';
@@ -1943,8 +1943,8 @@ IS
    END grant_transcend_sys_privs;
 
    PROCEDURE build_evolve_app(
-      p_schema       VARCHAR2 DEFAULT 'TDSYS',
-      p_repository   VARCHAR2 DEFAULT 'TDSYS',
+      p_schema       VARCHAR2 DEFAULT DEFAULT_REPOSITORY,
+      p_repository   VARCHAR2 DEFAULT DEFAULT_REPOSITORY,
       p_drop         BOOLEAN DEFAULT FALSE
    )
    IS
@@ -1998,8 +1998,8 @@ IS
    END build_evolve_app;
 
    PROCEDURE build_transcend_app(
-      p_schema       VARCHAR2 DEFAULT 'TDSYS',
-      p_repository   VARCHAR2 DEFAULT 'TDSYS',
+      p_schema       VARCHAR2 DEFAULT DEFAULT_REPOSITORY,
+      p_repository   VARCHAR2 DEFAULT DEFAULT_REPOSITORY,
       p_drop         BOOLEAN DEFAULT FALSE
    )
    IS
@@ -2219,8 +2219,8 @@ IS
 
    PROCEDURE create_evolve_user(
       p_user          VARCHAR2,
-      p_application   VARCHAR2 DEFAULT 'TDSYS',
-      p_repository    VARCHAR2 DEFAULT 'TDSYS'
+      p_application   VARCHAR2 DEFAULT DEFAULT_REPOSITORY,
+      p_repository    VARCHAR2 DEFAULT DEFAULT_REPOSITORY
    )
    IS
    BEGIN
@@ -2262,8 +2262,8 @@ IS
 
    PROCEDURE create_transcend_user(
       p_user          VARCHAR2,
-      p_application   VARCHAR2 DEFAULT 'TDSYS',
-      p_repository    VARCHAR2 DEFAULT 'TDSYS'
+      p_application   VARCHAR2 DEFAULT DEFAULT_REPOSITORY,
+      p_repository    VARCHAR2 DEFAULT DEFAULT_REPOSITORY
    )
    IS
    BEGIN

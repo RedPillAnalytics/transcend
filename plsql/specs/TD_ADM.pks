@@ -1,5 +1,8 @@
 CREATE OR REPLACE PACKAGE td_adm AUTHID CURRENT_USER
 IS
+
+   default_repository CONSTANT VARCHAR2(6) := 'TDREP';
+
    e_repo_obj_exists EXCEPTION;
 
    PROCEDURE build_sys_repo(

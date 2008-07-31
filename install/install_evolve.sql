@@ -11,11 +11,11 @@ VARIABLE current_schema char(30)
 EXEC :current_schema := sys_context('USERENV','CURRENT_SCHEMA');
 
 -- get the schema for the Evolve repository (tables)
-ACCEPT rep_schema char default 'TDSYS' prompt 'Schema name for the default repository [tdsys]: '
+ACCEPT rep_schema char default 'TDREP' prompt 'Schema name for the default repository [tdrep]: '
 -- get the tablespace for the repository
-ACCEPT tablespace char default 'TDSYS' prompt 'Tablespace in which to install default repository: [tdsys]: '
+ACCEPT tablespace char default 'TDREP' prompt 'Tablespace in which to install default repository: [tdrep]: '
 -- get the schema for the Evolve application (PL/SQL and Java code)
-ACCEPT app_schema char default 'TDSYS' prompt 'Schema name for the application [tdsys]: '
+ACCEPT app_schema char default 'TDREP' prompt 'Schema name for the application [tdrep]: '
 -- find out whether destructive actions are okay
 ACCEPT drop_obj char default 'N' prompt 'Do you want to issue DROP TABLE statements for any existing repository tables? [N]: '
 
