@@ -303,11 +303,12 @@ IS
       BEGIN
          EXECUTE IMMEDIATE q'|CREATE TABLE repositories
 	 ( 
-	   repository_name     VARCHAR2(30) NOT NULL,
-	   created_user	     VARCHAR2(30) DEFAULT sys_context('USERENV','SESSION_USER') NOT NULL,
-	   created_dt	     DATE DEFAULT SYSDATE NOT NULL,
-	   modified_user	     VARCHAR2(30),
-	   modified_dt	     DATE
+	   repository_name    VARCHAR2(30) NOT NULL,
+	   version	      NUMBER,
+	   created_user	      VARCHAR2(30) DEFAULT sys_context('USERENV','SESSION_USER') NOT NULL,
+	   created_dt	      DATE DEFAULT SYSDATE NOT NULL,
+	   modified_user      VARCHAR2(30),
+	   modified_dt	      DATE
 	 )|';
 
          EXECUTE IMMEDIATE q'|ALTER TABLE repositories ADD 
@@ -328,12 +329,13 @@ IS
       BEGIN
          EXECUTE IMMEDIATE q'|CREATE TABLE applications
 	 ( 
-	   application_name    VARCHAR2(30) NOT NULL,
-	   repository_name     VARCHAR2(30) NOT NULL,
-	   created_user	     VARCHAR2(30) DEFAULT sys_context('USERENV','SESSION_USER') NOT NULL,
-	   created_dt	     DATE DEFAULT SYSDATE NOT NULL,
-	   modified_user	     VARCHAR2(30),
-	   modified_dt	     DATE
+	   application_name   VARCHAR2(30) NOT NULL,
+	   repository_name    VARCHAR2(30) NOT NULL,
+	   version 	      NUMBER,
+	   created_user	      VARCHAR2(30) DEFAULT sys_context('USERENV','SESSION_USER') NOT NULL,
+	   created_dt	      DATE DEFAULT SYSDATE NOT NULL,
+	   modified_user      VARCHAR2(30),
+	   modified_dt	      DATE
 	 )|';
 
          EXECUTE IMMEDIATE q'|ALTER TABLE applications ADD 
@@ -362,13 +364,14 @@ IS
       BEGIN
          EXECUTE IMMEDIATE q'|CREATE TABLE users
 	 ( 
-	   user_name           VARCHAR2(30) NOT NULL,
-	   application_name    VARCHAR2(30) NOT NULL,
-	   repository_name     VARCHAR2(30) NOT NULL,
-	   created_user	     VARCHAR2(30) DEFAULT sys_context('USERENV','SESSION_USER') NOT NULL,
-	   created_dt	     DATE DEFAULT SYSDATE NOT NULL,
-	   modified_user	     VARCHAR2(30),
-	   modified_dt	     DATE
+	   user_name          VARCHAR2(30) NOT NULL,
+	   application_name   VARCHAR2(30) NOT NULL,
+	   repository_name    VARCHAR2(30) NOT NULL,
+	   version 	      NUMBER,
+	   created_user	      VARCHAR2(30) DEFAULT sys_context('USERENV','SESSION_USER') NOT NULL,
+	   created_dt	      DATE DEFAULT SYSDATE NOT NULL,
+	   modified_user      VARCHAR2(30),
+	   modified_dt	      DATE
 	 )|';
 
          EXECUTE IMMEDIATE q'|ALTER TABLE users ADD 
@@ -839,16 +842,16 @@ IS
          EXECUTE IMMEDIATE q'|UPDATE tdsys.repositories
 	 SET modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
 	 modified_dt = SYSDATE
-	 WHERE repository_name=upper(:v_schema)|'
+	 WHERE repository_name=upper(:b_schema)|'
                      USING p_schema;
 
          IF SQL%ROWCOUNT = 0
          THEN
             EXECUTE IMMEDIATE q'|INSERT INTO tdsys.repositories
-	    ( repository_name)
+	    ( repository_name, version)
 	    VALUES
-	    ( upper(:v_schema))|'
-                        USING p_schema;
+	    ( upper(:b_schema),:b_version)|'
+            USING p_schema, td_version;
          END IF;
       EXCEPTION
          WHEN e_tab_exists
@@ -1974,21 +1977,23 @@ IS
 
       -- write application tracking record
       EXECUTE IMMEDIATE q'|UPDATE tdsys.applications
-      SET repository_name = upper(:v_rep_schema),
+      SET repository_name = upper(:b_rep_schema),
       modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
       modified_dt = SYSDATE
-      WHERE application_name=upper(:v_app_schema)|'
+      WHERE application_name=upper(:b_app_schema)|'
                   USING p_repository, p_schema;
 
       IF SQL%ROWCOUNT = 0
       THEN
          EXECUTE IMMEDIATE q'|INSERT INTO tdsys.applications
 	 ( application_name,
-	   repository_name)
+	   repository_name,
+	   version )
 	 VALUES
-	 ( upper(:v_app_schema),
-	   upper(:v_rep_schema))|'
-                     USING p_schema, p_repository;
+	 ( upper(:b_app_schema),
+	   upper(:b_rep_schema),
+	   :b_version )|'
+         USING p_schema, p_repository, td_version;
       END IF;
 
       DBMS_OUTPUT.put_line(    ' The CURRENT_SCHEMA is set to '
@@ -2241,11 +2246,11 @@ IS
       -- write audit record for creating or modifying a user record
       -- use EXECUTE IMMEDIATE because the table does not exist when this package is created
       EXECUTE IMMEDIATE q'|UPDATE tdsys.users
-      SET application_name = upper(:v_app_schema),
-      repository_name = upper(:v_rep_schema),
+      SET application_name = upper(:b_app_schema),
+      repository_name = upper(:b_rep_schema),
       modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
       modified_dt = SYSDATE
-      WHERE user_name=upper(:v_user)|'
+      WHERE user_name=upper(:b_user)|'
                   USING p_application, p_repository, p_user;
 
       IF SQL%ROWCOUNT = 0
@@ -2253,12 +2258,14 @@ IS
          EXECUTE IMMEDIATE q'|INSERT INTO tdsys.users
 	 ( user_name,
 	   application_name,
-	   repository_name)
+	   repository_name,
+	   version )
 	 VALUES
-	 ( upper(:v_user),
-	   upper(:v_app_schema),
-	   upper(:v_rep_schema))|'
-                     USING p_user, p_application, p_repository;
+	 ( upper(:b_user),
+	   upper(:b_app_schema),
+	   upper(:b_rep_schema),
+	   :b_version )|'
+         USING p_user, p_application, p_repository, td_version;
       END IF;
    END create_evolve_user;
 

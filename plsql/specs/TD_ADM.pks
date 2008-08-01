@@ -1,6 +1,8 @@
 CREATE OR REPLACE PACKAGE td_adm AUTHID CURRENT_USER
 IS
 
+   td_version CONSTANT NUMBER := 1.3;
+
    default_repository CONSTANT VARCHAR2(6) := 'TDREP';
 
    e_repo_obj_exists EXCEPTION;
