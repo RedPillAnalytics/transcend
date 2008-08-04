@@ -134,7 +134,7 @@ IS
          ( job_class_name      => 'EVOLVE_DEFAULT_CLASS',
            logging_level       => DBMS_SCHEDULER.logging_full,
            comments            =>    'Job class for the Evolve product by Transcendent Data, Inc.'
-                                  || ' This is the job class used by default when the Oracle scheduler is used for concurrent processing'
+                                  || ' This is the job class Evolve calls by default when the Oracle scheduler is used for concurrent processing'
          );
    END create_scheduler_metadata;
 
@@ -304,6 +304,7 @@ IS
          EXECUTE IMMEDIATE q'|CREATE TABLE repositories
 	 ( 
 	   repository_name    VARCHAR2(30) NOT NULL,
+	   product	      VARCHAR2(20),
 	   version	      NUMBER,
 	   created_user	      VARCHAR2(30) DEFAULT sys_context('USERENV','SESSION_USER') NOT NULL,
 	   created_dt	      DATE DEFAULT SYSDATE NOT NULL,
@@ -331,6 +332,7 @@ IS
 	 ( 
 	   application_name   VARCHAR2(30) NOT NULL,
 	   repository_name    VARCHAR2(30) NOT NULL,
+	   product	      VARCHAR2(20),
 	   version 	      NUMBER,
 	   created_user	      VARCHAR2(30) DEFAULT sys_context('USERENV','SESSION_USER') NOT NULL,
 	   created_dt	      DATE DEFAULT SYSDATE NOT NULL,
@@ -367,6 +369,7 @@ IS
 	   user_name          VARCHAR2(30) NOT NULL,
 	   application_name   VARCHAR2(30) NOT NULL,
 	   repository_name    VARCHAR2(30) NOT NULL,
+	   product	      VARCHAR2(20),
 	   version 	      NUMBER,
 	   created_user	      VARCHAR2(30) DEFAULT sys_context('USERENV','SESSION_USER') NOT NULL,
 	   created_dt	      DATE DEFAULT SYSDATE NOT NULL,
@@ -848,9 +851,9 @@ IS
          IF SQL%ROWCOUNT = 0
          THEN
             EXECUTE IMMEDIATE q'|INSERT INTO tdsys.repositories
-	    ( repository_name, version)
+	    ( repository_name, product, version)
 	    VALUES
-	    ( upper(:b_schema),:b_version)|'
+	    ( upper(:b_schema),'evolve', :b_version)|'
             USING p_schema, td_version;
          END IF;
       EXCEPTION
@@ -1347,6 +1350,22 @@ IS
          THEN
             RAISE e_repo_obj_exists;
       END;
+      
+      -- write the audit record for creating or modifying the repository
+      -- doe this as an EXECUTE IMMEDIATE because the package won't compile otherwise
+      -- that's because the package itself creates the table
+      EXECUTE IMMEDIATE q'|UPDATE tdsys.repositories
+      SET modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
+      modified_dt = SYSDATE,
+      product = 'transcend',
+      version = :b_version
+      WHERE repository_name=upper(:b_schema)|'
+      USING p_schema, td_version;
+      
+      IF SQL%ROWCOUNT = 0
+      THEN
+	 RAISE no_sys_repo_entry;
+      END IF;
 
       -- if the default tablespace was changed, then put it back
       reset_default_tablespace;
@@ -1988,10 +2007,12 @@ IS
          EXECUTE IMMEDIATE q'|INSERT INTO tdsys.applications
 	 ( application_name,
 	   repository_name,
+	   product,
 	   version )
 	 VALUES
 	 ( upper(:b_app_schema),
 	   upper(:b_rep_schema),
+	   'evolve',
 	   :b_version )|'
          USING p_schema, p_repository, td_version;
       END IF;
@@ -2259,11 +2280,13 @@ IS
 	 ( user_name,
 	   application_name,
 	   repository_name,
+	   product,
 	   version )
 	 VALUES
 	 ( upper(:b_user),
 	   upper(:b_app_schema),
 	   upper(:b_rep_schema),
+	   'evolve',
 	   :b_version )|'
          USING p_user, p_application, p_repository, td_version;
       END IF;
@@ -2290,6 +2313,110 @@ IS
       grant_transcend_app_privs( p_user=> p_user, p_schema => p_application );
 
    END create_transcend_user;
+   
+   PROCEDURE upgrade_sys_repo(
+      p_schema    VARCHAR2 DEFAULT DEFAULT_REPOSITORY
+   )
+   IS
+   BEGIN
+      
+      -- in future releases, there will be a statement here that selects the current version from the repository
+      -- currently, the version information in the sys repository doesn't have version information
+      -- so we won't be selecting that now
+      
+      -- ticket:95
+      -- add version and product columns to the sys repository tables
+      EXECUTE IMMEDIATE q'|alter table tdsys.repositories add product VARCHAR2(20)|';
+      EXECUTE IMMEDIATE q'|alter table tdsys.applications add product VARCHAR2(20)|';
+      EXECUTE IMMEDIATE q'|alter table tdsys.users add product VARCHAR2(20)|';
+
+      EXECUTE IMMEDIATE q'|alter table tdsys.repositories add version NUMBER|';
+      EXECUTE IMMEDIATE q'|alter table tdsys.applications add version NUMBER|';
+      EXECUTE IMMEDIATE q'|alter table tdsys.users add version NUMBER|';
+
+      -- the default version will be 1.2 for anything without a version number
+      -- currently no Evolve-only customers, so the default product will be 'transcend'
+      EXECUTE IMMEDIATE q'|update tdsys.repositories set version='1.2', product='transcend' where version is null|';
+      EXECUTE IMMEDIATE q'|update tdsys.applications set version='1.2', product='transcend' where version is null|';
+      EXECUTE IMMEDIATE q'|update tdsys.users set version='1.2', product='transcend' where version is null|';
+
+   END upgrade_sys_repo;
+
+   PROCEDURE upgrade_evolve_repo(
+      p_schema    VARCHAR2 DEFAULT DEFAULT_REPOSITORY
+   )
+   IS
+   BEGIN
+      
+      -- set the current schema to the repository user
+      set_current_schema( p_schema => p_schema );
+
+      -- get the current version number
+      BEGIN
+
+	 SELECT version
+	   INTO l_version
+	   FROM tdsys.repositories
+	  WHERE lower(repository) = lower(p_schema)
+	    AND product IN ('evolve','transcend');
+	 
+      EXCEPTION
+	 WHEN no_data_found
+	 THEN 
+	 RAISE no_sys_repo_entry;
+      END;
+      
+      -- changes for version 1.3
+      IF l_version < 1.3
+      THEN
+	 
+	 -- ticket:92
+	 -- change the value used for "default" configuration entries
+	 EXECUTE IMMEDIATE q'|UPDATE runmode_conf SET module='*all_modules*' WHERE module='default'|';
+	 EXECUTE IMMEDIATE q'|UPDATE registration_conf SET module='*all_modules*' WHERE module='default'|';
+	 EXECUTE IMMEDIATE q'|UPDATE logging_conf SET module='*all_modules*' WHERE module='default'|';
+	 
+	 
+      END IF;
+
+   END upgrade_evolve_repo;
+   
+   PROCEDURE upgrade_transcend_repo(
+      p_schema    VARCHAR2 DEFAULT DEFAULT_REPOSITORY
+   )
+   IS
+   BEGIN
+      
+      -- set the current schema to the repository user
+      set_current_schema( p_schema => p_schema );
+
+      -- get the current version number
+      BEGIN
+
+	 SELECT version
+	   INTO l_version
+	   FROM tdsys.repositories
+	  WHERE lower(repository) = lower(p_schema)
+	    AND product = 'transcend';
+	 
+      EXCEPTION
+	 WHEN no_data_found
+	 THEN 
+	 RAISE no_sys_repo_entry;
+      END;
+
+      -- changes for version 1.3
+      IF l_version < 1.3
+      THEN
+	 
+	 -- ticket:92
+	 -- change the value used for "default" configuration entries
+	 EXECUTE IMMEDIATE q'|alter table mapping_conf modify mapping_name varchar2(40)|';	 
+	 
+      END IF;
+
+   END upgrade_transcend_repo;
+
 END td_adm;
 /
 

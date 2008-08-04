@@ -5,7 +5,8 @@ IS
 
    default_repository CONSTANT VARCHAR2(6) := 'TDREP';
 
-   e_repo_obj_exists EXCEPTION;
+   repo_obj_exists EXCEPTION;
+   no_sys_repo_entry EXCEPTION;
 
    PROCEDURE build_sys_repo(
       p_schema       VARCHAR2 DEFAULT 'TDSYS',
