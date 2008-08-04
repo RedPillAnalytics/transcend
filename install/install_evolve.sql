@@ -65,7 +65,7 @@ BEGIN
    -- create the Evolve application
    tdsys.td_adm.build_evolve_app( p_schema => '&app_schema', p_repository => '&rep_schema', p_drop => l_drop);   
 EXCEPTION
-   WHEN tdsys.td_adm.e_repo_obj_exists
+   WHEN tdsys.td_adm.repo_obj_exists
    THEN
    raise_application_error(-20003,'Repository tables exist. Specify ''Y'' when prompted to issue DROP TABLE statements');
 END;
