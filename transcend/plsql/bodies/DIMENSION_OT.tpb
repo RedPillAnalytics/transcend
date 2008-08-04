@@ -544,7 +544,7 @@ AS
          BEGIN
             td_dbutils.drop_constraints( p_owner => SELF.staging_owner, p_table => SELF.staging_table );
          EXCEPTION
-            WHEN td_dbutils.e_drop_iot_key
+            WHEN td_dbutils.drop_iot_key
             THEN
                NULL;
          END;

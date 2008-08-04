@@ -1,6 +1,6 @@
 CREATE OR REPLACE PACKAGE td_dbutils AUTHID CURRENT_USER
 IS
-   e_drop_iot_key   EXCEPTION;
+   drop_iot_key   EXCEPTION;
 
    PROCEDURE populate_partname(
       p_owner           VARCHAR2,

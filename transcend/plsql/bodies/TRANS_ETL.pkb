@@ -287,7 +287,7 @@ AS
                                    p_basis                  => p_basis
                                  );
    EXCEPTION
-      WHEN td_dbutils.e_drop_iot_key
+      WHEN td_dbutils.drop_iot_key
       THEN
          NULL;
       WHEN OTHERS
