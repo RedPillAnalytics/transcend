@@ -1,4 +1,4 @@
-@install_evolve.sql
+@upgrade_evolve.sql
 
 PROMPT 'Running install_transcend.sql'
 SPOOL InstallTranscend_&_DATE..log
