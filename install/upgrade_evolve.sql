@@ -11,22 +11,22 @@ ACCEPT app_schema char default 'TDREP' prompt 'Schema name for the application [
 -- get the schema for the Evolve repository (tables)
 ACCEPT rep_schema char default 'TDREP' prompt 'Schema name for the default repository for this application [tdrep]: '
 -- get the tablespace for the repository
-ACCEPT tablespace char default 'TDREP' prompt 'Tablespace in which to install default repository: [tdrep]: '
--- find out whether destructive actions are okay
-ACCEPT drop_obj char default 'N' prompt 'Do you want to issue DROP TABLE statements for any existing repository tables? [N]: '
+ACCEPT tablespace char default 'TDREP' prompt 'Tablespace for the default repository: [tdrep]: '
 
 WHENEVER sqlerror exit sql.sqlcode
 
--- create the tdsys repository
-@../install_tdsys_repo.sql
+-- upgrade the tdsys repository
+@../upgrade_tdsys_repo.sql
 
-DECLARE
-   l_drop BOOLEAN := CASE WHEN REGEXP_LIKE('yes','&drop_obj','i') THEN TRUE ELSE FALSE END;
+-- install the installation package
+@../plsql/specs/TD_ADM.pks
+@../plsql/wrapped_bodies/TD_ADM.plb
+
 BEGIN
-   -- create the Evolve repository
-   tdsys.td_adm.build_evolve_repo( p_schema => '&rep_schema', p_tablespace => '&tablespace', p_drop => l_drop);
-   -- create the Evolve application
-   tdsys.td_adm.build_evolve_app( p_schema => '&app_schema', p_repository => '&rep_schema', p_drop => l_drop);   
+   -- upgrade the Evolve repository
+   tdsys.td_adm.upgrade_evolve_repo( p_schema => '&rep_schema', p_tablespace => '&tablespace');
+   -- prepare for the Evolve application
+   tdsys.td_adm.build_evolve_app( p_schema => '&app_schema', p_repository => '&rep_schema');
 EXCEPTION
    WHEN tdsys.td_adm.repo_obj_exists
    THEN
@@ -77,8 +77,5 @@ END;
 @../evolve/plsql/wrapped_bodies/EVOLVE_OT.plb
 @../evolve/plsql/wrapped_bodies/TD_UTILS.plb
 @../evolve/plsql/wrapped_bodies/EVOLVE_ADM.plb
-
--- set the default logging, registration and runmodes
-EXEC evolve_adm.set_default_configs;
 
 SPOOL off
