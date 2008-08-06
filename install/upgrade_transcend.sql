@@ -1,7 +1,7 @@
 @upgrade_evolve.sql
 
-PROMPT 'Running install_transcend.sql'
-SPOOL InstallTranscend_&_DATE..log
+PROMPT 'Running upgrade_transcend.sql'
+SPOOL UpgradeTranscend_&_DATE..log
 
 BEGIN
    -- create the Transcend repository
@@ -14,7 +14,6 @@ EXCEPTION
    raise_application_error(-20003,'Repository tables exist. Specify ''Y'' when prompted to issue DROP TABLE statements');
 END;
 /
-
 
 -- Install the Transcend Pieces
 
