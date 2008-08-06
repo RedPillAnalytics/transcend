@@ -21,8 +21,8 @@ IS
       END IF;
 
       -- now simply return the type
-      RETURN o_map;
       o_ev.clear_app_info;
+      RETURN o_map;
    EXCEPTION
       WHEN OTHERS
       THEN
@@ -51,8 +51,8 @@ IS
       -- use another GET_MAPPING_OT function
       o_map    := get_mapping_ot( l_mapping );
       -- now simply return the type
-      RETURN o_map;
       o_ev.clear_app_info;
+      RETURN o_map;
    EXCEPTION
       WHEN OTHERS
       THEN
