@@ -8,11 +8,6 @@ IS
    repo_obj_exists EXCEPTION;
    no_sys_repo_entry EXCEPTION;
 
-   PROCEDURE build_sys_repo(
-      p_schema       VARCHAR2 DEFAULT 'TDSYS',
-      p_tablespace   VARCHAR2 DEFAULT 'TDSYS'
-   );
-      
    PROCEDURE build_evolve_repo(
       p_schema      VARCHAR2 DEFAULT 'TDSYS',
       p_tablespace  VARCHAR2 DEFAULT 'TDSYS',

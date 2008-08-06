@@ -287,140 +287,6 @@ IS
       raise_application_error( -20004, 'Some application objects do not exist.' );
    END grant_transcend_app_privs;
 
-   PROCEDURE build_sys_repo(
-      p_schema       VARCHAR2 DEFAULT DEFAULT_REPOSITORY,
-      p_tablespace   VARCHAR2 DEFAULT DEFAULT_REPOSITORY
-   )
-   IS
-   BEGIN
-      -- create the user if it doesn't already exist
-      -- if it does, then simply change the default tablespace for that user
-      create_user( p_user => p_schema, p_tablespace => p_tablespace );
-      -- alter session to CURRENT_SCHEMA
-      set_current_schema( p_schema => p_schema );
-
-      -- create all the tables
-      BEGIN
-         EXECUTE IMMEDIATE q'|CREATE TABLE repositories
-	 ( 
-	   repository_name    VARCHAR2(30) NOT NULL,
-	   product	      VARCHAR2(20),
-	   version	      NUMBER,
-	   created_user	      VARCHAR2(30) DEFAULT sys_context('USERENV','SESSION_USER') NOT NULL,
-	   created_dt	      DATE DEFAULT SYSDATE NOT NULL,
-	   modified_user      VARCHAR2(30),
-	   modified_dt	      DATE
-	 )|';
-
-         EXECUTE IMMEDIATE q'|ALTER TABLE repositories ADD 
-	 (
-           CONSTRAINT repositories_pk
-           PRIMARY KEY
-	   (repository_name)
-	   USING INDEX
-	 )|';
-
-      EXCEPTION
-         WHEN e_tab_exists
-         THEN
-            NULL;
-      END;
-
-
-      BEGIN
-         EXECUTE IMMEDIATE q'|CREATE TABLE applications
-	 ( 
-	   application_name   VARCHAR2(30) NOT NULL,
-	   repository_name    VARCHAR2(30) NOT NULL,
-	   product	      VARCHAR2(20),
-	   version 	      NUMBER,
-	   created_user	      VARCHAR2(30) DEFAULT sys_context('USERENV','SESSION_USER') NOT NULL,
-	   created_dt	      DATE DEFAULT SYSDATE NOT NULL,
-	   modified_user      VARCHAR2(30),
-	   modified_dt	      DATE
-	 )|';
-
-         EXECUTE IMMEDIATE q'|ALTER TABLE applications ADD 
-	 (
-	   CONSTRAINT applications_pk
-	   PRIMARY KEY
-	   (application_name)
-	   USING INDEX
-	 )|';
-
-         EXECUTE IMMEDIATE q'|ALTER TABLE applications ADD 
-	 (
-	   CONSTRAINT applications_fk1
-	   FOREIGN KEY (repository_name)
-	   REFERENCES repositories  
-	   ( repository_name )
-	 )|';
-
-      EXCEPTION
-         WHEN e_tab_exists
-         THEN
-            NULL;
-      END;
-
-
-      BEGIN
-         EXECUTE IMMEDIATE q'|CREATE TABLE users
-	 ( 
-	   user_name          VARCHAR2(30) NOT NULL,
-	   application_name   VARCHAR2(30) NOT NULL,
-	   repository_name    VARCHAR2(30) NOT NULL,
-	   product	      VARCHAR2(20),
-	   version 	      NUMBER,
-	   created_user	      VARCHAR2(30) DEFAULT sys_context('USERENV','SESSION_USER') NOT NULL,
-	   created_dt	      DATE DEFAULT SYSDATE NOT NULL,
-	   modified_user      VARCHAR2(30),
-	   modified_dt	      DATE
-	 )|';
-
-         EXECUTE IMMEDIATE q'|ALTER TABLE users ADD 
-	 (
-	   CONSTRAINT users_pk
-	   PRIMARY KEY
-	   (user_name)
-	   USING INDEX
-	 )|';
-
-         EXECUTE IMMEDIATE q'|ALTER TABLE users ADD 
-	 (
-	   CONSTRAINT users_fk1
-	   FOREIGN KEY (repository_name)
-	   REFERENCES repositories  
-	   ( repository_name )
-	 )|';
-
-         EXECUTE IMMEDIATE q'|ALTER TABLE users ADD 
-	 (
-	   CONSTRAINT users_fk2
-	   FOREIGN KEY (application_name)
-	   REFERENCES applications 
-	   ( application_name )
-	 )|';
-
-      EXCEPTION
-         WHEN e_tab_exists
-         THEN
-            NULL;
-      END;
-
-      -- if the default tablespace was changed, then put it back
-      reset_default_tablespace;
-      -- set CURRENT_SCHEMA back to where it started
-      reset_current_schema;
-   EXCEPTION
-      WHEN OTHERS
-      THEN
-         -- if the default tablespace was changed, then put it back
-         reset_default_tablespace;
-         -- set CURRENT_SCHEMA back to where it started
-         reset_current_schema;
-         RAISE;
-   END build_sys_repo;
-
    PROCEDURE drop_evolve_repo(
       p_schema       VARCHAR2 DEFAULT DEFAULT_REPOSITORY
    )
@@ -2313,34 +2179,6 @@ IS
       grant_transcend_app_privs( p_user=> p_user, p_schema => p_application );
 
    END create_transcend_user;
-   
-   PROCEDURE upgrade_sys_repo(
-      p_schema    VARCHAR2 DEFAULT DEFAULT_REPOSITORY
-   )
-   IS
-   BEGIN
-      
-      -- in future releases, there will be a statement here that selects the current version from the repository
-      -- currently, the version information in the sys repository doesn't have version information
-      -- so we won't be selecting that now
-      
-      -- ticket:95
-      -- add version and product columns to the sys repository tables
-      EXECUTE IMMEDIATE q'|alter table tdsys.repositories add product VARCHAR2(20)|';
-      EXECUTE IMMEDIATE q'|alter table tdsys.applications add product VARCHAR2(20)|';
-      EXECUTE IMMEDIATE q'|alter table tdsys.users add product VARCHAR2(20)|';
-
-      EXECUTE IMMEDIATE q'|alter table tdsys.repositories add version NUMBER|';
-      EXECUTE IMMEDIATE q'|alter table tdsys.applications add version NUMBER|';
-      EXECUTE IMMEDIATE q'|alter table tdsys.users add version NUMBER|';
-
-      -- the default version will be 1.2 for anything without a version number
-      -- currently no Evolve-only customers, so the default product will be 'transcend'
-      EXECUTE IMMEDIATE q'|update tdsys.repositories set version='1.2', product='transcend' where version is null|';
-      EXECUTE IMMEDIATE q'|update tdsys.applications set version='1.2', product='transcend' where version is null|';
-      EXECUTE IMMEDIATE q'|update tdsys.users set version='1.2', product='transcend' where version is null|';
-
-   END upgrade_sys_repo;
 
    PROCEDURE upgrade_evolve_repo(
       p_schema    VARCHAR2 DEFAULT DEFAULT_REPOSITORY
@@ -2353,7 +2191,7 @@ IS
 
       -- get the current version number
       BEGIN
-
+	 
 	 SELECT version
 	   INTO l_version
 	   FROM tdsys.repositories
@@ -2411,7 +2249,10 @@ IS
 	 
 	 -- ticket:92
 	 -- change the value used for "default" configuration entries
-	 EXECUTE IMMEDIATE q'|alter table mapping_conf modify mapping_name varchar2(40)|';	 
+	 EXECUTE IMMEDIATE q'|alter table mapping_conf modify mapping_name varchar2(40)|';
+	 
+	 -- upgrade the repository version information to 1.3
+	 
 	 
       END IF;
 
