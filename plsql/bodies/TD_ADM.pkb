@@ -24,6 +24,8 @@ IS
    PRAGMA EXCEPTION_INIT( e_no_seq, -2289 );
    e_same_name    EXCEPTION;
    PRAGMA EXCEPTION_INIT( e_same_name, -1471 );
+   e_ins_privs    EXCEPTION;
+   PRAGMA EXCEPTION_INIT( e_same_name, -1031 );
 
 
    PROCEDURE create_user( p_user VARCHAR2 DEFAULT DEFAULT_REPOSITORY, p_tablespace VARCHAR2 DEFAULT NULL )
@@ -197,8 +199,7 @@ IS
    PROCEDURE grant_evolve_app_privs( p_user VARCHAR2, p_schema VARCHAR2 DEFAULT DEFAULT_REPOSITORY )
    IS
    BEGIN
-      EXECUTE IMMEDIATE 'grant execute on TDSYS.TD_ADM to ' || p_user;
-
+      
       -- types
       EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.APP_OT to ' || p_user;
 
@@ -708,19 +709,19 @@ IS
 	 -- write the audit record for creating or modifying the repository
 	 -- doe this as an EXECUTE IMMEDIATE because the package won't compile otherwise
 	 -- that's because the package itself creates the table
-         EXECUTE IMMEDIATE q'|UPDATE tdsys.repositories
-	 SET modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
-	 modified_dt = SYSDATE
-	 WHERE repository_name=upper(:b_schema)|'
-                     USING p_schema;
+         UPDATE tdsys.repositories
+	    SET modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
+		modified_dt = SYSDATE,
+		version = td_adm.version,
+		product = 'evolve'
+	  WHERE repository_name=upper( p_schema );
 
          IF SQL%ROWCOUNT = 0
          THEN
-            EXECUTE IMMEDIATE q'|INSERT INTO tdsys.repositories
-	    ( repository_name, product, version)
-	    VALUES
-	    ( upper(:b_schema),'evolve', :b_version)|'
-            USING p_schema, td_version;
+            INSERT INTO tdsys.repositories
+		   ( repository_name, product, version)
+		   VALUES
+		   ( upper( p_schema ), 'evolve', td_adm.version );
          END IF;
       EXCEPTION
          WHEN e_tab_exists
@@ -868,7 +869,7 @@ IS
          WHEN e_tab_exists OR e_stat_tab_exists
          THEN
             RAISE e_repo_obj_exists;
-      END;
+      END;      
 
       -- set current_schema back to where it started
       reset_current_schema;
@@ -1216,17 +1217,14 @@ IS
          THEN
             RAISE e_repo_obj_exists;
       END;
-      
-      -- write the audit record for creating or modifying the repository
-      -- doe this as an EXECUTE IMMEDIATE because the package won't compile otherwise
-      -- that's because the package itself creates the table
-      EXECUTE IMMEDIATE q'|UPDATE tdsys.repositories
-      SET modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
-      modified_dt = SYSDATE,
-      product = 'transcend',
-      version = :b_version
-      WHERE repository_name=upper(:b_schema)|'
-      USING p_schema, td_version;
+
+      -- the reason for this update is to set the product from 'evolve' to 'transcend'      
+      UPDATE tdsys.repositories
+	 SET modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
+	     modified_dt = SYSDATE,
+	     product = 'transcend',
+	     version = td_adm.version
+       WHERE repository_name=upper( p_schema );
       
       IF SQL%ROWCOUNT = 0
       THEN
@@ -1663,189 +1661,140 @@ IS
       END;
    END build_transcend_app_syns;
 
-   PROCEDURE grant_evolve_sys_privs( p_schema VARCHAR2 DEFAULT DEFAULT_REPOSITORY, p_drop BOOLEAN DEFAULT FALSE )
+   PROCEDURE grant_trans_files_sys_privs( p_schema VARCHAR2 DEFAULT DEFAULT_REPOSITORY, p_drop BOOLEAN DEFAULT FALSE )
    IS
-      l_sys_role      VARCHAR2( 30 ) := p_schema || '_sys';
-      l_java_role     VARCHAR2( 30 ) := p_schema || '_java';
-      e_no_role       EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_no_role, -1919 );
-      e_ins_privs        EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_ins_privs, -1031 );
    BEGIN
-      -- this will drop the roles before beginning
-      IF p_drop
-      THEN
-         BEGIN
-            EXECUTE IMMEDIATE 'DROP role ' || l_sys_role;
-         EXCEPTION
-            WHEN e_no_role
-            THEN
-               NULL;
-         END;
 
-         BEGIN
-            EXECUTE IMMEDIATE 'DROP role ' || l_java_role;
-         EXCEPTION
-            WHEN e_no_role
-            THEN
-               NULL;
-         END;
-      END IF;
-
-      BEGIN
-         EXECUTE IMMEDIATE 'CREATE ROLE ' || l_sys_role;
-      EXCEPTION
-         WHEN e_role_exists
-         THEN
-            NULL;
-      END;
-
-      BEGIN
-         EXECUTE IMMEDIATE 'CREATE ROLE ' || l_java_role;
-      EXCEPTION
-         WHEN e_role_exists
-         THEN
-            NULL;
-      END;
-
-      -- for each system privilege, grant it to the application owner and the _SYS role
-      EXECUTE IMMEDIATE 'GRANT CONNECT TO ' || l_sys_role;
-
-      EXECUTE IMMEDIATE 'GRANT CONNECT TO ' || p_schema;
-
-      EXECUTE IMMEDIATE 'GRANT RESOURCE TO ' || l_sys_role;
-
-      EXECUTE IMMEDIATE 'GRANT RESOURCE TO ' || p_schema;
-
-      EXECUTE IMMEDIATE 'GRANT ALTER SESSION TO ' || l_sys_role;
-
-      EXECUTE IMMEDIATE 'GRANT ALTER SESSION TO ' || p_schema;
-
-      EXECUTE IMMEDIATE 'GRANT SELECT ANY DICTIONARY TO ' || l_sys_role;
-
-      EXECUTE IMMEDIATE 'GRANT SELECT ANY DICTIONARY TO ' || p_schema;
-
-      -- grant permissions on UTL_MAIL
-      -- if the package doesn't exist, or the user doesn't have access to see it, then fail
-      BEGIN
-         EXECUTE IMMEDIATE 'GRANT EXECUTE ON sys.utl_mail TO ' || l_sys_role;
-
-         EXECUTE IMMEDIATE 'GRANT EXECUTE ON sys.utl_mail TO ' || p_schema;
-      EXCEPTION
-         WHEN e_no_obj OR e_no_tab
-         THEN
-	   dbms_output.put_line( 'The installing user cannot see package UTL_MAIL. EXECUTE on UTL_MAIL needs to be granted to user '||p_schema||' and role '||l_sys_role||'.' );
-	 WHEN e_ins_privs
-	 THEN
-	   dbms_output.put_line( 'The installing user cannot grant execute on UTL_MAIL. EXECUTE on UTL_MAIL needs to be granted to user '||p_schema||' and role '||l_sys_role||'.' );
-      END;
-
-      -- grant permissions on DBMS_LOCK
-      -- if the package doesn't exist, or the user doesn't have access to see it, then fail
-      BEGIN
-         EXECUTE IMMEDIATE 'GRANT EXECUTE ON sys.dbms_lock TO ' || l_sys_role;
-
-         EXECUTE IMMEDIATE 'GRANT EXECUTE ON sys.dbms_lock TO ' || p_schema;
-      EXCEPTION
-         WHEN e_no_obj OR e_no_tab
-         THEN
-	   dbms_output.put_line( 'The installing user cannot see package DBMS_LOCK. EXECUTE on DBMS_LOCK needs to be granted to user '||p_schema||' and role '||l_sys_role||'.' );
-	 WHEN e_ins_privs
-	 THEN
-	   dbms_output.put_line( 'The installing user cannot grant execute on DBMS_LOCK. EXECUTE on DBMS_LOCK needs to be granted to user '||p_schema||' and role '||l_sys_role||'.' );
-      END;
-
-      -- grant permissions on DBMS_FLASHBACK
-      -- if the package doesn't exist, or the user doesn't have access to see it, then fail
-      BEGIN
-         EXECUTE IMMEDIATE 'GRANT EXECUTE ON sys.dbms_flashback TO ' || l_sys_role;
-
-         EXECUTE IMMEDIATE 'GRANT EXECUTE ON sys.dbms_flashback TO ' || p_schema;
-      EXCEPTION
-         WHEN e_no_obj OR e_no_tab
-         THEN
-	   dbms_output.put_line( 'The installing user cannot see package DBMS_FLASHBACK. EXECUTE on DBMS_FLASHBACK needs to be granted to user '||p_schema||' and role '||l_sys_role||'.' );
-	 WHEN e_ins_privs
-	 THEN
-	   dbms_output.put_line( 'The installing user cannot grant execute on DBMS_FLASHBACK. EXECUTE on DBMS_FLASHBACK needs to be granted to user '||p_schema||' and role '||l_sys_role||'.' );
-      END;
-
-      -- grant java specific privilege to the _JAVA role
+      -- grant full java permissions needed to manipulate any file and perform any action at the OS level to the TRANS_FILES_SYS role
       DBMS_JAVA.set_output( 1000000 );
-      DBMS_JAVA.grant_permission( UPPER( l_java_role ), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'execute' );
-      DBMS_JAVA.grant_permission( UPPER( l_java_role ), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'read' );
-      DBMS_JAVA.grant_permission( UPPER( l_java_role ), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'write' );
-      DBMS_JAVA.grant_permission( UPPER( l_java_role ), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'delete' );
-      DBMS_JAVA.grant_permission( UPPER( l_java_role ), 'SYS:java.lang.RuntimePermission', 'writeFileDescriptor', '' );
-      DBMS_JAVA.grant_permission( UPPER( l_java_role ), 'SYS:java.lang.RuntimePermission', 'readFileDescriptor', '' );
+      DBMS_JAVA.grant_permission( UPPER( trans_files_role ), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'execute' );
+      DBMS_JAVA.grant_permission( UPPER( trans_files_role ), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'read' );
+      DBMS_JAVA.grant_permission( UPPER( trans_files_role ), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'write' );
+      DBMS_JAVA.grant_permission( UPPER( trans_files_role ), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'delete' );
+      DBMS_JAVA.grant_permission( UPPER( trans_files_role ), 'SYS:java.lang.RuntimePermission', 'writeFileDescriptor', '' );
+      DBMS_JAVA.grant_permission( UPPER( trans_files_role ), 'SYS:java.lang.RuntimePermission', 'readFileDescriptor', '' );
 
-      -- grant the _JAVA role to the app owner and the _APP role
-      EXECUTE IMMEDIATE 'GRANT ' || l_java_role || ' TO ' || l_sys_role;
-
-      EXECUTE IMMEDIATE 'GRANT ' || l_java_role || ' TO ' || p_schema;
    EXCEPTION
       WHEN OTHERS
       THEN
          -- set current_schema back to where it started
          reset_current_schema;
          RAISE;
-   END grant_evolve_sys_privs;
+   END grant_trans_files_sys_privs;
 
-   PROCEDURE grant_transcend_sys_privs( p_schema VARCHAR2 DEFAULT DEFAULT_REPOSITORY )
+   PROCEDURE grant_trans_etl_sys_privs( p_schema VARCHAR2 DEFAULT DEFAULT_REPOSITORY )
    IS
-      l_sys_role      VARCHAR2( 30 ) := p_schema || '_sys';
-      l_java_role     VARCHAR2( 30 ) := p_schema || '_java';
       e_no_role       EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_role, -1919 );
    BEGIN
       BEGIN
          -- for each system privilege, grant it to the application owner and the _SYS role
-         EXECUTE IMMEDIATE 'GRANT ALTER ANY TABLE TO ' || p_schema || '_sys';
+         EXECUTE IMMEDIATE 'GRANT ALTER ANY TABLE TO ' || trans_etl_role;
 
-         EXECUTE IMMEDIATE 'GRANT INSERT ANY TABLE TO ' || p_schema || '_sys';
+         EXECUTE IMMEDIATE 'GRANT INSERT ANY TABLE TO ' || trans_etl_role;
 
-         EXECUTE IMMEDIATE 'GRANT SELECT ANY dictionary TO ' || p_schema || '_sys';
+         EXECUTE IMMEDIATE 'GRANT SELECT ANY dictionary TO ' || trans_etl_role;
 
-         EXECUTE IMMEDIATE 'GRANT SELECT ANY TABLE TO ' || p_schema || '_sys';
+         EXECUTE IMMEDIATE 'GRANT SELECT ANY TABLE TO ' || trans_etl_role;
 
-         EXECUTE IMMEDIATE 'GRANT SELECT ANY SEQUENCE TO ' || p_schema || '_sys';
+         EXECUTE IMMEDIATE 'GRANT SELECT ANY SEQUENCE TO ' || trans_etl_role;
 
-         EXECUTE IMMEDIATE 'GRANT UPDATE ANY TABLE TO ' || p_schema || '_sys';
+         EXECUTE IMMEDIATE 'GRANT UPDATE ANY TABLE TO ' || trans_etl_role;
 
-         EXECUTE IMMEDIATE 'GRANT DELETE ANY TABLE TO ' || p_schema || '_sys';
+         EXECUTE IMMEDIATE 'GRANT DELETE ANY TABLE TO ' || trans_etl_role;
 
-         EXECUTE IMMEDIATE 'GRANT ALTER ANY INDEX TO ' || p_schema || '_sys';
+         EXECUTE IMMEDIATE 'GRANT ALTER ANY INDEX TO ' || trans_etl_role;
 
-         EXECUTE IMMEDIATE 'GRANT CREATE ANY INDEX TO ' || p_schema || '_sys';
+         EXECUTE IMMEDIATE 'GRANT CREATE ANY INDEX TO ' || trans_etl_role;
 
-         EXECUTE IMMEDIATE 'GRANT DROP ANY INDEX TO ' || p_schema || '_sys';
+         EXECUTE IMMEDIATE 'GRANT DROP ANY INDEX TO ' || trans_etl_role;
 
-         EXECUTE IMMEDIATE 'GRANT DROP ANY TABLE TO ' || p_schema || '_sys';
+         EXECUTE IMMEDIATE 'GRANT DROP ANY TABLE TO ' || trans_etl_role;
 
-         EXECUTE IMMEDIATE 'GRANT ANALYZE ANY TO ' || p_schema || '_sys';
+         EXECUTE IMMEDIATE 'GRANT ANALYZE ANY TO ' || trans_etl_role;
       EXCEPTION
          WHEN e_no_obj
          THEN
             raise_application_error( -20004, 'Some repository objects do not exist.' );
       END;
-   END grant_transcend_sys_privs;
+   END grant_trans_etl_sys_privs;
 
    PROCEDURE build_evolve_app(
       p_schema       VARCHAR2 DEFAULT DEFAULT_REPOSITORY,
-      p_repository   VARCHAR2 DEFAULT DEFAULT_REPOSITORY,
-      p_drop         BOOLEAN DEFAULT FALSE
+      p_repository   VARCHAR2 DEFAULT DEFAULT_REPOSITORY
    )
    IS
    BEGIN
       -- create the user if it doesn't already exist
       create_user( p_user => p_schema );
-      -- two packages that are needed
+      
+      -- grant required permissions for code compilation
+      BEGIN
+	 EXECUTE IMMEDIATE 'GRANT RESOURCE TO ' || p_schema;
+      EXCEPTION
+	 WHEN e_ins_privs
+	 THEN
+	    dbms_output.put_line( 'The installing user cannot grant the RESOURCE role. RESOURCE needs to be granted to user '||p_schema||'.' );
+      END;
+      
+      BEGIN
+         EXECUTE IMMEDIATE 'GRANT ALTER SESSION TO ' || p_schema;
+      EXCEPTION
+	 WHEN e_ins_privs
+	 THEN
+	    dbms_output.put_line( 'The installing user cannot grant the ALTER SESSION system privilege. ALTER SESSION needs to be granted to user '||p_schema||'.' );
+      END;
+      
+      BEGIN
+         EXECUTE IMMEDIATE 'GRANT SELECT ANY DICTIONARY TO ' || p_schema;
+      EXCEPTION
+	 WHEN e_ins_privs
+	 THEN
+	    dbms_output.put_line( 'The installing user cannot grant the SELECT ANY DICTIONARY system privilege. RESOURCE needs to be granted to user '||p_schema||'.' );
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE 'GRANT EXECUTE ON sys.utl_mail TO ' || p_schema;
+      EXCEPTION
+         WHEN e_no_obj OR e_no_tab
+         THEN
+	    dbms_output.put_line( 'The installing user cannot see package UTL_MAIL. The package needs to be created, and EXECUTE needs to be granted to user '||p_schema||'.' );
+	 WHEN e_ins_privs
+	 THEN
+	    dbms_output.put_line( 'The installing user cannot grant execute on UTL_MAIL. EXECUTE needs to be granted to user '||p_schema||'.' );
+      END;
+
+      -- grant permissions on DBMS_LOCK
+      -- if the package doesn't exist, or the user doesn't have access to see it, then fail
+      BEGIN
+         EXECUTE IMMEDIATE 'GRANT EXECUTE ON sys.dbms_lock TO ' || p_schema;
+      EXCEPTION
+         WHEN e_no_obj OR e_no_tab
+         THEN
+	    dbms_output.put_line( 'The installing user cannot see package DBMS_LOCK. The package needs to be created, and EXECUTE needs to be granted to user '||p_schema||'.' );
+	 WHEN e_ins_privs
+	 THEN
+	    dbms_output.put_line( 'The installing user cannot grant execute on DBMS_LOCK. EXECUTE needs to be granted to user '||p_schema||'.' );
+      END;
+
+      -- grant permissions on DBMS_FLASHBACK
+      -- if the package doesn't exist, or the user doesn't have access to see it, then fail
+      BEGIN
+         EXECUTE IMMEDIATE 'GRANT EXECUTE ON sys.dbms_flashback TO ' || p_schema;
+      EXCEPTION
+         WHEN e_no_obj OR e_no_tab
+         THEN
+	    dbms_output.put_line( 'The installing user cannot see package DBMS_FLASHBACK. The package needs to be created, and EXECUTE needs to be granted to user '||p_schema||'.' );
+	 WHEN e_ins_privs
+	 THEN
+	    dbms_output.put_line( 'The installing user cannot grant execute on DBMS_FLASHBACK. EXECUTE needs to be granted to user '||p_schema||'.' );
+      END;
 
       -- set CURRENT_SCHEMA to the owner of the repository
       set_current_schema( p_schema => p_repository );
 
       -- drop all the code objects if they exist
-      drop_evolve_app;
+      drop_evolve_app( p_schema => p_schema );
       
       -- create grants to the application owner to all the tables in the repository
       grant_evolve_rep_privs( p_grantee => p_schema );
@@ -1861,26 +1810,26 @@ IS
       create_scheduler_metadata;
 
       -- write application tracking record
-      EXECUTE IMMEDIATE q'|UPDATE tdsys.applications
-      SET repository_name = upper(:b_rep_schema),
-      modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
-      modified_dt = SYSDATE
-      WHERE application_name=upper(:b_app_schema)|'
-                  USING p_repository, p_schema;
-
+      UPDATE tdsys.applications
+	 SET repository_name = upper( p_repository ),
+	     product = 'evolve',
+	     version = td_adm.version,
+	     modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
+	     modified_dt = SYSDATE
+       WHERE application_name=upper( p_schema );
+      
       IF SQL%ROWCOUNT = 0
       THEN
-         EXECUTE IMMEDIATE q'|INSERT INTO tdsys.applications
-	 ( application_name,
-	   repository_name,
-	   product,
-	   version )
-	 VALUES
-	 ( upper(:b_app_schema),
-	   upper(:b_rep_schema),
-	   'evolve',
-	   :b_version )|'
-         USING p_schema, p_repository, td_version;
+         INSERT INTO tdsys.applications
+		( application_name,
+		  repository_name,
+		  product,
+		  version )
+		VALUES
+		( upper( p_schema ),
+		  upper( p_repository ),
+		  'evolve',
+		  td_adm.version );
       END IF;
 
       DBMS_OUTPUT.put_line(    ' The CURRENT_SCHEMA is set to '
@@ -1891,8 +1840,7 @@ IS
 
    PROCEDURE build_transcend_app(
       p_schema       VARCHAR2 DEFAULT DEFAULT_REPOSITORY,
-      p_repository   VARCHAR2 DEFAULT DEFAULT_REPOSITORY,
-      p_drop         BOOLEAN DEFAULT FALSE
+      p_repository   VARCHAR2 DEFAULT DEFAULT_REPOSITORY
    )
    IS
    BEGIN
@@ -1900,7 +1848,7 @@ IS
       set_current_schema( p_schema => p_repository );
 
       -- drop all the transcend application objects in order to make sure they can be recreated
-      drop_transcend_app;
+      drop_transcend_app( p_schema => p_schema );
 
       -- create grants to the application owner to all the tables in the repository
       grant_transcend_rep_privs( p_user => p_schema );
@@ -1912,15 +1860,30 @@ IS
       build_transcend_rep_syns( p_user => p_schema, p_schema => p_repository );
       -- grant application privileges to the roles
       grant_transcend_sys_privs( p_schema => p_schema );
+      
+      -- the reason for this update is to set the product from 'evolve' to 'transcend'      
+      -- write application tracking record
+      UPDATE tdsys.applications
+	 SET modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
+	     modified_dt = SYSDATE,
+	     product = 'transcend',
+	     version = td_adm.version
+       WHERE application_name=upper( p_schema );
+            
+      IF SQL%ROWCOUNT = 0
+      THEN
+	 RAISE no_sys_repo_entry;
+      END IF;
+
    END build_transcend_app;
 
-   PROCEDURE drop_evolve_app
+   PROCEDURE drop_evolve_app ( p_schema VARCHAR2 )
    IS
    BEGIN
       
       -- this type is created first as it's needed for the TD_CORE
       BEGIN
-         EXECUTE IMMEDIATE 'DROP TYPE split_ot';
+         EXECUTE IMMEDIATE 'DROP TYPE '||p_schema||'.split_ot';
       EXCEPTION
          when e_no_obj
          THEN
@@ -1930,7 +1893,7 @@ IS
 
       -- td_core package
       BEGIN
-         EXECUTE IMMEDIATE 'DROP package td_core';
+         EXECUTE IMMEDIATE 'DROP package '||p_schema||'.td_core';
       EXCEPTION
          when e_no_obj
          THEN
@@ -1939,7 +1902,7 @@ IS
 
       -- STRAGG function
       BEGIN
-         EXECUTE IMMEDIATE 'DROP package string_agg_ot';
+         EXECUTE IMMEDIATE 'DROP package '||p_schema||'.string_agg_ot';
       EXCEPTION
          when e_no_obj
          THEN
@@ -1947,7 +1910,7 @@ IS
       END;
 
       BEGIN
-         EXECUTE IMMEDIATE 'DROP function stragg';
+         EXECUTE IMMEDIATE 'DROP function '||p_schema||'.stragg';
       EXCEPTION
          when e_no_obj
          THEN
@@ -1956,7 +1919,7 @@ IS
       
       -- java stored procedures
       BEGIN
-         EXECUTE IMMEDIATE 'DROP java source TdCore';
+         EXECUTE IMMEDIATE 'DROP java source '||p_schema||'.TdCore';
       EXCEPTION
          when e_no_obj
          THEN
@@ -1965,7 +1928,7 @@ IS
       
       -- td_inst package
       BEGIN
-         EXECUTE IMMEDIATE 'DROP package td_inst';
+         EXECUTE IMMEDIATE 'DROP package '||p_schema||'.td_inst';
       EXCEPTION
          when e_no_obj
          THEN
@@ -1974,7 +1937,7 @@ IS
       
       -- evolve package
       BEGIN
-         EXECUTE IMMEDIATE 'DROP package evolve';
+         EXECUTE IMMEDIATE 'DROP package '||p_schema||'.evolve';
       EXCEPTION
          when e_no_obj
          THEN
@@ -1983,7 +1946,7 @@ IS
       
       -- types need to be dropped in a specific order
       BEGIN
-         EXECUTE IMMEDIATE 'DROP TYPE notification_ot';
+         EXECUTE IMMEDIATE 'DROP TYPE '||p_schema||'.notification_ot';
       EXCEPTION
          when e_no_obj
          THEN
@@ -1991,7 +1954,7 @@ IS
       END;
 
       BEGIN
-         EXECUTE IMMEDIATE 'DROP TYPE evolve_ot';
+         EXECUTE IMMEDIATE 'DROP TYPE '||p_schema||'.evolve_ot';
       EXCEPTION
          when e_no_obj
          THEN
@@ -1999,7 +1962,7 @@ IS
       END;
 
       BEGIN
-         EXECUTE IMMEDIATE 'DROP TYPE app_ot';
+         EXECUTE IMMEDIATE 'DROP TYPE '||p_schema||'.app_ot';
       EXCEPTION
          when e_no_obj
          THEN
@@ -2008,7 +1971,7 @@ IS
 
       -- utilities package
       BEGIN
-         EXECUTE IMMEDIATE 'DROP package td_utils';
+         EXECUTE IMMEDIATE 'DROP package '||p_schema||'.td_utils';
       EXCEPTION
          when e_no_obj
          THEN
@@ -2017,7 +1980,7 @@ IS
       
       -- evolve callable packages
       BEGIN
-         EXECUTE IMMEDIATE 'DROP package evolve';
+         EXECUTE IMMEDIATE 'DROP package '||p_schema||'.evolve';
       EXCEPTION
          when e_no_obj
          THEN
@@ -2025,7 +1988,7 @@ IS
       END;
       
       BEGIN
-         EXECUTE IMMEDIATE 'DROP package evolve_adm';
+         EXECUTE IMMEDIATE 'DROP package '||p_schema||'.evolve_adm';
       EXCEPTION
          when e_no_obj
          THEN
@@ -2034,11 +1997,11 @@ IS
 
    END drop_evolve_app;
 
-   PROCEDURE drop_transcend_app
+   PROCEDURE drop_transcend_app ( p_schema VARCHAR2 )
    IS
    BEGIN
       BEGIN
-         EXECUTE IMMEDIATE 'DROP TYPE dimension_ot';
+         EXECUTE IMMEDIATE 'DROP TYPE '||p_schema||'.dimension_ot';
       EXCEPTION
          WHEN e_no_obj
          THEN
@@ -2046,7 +2009,7 @@ IS
       END;
 
       BEGIN
-         EXECUTE IMMEDIATE 'DROP TYPE mapping_ot';
+         EXECUTE IMMEDIATE 'DROP TYPE '||p_schema||'.mapping_ot';
       EXCEPTION
          WHEN e_no_obj
          THEN
@@ -2054,7 +2017,7 @@ IS
       END;
 
       BEGIN
-         EXECUTE IMMEDIATE 'DROP TYPE feed_ot';
+         EXECUTE IMMEDIATE 'DROP TYPE '||p_schema||'.feed_ot';
       EXCEPTION
          WHEN e_no_obj
          THEN
@@ -2062,7 +2025,7 @@ IS
       END;
 
       BEGIN
-         EXECUTE IMMEDIATE 'DROP TYPE extract_ot';
+         EXECUTE IMMEDIATE 'DROP TYPE '||p_schema||'.extract_ot';
       EXCEPTION
          WHEN e_no_obj
          THEN
@@ -2070,7 +2033,7 @@ IS
       END;
 
       BEGIN
-         EXECUTE IMMEDIATE 'DROP TYPE file_ot';
+         EXECUTE IMMEDIATE 'DROP TYPE '||p_schema||'.file_ot';
       EXCEPTION
          WHEN e_no_obj
          THEN
@@ -2078,7 +2041,7 @@ IS
       END;
 
       BEGIN
-         EXECUTE IMMEDIATE 'DROP package td_dbutils';
+         EXECUTE IMMEDIATE 'DROP package '||p_schema||'.td_dbutils';
       EXCEPTION
          WHEN e_no_obj
          THEN
@@ -2086,7 +2049,7 @@ IS
       END;
       
       BEGIN
-         EXECUTE IMMEDIATE 'DROP package trans_adm';
+         EXECUTE IMMEDIATE 'DROP package '||p_schema||'.trans_adm';
       EXCEPTION
          WHEN e_no_obj
          THEN
@@ -2094,7 +2057,7 @@ IS
       END;
       
       BEGIN
-         EXECUTE IMMEDIATE 'DROP package trans_etl';
+         EXECUTE IMMEDIATE 'DROP package '||p_schema||'.trans_etl';
       EXCEPTION
          WHEN e_no_obj
          THEN
@@ -2102,7 +2065,7 @@ IS
       END;
       
       BEGIN
-         EXECUTE IMMEDIATE 'DROP package trans_files';
+         EXECUTE IMMEDIATE 'DROP package '||p_schema||'.trans_files';
       EXCEPTION
          WHEN e_no_obj
          THEN
@@ -2117,6 +2080,7 @@ IS
       p_repository    VARCHAR2 DEFAULT DEFAULT_REPOSITORY
    )
    IS
+      l_adm_role VARCHAR2(30) := p_repository || '_adm';
    BEGIN
       -- create the user if it doesn't already exist
       create_user( p_user => p_user );
@@ -2127,34 +2091,50 @@ IS
 
       -- grant execute on the framework to the new user
       grant_evolve_app_privs( p_user=> p_user, p_schema => p_application );
-
-      EXECUTE IMMEDIATE 'grant ' || p_repository || '_adm to ' || p_user;
+      
+      -- grant permissions to use the Oracle Scheduler
+      -- need the permission to create a job
+      -- this is for concurrent processing
+      BEGIN
+         EXECUTE IMMEDIATE 'GRANT create job TO ' || p_user;
+      EXCEPTION
+	 WHEN e_ins_privs
+	 THEN
+	    dbms_output.put_line( 'The executing user cannot grant the CREATE JOB system privilege. CREATE JOB needs to be granted to user '||p_schema||'.' );
+      END;
+      
+      BEGIN
+	 EXECUTE IMMEDIATE 'grant ' || l_adm_role || ' to ' || p_user;
+      EXCEPTION
+	 WHEN e_ins_privs
+	 THEN
+	 dbms_output.put_line( 'The executing user cannot grant the role ' || l_adm_role || '. '||l_adm_role ' needs to be granted to user '||p_schema||'.' );
+      END;
 
       -- write audit record for creating or modifying a user record
-      -- use EXECUTE IMMEDIATE because the table does not exist when this package is created
-      EXECUTE IMMEDIATE q'|UPDATE tdsys.users
-      SET application_name = upper(:b_app_schema),
-      repository_name = upper(:b_rep_schema),
-      modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
-      modified_dt = SYSDATE
-      WHERE user_name=upper(:b_user)|'
-                  USING p_application, p_repository, p_user;
+      UPDATE tdsys.users
+	 SET application_name = upper( p_application ),
+	     repository_name = upper( p_repository ),
+	     version = td_adm.version,
+	     product = 'evolve',
+	     modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
+	     modified_dt = SYSDATE
+       WHERE user_name=upper( p_user );
 
       IF SQL%ROWCOUNT = 0
       THEN
-         EXECUTE IMMEDIATE q'|INSERT INTO tdsys.users
-	 ( user_name,
-	   application_name,
-	   repository_name,
-	   product,
-	   version )
-	 VALUES
-	 ( upper(:b_user),
-	   upper(:b_app_schema),
-	   upper(:b_rep_schema),
-	   'evolve',
-	   :b_version )|'
-         USING p_user, p_application, p_repository, td_version;
+         INSERT INTO tdsys.users
+		( user_name,
+		  application_name,
+		  repository_name,
+		  product,
+		  version )
+		VALUES
+		( upper( p_user ),
+		  upper( p_application ),
+		  upper( p_repository ),
+		  'evolve',
+		  td_adm.version );
       END IF;
    END create_evolve_user;
 
@@ -2177,6 +2157,16 @@ IS
       
       -- grant execute on the framework to the new user
       grant_transcend_app_privs( p_user=> p_user, p_schema => p_application );
+      
+      -- write audit record for modifying a user record
+      UPDATE tdsys.users
+	 SET application_name = upper( p_application ),
+	     repository_name = upper( p_repository ),
+	     version = td_adm.version,
+	     product = 'transcend'
+	     modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
+	     modified_dt = SYSDATE
+       WHERE user_name=upper( p_user );
 
    END create_transcend_user;
 
