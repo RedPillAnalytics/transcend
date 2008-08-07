@@ -9,10 +9,6 @@ SPOOL InstallTdsys_&_DATE..log
 -- create the tdsys user if it doesn't already exist
 DECLARE
    l_user           all_users.username%TYPE;
-   e_user_exists    EXCEPTION;
-   PRAGMA EXCEPTION_INIT( e_user_exists, -1920 );
-   -- find out if the user exists
-   -- also get the current default tablespace of the user
 BEGIN
    SELECT username
      INTO l_user
@@ -31,6 +27,12 @@ END;
 GRANT SELECT ANY dictionary TO tdsys;
 
 ALTER SESSION SET current_schema=tdsys;
+
+-- create the roles for system level privileges
+CREATE ROLE evolve_sys;
+CREATE ROLE trans_etl_sys;
+CREATE ROLE trans_files_sys;
+      
 
 -- get the CURRENT_SCHEMA
 VARIABLE td_curr_schema char(30)
