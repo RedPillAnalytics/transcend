@@ -199,6 +199,7 @@ IS
    PROCEDURE grant_evolve_app_privs( p_user VARCHAR2, p_schema VARCHAR2 DEFAULT DEFAULT_REPOSITORY )
    IS
    BEGIN
+      EXECUTE IMMEDIATE 'grant execute on TDSYS.TD_ADM to ' || p_user;
       
       -- types
       EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.APP_OT to ' || p_user;
