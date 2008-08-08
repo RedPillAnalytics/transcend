@@ -225,7 +225,9 @@ IS
    PROCEDURE grant_transcend_rep_privs(
       p_grantee   VARCHAR2,
       -- 'select' OR 'admin'
-      p_mode	  VARCHAR2 DEFAULT 'admin'
+      p_mode	  VARCHAR2 DEFAULT 'admin')
+   AS
+      l_grant VARCHAR2(100);
    BEGIN
 
       -- if p_mode is 'select', then only grant select privilege
@@ -268,7 +270,7 @@ IS
          WHEN e_no_grantee
          THEN
             raise_application_error( -20005,
-                                     'The grantees ' || l_sel_grant || ' and ' || l_adm_grant || ' do not exist.'
+                                     'The grantees ' || p_grantee || ' does not exist.'
                                    );
       END;
    END grant_transcend_rep_privs;
@@ -747,6 +749,7 @@ IS
       p_schema       VARCHAR2 DEFAULT DEFAULT_REPOSITORY
    )
    IS
+      e_stat_tab_exists EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_stat_tab_exists, -20002 );
    BEGIN
       -- alter session to CURRENT_SCHEMA
@@ -864,12 +867,6 @@ IS
          THEN
          NULL;
       END;
-
-      EXCEPTION
-         WHEN e_tab_exists OR e_stat_tab_exists
-         THEN
-            RAISE e_repo_obj_exists;
-      END;      
 
       -- set current_schema back to where it started
       reset_current_schema;
@@ -2108,7 +2105,7 @@ IS
       EXCEPTION
 	 WHEN e_ins_privs
 	 THEN
-	 dbms_output.put_line( 'The executing user cannot grant the role ' || l_adm_role || '. '||l_adm_role ' needs to be granted to user '||p_schema||'.' );
+	 dbms_output.put_line( 'The executing user cannot grant the role ' || l_adm_role || '. '||l_adm_role||' needs to be granted to user '||p_schema||'.' );
       END;
 
       -- write audit record for creating or modifying a user record
@@ -2163,7 +2160,7 @@ IS
 	 SET application_name = upper( p_application ),
 	     repository_name = upper( p_repository ),
 	     version = td_adm.version,
-	     product = 'transcend'
+	     product = 'transcend',
 	     modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
 	     modified_dt = SYSDATE
        WHERE user_name=upper( p_user );
