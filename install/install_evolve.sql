@@ -18,7 +18,7 @@ ACCEPT drop_obj char default 'N' prompt 'Do you want to issue DROP TABLE stateme
 WHENEVER sqlerror exit sql.sqlcode
 
 -- create the tdsys repository
-@../install_tdsys_repo.sql
+@install_tdsys_repo.sql
 
 DECLARE
    l_drop BOOLEAN := CASE WHEN REGEXP_LIKE('yes','&drop_obj','i') THEN TRUE ELSE FALSE END;
