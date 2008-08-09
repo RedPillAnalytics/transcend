@@ -28,17 +28,47 @@ GRANT SELECT ANY dictionary TO tdsys;
 
 ALTER SESSION SET current_schema=tdsys;
 
--- create the roles for system level privileges
+-- delete the sys roles just in case they already exist
+DECLARE
+   e_no_role EXCEPTION;
+   PRAGMA exception_init( e_no_role, -1919 );
+BEGIN
+   BEGIN
+      EXECUTE IMMEDIATE q'|DROP ROLE evolve_sys|';
+   EXCEPTION
+      WHEN e_no_role
+      THEN
+      NULL;
+   END;
+   BEGIN
+      EXECUTE IMMEDIATE q'|DROP ROLE trans_etl_sys|';
+   EXCEPTION
+      WHEN e_no_role
+      THEN
+      NULL;
+   END;
+   BEGIN
+      EXECUTE IMMEDIATE q'|DROP ROLE trans_files_sys|';
+   EXCEPTION
+      WHEN e_no_role
+      THEN
+      NULL;
+   END;
+END;
+/
+
+-- now, create the roles
 CREATE ROLE evolve_sys;
 CREATE ROLE trans_etl_sys;
 CREATE ROLE trans_files_sys;
-      
 
 -- get the CURRENT_SCHEMA
 VARIABLE td_curr_schema char(30)
 EXEC :td_curr_schema := sys_context('USERENV','CURRENT_SCHEMA');
 
--- create all the tables      
+-- create all the tables
+DECLARE
+      
 CREATE TABLE repositories
        ( 
 	 repository_name    VARCHAR2(30) NOT NULL,
@@ -127,7 +157,6 @@ ALTER TABLE users ADD
 -- install the installation package
 @../plsql/specs/TD_ADM.pks
 @../plsql/wrapped_bodies/TD_ADM.plb
-
 
 BEGIN
    EXECUTE IMMEDIATE 'ALTER SESSION SET current_schema='||:td_curr_schema;
