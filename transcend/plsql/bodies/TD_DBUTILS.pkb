@@ -2600,7 +2600,7 @@ AS
       BEGIN
          drop_constraints( p_owner => p_source_owner, p_table => p_source_table, p_basis => 'all' );
       EXCEPTION
-         WHEN e_drop_iot_key
+         WHEN drop_iot_key
          THEN
             NULL;
       END;
@@ -2855,7 +2855,7 @@ AS
          drop_constraints( p_owner => p_owner, p_table => p_table, p_basis => 'all' );
       EXCEPTION
          -- if we try to drop the constraints on an IOT, then we know we need to swap them afterwards
-         WHEN e_drop_iot_key
+         WHEN drop_iot_key
          THEN
             rename_primary_keys( p_owner             => p_owner,
                                  p_table             => p_table,

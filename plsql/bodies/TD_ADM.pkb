@@ -25,7 +25,7 @@ IS
    e_same_name    EXCEPTION;
    PRAGMA EXCEPTION_INIT( e_same_name, -1471 );
    e_ins_privs    EXCEPTION;
-   PRAGMA EXCEPTION_INIT( e_same_name, -1031 );
+   PRAGMA EXCEPTION_INIT( e_ins_privs, -1031 );
 
 
    PROCEDURE create_user( p_user VARCHAR2 DEFAULT DEFAULT_REPOSITORY, p_tablespace VARCHAR2 DEFAULT NULL )
@@ -729,7 +729,7 @@ IS
       EXCEPTION
          WHEN e_tab_exists
          THEN
-            RAISE e_repo_obj_exists;
+            RAISE repo_obj_exists;
       END;
 
       -- if the default tablespace was changed, then put it back
@@ -1205,15 +1205,15 @@ IS
 	 )|';
 
 	 -- grant select privileges to the select role
-	 grant_transcend_rep_privs( p_grantee=> l_sel_role, p_mode => 'select');
+	 grant_transcend_rep_privs( p_grantee=> p_schema||'_sel', p_mode => 'select');
 
 	 -- grant all privileges to the admin role
-	 grant_transcend_rep_privs( p_grantee=> l_adm_role, p_mode => 'admin');
+	 grant_transcend_rep_privs( p_grantee=> p_schema||'_adm', p_mode => 'admin');
 
       EXCEPTION
          WHEN e_tab_exists OR e_stat_tab_exists
          THEN
-            RAISE e_repo_obj_exists;
+            RAISE repo_obj_exists;
       END;
 
       -- the reason for this update is to set the product from 'evolve' to 'transcend'      
@@ -1659,18 +1659,18 @@ IS
       END;
    END build_transcend_app_syns;
 
-   PROCEDURE grant_trans_files_sys_privs( p_schema VARCHAR2 DEFAULT DEFAULT_REPOSITORY, p_drop BOOLEAN DEFAULT FALSE )
+   PROCEDURE grant_trans_files_sys_privs( p_grantee VARCHAR2 DEFAULT trans_files_role )
    IS
    BEGIN
 
       -- grant full java permissions needed to manipulate any file and perform any action at the OS level to the TRANS_FILES_SYS role
       DBMS_JAVA.set_output( 1000000 );
-      DBMS_JAVA.grant_permission( UPPER( trans_files_role ), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'execute' );
-      DBMS_JAVA.grant_permission( UPPER( trans_files_role ), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'read' );
-      DBMS_JAVA.grant_permission( UPPER( trans_files_role ), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'write' );
-      DBMS_JAVA.grant_permission( UPPER( trans_files_role ), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'delete' );
-      DBMS_JAVA.grant_permission( UPPER( trans_files_role ), 'SYS:java.lang.RuntimePermission', 'writeFileDescriptor', '' );
-      DBMS_JAVA.grant_permission( UPPER( trans_files_role ), 'SYS:java.lang.RuntimePermission', 'readFileDescriptor', '' );
+      DBMS_JAVA.grant_permission( UPPER( p_grantee ), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'execute' );
+      DBMS_JAVA.grant_permission( UPPER( p_grantee ), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'read' );
+      DBMS_JAVA.grant_permission( UPPER( p_grantee ), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'write' );
+      DBMS_JAVA.grant_permission( UPPER( p_grantee ), 'SYS:java.io.FilePermission', '<<ALL FILES>>', 'delete' );
+      DBMS_JAVA.grant_permission( UPPER( p_grantee ), 'SYS:java.lang.RuntimePermission', 'writeFileDescriptor', '' );
+      DBMS_JAVA.grant_permission( UPPER( p_grantee ), 'SYS:java.lang.RuntimePermission', 'readFileDescriptor', '' );
 
    EXCEPTION
       WHEN OTHERS
@@ -1680,36 +1680,36 @@ IS
          RAISE;
    END grant_trans_files_sys_privs;
 
-   PROCEDURE grant_trans_etl_sys_privs( p_schema VARCHAR2 DEFAULT DEFAULT_REPOSITORY )
+   PROCEDURE grant_trans_etl_sys_privs( p_grantee VARCHAR2 DEFAULT trans_etl_role )
    IS
       e_no_role       EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_role, -1919 );
    BEGIN
       BEGIN
          -- for each system privilege, grant it to the application owner and the _SYS role
-         EXECUTE IMMEDIATE 'GRANT ALTER ANY TABLE TO ' || trans_etl_role;
+         EXECUTE IMMEDIATE 'GRANT ALTER ANY TABLE TO ' || p_grantee;
 
-         EXECUTE IMMEDIATE 'GRANT INSERT ANY TABLE TO ' || trans_etl_role;
+         EXECUTE IMMEDIATE 'GRANT INSERT ANY TABLE TO ' || p_grantee;
 
-         EXECUTE IMMEDIATE 'GRANT SELECT ANY dictionary TO ' || trans_etl_role;
+         EXECUTE IMMEDIATE 'GRANT SELECT ANY dictionary TO ' || p_grantee;
 
-         EXECUTE IMMEDIATE 'GRANT SELECT ANY TABLE TO ' || trans_etl_role;
+         EXECUTE IMMEDIATE 'GRANT SELECT ANY TABLE TO ' || p_grantee;
 
-         EXECUTE IMMEDIATE 'GRANT SELECT ANY SEQUENCE TO ' || trans_etl_role;
+         EXECUTE IMMEDIATE 'GRANT SELECT ANY SEQUENCE TO ' || p_grantee;
 
-         EXECUTE IMMEDIATE 'GRANT UPDATE ANY TABLE TO ' || trans_etl_role;
+         EXECUTE IMMEDIATE 'GRANT UPDATE ANY TABLE TO ' || p_grantee;
 
-         EXECUTE IMMEDIATE 'GRANT DELETE ANY TABLE TO ' || trans_etl_role;
+         EXECUTE IMMEDIATE 'GRANT DELETE ANY TABLE TO ' || p_grantee;
 
-         EXECUTE IMMEDIATE 'GRANT ALTER ANY INDEX TO ' || trans_etl_role;
+         EXECUTE IMMEDIATE 'GRANT ALTER ANY INDEX TO ' || p_grantee;
 
-         EXECUTE IMMEDIATE 'GRANT CREATE ANY INDEX TO ' || trans_etl_role;
+         EXECUTE IMMEDIATE 'GRANT CREATE ANY INDEX TO ' || p_grantee;
 
-         EXECUTE IMMEDIATE 'GRANT DROP ANY INDEX TO ' || trans_etl_role;
+         EXECUTE IMMEDIATE 'GRANT DROP ANY INDEX TO ' || p_grantee;
 
-         EXECUTE IMMEDIATE 'GRANT DROP ANY TABLE TO ' || trans_etl_role;
+         EXECUTE IMMEDIATE 'GRANT DROP ANY TABLE TO ' || p_grantee;
 
-         EXECUTE IMMEDIATE 'GRANT ANALYZE ANY TO ' || trans_etl_role;
+         EXECUTE IMMEDIATE 'GRANT ANALYZE ANY TO ' || p_grantee;
       EXCEPTION
          WHEN e_no_obj
          THEN
@@ -1802,8 +1802,6 @@ IS
       set_current_schema( p_schema => p_schema );
       -- create the synonyms to the repository
       build_evolve_rep_syns( p_user => p_schema, p_schema => p_repository );
-      -- grant application privileges to the roles
-      grant_evolve_sys_privs( p_schema => p_schema );
       -- create the dbms_scheduler program
       create_scheduler_metadata;
 
@@ -1849,15 +1847,17 @@ IS
       drop_transcend_app( p_schema => p_schema );
 
       -- create grants to the application owner to all the tables in the repository
-      grant_transcend_rep_privs( p_user => p_schema );
+      grant_transcend_rep_privs( p_grantee => p_schema, p_mode => 'admin' );
       -- set the CURRENT_SCHEMA back
       reset_current_schema;
       -- set the CURRENT_SCHEMA to the application owner
       set_current_schema( p_schema => p_schema );
       -- create the synonyms to the repository
       build_transcend_rep_syns( p_user => p_schema, p_schema => p_repository );
-      -- grant application privileges to the roles
-      grant_transcend_sys_privs( p_schema => p_schema );
+      -- grant full system privileges for Transcend ETL (trans_etl) to the trans_etl_sys role
+      grant_trans_etl_sys_privs( p_grantee => trans_etl_role );
+      -- grant full system privileges for Transcend Files (trans_files) to the trans_files_sys role
+      grant_trans_files_sys_privs( p_grantee => trans_files_role );
       
       -- the reason for this update is to set the product from 'evolve' to 'transcend'      
       -- write application tracking record
@@ -2098,7 +2098,7 @@ IS
       EXCEPTION
 	 WHEN e_ins_privs
 	 THEN
-	    dbms_output.put_line( 'The executing user cannot grant the CREATE JOB system privilege. CREATE JOB needs to be granted to user '||p_schema||'.' );
+	    dbms_output.put_line( 'The executing user cannot grant the CREATE JOB system privilege. CREATE JOB needs to be granted to user '||p_user||'.' );
       END;
       
       BEGIN
@@ -2106,7 +2106,7 @@ IS
       EXCEPTION
 	 WHEN e_ins_privs
 	 THEN
-	 dbms_output.put_line( 'The executing user cannot grant the role ' || l_adm_role || '. '||l_adm_role||' needs to be granted to user '||p_schema||'.' );
+	 dbms_output.put_line( 'The executing user cannot grant the role ' || l_adm_role || '. '||l_adm_role||' needs to be granted to user '||p_user||'.' );
       END;
 
       -- write audit record for creating or modifying a user record
@@ -2172,6 +2172,9 @@ IS
       p_schema    VARCHAR2 DEFAULT DEFAULT_REPOSITORY
    )
    IS
+      -- version number before we tracked version numbers was 1.2
+      -- this is the default
+      l_version tdsys.repositories.version%type := 1.2;
    BEGIN
       
       -- set the current schema to the repository user
@@ -2183,7 +2186,7 @@ IS
 	 SELECT version
 	   INTO l_version
 	   FROM tdsys.repositories
-	  WHERE lower(repository) = lower(p_schema)
+	  WHERE lower(repository_name) = lower(p_schema)
 	    AND product IN ('evolve','transcend');
 	 
       EXCEPTION
@@ -2211,6 +2214,7 @@ IS
       p_schema    VARCHAR2 DEFAULT DEFAULT_REPOSITORY
    )
    IS
+      l_version tdsys.repositories.version%type := 1.2;
    BEGIN
       
       -- set the current schema to the repository user
@@ -2222,7 +2226,7 @@ IS
 	 SELECT version
 	   INTO l_version
 	   FROM tdsys.repositories
-	  WHERE lower(repository) = lower(p_schema)
+	  WHERE lower(repository_name) = lower(p_schema)
 	    AND product = 'transcend';
 	 
       EXCEPTION

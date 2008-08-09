@@ -6,20 +6,33 @@ SET timing off
 ALTER SESSION SET nls_date_format = 'yyyymmdd_hhmiss';
 SPOOL InstallTdsys_&_DATE..log
 
+VARIABLE b_tbspace char(30)
+VARIABLE b_current_schema char(30)
 -- create the tdsys user if it doesn't already exist
 DECLARE
    l_user           all_users.username%TYPE;
 BEGIN
-   SELECT username
-     INTO l_user
-     FROM dba_users
-    WHERE username = 'TDSYS';
 
-EXCEPTION
-   -- the user does not exist
-   WHEN NO_DATA_FOUND
-   THEN
+   -- get the current schema
+   SELECT sys_context('USERENV','CURRENT_SCHEMA')
+     INTO :b_current_schema
+     FROM dual;   
+   BEGIN
+      -- see if the TDSYS user exists
+      -- while we're at it, get his default tablespace
+      SELECT username,
+	     default_tablespace
+	INTO l_user,
+	     :b_tbspace
+	FROM dba_users
+       WHERE username = 'TDSYS';
+   EXCEPTION
+      -- the user does not exist
+      WHEN NO_DATA_FOUND
+      THEN
+      -- create it
       EXECUTE IMMEDIATE 'CREATE USER tdsys identified by no2tdsys default tablespace &tablespace quota unlimited on &tablespace';
+   END;
 END;
 /
 
@@ -28,48 +41,101 @@ GRANT SELECT ANY dictionary TO tdsys;
 
 ALTER SESSION SET current_schema=tdsys;
 
--- delete the sys roles just in case they already exist
+VARIABLE b_role_exists char(1)
+SET feedback off
 DECLARE
-   e_no_role EXCEPTION;
-   PRAGMA exception_init( e_no_role, -1919 );
+   e_role_exists EXCEPTION;
+   PRAGMA exception_init( e_role_exists, -1921 );
 BEGIN
    BEGIN
-      EXECUTE IMMEDIATE q'|DROP ROLE evolve_sys|';
+      EXECUTE IMMEDIATE q'|CREATE ROLE evolve_sys|';
+      EXECUTE IMMEDIATE q'|CREATE ROLE trans_etl_sys|';
+      EXECUTE IMMEDIATE q'|CREATE ROLE trans_files_sys|';
+      dbms_output.put_line( 'Press RETURN to continue' );
+
    EXCEPTION
-      WHEN e_no_role
+      WHEN e_role_exists
       THEN
-      NULL;
-   END;
-   BEGIN
-      EXECUTE IMMEDIATE q'|DROP ROLE trans_etl_sys|';
-   EXCEPTION
-      WHEN e_no_role
-      THEN
-      NULL;
-   END;
-   BEGIN
-      EXECUTE IMMEDIATE q'|DROP ROLE trans_files_sys|';
-   EXCEPTION
-      WHEN e_no_role
-      THEN
-      NULL;
+      :b_role_exists := 'Y';
+      dbms_output.put_line( 'Some repository objects exist. If this is an upgrade to Evolve or Transcend, then the upgrade script should be run instead.'
+			    ||chr(10)
+			    ||'To continue, any repository objects will have to be dropped and recreated. Do you want to continue? [N]' );
    END;
 END;
 /
 
--- now, create the roles
-CREATE ROLE evolve_sys;
-CREATE ROLE trans_etl_sys;
-CREATE ROLE trans_files_sys;
+-- get the schema for the Evolve application (PL/SQL and Java code)
+ACCEPT drop_repo char default 'N'
+DECLARE
+   e_no_role EXCEPTION;
+   e_no_tab  EXCEPTION;
+   PRAGMA exception_init( e_no_role, -1919 );
+   PRAGMA exception_init( e_no_tab, -942 );
+BEGIN
+--   dbms_output.put_line('The value of bind variable b_role_exists: '||:b_role_exists);
+--   dbms_output.put_line('The value of bind sqlplus variable drop_repo: &drop_repo');
+   IF :b_role_exists = 'Y' AND '&drop_repo' = 'Y'
+   THEN
+      BEGIN
+	 EXECUTE IMMEDIATE q'|DROP ROLE evolve_sys|';
+      EXCEPTION
+	 WHEN e_no_role
+	 THEN
+	 NULL;
+      END;
+      BEGIN
+	 EXECUTE IMMEDIATE q'|DROP ROLE trans_etl_sys|';
+      EXCEPTION
+	 WHEN e_no_role
+	 THEN
+	 NULL;
+      END;
+      BEGIN
+	 EXECUTE IMMEDIATE q'|DROP ROLE trans_files_sys|';
+      EXCEPTION
+	 WHEN e_no_role
+	 THEN
+	 NULL;
+      END;
+      BEGIN
+	 EXECUTE IMMEDIATE q'|DROP table tdsys.users|';
+      EXCEPTION
+	 WHEN e_no_tab
+	 THEN
+	 NULL;
+      END;
+      BEGIN
+	 EXECUTE IMMEDIATE q'|DROP table tdsys.applications|';
+      EXCEPTION
+	 WHEN e_no_tab
+	 THEN
+	 NULL;
+      END;
+      BEGIN
+	 EXECUTE IMMEDIATE q'|DROP table tdsys.repositories|';
+      EXCEPTION
+	 WHEN e_no_tab
+	 THEN
+	 NULL;
+      END;
+      EXECUTE IMMEDIATE q'|CREATE ROLE evolve_sys|';
+      EXECUTE IMMEDIATE q'|CREATE ROLE trans_etl_sys|';
+      EXECUTE IMMEDIATE q'|CREATE ROLE trans_files_sys|';
+
+   ELSIF :b_role_exists = 'Y' AND '&drop_repo' = 'N'
+   THEN
+      raise_application_error(-20004, 'TDSYS repository object exist. Installation cannot continue.' );
+   ELSE
+      NULL;
+   END IF;
+END;
+/
+
+SET feedback on
 
 -- get the CURRENT_SCHEMA
-VARIABLE td_curr_schema char(30)
-EXEC :td_curr_schema := sys_context('USERENV','CURRENT_SCHEMA');
 
--- create all the tables
-DECLARE
-      
-CREATE TABLE repositories
+CREATE TABLE tdsys.repositories
        ( 
 	 repository_name    VARCHAR2(30) NOT NULL,
 	 product	    VARCHAR2(20),
@@ -80,7 +146,7 @@ CREATE TABLE repositories
 	 modified_dt	    DATE
        );
 
-ALTER TABLE repositories ADD 
+ALTER TABLE tdsys.repositories ADD 
       (
         CONSTRAINT repositories_pk
         PRIMARY KEY
@@ -88,7 +154,7 @@ ALTER TABLE repositories ADD
 	USING INDEX
       );
 
-CREATE TABLE applications
+CREATE TABLE tdsys.applications
        ( 
 	 application_name   VARCHAR2(30) NOT NULL,
 	 repository_name    VARCHAR2(30) NOT NULL,
@@ -100,7 +166,7 @@ CREATE TABLE applications
 	 modified_dt	    DATE
        );
 
-ALTER TABLE applications ADD 
+ALTER TABLE tdsys.applications ADD 
       (
 	CONSTRAINT applications_pk
 	PRIMARY KEY
@@ -108,7 +174,7 @@ ALTER TABLE applications ADD
 	USING INDEX
       );
 
-ALTER TABLE applications ADD 
+ALTER TABLE tdsys.applications ADD 
       (
 	CONSTRAINT applications_fk1
 	FOREIGN KEY (repository_name)
@@ -116,7 +182,7 @@ ALTER TABLE applications ADD
 	( repository_name )
       );
 
-CREATE TABLE users
+CREATE TABLE tdsys.users
        ( 
 	 user_name          VARCHAR2(30) NOT NULL,
 	 application_name   VARCHAR2(30) NOT NULL,
@@ -129,7 +195,7 @@ CREATE TABLE users
 	 modified_dt	    DATE
        );
 
-ALTER TABLE users ADD 
+ALTER TABLE tdsys.users ADD 
       (
 	CONSTRAINT users_pk
 	PRIMARY KEY
@@ -137,7 +203,7 @@ ALTER TABLE users ADD
 	USING INDEX
       );
 
-ALTER TABLE users ADD 
+ALTER TABLE tdsys.users ADD 
       (
 	CONSTRAINT users_fk1
 	FOREIGN KEY (repository_name)
@@ -145,7 +211,7 @@ ALTER TABLE users ADD
 	( repository_name )
       );
 
-ALTER TABLE users ADD 
+ALTER TABLE tdsys.users ADD 
       (
 	CONSTRAINT users_fk2
 	FOREIGN KEY (application_name)
@@ -159,7 +225,7 @@ ALTER TABLE users ADD
 @../plsql/wrapped_bodies/TD_ADM.plb
 
 BEGIN
-   EXECUTE IMMEDIATE 'ALTER SESSION SET current_schema='||:td_curr_schema;
+   EXECUTE IMMEDIATE 'ALTER SESSION SET current_schema='||:b_current_schema;
 END;
 /
 

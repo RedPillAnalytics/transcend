@@ -1,16 +1,16 @@
 CREATE OR REPLACE PACKAGE td_adm AUTHID CURRENT_USER
 IS
+   -- global exceptions
+   repo_obj_exists EXCEPTION;
+   no_sys_repo_entry EXCEPTION;
 
-   version CONSTANT NUMBER := 1.3;
-
+   -- package constatnts
+   version CONSTANT NUMBER := 1.3; 
    evolve_sys_role CONSTANT VARCHAR2(30) := 'EVOLVE_SYS';
    trans_etl_role CONSTANT VARCHAR2(30) := 'TRANS_ETL_SYS';
    trans_files_role CONSTANT VARCHAR2(30) := 'TRANS_FILES_SYS';
-
    default_repository CONSTANT VARCHAR2(6) := 'TDREP';
 
-   repo_obj_exists EXCEPTION;
-   no_sys_repo_entry EXCEPTION;
 
    PROCEDURE build_evolve_repo(
       p_schema      VARCHAR2 DEFAULT DEFAULT_REPOSITORY,
@@ -48,9 +48,9 @@ IS
       p_schema   VARCHAR2 DEFAULT DEFAULT_REPOSITORY
    );
 
-   PROCEDURE drop_evolve_app;
+   PROCEDURE drop_evolve_app ( p_schema VARCHAR2 );
 
-   PROCEDURE drop_transcend_types;
+   PROCEDURE drop_transcend_app ( p_schema VARCHAR2 );
 
    PROCEDURE create_evolve_user(
       p_user         VARCHAR2,

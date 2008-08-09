@@ -1,7 +1,7 @@
 CREATE OR REPLACE PACKAGE BODY evolve_adm
 IS
    PROCEDURE set_logging_level(
-      p_module          VARCHAR2 DEFAULT 'default',
+      p_module          VARCHAR2 DEFAULT all_modules,
       p_logging_level   NUMBER DEFAULT 1,
       p_debug_level     NUMBER DEFAULT 3,
       p_mode            VARCHAR2 DEFAULT 'upsert'
@@ -52,7 +52,7 @@ IS
    END set_logging_level;
 
    PROCEDURE set_runmode(
-      p_module            VARCHAR2 DEFAULT 'default',
+      p_module            VARCHAR2 DEFAULT all_modules,
       p_default_runmode   VARCHAR2 DEFAULT 'runtime',
       p_mode              VARCHAR2 DEFAULT 'upsert'
    )
@@ -101,7 +101,7 @@ IS
    END set_runmode;
 
    PROCEDURE set_registration(
-      p_module         VARCHAR2 DEFAULT 'default',
+      p_module         VARCHAR2 DEFAULT all_modules,
       p_registration   VARCHAR2 DEFAULT 'appinfo',
       p_mode           VARCHAR2 DEFAULT 'upsert'
    )
