@@ -26,6 +26,10 @@ IS
    PRAGMA EXCEPTION_INIT( e_same_name, -1471 );
    e_ins_privs    EXCEPTION;
    PRAGMA EXCEPTION_INIT( e_ins_privs, -1031 );
+   e_no_role       EXCEPTION;
+   PRAGMA EXCEPTION_INIT( e_no_role, -1919 );
+   e_col_exists       EXCEPTION;
+   PRAGMA EXCEPTION_INIT( e_col_exists, -1430 );
 
 
    PROCEDURE create_user( p_user VARCHAR2 DEFAULT DEFAULT_REPOSITORY, p_tablespace VARCHAR2 DEFAULT NULL )
@@ -1682,8 +1686,6 @@ IS
 
    PROCEDURE grant_trans_etl_sys_privs( p_grantee VARCHAR2 DEFAULT trans_etl_role )
    IS
-      e_no_role       EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_no_role, -1919 );
    BEGIN
       BEGIN
          -- for each system privilege, grant it to the application owner and the _SYS role
@@ -1879,6 +1881,24 @@ IS
    IS
    BEGIN
       
+      -- drop some of the old roles used in earlier versions
+      BEGIN
+         EXECUTE IMMEDIATE 'DROP ROLE '||p_schema||'_java';
+      EXCEPTION
+         when e_no_role
+         THEN
+         NULL;
+      END;
+      
+      BEGIN
+         EXECUTE IMMEDIATE 'DROP ROLE '||p_schema||'_sys';
+      EXCEPTION
+         when e_no_role
+         THEN
+         NULL;
+      END;
+
+      
       -- this type is created first as it's needed for the TD_CORE
       BEGIN
          EXECUTE IMMEDIATE 'DROP TYPE '||p_schema||'.split_ot';
@@ -1936,6 +1956,25 @@ IS
       -- evolve package
       BEGIN
          EXECUTE IMMEDIATE 'DROP package '||p_schema||'.evolve';
+      EXCEPTION
+         when e_no_obj
+         THEN
+         NULL;
+      END;
+      
+      -- drop some older evolve packages just in case
+      -- these no longer exist in current versions
+      -- evolve package
+      BEGIN
+         EXECUTE IMMEDIATE 'DROP package '||p_schema||'.evolve_app';
+      EXCEPTION
+         when e_no_obj
+         THEN
+         NULL;
+      END;
+      -- evolve package
+      BEGIN
+         EXECUTE IMMEDIATE 'DROP package '||p_schema||'.evolve_log';
       EXCEPTION
          when e_no_obj
          THEN
@@ -2143,10 +2182,8 @@ IS
    )
    IS
    BEGIN
-      -- create the user if it doesn't already exist
-      create_user( p_user => p_user );
-
-      EXECUTE IMMEDIATE 'grant select_catalog_role to ' || p_user;
+      -- register as an evolve user first
+      create_evolve_user( p_user => p_user, p_application => p_application, p_repository => p_repository );
 
       -- create the synonyms to the repository
       build_transcend_rep_syns( p_user => p_user, p_schema => p_repository );
@@ -2169,7 +2206,8 @@ IS
    END create_transcend_user;
 
    PROCEDURE upgrade_evolve_repo(
-      p_schema    VARCHAR2 DEFAULT DEFAULT_REPOSITORY
+      p_schema      VARCHAR2 DEFAULT default_repository,
+      p_tablespace  VARCHAR2 DEFAULT default_repository
    )
    IS
       -- version number before we tracked version numbers was 1.2
@@ -2204,14 +2242,23 @@ IS
 	 EXECUTE IMMEDIATE q'|UPDATE runmode_conf SET module='*all_modules*' WHERE module='default'|';
 	 EXECUTE IMMEDIATE q'|UPDATE registration_conf SET module='*all_modules*' WHERE module='default'|';
 	 EXECUTE IMMEDIATE q'|UPDATE logging_conf SET module='*all_modules*' WHERE module='default'|';
-	 
+
+	 -- add the order_seq column to the TD_CON_MAINT_GTT table
+	 BEGIN
+	    EXECUTE IMMEDIATE 'alter table td_con_maint_gtt add order_seq number';
+	 EXCEPTION
+	    WHEN e_col_exists
+	    THEN
+	    NULL;
+	 END;
 	 
       END IF;
 
    END upgrade_evolve_repo;
    
    PROCEDURE upgrade_transcend_repo(
-      p_schema    VARCHAR2 DEFAULT DEFAULT_REPOSITORY
+      p_schema      VARCHAR2 DEFAULT default_repository,
+      p_tablespace  VARCHAR2 DEFAULT default_repository
    )
    IS
       l_version tdsys.repositories.version%type := 1.2;

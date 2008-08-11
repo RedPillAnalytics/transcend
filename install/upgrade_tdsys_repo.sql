@@ -7,8 +7,12 @@ ALTER SESSION SET nls_date_format = 'yyyymmdd_hhmiss';
 SPOOL UpgradeTdsys_&_DATE..log
 
 -- get the CURRENT_SCHEMA
-VARIABLE td_curr_schema char(30)
-EXEC :td_curr_schema := sys_context('USERENV','CURRENT_SCHEMA');
+VARIABLE b_schema char(30)
+EXEC :b_schema := sys_context('USERENV','CURRENT_SCHEMA');
+BEGIN
+   EXECUTE IMMEDIATE 'alter session set current_schema=tdsys';
+END;
+/
 
 -- perform any upgrades to the tdsys repository
 -- ticket:95
@@ -26,6 +30,9 @@ alter table tdsys.users add version NUMBER;
 update tdsys.repositories set version='1.2', product='transcend' where version is null;
 update tdsys.applications set version='1.2', product='transcend' where version is null;
 update tdsys.users set version='1.2', product='transcend' where version is null;
+
+-- get rid of the old installation package
+DROP PACKAGE tdsys.td_install;
       
 -- install the installation package
 @../plsql/specs/TD_ADM.pks
@@ -33,7 +40,7 @@ update tdsys.users set version='1.2', product='transcend' where version is null;
 
 
 BEGIN
-   EXECUTE IMMEDIATE 'ALTER SESSION SET current_schema='||:td_curr_schema;
+   EXECUTE IMMEDIATE 'ALTER SESSION SET current_schema='||:b_schema;
 END;
 /
 

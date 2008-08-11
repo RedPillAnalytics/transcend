@@ -63,6 +63,16 @@ IS
       p_application  VARCHAR2 DEFAULT DEFAULT_REPOSITORY, 
       p_repository   VARCHAR2 DEFAULT DEFAULT_REPOSITORY
    );
+
+   PROCEDURE upgrade_evolve_repo(
+      p_schema      VARCHAR2 DEFAULT default_repository,
+      p_tablespace  VARCHAR2 DEFAULT default_repository
+   );
+
+   PROCEDURE upgrade_transcend_repo(
+      p_schema      VARCHAR2 DEFAULT default_repository,
+      p_tablespace  VARCHAR2 DEFAULT default_repository
+   );
       
 END td_adm;
 /

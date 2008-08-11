@@ -16,11 +16,7 @@ ACCEPT tablespace char default 'TDREP' prompt 'Tablespace for the default reposi
 WHENEVER sqlerror exit sql.sqlcode
 
 -- upgrade the tdsys repository
-@../upgrade_tdsys_repo.sql
-
--- install the installation package
-@../plsql/specs/TD_ADM.pks
-@../plsql/wrapped_bodies/TD_ADM.plb
+--@upgrade_tdsys_repo.sql
 
 BEGIN
    -- upgrade the Evolve repository
