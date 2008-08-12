@@ -2274,7 +2274,7 @@ IS
 	   INTO l_version
 	   FROM tdsys.repositories
 	  WHERE lower(repository_name) = lower(p_schema)
-	    AND product = 'transcend';
+	    AND product IN ('evolve','transcend');
 	 
       EXCEPTION
 	 WHEN no_data_found
