@@ -4,8 +4,11 @@ AS
       RETURN SELF AS RESULT
    AS
    BEGIN
+      -- there is an owb constant that can be used to get the mapping name
+      -- however, the constant puts double quotes around it
+      -- need to strip these double quotes just in case
       -- set the instrumentation details
-      REGISTER( p_mapping, p_batch_id );
+      REGISTER( regexp_replace(p_mapping,'^"|"$',NULL), p_batch_id );
 
       -- load information from the mapping_conf table
       BEGIN
