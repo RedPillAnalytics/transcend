@@ -1856,6 +1856,42 @@ IS
       set_current_schema( p_schema => p_schema );
       -- create the synonyms to the repository
       build_transcend_rep_syns( p_user => p_schema, p_schema => p_repository );
+
+      -- drop the _SYS roles      
+      BEGIN
+         EXECUTE IMMEDIATE 'DROP ROLE '||trans_etl_role;
+      EXCEPTION
+         when e_no_role
+         THEN
+         NULL;
+      END;
+      
+      BEGIN
+         EXECUTE IMMEDIATE 'DROP ROLE '||trans_files_role;
+      EXCEPTION
+         when e_no_role
+         THEN
+         NULL;
+      END;
+      
+      -- create _SYS roles
+      BEGIN
+         EXECUTE IMMEDIATE 'CREATE ROLE ' || trans_etl_role;
+      EXCEPTION
+         WHEN e_role_exists
+         THEN
+            NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE 'CREATE ROLE ' || trans_files_role;
+      EXCEPTION
+         WHEN e_role_exists
+         THEN
+            NULL;
+      END;
+
+      
       -- grant full system privileges for Transcend ETL (trans_etl) to the trans_etl_sys role
       grant_trans_etl_sys_privs( p_grantee => trans_etl_role );
       -- grant full system privileges for Transcend Files (trans_files) to the trans_files_sys role
@@ -2254,6 +2290,15 @@ IS
 	 
       END IF;
 
+      -- upgrade the repository version information to 1.3      
+      UPDATE tdsys.repositories
+	 SET modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
+	     modified_dt = SYSDATE,
+	     product = 'transcend',
+	     version = td_adm.version
+       WHERE repository_name=upper( p_schema );
+
+
    END upgrade_evolve_repo;
    
    PROCEDURE upgrade_transcend_repo(
@@ -2291,7 +2336,13 @@ IS
 	 EXECUTE IMMEDIATE q'|alter table mapping_conf modify mapping_name varchar2(40)|';
 	 
 	 -- upgrade the repository version information to 1.3
-	 
+	 UPDATE tdsys.repositories
+	    SET modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
+		modified_dt = SYSDATE,
+		product = 'transcend',
+		version = td_adm.version
+	  WHERE repository_name=upper( p_schema );
+
 	 
       END IF;
 
