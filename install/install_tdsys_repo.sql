@@ -124,7 +124,7 @@ BEGIN
 
    ELSIF :b_role_exists = 'Y' AND '&drop_repo' = 'N'
    THEN
-      raise_application_error(-20004, 'TDSYS repository object exist. Installation cannot continue.' );
+      raise_application_error(-20004, 'Installation aborted by user.' );
    ELSE
       NULL;
    END IF;
