@@ -56,7 +56,7 @@ AS
       RETURN VARCHAR2;
 
    PROCEDURE client_info( p_client_info VARCHAR2 );
-
+      
    FUNCTION batch_id
       RETURN NUMBER;
 
