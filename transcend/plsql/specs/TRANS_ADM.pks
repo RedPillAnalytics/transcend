@@ -1,8 +1,10 @@
 CREATE OR REPLACE PACKAGE trans_adm AUTHID CURRENT_USER
 IS
+   null_value   CONSTANT VARCHAR2 (10) := '*null*';
+
    PROCEDURE set_default_configs;
 
-   PROCEDURE configure_feed(
+   PROCEDURE configure_feed (
       p_file_group         VARCHAR2,
       p_file_label         VARCHAR2,
       p_filename           VARCHAR2 DEFAULT NULL,
@@ -25,7 +27,7 @@ IS
       p_mode               VARCHAR2 DEFAULT 'upsert'
    );
 
-   PROCEDURE configure_extract(
+   PROCEDURE configure_extract (
       p_file_group         VARCHAR2,
       p_file_label         VARCHAR2,
       p_filename           VARCHAR2 DEFAULT NULL,
@@ -47,7 +49,7 @@ IS
       p_mode               VARCHAR2 DEFAULT 'upsert'
    );
 
-   PROCEDURE configure_mapping(
+   PROCEDURE configure_mapping (
       p_mapping             VARCHAR2,
       p_owner               VARCHAR2 DEFAULT NULL,
       p_table               VARCHAR2 DEFAULT NULL,
@@ -69,7 +71,7 @@ IS
       p_mode                VARCHAR2 DEFAULT 'upsert'
    );
 
-   PROCEDURE configure_dim(
+   PROCEDURE configure_dim (
       p_owner              VARCHAR2,
       p_table              VARCHAR2,
       p_source_owner       VARCHAR2 DEFAULT NULL,
@@ -78,20 +80,20 @@ IS
       p_sequence_name      VARCHAR2 DEFAULT NULL,
       p_staging_owner      VARCHAR2 DEFAULT NULL,
       p_staging_table      VARCHAR2 DEFAULT NULL,
-      p_default_scd_type   NUMBER   DEFAULT NULL,
+      p_default_scd_type   NUMBER DEFAULT NULL,
       p_direct_load        VARCHAR2 DEFAULT NULL,
       p_replace_method     VARCHAR2 DEFAULT NULL,
       p_statistics         VARCHAR2 DEFAULT NULL,
-      p_concurrent         VARCHAR2 DEFAULT NULL,    
-      p_stage_key_def	   NUMBER   DEFAULT NULL,
-      p_char_nvl_def	   VARCHAR2 DEFAULT NULL,
-      p_date_nvl_def	   DATE     DEFAULT NULL,
-      p_num_nvl_def	   NUMBER   DEFAULT NULL, 			    
+      p_concurrent         VARCHAR2 DEFAULT NULL,
+      p_stage_key_def      NUMBER DEFAULT NULL,
+      p_char_nvl_def       VARCHAR2 DEFAULT NULL,
+      p_date_nvl_def       DATE DEFAULT NULL,
+      p_num_nvl_def        NUMBER DEFAULT NULL,
       p_description        VARCHAR2 DEFAULT NULL,
       p_mode               VARCHAR2 DEFAULT 'upsert'
    );
 
-   PROCEDURE configure_dim_cols(
+   PROCEDURE configure_dim_cols (
       p_owner           VARCHAR2,
       p_table           VARCHAR2,
       p_surrogate       VARCHAR2 DEFAULT NULL,
