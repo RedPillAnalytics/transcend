@@ -1268,14 +1268,12 @@ IS
                      );
    END modify_dimension;
 
-   PROCEDURE delete_dimension (p_owner VARCHAR2, p_table VARCHAR2)
+   PROCEDURE delete_dimension ( p_owner VARCHAR2, p_table VARCHAR2 )
    IS
       o_ev   evolve_ot := evolve_ot (p_module => 'delete_dimension');
    BEGIN
       -- delete the column configuration
-      DELETE FROM column_conf
-            WHERE LOWER (table_owner) = LOWER (p_owner)
-              AND LOWER (table_name) = LOWER (p_table);
+      delete_dim_cols( p_owner => p_owner, p_table => p_table );
 
       -- now delete the dimension configuraiton
       DELETE FROM dimension_conf
@@ -1285,7 +1283,7 @@ IS
              INTO l_mapping;
 
       -- now make the call to delete the mapping
-      delete_mapping (p_mapping => l_mapping);
+      delete_mapping ( p_mapping => l_mapping );
    END delete_dimension;
 
    PROCEDURE configure_dim_cols (
@@ -1442,6 +1440,21 @@ IS
       -- confirm the dimension columns
       o_dim.confirm_dim_cols;
    END configure_dim_cols;
+   
+   PROCEDURE delete_dim_cols (
+      p_owner           VARCHAR2,
+      p_table           VARCHAR2
+   )
+   IS
+   BEGIN
+      
+      -- delete the column configuration
+      DELETE FROM column_conf
+            WHERE LOWER (table_owner) = LOWER (p_owner)
+              AND LOWER (table_name) = LOWER (p_table);
+
+   END delete_dim_cols;
+
 END trans_adm;
 /
 
