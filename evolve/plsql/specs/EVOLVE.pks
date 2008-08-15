@@ -8,6 +8,8 @@ AS
 
    PROCEDURE raise_err( p_name VARCHAR2, p_add_msg VARCHAR2 DEFAULT NULL );
 
+   PROCEDURE handle_err;      
+
    PROCEDURE print_query( p_query IN VARCHAR2 );
 
    FUNCTION is_debugmode

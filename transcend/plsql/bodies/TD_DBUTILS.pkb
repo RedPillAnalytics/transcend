@@ -1823,6 +1823,7 @@ AS
 
       IF l_iot_pk
       THEN
+	 o_ev.clear_app_info;
          RAISE drop_iot_key;
       END IF;
 

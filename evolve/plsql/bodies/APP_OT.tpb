@@ -104,7 +104,7 @@ AS
       td_inst.client_info( prev_client_info );
       td_inst.REGISTER;
    END clear_app_info;
-
+   
    MEMBER PROCEDURE read_prev_info
    AS
    BEGIN

@@ -198,20 +198,6 @@ AS
                              );
    END raise_err;
    
-   -- manages registration information whenever an exception is handled.
-   PROCEDURE handle_err( p_name VARCHAR2, p_add_msg VARCHAR2 DEFAULT NULL )
-   AS
-   BEGIN
-      log_msg( 'exception handled', 5 );
-      raise_application_error( get_err_cd( p_name ),
-                               get_err_msg( p_name ) || CASE
-                                  WHEN p_add_msg IS NULL
-                                     THEN NULL
-                                  ELSE ': ' || p_add_msg
-                               END
-                             );
-   END handle_err;
-
    PROCEDURE print_query( p_query IN VARCHAR2 )
    IS
       l_thecursor     INTEGER           DEFAULT DBMS_SQL.open_cursor;

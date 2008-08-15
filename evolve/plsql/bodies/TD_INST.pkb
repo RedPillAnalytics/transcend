@@ -2,25 +2,22 @@ CREATE OR REPLACE PACKAGE BODY td_inst
 AS
 -- global variables placed in the package body because they should be accessed or set outside the package
 
--- variables for holding information about the current session 
-   g_service_name       VARCHAR2( 64 ) := SYS_CONTEXT( 'USERENV', 'SERVICE_NAME' );
-   g_session_id      	NUMBER         := SYS_CONTEXT( 'USERENV', 'SESSIONID' );
-   g_instance_name   	VARCHAR( 30 )  := SYS_CONTEXT( 'USERENV', 'INSTANCE_NAME' );
-   g_machine         	VARCHAR2( 64 ) := SYS_CONTEXT( 'USERENV', 'MACHINE' );
-   g_dbuser          	VARCHAR2( 30 ) := SYS_CONTEXT( 'USERENV', 'SESSION_USER' );
-   g_osuser          	VARCHAR2( 30 ) := SYS_CONTEXT( 'USERENV', 'OS_USER' );
+   -- variables for holding information about the current session
+   g_service_name    VARCHAR2( 64 ) := SYS_CONTEXT( 'USERENV', 'SERVICE_NAME' );
+   g_session_id      NUMBER         := SYS_CONTEXT( 'USERENV', 'SESSIONID' );
+   g_instance_name   VARCHAR( 30 )  := SYS_CONTEXT( 'USERENV', 'INSTANCE_NAME' );
+   g_machine         VARCHAR2( 64 ) := SYS_CONTEXT( 'USERENV', 'MACHINE' );
+   g_dbuser          VARCHAR2( 30 ) := SYS_CONTEXT( 'USERENV', 'SESSION_USER' );
+   g_osuser          VARCHAR2( 30 ) := SYS_CONTEXT( 'USERENV', 'OS_USER' );
 -- variables for holding information used to register an application with some other framework, such as DBMS_APPLCIATION_INFO
-   g_client_info     	VARCHAR2( 64 ) := SYS_CONTEXT( 'USERENV', 'CLIENT_INFO' );
-   g_module             VARCHAR2( 48 ) := SYS_CONTEXT( 'USERENV', 'MODULE' );
-   g_action        	VARCHAR2( 32 ) := SYS_CONTEXT( 'USERENV', 'ACTION' );
-   g_prev_client_info   VARCHAR2( 64 ) := SYS_CONTEXT( 'USERENV', 'CLIENT_INFO' );
-   g_prev_module        VARCHAR2( 48 ) := SYS_CONTEXT( 'USERENV', 'MODULE' );
-   g_prev_action        VARCHAR2( 32 ) := SYS_CONTEXT( 'USERENV', 'ACTION' );
--- evolve framework-specific variables
-   g_batch_id        	NUMBER;
-   g_registration    	VARCHAR2( 30 ) := 'appinfo';
-   g_logging_level   	number := 2;
-   g_runmode         	VARCHAR2( 10 ) := 'runtime';
+   g_client_info     VARCHAR2( 64 ) := SYS_CONTEXT( 'USERENV', 'CLIENT_INFO' );
+   g_module          VARCHAR2( 48 ) := SYS_CONTEXT( 'USERENV', 'MODULE' );
+   g_action          VARCHAR2( 32 ) := SYS_CONTEXT( 'USERENV', 'ACTION' );
+-- miscelaneous other variables for enhanced framework functionality
+   g_batch_id        NUMBER;
+   g_registration    VARCHAR2( 30 ) := 'appinfo';
+   g_logging_level   number := 2;
+   g_runmode         VARCHAR2( 10 ) := 'runtime';
 
    -- registers the application
    PROCEDURE REGISTER
@@ -191,7 +188,6 @@ AS
    PROCEDURE module( p_module VARCHAR2 )
    AS
    BEGIN
-      g_prev_module := g_module;
       g_module := p_module;
    END module;
 
@@ -206,7 +202,6 @@ AS
    PROCEDURE action( p_action VARCHAR2 )
    AS
    BEGIN
-      g_prev_action := g_module_action;
       g_action := p_action;
    END action;
 
@@ -221,10 +216,9 @@ AS
    PROCEDURE client_info( p_client_info VARCHAR2 )
    AS
    BEGIN
-      g_prev_client_info := g_client_info;
       g_client_info := p_client_info;
-   END client_info;
-   
+   END client_info;   
+
    -- return a Boolean determing full debug mode
    FUNCTION is_full_debugmode
       RETURN BOOLEAN
