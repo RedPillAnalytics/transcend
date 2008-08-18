@@ -17,6 +17,7 @@ ACCEPT tablespace char default 'TDREP' prompt 'Tablespace in which to install de
 
 WHENEVER sqlerror exit sql.sqlcode
 
+SET echo on
 -- create the tdsys repository
 @install_tdsys_repo.sql
 
