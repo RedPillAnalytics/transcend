@@ -3,10 +3,8 @@ SET verify off
 PROMPT 'Running install_evolve.sql'
 SET serveroutput on size unlimited
 SET timing off
-
 ALTER SESSION SET nls_date_format = 'yyyymmdd_hhmiss';
-define elog = install_evolve&_DATE..log;
-SPOOL &elog
+SPOOL InstallEvolve_&_DATE..log
 
 -- get the schema for the Evolve application (PL/SQL and Java code)
 ACCEPT app_schema char default 'TDREP' prompt 'Schema name for the application [tdrep]: '
@@ -20,7 +18,6 @@ WHENEVER sqlerror exit sql.sqlcode
 -- create the tdsys repository
 @install_tdsys_repo.sql
 
-SPOOL &elog append
 DECLARE
    l_drop BOOLEAN := CASE WHEN REGEXP_LIKE('yes','&drop_repo','i') THEN TRUE ELSE FALSE END;
 BEGIN
