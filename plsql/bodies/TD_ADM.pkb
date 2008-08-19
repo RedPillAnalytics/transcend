@@ -250,12 +250,6 @@ IS
 
          EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON TD_PART_GTT TO ' || p_grantee;
 
-         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON TD_BUILD_IDX_GTT TO ' || p_grantee;
-
-         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON TD_BUILD_CON_GTT TO ' || p_grantee;
-
-         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON TD_CON_MAINT_GTT TO ' || p_grantee;
-
          EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON OPT_STATS TO ' || p_grantee;
 
          EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON DIMENSION_CONF TO ' || p_grantee;
@@ -827,30 +821,6 @@ IS
       END;
 
       BEGIN
-         EXECUTE IMMEDIATE q'|DROP TABLE td_build_idx_gtt|';
-      EXCEPTION
-         WHEN e_no_tab
-         THEN
-         NULL;
-      END;
-
-      BEGIN
-         EXECUTE IMMEDIATE q'|DROP TABLE td_build_con_gtt|';
-      EXCEPTION
-         WHEN e_no_tab
-         THEN
-         NULL;
-      END;
-
-      BEGIN
-         EXECUTE IMMEDIATE q'|DROP TABLE td_con_maint_gtt|';
-      EXCEPTION
-         WHEN e_no_tab
-         THEN
-         NULL;
-      END;
-
-      BEGIN
          EXECUTE IMMEDIATE q'|DROP TABLE opt_stats|';
       EXCEPTION
          WHEN e_no_tab
@@ -873,7 +843,7 @@ IS
          THEN
          NULL;
       END;
-
+      
       -- set current_schema back to where it started
       reset_current_schema;
    EXCEPTION
@@ -1032,33 +1002,24 @@ IS
 	   partition_position NUMBER
 	 )
 	 ON COMMIT DELETE ROWS|';
-
-         -- TD_BUILD_IDX_GTT
-         EXECUTE IMMEDIATE q'|CREATE global TEMPORARY TABLE td_build_idx_gtt
+	 
+         EXECUTE IMMEDIATE q'|CREATE TABLE ddl_queue
 	 ( 
-	   rename_ddl 	      VARCHAR2(4000),
-	   rename_msg 	      VARCHAR2(4000)
-	 )
-	 ON COMMIT DELETE ROWS|';
-
-         -- TD_BUILD_CON_GTT
-         EXECUTE IMMEDIATE q'|CREATE global TEMPORARY TABLE td_build_con_gtt
-	 ( 
-	   rename_ddl 	      VARCHAR2(4000),
-	   rename_msg 	      VARCHAR2(4000)
-	 )
-	 ON COMMIT DELETE ROWS|';
-
-         -- TD_CON_MAINT_GTT
-         EXECUTE IMMEDIATE q'|CREATE global TEMPORARY TABLE td_con_maint_gtt
-	 ( 
-	   disable_ddl 	    VARCHAR2(4000),
-	   disable_msg 	    VARCHAR2(4000),
-	   enable_ddl 	    VARCHAR2(4000),
-	   enable_msg 	    VARCHAR2(4000),
-	   order_seq	    NUMBER
-	 )
-	 ON COMMIT DELETE ROWS|';
+	   stmt_ddl 	    VARCHAR2(4000) NOT NULL,
+	   stmt_msg 	    VARCHAR2(4000) NOT NULL,
+	   client_info	    VARCHAR2(64) NOT NULL,
+	   module 	    VARCHAR2(48) NOT NULL,
+	   action 	    VARCHAR2(24) NOT NULL,
+	   stmt_order 	    NUMBER
+	 )|';
+	 
+         EXECUTE IMMEDIATE q'|ALTER TABLE ddl_queue ADD 
+	 (
+	   CONSTRAINT ddl_queue_pk
+	   PRIMARY KEY
+	   (stmt_ddl, stmt_msg, client_info, module, action)
+	   USING INDEX
+	 )|';
 
          -- COLUMN_TYPE_LIST table
          EXECUTE IMMEDIATE q'|CREATE TABLE column_type_list
@@ -2358,6 +2319,56 @@ IS
 
 	 
       END IF;
+
+      -- changes for version 1.4
+      IF l_version < 1.4
+      THEN
+	 
+	 -- ticket:64
+	 
+	 EXECUTE IMMEDIATE q'|drop table td_build_con_gtt purge|';
+	 
+	 EXECUTE IMMEDIATE q'|drop table td_build_idx_gtt purge|';
+	 
+	 EXECUTE IMMEDIATE q'|drop table td_con_maint_gtt purge|';
+	 
+         EXECUTE IMMEDIATE q'|CREATE TABLE ddl_queue
+	 ( 
+	   stmt_ddl 	    VARCHAR2(4000) NOT NULL,
+	   stmt_msg 	    VARCHAR2(4000) NOT NULL,
+	   client_info	    VARCHAR2(64) NOT NULL,
+	   module 	    VARCHAR2(48) NOT NULL,
+	   action 	    VARCHAR2(24) NOT NULL,
+	   stmt_order 	    NUMBER
+	 )|';
+
+	 BEGIN
+            EXECUTE IMMEDIATE q'|DROP TABLE td_build_idx_gtt|';
+	 EXCEPTION
+            WHEN e_no_tab
+            THEN
+            NULL;
+	 END;
+
+	 BEGIN
+            EXECUTE IMMEDIATE q'|DROP TABLE td_build_con_gtt|';
+	 EXCEPTION
+            WHEN e_no_tab
+            THEN
+            NULL;
+	 END;
+
+	 BEGIN
+            EXECUTE IMMEDIATE q'|DROP TABLE td_con_maint_gtt|';
+	 EXCEPTION
+            WHEN e_no_tab
+            THEN
+            NULL;
+	 END;
+	 
+      END IF;
+      
+      
 
    END upgrade_transcend_repo;
 
