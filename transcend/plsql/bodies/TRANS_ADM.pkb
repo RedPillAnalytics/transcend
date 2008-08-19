@@ -690,6 +690,635 @@ IS
       END IF;
    END configure_extract;
 
+   PROCEDURE create_mapping (
+      p_mapping             VARCHAR2,
+      p_mapping_type        VARCHAR2,
+      p_owner               VARCHAR2 DEFAULT NULL,
+      p_table               VARCHAR2 DEFAULT NULL,
+      p_partname            VARCHAR2 DEFAULT NULL,
+      p_indexes             VARCHAR2 DEFAULT 'no',
+      p_constraints         VARCHAR2 DEFAULT 'no',
+      p_source_owner        VARCHAR2 DEFAULT NULL,
+      p_source_object       VARCHAR2 DEFAULT NULL,
+      p_source_column       VARCHAR2 DEFAULT NULL,
+      p_replace_method      VARCHAR2 DEFAULT NULL,
+      p_statistics          VARCHAR2 DEFAULT 'transfer',
+      p_concurrent          VARCHAR2 DEFAULT 'no',
+      p_index_regexp        VARCHAR2 DEFAULT NULL,
+      p_index_type          VARCHAR2 DEFAULT NULL,
+      p_part_type           VARCHAR2 DEFAULT NULL,
+      p_constraint_regexp   VARCHAR2 DEFAULT NULL,
+      p_constraint_type     VARCHAR2 DEFAULT NULL,
+      p_description         VARCHAR2 DEFAULT NULL
+   )
+   IS
+      l_num_rows   NUMBER;
+      o_map        mapping_ot;
+      e_dup_conf   EXCEPTION;
+      PRAGMA EXCEPTION_INIT (e_dup_conf, -1);
+      o_ev          evolve_ot     := evolve_ot (p_module  => 'create_mapping');
+   BEGIN
+
+      BEGIN
+	 INSERT INTO mapping_conf
+		( mapping_name, mapping_type,
+		  table_owner, table_name,
+		  partition_name, manage_indexes,
+		  manage_constraints,
+		  source_owner, source_object,
+		  source_column, replace_method,
+		  STATISTICS,
+		  concurrent, index_regexp,
+		  index_type, partition_type, constraint_regexp,
+		  constraint_type, description
+		)
+		VALUES ( LOWER (p_mapping), LOWER (p_mapping_type),
+			 UPPER (p_owner), UPPER (p_table),
+			 UPPER (p_partname), LOWER (NVL (p_indexes, 'no')),
+			 LOWER (p_constraints),
+			 UPPER (p_source_owner), UPPER (p_source_object),
+			 UPPER (p_source_column), p_replace_method,
+			 LOWER (p_statistics),
+			 LOWER (p_concurrent), p_index_regexp,
+			 p_index_type, p_part_type, p_constraint_regexp,
+			 p_constraint_type, p_description
+                       );
+      EXCEPTION
+	 WHEN e_dup_conf
+	 THEN
+            o_ev.clear_app_info;
+            evolve.raise_err ('dup_conf');
+      END;
+
+      -- initiating the object will run the business logic checks      
+      o_map := trans_factory.get_mapping_ot (p_mapping => p_mapping);
+
+   EXCEPTION
+      WHEN others
+      THEN
+         evolve.log_err;
+      	 o_ev.clear_app_info;
+      	 RAISE;
+   END create_mapping;
+
+   PROCEDURE create_mapping (
+      p_mapping             VARCHAR2,
+      p_mapping_type        VARCHAR2,
+      p_owner               VARCHAR2 DEFAULT NULL,
+      p_table               VARCHAR2 DEFAULT NULL,
+      p_partname            VARCHAR2 DEFAULT NULL,
+      p_indexes             VARCHAR2 DEFAULT 'no',
+      p_constraints         VARCHAR2 DEFAULT 'no',
+      p_source_owner        VARCHAR2 DEFAULT NULL,
+      p_source_object       VARCHAR2 DEFAULT NULL,
+      p_source_column       VARCHAR2 DEFAULT NULL,
+      p_replace_method      VARCHAR2 DEFAULT NULL,
+      p_statistics          VARCHAR2 DEFAULT 'transfer',
+      p_concurrent          VARCHAR2 DEFAULT 'no',
+      p_index_regexp        VARCHAR2 DEFAULT NULL,
+      p_index_type          VARCHAR2 DEFAULT NULL,
+      p_part_type           VARCHAR2 DEFAULT NULL,
+      p_constraint_regexp   VARCHAR2 DEFAULT NULL,
+      p_constraint_type     VARCHAR2 DEFAULT NULL,
+      p_description         VARCHAR2 DEFAULT NULL
+   )
+   IS
+      o_ev          evolve_ot     := evolve_ot (p_module  => 'create_mapping');
+   BEGIN
+      
+      create_mapping ( p_mapping   => p_mapping,
+		       p_mapping_type => 'table',
+		       p_owner => p_owner,
+		       p_table => p_table,
+		       p_partname => p_partname,
+		       p_indexes => p_indexes,
+		       p_constraints => p_constraints,
+		       p_source_owner => p_source_owner,
+		       p_source_object => p_source_object,
+		       p_source_column => p_source_column,
+		       p_replace_method => p_replace_method,
+		       p_statistics => p_statistics,
+		       p_concurrent => p_concurrent,
+		       p_index_regexp => p_index_regexp,
+		       p_index_type => p_index_type,
+		       p_part_type => p_part_type,
+		       p_constraint_regexp => p_constraint_regexp,
+		       p_constraint_type => p_constraint_type,
+		       p_description => p_description );
+      
+      o_ev.clear_app_info;
+
+   END create_mapping;
+   
+   PROCEDURE modify_mapping (
+      p_mapping             VARCHAR2,
+      p_owner               VARCHAR2 DEFAULT NULL,
+      p_table               VARCHAR2 DEFAULT NULL,
+      p_partname            VARCHAR2 DEFAULT NULL,
+      p_indexes             VARCHAR2 DEFAULT 'no',
+      p_constraints         VARCHAR2 DEFAULT 'no',
+      p_source_owner        VARCHAR2 DEFAULT NULL,
+      p_source_object       VARCHAR2 DEFAULT NULL,
+      p_source_column       VARCHAR2 DEFAULT NULL,
+      p_replace_method      VARCHAR2 DEFAULT NULL,
+      p_statistics          VARCHAR2 DEFAULT 'transfer',
+      p_concurrent          VARCHAR2 DEFAULT 'no',
+      p_index_regexp        VARCHAR2 DEFAULT NULL,
+      p_index_type          VARCHAR2 DEFAULT NULL,
+      p_part_type           VARCHAR2 DEFAULT NULL,
+      p_constraint_regexp   VARCHAR2 DEFAULT NULL,
+      p_constraint_type     VARCHAR2 DEFAULT NULL,
+      p_description         VARCHAR2 DEFAULT NULL,
+      p_mode                VARCHAR2 DEFAULT 'upsert'
+   )
+   IS
+      l_num_rows   NUMBER;
+      o_map        mapping_ot;
+      e_dup_conf   EXCEPTION;
+      PRAGMA EXCEPTION_INIT (e_dup_conf, -1);
+      o_ev          evolve_ot     := evolve_ot (p_module      => 'modify_mapping');
+   BEGIN
+      
+      BEGIN
+         --first, check to make sure that we should be modifying this record
+         SELECT mapping_type
+           INTO l_map_type
+           FROM mapping_conf
+          WHERE LOWER (mapping_name) = LOWER (p_mapping);
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            -- if there is no record, then raise the error
+	    o_ev.clear_app_info;
+            evolve.raise_err( 'no_mapping' );
+      END;
+      
+      -- if this is a dimensional mapping, we should not modify it.
+      IF LOWER (l_map_type) = 'dimension'
+      THEN
+	 o_ev.clear_app_info;
+         evolve.raise_err ('dim_map_obj');
+      END IF;
+
+      -- remove null values if P_MODE is 'nullify'
+      -- any attributes specified with a 'NULL' will be nullified
+      UPDATE mapping_conf
+         SET mapping_type = LOWER (p_mapping_type),
+             table_owner =
+             UPPER ( CASE
+                     WHEN p_owner IS NULL
+                     THEN table_owner
+                     WHEN p_owner = null_value
+                     THEN NULL
+                     ELSE p_owner
+                     END
+                   ),
+             table_name =
+             UPPER (CASE
+                     WHEN p_table IS NULL
+                     THEN table_name
+                     WHEN p_table = null_value
+                     THEN NULL
+                     ELSE p_table
+                     END
+                   ),
+             partition_name =
+             UPPER (CASE
+                     WHEN p_partname IS NULL
+                     THEN partition_name
+                     WHEN p_partname = null_value
+                     THEN NULL
+                     ELSE p_partname
+                     END
+                   ),
+             manage_indexes =
+             LOWER (CASE
+                     WHEN p_indexes IS NULL
+                     THEN manage_indexes
+                     WHEN p_indexes = null_value
+                     THEN NULL
+                     ELSE p_indexes
+                     END
+                   ),
+             manage_constraints =
+             LOWER (CASE
+                     WHEN p_constraints IS NULL
+                     THEN manage_constraints
+                     WHEN p_constraints = null_value
+                     THEN NULL
+                     ELSE p_constraints
+                     END
+                   ),
+             source_owner =
+             UPPER (CASE
+                     WHEN p_source_owner IS NULL
+                     THEN source_owner
+                     WHEN p_source_owner = null_value
+                     THEN NULL
+                     ELSE p_source_owner
+                     END
+                   ),
+             source_object =
+             UPPER (CASE
+                     WHEN p_source_object IS NULL
+                     THEN source_object
+                     WHEN p_source_object = null_value
+                     THEN NULL
+                     ELSE p_source_object
+                     END
+                   ),
+             source_column =
+             UPPER (CASE
+                     WHEN p_source_column IS NULL
+                     THEN source_column
+                     WHEN p_source_column = null_value
+                     THEN NULL
+                     ELSE p_source_column
+                     END
+                   ),
+             replace_method =
+             LOWER (CASE
+                     WHEN p_replace_method IS NULL
+                     THEN replace_method
+                     WHEN p_replace_method = null_value
+                     THEN NULL
+                     ELSE p_replace_method
+                     END
+                   ),
+             STATISTICS =
+             LOWER (CASE
+                     WHEN p_statistics IS NULL
+                     THEN statistics
+                     WHEN p_statistics = null_value
+                     THEN NULL
+                     ELSE p_statistics
+                     END
+                   ),
+             concurrent =
+             LOWER (CASE
+                     WHEN p_concurrent IS NULL
+                     THEN concurrent
+                     WHEN p_concurrent = null_value
+                     THEN NULL
+                     ELSE p_concurrent
+                     END
+                   ),
+             index_regexp =
+             CASE
+             WHEN p_index_regexp IS NULL
+             THEN index_regexp
+             WHEN p_index_regexp = null_value
+             THEN NULL
+             ELSE p_index_regexp
+             END,
+             index_type =
+             CASE
+             WHEN p_index_type IS NULL
+             THEN index_type
+             WHEN p_index_type = null_value
+             THEN NULL
+             ELSE p_index_type
+             END,
+             partition_type =
+             CASE
+             WHEN p_part_type IS NULL
+             THEN partition_type
+             WHEN p_part_type = null_value
+             THEN NULL
+             ELSE p_part_type
+             END,
+             constraint_regexp =
+             CASE
+             WHEN p_constraint_regexp IS NULL
+             THEN constraint_regexp
+             WHEN p_constraint_regexp = null_value
+             THEN NULL
+             ELSE p_constraint_regexp
+             END,
+             constraint_type =
+             CASE
+             WHEN p_constraint_type IS NULL
+             THEN constraint_type
+             WHEN p_constraint_type = null_value
+             THEN NULL
+             ELSE p_constraint_type
+             END,
+             description =
+             CASE
+             WHEN p_description IS NULL
+             THEN description
+             WHEN p_description = null_value
+             THEN NULL
+             ELSE p_description
+             END,
+             modified_user = SYS_CONTEXT ('USERENV', 'SESSION_USER'),
+             modified_dt = SYSDATE
+       WHERE mapping_name = LOWER (p_mapping);
+
+
+         -- now use the dimension object to validate the new structure
+         -- just constructing the object calls the CONFIRM_OBJECTS procedure
+         BEGIN
+            o_map := trans_factory.get_mapping_ot (p_mapping => p_mapping);
+         END;
+
+   END modify_mapping;
+
+   PROCEDURE configure_mapping (
+      p_mapping             VARCHAR2,
+      p_mapping_type        VARCHAR2,
+      p_owner               VARCHAR2 DEFAULT NULL,
+      p_table               VARCHAR2 DEFAULT NULL,
+      p_partname            VARCHAR2 DEFAULT NULL,
+      p_indexes             VARCHAR2 DEFAULT 'no',
+      p_constraints         VARCHAR2 DEFAULT 'no',
+      p_source_owner        VARCHAR2 DEFAULT NULL,
+      p_source_object       VARCHAR2 DEFAULT NULL,
+      p_source_column       VARCHAR2 DEFAULT NULL,
+      p_replace_method      VARCHAR2 DEFAULT NULL,
+      p_statistics          VARCHAR2 DEFAULT 'transfer',
+      p_concurrent          VARCHAR2 DEFAULT 'no',
+      p_index_regexp        VARCHAR2 DEFAULT NULL,
+      p_index_type          VARCHAR2 DEFAULT NULL,
+      p_part_type           VARCHAR2 DEFAULT NULL,
+      p_constraint_regexp   VARCHAR2 DEFAULT NULL,
+      p_constraint_type     VARCHAR2 DEFAULT NULL,
+      p_description         VARCHAR2 DEFAULT NULL,
+      p_mode                VARCHAR2 DEFAULT 'upsert'
+   )
+   IS
+      l_num_rows   NUMBER;
+      o_map        mapping_ot;
+      e_dup_conf   EXCEPTION;
+      PRAGMA EXCEPTION_INIT (e_dup_conf, -1);
+   BEGIN
+      -- remove null values if P_MODE is 'nullify'
+      -- any attributes specified with a 'NULL' will be nullified
+      IF LOWER (p_mode) = 'nullify'
+      THEN
+         UPDATE mapping_conf
+            SET mapping_type = LOWER (p_mapping_type),
+                table_owner =
+                   UPPER (CASE
+                             WHEN p_owner IS NULL
+                                THEN table_owner
+                             WHEN p_owner = 'NULL'
+                                THEN NULL
+                             ELSE table_owner
+                          END
+                         ),
+                table_name =
+                   UPPER (CASE
+                             WHEN p_table IS NULL
+                                THEN table_name
+                             WHEN p_table = 'NULL'
+                                THEN NULL
+                             ELSE table_name
+                          END
+                         ),
+                partition_name =
+                   UPPER (CASE
+                             WHEN p_partname IS NULL
+                                THEN partition_name
+                             WHEN p_partname = 'NULL'
+                                THEN NULL
+                             ELSE partition_name
+                          END
+                         ),
+                manage_indexes =
+                   LOWER (CASE
+                             WHEN p_indexes IS NULL
+                                THEN manage_indexes
+                             WHEN p_indexes = 'NULL'
+                                THEN NULL
+                             ELSE manage_indexes
+                          END
+                         ),
+                manage_constraints =
+                   LOWER (CASE
+                             WHEN p_constraints IS NULL
+                                THEN manage_constraints
+                             WHEN p_constraints = 'NULL'
+                                THEN NULL
+                             ELSE manage_constraints
+                          END
+                         ),
+                source_owner =
+                   UPPER (CASE
+                             WHEN p_source_owner IS NULL
+                                THEN source_owner
+                             WHEN p_source_owner = 'NULL'
+                                THEN NULL
+                             ELSE source_owner
+                          END
+                         ),
+                source_object =
+                   UPPER (CASE
+                             WHEN p_source_object IS NULL
+                                THEN source_object
+                             WHEN p_source_object = 'NULL'
+                                THEN NULL
+                             ELSE source_object
+                          END
+                         ),
+                source_column =
+                   UPPER (CASE
+                             WHEN p_source_column IS NULL
+                                THEN source_column
+                             WHEN p_source_column = 'NULL'
+                                THEN NULL
+                             ELSE source_column
+                          END
+                         ),
+                replace_method =
+                   LOWER (CASE
+                             WHEN p_replace_method IS NULL
+                                THEN replace_method
+                             WHEN p_replace_method = 'NULL'
+                                THEN NULL
+                             ELSE replace_method
+                          END
+                         ),
+                STATISTICS =
+                   LOWER (CASE
+                             WHEN p_statistics IS NULL
+                                THEN STATISTICS
+                             WHEN p_statistics = 'NULL'
+                                THEN NULL
+                             ELSE STATISTICS
+                          END
+                         ),
+                concurrent =
+                   LOWER (CASE
+                             WHEN p_concurrent IS NULL
+                                THEN concurrent
+                             WHEN p_concurrent = 'NULL'
+                                THEN NULL
+                             ELSE concurrent
+                          END
+                         ),
+                index_regexp =
+                   CASE
+                      WHEN p_index_regexp IS NULL
+                         THEN index_regexp
+                      WHEN p_index_regexp = 'NULL'
+                         THEN NULL
+                      ELSE index_regexp
+                   END,
+                index_type =
+                   CASE
+                      WHEN p_index_type IS NULL
+                         THEN index_type
+                      WHEN p_index_type = 'NULL'
+                         THEN NULL
+                      ELSE index_type
+                   END,
+                partition_type =
+                   CASE
+                      WHEN p_part_type IS NULL
+                         THEN partition_type
+                      WHEN p_part_type = 'NULL'
+                         THEN NULL
+                      ELSE partition_type
+                   END,
+                constraint_regexp =
+                   CASE
+                      WHEN p_constraint_regexp IS NULL
+                         THEN constraint_regexp
+                      WHEN p_constraint_regexp = 'NULL'
+                         THEN NULL
+                      ELSE constraint_regexp
+                   END,
+                constraint_type =
+                   CASE
+                      WHEN p_constraint_type IS NULL
+                         THEN constraint_type
+                      WHEN p_constraint_type = 'NULL'
+                         THEN NULL
+                      ELSE constraint_type
+                   END,
+                description =
+                   CASE
+                      WHEN p_description IS NULL
+                         THEN description
+                      WHEN p_description = 'NULL'
+                         THEN NULL
+                      ELSE description
+                   END,
+                modified_user = SYS_CONTEXT ('USERENV', 'SESSION_USER'),
+                modified_dt = SYSDATE
+          WHERE mapping_name = LOWER (p_mapping);
+      END IF;
+
+      IF LOWER (p_mode) IN ('upsert', 'update')
+      THEN
+         evolve.log_msg ('Updating configuration', 5);
+
+         -- try to update an existing configuration
+         UPDATE mapping_conf
+            SET mapping_name = LOWER (NVL (p_mapping, mapping_name)),
+                mapping_type = LOWER (NVL (p_mapping_type, mapping_type)),
+                table_owner = UPPER (NVL (p_owner, table_owner)),
+                table_name = UPPER (NVL (p_table, table_name)),
+                partition_name = UPPER (NVL (p_partname, partition_name)),
+                manage_indexes = LOWER (NVL (p_indexes, manage_indexes)),
+                manage_constraints =
+                               LOWER (NVL (p_constraints, manage_constraints)),
+                source_owner = UPPER (NVL (p_source_owner, source_owner)),
+                source_object = UPPER (NVL (p_source_object, source_object)),
+                source_column = UPPER (NVL (p_source_column, source_column)),
+                replace_method =
+                                LOWER (NVL (p_replace_method, replace_method)),
+                STATISTICS = LOWER (NVL (p_statistics, STATISTICS)),
+                concurrent = LOWER (NVL (p_concurrent, concurrent)),
+                index_regexp = NVL (p_index_regexp, index_regexp),
+                index_type = NVL (p_index_type, index_type),
+                partition_type = NVL (p_part_type, partition_type),
+                constraint_regexp =
+                                  NVL (p_constraint_regexp, constraint_regexp),
+                constraint_type = NVL (p_constraint_type, constraint_type),
+                description = NVL (p_description, description),
+                modified_user = SYS_CONTEXT ('USERENV', 'SESSION_USER'),
+                modified_dt = SYSDATE
+          WHERE mapping_name = LOWER (p_mapping);
+
+         -- get the SQL rowcount
+         l_num_rows := SQL%ROWCOUNT;
+      END IF;
+
+      -- updating a current config has failed, or an insert was specified
+      -- in this case, insert a new record
+      IF    (l_num_rows = 0 AND LOWER (p_mode) = 'upsert')
+         OR LOWER (p_mode) = 'insert'
+      THEN
+         evolve.log_msg ('Inserting configuration', 5);
+
+         CASE
+            WHEN p_mapping IS NULL
+            THEN
+               evolve.raise_err ('parm_req', 'P_MAPPING');
+            ELSE
+               NULL;
+         END CASE;
+
+         BEGIN
+            INSERT INTO mapping_conf
+                        (mapping_name, mapping_type,
+                         table_owner, table_name,
+                         partition_name, manage_indexes,
+                         manage_constraints,
+                         source_owner, source_object,
+                         source_column, replace_method,
+                         STATISTICS,
+                         concurrent, index_regexp,
+                         index_type, partition_type, constraint_regexp,
+                         constraint_type, description
+                        )
+                 VALUES (LOWER (p_mapping), LOWER (p_mapping_type),
+                         UPPER (p_owner), UPPER (p_table),
+                         UPPER (p_partname), LOWER (NVL (p_indexes, 'no')),
+                         LOWER (NVL (p_constraints, 'no')),
+                         UPPER (p_source_owner), UPPER (p_source_object),
+                         UPPER (p_source_column), p_replace_method,
+                         LOWER (NVL (p_statistics, 'transfer')),
+                         LOWER (NVL (p_concurrent, 'no')), p_index_regexp,
+                         p_index_type, p_part_type, p_constraint_regexp,
+                         p_constraint_type, p_description
+                        );
+
+            -- get the SQL rowcount
+            l_num_rows := SQL%ROWCOUNT;
+         EXCEPTION
+            WHEN e_dup_conf
+            THEN
+               evolve.raise_err ('dup_conf');
+         END;
+      END IF;
+
+      IF LOWER (p_mode) = 'delete'
+      THEN
+         -- if a delete is specifically requested, then do a delete
+         DELETE FROM mapping_conf
+               WHERE mapping_name = LOWER (p_mapping);
+
+         -- get the SQL rowcount
+         l_num_rows := SQL%ROWCOUNT;
+      ELSE
+         -- as long as P_MODE wasn't 'delete', then we should validate the new structure of the dimension
+         -- now use the dimension object to validate the new structure
+         -- just constructing the object calls the CONFIRM_OBJECTS procedure
+         BEGIN
+            o_map := trans_factory.get_mapping_ot (p_mapping => p_mapping);
+         END;
+      END IF;
+
+      -- if we still have not affected any records, then there's a problem
+      IF l_num_rows = 0
+      THEN
+         evolve.raise_err ('no_rep_obj');
+      END IF;
+   END configure_mapping;
+   
    PROCEDURE configure_mapping (
       p_mapping             VARCHAR2,
       p_mapping_type        VARCHAR2,
@@ -1085,15 +1714,15 @@ IS
                       sequence_owner, sequence_name,
                       staging_owner, staging_table,
                       default_scd_type, direct_load,
-                      stage_key_default, char_nvl_default, date_nvl_default,
-                      date_nvl_default, number_nvl_default, description
+                      stage_key_default, char_nvl_default,
+		      date_nvl_default, number_nvl_default, description
                      )
               VALUES (UPPER (p_owner), UPPER (p_table),
                       UPPER (p_sequence_owner), UPPER (p_sequence_name),
                       UPPER (p_staging_owner), UPPER (p_staging_table),
-                      p_default_scd_type, LOWER (p_direct_load, 'yes'),
+                      p_default_scd_type, LOWER (p_direct_load),
                       p_stage_key_def, p_char_nvl_def, p_date_nvl_def,
-                      p_date_nvl_def, p_num_nvl_def, p_description
+                      p_num_nvl_def, p_description
                      );
       EXCEPTION
          WHEN e_dup_conf
@@ -1238,6 +1867,11 @@ IS
              modified_dt = SYSDATE
        WHERE LOWER (table_owner) = LOWER (p_owner)
          AND LOWER (table_name) = LOWER (p_table);
+		
+		IF sql%rowcount = o
+		THEN
+		   evolve.raise_err( 'no_dim' );
+		END IF;
 
       -- get the mapping name
       o_ev.change_action ('get mapping name');

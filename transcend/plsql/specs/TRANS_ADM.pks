@@ -71,9 +71,32 @@ IS
       p_mode                VARCHAR2 DEFAULT 'upsert'
    );
 
-   PROCEDURE configure_dim (
+   PROCEDURE create_dimension (
+      p_mapping            VARCHAR2,
       p_owner              VARCHAR2,
       p_table              VARCHAR2,
+      p_source_owner       VARCHAR2,
+      p_source_object      VARCHAR2,
+      p_sequence_owner     VARCHAR2,
+      p_sequence_name      VARCHAR2,
+      p_staging_owner      VARCHAR2 DEFAULT NULL,
+      p_staging_table      VARCHAR2 DEFAULT NULL,
+      p_default_scd_type   NUMBER DEFAULT 2,
+      p_direct_load        VARCHAR2 DEFAULT 'yes',
+      p_replace_method     VARCHAR2 DEFAULT 'rename',
+      p_statistics         VARCHAR2 DEFAULT 'transfer',
+      p_concurrent         VARCHAR2 DEFAULT 'no',
+      p_stage_key_def      NUMBER DEFAULT -.01,
+      p_char_nvl_def       VARCHAR2 DEFAULT '~',
+      p_date_nvl_def       DATE DEFAULT TO_DATE ('01/01/9999'),
+      p_num_nvl_def        NUMBER DEFAULT -.01,
+      p_description        VARCHAR2 DEFAULT NULL
+   );
+
+   PROCEDURE modify_dimension (
+      p_owner              VARCHAR2,
+      p_table              VARCHAR2,
+      p_mapping            VARCHAR2 DEFAULT NULL,
       p_source_owner       VARCHAR2 DEFAULT NULL,
       p_source_object      VARCHAR2 DEFAULT NULL,
       p_sequence_owner     VARCHAR2 DEFAULT NULL,
@@ -89,10 +112,11 @@ IS
       p_char_nvl_def       VARCHAR2 DEFAULT NULL,
       p_date_nvl_def       DATE DEFAULT NULL,
       p_num_nvl_def        NUMBER DEFAULT NULL,
-      p_description        VARCHAR2 DEFAULT NULL,
-      p_mode               VARCHAR2 DEFAULT 'upsert'
-   );
-
+      p_description        VARCHAR2 DEFAULT NULL
+  );
+   
+   PROCEDURE delete_dimension ( p_owner VARCHAR2, p_table VARCHAR2 );
+   
    PROCEDURE configure_dim_cols (
       p_owner           VARCHAR2,
       p_table           VARCHAR2,
