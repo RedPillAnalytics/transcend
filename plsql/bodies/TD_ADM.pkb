@@ -535,6 +535,7 @@ IS
 	   action VARCHAR2(32),
 	   service_name VARCHAR2(64),
 	   runmode VARCHAR2(10) NOT NULL,
+	   LEVEL NUMBER NOT NULL,
 	   session_id NUMBER NOT NULL,
 	   current_scn NUMBER NOT NULL,
 	   instance_name VARCHAR2(30) NOT NULL,
@@ -2286,6 +2287,18 @@ IS
 	    WHEN e_col_exists
 	    THEN
 	    NULL;
+	 END;
+	 
+      END IF;
+      
+      -- changes for version 1.4
+      IF l_version < 1.4
+      THEN
+	 
+	 -- ticket:104
+	 -- add a level column to LOG_TABLE
+	 EXECUTE IMMEDIATE q'|alter table log_table add level number not null|';
+
 	 END;
 	 
       END IF;

@@ -130,7 +130,7 @@ AS
                      ELSE 'alter session set ' || name || '=' || value
                   END DDL
             FROM parameter_conf
-           WHERE LOWER( module ) = td_inst.module )
+            WHERE LOWER( module ) = td_inst.module OR module = evolve_adm.all_modules )
       LOOP
          IF evolve.is_debugmode
          THEN
