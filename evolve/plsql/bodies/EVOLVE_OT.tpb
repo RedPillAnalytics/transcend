@@ -123,14 +123,14 @@ AS
       -- do this by setting the value for that parameter as either "enabled" or "disabled"
       FOR c_params IN
          ( SELECT CASE
-                     WHEN REGEXP_LIKE( name, 'enabled', 'i' )
+                     WHEN REGEXP_LIKE( name, 'enable', 'i' )
                         THEN 'alter session enable '||name
-                     WHEN REGEXP_LIKE( name, 'disabled', 'i' )
+                     WHEN REGEXP_LIKE( name, 'disable', 'i' )
                         THEN 'alter session disable '||name
                      ELSE 'alter session set ' || name || '=' || value
                   END DDL
             FROM parameter_conf
-           WHERE LOWER( module ) = td_inst.module )
+            WHERE LOWER( module ) = td_inst.module OR module = evolve_adm.all_modules )
       LOOP
          IF evolve.is_debugmode
          THEN

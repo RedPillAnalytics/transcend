@@ -13,6 +13,7 @@ AS
    g_client_info     VARCHAR2( 64 ) := SYS_CONTEXT( 'USERENV', 'CLIENT_INFO' );
    g_module          VARCHAR2( 48 ) := SYS_CONTEXT( 'USERENV', 'MODULE' );
    g_action          VARCHAR2( 32 ) := SYS_CONTEXT( 'USERENV', 'ACTION' );
+-- miscelaneous other variables for enhanced framework functionality
    g_batch_id        NUMBER;
    g_registration    VARCHAR2( 30 ) := 'appinfo';
    g_logging_level   number := 2;
@@ -216,7 +217,7 @@ AS
    AS
    BEGIN
       g_client_info := p_client_info;
-   END client_info;
+   END client_info;   
 
    -- return a Boolean determing full debug mode
    FUNCTION is_full_debugmode
