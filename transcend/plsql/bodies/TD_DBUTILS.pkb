@@ -1238,7 +1238,6 @@ AS
                   -- first log the error
                   -- provide a backtrace from this exception handler to the next exception
                   evolve.log_err;
-                  o_ev.clear_app_info;
                   RAISE;
             END;
          END IF;
@@ -1456,8 +1455,14 @@ AS
                                                       THEN 'DISABLED'
                                                 END
                                          AND REGEXP_LIKE( constraint_name, NVL( p_constraint_regexp, '.' ), 'i' )
-                                         AND r_constraint_name IN(
+                                         AND r_constraint_name IN (
                                                 SELECT constraint_name
+                                                  FROM all_constraints
+                                                 WHERE table_name = UPPER( p_table )
+                                                   AND owner = UPPER( p_owner )
+                                                   AND constraint_type = 'P' )
+                                         AND r_owner IN (
+                                                SELECT owner
                                                   FROM all_constraints
                                                  WHERE table_name = UPPER( p_table )
                                                    AND owner = UPPER( p_owner )
@@ -2583,7 +2588,6 @@ AS
                   enable_constraints( p_concurrent => p_concurrent );
                END IF;
 
-               o_ev.clear_app_info;
                RAISE;
          END;
 
