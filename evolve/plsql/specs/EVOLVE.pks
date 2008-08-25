@@ -1,5 +1,12 @@
 CREATE OR REPLACE PACKAGE evolve AUTHID CURRENT_USER
 AS
+   
+   FUNCTION get_action
+      RETURN VARCHAR2;
+
+   FUNCTION get_module
+      RETURN VARCHAR2;
+
    PROCEDURE log_msg( p_msg VARCHAR2, p_level NUMBER DEFAULT 1 );
 
    PROCEDURE log_cnt_msg( p_count NUMBER, p_msg VARCHAR2 DEFAULT NULL, p_level NUMBER DEFAULT 1 );

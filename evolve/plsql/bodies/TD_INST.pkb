@@ -6,7 +6,7 @@ AS
    g_service_name    VARCHAR2( 64 ) := SYS_CONTEXT( 'USERENV', 'SERVICE_NAME' );
    g_session_id      NUMBER         := SYS_CONTEXT( 'USERENV', 'SESSIONID' );
    g_instance_name   VARCHAR( 30 )  := SYS_CONTEXT( 'USERENV', 'INSTANCE_NAME' );
-   g_machine         VARCHAR2( 64 ) := SYS_CONTEXT( 'USERENV', 'MACHINE' );
+   g_machine         VARCHAR2( 64 ) := SYS_CONTEXT( 'USERENV', 'HOST' );
    g_dbuser          VARCHAR2( 30 ) := SYS_CONTEXT( 'USERENV', 'SESSION_USER' );
    g_osuser          VARCHAR2( 30 ) := SYS_CONTEXT( 'USERENV', 'OS_USER' );
 -- variables for holding information used to register an application with some other framework, such as DBMS_APPLCIATION_INFO

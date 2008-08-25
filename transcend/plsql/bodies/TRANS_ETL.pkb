@@ -111,46 +111,6 @@ AS
          RAISE;
    END build_indexes;
 
-   -- renames cloned indexes on a particular table back to their original names
-   PROCEDURE rename_indexes
-   IS
-      l_idx_cnt   NUMBER    := 0;
-      l_rows      BOOLEAN   := FALSE;
-      o_ev        evolve_ot := evolve_ot( p_module => 'rename_indexes' );
-   BEGIN
-      FOR c_idxs IN ( SELECT *
-                       FROM td_build_idx_gtt )
-      LOOP
-         BEGIN
-            l_rows       := TRUE;
-            evolve.exec_sql( p_sql => c_idxs.rename_ddl, p_auto => 'yes' );
-            evolve.log_msg( c_idxs.rename_msg, 3 );
-            l_idx_cnt    := l_idx_cnt + 1;
-         END;
-      END LOOP;
-
-      IF NOT l_rows
-      THEN
-         evolve.log_msg( 'No previously cloned indexes identified' );
-      ELSE
-         evolve.log_msg( l_idx_cnt || ' index' || CASE
-                                WHEN l_idx_cnt = 1
-                                   THEN NULL
-                                ELSE 'es'
-                             END || ' renamed' );
-      END IF;
-
-      -- commit is required to clear out the contents of the global temporary table
-      COMMIT;
-      o_ev.clear_app_info;
-   EXCEPTION
-      WHEN OTHERS
-      THEN
-         evolve.log_err;
-         o_ev.clear_app_info;
-         RAISE;
-   END rename_indexes;
-
    -- builds the constraints from one table on another
    PROCEDURE build_constraints(
       p_owner               VARCHAR2,
@@ -196,7 +156,8 @@ AS
                                    p_maint_type             => 'disable',
                                    p_constraint_type        => p_constraint_type,
                                    p_constraint_regexp      => p_constraint_regexp,
-                                   p_basis                  => p_basis
+                                   p_basis                  => p_basis,
+				   p_enable_queue	    => 'no'
                                  );
    EXCEPTION
       WHEN OTHERS
@@ -233,20 +194,6 @@ AS
          RAISE;
    END enable_constraints;
    
-   -- enables constraints previously disabled using the P_ENABLE_QUEUE parameter
-   PROCEDURE enable_constraints(
-      p_concurrent          VARCHAR2 DEFAULT 'no'
-   )
-   IS
-   BEGIN
-      td_dbutils.enable_constraints( p_concurrent => p_concurrent );
-   EXCEPTION
-      WHEN OTHERS
-      THEN
-         evolve.log_err;
-         RAISE;
-   END enable_constraints;
-
    -- drop particular indexes from a table
    PROCEDURE drop_indexes(
       p_owner          VARCHAR2,

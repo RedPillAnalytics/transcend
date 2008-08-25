@@ -5,9 +5,8 @@ COLUMN zip format 99999
 SET echo on
 -- before we start, I need to delete configurations from previous runs
 BEGIN
-   trans_adm.configure_dim( p_owner=>'testdim',
-			    p_table=>'customer_dim',
-			    p_mode=>'delete');
+   trans_adm.delete_dimension( p_owner=>'testdim',
+			       p_table=>'customer_dim');
 END;
 /
 
@@ -173,16 +172,17 @@ SELECT * FROM testdim.customer_src
 
 -- I want to register this table with Transcend as a dimension table
 BEGIN
-   trans_adm.configure_dim( p_owner=>'testdim',
-			    p_table=>'customer_dim',
-			    p_source_owner=>'testdim',
-			    p_source_object=>'customer_src',
-			    p_sequence_owner=>'testdim',
-			    p_sequence_name=>'customer_dim_seq',
-			    p_default_scd_type=> 2,
-			    p_replace_method=>'rename',
-			    p_statistics=>'transfer',
-			    p_concurrent=>'no');
+   trans_adm.create_dimension( p_mapping => 'ld_customer_dim',
+			       p_owner=>'testdim',
+			       p_table=>'customer_dim',
+			       p_source_owner=>'testdim',
+			       p_source_object=>'customer_src',
+			       p_sequence_owner=>'testdim',
+			       p_sequence_name=>'customer_dim_seq',
+			       p_default_scd_type=> 2,
+			       p_replace_method=>'rename',
+			       p_statistics=>'transfer',
+			       p_concurrent=>'no');
 END;
 /
 
@@ -421,4 +421,3 @@ BEGIN
 		       p_table=>'customer_dim');
 END;
 /
-

@@ -48,8 +48,29 @@ IS
       p_file_description   VARCHAR2 DEFAULT NULL,
       p_mode               VARCHAR2 DEFAULT 'upsert'
    );
+      
+   PROCEDURE create_mapping (
+      p_mapping             VARCHAR2,
+      p_owner               VARCHAR2 DEFAULT NULL,
+      p_table               VARCHAR2 DEFAULT NULL,
+      p_partname            VARCHAR2 DEFAULT NULL,
+      p_indexes             VARCHAR2 DEFAULT 'no',
+      p_constraints         VARCHAR2 DEFAULT 'no',
+      p_source_owner        VARCHAR2 DEFAULT NULL,
+      p_source_object       VARCHAR2 DEFAULT NULL,
+      p_source_column       VARCHAR2 DEFAULT NULL,
+      p_replace_method      VARCHAR2 DEFAULT NULL,
+      p_statistics          VARCHAR2 DEFAULT 'transfer',
+      p_concurrent          VARCHAR2 DEFAULT 'no',
+      p_index_regexp        VARCHAR2 DEFAULT NULL,
+      p_index_type          VARCHAR2 DEFAULT NULL,
+      p_part_type           VARCHAR2 DEFAULT NULL,
+      p_constraint_regexp   VARCHAR2 DEFAULT NULL,
+      p_constraint_type     VARCHAR2 DEFAULT NULL,
+      p_description         VARCHAR2 DEFAULT NULL
+   );
 
-   PROCEDURE configure_mapping (
+   PROCEDURE modify_mapping (
       p_mapping             VARCHAR2,
       p_owner               VARCHAR2 DEFAULT NULL,
       p_table               VARCHAR2 DEFAULT NULL,
@@ -69,6 +90,10 @@ IS
       p_constraint_type     VARCHAR2 DEFAULT NULL,
       p_description         VARCHAR2 DEFAULT NULL,
       p_mode                VARCHAR2 DEFAULT 'upsert'
+   );
+
+   PROCEDURE delete_mapping (
+      p_mapping             VARCHAR2
    );
 
    PROCEDURE create_dimension (
@@ -128,5 +153,11 @@ IS
       p_expiration_dt   VARCHAR2 DEFAULT NULL,
       p_current_ind     VARCHAR2 DEFAULT NULL
    );
+
+   PROCEDURE delete_dim_cols (
+      p_owner           VARCHAR2,
+      p_table           VARCHAR2
+   );
+
 END trans_adm;
 /

@@ -174,7 +174,14 @@ AS
       -- enable the constraints
       IF td_core.is_true( SELF.manage_constraints ) AND SELF.replace_method IS NULL
       THEN
-         td_dbutils.enable_constraints( p_concurrent => SELF.concurrent );
+         td_dbutils.constraint_maint( p_owner                  => SELF.table_owner,
+                                      p_table                  => SELF.table_name,
+                                      p_constraint_regexp      => SELF.constraint_regexp,
+                                      p_constraint_type        => SELF.constraint_type,
+                                      p_maint_type             => 'enable',
+                                      p_concurrent	       => SELF.concurrent
+                                    );
+
       END IF;
 
       -- used to be a commit right here

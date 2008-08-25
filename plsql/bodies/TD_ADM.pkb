@@ -529,7 +529,7 @@ IS
 	   action VARCHAR2(32),
 	   service_name VARCHAR2(64),
 	   runmode VARCHAR2(10) NOT NULL,
-	   LEVEL NUMBER NOT NULL,
+	   logging_level NUMBER NOT NULL,
 	   session_id NUMBER NOT NULL,
 	   current_scn NUMBER NOT NULL,
 	   instance_name VARCHAR2(30) NOT NULL,
@@ -819,6 +819,14 @@ IS
          THEN
          NULL;
       END;
+      
+      BEGIN
+         EXECUTE IMMEDIATE q'|DROP TABLE ddl_queue|';
+      EXCEPTION
+         WHEN e_no_tab
+         THEN
+         NULL;
+      END;
 
       BEGIN
          EXECUTE IMMEDIATE q'|DROP TABLE opt_stats|';
@@ -1003,7 +1011,7 @@ IS
 	 )
 	 ON COMMIT DELETE ROWS|';
 	 
-         EXECUTE IMMEDIATE q'|CREATE TABLE ddl_queue
+         EXECUTE IMMEDIATE q'|CREATE global temporary table ddl_queue
 	 ( 
 	   stmt_ddl 	    VARCHAR2(4000) NOT NULL,
 	   stmt_msg 	    VARCHAR2(4000) NOT NULL,
@@ -1011,16 +1019,9 @@ IS
 	   module 	    VARCHAR2(48) NOT NULL,
 	   action 	    VARCHAR2(24) NOT NULL,
 	   stmt_order 	    NUMBER
-	 )|';
+	 )
+	 ON COMMIT DELETE ROWS|';
 	 
-         EXECUTE IMMEDIATE q'|ALTER TABLE ddl_queue ADD 
-	 (
-	   CONSTRAINT ddl_queue_pk
-	   PRIMARY KEY
-	   (stmt_ddl, stmt_msg, client_info, module, action)
-	   USING INDEX
-	 )|';
-
          -- COLUMN_TYPE_LIST table
          EXECUTE IMMEDIATE q'|CREATE TABLE column_type_list
 	 ( 
@@ -2258,10 +2259,8 @@ IS
 	 
 	 -- ticket:104
 	 -- add a level column to LOG_TABLE
-	 EXECUTE IMMEDIATE q'|alter table log_table add level number not null|';
+	 EXECUTE IMMEDIATE q'|alter table log_table add logging_level number not null|';
 
-	 END;
-	 
       END IF;
 
       -- upgrade the repository version information to 1.3      

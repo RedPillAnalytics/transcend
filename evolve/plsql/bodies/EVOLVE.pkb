@@ -1,5 +1,23 @@
 CREATE OR REPLACE PACKAGE BODY evolve
 AS
+   -- get the currently configured action
+   FUNCTION get_action
+      RETURN VARCHAR2
+   AS
+      l_action   VARCHAR2( 32 );
+   BEGIN
+      RETURN td_inst.action;
+   END get_action;
+
+   -- get the currently configured module
+   FUNCTION get_module
+      RETURN VARCHAR2
+   AS
+      l_module   VARCHAR2( 32 );
+   BEGIN
+      RETURN td_inst.module;
+   END get_module;
+
    -- used to pull the calling block from the dictionary
    -- used to populate CALL_STACK column in the LOG_TABLE
    FUNCTION whence
@@ -61,7 +79,7 @@ AS
          INSERT INTO log_table
                      ( msg, client_info, module, action, service_name,
                        runmode, session_id, current_scn, instance_name, machine,
-                       dbuser, osuser, code, call_stack, back_trace, batch_id, level
+                       dbuser, osuser, code, call_stack, back_trace, batch_id, logging_level
                      )
               VALUES ( l_msg, td_inst.client_info, td_inst.module, td_inst.action, td_inst.service_name,
                        td_inst.runmode, td_inst.session_id, l_scn, td_inst.instance_name, td_inst.machine,
@@ -129,7 +147,7 @@ AS
                      ( msg, client_info, module, action, service_name,
                        runmode, session_id, current_scn, instance_name, machine,
                        dbuser, osuser, code, call_stack,
-                       back_trace, batch_id, level
+                       back_trace, batch_id, logging_level
                      )
               VALUES ( l_msg, td_inst.client_info, td_inst.module, td_inst.action, td_inst.service_name,
                        td_inst.runmode, td_inst.session_id, l_scn, td_inst.instance_name, td_inst.machine,
@@ -431,6 +449,9 @@ AS
          THEN
             l_job_name := DBMS_SCHEDULER.generate_job_name;
       END;
+      
+      -- record the job name
+      log_msg( 'The job name is: ' || l_job_name, 5 );
 
       -- use the unique concurrent id
       log_msg( 'The child concurrent_id is: ' || p_concurrent_id, 5 );
@@ -453,8 +474,9 @@ AS
                                  job_type        => 'plsql_block',
                                  job_action      => l_job_action
                                );
-      DBMS_SCHEDULER.ENABLE( l_job_name );
       log_msg( 'Oracle scheduler job ' || l_job_name || ' created', 2 );
+      DBMS_SCHEDULER.ENABLE( l_job_name );
+      log_msg( 'Oracle scheduler job ' || l_job_name || ' enabled', 2 );
    END submit_sql;
 
    -- this process will execute through DBMS_SCHEDULER

@@ -19,7 +19,7 @@ AS
    AS
       o_ev              evolve_ot                                    := evolve_ot( p_module => 'populate_partname' );
       l_dsql            LONG;
-      l_num_msg         VARCHAR2( 100 )                          := 'Number of records inserted into TD_PART_GTT table';
+      l_num_msg         VARCHAR2( 100 )                              := 'Number of records inserted into TD_PART_GTT table';
       l_source_column   all_part_key_columns.column_name%TYPE;
       l_results         NUMBER;
       l_part_position   all_tab_partitions.partition_position%TYPE;
@@ -35,7 +35,7 @@ AS
            INTO l_part_position, l_high_value
            FROM all_tab_partitions
           WHERE table_owner = UPPER( p_owner ) AND table_name = UPPER( p_table )
-                AND partition_name = UPPER( p_partname );
+            AND partition_name = UPPER( p_partname );
 
          -- write records to the global temporary table, which will later be used in cursors for other procedures
 
@@ -110,7 +110,6 @@ AS
    PROCEDURE enqueue_ddl(
       p_stmt          VARCHAR2,
       p_msg           VARCHAR2,
-      p_client_info   VARCHAR2,
       p_module        VARCHAR2,
       p_action	      VARCHAR2,
       p_order         VARCHAR2 DEFAULT NULL
@@ -119,12 +118,11 @@ AS
       o_ev              evolve_ot     := evolve_ot( p_module => 'enqueue_ddl' );
    BEGIN
          INSERT INTO ddl_queue
-                     ( stmt_ddl, stmt_msg, client_info, module, action, stmt_order
+                     ( stmt_ddl, stmt_msg, module, action, stmt_order
                      )
-              VALUES ( p_stmt, p_msg, p_client_info, p_module, p_action, p_order
+              VALUES ( p_stmt, p_msg, p_module, p_action, p_order
                      );
 
-      evolve.log_cnt_msg( SQL%ROWCOUNT, l_num_msg, 4 );
       o_ev.clear_app_info;
    EXCEPTION
       WHEN OTHERS
@@ -134,16 +132,87 @@ AS
          RAISE;
    END enqueue_ddl;
    
-   PROCEDURE dequeue_ddl(
-      p_varchar2      stmt_rowid
+   PROCEDURE dequeue_ddl( 
+      p_module        VARCHAR2,
+      p_action	      VARCHAR2,
+      p_concurrent VARCHAR2 DEFAULT 'no',
+      p_raise_err  VARCHAR2 DEFAULT 'yes'
    )
-   AS
-      o_ev              evolve_ot     := evolve_ot( p_module => 'dequeue_ddl' );
+   IS
+      l_stmt_cnt         NUMBER    := 0;
+      l_stmtcurrent_id   VARCHAR2( 100 ) := NULL;
+      l_rows            BOOLEAN   := FALSE;
+      -- purposefully not initiating an EVOLVE_OT object
+      -- this procedure needs to be transparent for a reason
+      o_ev              evolve_ot := evolve_ot( p_module => 'dequeue_ddl' );
    BEGIN
-      DELETE FROM ddl_queue
-       WHERE ROWID = p_rowid;
 
-      evolve.log_cnt_msg( SQL%ROWCOUNT, l_num_msg, 4 );
+      -- need to get a unique "job header" number in case we are running concurrently
+      o_ev.change_action( 'get concurrent id' );
+      IF td_core.is_true( p_concurrent )
+      THEN
+         l_stmtcurrent_id    := evolve.get_concurrent_id;
+      END IF;
+
+      o_ev.change_action( 'looping through DDL' );
+      -- looping through records in the DDL_QUEUE table
+      -- finding statements queueud there previously
+      evolve.log_msg( 'Executing DDL statements previously queued' );
+      FOR c_stmts IN ( SELECT stmt_ddl,
+			     stmt_msg,
+			     ROWID
+			FROM ddl_queue
+		       WHERE lower( module ) = lower( p_module )
+			 AND lower( action ) = lower( p_action )
+		       ORDER BY stmt_order )
+
+      LOOP
+         BEGIN
+            l_rows       := TRUE;
+            -- execute the DDL either in this session or a background session
+            o_ev.change_action( 'executing DDL' );
+            evolve.exec_sql( p_sql => c_stmts.stmt_ddl, p_auto => 'yes', p_concurrent_id => l_stmtcurrent_id );
+            evolve.log_msg( c_stmts.stmt_msg );
+	    
+	    -- delete the row from the queue once it's executed
+	    DELETE FROM ddl_queue
+	     WHERE ROWID = c_stmts.rowid;
+
+            l_stmt_cnt    := l_stmt_cnt + 1;
+         END;
+      END LOOP;
+
+      IF NOT l_rows
+      THEN
+         evolve.log_msg( 'No queued DDL statements applicable for this module and action' );
+      ELSE
+         -- wait for the concurrent processes to complete or fail
+         o_ev.change_action( 'wait on concurrent processes' );
+
+         IF td_core.is_true( p_concurrent )
+         THEN
+            evolve.coordinate_sql( p_concurrent_id => l_stmtcurrent_id, p_raise_err => 'no' );
+         END IF;
+
+         evolve.log_msg(    l_stmt_cnt
+                             || ' queued DDL statement'
+                             || CASE
+                                   WHEN l_stmt_cnt = 1
+                                      THEN NULL
+                                   ELSE 's'
+                                END
+                             || ' '
+                             || CASE
+                                   WHEN td_core.is_true( p_concurrent )
+                                      THEN 'submitted to the Oracle scheduler'
+                                   ELSE 'executed'
+                                END
+                           );
+      END IF;
+      
+      -- commit to clear the queue
+      COMMIT;
+
       o_ev.clear_app_info;
    EXCEPTION
       WHEN OTHERS
@@ -778,20 +847,25 @@ AS
 
             -- queue up alternative DDL statements for later use
             -- in this case, queue up index rename statements
-            -- these statements are used by RENAME_INDEXES
+            -- these statements are used by module 'replace_table' and action 'rename indexes'
             IF td_core.is_true( p_enable_queue )
             THEN
 	       enqueue_ddl( p_stmt	  => c_indexes.rename_ddl,
 			    p_msg  	  => c_indexes.rename_msg,
-			    p_client_info => td_inst.client_info,
-			    p_module	  => td_inst.client_info,
-			    p_action	  => td_inst.client_info );
+			    p_module	  => 'replace_table',
+			    p_action	  => 'rename indexes' );
             END IF;
          EXCEPTION
             -- if a duplicate column list of indexes already exist, log it, but continue
             WHEN e_dup_col_list
             THEN
                evolve.log_msg( 'Index comparable to ' || c_indexes.source_index || ' already exists', 3 );
+            WHEN OTHERS
+            THEN
+            -- first log the error
+            -- provide a backtrace from this exception handler to the next exception
+            evolve.log_err;
+            RAISE;
          END;
       END LOOP;
 
@@ -837,52 +911,6 @@ AS
          o_ev.clear_app_info;
          RAISE;
    END build_indexes;
-
-   -- renames cloned indexes on a particular table back to their original names
-   PROCEDURE rename_indexes
-   IS
-      l_idx_cnt   NUMBER    := 0;
-      l_rows      BOOLEAN   := FALSE;
-      o_ev        evolve_ot := evolve_ot( p_module => 'rename_indexes' );
-   BEGIN
-      FOR c_idxs IN ( SELECT stmt_ddl,
-			     stmt_msg,
-			     module,
-			     action,
-			     ROWID
-			FROM ddl_queue
-		       WHERE module = 'build_indexes'
-			 AND action = 'enqueue idx rename DDL'
-		       ORDER BY stmt_order )
-      LOOP
-         BEGIN
-            l_rows       := TRUE;
-            evolve.exec_sql( p_sql => c_idxs.stmt_ddl, p_auto => 'yes' );
-            evolve.log_msg( c_idxs.stmt_msg, 3 );
-	    dequeue_ddl( p_rowid => c_idxs.ROWID );
-            l_idx_cnt    := l_idx_cnt + 1;
-         END;
-      END LOOP;
-
-      IF NOT l_rows
-      THEN
-         evolve.log_msg( 'No previously cloned indexes identified', 2 );
-      ELSE
-         evolve.log_msg( l_idx_cnt || ' index' || CASE
-                                WHEN l_idx_cnt = 1
-                                   THEN NULL
-                                ELSE 'es'
-                             END || ' renamed' );
-      END IF;
-
-      o_ev.clear_app_info;
-   EXCEPTION
-      WHEN OTHERS
-      THEN
-         evolve.log_err;
-         o_ev.clear_app_info;
-         RAISE;
-   END rename_indexes;
 
    -- builds the constraints from one table on another
    PROCEDURE build_constraints(
@@ -1263,14 +1291,13 @@ AS
                -- only insert for rename if the constraint is a named constraint
                -- queue up alternative DDL statements for later use
                -- in this case, queue up constraint rename statements
-               -- these statements are used by RENAME_CONSTRAINTS
+               -- these statements are used by module 'replace_table' and action 'rename constraints'
                IF c_constraints.named_constraint = 'Y' AND td_core.is_true( p_enable_queue )
                THEN
 		  enqueue_ddl( p_stmt	     => c_constraints.rename_ddl,
 			       p_msg  	     => c_constraints.rename_msg,
-			       p_client_info => td_inst.client_info,
-			       p_module	     => td_inst.client_info,
-			       p_action	     => td_inst.client_info );
+			       p_module	     => 'replace_table',
+			       p_action	     => 'rename constraints' );
 
                END IF;
             EXCEPTION
@@ -1340,52 +1367,6 @@ AS
          RAISE;
    END build_constraints;
 
-   -- renames cloned constraints on a particular table back to their original names
-   PROCEDURE rename_constraints
-   IS
-      l_con_cnt   NUMBER    := 0;
-      l_rows      BOOLEAN   := FALSE;
-      o_ev        evolve_ot := evolve_ot( p_module => 'rename_constraints' );
-   BEGIN
-      FOR c_cons IN ( SELECT stmt_ddl,
-			     stmt_msg,
-			     module,
-			     action,
-			     rowid
-			FROM ddl_queue
-		       WHERE module = 'build_constraints'
-			 AND action = 'enqueue idx build DDL'
-		       ORDER BY stmt_order )
-      LOOP
-         BEGIN
-            l_rows       := TRUE;
-            evolve.exec_sql( p_sql => c_cons.stmt_ddl, p_auto => 'yes' );
-            evolve.log_msg( c_cons.stmt_msg, 3 );
-	    dequeue_ddl ( p_rowid => c_cons.ROWID );
-            l_con_cnt    := l_con_cnt + 1;
-         END;
-      END LOOP;
-
-      IF NOT l_rows
-      THEN
-         evolve.log_msg( 'No previously cloned constraints identified', 2 );
-      ELSE
-         evolve.log_msg( l_con_cnt || ' constraint' || CASE
-                                WHEN l_con_cnt = 1
-                                   THEN NULL
-                                ELSE 's'
-                             END || ' renamed' );
-      END IF;
-
-      o_ev.clear_app_info;
-   EXCEPTION
-      WHEN OTHERS
-      THEN
-         evolve.log_err;
-         o_ev.clear_app_info;
-         RAISE;
-   END rename_constraints;
-
    -- disables constraints related to a particular table
    PROCEDURE constraint_maint(
       p_owner               VARCHAR2,
@@ -1395,7 +1376,7 @@ AS
       p_constraint_regexp   VARCHAR2 DEFAULT NULL,
       p_basis               VARCHAR2 DEFAULT 'table',
       p_concurrent          VARCHAR2 DEFAULT 'no',
-      p_enable_queue        VARCHAR2 DEFAULT 'yes'
+      p_enable_queue        VARCHAR2 DEFAULT 'no'
    )
    IS
       l_con_cnt         NUMBER         := 0;
@@ -1519,8 +1500,14 @@ AS
                                                       THEN 'DISABLED'
                                                 END
                                          AND REGEXP_LIKE( constraint_name, NVL( p_constraint_regexp, '.' ), 'i' )
-                                         AND r_constraint_name IN(
+                                         AND r_constraint_name IN (
                                                 SELECT constraint_name
+                                                  FROM all_constraints
+                                                 WHERE table_name = UPPER( p_table )
+                                                   AND owner = UPPER( p_owner )
+                                                   AND constraint_type = 'P' )
+                                         AND r_owner IN (
+                                                SELECT owner
                                                   FROM all_constraints
                                                  WHERE table_name = UPPER( p_table )
                                                    AND owner = UPPER( p_owner )
@@ -1543,15 +1530,14 @@ AS
                                );
 
             -- queue up alternative DDL statements for later use
-            -- this allows a call to ENABLE_CONSTRAINTS without parameters to only work on those that were previously disabled
+            -- this allows a call to DEQUEUE_DDL to only work on those that were previously disabled
             IF REGEXP_LIKE( 'disable', p_maint_type, 'i' ) AND td_core.is_true( p_enable_queue )
             THEN
                o_ev.change_action( 'enqueue disable con DDL' );
 	       enqueue_ddl( p_stmt	  => c_constraints.disable_ddl,
 			    p_msg  	  => c_constraints.disable_msg,
-			    p_client_info => td_inst.client_info,
-			    p_module	  => td_inst.client_info,
-			    p_action	  => td_inst.client_info );
+			    p_module	  => evolve.get_module,
+			    p_action	  => evolve.get_action );
 
             END IF;
 
@@ -1635,89 +1621,6 @@ AS
          o_ev.clear_app_info;
          RAISE;
    END constraint_maint;
-
-   -- enables constraints related to a particular table
-   -- this procedure is used to just enable constraints disabled with the last call (in the current session) to DISABLE_CONSTRAINTS
-   PROCEDURE enable_constraints( p_concurrent VARCHAR2 DEFAULT 'no' )
-   IS
-      l_con_cnt         NUMBER    := 0;
-      l_concurrent_id   VARCHAR2( 100 );
-      l_rows            BOOLEAN   := FALSE;
-      o_ev              evolve_ot := evolve_ot( p_module => 'enable_constraints' );
-   BEGIN
-      -- need to get a unique "job header" number in case we are running concurrently
-      o_ev.change_action( 'get concurrent id' );
-
-      IF td_core.is_true( p_concurrent )
-      THEN
-         l_concurrent_id    := evolve.get_concurrent_id;
-      END IF;
-
-      o_ev.change_action( 'looping through' );
-      -- looping through records in the DDL_QUEUE table
-      -- finding records populated there by CONSTRAINT_MAINT
-      evolve.log_msg( 'Enabling constraints disabled previously' );
-      FOR c_cons IN ( SELECT stmt_ddl,
-			     stmt_msg,
-			     module,
-			     action,
-			     ROWID
-			FROM ddl_queue
-		       WHERE module = 'constraint_maint'
-			 AND action = 'enqueue disable con DDL'
-		       ORDER BY stmt_order desc )
-
-      LOOP
-         BEGIN
-            l_rows       := TRUE;
-            -- execute the DDL either in this session or a background session
-            o_ev.change_action( 'executing DDL' );
-            evolve.exec_sql( p_sql => c_cons.stmt_ddl, p_auto => 'yes', p_concurrent_id => l_concurrent_id );
-            evolve.log_msg( c_cons.stmt_msg );
-	    dequeue_ddl( p_rowid => c_idxs.ROWID );
-            l_con_cnt    := l_con_cnt + 1;
-         END;
-      END LOOP;
-
-      IF NOT l_rows
-      THEN
-         evolve.log_msg( 'No previously disabled constraints found' );
-      ELSE
-         -- wait for the concurrent processes to complete or fail
-         o_ev.change_action( 'wait on concurrent processes' );
-
-         IF td_core.is_true( p_concurrent )
-         THEN
-            evolve.coordinate_sql( p_concurrent_id => l_concurrent_id, p_raise_err => 'no' );
-         END IF;
-
-         evolve.log_msg(    l_con_cnt
-                             || ' constraint enablement process'
-                             || CASE
-                                   WHEN l_con_cnt = 1
-                                      THEN NULL
-                                   ELSE 'es'
-                                END
-                             || ' '
-                             || CASE
-                                   WHEN td_core.is_true( p_concurrent )
-                                      THEN 'submitted to the Oracle scheduler'
-                                   ELSE 'executed'
-                                END
-                           );
-      END IF;
-      
-      -- commit to clear the queue
-      COMMIT;
-
-      o_ev.clear_app_info;
-   EXCEPTION
-      WHEN OTHERS
-      THEN
-         evolve.log_err;
-         o_ev.clear_app_info;
-         RAISE;
-   END enable_constraints;
 
    -- drop particular indexes from a table
    PROCEDURE drop_indexes(
@@ -2647,7 +2550,11 @@ AS
                -- any constraints need to be enabled
                IF l_constraints
                THEN
-                  enable_constraints( p_concurrent => p_concurrent );
+		  o_ev.change_action( 'enable constraints' );
+		  -- this statement will pull previously entered DDL statements off the queue and execute them
+		  dequeue_ddl( p_action => evolve.get_action,
+			       p_module => evolve.get_module );
+
                END IF;
 
                o_ev.clear_app_info;
@@ -2660,7 +2567,10 @@ AS
       -- any constraints need to be enabled
       IF l_constraints
       THEN
-         enable_constraints( p_concurrent => p_concurrent );
+		  o_ev.change_action( 'enable constraints' );
+		  -- this statement will pull previously entered DDL statements off the queue and execute them
+		  dequeue_ddl( p_action => evolve.get_action,
+			       p_module => evolve.get_module);
       END IF;
 
       -- drop constraints on the stage table
@@ -2940,12 +2850,16 @@ AS
       END;
 
       -- rename the indexes
-      rename_indexes;
+      o_ev.change_action( 'rename indexes' );
+      -- this statement will pull previously entered DDL statements off the queue and execute them
+      dequeue_ddl( p_action => evolve.get_action,
+		   p_module => evolve.get_module );
+
 
       -- rename the constraints
-      BEGIN
-         rename_constraints;
-      END;
+      o_ev.change_action( 'rename constraints' );
+      dequeue_ddl( p_action => evolve.get_action,
+		   p_module => evolve.get_module );
 
       o_ev.clear_app_info;
    EXCEPTION
@@ -2969,8 +2883,8 @@ AS
       p_source_owner    VARCHAR2 DEFAULT NULL,
       p_source_object   VARCHAR2 DEFAULT NULL,
       p_source_column   VARCHAR2 DEFAULT NULL,
-      p_d_num           NUMBER DEFAULT 0,
-      p_p_num           NUMBER DEFAULT 65535,
+      p_d_num           NUMBER   DEFAULT 0,
+      p_p_num           NUMBER   DEFAULT 65535,
       p_index_regexp    VARCHAR2 DEFAULT NULL,
       p_index_type      VARCHAR2 DEFAULT NULL,
       p_part_type       VARCHAR2 DEFAULT NULL
