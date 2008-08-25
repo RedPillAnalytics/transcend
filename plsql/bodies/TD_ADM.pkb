@@ -122,7 +122,7 @@ IS
    END reset_current_schema;
 
    -- this creates the job metadata (called a program) for submitting concurrent processes
-   PROCEDURE create_scheduler_metadata
+   PROCEDURE create_scheduler_metadata( p_schema VARCHAR2 )
    IS
       e_no_sched_obj   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_sched_obj, -27476 );
@@ -142,6 +142,9 @@ IS
            comments            =>    'Job class for the Evolve product by Transcendent Data, Inc.'
                                   || ' This is the job class Evolve calls by default when the Oracle scheduler is used for concurrent processing'
          );
+      
+      EXECUTE IMMEDIATE 'grant execute on sys.EVOLVE_DEFAULT_CLASS to '||p_schema;
+
    END create_scheduler_metadata;
 
    PROCEDURE grant_evolve_rep_privs(
@@ -220,6 +223,8 @@ IS
       EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.EVOLVE to ' || p_user;
 
       EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.EVOLVE_ADM to ' || p_user;
+      
+      EXECUTE IMMEDIATE 'grant execute on sys.EVOLVE_DEFAULT_CLASS to '||p_user;
 
    EXCEPTION
       WHEN e_no_obj
@@ -1805,7 +1810,7 @@ IS
       -- create the synonyms to the repository
       build_evolve_rep_syns( p_user => p_schema, p_schema => p_repository );
       -- create the dbms_scheduler program
-      create_scheduler_metadata;
+      create_scheduler_metadata( p_schema => p_schema );
 
       -- write application tracking record
       UPDATE tdsys.applications

@@ -700,6 +700,7 @@ AS
                                                      ELSE '~'
                                                   END
                                      -- USE an NVL'd regular expression to determine the specific indexes to work on
+
                                      -- when nothing is passed for p_INDEX_TYPE, then that is the same as passing a wildcard
                                      AND REGEXP_LIKE( index_name, NVL( p_index_regexp, '.' ), 'i' )
                                      -- USE an NVL'd regular expression to determine the index types to worked on
@@ -746,6 +747,12 @@ AS
             WHEN e_dup_col_list
             THEN
                evolve.log_msg( 'Index comparable to ' || c_indexes.source_index || ' already exists', 3 );
+            WHEN OTHERS
+            THEN
+            -- first log the error
+            -- provide a backtrace from this exception handler to the next exception
+            evolve.log_err;
+            RAISE;
          END;
       END LOOP;
 
