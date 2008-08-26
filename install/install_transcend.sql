@@ -1,7 +1,8 @@
 @install_evolve.sql
 
 PROMPT 'Running install_transcend.sql'
-SPOOL InstallTranscend_&_DATE..log
+DEFINE suffix = _&_DATE..log
+SPOOL InstallTranscend&suffix
 
 DECLARE
    l_drop BOOLEAN := CASE WHEN REGEXP_LIKE('yes','&drop_repo','i') THEN TRUE ELSE FALSE END;
