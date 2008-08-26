@@ -2473,6 +2473,34 @@ AS
                         ELSE l_partname
                      END
                    );
+
+      -- disable any unique constraints on the target table that are enforced with global indexes
+      -- there are multiple reasons for this
+      -- first off, there are lots of different errors that can occur because of this situation
+      -- it would be difficult to handle and except all of them
+      -- the other issue is that this just makes sense: the entire constraint would have to be revalidated anyway
+      -- because the index it's based on is updated during the exchange
+      o_ev.change_action( 'disable global constraints' );
+      FOR c_glob_cons IN ( SELECT *
+                             FROM all_constraints ac JOIN all_indexes ai
+                                  ON NVL( ac.index_owner, ac.owner ) = ai.owner
+                              AND ac.index_name = ai.index_name
+                            WHERE constraint_type IN( 'U', 'P' )
+                              AND ac.table_name = upper( p_table )
+                              AND ac.owner = upper ( p_owner )
+                              AND partitioned = 'NO' )
+      LOOP
+	 evolve.log_msg( 'Unique constraints based on global indexes found ', 5 );
+	 l_constraints := TRUE;
+         constraint_maint( p_owner                  => p_owner,
+                           p_table                  => p_table,
+                           p_maint_type             => 'disable',
+                           p_constraint_regexp      => '^' || c_glob_cons.constraint_name || '$',
+                           p_enable_queue           => 'yes'
+                         );
+      END LOOP;
+
+
       -- build any constraints on the source table
       o_ev.change_action( 'build constraints' );
       build_constraints( p_owner             => p_source_owner,
@@ -2553,41 +2581,22 @@ AS
                                   p_basis                => 'table',
                                   p_concurrent           => p_concurrent
                                 );
-            WHEN e_uk_mismatch
-            THEN
-               evolve.log_msg( 'ORA-14130 raised involving unique constraint mismatch', 4 );
-               -- need to disable unique constraints on the target table
-               -- but only the ones attached to global indexes
-               o_ev.change_action( 'disable global unique constraints' );
-
-               FOR c_glob_cons IN ( SELECT *
-                                     FROM all_constraints ac JOIN all_indexes ai
-                                          ON NVL( ac.index_owner, ac.owner ) = ai.owner
-                                             AND ac.index_name = ai.index_name
-                                    WHERE constraint_type IN( 'U', 'P' )
-                                      AND ac.table_name = p_table
-                                      AND ac.owner = p_owner
-                                      AND partitioned = 'NO' )
-               LOOP
-                  l_constraints    := TRUE;
-                  l_retry_ddl      := TRUE;
-                  constraint_maint( p_owner                  => p_owner,
-                                    p_table                  => p_table,
-                                    p_maint_type             => 'disable',
-                                    p_constraint_regexp      => '^' || c_glob_cons.constraint_name || '$',
-                                    p_enable_queue           => 'yes'
-                                  );
-               END LOOP;
             WHEN OTHERS
             THEN
                -- first log the error
                -- provide a backtrace from this exception handler to the next exception
                evolve.log_err;
-                  -- need to drop indexes if there is an exception
-                  -- this is for rerunability
+               -- need to drop indexes if there is an exception
+               -- this is for rerunability
                -- now record the reason for the index drops
                evolve.log_msg( 'Dropping indexes for restartability', 3 );
                drop_indexes( p_owner => p_source_owner, p_table => p_source_table );
+
+               -- need to drop constraints if there is an exception
+               -- this is for rerunability	    
+               -- now record the reason for the index drops
+               evolve.log_msg( 'Dropping constraints for restartability', 3 );
+               drop_constraints( p_owner => p_source_owner, p_table => p_source_table );
 
                -- any constraints need to be enabled
                IF l_constraints
