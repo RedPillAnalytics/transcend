@@ -4,7 +4,8 @@ PROMPT 'Running upgrade_evolve.sql'
 SET serveroutput on size unlimited
 SET timing off
 ALTER SESSION SET nls_date_format = 'yyyymmdd_hhmiss';
-SPOOL UpgradeEvolve_&_DATE..log
+DEFINE suffix = _&_DATE..log
+SPOOL UpgradeEvolve&suffix
 
 -- get the schema for the Evolve application (PL/SQL and Java code)
 ACCEPT app_schema char default 'TDREP' prompt 'Schema name for the application [tdrep]: '
@@ -15,8 +16,11 @@ ACCEPT tablespace char default 'TDREP' prompt 'Tablespace for the default reposi
 
 WHENEVER sqlerror exit sql.sqlcode
 
+SPOOL off 
 -- upgrade the tdsys repository
 @upgrade_tdsys_repo.sql
+
+SPOOL UpgradeEvolve&suffix append
 
 BEGIN
    -- upgrade the Evolve repository

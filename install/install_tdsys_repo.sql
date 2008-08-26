@@ -4,7 +4,8 @@ PROMPT 'Running install_tdsys_repo.sql'
 SET serveroutput on size unlimited
 SET timing off
 ALTER SESSION SET nls_date_format = 'yyyymmdd_hhmiss';
-SPOOL InstallTdsys_&_DATE..log
+DEFINE suffix = _&_DATE..log
+SPOOL InstallTdsys&suffix
 
 VARIABLE b_tbspace char(30)
 VARIABLE b_current_schema char(30)

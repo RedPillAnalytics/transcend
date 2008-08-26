@@ -1,7 +1,8 @@
 @upgrade_evolve.sql
 
 PROMPT 'Running upgrade_transcend.sql'
-SPOOL UpgradeTranscend_&_DATE..log
+DEFINE suffix = _&_DATE..log
+SPOOL UpgradeTranscend&suffix
 
 BEGIN
    -- create the Transcend repository

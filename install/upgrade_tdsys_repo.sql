@@ -4,7 +4,8 @@ PROMPT 'Running upgrade_tdsys_repo.sql'
 SET serveroutput on size unlimited
 SET timing off
 ALTER SESSION SET nls_date_format = 'yyyymmdd_hhmiss';
-SPOOL UpgradeTdsys_&_DATE..log
+DEFINE suffix = _&_DATE..log
+SPOOL UpgradeTdsys&suffix
 
 -- get the CURRENT_SCHEMA
 VARIABLE b_schema char(30)
