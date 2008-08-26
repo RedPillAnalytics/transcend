@@ -432,6 +432,9 @@ AS
          THEN
             l_job_name := DBMS_SCHEDULER.generate_job_name;
       END;
+      
+      -- record the job name
+      log_msg( 'The job name is: ' || l_job_name, 5 );
 
       -- use the unique concurrent id
       log_msg( 'The child concurrent_id is: ' || p_concurrent_id, 5 );
@@ -454,8 +457,9 @@ AS
                                  job_type        => 'plsql_block',
                                  job_action      => l_job_action
                                );
-      DBMS_SCHEDULER.ENABLE( l_job_name );
       log_msg( 'Oracle scheduler job ' || l_job_name || ' created', 2 );
+      DBMS_SCHEDULER.ENABLE( l_job_name );
+      log_msg( 'Oracle scheduler job ' || l_job_name || ' enabled', 2 );
    END submit_sql;
 
    -- this process will execute through DBMS_SCHEDULER
