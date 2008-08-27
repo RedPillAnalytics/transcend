@@ -555,7 +555,8 @@ AS
       p_tablespace     VARCHAR2 DEFAULT NULL,
       p_partname       VARCHAR2 DEFAULT NULL,
       p_concurrent     VARCHAR2 DEFAULT 'no',
-      p_enable_queue   VARCHAR2 DEFAULT 'no'
+      p_queue_module   VARCHAR2 DEFAULT NULL,
+      p_queue_action   VARCHAR2 DEFAULT NULL
    )
    IS
       l_ddl             LONG;
@@ -848,12 +849,12 @@ AS
             -- queue up alternative DDL statements for later use
             -- in this case, queue up index rename statements
             -- these statements are used by module 'replace_table' and action 'rename indexes'
-            IF td_core.is_true( p_enable_queue )
+            IF p_queue_module = 'replace_table' AND p_queue_action = 'rename indexes'
             THEN
-	       enqueue_ddl( p_stmt	  => c_indexes.rename_ddl,
-			    p_msg  	  => c_indexes.rename_msg,
-			    p_module	  => 'replace_table',
-			    p_action	  => 'rename indexes' );
+	       enqueue_ddl( p_stmt     => c_indexes.rename_ddl,
+			    p_msg      => c_indexes.rename_msg,
+			    p_module   => p_queue_module,
+			    p_action   => p_queue_action );
             END IF;
          EXCEPTION
             -- if a duplicate column list of indexes already exist, log it, but continue
@@ -925,7 +926,8 @@ AS
       p_tablespace          VARCHAR2 DEFAULT NULL,
       p_partname            VARCHAR2 DEFAULT NULL,
       p_concurrent          VARCHAR2 DEFAULT 'no',
-      p_enable_queue        VARCHAR2 DEFAULT 'no'
+      p_queue_module        VARCHAR2 DEFAULT NULL,
+      p_queue_action   	    VARCHAR2 DEFAULT NULL
    )
    IS
       l_targ_part       all_tables.partitioned%TYPE;
@@ -1292,12 +1294,12 @@ AS
                -- queue up alternative DDL statements for later use
                -- in this case, queue up constraint rename statements
                -- these statements are used by module 'replace_table' and action 'rename constraints'
-               IF c_constraints.named_constraint = 'Y' AND td_core.is_true( p_enable_queue )
+               IF c_constraints.named_constraint = 'Y' AND p_queue_module = 'replace_table' AND p_queue_action = 'rename constraints'
                THEN
 		  enqueue_ddl( p_stmt	     => c_constraints.rename_ddl,
 			       p_msg  	     => c_constraints.rename_msg,
-			       p_module	     => 'replace_table',
-			       p_action	     => 'rename constraints' );
+			       p_module	     => p_queue_module,
+			       p_action	     => p_queue_action );
 
                END IF;
             EXCEPTION
@@ -1376,7 +1378,8 @@ AS
       p_constraint_regexp   VARCHAR2 DEFAULT NULL,
       p_basis               VARCHAR2 DEFAULT 'table',
       p_concurrent          VARCHAR2 DEFAULT 'no',
-      p_enable_queue        VARCHAR2 DEFAULT 'no'
+      p_queue_module        VARCHAR2 DEFAULT NULL,
+      p_queue_action        VARCHAR2 DEFAULT NULL
    )
    IS
       l_con_cnt         NUMBER         := 0;
@@ -1536,8 +1539,8 @@ AS
                o_ev.change_action( 'enqueue disable con DDL' );
 	       enqueue_ddl( p_stmt	  => c_constraints.disable_ddl,
 			    p_msg  	  => c_constraints.disable_msg,
-			    p_module	  => evolve.get_module,
-			    p_action	  => evolve.get_action );
+			    p_module	  => p_queue_module,
+			    p_action	  => p_queue_action );
 
             END IF;
 
@@ -2431,6 +2434,34 @@ AS
                         ELSE l_partname
                      END
                    );
+
+      -- disable any unique constraints on the target table that are enforced with global indexes
+      -- there are multiple reasons for this
+      -- first off, there are lots of different errors that can occur because of this situation
+      -- it would be difficult to handle and except all of them
+      -- the other issue is that this just makes sense: the entire constraint would have to be revalidated anyway
+      -- because the index it's based on is updated during the exchange
+      o_ev.change_action( 'disable global constraints' );
+      FOR c_glob_cons IN ( SELECT *
+                             FROM all_constraints ac JOIN all_indexes ai
+                                  ON NVL( ac.index_owner, ac.owner ) = ai.owner
+                              AND ac.index_name = ai.index_name
+                            WHERE constraint_type IN( 'U', 'P' )
+                              AND ac.table_name = upper( p_table )
+                              AND ac.owner = upper ( p_owner )
+                              AND partitioned = 'NO' )
+      LOOP
+	 evolve.log_msg( 'Unique constraints based on global indexes found ', 5 );
+	 l_constraints := TRUE;
+         constraint_maint( p_owner                  => p_owner,
+                           p_table                  => p_table,
+                           p_maint_type             => 'disable',
+                           p_constraint_regexp      => '^' || c_glob_cons.constraint_name || '$',
+                           p_enable_queue           => 'yes'
+                         );
+      END LOOP;
+
+
       -- build any constraints on the source table
       o_ev.change_action( 'build constraints' );
       build_constraints( p_owner             => p_source_owner,
@@ -2511,41 +2542,22 @@ AS
                                   p_basis                => 'table',
                                   p_concurrent           => p_concurrent
                                 );
-            WHEN e_uk_mismatch
-            THEN
-               evolve.log_msg( 'ORA-14130 raised involving unique constraint mismatch', 4 );
-               -- need to disable unique constraints on the target table
-               -- but only the ones attached to global indexes
-               o_ev.change_action( 'disable global unique constraints' );
-
-               FOR c_glob_cons IN ( SELECT *
-                                     FROM all_constraints ac JOIN all_indexes ai
-                                          ON NVL( ac.index_owner, ac.owner ) = ai.owner
-                                             AND ac.index_name = ai.index_name
-                                    WHERE constraint_type IN( 'U', 'P' )
-                                      AND ac.table_name = p_table
-                                      AND ac.owner = p_owner
-                                      AND partitioned = 'NO' )
-               LOOP
-                  l_constraints    := TRUE;
-                  l_retry_ddl      := TRUE;
-                  constraint_maint( p_owner                  => p_owner,
-                                    p_table                  => p_table,
-                                    p_maint_type             => 'disable',
-                                    p_constraint_regexp      => '^' || c_glob_cons.constraint_name || '$',
-                                    p_enable_queue           => 'yes'
-                                  );
-               END LOOP;
             WHEN OTHERS
             THEN
                -- first log the error
                -- provide a backtrace from this exception handler to the next exception
                evolve.log_err;
-                  -- need to drop indexes if there is an exception
-                  -- this is for rerunability
+               -- need to drop indexes if there is an exception
+               -- this is for rerunability
                -- now record the reason for the index drops
                evolve.log_msg( 'Dropping indexes for restartability', 3 );
                drop_indexes( p_owner => p_source_owner, p_table => p_source_table );
+
+               -- need to drop constraints if there is an exception
+               -- this is for rerunability	    
+               -- now record the reason for the index drops
+               evolve.log_msg( 'Dropping constraints for restartability', 3 );
+               drop_constraints( p_owner => p_source_owner, p_table => p_source_table );
 
                -- any constraints need to be enabled
                IF l_constraints
@@ -2567,10 +2579,10 @@ AS
       -- any constraints need to be enabled
       IF l_constraints
       THEN
-		  o_ev.change_action( 'enable constraints' );
-		  -- this statement will pull previously entered DDL statements off the queue and execute them
-		  dequeue_ddl( p_action => evolve.get_action,
-			       p_module => evolve.get_module);
+	 o_ev.change_action( 'enable constraints' );
+	 -- this statement will pull previously entered DDL statements off the queue and execute them
+	 dequeue_ddl( p_action => evolve.get_action,
+		      p_module => evolve.get_module);
       END IF;
 
       -- drop constraints on the stage table
@@ -2756,17 +2768,17 @@ AS
       p_statistics     VARCHAR2 DEFAULT 'transfer'
    )
    IS
-      l_src_name   VARCHAR2( 61 ) := UPPER( p_owner || '.' || p_source_table );
-      l_tab_name   VARCHAR2( 61 ) := UPPER( p_owner || '.' || p_table );
-      l_rows       BOOLEAN        := FALSE;
-      l_ddl        LONG;
-      e_no_stats   EXCEPTION;
+      l_src_name       VARCHAR2( 61 ) := UPPER( p_owner || '.' || p_source_table );
+      l_tab_name       VARCHAR2( 61 ) := UPPER( p_owner || '.' || p_table );
+      l_rows           BOOLEAN        := FALSE;
+      l_ddl            LONG;
+      e_no_stats       EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_stats, -20000 );
-      e_compress   EXCEPTION;
+      e_compress       EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_compress, -14646 );
-      e_fkeys      EXCEPTION;
+      e_fkeys          EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_fkeys, -2266 );
-      o_ev         evolve_ot      := evolve_ot( p_module => 'replace_table' );
+      o_ev             evolve_ot      := evolve_ot( p_module => 'replace_table' );
    BEGIN
       o_ev.change_action( 'perform object checks' );
       -- check to make sure the target table exists
@@ -2809,7 +2821,8 @@ AS
                      p_source_table      => p_table,
                      p_tablespace        => p_tablespace,
                      p_concurrent        => p_concurrent,
-                     p_enable_queue      => 'yes'
+      		     p_queue_module	 => 'replace_table',
+      		     p_queue_action	 => 'rename indexes'
                    );
       -- build the constraints on the source table
       build_constraints( p_owner             => p_owner,
@@ -2818,7 +2831,8 @@ AS
                          p_source_table      => p_table,
                          p_basis             => 'all',
                          p_concurrent        => p_concurrent,
-                         p_enable_queue      => 'yes'
+      			 p_queue_module	     => 'replace_table',
+      			 p_queue_action	     => 'rename constraints'
                        );
       -- grant privileges on the source table
       object_grants( p_owner              => p_owner,
