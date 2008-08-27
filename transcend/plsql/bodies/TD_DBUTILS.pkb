@@ -135,8 +135,8 @@ AS
    PROCEDURE dequeue_ddl( 
       p_module        VARCHAR2,
       p_action	      VARCHAR2,
-      p_concurrent VARCHAR2 DEFAULT 'no',
-      p_raise_err  VARCHAR2 DEFAULT 'yes'
+      p_concurrent    VARCHAR2 DEFAULT 'no',
+      p_raise_err     VARCHAR2 DEFAULT 'yes'
    )
    IS
       l_stmt_cnt         NUMBER    := 0;
@@ -1534,7 +1534,7 @@ AS
 
             -- queue up alternative DDL statements for later use
             -- this allows a call to DEQUEUE_DDL to only work on those that were previously disabled
-            IF REGEXP_LIKE( 'disable', p_maint_type, 'i' ) AND td_core.is_true( p_enable_queue )
+            IF REGEXP_LIKE( 'disable', p_maint_type, 'i' )
             THEN
                o_ev.change_action( 'enqueue disable con DDL' );
 	       enqueue_ddl( p_stmt	  => c_constraints.disable_ddl,
@@ -2457,7 +2457,8 @@ AS
                            p_table                  => p_table,
                            p_maint_type             => 'disable',
                            p_constraint_regexp      => '^' || c_glob_cons.constraint_name || '$',
-                           p_enable_queue           => 'yes'
+			   p_queue_module	    => evolve.get_module,
+                           p_queue_action           => 'enable constraints'
                          );
       END LOOP;
 
@@ -2506,7 +2507,8 @@ AS
                                  p_table             => p_table,
                                  p_maint_type        => 'disable',
                                  p_basis             => 'reference',
-                                 p_enable_queue      => 'yes'
+				 p_queue_module	     => evolve.get_module,
+				 p_queue_action      => 'enable constraints'
                                );
                -- disable constraints related to the source
                -- don't queue enable these, as it will be exchanged in and eventually dropped
@@ -2514,8 +2516,7 @@ AS
                constraint_maint( p_owner             => p_source_owner,
                                  p_table             => p_source_table,
                                  p_maint_type        => 'disable',
-                                 p_basis             => 'reference',
-                                 p_enable_queue      => 'no'
+                                 p_basis             => 'reference'
                                );
             WHEN e_compress
             THEN
@@ -2565,7 +2566,8 @@ AS
 		  o_ev.change_action( 'enable constraints' );
 		  -- this statement will pull previously entered DDL statements off the queue and execute them
 		  dequeue_ddl( p_action => evolve.get_action,
-			       p_module => evolve.get_module );
+			       p_module => evolve.get_module,
+			       p_concurrent => p_concurrent );
 
                END IF;
 
@@ -2581,8 +2583,9 @@ AS
       THEN
 	 o_ev.change_action( 'enable constraints' );
 	 -- this statement will pull previously entered DDL statements off the queue and execute them
-	 dequeue_ddl( p_action => evolve.get_action,
-		      p_module => evolve.get_module);
+	 dequeue_ddl( p_action     => evolve.get_action,
+		      p_module 	   => evolve.get_module,
+		      p_concurrent => p_concurrent);
       END IF;
 
       -- drop constraints on the stage table
@@ -2866,14 +2869,16 @@ AS
       -- rename the indexes
       o_ev.change_action( 'rename indexes' );
       -- this statement will pull previously entered DDL statements off the queue and execute them
-      dequeue_ddl( p_action => evolve.get_action,
-		   p_module => evolve.get_module );
+      dequeue_ddl( p_action     => evolve.get_action,
+		   p_module     => evolve.get_module,
+		   p_concurrent => p_concurrent );
 
 
       -- rename the constraints
       o_ev.change_action( 'rename constraints' );
-      dequeue_ddl( p_action => evolve.get_action,
-		   p_module => evolve.get_module );
+      dequeue_ddl( p_action     => evolve.get_action,
+		   p_module 	   => evolve.get_module,
+		   p_concurrent => p_concurrent);
 
       o_ev.clear_app_info;
    EXCEPTION
