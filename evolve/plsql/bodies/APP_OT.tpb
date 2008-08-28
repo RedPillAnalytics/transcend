@@ -99,9 +99,9 @@ AS
    MEMBER PROCEDURE clear_app_info
    AS
    BEGIN
-      td_inst.action( prev_action );
-      td_inst.module( prev_module );
       td_inst.client_info( prev_client_info );
+      td_inst.module( prev_module );
+      td_inst.action( prev_action );
       td_inst.REGISTER;
    END clear_app_info;
    
