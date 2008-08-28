@@ -154,11 +154,11 @@ AS
    OVERRIDING MEMBER PROCEDURE clear_app_info
    AS
    BEGIN
-      td_inst.action( prev_action );
-      td_inst.module( prev_module );
       td_inst.client_info( prev_client_info );
-      evolve.log_msg( 'ACTION attribute changed to "' || td_inst.action || '"', 4 );
+      td_inst.module( prev_module );
+      td_inst.action( prev_action );
       evolve.log_msg( 'MODULE attribute changed to "' || td_inst.module || '"', 4 );
+      evolve.log_msg( 'ACTION attribute changed to "' || td_inst.action || '"', 4 );
       td_inst.REGISTER;
    END clear_app_info;
 
