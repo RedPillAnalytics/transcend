@@ -75,7 +75,7 @@ DECLARE
 BEGIN
 --   dbms_output.put_line('The value of bind variable b_role_exists: '||:b_role_exists);
 --   dbms_output.put_line('The value of bind sqlplus variable drop_repo: &drop_repo');
-   IF :b_role_exists = 'Y' AND '&drop_repo' = 'Y'
+   IF :b_role_exists = 'Y' AND upper('&drop_repo') = 'Y'
    THEN
       BEGIN
 	 EXECUTE IMMEDIATE q'|DROP ROLE evolve_sys|';
