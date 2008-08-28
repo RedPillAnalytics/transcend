@@ -216,6 +216,8 @@ IS
 
       -- packages
       EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.TD_INST to ' || p_user;
+
+      EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.TD_CORE to ' || p_user;
       
       EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.EVOLVE to ' || p_user;
 
@@ -249,6 +251,8 @@ IS
          EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON FILES_OBJ_DETAIL TO ' || p_grantee;
 
          EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON TD_PART_GTT TO ' || p_grantee;
+	 
+         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON DDL_QUEUE TO ' || p_grantee;
 
          EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON OPT_STATS TO ' || p_grantee;
 
@@ -1015,9 +1019,9 @@ IS
 	 ( 
 	   stmt_ddl 	    VARCHAR2(4000) NOT NULL,
 	   stmt_msg 	    VARCHAR2(4000) NOT NULL,
-	   client_info	    VARCHAR2(64) NOT NULL,
-	   module 	    VARCHAR2(48) NOT NULL,
-	   action 	    VARCHAR2(24) NOT NULL,
+	   client_info	    VARCHAR2(64),
+	   module 	    VARCHAR2(48),
+	   action 	    VARCHAR2(24),
 	   stmt_order 	    NUMBER
 	 )
 	 ON COMMIT DELETE ROWS|';
@@ -1405,6 +1409,14 @@ IS
       END;
 
       BEGIN
+         EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.TD_CORE for ' || p_schema || '.TD_CORE';
+      EXCEPTION
+         WHEN e_same_name
+         THEN
+            NULL;
+      END;
+
+      BEGIN
          EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.EVOLVE for ' || p_schema || '.EVOLVE';
       EXCEPTION
          WHEN e_same_name
@@ -1486,37 +1498,9 @@ IS
          THEN
             NULL;
       END;
-
+      
       BEGIN
-         EXECUTE IMMEDIATE    'create or replace synonym '
-                           || p_user
-                           || '.TD_BUILD_IDX_GTT for '
-                           || p_schema
-                           || '.TD_BUILD_IDX_GTT';
-      EXCEPTION
-         WHEN e_same_name
-         THEN
-            NULL;
-      END;
-
-      BEGIN
-         EXECUTE IMMEDIATE    'create or replace synonym '
-                           || p_user
-                           || '.TD_BUILD_CON_GTT for '
-                           || p_schema
-                           || '.TD_BUILD_CON_GTT';
-      EXCEPTION
-         WHEN e_same_name
-         THEN
-            NULL;
-      END;
-
-      BEGIN
-         EXECUTE IMMEDIATE    'create or replace synonym '
-                           || p_user
-                           || '.TD_CON_MAINT_GTT for '
-                           || p_schema
-                           || '.TD_CON_MAINT_GTT';
+         EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.DDL_QUEUE for ' || p_schema || '.DDL_QUEUE';
       EXCEPTION
          WHEN e_same_name
          THEN
@@ -2331,15 +2315,16 @@ IS
 	 
 	 EXECUTE IMMEDIATE q'|drop table td_con_maint_gtt purge|';
 	 
-         EXECUTE IMMEDIATE q'|CREATE TABLE ddl_queue
+         EXECUTE IMMEDIATE q'|CREATE global temporary table ddl_queue
 	 ( 
 	   stmt_ddl 	    VARCHAR2(4000) NOT NULL,
 	   stmt_msg 	    VARCHAR2(4000) NOT NULL,
-	   client_info	    VARCHAR2(64) NOT NULL,
-	   module 	    VARCHAR2(48) NOT NULL,
-	   action 	    VARCHAR2(24) NOT NULL,
+	   client_info	    VARCHAR2(64),
+	   module 	    VARCHAR2(48),
+	   action 	    VARCHAR2(24),
 	   stmt_order 	    NUMBER
-	 )|';
+	 )
+	 ON COMMIT DELETE ROWS|';
 
 	 BEGIN
             EXECUTE IMMEDIATE q'|DROP TABLE td_build_idx_gtt|';
@@ -2366,8 +2351,6 @@ IS
 	 END;
 	 
       END IF;
-      
-      
 
    END upgrade_transcend_repo;
 

@@ -148,9 +148,9 @@ AS
    BEGIN
 
       -- need to get a unique "job header" number in case we are running concurrently
-      o_ev.change_action( 'get concurrent id' );
       IF td_core.is_true( p_concurrent )
       THEN
+	 o_ev.change_action( 'get concurrent id' );
          l_stmtcurrent_id    := evolve.get_concurrent_id;
       END IF;
 
@@ -585,6 +585,9 @@ AS
             NULL;
       END CASE;
 
+      -- register the value of p_concurrent
+      evolve.log_msg( 'The value of P_CONCURRENT is: '||p_concurrent, 5 );
+
       -- confirm that the target table exists
       -- raise an error if it doesn't
       td_utils.check_table( p_owner => p_owner, p_table => p_table );
@@ -617,10 +620,9 @@ AS
       END IF;
 
       -- need to get a unique "job header" number in case we are running concurrently
-      o_ev.change_action( 'get concurrent id' );
-
       IF td_core.is_true( p_concurrent )
       THEN
+	 o_ev.change_action( 'get concurrent id' );
          l_concurrent_id    := evolve.get_concurrent_id;
       END IF;
 
@@ -1674,7 +1676,7 @@ AS
 
       IF NOT l_rows
       THEN
-         evolve.log_msg( 'No matching indexes found on ' || l_tab_name );
+         evolve.log_msg( 'No matching indexes to drop found on ' || l_tab_name );
       ELSE
          evolve.log_msg( l_idx_cnt || ' index' || CASE
                                 WHEN l_idx_cnt = 1
@@ -1703,7 +1705,7 @@ AS
    )
    IS
       l_con_cnt    NUMBER         := 0;
-      l_tab_name   VARCHAR2( 61 ) := p_owner || '.' || p_table;
+      l_tab_name   VARCHAR2( 61 ) := UPPER( p_owner || '.' || p_table );
       l_rows       BOOLEAN        := FALSE;
       l_iot_pk     BOOLEAN        := FALSE;
       e_iot_pk     EXCEPTION;
@@ -1779,7 +1781,7 @@ AS
 
       IF NOT l_rows
       THEN
-         evolve.log_msg( 'No matching constraints found on ' || l_tab_name );
+         evolve.log_msg( 'No matching constraints to drop found on ' || l_tab_name );
       ELSE
          evolve.log_msg(    l_con_cnt
                              || ' constraint'
@@ -3282,8 +3284,6 @@ AS
          td_utils.check_table( p_owner => p_source_owner, p_table => p_source_table, p_partname => p_source_partname );
       END IF;
 
-      o_ev.change_action( 'gathering statistics' );
-
       -- check to see if we are in debug mode
       IF NOT evolve.is_debugmode
       THEN
@@ -3297,6 +3297,7 @@ AS
             -- in that case, we need to call GATHER_SCHEMA_STATS instead of GATHER_TABLE_STATS
             IF p_table IS NULL
             THEN
+	       o_ev.change_action( 'gathering schema stats' );
                DBMS_STATS.gather_schema_stats( ownname               => p_owner,
                                                estimate_percent      => NVL( p_percent, DBMS_STATS.auto_sample_size ),
                                                method_opt            => p_method,
@@ -3310,6 +3311,7 @@ AS
             -- if the table name is not null, then we are only collecting stats on a particular table
             -- will call GATHER_TABLE_STATS as opposed to GATHER_SCHEMA_STATS
             ELSE
+	       o_ev.change_action( 'gathering table stats' );
                DBMS_STATS.gather_table_stats( ownname               => p_owner,
                                               tabname               => p_table,
                                               partname              => p_partname,
@@ -3325,8 +3327,7 @@ AS
          -- if the source owner isn't null, then we know we are transferring statistics
          -- we will use GET_TABLE_STATS and PUT_TABLE_STATS
          ELSE
-            o_ev.change_action( 'transfer stats' );
-
+            o_ev.change_action( 'export stats' );
             -- this will either take partition level statistics and import into a table
             -- or, it will take table level statistics and import it into a partition
             -- or, it will take table level statistics and import it into a table.
@@ -3359,6 +3360,7 @@ AS
                END CASE;
 
                -- now import the statistics
+               o_ev.change_action( 'import stats' );
                DBMS_STATS.import_table_stats( ownname       => p_owner,
                                               tabname       => p_table,
                                               partname      => p_partname,

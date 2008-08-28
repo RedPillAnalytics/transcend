@@ -156,8 +156,7 @@ AS
                                    p_maint_type             => 'disable',
                                    p_constraint_type        => p_constraint_type,
                                    p_constraint_regexp      => p_constraint_regexp,
-                                   p_basis                  => p_basis,
-				   p_enable_queue	    => 'no'
+                                   p_basis                  => p_basis
                                  );
    EXCEPTION
       WHEN OTHERS
@@ -184,8 +183,7 @@ AS
                                    p_constraint_type        => p_constraint_type,
                                    p_constraint_regexp      => p_constraint_regexp,
                                    p_basis                  => p_basis,
-                                   p_concurrent             => p_concurrent,
-				   p_enable_queue	    => 'no'
+                                   p_concurrent             => p_concurrent
                                  );
    EXCEPTION
       WHEN OTHERS

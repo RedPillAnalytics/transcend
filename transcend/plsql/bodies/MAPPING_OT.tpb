@@ -128,8 +128,7 @@ AS
                                       p_table                  => SELF.table_name,
                                       p_constraint_regexp      => SELF.constraint_regexp,
                                       p_constraint_type        => SELF.constraint_type,
-                                      p_maint_type             => 'disable',
-                                      p_enable_queue           => 'yes'
+                                      p_maint_type             => 'disable'
                                     );
       END IF;
    END start_map;
