@@ -132,12 +132,13 @@ AS
          RAISE;
    END enqueue_ddl;
    
-   PROCEDURE dequeue_ddl( 
+   FUNCTION dequeue_ddl( 
       p_module        VARCHAR2,
       p_action	      VARCHAR2,
       p_concurrent    VARCHAR2 DEFAULT 'no',
       p_raise_err     VARCHAR2 DEFAULT 'yes'
    )
+      RETURN NUMBER 
    IS
       l_stmt_cnt         NUMBER    := 0;
       l_stmtcurrent_id   VARCHAR2( 100 ) := NULL;
@@ -157,14 +158,14 @@ AS
       o_ev.change_action( 'looping through DDL' );
       -- looping through records in the DDL_QUEUE table
       -- finding statements queueud there previously
-      evolve.log_msg( 'Executing DDL statements previously queued' );
+      evolve.log_msg( 'Executing DDL statements previously queued', 3 );
       FOR c_stmts IN ( SELECT stmt_ddl,
-			     stmt_msg,
-			     ROWID
-			FROM ddl_queue
-		       WHERE lower( module ) = lower( p_module )
-			 AND lower( action ) = lower( p_action )
-		       ORDER BY stmt_order )
+			      stmt_msg,
+			      ROWID
+			 FROM ddl_queue
+			WHERE lower( module ) = lower( p_module )
+			  AND lower( action ) = lower( p_action )
+			ORDER BY stmt_order )
 
       LOOP
          BEGIN
@@ -184,7 +185,7 @@ AS
 
       IF NOT l_rows
       THEN
-         evolve.log_msg( 'No queued DDL statements applicable for this module and action' );
+         evolve.log_msg( 'No queued DDL statements applicable for this module and action', 3 );
       ELSE
          -- wait for the concurrent processes to complete or fail
          o_ev.change_action( 'wait on concurrent processes' );
@@ -206,14 +207,12 @@ AS
                                    WHEN td_core.is_true( p_concurrent )
                                       THEN 'submitted to the Oracle scheduler'
                                    ELSE 'executed'
-                                END
+                                END, 3
                            );
       END IF;
       
-      -- commit to clear the queue
-      COMMIT;
-
       o_ev.clear_app_info;
+      RETURN l_stmt_cnt
    EXCEPTION
       WHEN OTHERS
       THEN
@@ -874,7 +873,7 @@ AS
 
       IF NOT l_rows
       THEN
-         evolve.log_msg( 'No matching indexes found on ' || l_src_name );
+         evolve.log_msg( 'No matching indexes found on ' || l_src_name, 2 );
       ELSE
          IF td_core.is_true( p_concurrent )
          THEN
@@ -1332,7 +1331,7 @@ AS
 
       IF NOT l_rows
       THEN
-         evolve.log_msg( 'No matching constraints found on ' || l_src_name );
+         evolve.log_msg( 'No matching constraints found on ' || l_src_name, 2 );
       ELSE
          IF td_core.is_true( p_concurrent )
          THEN
@@ -1575,7 +1574,7 @@ AS
                                    WHEN REGEXP_LIKE( 'enable', p_maint_type, 'i' )
                                       THEN 'disabled'
                                 END
-                             || ' constraints found.'
+                             || ' constraints found.', 2
                            );
       ELSE
          -- wait for the concurrent processes to complete or fail
@@ -1676,7 +1675,7 @@ AS
 
       IF NOT l_rows
       THEN
-         evolve.log_msg( 'No matching indexes to drop found on ' || l_tab_name );
+         evolve.log_msg( 'No matching indexes to drop found on ' || l_tab_name, 2 );
       ELSE
          evolve.log_msg( l_idx_cnt || ' index' || CASE
                                 WHEN l_idx_cnt = 1
@@ -1781,7 +1780,7 @@ AS
 
       IF NOT l_rows
       THEN
-         evolve.log_msg( 'No matching constraints to drop found on ' || l_tab_name );
+         evolve.log_msg( 'No matching constraints to drop found on ' || l_tab_name, 2 );
       ELSE
          evolve.log_msg(    l_con_cnt
                              || ' constraint'
@@ -1873,7 +1872,7 @@ AS
           -- when nothing is passed for p_INDEX_TYPE, then that is the same as passing a wildcard
          WHERE  REGEXP_LIKE( DDL, NVL( p_grant_regexp, '.' ), 'i' );
       EXCEPTION
-         -- if a duplicate column list of indexes already exist, log it, but continue
+	 -- when there are no object grants found
          WHEN e_no_grants
          THEN
             l_grants    := FALSE;
@@ -2349,6 +2348,7 @@ AS
       l_rows           BOOLEAN                                  := FALSE;
       l_partname       all_tab_partitions.partition_name%TYPE;
       l_ddl            LONG;
+      l_num_cons       NUMBER;
       l_build_cons     BOOLEAN                                  := FALSE;
       l_compress       BOOLEAN                                  := FALSE;
       l_constraints    BOOLEAN                                  := FALSE;
@@ -2567,9 +2567,25 @@ AS
                THEN
 		  o_ev.change_action( 'enable constraints' );
 		  -- this statement will pull previously entered DDL statements off the queue and execute them
-		  dequeue_ddl( p_action => evolve.get_action,
-			       p_module => evolve.get_module,
-			       p_concurrent => p_concurrent );
+		  l_num_cons := dequeue_ddl( p_action => evolve.get_action,
+					     p_module => evolve.get_module,
+					     p_concurrent => p_concurrent );
+
+		  -- log a message concerning number of constraints		  
+		  evolve.log_msg(    l_num_cons
+				  || ' constraint enablement process'
+				  || CASE
+                                  WHEN l_num_cons = 1
+                                  THEN NULL
+                                  ELSE 'es'
+                                  END
+				  || ' '
+				  || CASE
+                                  WHEN td_core.is_true( p_concurrent )
+                                  THEN 'submitted to the Oracle scheduler'
+                                  ELSE 'executed'
+                                  END, 2
+				);
 
                END IF;
 
@@ -2585,9 +2601,27 @@ AS
       THEN
 	 o_ev.change_action( 'enable constraints' );
 	 -- this statement will pull previously entered DDL statements off the queue and execute them
-	 dequeue_ddl( p_action     => evolve.get_action,
-		      p_module 	   => evolve.get_module,
-		      p_concurrent => p_concurrent);
+		  -- this statement will pull previously entered DDL statements off the queue and execute them
+		  l_num_cons := dequeue_ddl( p_action => evolve.get_action,
+					     p_module => evolve.get_module,
+					     p_concurrent => p_concurrent );
+
+		  -- log a message concerning number of constraints		  
+		  evolve.log_msg(    l_num_cons
+				  || ' constraint enablement process'
+				  || CASE
+                                  WHEN l_num_cons = 1
+                                  THEN NULL
+                                  ELSE 'es'
+                                  END
+				  || ' '
+				  || CASE
+                                  WHEN td_core.is_true( p_concurrent )
+                                  THEN 'submitted to the Oracle scheduler'
+                                  ELSE 'executed'
+                                  END, 2
+				);
+
       END IF;
 
       -- drop constraints on the stage table
@@ -3064,7 +3098,7 @@ AS
                               );
          END IF;
       ELSE
-         evolve.log_msg( 'No matching usable indexes found on ' || l_tab_name );
+         evolve.log_msg( 'No matching usable indexes found on ' || l_tab_name, 2 );
       END IF;
 
       o_ev.clear_app_info;
@@ -3209,7 +3243,7 @@ AS
                                       THEN 'global '
                                    ELSE NULL
                                 END
-                             || 'indexes found'
+                             || 'indexes found', 2
                            );
       END IF;
 
