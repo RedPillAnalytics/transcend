@@ -1278,7 +1278,7 @@ IS
       o_ev   evolve_ot := evolve_ot (p_module => 'delete_dimension');
    BEGIN
       -- delete the column configuration
-      delete_dim_cols( p_owner => p_owner, p_table => p_table );
+      delete_dim_attribs( p_owner => p_owner, p_table => p_table );
 
       -- now delete the dimension configuration
       BEGIN
@@ -1295,31 +1295,29 @@ IS
 		       p_table => p_table );
    END delete_dimension;
 
-   PROCEDURE configure_dim_cols (
+   PROCEDURE create_dim_attribs (
       p_owner           VARCHAR2,
       p_table           VARCHAR2,
-      p_surrogate       VARCHAR2 DEFAULT NULL,
-      p_nat_key         VARCHAR2 DEFAULT NULL,
+      p_surrogate       VARCHAR2,
+      p_effective_dt    VARCHAR2,
+      p_expiration_dt   VARCHAR2,
+      p_current_ind     VARCHAR2,
+      p_nat_key         VARCHAR2,
       p_scd1            VARCHAR2 DEFAULT NULL,
-      p_scd2            VARCHAR2 DEFAULT NULL,
-      p_effective_dt    VARCHAR2 DEFAULT NULL,
-      p_expiration_dt   VARCHAR2 DEFAULT NULL,
-      p_current_ind     VARCHAR2 DEFAULT NULL
+      p_scd2            VARCHAR2 DEFAULT NULL
    )
    IS
       l_mapping    mapping_conf.mapping_name%TYPE;
-      l_results    NUMBER;
       l_col_list   LONG;
       -- a dimension table should have already been configured
       o_dim        mapping_ot;
-      e_dup_conf   EXCEPTION;
-      PRAGMA EXCEPTION_INIT (e_dup_conf, -1);
    BEGIN
       -- construct a DIMENSION_OT object
       -- this is done using the supertype MAPPING_OT
       o_dim := trans_factory.get_mapping_ot ( p_owner => p_owner,
 					      p_table => p_table );
-      -- construct the list for instrumentation purposes
+
+      -- construct the list for instrumentation purposes      
       l_col_list :=
          UPPER (td_core.format_list (   p_surrogate
                                      || ','
@@ -1336,11 +1334,44 @@ IS
                                      || p_current_ind
                                     )
                );
+
       evolve.log_msg ('The column list: ' || l_col_list, 5);
 
-      -- check and make sure all the columns specified are legitimate
+
+      -- write the surrogate key information
+      td_utils.check_column( p_owner	=> p_owner,
+			     p_table	=> p_table,
+			     p_column	=> p_surrogate );
+      
+      INSERT INTO column_conf
+	     ( table_owner, table_name, column_name, column_type )
+	     VALUES 
+	     ( p_owner, p_table, p_surrogate, 'surrogate key' );
+
+      -- write the effective date information
+      td_utils.check_column( p_owner	=> p_owner,
+			     p_table	=> p_table,
+			     p_column	=> p_effective_dt );
+      
+      INSERT INTO column_conf
+	     ( table_owner, table_name, column_name, column_type )
+	     VALUES 
+	     ( p_owner, p_table, p_effective_dt, 'effective date' );
+
+      -- write the expiration date information
+      td_utils.check_column( p_owner	=> p_owner,
+			     p_table	=> p_table,
+			     p_column	=> p_expiration_dt );
+      
+      INSERT INTO column_conf
+	     ( table_owner, table_name, column_name, column_type )
+	     VALUES 
+	     ( p_owner, p_table, p_expiration_dt, 'expiration date' );
+      
+      
+      -- write the natural key information
       FOR c_cols IN (SELECT COLUMN_VALUE column_name
-                       FROM TABLE (CAST (td_core.SPLIT (l_col_list, ',') AS split_ot
+                       FROM TABLE (CAST (td_core.SPLIT (p_nat_key, ',') AS split_ot
                                         )
                                   ))
       LOOP
@@ -1348,109 +1379,57 @@ IS
                                 p_table       => p_table,
                                 p_column      => c_cols.column_name
                                );
+
+	 INSERT INTO column_conf
+		( table_owner, table_name, column_name, column_type )
+		VALUES 
+		( p_owner, p_table, p_effective_dt, 'natural key' );
+	 
+
+      END LOOP;
+      
+      -- write the type 1 attributes
+      FOR c_cols IN (SELECT COLUMN_VALUE column_name
+                       FROM TABLE (CAST (td_core.SPLIT (p_scd1, ',') AS split_ot
+                                        )
+                                  ))
+      LOOP
+         td_utils.check_column (p_owner       => p_owner,
+                                p_table       => p_table,
+                                p_column      => c_cols.column_name
+                               );
+
+	 INSERT INTO column_conf
+		( table_owner, table_name, column_name, column_type )
+		VALUES 
+		( p_owner, p_table, p_effective_dt, 'scd type 1' );
+	 
+
+      END LOOP;
+      
+      -- write the type 2 attributes
+      FOR c_cols IN (SELECT COLUMN_VALUE column_name
+                       FROM TABLE (CAST (td_core.SPLIT (p_scd2, ',') AS split_ot
+                                        )
+                                  ))
+      LOOP
+         td_utils.check_column (p_owner       => p_owner,
+                                p_table       => p_table,
+                                p_column      => c_cols.column_name
+                               );
+
+	 INSERT INTO column_conf
+		( table_owner, table_name, column_name, column_type )
+		VALUES 
+		( p_owner, p_table, p_effective_dt, 'scd type 2' );
+	 
       END LOOP;
 
-      -- do the first merge to update any changed column_types from the parameters
-      MERGE INTO column_conf t
-         USING (SELECT *
-                  FROM (SELECT owner, table_name, column_name,
-                               'surrogate key' column_type
-                          FROM all_tab_columns
-                         WHERE column_name = UPPER (p_surrogate)
-                        UNION
-                        SELECT owner, table_name, column_name,
-                               'effective date' column_type
-                          FROM all_tab_columns
-                         WHERE column_name = UPPER (p_effective_dt)
-                        UNION
-                        SELECT owner, table_name, column_name,
-                               'expiration date' column_type
-                          FROM all_tab_columns
-                         WHERE column_name = UPPER (p_expiration_dt)
-                        UNION
-                        SELECT owner, table_name, column_name,
-                               'current indicator' column_type
-                          FROM all_tab_columns
-                         WHERE column_name = UPPER (p_current_ind)
-                        UNION
-                        SELECT owner, table_name, column_name,
-                               'natural key' column_type
-                          FROM all_tab_columns atc JOIN TABLE
-                                                          (CAST
-                                                              (td_core.SPLIT
-                                                                  (UPPER
-                                                                      (p_nat_key
-                                                                      ),
-                                                                   ','
-                                                                  ) AS split_ot
-                                                              )
-                                                          ) s
-                               ON atc.column_name = s.COLUMN_VALUE
-                        UNION
-                        SELECT owner, table_name, column_name,
-                               'scd type 1' column_type
-                          FROM all_tab_columns atc JOIN TABLE
-                                                          (CAST
-                                                              (td_core.SPLIT
-                                                                  (UPPER
-                                                                       (p_scd1),
-                                                                   ','
-                                                                  ) AS split_ot
-                                                              )
-                                                          ) s
-                               ON atc.column_name = s.COLUMN_VALUE
-                        UNION
-                        SELECT owner, table_name, column_name,
-                               'scd type 2' column_type
-                          FROM all_tab_columns atc JOIN TABLE
-                                                          (CAST
-                                                              (td_core.SPLIT
-                                                                  (UPPER
-                                                                       (p_scd2),
-                                                                   ','
-                                                                  ) AS split_ot
-                                                              )
-                                                          ) s
-                               ON atc.column_name = s.COLUMN_VALUE
-                               )
-                 WHERE owner = UPPER (p_owner)
-                       AND table_name = UPPER (p_table)) s
-         ON (    t.table_owner = s.owner
-             AND t.table_name = s.table_name
-             AND t.column_name = s.column_name)
-         WHEN MATCHED THEN
-            UPDATE
-               SET t.column_type = s.column_type,
-                   t.modified_user = SYS_CONTEXT ('USERENV', 'SESSION_USER'),
-                   t.modified_dt = SYSDATE
-               WHERE s.column_type <> t.column_type
-         WHEN NOT MATCHED THEN
-            INSERT (t.table_owner, t.table_name, t.column_name, t.column_type)
-            VALUES (s.owner, s.table_name, s.column_name, s.column_type);
-      -- do the second merge to write any columns that have been left off
-      MERGE INTO column_conf t
-         USING (SELECT table_owner, dc.table_name, column_name,
-                       CASE default_scd_type
-                          WHEN 1
-                             THEN 'scd type 1'
-                          ELSE 'scd type 2'
-                       END column_type
-                  FROM all_tab_columns atc JOIN dimension_conf dc
-                       ON atc.owner = dc.table_owner
-                     AND atc.table_name = dc.table_name
-                 WHERE table_owner = UPPER (p_owner)
-                   AND dc.table_name = UPPER (p_table)) s
-         ON (    t.table_owner = s.table_owner
-             AND t.table_name = s.table_name
-             AND t.column_name = s.column_name)
-         WHEN NOT MATCHED THEN
-            INSERT (t.table_owner, t.table_name, t.column_name, t.column_type)
-            VALUES (s.table_owner, s.table_name, s.column_name, s.column_type);
       -- confirm the dimension columns
       o_dim.confirm_dim_cols;
-   END configure_dim_cols;
+   END create_dim_attribs;
    
-   PROCEDURE delete_dim_cols (
+   PROCEDURE delete_dim_attribs (
       p_owner           VARCHAR2,
       p_table           VARCHAR2
    )
@@ -1462,7 +1441,7 @@ IS
             WHERE LOWER (table_owner) = LOWER (p_owner)
               AND LOWER (table_name) = LOWER (p_table);
 
-   END delete_dim_cols;
+   END delete_dim_attribs;
 
 END trans_adm;
 /
