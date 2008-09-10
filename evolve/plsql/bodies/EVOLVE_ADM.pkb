@@ -503,7 +503,7 @@ IS
             DELETE FROM error_conf;
          END IF;
 
-         set_error_conf( p_name         => 'dup_config',
+         set_error_conf( p_name         => 'dup_conf',
                          p_message      => 'An attempt was made to add a duplicate configuration'
                        );
          set_error_conf( p_name         => 'no_rep_obj',
