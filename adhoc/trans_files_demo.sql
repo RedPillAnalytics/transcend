@@ -14,9 +14,9 @@ GRANT READ,WRITE ON directory extractdata TO tdrep;
 
 
 -- create test external table
-DROP TABLE test_feed
+DROP TABLE stewart.test_feed
 /
-CREATE TABLE test_feed
+CREATE TABLE stewart.test_feed
        ( feed_id        NUMBER,
 	 feed_desc     VARCHAR2(100))
        organization external
@@ -32,8 +32,16 @@ CREATE TABLE test_feed
        PARALLEL
 /
 
+exec dbms_java.grant_permission( 'TDREP', 'SYS:java.io.FilePermission', '/transcend/source', 'read' );
+
+EXEC dbms_java.grant_permission( 'TDREP', 'SYS:java.io.FilePermission', '/transcend/source/*', 'read' );
+
 -- CREATE a test feed
-EXEC trans_adm.configure_feed( 'test group','test feed',p_filename=>'TEST_FEED.dat',p_owner=>'stewart',p_table=>'test_feed',p_arch_directory=>'archdata', p_file_datestamp=>'yyyymmddhhmiss',p_baseurl=>'www.transcendentdata.com/files',p_passphrase=>'passw0rd',p_source_directory=>'sourcedata',p_source_regexp=>'txt$',p_source_policy=>'newest',p_delete_source=>'no');
+EXEC trans_adm.create_feed( 'test group','test feed',p_directory=>'extdata',p_filename=>'TEST_FEED.dat',p_owner=>'stewart',p_table=>'test_feed',p_arch_directory=>'archdata', p_file_datestamp=>'yyyymmddhhmiss',p_baseurl=>'www.transcendentdata.com/files',p_passphrase=>'passw0rd',p_source_directory=>'sourcedata',p_source_regexp=>'txt$',p_source_policy=>'newest',p_delete_source=>'no');
 
 -- CREATE a test extract
-EXEC trans_adm.configure_extract( 'test group','test extract',p_filename=>'TEST_EXTRACT.dat',p_object_owner=>'stewart',p_object_name=>'test_extract',p_arch_directory=>'archdata',p_baseurl=>'www.transcendentdata.com/files',p_passphrase=>'passw0rd',p_directory=>'extractdata');
+EXEC trans_adm.create_extract( 'test group','test extract',p_filename=>'TEST_EXTRACT.dat',p_object_owner=>'stewart',p_object_name=>'test_extract',p_arch_directory=>'archdata',p_baseurl=>'www.transcendentdata.com/files',p_passphrase=>'passw0rd',p_directory=>'extractdata');
+
+COMMIT;
+
+EXEC trans_files.process_files( 'test group' );

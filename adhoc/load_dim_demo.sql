@@ -192,7 +192,7 @@ exec print.tbl(q'|select * from dimension_conf join mapping_conf using (table_na
 
 -- now, configure the columns for the dimension
 BEGIN
-   trans_adm.configure_dim_cols ( p_owner=>'testdim',
+   trans_adm.create_dim_attribs ( p_owner=>'testdim',
 				  p_table=>'customer_dim',
 				  p_surrogate=>'customer_key',
 				  p_nat_key=>'account_number',
@@ -208,8 +208,8 @@ select column_name, column_type from column_conf WHERE table_owner='TESTDIM' AND
 
 -- now, execute the load
 BEGIN
-   trans_etl.load_dim( p_owner=>'testdim',
-		       p_table=>'customer_dim');
+   trans_etl.load_dimension( p_owner=>'testdim',
+			     p_table=>'customer_dim');
 END;
 /
 -- a table rename was used to replace one table with another
@@ -223,21 +223,21 @@ SELECT * FROM testdim.customer_dim
 
 -- lets update the logging_level and get a better idea of what's going on
 BEGIN
-   evolve_adm.set_logging_level( p_module=> 'default',
+   evolve_adm.set_logging_level( p_module=> evolve_adm.all_modules,
 				 p_logging_level=>3 );
 END;
 /
 
 -- run the load again
 BEGIN
-   trans_etl.load_dim( p_owner=>'testdim',
-		       p_table=>'customer_dim');
+   trans_etl.load_dimension( p_owner=>'testdim',
+			     p_table=>'customer_dim');
 END;
 /
 
 -- put the logging level back
 BEGIN
-   evolve_adm.set_logging_level( p_module=> 'default',
+   evolve_adm.set_logging_level( p_module=> evolve_adm.all_modules,
 				 p_logging_level=>1 );
 END;
 /
@@ -265,17 +265,18 @@ CREATE TABLE testdim.customer_scd
 /
 
 BEGIN
-   trans_adm.configure_dim( p_owner=>'testdim',
-			    p_table=>'customer_dim',
-			    p_staging_owner=>'testdim',
-			    p_staging_table=>'customer_scd');
+   trans_adm.modify_dimension( p_mapping=>'ld_customer_dim',
+			       p_owner=>'testdim',
+			       p_table=>'customer_dim',
+			       p_staging_owner=>'testdim',
+			       p_staging_table=>'customer_scd');
 END;
 /
 
 -- now execute the load again
 BEGIN
-   trans_etl.load_dim( p_owner=>'testdim',
-		       p_table=>'customer_dim');
+   trans_etl.load_dimension( p_owner=>'testdim',
+			     p_table=>'customer_dim');
 END;
 /
 
@@ -290,17 +291,17 @@ SELECT * FROM testdim.customer_scd
 -- Transcend uses all the default values of DBMS_STATS introduced in 10g for automatics stats collection
 -- it will figure out the best values for granularity, percentage, parallelism, etc.
 BEGIN
-   trans_adm.configure_dim( p_owner=>'testdim',
-			    p_table=>'customer_dim',
-			    p_concurrent=>'yes',
-			    p_statistics=>'gather');
+   trans_adm.modify_dimension( p_owner=>'testdim',
+			       p_table=>'customer_dim',
+			       p_concurrent=>'yes',
+			       p_statistics=>'gather');
 END;
 /
 
 -- now, let's do the load again
 BEGIN
-   trans_etl.load_dim( p_owner=>'testdim',
-		       p_table=>'customer_dim');
+   trans_etl.load_dimension( p_owner=>'testdim',
+			     p_table=>'customer_dim');
 END;
 /
 
@@ -409,15 +410,15 @@ CREATE TABLE testdim.customer_scd
 
 -- now register our preferred replace method with Transcend
 BEGIN
-   trans_adm.configure_dim( p_owner=>'testdim',
-			    p_table=>'customer_dim',
-			    p_replace_method=>'exchange');
+   trans_adm.modify_dimension( p_owner=>'testdim',
+			       p_table=>'customer_dim',
+			       p_replace_method=>'exchange');
 END;
 /
 
 -- now, let's do the load again
 BEGIN
-   trans_etl.load_dim( p_owner=>'testdim',
-		       p_table=>'customer_dim');
+   trans_etl.load_dimension( p_owner=>'testdim',
+			     p_table=>'customer_dim');
 END;
 /
