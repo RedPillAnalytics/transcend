@@ -2352,25 +2352,6 @@ IS
             NULL;
 	 END;
 	 
-	 -- ticket 110
-	 -- remove NOT NULL from object_owner and object_name columns
-
-	 BEGIN
-	    EXECUTE IMMEDIATE q'|alter table files_conf modify object_name not null|';
-	 EXCEPTION
-            WHEN e_already_null
-            THEN
-            NULL;
-	 END;
-	 
-	 BEGIN
-	    EXECUTE IMMEDIATE q'|alter table files_conf modify object_owner not null|';
-	 EXCEPTION
-            WHEN e_already_null
-            THEN
-            NULL;
-	 END;
-
       END IF;
 
    END upgrade_transcend_repo;

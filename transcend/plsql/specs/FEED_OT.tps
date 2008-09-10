@@ -7,7 +7,6 @@ CREATE OR REPLACE TYPE feed_ot UNDER file_ot(
    required           VARCHAR2( 8 ),
    delete_source      VARCHAR2( 3 ),
    reject_limit       NUMBER,
-   associated_table   VARCHAR2( 3 ),
    CONSTRUCTOR FUNCTION feed_ot(
       p_file_group   VARCHAR2,
       p_file_label   VARCHAR2
