@@ -133,7 +133,7 @@ IS
       p_statistics     VARCHAR2 DEFAULT 'transfer'
    );
 
-   PROCEDURE load_dim( p_owner VARCHAR2, p_table VARCHAR2 );
+   PROCEDURE load_dimension( p_owner VARCHAR2, p_table VARCHAR2 );
 
    PROCEDURE replace_table(
       p_owner          VARCHAR2,
