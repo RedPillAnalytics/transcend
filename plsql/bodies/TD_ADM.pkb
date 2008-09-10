@@ -6,15 +6,15 @@ IS
 
    -- exceptions used over and over agaoin
    -- define them only once
-   e_no_user          EXCEPTION;
+   e_no_user      EXCEPTION;
    PRAGMA EXCEPTION_INIT( e_no_user, -1435 );
-   e_obj_exists    EXCEPTION;
+   e_obj_exists   EXCEPTION;
    PRAGMA EXCEPTION_INIT( e_obj_exists, -955 );
-   e_role_exists   EXCEPTION;
+   e_role_exists  EXCEPTION;
    PRAGMA EXCEPTION_INIT( e_role_exists, -1921 );
-   e_no_grantee    EXCEPTION;
+   e_no_grantee   EXCEPTION;
    PRAGMA EXCEPTION_INIT( e_no_grantee, -1919 );
-   e_no_obj        EXCEPTION;
+   e_no_obj       EXCEPTION;
    PRAGMA EXCEPTION_INIT( e_no_obj, -4043 );
    e_tab_exists   EXCEPTION;
    PRAGMA EXCEPTION_INIT( e_tab_exists, -955 );
@@ -26,10 +26,12 @@ IS
    PRAGMA EXCEPTION_INIT( e_same_name, -1471 );
    e_ins_privs    EXCEPTION;
    PRAGMA EXCEPTION_INIT( e_ins_privs, -1031 );
-   e_no_role       EXCEPTION;
+   e_no_role      EXCEPTION;
    PRAGMA EXCEPTION_INIT( e_no_role, -1919 );
-   e_col_exists       EXCEPTION;
+   e_col_exists   EXCEPTION;
    PRAGMA EXCEPTION_INIT( e_col_exists, -1430 );
+   e_already_null EXCEPTION;
+   PRAGMA EXCEPTION_INIT( e_already_null, -1451 );
 
 
    PROCEDURE create_user( p_user VARCHAR2 DEFAULT DEFAULT_REPOSITORY, p_tablespace VARCHAR2 DEFAULT NULL )
@@ -898,8 +900,8 @@ IS
 	   file_group	       VARCHAR2(64) 	NOT NULL,
 	   file_type	       VARCHAR2(7) 	NOT NULL,
 	   file_description    VARCHAR2(100),
-	   object_owner	       VARCHAR2(30)	NOT NULL,
-	   object_name	       VARCHAR2(30)    	NOT NULL,
+	   object_owner	       VARCHAR2(30),
+	   object_name	       VARCHAR2(30),
 	   directory	       VARCHAR2(30)	NOT NULL,
 	   filename	       VARCHAR2(50)    	NOT NULL,		
 	   arch_directory      VARCHAR2(30) 	NOT NULL,
@@ -2350,6 +2352,25 @@ IS
             NULL;
 	 END;
 	 
+	 -- ticket 110
+	 -- remove NOT NULL from object_owner and object_name columns
+
+	 BEGIN
+	    EXECUTE IMMEDIATE q'|alter table files_conf modify object_name not null|';
+	 EXCEPTION
+            WHEN e_already_null
+            THEN
+            NULL;
+	 END;
+	 
+	 BEGIN
+	    EXECUTE IMMEDIATE q'|alter table files_conf modify object_owner not null|';
+	 EXCEPTION
+            WHEN e_already_null
+            THEN
+            NULL;
+	 END;
+
       END IF;
 
    END upgrade_transcend_repo;
