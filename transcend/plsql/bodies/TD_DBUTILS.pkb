@@ -212,7 +212,7 @@ AS
       END IF;
       
       o_ev.clear_app_info;
-      RETURN l_stmt_cnt
+      RETURN l_stmt_cnt;
    EXCEPTION
       WHEN OTHERS
       THEN
@@ -2811,6 +2811,7 @@ AS
       l_tab_name       VARCHAR2( 61 ) := UPPER( p_owner || '.' || p_table );
       l_rows           BOOLEAN        := FALSE;
       l_ddl            LONG;
+      l_cnt        NUMBER;
       e_no_stats       EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_stats, -20000 );
       e_compress       EXCEPTION;
@@ -2905,16 +2906,16 @@ AS
       -- rename the indexes
       o_ev.change_action( 'rename indexes' );
       -- this statement will pull previously entered DDL statements off the queue and execute them
-      dequeue_ddl( p_action     => evolve.get_action,
-		   p_module     => evolve.get_module,
-		   p_concurrent => p_concurrent );
+      l_cnt := dequeue_ddl( p_action     => evolve.get_action,
+				p_module     => evolve.get_module,
+				p_concurrent => p_concurrent );
 
 
       -- rename the constraints
       o_ev.change_action( 'rename constraints' );
-      dequeue_ddl( p_action     => evolve.get_action,
-		   p_module 	   => evolve.get_module,
-		   p_concurrent => p_concurrent);
+      l_cnt := dequeue_ddl( p_action     => evolve.get_action,
+			    p_module 	   => evolve.get_module,
+			    p_concurrent => p_concurrent);
 
       o_ev.clear_app_info;
    EXCEPTION
