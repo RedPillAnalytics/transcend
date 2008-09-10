@@ -4,30 +4,80 @@ IS
 
    PROCEDURE set_default_configs;
 
-   PROCEDURE configure_feed (
+   PROCEDURE create_feed (
       p_file_group         VARCHAR2,
       p_file_label         VARCHAR2,
-      p_filename           VARCHAR2 DEFAULT NULL,
+      p_filename           VARCHAR2,
+      p_directory	   VARCHAR2,
+      p_arch_directory     VARCHAR2,
+      p_source_directory   VARCHAR2,
+      p_source_regexp      VARCHAR2,
       p_owner              VARCHAR2 DEFAULT NULL,
       p_table              VARCHAR2 DEFAULT NULL,
-      p_arch_directory     VARCHAR2 DEFAULT NULL,
-      p_min_bytes          NUMBER DEFAULT NULL,
-      p_max_bytes          NUMBER DEFAULT NULL,
+      p_match_parameter    VARCHAR2 DEFAULT 'i',
+      p_source_policy      VARCHAR2 DEFAULT 'newest',
+      p_required           VARCHAR2 DEFAULT 'yes',
+      p_min_bytes          NUMBER   DEFAULT 0,
+      p_max_bytes          NUMBER   DEFAULT 0,
+      p_reject_limit       NUMBER   DEFAULT 100,
       p_file_datestamp     VARCHAR2 DEFAULT NULL,
       p_baseurl            VARCHAR2 DEFAULT NULL,
       p_passphrase         VARCHAR2 DEFAULT NULL,
+      p_delete_source      VARCHAR2 DEFAULT 'yes',
+      p_file_description   VARCHAR2 DEFAULT NULL
+   );
+      
+   PROCEDURE modify_feed (
+      p_file_group         VARCHAR2,
+      p_file_label         VARCHAR2,
+      p_filename           VARCHAR2 DEFAULT NULL,
+      p_directory	   VARCHAR2 DEFAULT NULL,
+      p_arch_directory     VARCHAR2 DEFAULT NULL,
       p_source_directory   VARCHAR2 DEFAULT NULL,
       p_source_regexp      VARCHAR2 DEFAULT NULL,
+      p_owner              VARCHAR2 DEFAULT NULL,
+      p_table              VARCHAR2 DEFAULT NULL,
       p_match_parameter    VARCHAR2 DEFAULT NULL,
       p_source_policy      VARCHAR2 DEFAULT NULL,
       p_required           VARCHAR2 DEFAULT NULL,
+      p_min_bytes          NUMBER   DEFAULT NULL,
+      p_max_bytes          NUMBER   DEFAULT NULL,
+      p_reject_limit       NUMBER   DEFAULT NULL,
+      p_file_datestamp     VARCHAR2 DEFAULT NULL,
+      p_baseurl            VARCHAR2 DEFAULT NULL,
+      p_passphrase         VARCHAR2 DEFAULT NULL,
       p_delete_source      VARCHAR2 DEFAULT NULL,
-      p_reject_limit       NUMBER DEFAULT NULL,
-      p_file_description   VARCHAR2 DEFAULT NULL,
-      p_mode               VARCHAR2 DEFAULT 'upsert'
+      p_file_description   VARCHAR2 DEFAULT NULL
+   );
+      
+   PROCEDURE delete_feed (
+      p_file_group         VARCHAR2,
+      p_file_label         VARCHAR2
    );
 
-   PROCEDURE configure_extract (
+   PROCEDURE create_extract (
+      p_file_group         VARCHAR2,
+      p_file_label         VARCHAR2,
+      p_filename           VARCHAR2,
+      p_object_owner       VARCHAR2,
+      p_object_name        VARCHAR2,
+      p_directory          VARCHAR2,
+      p_arch_directory     VARCHAR2,
+      p_min_bytes          NUMBER   DEFAULT 0,
+      p_max_bytes          NUMBER   DEFAULT 0,
+      p_file_datestamp     VARCHAR2 DEFAULT NULL,
+      p_baseurl            VARCHAR2 DEFAULT NULL,
+      p_passphrase         VARCHAR2 DEFAULT NULL,
+      p_dateformat         VARCHAR2 DEFAULT 'mm/dd/yyyy hh:mi:ss am',
+      p_timestampformat    VARCHAR2 DEFAULT 'mm/dd/yyyy hh:mi:ss:x:ff am',
+      p_delimiter          VARCHAR2 DEFAULT ',',
+      p_quotechar          VARCHAR2 DEFAULT NULL,
+      p_headers            VARCHAR2 DEFAULT 'yes',
+      p_file_description   VARCHAR2 DEFAULT NULL
+   );
+      
+   
+   PROCEDURE modify_extract (
       p_file_group         VARCHAR2,
       p_file_label         VARCHAR2,
       p_filename           VARCHAR2 DEFAULT NULL,
@@ -47,8 +97,13 @@ IS
       p_headers            VARCHAR2 DEFAULT NULL,
       p_file_description   VARCHAR2 DEFAULT NULL,
       p_mode               VARCHAR2 DEFAULT 'upsert'
-   );
+   );   
       
+   PROCEDURE delete_extract (
+      p_file_group         VARCHAR2,
+      p_file_label         VARCHAR2
+   );
+   
    PROCEDURE create_mapping (
       p_mapping             VARCHAR2,
       p_owner               VARCHAR2 DEFAULT NULL,
@@ -88,8 +143,7 @@ IS
       p_part_type           VARCHAR2 DEFAULT NULL,
       p_constraint_regexp   VARCHAR2 DEFAULT NULL,
       p_constraint_type     VARCHAR2 DEFAULT NULL,
-      p_description         VARCHAR2 DEFAULT NULL,
-      p_mode                VARCHAR2 DEFAULT 'upsert'
+      p_description         VARCHAR2 DEFAULT NULL
    );
 
    PROCEDURE delete_mapping (
@@ -142,19 +196,26 @@ IS
    
    PROCEDURE delete_dimension ( p_owner VARCHAR2, p_table VARCHAR2 );
    
-   PROCEDURE configure_dim_cols (
+   PROCEDURE create_dim_attribs (
       p_owner           VARCHAR2,
       p_table           VARCHAR2,
-      p_surrogate       VARCHAR2 DEFAULT NULL,
-      p_nat_key         VARCHAR2 DEFAULT NULL,
+      p_surrogate       VARCHAR2,
+      p_effective_dt    VARCHAR2,
+      p_expiration_dt   VARCHAR2,
+      p_current_ind     VARCHAR2,
+      p_nat_key         VARCHAR2,
       p_scd1            VARCHAR2 DEFAULT NULL,
-      p_scd2            VARCHAR2 DEFAULT NULL,
-      p_effective_dt    VARCHAR2 DEFAULT NULL,
-      p_expiration_dt   VARCHAR2 DEFAULT NULL,
-      p_current_ind     VARCHAR2 DEFAULT NULL
+      p_scd2            VARCHAR2 DEFAULT NULL
    );
 
-   PROCEDURE delete_dim_cols (
+   PROCEDURE modify_dim_attrib (
+      p_owner           VARCHAR2,
+      p_table           VARCHAR2,
+      p_column		VARCHAR2,
+      p_column_type	VARCHAR2
+   );
+
+   PROCEDURE delete_dim_attribs (
       p_owner           VARCHAR2,
       p_table           VARCHAR2
    );

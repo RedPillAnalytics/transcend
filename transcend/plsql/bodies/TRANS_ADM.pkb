@@ -82,6 +82,14 @@ IS
           p_message      => 'The specified table is not a configured dimension table'
          );
       evolve_adm.set_error_conf
+         (p_name         => 'no_feed',
+          p_message      => 'The specified feed has not been configured'
+         );
+      evolve_adm.set_error_conf
+         (p_name         => 'no_extract',
+          p_message      => 'The specified extract has not been configured'
+         );
+      evolve_adm.set_error_conf
                  (p_name         => 'no_mapping',
                   p_message      => 'The specified mapping has not been configured'
                  );
@@ -93,350 +101,329 @@ IS
          (p_name         => 'dim_mismatch',
           p_message      => 'There is a mismatch between columns in the source object and dimension table for the specified dimension table'
          );
+      evolve_adm.set_error_conf
+         (p_name         => 'no_curr_ind',
+           p_message      => 'No current indicator attribute has been configured for the dimension'
+         );
+      evolve_adm.set_error_conf
+         (p_name         => 'multiple_curr_ind',
+           p_message      => 'Multiple current indicator attributes have been configured for the dimension'
+         );
+      evolve_adm.set_error_conf
+         (p_name         => 'no_exp_dt',
+           p_message      => 'No expiration date attribute has been configured for the dimension'
+         );
+      evolve_adm.set_error_conf
+         (p_name         => 'multiple_exp_dt',
+          p_message      => 'Multiple expiration date atributes have been configured for the dimension'
+         );
+      evolve_adm.set_error_conf
+         (p_name         => 'no_eff_dt',
+           p_message      => 'No effective date attribute has been configured for the dimension'
+         );
+      evolve_adm.set_error_conf
+         (p_name         => 'multiple_eff_dt',
+          p_message      => 'Multiple effective date atributes have been configured for the dimension'
+         );
+      evolve_adm.set_error_conf
+         (p_name         => 'no_nat_key',
+           p_message      => 'No natural key attribute has been configured for the dimension'
+         );
+      evolve_adm.set_error_conf
+         (p_name         => 'no_surr_key',
+           p_message      => 'No surrogate key attribute has been configured for the dimension'
+         );
+      evolve_adm.set_error_conf
+         (p_name         => 'multiple_surr_key',
+           p_message      => 'Multiple surrogate key atributes have been configured for the dimension'
+         );
    END set_default_configs;
 
-   PROCEDURE configure_feed (
+   PROCEDURE create_feed (
       p_file_group         VARCHAR2,
       p_file_label         VARCHAR2,
-      p_filename           VARCHAR2 DEFAULT NULL,
+      p_filename           VARCHAR2,
+      p_directory	   VARCHAR2,
+      p_arch_directory     VARCHAR2,
+      p_source_directory   VARCHAR2,
+      p_source_regexp      VARCHAR2,
       p_owner              VARCHAR2 DEFAULT NULL,
       p_table              VARCHAR2 DEFAULT NULL,
-      p_arch_directory     VARCHAR2 DEFAULT NULL,
-      p_min_bytes          NUMBER DEFAULT NULL,
-      p_max_bytes          NUMBER DEFAULT NULL,
+      p_match_parameter    VARCHAR2 DEFAULT 'i',
+      p_source_policy      VARCHAR2 DEFAULT 'newest',
+      p_required           VARCHAR2 DEFAULT 'yes',
+      p_min_bytes          NUMBER   DEFAULT 0,
+      p_max_bytes          NUMBER   DEFAULT 0,
+      p_reject_limit       NUMBER   DEFAULT 100,
       p_file_datestamp     VARCHAR2 DEFAULT NULL,
       p_baseurl            VARCHAR2 DEFAULT NULL,
       p_passphrase         VARCHAR2 DEFAULT NULL,
-      p_source_directory   VARCHAR2 DEFAULT NULL,
-      p_source_regexp      VARCHAR2 DEFAULT NULL,
-      p_match_parameter    VARCHAR2 DEFAULT NULL,
-      p_source_policy      VARCHAR2 DEFAULT NULL,
-      p_required           VARCHAR2 DEFAULT NULL,
-      p_delete_source      VARCHAR2 DEFAULT NULL,
-      p_reject_limit       NUMBER DEFAULT NULL,
-      p_file_description   VARCHAR2 DEFAULT NULL,
-      p_mode               VARCHAR2 DEFAULT 'upsert'
+      p_delete_source      VARCHAR2 DEFAULT 'yes',
+      p_file_description   VARCHAR2 DEFAULT NULL
    )
    IS
-      l_owner       all_external_tables.owner%TYPE;
-      l_table       all_external_tables.table_name%TYPE;
-      l_dir_path    all_directories.directory_path%TYPE;
-      l_directory   all_external_tables.default_directory_name%TYPE;
-      l_ext_tab     all_external_tables.table_name%TYPE;
-      l_no_conf     BOOLEAN;
       e_dup_conf    EXCEPTION;
       PRAGMA EXCEPTION_INIT (e_dup_conf, -1);
       o_feed        feed_ot;
-      o_ev          evolve_ot     := evolve_ot (p_module      => 'configure_feed');
+      o_ev          evolve_ot     := evolve_ot (p_module      => 'create_feed');
    BEGIN
-      CASE
-         WHEN    (p_owner IS NULL AND p_table IS NOT NULL)
-              OR (p_owner IS NOT NULL AND p_table IS NULL)
-         THEN
-            evolve.raise_err ('parms_comb', 'P_OWNER and P_TABLE');
-         WHEN p_table IS NOT NULL
-         THEN
-            -- directory information is not configured by the user... instead, it is pulled from the external table
-            -- but I don't want to make the configuring user have to provide the owner and name of the table for every configuration
-            -- if it's provided, we will use that to get the directory
-            -- if it isn't provided, then I will pull that information, and use it to get the directory.
-            l_owner := UPPER (p_owner);
-            l_table := UPPER (p_table);
-            -- now check the external table
-            td_utils.check_table (p_owner         => p_owner,
-                                  p_table         => p_table,
-                                  p_external      => 'yes'
-                                 );
-         WHEN p_table IS NULL
-         THEN
-            evolve.log_msg ('P_TABLE is NULL', 5);
 
-            -- the object_name is null, so we need to pull the table information from the configuration
-            BEGIN
-               SELECT UPPER (object_owner), UPPER (object_name)
-                 INTO l_owner, l_table
-                 FROM files_conf
-                WHERE file_group = LOWER (p_file_group)
-                  AND file_label = LOWER (p_file_label);
-            EXCEPTION
-               WHEN NO_DATA_FOUND
-               THEN
-                  l_no_conf := TRUE;
-            END;
-
-            evolve.log_msg (   'Values for L_OWNER and L_TABLE: '
-                            || l_owner
-                            || ','
-                            || l_table,
-                            5
-                           );
-      END CASE;
-
-      -- as long as this is not a delete, I need the directory name
-      IF NOT p_mode = 'delete'
-      THEN
-         -- get the directory from the external table
-         BEGIN
-            SELECT default_directory_name
-              INTO l_directory
-              FROM all_external_tables
-             WHERE owner = l_owner AND table_name = l_table;
-         EXCEPTION
-            WHEN NO_DATA_FOUND
-            THEN
-               IF l_no_conf
-               THEN
-                  NULL;
-               ELSE
-                  evolve.raise_err ('no_ext_tab',
-                                    UPPER (l_owner || '.' || l_table)
-                                   );
-               END IF;
-         END;
-      END IF;
-
-      -- this step is used to nullify records when needed
-      IF LOWER (p_mode) = 'nullify'
-      THEN
-         -- this is a list of the required parameters
-         CASE
-            WHEN p_owner = 'NULL'
-            THEN
-               evolve.raise_err ('parm_req', 'P_OWNER');
-            WHEN p_table = 'NULL'
-            THEN
-               evolve.raise_err ('parm_req', 'P_TABLE');
-            WHEN p_filename IS NULL
-            THEN
-               evolve.raise_err ('parm_req', 'P_FILENAME');
-            WHEN p_arch_directory = 'NULL'
-            THEN
-               evolve.raise_err ('parm_req', 'P_ARCH_DIRECTORY');
-            WHEN p_source_directory = 'NULL'
-            THEN
-               evolve.raise_err ('parm_req', 'P_SOURCE_DIRECTORY');
-            WHEN p_source_regexp = 'NULL'
-            THEN
-               evolve.raise_err ('parm_req', 'P_SOURCE_REGEXP');
-            ELSE
-               NULL;
-         END CASE;
-
-         UPDATE files_conf
-            SET file_description =
-                   CASE
-                      WHEN p_file_description IS NULL
-                         THEN file_description
-                      WHEN p_file_description = 'NULL'
-                         THEN NULL
-                      ELSE file_description
-                   END,
-                filename =
-                   CASE
-                      WHEN p_filename IS NULL
-                         THEN filename
-                      WHEN p_filename = 'NULL'
-                         THEN NULL
-                      ELSE filename
-                   END,
-                min_bytes =
-                   CASE
-                      WHEN p_min_bytes IS NULL
-                         THEN min_bytes
-                      WHEN p_min_bytes = 'NULL'
-                         THEN NULL
-                      ELSE min_bytes
-                   END,
-                max_bytes =
-                   CASE
-                      WHEN p_max_bytes IS NULL
-                         THEN max_bytes
-                      WHEN p_max_bytes = 'NULL'
-                         THEN NULL
-                      ELSE max_bytes
-                   END,
-                file_datestamp =
-                   CASE
-                      WHEN p_file_datestamp IS NULL
-                         THEN file_datestamp
-                      WHEN p_file_datestamp = 'NULL'
-                         THEN NULL
-                      ELSE file_datestamp
-                   END,
-                baseurl =
-                   CASE
-                      WHEN p_baseurl IS NULL
-                         THEN baseurl
-                      WHEN p_baseurl = 'NULL'
-                         THEN NULL
-                      ELSE baseurl
-                   END,
-                passphrase =
-                   CASE
-                      WHEN p_passphrase IS NULL
-                         THEN passphrase
-                      WHEN p_passphrase = 'NULL'
-                         THEN NULL
-                      ELSE passphrase
-                   END,
-                match_parameter =
-                   CASE
-                      WHEN p_match_parameter IS NULL
-                         THEN match_parameter
-                      WHEN p_match_parameter = 'NULL'
-                         THEN NULL
-                      ELSE match_parameter
-                   END,
-                source_policy =
-                   CASE
-                      WHEN p_source_policy IS NULL
-                         THEN source_policy
-                      WHEN p_source_policy = 'NULL'
-                         THEN NULL
-                      ELSE source_policy
-                   END,
-                required =
-                   CASE
-                      WHEN p_required IS NULL
-                         THEN required
-                      WHEN p_required = 'NULL'
-                         THEN NULL
-                      ELSE required
-                   END,
-                delete_source =
-                   CASE
-                      WHEN p_delete_source IS NULL
-                         THEN delete_source
-                      WHEN p_delete_source = 'NULL'
-                         THEN NULL
-                      ELSE delete_source
-                   END,
-                reject_limit =
-                   CASE
-                      WHEN p_reject_limit IS NULL
-                         THEN reject_limit
-                      WHEN p_reject_limit = 'NULL'
-                         THEN NULL
-                      ELSE reject_limit
-                   END,
-                modified_user = SYS_CONTEXT ('USERENV', 'SESSION_USER'),
-                modified_dt = SYSDATE
-          WHERE file_label = LOWER (p_file_label)
-            AND file_group = LOWER (p_file_group);
-      END IF;
-
-      -- this is the default method... update if it exists or insert it
-      IF LOWER (p_mode) IN ('upsert', 'update')
-      THEN
-         UPDATE files_conf
-            SET file_description = NVL (p_file_description, file_description),
-                object_owner = UPPER (NVL (p_owner, object_owner)),
-                object_name = UPPER (NVL (p_table, object_name)),
-                DIRECTORY = l_directory,
-                filename = NVL (p_filename, filename),
-                arch_directory =
-                                UPPER (NVL (p_arch_directory, arch_directory)),
-                min_bytes = NVL (p_min_bytes, min_bytes),
-                max_bytes = NVL (p_max_bytes, max_bytes),
-                file_datestamp = NVL (p_file_datestamp, file_datestamp),
-                baseurl = NVL (p_baseurl, baseurl),
-                passphrase = NVL (p_passphrase, passphrase),
-                source_directory =
-                            UPPER (NVL (p_source_directory, source_directory)),
-                source_regexp = NVL (p_source_regexp, source_regexp),
-                match_parameter = NVL (p_match_parameter, match_parameter),
-                source_policy = NVL (p_source_policy, source_policy),
-                required = NVL (p_required, required),
-                delete_source = NVL (p_delete_source, delete_source),
-                reject_limit = NVL (p_reject_limit, reject_limit),
-                modified_user = SYS_CONTEXT ('USERENV', 'SESSION_USER'),
-                modified_dt = SYSDATE
-          WHERE file_label = LOWER (p_file_label)
-            AND file_group = LOWER (p_file_group);
-      END IF;
-
-      -- if the update was unsuccessful above, or an insert it specifically requested, then do an insert
-      IF    (SQL%ROWCOUNT = 0 AND LOWER (p_mode) = 'upsert')
-         OR LOWER (p_mode) = 'insert'
-      THEN
-         -- this is a list of the required parameters
-         CASE
-            WHEN p_owner IS NULL
-            THEN
-               evolve.raise_err ('parm_req', 'P_OWNER');
-            WHEN p_table IS NULL
-            THEN
-               evolve.raise_err ('parm_req', 'P_TABLE');
-            WHEN p_filename IS NULL
-            THEN
-               evolve.raise_err ('parm_req', 'P_FILENAME');
-            WHEN p_arch_directory IS NULL
-            THEN
-               evolve.raise_err ('parm_req', 'P_ARCH_DIRECTORY');
-            WHEN p_source_directory IS NULL
-            THEN
-               evolve.raise_err ('parm_req', 'P_SOURCE_DIRECTORY');
-            WHEN p_source_regexp IS NULL
-            THEN
-               evolve.raise_err ('parm_req', 'P_SOURCE_REGEXP');
-            ELSE
-               NULL;
-         END CASE;
-
-         BEGIN
-            INSERT INTO files_conf
-                        (file_label, file_group, file_type,
-                         file_description, object_owner,
-                         object_name, DIRECTORY, filename,
-                         arch_directory, min_bytes,
-                         max_bytes, file_datestamp, baseurl,
-                         passphrase, source_directory,
-                         source_regexp, match_parameter,
-                         source_policy,
-                         required,
-                         delete_source,
-                         reject_limit
-                        )
-                 VALUES (p_file_label, p_file_group, 'feed',
+      BEGIN
+         INSERT INTO files_conf
+                ( file_label, file_group, file_type,
+                  file_description, object_owner,
+                  object_name, DIRECTORY, filename,
+                  arch_directory, min_bytes,
+                  max_bytes, file_datestamp, baseurl,
+                  passphrase, source_directory,
+                  source_regexp, match_parameter,
+                  source_policy,
+                  required,
+                  delete_source,
+                  reject_limit
+                )
+                VALUES ( p_file_label, p_file_group, 'feed',
                          p_file_description, UPPER (p_owner),
-                         UPPER (p_table), l_directory, p_filename,
-                         UPPER (p_arch_directory), NVL (p_min_bytes, 0),
-                         NVL (p_max_bytes, 0), p_file_datestamp, p_baseurl,
+                         UPPER (p_table), UPPER(p_directory), p_filename,
+                         UPPER (p_arch_directory), p_min_bytes,
+                         p_max_bytes, p_file_datestamp, p_baseurl,
                          p_passphrase, UPPER (p_source_directory),
                          p_source_regexp, NVL (p_match_parameter, 'i'),
                          NVL (p_source_policy, 'newest'),
                          NVL (p_required, 'yes'),
                          NVL (p_delete_source, 'yes'),
                          NVL (p_reject_limit, 100)
-                        );
-         EXCEPTION
-            WHEN e_dup_conf
-            THEN
-               evolve.raise_err ('dup_conf');
-         END;
-      END IF;
+                       );
+      EXCEPTION
+         WHEN e_dup_conf
+         THEN
+         evolve.raise_err ('dup_conf');
+      END;
+      
+      evolve.log_cnt_msg( SQL%ROWCOUNT, p_level => 4 );
 
-      IF LOWER (p_mode) = 'delete'
-      THEN
-         -- if a delete is specifically requested, then do a delete
-         DELETE FROM files_conf
-               WHERE file_label = LOWER (p_file_label)
-                 AND file_group = LOWER (p_file_group);
-      ELSE
-         o_feed :=
-            feed_ot (p_file_group      => p_file_group,
-                     p_file_label      => p_file_label
-                    );
-      END IF;
+      o_feed := feed_ot ( p_file_group      => p_file_group,
+                	  p_file_label      => p_file_label );
 
-      -- if we still have not affected any records, then there's a problem
-      IF SQL%ROWCOUNT = 0
-      THEN
-         evolve.raise_err ('no_rep_obj');
-      END IF;
-   END configure_feed;
+   END create_feed;
 
-   PROCEDURE configure_extract (
+   PROCEDURE modify_feed (
+      p_file_group         VARCHAR2,
+      p_file_label         VARCHAR2,
+      p_filename           VARCHAR2 DEFAULT NULL,
+      p_directory	   VARCHAR2 DEFAULT NULL,
+      p_arch_directory     VARCHAR2 DEFAULT NULL,
+      p_source_directory   VARCHAR2 DEFAULT NULL,
+      p_source_regexp      VARCHAR2 DEFAULT NULL,
+      p_owner              VARCHAR2 DEFAULT NULL,
+      p_table              VARCHAR2 DEFAULT NULL,
+      p_match_parameter    VARCHAR2 DEFAULT NULL,
+      p_source_policy      VARCHAR2 DEFAULT NULL,
+      p_required           VARCHAR2 DEFAULT NULL,
+      p_min_bytes          NUMBER   DEFAULT NULL,
+      p_max_bytes          NUMBER   DEFAULT NULL,
+      p_reject_limit       NUMBER   DEFAULT NULL,
+      p_file_datestamp     VARCHAR2 DEFAULT NULL,
+      p_baseurl            VARCHAR2 DEFAULT NULL,
+      p_passphrase         VARCHAR2 DEFAULT NULL,
+      p_delete_source      VARCHAR2 DEFAULT NULL,
+      p_file_description   VARCHAR2 DEFAULT NULL
+   )
+   IS
+      e_dup_conf    EXCEPTION;
+      PRAGMA EXCEPTION_INIT (e_dup_conf, -1);
+      o_feed        feed_ot;
+      o_ev          evolve_ot     := evolve_ot (p_module      => 'modify_feed');
+   BEGIN
+      
+      -- if the constant NULL_VALUE is used, then the value should be set to null
+      UPDATE files_conf
+         SET file_description =
+             CASE
+             WHEN p_file_description IS NULL
+             THEN file_description
+             WHEN p_file_description = null_value
+             THEN NULL
+             ELSE p_file_description
+             END,
+             filename =
+             CASE
+             WHEN p_filename IS NULL
+             THEN filename
+             WHEN p_filename = null_value
+             THEN NULL
+             ELSE p_filename
+             END,
+             min_bytes =
+             CASE
+             WHEN p_min_bytes IS NULL
+             THEN min_bytes
+             WHEN p_min_bytes = null_value
+             THEN NULL
+             ELSE p_min_bytes
+             END,
+             max_bytes =
+             CASE
+             WHEN p_max_bytes IS NULL
+             THEN max_bytes
+             WHEN p_max_bytes = null_value
+             THEN NULL
+             ELSE p_max_bytes
+             END,
+             file_datestamp =
+             CASE
+             WHEN p_file_datestamp IS NULL
+             THEN file_datestamp
+             WHEN p_file_datestamp = null_value
+             THEN NULL
+             ELSE p_file_datestamp
+             END,
+             baseurl =
+             CASE
+             WHEN p_baseurl IS NULL
+             THEN baseurl
+             WHEN p_baseurl = null_value
+             THEN NULL
+             ELSE p_baseurl
+             END,
+             passphrase =
+             CASE
+             WHEN p_passphrase IS NULL
+             THEN passphrase
+             WHEN p_passphrase = null_value
+             THEN NULL
+             ELSE p_passphrase
+             END,
+             match_parameter =
+             CASE
+             WHEN p_match_parameter IS NULL
+             THEN match_parameter
+             WHEN p_match_parameter = null_value
+             THEN NULL
+             ELSE p_match_parameter
+             END,
+             source_policy =
+             CASE
+             WHEN p_source_policy IS NULL
+             THEN source_policy
+             WHEN p_source_policy = null_value
+             THEN NULL
+             ELSE p_source_policy
+             END,
+             required =
+             CASE
+             WHEN p_required IS NULL
+             THEN required
+             WHEN p_required = null_value
+             THEN NULL
+             ELSE p_required
+             END,
+             delete_source =
+             CASE
+             WHEN p_delete_source IS NULL
+             THEN delete_source
+             WHEN p_delete_source = null_value
+             THEN NULL
+             ELSE p_delete_source
+             END,
+             reject_limit =
+             CASE
+             WHEN p_reject_limit IS NULL
+             THEN reject_limit
+             WHEN p_reject_limit = null_value
+             THEN NULL
+             ELSE p_reject_limit
+             END,
+             modified_user = SYS_CONTEXT ('USERENV', 'SESSION_USER'),
+             modified_dt = SYSDATE
+       WHERE file_label = LOWER (p_file_label)
+         AND file_group = LOWER (p_file_group);
+	     
+       evolve.log_cnt_msg( SQL%ROWCOUNT, p_level => 4 );
+
+       o_feed := feed_ot ( p_file_group      => p_file_group,
+			   p_file_label      => p_file_label );
+   END modify_feed;
+
+
+   PROCEDURE delete_feed (
+      p_file_group         VARCHAR2,
+      p_file_label         VARCHAR2
+   )
+   IS
+      o_ev          evolve_ot     := evolve_ot (p_module      => 'delete_feed');
+   BEGIN
+
+      DELETE FROM files_conf
+       WHERE file_label = LOWER (p_file_label)
+         AND file_group = LOWER (p_file_group);
+      
+      evolve.log_cnt_msg( SQL%ROWCOUNT, p_level => 4 );
+
+   END delete_feed;
+      
+   PROCEDURE create_extract (
+      p_file_group         VARCHAR2,
+      p_file_label         VARCHAR2,
+      p_filename           VARCHAR2,
+      p_object_owner       VARCHAR2,
+      p_object_name        VARCHAR2,
+      p_directory          VARCHAR2,
+      p_arch_directory     VARCHAR2,
+      p_min_bytes          NUMBER   DEFAULT 0,
+      p_max_bytes          NUMBER   DEFAULT 0,
+      p_file_datestamp     VARCHAR2 DEFAULT NULL,
+      p_baseurl            VARCHAR2 DEFAULT NULL,
+      p_passphrase         VARCHAR2 DEFAULT NULL,
+      p_dateformat         VARCHAR2 DEFAULT 'mm/dd/yyyy hh:mi:ss am',
+      p_timestampformat    VARCHAR2 DEFAULT 'mm/dd/yyyy hh:mi:ss:x:ff am',
+      p_delimiter          VARCHAR2 DEFAULT ',',
+      p_quotechar          VARCHAR2 DEFAULT NULL,
+      p_headers            VARCHAR2 DEFAULT 'yes',
+      p_file_description   VARCHAR2 DEFAULT NULL
+   )
+   IS
+      o_extract    extract_ot;
+      e_dup_conf   EXCEPTION;
+      PRAGMA EXCEPTION_INIT (e_dup_conf, -1);
+      o_ev         evolve_ot   := evolve_ot (p_module      => 'create_extract');
+   BEGIN
+      BEGIN
+         INSERT INTO files_conf
+                (file_label, file_group, file_type,
+                  file_description, object_owner,
+                  object_name, DIRECTORY,
+                  filename, arch_directory,
+                  min_bytes, max_bytes,
+                  file_datestamp, baseurl, passphrase,
+                  DATEFORMAT,
+                  timestampformat,
+                  delimiter, quotechar,
+                  headers
+                )
+                VALUES ( p_file_label, p_file_group, 'extract',
+                         p_file_description, UPPER (p_object_owner),
+                         UPPER (p_object_name), UPPER (p_directory),
+                         p_filename, UPPER (p_arch_directory),
+                         p_min_bytes, p_max_bytes,
+                         p_file_datestamp, p_baseurl, p_passphrase,
+                         p_dateformat, p_timestampformat,
+                         p_delimiter, p_quotechar,
+                         p_headers
+                       );
+      EXCEPTION
+         WHEN e_dup_conf
+         THEN
+         evolve.raise_err ('dup_conf');
+      END;
+
+      -- instantiate an object to test it      
+      o_extract := extract_ot ( p_file_group      => p_file_group,
+				p_file_label      => p_file_label );
+
+   END create_extract;
+   
+   PROCEDURE modify_extract (
       p_file_group         VARCHAR2,
       p_file_label         VARCHAR2,
       p_filename           VARCHAR2 DEFAULT NULL,
@@ -465,230 +452,120 @@ IS
       o_extract    extract_ot;
       e_dup_conf   EXCEPTION;
       PRAGMA EXCEPTION_INIT (e_dup_conf, -1);
-      o_ev         evolve_ot   := evolve_ot (p_module      => 'configure_extract');
+      o_ev         evolve_ot   := evolve_ot (p_module      => 'modify_extract');
    BEGIN
-      -- this is the default method... update if it exists or insert it
-      IF LOWER (p_mode) = 'nullify'
-      THEN
-         -- this is a list of required parameters
-         CASE
-            WHEN p_filename = 'NULL'
-            THEN
-               evolve.raise_err ('parm_req', 'P_FILENAME');
-            WHEN p_object_owner = 'NULL'
-            THEN
-               evolve.raise_err ('parm_req', 'P_OBJECT_OWNER');
-            WHEN p_object_name = 'NULL'
-            THEN
-               evolve.raise_err ('parm_req', 'P_OBJECT_NAME');
-            WHEN p_directory = 'NULL'
-            THEN
-               evolve.raise_err ('parm_req', 'P_DIRECTORY');
-            WHEN p_arch_directory = 'NULL'
-            THEN
-               evolve.raise_err ('parm_req', 'P_ARCH_DIRECTORY');
-            ELSE
-               NULL;
-         END CASE;
-
          UPDATE files_conf
             SET file_description =
                    CASE
                       WHEN p_file_description IS NULL
                          THEN file_description
-                      WHEN p_file_description = 'NULL'
+                      WHEN p_file_description = null_value
                          THEN NULL
-                      ELSE file_description
+                      ELSE p_file_description
                    END,
                 min_bytes =
                    CASE
                       WHEN p_min_bytes IS NULL
                          THEN min_bytes
-                      WHEN p_min_bytes = 'NULL'
+                      WHEN p_min_bytes = null_value
                          THEN NULL
-                      ELSE min_bytes
+                      ELSE p_min_bytes
                    END,
                 max_bytes =
                    CASE
                       WHEN p_max_bytes IS NULL
                          THEN max_bytes
-                      WHEN p_max_bytes = 'NULL'
+                      WHEN p_max_bytes = null_value
                          THEN NULL
-                      ELSE max_bytes
+                      ELSE p_max_bytes
                    END,
                 file_datestamp =
                    CASE
                       WHEN p_file_datestamp IS NULL
                          THEN file_datestamp
-                      WHEN p_file_datestamp = 'NULL'
+                      WHEN p_file_datestamp = null_value
                          THEN NULL
-                      ELSE file_datestamp
+                      ELSE p_file_datestamp
                    END,
                 baseurl =
                    CASE
                       WHEN p_baseurl IS NULL
                          THEN baseurl
-                      WHEN p_baseurl = 'NULL'
+                      WHEN p_baseurl = null_value
                          THEN NULL
-                      ELSE baseurl
+                      ELSE p_baseurl
                    END,
                 passphrase =
                    CASE
                       WHEN p_passphrase IS NULL
                          THEN passphrase
-                      WHEN p_passphrase = 'NULL'
+                      WHEN p_passphrase = null_value
                          THEN NULL
-                      ELSE passphrase
+                      ELSE p_passphrase
                    END,
                 DATEFORMAT =
                    CASE
                       WHEN p_dateformat IS NULL
                          THEN DATEFORMAT
-                      WHEN p_dateformat = 'NULL'
+                      WHEN p_dateformat = null_value
                          THEN NULL
-                      ELSE DATEFORMAT
+                      ELSE p_dateformat
                    END,
                 timestampformat =
                    CASE
                       WHEN p_timestampformat IS NULL
                          THEN timestampformat
-                      WHEN p_timestampformat = 'NULL'
+                      WHEN p_timestampformat = null_value
                          THEN NULL
-                      ELSE timestampformat
+                      ELSE p_timestampformat
                    END,
                 delimiter =
                    CASE
                       WHEN p_delimiter IS NULL
                          THEN delimiter
-                      WHEN p_delimiter = 'NULL'
+                      WHEN p_delimiter = null_value
                          THEN NULL
-                      ELSE delimiter
+                      ELSE p_delimiter
                    END,
                 quotechar =
                    CASE
                       WHEN p_quotechar IS NULL
                          THEN quotechar
-                      WHEN p_quotechar = 'NULL'
+                      WHEN p_quotechar = null_value
                          THEN NULL
-                      ELSE quotechar
+                      ELSE p_quotechar
                    END,
                 headers =
                    CASE
                       WHEN p_headers IS NULL
                          THEN headers
-                      WHEN p_headers = 'NULL'
+                      WHEN p_headers = null_value
                          THEN NULL
-                      ELSE headers
+                      ELSE p_headers
                    END,
                 modified_user = SYS_CONTEXT ('USERENV', 'SESSION_USER'),
                 modified_dt = SYSDATE
           WHERE file_label = LOWER (p_file_label)
             AND file_group = LOWER (p_file_group);
-      END IF;
+		   
+      -- instantiate the object to verify it
+      o_extract := extract_ot ( p_file_group      => p_file_group,
+				p_file_label      => p_file_label );
+		
+   END modify_extract;
+   
+   PROCEDURE delete_extract (
+      p_file_group         VARCHAR2,
+      p_file_label         VARCHAR2
+   )
+   IS
+      o_ev         evolve_ot   := evolve_ot (p_module      => 'delete_extract');
+   BEGIN
+      DELETE FROM files_conf
+       WHERE file_label = LOWER (p_file_label)
+         AND file_group = LOWER (p_file_group);
 
-      -- this is the default method... update if it exists or insert it
-      IF LOWER (p_mode) IN ('upsert', 'update')
-      THEN
-         UPDATE files_conf
-            SET file_description = NVL (p_file_description, file_description),
-                object_owner = UPPER (NVL (p_object_owner, object_owner)),
-                object_name = UPPER (NVL (p_object_name, object_name)),
-                DIRECTORY = UPPER (NVL (p_directory, DIRECTORY)),
-                filename = NVL (p_filename, filename),
-                arch_directory =
-                                UPPER (NVL (p_arch_directory, arch_directory)),
-                min_bytes = NVL (p_min_bytes, min_bytes),
-                max_bytes = NVL (p_max_bytes, max_bytes),
-                file_datestamp = NVL (p_file_datestamp, file_datestamp),
-                baseurl = NVL (p_baseurl, baseurl),
-                passphrase = NVL (p_passphrase, passphrase),
-                DATEFORMAT = NVL (p_dateformat, DATEFORMAT),
-                timestampformat = NVL (p_timestampformat, timestampformat),
-                delimiter = NVL (p_delimiter, delimiter),
-                quotechar = NVL (p_quotechar, quotechar),
-                headers = NVL (p_headers, headers),
-                modified_user = SYS_CONTEXT ('USERENV', 'SESSION_USER'),
-                modified_dt = SYSDATE
-          WHERE file_label = LOWER (p_file_label)
-            AND file_group = LOWER (p_file_group);
-      END IF;
-
-      -- if the update was unsuccessful above, or an insert it specifically requested, then do an insert
-      IF    (SQL%ROWCOUNT = 0 AND LOWER (p_mode) = 'upsert')
-         OR LOWER (p_mode) = 'insert'
-      THEN
-         -- this is a list of required parameters
-         CASE
-            WHEN p_filename IS NULL
-            THEN
-               evolve.raise_err ('parm_req', 'P_FILENAME');
-            WHEN p_object_owner IS NULL
-            THEN
-               evolve.raise_err ('parm_req', 'P_OBJECT_OWNER');
-            WHEN p_object_name IS NULL
-            THEN
-               evolve.raise_err ('parm_req', 'P_OBJECT_NAME');
-            WHEN p_directory IS NULL
-            THEN
-               evolve.raise_err ('parm_req', 'P_DIRECTORY');
-            WHEN p_arch_directory IS NULL
-            THEN
-               evolve.raise_err ('parm_req', 'P_ARCH_DIRECTORY');
-            ELSE
-               NULL;
-         END CASE;
-
-         BEGIN
-            INSERT INTO files_conf
-                        (file_label, file_group, file_type,
-                         file_description, object_owner,
-                         object_name, DIRECTORY,
-                         filename, arch_directory,
-                         min_bytes, max_bytes,
-                         file_datestamp, baseurl, passphrase,
-                         DATEFORMAT,
-                         timestampformat,
-                         delimiter, quotechar,
-                         headers
-                        )
-                 VALUES (p_file_label, p_file_group, 'extract',
-                         p_file_description, UPPER (p_object_owner),
-                         UPPER (p_object_name), UPPER (p_directory),
-                         p_filename, UPPER (p_arch_directory),
-                         NVL (p_min_bytes, 0), NVL (p_max_bytes, 0),
-                         p_file_datestamp, p_baseurl, p_passphrase,
-                         NVL (p_dateformat, 'mm/dd/yyyy hh:mi:ss am'),
-                         NVL (p_timestampformat,
-                              'mm/dd/yyyy hh:mi:ss:x:ff am'),
-                         NVL (p_delimiter, ','), p_quotechar,
-                         NVL (p_headers, 'yes')
-                        );
-         EXCEPTION
-            WHEN e_dup_conf
-            THEN
-               evolve.raise_err ('dup_conf');
-         END;
-      END IF;
-
-      IF LOWER (p_mode) = 'delete'
-      THEN
-         -- if a delete is specifically requested, then do a delete
-         DELETE FROM files_conf
-               WHERE file_label = LOWER (p_file_label)
-                 AND file_group = LOWER (p_file_group);
-      ELSE
-         o_extract :=
-            extract_ot (p_file_group      => p_file_group,
-                        p_file_label      => p_file_label
-                       );
-      END IF;
-
-      -- if we still have not affected any records, then there's a problem
-      IF SQL%ROWCOUNT = 0
-      THEN
-         evolve.raise_err ('no_rep_obj');
-      END IF;
-   END configure_extract;
+   END delete_extract;
 
    PROCEDURE create_mapping (
       p_mapping             VARCHAR2,
@@ -827,8 +704,7 @@ IS
       p_part_type           VARCHAR2 DEFAULT NULL,
       p_constraint_regexp   VARCHAR2 DEFAULT NULL,
       p_constraint_type     VARCHAR2 DEFAULT NULL,
-      p_description         VARCHAR2 DEFAULT NULL,
-      p_mode                VARCHAR2 DEFAULT 'upsert'
+      p_description         VARCHAR2 DEFAULT NULL
    )
    IS
       l_map_type   mapping_conf.mapping_type%TYPE;
@@ -852,13 +728,6 @@ IS
 	    o_ev.clear_app_info;
             evolve.raise_err( 'no_mapping' );
       END;
-      
-      -- if this is a dimensional mapping, we should not modify it.
-      IF LOWER (l_map_type) = 'dimension'
-      THEN
-	 o_ev.clear_app_info;
-         evolve.raise_err ('dim_map_obj');
-      END IF;
       
       -- if the constant null_value is used, then the value should be set to null
       UPDATE mapping_conf
@@ -1012,6 +881,7 @@ IS
          END;
 
    END modify_mapping;
+
    
    PROCEDURE delete_mapping (
       p_mapping             VARCHAR2
@@ -1239,7 +1109,7 @@ IS
              modified_dt = SYSDATE
        WHERE LOWER (table_owner) = LOWER (p_owner)
          AND LOWER (table_name) = LOWER (p_table);
-		
+
      IF sql%rowcount = 0
      THEN
 	evolve.raise_err( 'no_dim' );
@@ -1256,13 +1126,18 @@ IS
 
       -- update the mapping name in case it's been changed
       o_ev.change_action ('rename mapping name');
+     
+     IF p_mapping IS NOT NULL
+     THEN
 
-      UPDATE mapping_conf
-         SET mapping_name = LOWER (p_mapping)
-       WHERE mapping_name = l_mapping;
+	UPDATE mapping_conf
+           SET mapping_name = LOWER (p_mapping)
+	 WHERE mapping_name = l_mapping;
+	
+     END IF;
 
       -- now make the call to modify the mapping
-      modify_mapping (p_mapping             => p_mapping,
+      modify_mapping (p_mapping             => nvl( p_mapping, l_mapping),
                       p_table               => p_table,
                       p_owner               => p_owner,
                       p_source_owner        => p_source_owner,
@@ -1309,6 +1184,8 @@ IS
    IS
       l_mapping    mapping_conf.mapping_name%TYPE;
       l_col_list   LONG;
+      o_ev   evolve_ot := evolve_ot (p_module => 'create_dim_attribs');
+
       -- a dimension table should have already been configured
       o_dim        mapping_ot;
    BEGIN
@@ -1339,6 +1216,7 @@ IS
 
 
       -- write the surrogate key information
+      o_ev.change_action( 'configure surrogate key' );
       td_utils.check_column( p_owner	=> p_owner,
 			     p_table	=> p_table,
 			     p_column	=> p_surrogate );
@@ -1346,9 +1224,13 @@ IS
       INSERT INTO column_conf
 	     ( table_owner, table_name, column_name, column_type )
 	     VALUES 
-	     ( p_owner, p_table, p_surrogate, 'surrogate key' );
+	     ( upper( p_owner ), upper( p_table ), upper( p_surrogate ), 'surrogate key' );
+      
+      -- record the number of rows affected by the last statment
+      evolve.log_cnt_msg( SQL%ROWCOUNT, p_level => 4, p_msg => 'Number of surrogate keys inserted' );
 
       -- write the effective date information
+      o_ev.change_action( 'configure effective date' );
       td_utils.check_column( p_owner	=> p_owner,
 			     p_table	=> p_table,
 			     p_column	=> p_effective_dt );
@@ -1356,9 +1238,13 @@ IS
       INSERT INTO column_conf
 	     ( table_owner, table_name, column_name, column_type )
 	     VALUES 
-	     ( p_owner, p_table, p_effective_dt, 'effective date' );
+	     ( upper( p_owner ), upper( p_table ), upper( p_effective_dt ), 'effective date' );
+      
+      -- record the number of rows affected by the last statment
+      evolve.log_cnt_msg( SQL%ROWCOUNT, p_level => 4, p_msg => 'Number of effective dates inserted' );
 
       -- write the expiration date information
+      o_ev.change_action( 'configure expire date' );
       td_utils.check_column( p_owner	=> p_owner,
 			     p_table	=> p_table,
 			     p_column	=> p_expiration_dt );
@@ -1366,15 +1252,34 @@ IS
       INSERT INTO column_conf
 	     ( table_owner, table_name, column_name, column_type )
 	     VALUES 
-	     ( p_owner, p_table, p_expiration_dt, 'expiration date' );
+	     ( upper( p_owner ), upper( p_table ), upper( p_expiration_dt ), 'expiration date' );
+
+      -- record the number of rows affected by the last statment
+      evolve.log_cnt_msg( SQL%ROWCOUNT, p_level => 4, p_msg => 'Number of expiration dates inserted' );
       
+      -- write the current indicator information
+      o_ev.change_action( 'configure current indicator' );
+      td_utils.check_column( p_owner	=> p_owner,
+			     p_table	=> p_table,
+			     p_column	=> p_current_ind );
+      
+      INSERT INTO column_conf
+	     ( table_owner, table_name, column_name, column_type )
+	     VALUES 
+	     ( upper( p_owner ), upper( p_table ), upper( p_current_ind ), 'current indicator' );
+
+      -- record the number of rows affected by the last statment
+      evolve.log_cnt_msg( SQL%ROWCOUNT, p_level => 4, p_msg => 'Number of current indicators inserted' );
       
       -- write the natural key information
+      o_ev.change_action( 'configure natural key' );
       FOR c_cols IN (SELECT COLUMN_VALUE column_name
                        FROM TABLE (CAST (td_core.SPLIT (p_nat_key, ',') AS split_ot
                                         )
                                   ))
       LOOP
+	 
+	 evolve.log_msg( 'The natural key column being configured is: '||c_cols.column_name, 5 );
          td_utils.check_column (p_owner       => p_owner,
                                 p_table       => p_table,
                                 p_column      => c_cols.column_name
@@ -1383,51 +1288,133 @@ IS
 	 INSERT INTO column_conf
 		( table_owner, table_name, column_name, column_type )
 		VALUES 
-		( p_owner, p_table, p_effective_dt, 'natural key' );
+		( upper( p_owner ), upper( p_table ), upper( c_cols.column_name ), 'natural key' );
 	 
+	 -- record the number of rows affected by the last statment
+	 evolve.log_cnt_msg( SQL%ROWCOUNT, p_level => 4, p_msg => 'Number of natural keys inserted' );
 
       END LOOP;
       
       -- write the type 1 attributes
-      FOR c_cols IN (SELECT COLUMN_VALUE column_name
-                       FROM TABLE (CAST (td_core.SPLIT (p_scd1, ',') AS split_ot
-                                        )
-                                  ))
-      LOOP
-         td_utils.check_column (p_owner       => p_owner,
-                                p_table       => p_table,
-                                p_column      => c_cols.column_name
-                               );
+      o_ev.change_action( 'configure scd1' );
+      
+      -- only run the loop process if the p_scd1 column is not null
+      IF p_scd1 IS NOT NULL
+      THEN
 
-	 INSERT INTO column_conf
-		( table_owner, table_name, column_name, column_type )
-		VALUES 
-		( p_owner, p_table, p_effective_dt, 'scd type 1' );
+	 FOR c_cols IN (SELECT COLUMN_VALUE column_name
+			  FROM TABLE (CAST (td_core.SPLIT (p_scd1, ',') AS split_ot
+                                           )
+                                     ))
+	 LOOP
+	    evolve.log_msg( 'The scd1 column being configured is: '||c_cols.column_name, 5 );
+            td_utils.check_column (p_owner       => p_owner,
+                                    p_table       => p_table,
+                                    p_column      => c_cols.column_name
+				  );
+
+	    INSERT INTO column_conf
+		   ( table_owner, table_name, column_name, column_type )
+		   VALUES 
+		   ( upper( p_owner ), upper( p_table ), upper( c_cols.column_name ), 'scd type 1' );
+	    
+	    -- record the number of rows affected by the last statment
+	    evolve.log_cnt_msg( SQL%ROWCOUNT, p_level => 4, p_msg => 'Number of scd1 attributes inserted' );
+
+	 END LOOP;
 	 
-
-      END LOOP;
+      END IF;
       
       -- write the type 2 attributes
-      FOR c_cols IN (SELECT COLUMN_VALUE column_name
-                       FROM TABLE (CAST (td_core.SPLIT (p_scd2, ',') AS split_ot
-                                        )
-                                  ))
-      LOOP
-         td_utils.check_column (p_owner       => p_owner,
-                                p_table       => p_table,
-                                p_column      => c_cols.column_name
-                               );
+      
+      -- only do the loop process if p_scd2 is not null
+      IF p_scd2 IS NOT NULL
+      THEN
 
-	 INSERT INTO column_conf
-		( table_owner, table_name, column_name, column_type )
-		VALUES 
-		( p_owner, p_table, p_effective_dt, 'scd type 2' );
-	 
-      END LOOP;
+	 o_ev.change_action( 'configure scd2' );
+	 FOR c_cols IN (SELECT COLUMN_VALUE column_name
+			  FROM TABLE (CAST (td_core.SPLIT (p_scd2, ',') AS split_ot
+                                           )
+                                     ))
+	 LOOP
+	    evolve.log_msg( 'The scd2 column being configured is: '||c_cols.column_name, 5 );
+            td_utils.check_column (p_owner       => p_owner,
+                                    p_table       => p_table,
+                                    p_column      => c_cols.column_name
+				  );
+
+	    INSERT INTO column_conf
+		   ( table_owner, table_name, column_name, column_type )
+		   VALUES 
+		   ( upper( p_owner ), upper( p_table ), upper( c_cols.column_name ), 'scd type 2' );
+
+	    -- record the number of rows affected by the last statment
+	    evolve.log_cnt_msg( SQL%ROWCOUNT, p_level => 4, p_msg => 'Number of scd2 attributes inserted' );
+	    
+	 END LOOP;
+      END IF;
+      
+      -- EXECUTE the merge statement to write any columns that have been left off
+      MERGE INTO column_conf t
+         USING ( SELECT table_owner, dc.table_name, column_name,
+                        CASE default_scd_type
+                           WHEN 1
+                              THEN 'scd type 1'
+                           ELSE 'scd type 2'
+                        END column_type
+                  FROM all_tab_columns atc JOIN dimension_conf dc
+                       ON atc.owner = dc.table_owner AND atc.table_name = dc.table_name
+                 WHERE table_owner = UPPER( p_owner ) AND dc.table_name = UPPER( p_table )) s
+         ON (t.table_owner = s.table_owner AND t.table_name = s.table_name AND t.column_name = s.column_name )
+         WHEN NOT MATCHED THEN
+            INSERT( t.table_owner, t.table_name, t.column_name, t.column_type )
+            VALUES( s.table_owner, s.table_name, s.column_name, s.column_type );
+      
+      evolve.log_cnt_msg( SQL%ROWCOUNT, p_level => 4, p_msg => 'Number of rows merged' );
+
 
       -- confirm the dimension columns
       o_dim.confirm_dim_cols;
    END create_dim_attribs;
+   
+   PROCEDURE modify_dim_attrib (
+      p_owner           VARCHAR2,
+      p_table           VARCHAR2,
+      p_column		VARCHAR2,
+      p_column_type	VARCHAR2
+   )
+   IS
+      l_mapping    mapping_conf.mapping_name%TYPE;
+      o_ev   evolve_ot := evolve_ot (p_module => 'modify_dim_attrib');
+
+      -- a dimension table should have already been configured
+      o_dim        mapping_ot;
+   BEGIN
+      -- construct a DIMENSION_OT object
+      -- this is done using the supertype MAPPING_OT
+      o_dim := trans_factory.get_mapping_ot ( p_owner => p_owner,
+					      p_table => p_table );
+
+      evolve.log_msg ('The column being modified: ' || p_column, 5);
+
+      -- modify the attribute type
+      o_ev.change_action( 'modify attribute type' );
+      td_utils.check_column( p_owner	=> p_owner,
+			     p_table	=> p_table,
+			     p_column	=> p_column );
+      
+      UPDATE column_conf
+	 SET column_type = p_column_type
+       WHERE lower( table_owner ) = lower( p_owner )
+	 AND lower( table_name ) = lower( p_table )
+	 AND lower( column_name ) = lower( p_column );
+      
+      -- record the number of rows affected by the last statment
+      evolve.log_cnt_msg( SQL%ROWCOUNT, p_level => 4 );
+      
+      -- confirm the dimension columns
+      o_dim.confirm_dim_cols;
+   END modify_dim_attrib;
    
    PROCEDURE delete_dim_attribs (
       p_owner           VARCHAR2,
@@ -1439,7 +1426,10 @@ IS
       -- delete the column configuration
       DELETE FROM column_conf
             WHERE LOWER (table_owner) = LOWER (p_owner)
-              AND LOWER (table_name) = LOWER (p_table);
+         AND LOWER (table_name) = LOWER (p_table);
+      
+      -- record the number of rows affected by the last statment
+      evolve.log_cnt_msg( SQL%ROWCOUNT, p_level => 4 );
 
    END delete_dim_attribs;
 
