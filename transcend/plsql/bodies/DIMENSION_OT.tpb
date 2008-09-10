@@ -34,7 +34,7 @@ AS
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
-            evolve.raise_err( 'no_dim', SELF.full_table );
+            evolve.raise_err( 'no_dim' );
       END;
 
       -- confirm the objects related to the dimensional configuration
