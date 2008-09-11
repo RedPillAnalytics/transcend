@@ -1,5 +1,6 @@
 CREATE OR REPLACE PACKAGE BODY td_dbutils
 AS
+
    -- find records in p_source_table that match the values of the partitioned column in p_table
    -- This procedure uses an undocumented database function called tbl$or$idx$part$num.
    -- There are two "magic" numbers that are required to make it work correctly.
@@ -287,6 +288,8 @@ AS
       p_source_owner   VARCHAR2,
       p_source_table   VARCHAR2,
       p_tablespace     VARCHAR2 DEFAULT NULL,
+      p_constraints    VARCHAR2 DEFAULT 'no',
+      p_indexes	       VARCHAR2 DEFAULT 'no',
       p_partitioning   VARCHAR2 DEFAULT 'yes',
       p_rows           VARCHAR2 DEFAULT 'no',
       p_statistics     VARCHAR2 DEFAULT 'ignore'
@@ -410,7 +413,7 @@ AS
                             CASE
                                WHEN p_tablespace IS NULL
                                   THEN '\1\2\3\4'
-                               WHEN p_tablespace = 'default'
+                               WHEN p_tablespace = default_tablespace
                                   THEN NULL
                                ELSE '\1\2' || UPPER( p_tablespace ) || '\4'
                             END,
@@ -499,6 +502,7 @@ AS
                        p_owner              => p_owner,
                        p_table              => p_table
                      );
+	 COMMIT;
       END IF;
 
       -- we want to gather statistics
@@ -529,6 +533,31 @@ AS
             o_ev.clear_app_info;
             evolve.raise_err( 'unrecognized_parm', p_statistics );
       END CASE;
+
+
+      -- do we want indexes as well
+      IF td_core.is_true( p_indexes )
+      THEN
+         o_ev.change_action( 'build indexes' );
+         build_indexes( p_source_owner       => p_source_owner,
+                      	p_source_table       => p_source_table,
+                       	p_owner              => p_owner,
+                       	p_table              => p_table,
+			p_tablespace 	     => p_tablespace
+                     );
+      END IF;
+      
+      
+      -- do we want constraints as well
+      IF td_core.is_true( p_constraints )
+      THEN
+         o_ev.change_action( 'build indexes' );
+         build_constraints( p_source_owner       => p_source_owner,
+                      	    p_source_table       => p_source_table,
+                       	    p_owner              => p_owner,
+                       	    p_table              => p_table
+			  );
+      END IF;
 
       o_ev.clear_app_info;
    EXCEPTION
@@ -742,10 +771,10 @@ AS
                                                   'in'
                                                 )
                                           || CASE
-                                                -- if 'default' is passed, then use the users default tablespace
+                                                -- if constant default_tablespace is passed, then use the users default tablespace
                                                 -- a non-null value for p_tablespace already stripped all tablespace information above
                                                 -- now just need to not put in the 'TABLESPACE' information here
-                                             WHEN LOWER( p_tablespace ) = 'default'
+                                             WHEN LOWER( p_tablespace ) = default_tablespace
                                                    THEN NULL
                                                 -- if p_TABLESPACE is provided, then previous tablespace information was stripped (above)
                                                 -- now we can just tack the new tablespace information on the end
@@ -1180,8 +1209,8 @@ AS
                                     || CASE
                                           -- if the INDEX_NAME column is null, then there is no index associated with this constraint
                                           -- that means that tablespace information would be meaningless.
-                                          -- also, IF 'default' is passed, then use the users default tablespace
-                                       WHEN ac.index_name IS NULL OR LOWER( p_tablespace ) = 'default'
+                                          -- also, IF constant default_tablespace is passed, then use the users default tablespace
+                                       WHEN ac.index_name IS NULL OR LOWER( p_tablespace ) = default_tablespace
                                              THEN NULL
                                           -- IF p_TABLESPACE is provided, then previous tablespace information was stripped (above)
                                           -- now we can just tack the new tablespace information on the end

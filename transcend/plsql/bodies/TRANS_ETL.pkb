@@ -57,6 +57,8 @@ AS
       p_source_owner   VARCHAR2,
       p_source_table   VARCHAR2,
       p_tablespace     VARCHAR2 DEFAULT NULL,
+      p_constraints    VARCHAR2 DEFAULT 'no',
+      p_indexes	       VARCHAR2 DEFAULT 'no',
       p_partitioning   VARCHAR2 DEFAULT 'yes',
       p_rows           VARCHAR2 DEFAULT 'no',
       p_statistics     VARCHAR2 DEFAULT 'ignore'
@@ -70,7 +72,9 @@ AS
                               p_tablespace        => p_tablespace,
                               p_partitioning      => p_partitioning,
                               p_rows              => p_rows,
-                              p_statistics        => p_statistics
+                              p_statistics        => p_statistics,
+			      p_indexes		  => p_indexes,
+			      p_constraints	  => p_constraints
                             );
    EXCEPTION
       WHEN OTHERS

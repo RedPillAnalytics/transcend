@@ -1,5 +1,8 @@
 CREATE OR REPLACE PACKAGE trans_etl AUTHID CURRENT_USER
 IS
+
+   default_tablespace CONSTANT VARCHAR2(30) := td_dbutils.default_tablespace;
+
    PROCEDURE start_mapping(
       p_mapping    VARCHAR2 DEFAULT SYS_CONTEXT( 'USERENV', 'ACTION' ),
       p_batch_id   NUMBER DEFAULT NULL
@@ -17,6 +20,8 @@ IS
       p_source_owner   VARCHAR2,
       p_source_table   VARCHAR2,
       p_tablespace     VARCHAR2 DEFAULT NULL,
+      p_constraints    VARCHAR2 DEFAULT 'no',
+      p_indexes	       VARCHAR2 DEFAULT 'no',
       p_partitioning   VARCHAR2 DEFAULT 'yes',
       p_rows           VARCHAR2 DEFAULT 'no',
       p_statistics     VARCHAR2 DEFAULT 'ignore'
