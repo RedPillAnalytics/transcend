@@ -2,28 +2,75 @@ CREATE OR REPLACE TYPE BODY file_ot
 AS
    -- store audit information about the feed or extract
    MEMBER PROCEDURE audit_file(
-      p_filepath          VARCHAR2,
-      p_source_filepath   VARCHAR2,
-      p_arch_filepath     VARCHAR2,
       p_num_bytes         NUMBER,
       p_num_lines         NUMBER,
-      p_file_dt           DATE
+      p_file_dt           DATE,
+      p_filename          VARCHAR2 DEFAULT NULL,
+      p_source_filename	  VARCHAR2 DEFAULT NULL,
+      p_clob		  CLOB DEFAULT NULL,
+      p_blob		  BLOB DEFAULT NULL
    )
    AS
+      l_dest_clob    CLOB;
+      l_dest_blob    BLOB;
+      l_src_lob      BFILE;
+      l_dst_offset   NUMBER := 1;
+      l_src_offset   NUMBER := 1;
+      l_lang_ctx     NUMBER := DBMS_LOB.default_lang_ctx;
+      l_warning      NUMBER;
+      l_filename          files_conf.filename%type         := NVL( p_filename, SELF.filename );  
+      l_source_directory  files_conf.source_directory%type := NVL( SELF.work_directory, SELF.source_directory );
       o_ev   evolve_ot := evolve_ot( p_module => 'audit_file' );
    BEGIN
+      
+      -- open the bfile
+      o_ev.change_action( 'open BFILE' );
+      l_src_lob := BFILENAME ( CASE self.file_type WHEN 'feed' THEN l_source_directory ELSE SELF.directory END, l_filename );
+      
       o_ev.change_action( 'Insert file detail' );
 
       -- INSERT into the FILE_DETAIL table to record the movement
       INSERT INTO files_detail
                   ( file_detail_id, file_label, file_group,
-                    file_type, source_filepath, target_filepath, arch_filepath,
-                    num_bytes, num_lines, file_dt
+                    file_type, directory, filename, source_directory, 
+		    source_filename, work_directory, num_bytes, num_lines, file_dt, file_clob, file_blob 
                   )
            VALUES ( files_detail_seq.NEXTVAL, file_label, file_group,
-                    file_type, p_source_filepath, p_filepath, p_arch_filepath,
-                    p_num_bytes, p_num_lines, p_file_dt
-                  );
+                    file_type, SELF.directory, l_filename, SELF.source_directory, p_source_filename, SELF.work_directory,
+                    p_num_bytes, p_num_lines, p_file_dt, EMPTY_CLOB(), EMPTY_BLOB()
+                  )
+        RETURNING file_clob, file_blob
+             INTO l_dest_clob, l_dest_blob;
+      
+      -- oepn the source LOB to get ready to write it
+      DBMS_LOB.OPEN (l_src_lob, DBMS_LOB.lob_readonly);
+
+      CASE
+      WHEN p_clob IS NOT NULL AND p_blob IS null
+      THEN
+      DBMS_LOB.loadclobfromfile ( dest_lob          => l_dest_clob,
+                                  src_bfile         => l_src_lob,
+                                  amount            => DBMS_LOB.getlength(l_src_lob),
+                                  dest_offset       => l_dst_offset,
+                                  src_offset        => l_src_offset,
+                                  bfile_csid        => NLS_CHARSET_ID( SELF.characterset ),
+                                  lang_context      => l_lang_ctx,
+                                  warning           => l_warning
+                                );
+      WHEN p_blob IS NOT NULL AND p_clob IS NULL
+      THEN
+	 DBMS_LOB.loadblobfromfile ( dest_lob          => l_dest_blob,
+                                     src_bfile         => l_src_lob,
+                                     amount            => DBMS_LOB.getlength(l_src_lob),
+                                     dest_offset       => l_dst_offset,
+                                     src_offset        => l_src_offset
+				   );
+      ELSE
+      evolve.raise_err( 'single_lob' );
+      END CASE;
+
+      -- now close the soure lob      
+      DBMS_LOB.CLOSE (l_src_lob);
 
       -- the job fails when size threshholds are not met
       IF NOT evolve.is_debugmode
@@ -44,24 +91,6 @@ AS
 
       o_ev.clear_app_info;
    END audit_file;
-   MEMBER PROCEDURE audit_file(
-      p_num_bytes   NUMBER,
-      p_num_lines   NUMBER,
-      p_file_dt     DATE
-   )
-   AS
-      o_ev   evolve_ot := evolve_ot( p_module => 'audit_file' );
-   BEGIN
-      o_ev.change_action( 'Insert FILE_DTL' );
-      audit_file( p_filepath             => SELF.filepath,
-                  p_source_filepath      => NULL,
-                  p_arch_filepath        => SELF.arch_filepath,
-                  p_num_bytes            => p_num_bytes,
-                  p_num_lines            => p_num_lines,
-                  p_file_dt              => p_file_dt
-                );
-   END audit_file;
-
    MEMBER PROCEDURE announce_file(
       p_files_url   VARCHAR2,
       p_num_lines   NUMBER,

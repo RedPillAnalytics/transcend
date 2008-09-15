@@ -50,7 +50,7 @@ END;
 
 -- create java stored procedures
 -- this contains OS and file level utilites that aren't available in other API's
-@../evolve/java/TdCore.jvs
+@../evolve/java/TdUtils.jvs
 
 -- create Evolve pieces that don't use any repository objects
 -- this in essence becomes "Evolve-lite" where no configuration or audit tables are required

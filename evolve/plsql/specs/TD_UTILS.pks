@@ -10,17 +10,21 @@ AS
       RETURN NUMBER
    AS
       LANGUAGE JAVA
-      NAME 'TdCore.copyFile( java.lang.String, java.lang.String ) return integer';
+      NAME 'TdUtils.copyFile( java.lang.String, java.lang.String ) return integer';
 
    -- procedure calls Utils.runCmd java method
    FUNCTION host_cmd( p_cmd IN VARCHAR2, p_stdin IN VARCHAR2 )
       RETURN NUMBER
    AS
       LANGUAGE JAVA
-      NAME 'TdCore.hostCmd(java.lang.String, java.lang.String) return integer';
+      NAME 'TdUtils.hostCmd(java.lang.String, java.lang.String) return integer';
 
    -- procedure executes the copy_file function and translates the return code to an exception
-   PROCEDURE copy_file( p_srcfile VARCHAR2, p_dstfile VARCHAR2 );
+   PROCEDURE copy_file( 
+      p_source_directory VARCHAR2, 
+      p_source_filename VARCHAR2, 
+      p_directory VARCHAR2, 
+      p_filename VARCHAR2 );
 
    -- procedure executes the delete_file function and translates the return code to an exception
    PROCEDURE delete_file( p_directory VARCHAR2, p_filename VARCHAR2 );

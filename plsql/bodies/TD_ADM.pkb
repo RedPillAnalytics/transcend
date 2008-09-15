@@ -899,17 +899,17 @@ IS
 	   file_label	       VARCHAR2(100) 	NOT NULL,
 	   file_group	       VARCHAR2(64) 	NOT NULL,
 	   file_type	       VARCHAR2(7) 	NOT NULL,
-	   file_description    VARCHAR2(100),
 	   object_owner	       VARCHAR2(30),
 	   object_name	       VARCHAR2(30),
 	   directory	       VARCHAR2(30)	NOT NULL,
-	   filename	       VARCHAR2(50)    	NOT NULL,		
-	   arch_directory      VARCHAR2(30) 	NOT NULL,
+	   filename	       VARCHAR2(50),		
+	   work_directory      VARCHAR2(30),
 	   min_bytes	       NUMBER 		DEFAULT 0 NOT NULL,
 	   max_bytes           NUMBER 		DEFAULT 0 NOT NULL,
 	   file_datestamp      VARCHAR2(30),
 	   baseurl             VARCHAR2(500),
 	   passphrase          VARCHAR2(100),
+	   characterset	       VARCHAR2(20),
 	   source_directory    VARCHAR2(50),
 	   source_regexp       VARCHAR2(100),
 	   match_parameter     VARCHAR2(10),
@@ -925,7 +925,8 @@ IS
 	   created_user        VARCHAR2(30),
 	   created_dt          DATE,
 	   modified_user       VARCHAR2(30),
-	   modified_dt         DATE
+	   modified_dt         DATE,
+	   description         VARCHAR2(100)
 	 )|';
 
          EXECUTE IMMEDIATE q'|ALTER TABLE files_conf ADD 
@@ -945,22 +946,32 @@ IS
          EXECUTE IMMEDIATE q'|ALTER TABLE files_conf ADD
 	   CONSTRAINT files_conf_ck2
 	   CHECK (file_type = case when source_directory is null or source_regexp is null then 'extract' ELSE file_type END )|';
+	 
+	 
+         EXECUTE IMMEDIATE q'|ALTER TABLE files_conf ADD
+	   CONSTRAINT files_conf_ck3
+	 CHECK ( 0 = CASE WHEN object_owner IS NULL AND object_name IS NOT NULL THEN 1 
+		 WHEN object_owner IS NOT NULL AND object_name IS NULL THEN 1 ELSE 0 END )|';
 
          -- FILES_DETAIL table
          EXECUTE IMMEDIATE q'|CREATE TABLE files_detail
 	 ( 
 	   file_detail_id	NUMBER		NOT NULL,
-	   file_label 	VARCHAR2(50),
-	   file_group 	VARCHAR2(64),
-	   file_type 	VARCHAR2(7)	NOT null,
-	   source_filepath VARCHAR2(200),
-	   target_filepath VARCHAR2(200),
-	   arch_filepath 	VARCHAR2(100)	NOT NULL,
-	   num_bytes 	NUMBER 		NOT NULL,
-	   num_lines 	NUMBER,
-	   file_dt 	DATE NOT	NULL,
-	   PROCESSED_TS 	TIMESTAMP 	DEFAULT systimestamp NOT NULL,
-	   session_id 	NUMBER 		DEFAULT sys_context('USERENV','SESSIONID') NOT NULL
+	   file_label 		VARCHAR2(50)	NOT NULL,
+	   file_group 		VARCHAR2(64)	NOT NULL,
+	   file_type 		VARCHAR2(7)	NOT NULL,
+	   directory	        VARCHAR2(30),
+	   filename	        VARCHAR2(200),
+	   work_directory	VARCHAR2(200),
+	   source_directory	VARCHAR2(30),
+	   source_filename 	VARCHAR2(200),
+	   num_bytes 		NUMBER 		NOT NULL,
+	   num_lines 		NUMBER,
+	   file_dt 		DATE		NOT NULL,
+	   file_clob		CLOB,
+	   file_blob		BLOB,
+	   processed_ts 	TIMESTAMP 	DEFAULT systimestamp NOT NULL,
+	   session_id		NUMBER 		DEFAULT sys_context('USERENV','SESSIONID') NOT NULL
 	 )|';
 
          EXECUTE IMMEDIATE q'|ALTER TABLE files_detail ADD 
@@ -1922,7 +1933,7 @@ IS
       
       -- java stored procedures
       BEGIN
-         EXECUTE IMMEDIATE 'DROP java source '||p_schema||'.TdCore';
+         EXECUTE IMMEDIATE 'DROP java source '||p_schema||'.TdUtils';
       EXCEPTION
          when e_no_obj
          THEN
@@ -2352,6 +2363,116 @@ IS
             NULL;
 	 END;
 	 
+      END IF;
+
+      -- changes for version 1.4
+      IF l_version < 1.5
+      THEN
+	 
+	 -- ticket 103
+	 -- drop the Java source as it's getting a new name
+	 EXECUTE IMMEDIATE q'|drop java source TdCore|';
+	 -- add and remove columns from the FILES_CONF table
+	 EXECUTE IMMEDIATE q'|drop table files_conf|';
+	 -- no clients using Transcend Files currently
+	 -- rebuilding table is a better option	 
+         EXECUTE IMMEDIATE q'|CREATE TABLE files_conf
+	 ( 
+	   file_label	       VARCHAR2(100) 	NOT NULL,
+	   file_group	       VARCHAR2(64) 	NOT NULL,
+	   file_type	       VARCHAR2(7) 	NOT NULL,
+	   object_owner	       VARCHAR2(30),
+	   object_name	       VARCHAR2(30),
+	   directory	       VARCHAR2(30)	NOT NULL,
+	   filename	       VARCHAR2(50),		
+	   work_directory      VARCHAR2(30),
+	   min_bytes	       NUMBER 		DEFAULT 0 NOT NULL,
+	   max_bytes           NUMBER 		DEFAULT 0 NOT NULL,
+	   file_datestamp      VARCHAR2(30),
+	   baseurl             VARCHAR2(500),
+	   passphrase          VARCHAR2(100),
+	   characterset	       VARCHAR2(20),
+	   source_directory    VARCHAR2(50),
+	   source_regexp       VARCHAR2(100),
+	   match_parameter     VARCHAR2(10),
+	   source_policy       VARCHAR2(10),
+	   required            VARCHAR2(3),
+	   delete_source       VARCHAR2(3),
+	   reject_limit        NUMBER,
+	   dateformat	       VARCHAR2(30),
+	   timestampformat     VARCHAR2(30),
+	   delimiter	       VARCHAR2(3),
+	   quotechar	       VARCHAR2(2),
+	   headers	       VARCHAR2(3),
+	   created_user        VARCHAR2(30),
+	   created_dt          DATE,
+	   modified_user       VARCHAR2(30),
+	   modified_dt         DATE,
+	   description         VARCHAR2(100)
+	 )|';
+
+         EXECUTE IMMEDIATE q'|ALTER TABLE files_conf ADD 
+	 (
+	   CONSTRAINT files_conf_pk
+	   PRIMARY KEY
+	   (file_label, file_group)
+	   USING INDEX
+	 )|';
+
+         EXECUTE IMMEDIATE q'|ALTER TABLE files_conf ADD 
+	 (
+	   CONSTRAINT files_conf_ck1
+	   CHECK (source_policy IN ('oldest','newest','all','fail',NULL))
+	 )|';
+
+         EXECUTE IMMEDIATE q'|ALTER TABLE files_conf ADD
+	   CONSTRAINT files_conf_ck2
+	   CHECK (file_type = case when source_directory is null or source_regexp is null then 'extract' ELSE file_type END )|';
+	 
+	 
+         EXECUTE IMMEDIATE q'|ALTER TABLE files_conf ADD
+	   CONSTRAINT files_conf_ck3
+	 CHECK ( 0 = CASE WHEN object_owner IS NULL AND object_name IS NOT NULL THEN 1 
+		 WHEN object_owner IS NOT NULL AND object_name IS NULL THEN 1 ELSE 0 END )|';
+	 
+	 EXECUTE IMMEDIATE q'|drop table files_detail|';
+	 
+         EXECUTE IMMEDIATE q'|CREATE TABLE files_detail
+	 ( 
+	   file_detail_id	NUMBER		NOT NULL,
+	   file_label 		VARCHAR2(50)	NOT NULL,
+	   file_group 		VARCHAR2(64)	NOT NULL,
+	   file_type 		VARCHAR2(7)	NOT NULL,
+	   directory	        VARCHAR2(30),
+	   filename	        VARCHAR2(200),
+	   work_directory	VARCHAR2(200),
+	   source_directory	VARCHAR2(30),
+	   source_filename 	VARCHAR2(200),
+	   num_bytes 		NUMBER 		NOT NULL,
+	   num_lines 		NUMBER,
+	   file_dt 		DATE		NOT NULL,
+	   file_clob		CLOB,
+	   file_blob		BLOB,
+	   processed_ts 	TIMESTAMP 	DEFAULT systimestamp NOT NULL,
+	   session_id		NUMBER 		DEFAULT sys_context('USERENV','SESSIONID') NOT NULL
+	 )|';
+
+         EXECUTE IMMEDIATE q'|ALTER TABLE files_detail ADD 
+	 (
+	   CONSTRAINT file_detail_pk
+	   PRIMARY KEY
+	   (file_detail_id)
+	   USING INDEX
+	 )|';
+
+         EXECUTE IMMEDIATE q'|ALTER TABLE files_detail ADD 
+	 (
+	   CONSTRAINT file_detail_fk1
+	   FOREIGN KEY ( file_label, file_group )
+	   REFERENCES files_conf
+	   ( file_label, file_group )
+	 )|';
+
       END IF;
 
    END upgrade_transcend_repo;

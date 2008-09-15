@@ -50,12 +50,16 @@ IS
           p_message      => 'The combination of parameters provided yields no matching objects'
          );
       evolve_adm.set_error_conf
-         (p_name         => 'file_too_big',
+         (p_name         => 'file_too_large',
           p_message      => 'The specified file is larger than the MAX_BYTES parameter'
          );
       evolve_adm.set_error_conf
          (p_name         => 'file_too_small',
           p_message      => 'The specified file is smaller than the MAX_BYTES parameter'
+         );
+      evolve_adm.set_error_conf
+         (p_name         => 'single_lob',
+           p_message      => 'The AUDIT_FILE procedure requires either a single CLOB or a single BLOB'
          );
       evolve_adm.set_error_conf
                 (p_name         => 'no_stats',

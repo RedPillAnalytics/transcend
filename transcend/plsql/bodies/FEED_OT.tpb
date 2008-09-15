@@ -5,22 +5,18 @@ AS
    AS
    BEGIN
       BEGIN
-         -- now load the other attributes
-	 SELECT file_label, file_group, file_type, object_owner, object_name, DIRECTORY, dirpath, filename,
-		dirpath || '/' || filename filepath, arch_directory, arch_dirpath, NULL arch_filename,
-		NULL arch_filepath, file_datestamp, min_bytes, max_bytes, baseurl, NULL file_url, passphrase,
-		source_directory, source_dirpath, source_regexp, match_parameter, source_policy, required,
+         -- load all the feed attributes
+	 SELECT file_label, file_group, file_type, object_owner, object_name, DIRECTORY, filename,
+		work_directory, file_datestamp, min_bytes, max_bytes, baseurl, passphrase,
+		source_directory, source_regexp, match_parameter, source_policy, required,
 		delete_source, reject_limit
-           INTO file_label, file_group, file_type, object_owner, object_name, DIRECTORY, dirpath, filename,
-		filepath, arch_directory, arch_dirpath, arch_filename,
-		arch_filepath, file_datestamp, min_bytes, max_bytes, baseurl, file_url, passphrase,
-		source_directory, source_dirpath, source_regexp, match_parameter, source_policy, required,
+           INTO self.file_label, self.file_group, self.file_type, self.object_owner, self.object_name, 
+		self.DIRECTORY, self.filename, work_directory, file_datestamp, min_bytes, max_bytes, 
+		baseurl, passphrase, source_directory, source_regexp, match_parameter, source_policy, required,
 		delete_source, reject_limit
-           FROM ( SELECT file_label, file_group, file_type, object_owner, object_name, DIRECTORY,
-			 td_utils.get_dir_path( DIRECTORY ) dirpath, filename, arch_directory,
-			 td_utils.get_dir_path( arch_directory ) arch_dirpath, file_datestamp, min_bytes,
-			 max_bytes, baseurl, passphrase, source_directory,
-			 td_utils.get_dir_path( source_directory ) source_dirpath, source_regexp, match_parameter,
+           FROM ( SELECT file_label, file_group, file_type, object_owner, object_name, directory,
+			 filename, work_directory, file_datestamp, min_bytes, max_bytes, baseurl, 
+			 passphrase, source_directory, source_regexp, match_parameter,
 			 source_policy, required, delete_source, reject_limit
                     FROM files_conf
 		   WHERE REGEXP_LIKE( file_type, '^feed$', 'i' )
@@ -29,12 +25,14 @@ AS
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
+	    -- if there is no record found for this file_lable, raise an exception
             evolve.raise_err( 'no_feed', p_file_label );
       END;
 
-      
+      -- run the business logic to make sure everything works out fine
       verify;
-
+      
+      -- return the self reference
       RETURN;
    END feed_ot;
 
@@ -46,34 +44,42 @@ AS
    BEGIN
       -- do checks to make sure all the provided information is legitimate
       -- check to see if the directories are legitimate
+
       -- if they aren't, the GET_DIR_PATH function raises an error
       l_dir_path := td_utils.get_dir_path( self.arch_directory );
       l_dir_path := td_utils.get_dir_path( self.source_directory );
       l_dir_path := td_utils.get_dir_path( self.directory );
       
-      -- make sure the external table exists
-      td_utils.check_table ( p_owner         => SELF.object_owner,
-                             p_table         => SELF.object_name,
-                             p_external      => 'yes'
-                           );
-
-      -- now need to find out what the directory is associated with the external table
-      BEGIN
-	 -- get the directory from the external table
-         SELECT default_directory_name
-           INTO l_directory
-           FROM all_external_tables
-          WHERE owner = self.object_owner AND table_name = self.object_name;
-      EXCEPTION
-         WHEN NO_DATA_FOUND
-         THEN
-         evolve.raise_err( 'no_ext_tab', UPPER( self.object_owner || '.' || self.object_name ));
-      END;
-      
-      -- now compare the two and make sure they are the same
-      IF upper(self.directory) <> l_directory
+      -- if there is an external table associate with this feed
+      -- we need to check a few things
+      IF object_name IS NOT NULL
       THEN
-	 evolve.raise_err( 'no_dir_match' );
+	
+	 -- make sure the external table exists
+	 td_utils.check_table ( p_owner         => SELF.object_owner,
+				p_table         => SELF.object_name,
+				p_external      => 'yes'
+                              );
+
+	 -- now need to find out what the directory is associated with the external table
+	 BEGIN
+	    -- get the directory from the external table
+            SELECT default_directory_name
+              INTO l_directory
+              FROM all_external_tables
+             WHERE owner = self.object_owner AND table_name = self.object_name;
+	 EXCEPTION
+            WHEN NO_DATA_FOUND
+            THEN
+            evolve.raise_err( 'no_ext_tab', UPPER( self.object_owner || '.' || self.object_name ));
+	 END;
+	 
+	 -- now compare the two and make sure they are the same
+	 IF upper(self.directory) <> l_directory
+	 THEN
+	    evolve.raise_err( 'no_dir_match' );
+	 END IF;
+	 
       END IF;
 
       evolve.log_msg( 'FEED confirmation completed successfully', 5 );
@@ -168,6 +174,7 @@ AS
    END audit_ext_tab;
    MEMBER PROCEDURE process
    IS
+      l_assoc_tab      BOOLEAN                            j:= CASE WHEN self.object_name IS NULL THEN TRUE ELSE FALSE END; 
       l_rows_dirlist   BOOLEAN                            := FALSE;                 -- TO catch empty cursors
       l_rows_delete    BOOLEAN                            := FALSE;
       l_numlines       NUMBER;
@@ -187,27 +194,33 @@ AS
       o_ev             evolve_ot                          := evolve_ot( p_module => 'process' );
    BEGIN
       evolve.log_msg( 'Processing feed "' || file_label || '"', 3 );
-      o_ev.change_action( 'evaluate source directory' );
-      -- we are about to copy files into place
-      -- before that, we need to remove files placed in on previous runs
-      -- we don't want the possiblity of data for a previous run getting loaded in
-      -- later, if no new files are found, and the REQUIRED attribute is 'N' (meaning this file is not required)
-      -- THEN we will create an empty file
-
-      o_ev.change_action( 'delete current locations' );
-
-      FOR c_location IN ( SELECT  DIRECTORY, LOCATION
-                            FROM dba_external_locations
-                           WHERE owner = UPPER( object_owner ) AND table_name = UPPER( object_name )
-                           ORDER BY LOCATION )
-      LOOP
-         l_rows_delete := TRUE;
-         td_utils.delete_file( c_location.DIRECTORY, c_location.LOCATION );
-      END LOOP;
-
-      IF l_rows_delete
+      
+      IF l_assoc_tab
       THEN
-         evolve.log_msg( 'Previous external table location files removed', 3 );
+	 
+	 o_ev.change_action( 'evaluate source directory' );
+	 -- we are about to copy files into place
+	 -- before that, we need to remove files placed in on previous runs
+	 -- we don't want the possiblity of data for a previous run getting loaded in
+	 -- later, if no new files are found, and the REQUIRED attribute is 'N' (meaning this file is not required)
+	 -- THEN we will create an empty file
+
+	 o_ev.change_action( 'delete current locations' );
+
+	 FOR c_location IN ( SELECT  DIRECTORY, LOCATION
+                               FROM dba_external_locations
+                              WHERE owner = UPPER( object_owner ) AND table_name = UPPER( object_name )
+                              ORDER BY LOCATION )
+	 LOOP
+            l_rows_delete := TRUE;
+            td_utils.delete_file( c_location.DIRECTORY, c_location.LOCATION );
+	 END LOOP;
+
+	 IF l_rows_delete
+	 THEN
+            evolve.log_msg( 'Previous external table location files removed', 3 );
+	 END IF;
+	 
       END IF;
       
 

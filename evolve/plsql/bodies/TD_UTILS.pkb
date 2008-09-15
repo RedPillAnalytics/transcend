@@ -28,8 +28,14 @@ AS
    END host_cmd;
 
    -- procedure executes the copy_file function and raises an exception with the return code
-   PROCEDURE copy_file( p_srcfile VARCHAR2, p_dstfile VARCHAR2 )
+   PROCEDURE copy_file( 
+      p_source_directory VARCHAR2, 
+      p_source_filename VARCHAR2, 
+      p_directory VARCHAR2, 
+      p_filename VARCHAR2 )
    AS
+      l_srcfile  VARCHAR2(300) := td_utils.get_dir_path( p_source_directory ) || '/' || p_source_filename;
+      l_dstfile  VARCHAR2(300) := td_utils.get_dir_path( p_directory ) || '/' || p_filename;
       l_retval   NUMBER;
       o_ev       evolve_ot := evolve_ot( p_module => 'copy_file' );
    BEGIN
@@ -37,7 +43,7 @@ AS
 
       IF NOT evolve.is_debugmode
       THEN
-         l_retval := copy_file( p_srcfile, p_dstfile );
+         l_retval := copy_file( l_srcfile, l_dstfile );
 
          IF l_retval <> 0
          THEN
@@ -45,7 +51,7 @@ AS
          END IF;
       END IF;
 
-      evolve.log_msg( 'File ' || p_srcfile || ' copied to ' || p_dstfile, 3 );
+      evolve.log_msg( 'File ' || l_srcfile || ' copied to ' || l_dstfile, 3 );
       o_ev.clear_app_info;
    END copy_file;
 

@@ -1,5 +1,5 @@
 create or replace and compile
-java source named TdCore
+java source named TdUtils
 as
 import java.io.*;
 import java.lang.*;
@@ -7,7 +7,7 @@ import java.sql.*;
 import java.nio.*;
 import java.nio.channels.*;
   
-public class TdCore extends Object {
+public class TdUtils extends Object {
     
     public static int copyFile(String srcfile, String dstfile) {
 	
