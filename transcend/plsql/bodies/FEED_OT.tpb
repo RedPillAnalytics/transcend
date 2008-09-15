@@ -9,15 +9,15 @@ AS
 	 SELECT file_label, file_group, file_type, object_owner, object_name, DIRECTORY, filename,
 		work_directory, file_datestamp, min_bytes, max_bytes, baseurl, passphrase,
 		source_directory, source_regexp, match_parameter, source_policy, required,
-		delete_source, reject_limit
+		delete_source, delete_target, reject_limit
            INTO self.file_label, self.file_group, self.file_type, self.object_owner, self.object_name, 
-		self.DIRECTORY, self.filename, work_directory, file_datestamp, min_bytes, max_bytes, 
-		baseurl, passphrase, source_directory, source_regexp, match_parameter, source_policy, required,
-		delete_source, reject_limit
+		self.DIRECTORY, self.filename, self.work_directory, self.file_datestamp, self.min_bytes, self.max_bytes, 
+		self.baseurl, self.passphrase, self.source_directory, self.source_regexp, self.match_parameter, self.source_policy, self.required,
+		self.delete_source, self.delete_target, self.reject_limit
            FROM ( SELECT file_label, file_group, file_type, object_owner, object_name, directory,
 			 filename, work_directory, file_datestamp, min_bytes, max_bytes, baseurl, 
 			 passphrase, source_directory, source_regexp, match_parameter,
-			 source_policy, required, delete_source, reject_limit
+			 source_policy, required, delete_source, delete_target, reject_limit
                     FROM files_conf
 		   WHERE REGEXP_LIKE( file_type, '^feed$', 'i' )
                      AND file_group = p_file_group
@@ -174,7 +174,8 @@ AS
    END audit_ext_tab;
    MEMBER PROCEDURE process
    IS
-      l_assoc_tab      BOOLEAN                            j:= CASE WHEN self.object_name IS NULL THEN TRUE ELSE FALSE END; 
+      l_ext_tab_ind    BOOLEAN                            := CASE WHEN self.object_name IS NULL THEN FALSE ELSE TRUE END; 
+      l_filename_ind   BOOLEAN                            := CASE WHEN self.filename IS NULL THEN FALSE ELSE TRUE END; 
       l_rows_dirlist   BOOLEAN                            := FALSE;                 -- TO catch empty cursors
       l_rows_delete    BOOLEAN                            := FALSE;
       l_numlines       NUMBER;
@@ -183,7 +184,7 @@ AS
       l_filepath       VARCHAR2( 200 );
       l_numfiles       NUMBER;
       l_sum_numlines   NUMBER                             := 0;
-      l_ext_file_cnt   NUMBER                             := 0;
+      l_targ_file_cnt   NUMBER                             := 0;
       l_ext_tab_ddl    VARCHAR2( 2000 );
       l_ext_tab        VARCHAR2( 61 )                     := object_owner || '.' || object_name;
       l_files_url      VARCHAR2( 1000 );
@@ -195,10 +196,11 @@ AS
    BEGIN
       evolve.log_msg( 'Processing feed "' || file_label || '"', 3 );
       
+      -- need to delete previous existing target files if so specified
+
+      
       IF l_assoc_tab
       THEN
-	 
-	 o_ev.change_action( 'evaluate source directory' );
 	 -- we are about to copy files into place
 	 -- before that, we need to remove files placed in on previous runs
 	 -- we don't want the possiblity of data for a previous run getting loaded in
@@ -226,35 +228,33 @@ AS
 
       -- now we need to see all the source files in the source directory that match the regular expression
       -- USE java stored procedure to populate global temp table DIR_LIST with all the files in the directory
+      o_ev.change_action( 'evaluate source directory' );
       td_utils.get_dir_list( source_dirpath );
 
       -- look at the contents of the DIR_LIST table to evaluate source files
       -- pull out only the ones matching the regular expression
       -- also work in a lot of the attributes to generate all the information needed for the object
       FOR c_dir_list IN
-         ( SELECT  object_name,                                                        -- external table owner
-                               object_owner,                                            -- external table name
-                                            source_filename,                      -- name of each source files
-                                                            source_filepath,
-                   
-                   -- name converted to absolute path
+         ( SELECT  
+		  -- name of each source files
+		  source_filename,
+                  -- USE analytics to determine how many files are going into place
+                  -- that tells us whether to increment the filenames
                    CASE
-                      -- USE analytics to determine how many files are going into place
-                      -- that tells us whether to increment the filenames
-                   WHEN ext_tab_ind = 'Y' AND ext_tab_type_cnt > 1
+                   WHEN targ_file_ind = 'Y' AND targ_file_cnt > 1
                          THEN REGEXP_REPLACE( filepath, '\.', '_' || file_number || '.' )
-                      WHEN ext_tab_ind = 'N'
+                      WHEN targ_file_ind = 'N'
                          THEN NULL
                       ELSE filepath
                    END filepath,
                    CASE
-                      WHEN ext_tab_ind = 'Y' AND ext_tab_type_cnt > 1
+                      WHEN targ_file_ind = 'Y' AND targ_file_cnt > 1
                          THEN REGEXP_REPLACE( SELF.filename, '\.', '_' || file_number || '.' )
-                      WHEN ext_tab_ind = 'N'
+                      WHEN targ_file_ind = 'N'
                          THEN NULL
                       ELSE SELF.filename
                    END filename,
-                   pre_mv_filepath, arch_filepath, file_dt, file_size, ext_tab_ind, ext_tab_type_cnt,
+                   file_dt, file_size, targ_file_ind, targ_file_cnt,
                       
                       -- USE analytics (stragg function) to construct the alter table command (if needed)
                       'alter table '
@@ -264,13 +264,13 @@ AS
                          ( STRAGG(    SELF.DIRECTORY
                                 || ':'''
                                 || CASE
-                                      WHEN ext_tab_ind = 'Y' AND ext_tab_type_cnt > 1
+                                      WHEN targ_file_ind = 'Y' AND targ_file_cnt > 1
                                          THEN REGEXP_REPLACE( SELF.filename, '\.', '_' || file_number || '.' )
-                                      WHEN ext_tab_ind = 'N'
+                                      WHEN targ_file_ind = 'N'
                                          THEN NULL
                                       ELSE SELF.filename
                                    END
-                              ) OVER( PARTITION BY ext_tab_ind ),
+                              ) OVER( PARTITION BY targ_file_ind ),
                            ',',
                            ''','
                          )
@@ -283,27 +283,26 @@ AS
                       ( STRAGG(    SELF.baseurl
                              || '/'
                              || CASE
-                                   WHEN ext_tab_ind = 'Y' AND ext_tab_type_cnt > 1
+                                   WHEN targ_file_ind = 'Y' AND targ_file_cnt > 1
                                       THEN REGEXP_REPLACE( SELF.filename, '\.', '_' || file_number || '.' )
-                                   WHEN ext_tab_ind = 'N'
+                                   WHEN targ_file_ind = 'N'
                                       THEN NULL
                                    ELSE SELF.filename
                                 END
-                           ) OVER( PARTITION BY ext_tab_ind ),
+                           ) OVER( PARTITION BY targ_file_ind ),
                         ',',
                         CHR( 10 )
                       ) files_url
-              FROM ( SELECT object_name, object_owner, source_filename, source_filepath, filepath,
-                            pre_mv_filepath, arch_filepath, file_dt, file_size, ext_tab_ind,
+              FROM ( SELECT object_name, object_owner, source_filename, file_dt, file_size, targ_file_ind,
                             
                             -- rank gives us a number to use to auto increment files in case SOURCE_POLICY attribute is 'all'
-                            RANK( ) OVER( PARTITION BY 1 ORDER BY ext_tab_ind DESC,
+                            RANK( ) OVER( PARTITION BY 1 ORDER BY targ_file_ind DESC,
                              source_filename ) file_number,
                             
-                            -- this gives us a count of how many files will be copied into the external table
+                            -- this gives us a count of how many files will be copied to the target
                             -- have this for each line
-                            -- USE the EXT_TAB_IND derived in the select below
-                            COUNT( * ) OVER( PARTITION BY ext_tab_ind ) ext_tab_type_cnt
+                            -- USE the TARG_FILE_IND derived in the select below
+                            COUNT( * ) OVER( PARTITION BY targ_file_ind ) targ_file_cnt
                       FROM ( SELECT                                -- the dir_list table has a filename column
                                    -- we also have a filename attribute
                                    -- RENAME the filename from the table as SOURCE_FILENAME
@@ -311,34 +310,10 @@ AS
                                                             -- URL location if the target location is web enabled
                                                             -- this is for notification purposes to send links for received files
                                                             SELF.baseurl baseurl,
-                                                                                 -- translate directory objects and filenames to absolute paths
-                                                                                 -- because Java actually does most the heavy lifting
-                                                                                 -- AND java doesn't know anything about a directory object
-                                                                                 -- path of the target object (if there's only one)
-                                                                                 SELF.filepath filepath,
                                    
-                                   -- path to the source file
-                                   SELF.source_dirpath || '/' || filename source_filepath,
-                                   
-                                   -- path to an intermediate file location just prior to being placed in the external table
-                                   -- this is so the file can be decompressed and decrypted AFTER the move
-                                   SELF.dirpath || '/' || filename pre_mv_filepath,
-                                   
-                                   -- USE the attribute FILE_DATESTAMP to determin if the archived file needs a date added
-                                   -- SOME files will come in dated already, and two datestamps are silly
-                                   -- WHEN we have a whole catalog to track the files
-                                   CASE
-                                      WHEN file_datestamp IS NULL
-                                         THEN SELF.arch_dirpath || '/' || filename
-                                      ELSE    SELF.arch_dirpath
-                                           || '/'
-                                           || filename
-                                           || '.'
-                                           || TO_CHAR( SYSDATE, file_datestamp )
-                                   END arch_filepath,
                                    file_dt, file_size,
                                    
-                                   -- CASE statement determines an EXT_TAB_IND
+                                   -- CASE statement determines an TARG_FILE_IND
                                    -- this picks out the files that will go to the external table
                                    -- uses the SOURCE_POLICY column to determine which ones to get
                                    -- that is translated to a Y/N indicator based on the date of the file
@@ -352,13 +327,13 @@ AS
                                       WHEN LOWER( SELF.source_policy ) = 'all'
                                          THEN 'Y'
                                       ELSE 'N'
-                                   END ext_tab_ind,
+                                   END targ_file_ind,
                                    UPPER( SELF.object_name ) object_name,
                                    UPPER( SELF.object_owner ) object_owner
                               FROM dir_list
                              -- matching regexp and match_parameter to find matching source files
                             WHERE  REGEXP_LIKE( filename, SELF.source_regexp, SELF.match_parameter )))
-          ORDER BY ext_tab_ind ASC )
+          ORDER BY targ_file_ind ASC )
       LOOP
          o_ev.change_action( 'process feed' );
          evolve.log_msg( 'Processing file ' || c_dir_list.source_filepath, 3 );
@@ -373,14 +348,14 @@ AS
          -- copy the file to the external table
          o_ev.change_action( 'copy external table files' );
 
-         IF c_dir_list.ext_tab_ind = 'Y'
+         IF c_dir_list.targ_file_ind = 'Y'
          THEN
             -- get the DDL to alter the external table after the loop is complete
             -- this statement will be the same no matter which of the rows we pull it from.
             -- might as well use the last
             l_ext_tab_ddl := c_dir_list.alt_ddl;
             -- RECORD the number of external table files
-            l_ext_file_cnt := c_dir_list.ext_tab_type_cnt;
+            l_targ_file_cnt := c_dir_list.targ_file_cnt;
             -- RECORD the files url
             l_files_url := c_dir_list.files_url;
             -- first move the file to the target destination without changing the name
@@ -450,7 +425,7 @@ AS
       o_ev.change_action( 'check for matching files' );
       evolve.log_msg( 'Attribute REQUIRED is: ' || required, 5 );
       evolve.log_msg( 'Attribute SOURCE_POLICY is: ' || source_policy, 5 );
-      evolve.log_msg( 'The number of files moved to target: ' || l_ext_file_cnt, 5 );
+      evolve.log_msg( 'The number of files moved to target: ' || l_targ_file_cnt, 5 );
       evolve.log_msg( 'Variable L_ROWS_DIRLIST is: ' || CASE
                              WHEN l_rows_dirlist
                                 THEN 'TRUE'
@@ -480,7 +455,7 @@ AS
             LOOP
                td_utils.create_file( c_location.DIRECTORY, c_location.LOCATION );
             END LOOP;
-         WHEN l_rows_dirlist AND l_ext_file_cnt > 0
+         WHEN l_rows_dirlist AND l_targ_file_cnt > 0
          -- matching files found, and the number of location files is greater than zero
          -- alter the external table to contain all the files
       THEN
@@ -498,7 +473,7 @@ AS
             -- audit the external table
             o_ev.change_action( 'audit external table' );
             SELF.audit_ext_tab( p_num_lines => l_sum_numlines );
-         WHEN l_rows_dirlist AND l_ext_file_cnt = 0
+         WHEN l_rows_dirlist AND l_targ_file_cnt = 0
               -- matching files found, but there were no location files
               -- there were files found at the OS level
          -- however, no files deemed as possible locations
@@ -513,7 +488,7 @@ AS
 
       -- notify about successful arrival of feed
       o_ev.change_action( 'notify success' );
-      SELF.announce_file( p_num_files      => l_ext_file_cnt,
+      SELF.announce_file( p_num_files      => l_targ_file_cnt,
                           p_num_lines      => l_max_numlines,
                           p_files_url      => l_files_url
                         );
