@@ -1,5 +1,26 @@
 CREATE OR REPLACE PACKAGE BODY td_utils
 AS
+
+   PROCEDURE dirpath_list( p_dirpath IN VARCHAR2 )
+   AS
+      LANGUAGE JAVA
+      NAME 'TdUtils.getDirList( java.lang.String )';
+      
+   -- procedure executes the copy_file function and raises an exception with the return code
+   PROCEDURE directory_list( p_directory IN VARCHAR2 )   
+   AS
+      o_ev       evolve_ot := evolve_ot( p_module => 'directory_list' );
+   BEGIN
+      DBMS_JAVA.set_output( 1000000 );
+
+      IF NOT evolve.is_debugmode
+      THEN
+	 dirpath_list( get_dir_path( p_directory ) );
+      END IF;
+
+      o_ev.clear_app_info;
+   END directory_list;
+
    -- procedure executes the host_cmd function and raises an exception with the return code
    PROCEDURE host_cmd( p_cmd VARCHAR2, p_stdin VARCHAR2 DEFAULT ' ' )
    AS

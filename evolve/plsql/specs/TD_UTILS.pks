@@ -1,9 +1,6 @@
 CREATE OR REPLACE PACKAGE td_utils AUTHID CURRENT_USER
 AS
-   PROCEDURE get_dir_list( p_directory IN VARCHAR2 )
-   AS
-      LANGUAGE JAVA
-      NAME 'TdCore.getDirList( java.lang.String )';
+   PROCEDURE directory_list( p_directory VARCHAR2 );
 
    -- procedure to copy a file from one place to another
    FUNCTION copy_file( p_srcfile VARCHAR2, p_dstfile VARCHAR2 )

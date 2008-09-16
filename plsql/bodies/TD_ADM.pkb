@@ -472,7 +472,8 @@ IS
 	 ( 
 	   filename VARCHAR2(255),
 	   file_dt date,
-	   file_size NUMBER
+	   file_size NUMBER,
+	   create_ts TIMESTAMP DEFAULT systimestamp
 	 )
 	 ON COMMIT DELETE ROWS|';
 
