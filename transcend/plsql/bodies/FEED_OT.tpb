@@ -258,7 +258,7 @@ AS
       -- now we need to see all the source files in the source directory that match the regular expression
       -- USE java stored procedure to populate global temp table DIR_LIST with all the files in the directory
       o_ev.change_action ('evaluate source directory');
-      td_utils.get_dir_list (source_dirpath);
+      td_utils.directory_list (source_directory);
 
       -- look at the contents of the DIR_LIST table to evaluate source files
       -- pull out only the ones matching the regular expression
@@ -332,18 +332,20 @@ AS
                            -- have this for each line
                            -- USE the TARG_FILE_IND derived in the select below
                            COUNT (*) OVER (PARTITION BY targ_file_ind) targ_file_cnt
-                      FROM (SELECT                              -- the dir_list table has a filename column
-                                                                -- we also have a filename attribute
-                                                                -- RENAME the filename from the table as SOURCE_FILENAME
+                      FROM (SELECT              
+				   -- the DIR_LIST table has a filename column
+                                   -- we also have a filename attribute
+                                   -- RENAME the filename from the DIR_LIST table as SOURCE_FILENAME
                                    filename source_filename,
-                                                            -- URL location if the target location is web enabled
-                                                            -- this is for notification purposes to send links for received files
-                                                            SELF.baseurl baseurl, file_dt, file_size,
-                                   
-                                   -- CASE statement determines an TARG_FILE_IND
-                                   -- this picks out the files that will go to the external table
-                                   -- uses the SOURCE_POLICY column to determine which ones to get
-                                   -- that is translated to a Y/N indicator based on the date of the file
+                                   -- URL location if the target location is web enabled
+                                   -- this is for notification purposes to send links for received files
+                                   SELF.baseurl baseurl, 
+				   file_dt, 
+				   file_size,
+                                   -- CASE statement determines TARG_FILE_IND
+                                   -- this picks out the files that go to the target location
+                                   -- uses the SOURCE_POLICY column to determine which ones go to target
+                                   -- translated to a Y/N indicator based on the file date and the source_policy
                                    CASE
                                       WHEN LOWER (SELF.source_policy) = 'newest'
                                       AND file_dt = MAX (file_dt) OVER (PARTITION BY 1)
@@ -354,8 +356,7 @@ AS
                                       WHEN LOWER (SELF.source_policy) = 'all'
                                          THEN 'Y'
                                       ELSE 'N'
-                                   END targ_file_ind,
-                                   UPPER (SELF.object_name) object_name, UPPER (SELF.object_owner) object_owner
+                                   END targ_file_ind
                               FROM dir_list
                              -- matching regexp and match_parameter to find matching source files
                             WHERE  REGEXP_LIKE (filename, SELF.source_regexp, SELF.match_parameter)))
