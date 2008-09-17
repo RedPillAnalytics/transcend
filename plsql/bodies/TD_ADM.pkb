@@ -905,6 +905,7 @@ IS
 	   directory	       VARCHAR2(30)	NOT NULL,
 	   filename	       VARCHAR2(50),		
 	   work_directory      VARCHAR2(30),
+	   lob_type	       VARCHAR2(4) 	DEFAULT 'clob',
 	   min_bytes	       NUMBER 		DEFAULT 0 NOT NULL,
 	   max_bytes           NUMBER 		DEFAULT 0 NOT NULL,
 	   file_datestamp      VARCHAR2(30),
@@ -954,6 +955,13 @@ IS
 	   CONSTRAINT files_conf_ck3
 	 CHECK ( 0 = CASE WHEN object_owner IS NULL AND object_name IS NOT NULL THEN 1 
 		 WHEN object_owner IS NOT NULL AND object_name IS NULL THEN 1 ELSE 0 END )|';
+	 
+         EXECUTE IMMEDIATE q'|ALTER TABLE files_conf ADD 
+	 (
+	   CONSTRAINT files_conf_ck4
+	   CHECK (lob_type IN ('clob','blob')
+	 )|';
+
 
          -- FILES_DETAIL table
          EXECUTE IMMEDIATE q'|CREATE TABLE files_detail
@@ -2388,6 +2396,7 @@ IS
 	   directory	       VARCHAR2(30)	NOT NULL,
 	   filename	       VARCHAR2(50),		
 	   work_directory      VARCHAR2(30),
+	   lob_type	       VARCHAR2(4) 	DEFAULT 'clob',
 	   min_bytes	       NUMBER 		DEFAULT 0 NOT NULL,
 	   max_bytes           NUMBER 		DEFAULT 0 NOT NULL,
 	   file_datestamp      VARCHAR2(30),
@@ -2437,6 +2446,12 @@ IS
 	   CONSTRAINT files_conf_ck3
 	 CHECK ( 0 = CASE WHEN object_owner IS NULL AND object_name IS NOT NULL THEN 1 
 		 WHEN object_owner IS NOT NULL AND object_name IS NULL THEN 1 ELSE 0 END )|';
+	 
+         EXECUTE IMMEDIATE q'|ALTER TABLE files_conf ADD 
+	 (
+	   CONSTRAINT files_conf_ck4
+	   CHECK (lob_type IN ('clob','blob')
+	 )|';
 	 
 	 EXECUTE IMMEDIATE q'|drop table files_detail|';
 	 

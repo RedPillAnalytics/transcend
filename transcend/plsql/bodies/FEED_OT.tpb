@@ -9,15 +9,15 @@ AS
          SELECT file_label, file_group, file_type, object_owner, object_name, DIRECTORY,
                 filename, work_directory, file_datestamp, min_bytes, max_bytes, baseurl,
                 passphrase, source_directory, source_regexp, match_parameter, source_policy,
-                required, delete_source, delete_target, reject_limit
+                required, delete_source, delete_target, reject_limit, lob_type
            INTO SELF.file_label, SELF.file_group, SELF.file_type, SELF.object_owner, SELF.object_name, SELF.DIRECTORY,
                 SELF.filename, SELF.work_directory, SELF.file_datestamp, SELF.min_bytes, SELF.max_bytes, SELF.baseurl,
                 SELF.passphrase, SELF.source_directory, SELF.source_regexp, SELF.match_parameter, SELF.source_policy,
-                SELF.required, SELF.delete_source, SELF.delete_target, SELF.reject_limit
+                SELF.required, SELF.delete_source, SELF.delete_target, SELF.reject_limit, SELF.lob_type
            FROM (SELECT file_label, file_group, file_type, object_owner, object_name, DIRECTORY, filename,
                         work_directory, file_datestamp, min_bytes, max_bytes, baseurl, passphrase, source_directory,
                         source_regexp, match_parameter, source_policy, required, delete_source, delete_target,
-                        reject_limit
+                        reject_limit, lob_type
                    FROM files_conf
                   WHERE REGEXP_LIKE (file_type, '^feed$', 'i') AND file_group = p_file_group
                         AND file_label = p_file_label);
@@ -265,25 +265,10 @@ AS
       -- also work in a lot of the attributes to generate all the information needed for the object
       FOR c_dir_list IN
          (SELECT
-                   -- name of each source files
-                   source_filename,
-                   
-                   -- USE analytics to determine how many files are going into place
-                   -- that tells us whether to increment the filenames
-                   CASE
-                      WHEN targ_file_ind = 'Y' AND targ_file_cnt > 1
-                         THEN REGEXP_REPLACE (filepath, '\.', '_' || file_number || '.')
-                      WHEN targ_file_ind = 'N'
-                         THEN NULL
-                      ELSE filepath
-                   END filepath,
-                   CASE
-                      WHEN targ_file_ind = 'Y' AND targ_file_cnt > 1
-                         THEN REGEXP_REPLACE (SELF.filename, '\.', '_' || file_number || '.')
-                      WHEN targ_file_ind = 'N'
-                         THEN NULL
-                      ELSE SELF.filename
-                   END filename,
+                   -- name of each source file
+                 source_filename,
+		 -- name of the target file 
+                 filename,
                    file_dt, file_size, targ_file_ind, targ_file_cnt,
                       
                       -- USE analytics (stragg function) to construct the alter table command (if needed)
@@ -293,13 +278,7 @@ AS
                    || REGEXP_REPLACE
                          (stragg (   SELF.DIRECTORY
                                || ':'''
-                               || CASE
-                                     WHEN targ_file_ind = 'Y' AND targ_file_cnt > 1
-                                        THEN REGEXP_REPLACE (SELF.filename, '\.', '_' || file_number || '.')
-                                     WHEN targ_file_ind = 'N'
-                                        THEN NULL
-                                     ELSE SELF.filename
-                                  END
+                               || filename
                               ) OVER (PARTITION BY targ_file_ind),
                           ',',
                           ''','
@@ -312,17 +291,18 @@ AS
                    REGEXP_REPLACE
                       (stragg (   SELF.baseurl
                             || '/'
-                            || CASE
-                                  WHEN targ_file_ind = 'Y' AND targ_file_cnt > 1
-                                     THEN REGEXP_REPLACE (SELF.filename, '\.', '_' || file_number || '.')
-                                  WHEN targ_file_ind = 'N'
-                                     THEN NULL
-                                  ELSE SELF.filename
-                               END
+                            || filename
                            ) OVER (PARTITION BY targ_file_ind),
                        ',',
                        CHR (10)
                       ) files_url
+	    FROM (SELECT object_name, object_owner, source_filename, file_dt, file_size, targ_file_ind,
+			 CASE 
+			 WHEN l_filename_ind AND targ_file_ind = 'Y' AND targ_file_cnt > 1
+                         THEN REGEXP_REPLACE (SELF.filename, '\.', '_' || file_number || '.')
+			 WHEN l_filename_ind AND targ_file_ind = 'Y' AND targ_file_cnt = 1
+			 THEN SELF.filename
+			 ELSE filename END filename
               FROM (SELECT object_name, object_owner, source_filename, file_dt, file_size, targ_file_ind,
                            
                            -- rank gives us a number to use to auto increment files in case SOURCE_POLICY attribute is 'all'
@@ -360,19 +340,29 @@ AS
                               FROM dir_list
                              -- matching regexp and match_parameter to find matching source files
                             WHERE  REGEXP_LIKE (filename, SELF.source_regexp, SELF.match_parameter)))
-          ORDER BY targ_file_ind ASC)
+		   ORDER BY targ_file_ind ASC))
       LOOP
-         o_ev.change_action ('process feed');
          evolve.log_msg ('Processing file ' || c_dir_list.source_filepath, 3);
          -- catch empty cursor sets
          l_rows_dirlist := TRUE;
          -- reset variables used in the cursor
          l_numlines := 0;
-         -- copy file to the archive location
-         o_ev.change_action ('copy archivefile');
-         td_utils.copy_file (c_dir_list.source_filepath, c_dir_list.arch_filepath);
-         evolve.log_msg ('Archive file ' || c_dir_list.arch_filepath || ' created', 3);
-         -- copy the file to the external table
+	 
+         -- first, write an audit record for the file from source
+	 -- we do this for all files, even the ones that won't go to target
+	 -- this also stores the file in the database
+         IF NOT evolve.is_debugmode
+         THEN
+            o_ev.change_action ('audit feed');
+            SELF.audit_file (p_filename             => c_dir_list.filename,
+                             p_source_filename      => c_dir_list.source_filename,
+                             p_num_bytes            => c_dir_list.file_size,
+                             p_num_lines            => l_numlines,
+                             p_file_dt              => c_dir_list.file_dt
+                            );
+         END IF;
+	 
+
          o_ev.change_action ('copy external table files');
 
          IF c_dir_list.targ_file_ind = 'Y'
@@ -423,19 +413,6 @@ AS
             THEN
                l_max_numlines := l_numlines;
             END IF;
-         END IF;
-
-         -- WRITE an audit record for the file that was just archived
-         IF NOT evolve.is_debugmode
-         THEN
-            o_ev.change_action ('audit feed');
-            SELF.audit_file (p_source_filepath      => c_dir_list.source_filepath,
-                             p_arch_filepath        => c_dir_list.arch_filepath,
-                             p_filepath             => c_dir_list.filepath,
-                             p_num_bytes            => c_dir_list.file_size,
-                             p_num_lines            => l_numlines,
-                             p_file_dt              => c_dir_list.file_dt
-                            );
          END IF;
 
          -- IF we get this far, then we need to delete the source files

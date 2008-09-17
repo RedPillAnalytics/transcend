@@ -6,9 +6,7 @@ AS
       p_num_lines         NUMBER,
       p_file_dt           DATE,
       p_filename          VARCHAR2 DEFAULT NULL,
-      p_source_filename	  VARCHAR2 DEFAULT NULL,
-      p_clob		  CLOB DEFAULT NULL,
-      p_blob		  BLOB DEFAULT NULL
+      p_source_filename	  VARCHAR2 DEFAULT NULL
    )
    AS
       l_dest_clob    CLOB;
@@ -28,53 +26,58 @@ AS
       l_src_lob := BFILENAME ( CASE self.file_type WHEN 'feed' THEN l_source_directory ELSE SELF.directory END, l_filename );
       
       o_ev.change_action( 'Insert file detail' );
-
-      -- INSERT into the FILE_DETAIL table to record the movement
-      INSERT INTO files_detail
-                  ( file_detail_id, file_label, file_group,
-                    file_type, directory, filename, source_directory, 
-		    source_filename, work_directory, num_bytes, num_lines, file_dt, file_clob, file_blob 
-                  )
-           VALUES ( files_detail_seq.NEXTVAL, file_label, file_group,
-                    file_type, SELF.directory, l_filename, SELF.source_directory, p_source_filename, SELF.work_directory,
-                    p_num_bytes, p_num_lines, p_file_dt, EMPTY_CLOB(), EMPTY_BLOB()
-                  )
-        RETURNING file_clob, file_blob
-             INTO l_dest_clob, l_dest_blob;
       
-      -- oepn the source LOB to get ready to write it
-      DBMS_LOB.OPEN (l_src_lob, DBMS_LOB.lob_readonly);
+      
+      -- INSERT into the FILE_DETAIL table to record the movement
+      -- this is done regardless of runmode
+      INSERT INTO files_detail
+             ( file_detail_id, file_label, file_group,
+               file_type, directory, filename, source_directory, 
+	       source_filename, work_directory, num_bytes, num_lines, file_dt, file_clob, file_blob 
+             )
+	     VALUES ( files_detail_seq.NEXTVAL, file_label, file_group,
+		      file_type, SELF.directory, l_filename, SELF.source_directory, p_source_filename, SELF.work_directory,
+		      p_num_bytes, p_num_lines, p_file_dt, EMPTY_CLOB(), EMPTY_BLOB()
+                    )
+	     RETURNING file_clob, file_blob
+	     INTO l_dest_clob, l_dest_blob;
 
-      CASE
-      WHEN p_clob IS NOT NULL AND p_blob IS null
-      THEN
-      DBMS_LOB.loadclobfromfile ( dest_lob          => l_dest_clob,
-                                  src_bfile         => l_src_lob,
-                                  amount            => DBMS_LOB.getlength(l_src_lob),
-                                  dest_offset       => l_dst_offset,
-                                  src_offset        => l_src_offset,
-                                  bfile_csid        => NLS_CHARSET_ID( SELF.characterset ),
-                                  lang_context      => l_lang_ctx,
-                                  warning           => l_warning
-                                );
-      WHEN p_blob IS NOT NULL AND p_clob IS NULL
-      THEN
-	 DBMS_LOB.loadblobfromfile ( dest_lob          => l_dest_blob,
-                                     src_bfile         => l_src_lob,
-                                     amount            => DBMS_LOB.getlength(l_src_lob),
-                                     dest_offset       => l_dst_offset,
-                                     src_offset        => l_src_offset
-				   );
-      ELSE
-      evolve.raise_err( 'single_lob' );
-      END CASE;
+      
+      -- do not want to store the file in the database if were are in debugmode
+      -- might reconsider this after the fact
 
-      -- now close the soure lob      
-      DBMS_LOB.CLOSE (l_src_lob);
-
-      -- the job fails when size threshholds are not met
       IF NOT evolve.is_debugmode
       THEN
+	       
+	 -- oepn the source LOB to get ready to write it
+	 DBMS_LOB.OPEN (l_src_lob, DBMS_LOB.lob_readonly);
+
+	 CASE SELF.lob_type
+	 WHEN 'clob'
+	    THEN
+	    DBMS_LOB.loadclobfromfile ( dest_lob          => l_dest_clob,
+					src_bfile         => l_src_lob,
+					amount            => DBMS_LOB.getlength(l_src_lob),
+					dest_offset       => l_dst_offset,
+					src_offset        => l_src_offset,
+					bfile_csid        => NLS_CHARSET_ID( SELF.characterset ),
+					lang_context      => l_lang_ctx,
+					warning           => l_warning
+                                      );
+	    WHEN 'blob'
+	       THEN
+	       DBMS_LOB.loadblobfromfile ( dest_lob          => l_dest_blob,
+					   src_bfile         => l_src_lob,
+					   amount            => DBMS_LOB.getlength(l_src_lob),
+					   dest_offset       => l_dst_offset,
+					   src_offset        => l_src_offset
+					 );
+	       ELSE
+	       evolve.raise_err( 'single_lob' );
+	 END CASE;
+
+	 -- now close the soure lob      
+	 DBMS_LOB.CLOSE (l_src_lob);
 
          IF p_num_bytes >= max_bytes AND max_bytes <> 0
          THEN
@@ -87,6 +90,7 @@ AS
             o_ev.send( p_label => file_label );
 	    evolve.raise_err( 'file_too_small' );
          END IF;
+
       END IF;
 
       o_ev.clear_app_info;

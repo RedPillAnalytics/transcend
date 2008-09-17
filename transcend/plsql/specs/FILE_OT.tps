@@ -8,6 +8,7 @@ CREATE OR REPLACE TYPE file_ot AUTHID CURRENT_USER AS object(
    filename         VARCHAR2( 50 ),
    source_directory VARCHAR2( 50 ),
    work_directory   VARCHAR2( 30 ),
+   lob_type	    VARCHAR2( 4 ),
    file_datestamp   VARCHAR2( 30 ),
    min_bytes        NUMBER,
    max_bytes        NUMBER,
