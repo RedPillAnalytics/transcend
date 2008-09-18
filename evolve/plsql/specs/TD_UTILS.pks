@@ -1,13 +1,14 @@
 CREATE OR REPLACE PACKAGE td_utils AUTHID CURRENT_USER
 AS
-   PROCEDURE directory_list( p_directory VARCHAR2 );
 
-   -- procedure to copy a file from one place to another
-   FUNCTION copy_file( p_srcfile VARCHAR2, p_dstfile VARCHAR2 )
-      RETURN NUMBER
-   AS
-      LANGUAGE JAVA
-      NAME 'TdUtils.copyFile( java.lang.String, java.lang.String ) return integer';
+   -- constants used for EXPAND_FILE
+   CONSTANT extension_method    VARCHAR2(15) := 'extension_based';
+   CONSTANT gzip_method         VARCHAR2(15) := 'gzip_method';
+   CONSTANT compress_method     VARCHAR2(15) := 'compress_method';
+   CONSTANT bunzip_method       VARCHAR2(15) := 'bunzip_method';
+   CONSTANT unzip_method        VARCHAR2(15) := 'unzip_method';
+
+   PROCEDURE directory_list( p_directory VARCHAR2 );
 
    -- procedure calls Utils.runCmd java method
    FUNCTION host_cmd( p_cmd IN VARCHAR2, p_stdin IN VARCHAR2 )
@@ -38,7 +39,7 @@ AS
    FUNCTION decrypt_file( p_dirpath VARCHAR2, p_filename VARCHAR2, p_passphrase VARCHAR2 )
       RETURN VARCHAR2;
 
-   FUNCTION unzip_file( p_dirpath VARCHAR2, p_filename VARCHAR2 )
+   FUNCTION expand_file( p_directory VARCHAR2, p_filename VARCHAR2, p_method DEFAULT extension_method )
       RETURN VARCHAR2;
 
    FUNCTION extract_query(

@@ -5,6 +5,13 @@ AS
    AS
       LANGUAGE JAVA
       NAME 'TdUtils.getDirList( java.lang.String )';
+
+   -- procedure to copy a file from one place to another
+   FUNCTION copy_file( p_srcfile VARCHAR2, p_dstfile VARCHAR2 )
+      RETURN NUMBER
+   AS
+      LANGUAGE JAVA
+      NAME 'TdUtils.copyFile( java.lang.String, java.lang.String ) return integer';
       
    -- procedure executes the copy_file function and raises an exception with the return code
    PROCEDURE directory_list( p_directory IN VARCHAR2 )   
@@ -148,43 +155,63 @@ AS
       END IF;
    END get_numlines;
 
-   -- a function used to unzip a file regardless of which library was used to zip it
+   -- a function used to expand a file regardless of which library was used to zip it
    -- currently contains functionality for the following libraries: gzip, zip, compress, and bzip2
    -- function returns what the name should be after the unzip process
-   FUNCTION unzip_file( p_dirpath VARCHAR2, p_filename VARCHAR2 )
+   FUNCTION expand_file( p_directory VARCHAR2, p_filename VARCHAR2, p_comp_method DEFAULT extension_method )
       RETURN VARCHAR2
    AS
       l_compressed     BOOLEAN         := TRUE;
       l_filebase       VARCHAR2( 50 );
       l_filesuf        VARCHAR2( 20 );
-      l_filepath       VARCHAR2( 200 ) := p_dirpath || '/' || p_filename;
+      l_filepath       VARCHAR2( 200 ) := get_dir_path( p_dirpath ) || '/' || p_filename;
       l_filebasepath   VARCHAR2( 200 );
       l_cmd            VARCHAR2( 200 );
       l_return         VARCHAR2( 200 );
       l_file_exists    BOOLEAN;
       l_file_size      NUMBER;
+      l_comp_method    files_conf.compression_method%type;
       l_blocksize      NUMBER;
-      o_ev             evolve_ot       := evolve_ot( p_module => 'unzip_file' );
+      o_ev             evolve_ot       := evolve_ot( p_module => 'expand_file' );
    BEGIN
       l_filebase := REGEXP_REPLACE( p_filename, '\.[^\.]+$', NULL, 1, 1, 'i' );
       l_filesuf := REGEXP_SUBSTR( p_filename, '[^\.]+$' );
-      l_filebasepath := p_dirpath || '/' || l_filebase;
+      l_filebasepath := get_dir_path( p_directory )|| '/' || l_filebase;
       evolve.log_msg( l_filepath || ' checked for compression using standard libraries', 3 );
+      
+      -- determine the method for expanding the file
+      -- can actually specify how it should be done using the attribute COMPRESS_METHOD
+      -- or we can let the file extension dictate the method by providing EXTENSTION_METHOD constant
+      l_comp_method := 
+      CASE 
+      WHEN p_comp_method <> extension_method THEN p_comp_method
+      WHEN p_comp_method = extension_method AND l_filesuf = 'gz'  THEN gzip_method
+      WHEN p_comp_method = extension_method AND l_filesuf = 'Z'   THEN compress_method
+      WHEN p_comp_method = extension_method AND l_filesuf = 'bz2' THEN bzip_method
+      WHEN p_comp_method = extension_method AND l_filesuf = 'zip' THEN zip_method
+      ELSE NULL
+      END;
+      
+      -- if l_comp_method is NULL, then we didn't get a valid method
+      IF l_comp_method IS NULL
+      THEN
+	 evolve.raise_err('invalid_compress_method');
+      END IF;
 
-      CASE l_filesuf
-         WHEN 'gz'
+      CASE l_comp_method
+         WHEN gzip_method
          THEN
             host_cmd( 'gzip -df ' || l_filepath );
             evolve.log_msg( l_filepath || ' gunzipped', 3 );
-         WHEN 'Z'
+         WHEN compress_method
          THEN
             host_cmd( 'uncompress ' || l_filepath );
             evolve.log_msg( l_filepath || ' uncompressed', 3 );
-         WHEN 'bz2'
+         WHEN bzip_method
          THEN
             host_cmd( 'bunzip2 ' || l_filepath );
             evolve.log_msg( l_filepath || ' bunzipped', 3 );
-         WHEN 'zip'
+         WHEN zip_method
          THEN
             host_cmd( 'unzip ' || l_filepath );
             evolve.log_msg( l_filepath || ' unzipped', 3 );
@@ -204,7 +231,7 @@ AS
 
       IF evolve.is_debugmode
       THEN
-         evolve.log_msg( 'File returned by UNZIP_FILE: ' || l_return );
+         evolve.log_msg( 'File returned by EXPAND_FILE: ' || l_return );
       ELSE
          o_ev.change_action( 'Check for extracted file' );
          -- check and make sure the unzip process worked
@@ -219,7 +246,7 @@ AS
 
       o_ev.clear_app_info;
       RETURN l_return;
-   END unzip_file;
+   END expand_file;
 
    -- a function used to decrypt a file regardless of which method was used to encrypt it
    -- currently contains functionality for the following encryption methods: gpg

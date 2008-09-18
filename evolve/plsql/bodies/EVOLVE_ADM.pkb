@@ -575,6 +575,7 @@ IS
          set_error_conf( p_name         => 'copy_file',
                          p_message      => 'Java Error: method copyFile was unable to copy' );
          set_error_conf( p_name => 'utl_mail_err', p_message => 'Fatal UTL_MAIL error occured' );
+         set_error_conf( p_name => 'invalid_compress_method', p_message => 'The specified compression method is not valid' );
       END IF;
    END set_default_configs;
 
