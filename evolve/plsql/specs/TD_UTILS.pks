@@ -5,8 +5,8 @@ AS
    CONSTANT extension_method    VARCHAR2(15) := 'extension_based';
    CONSTANT gzip_method         VARCHAR2(15) := 'gzip_method';
    CONSTANT compress_method     VARCHAR2(15) := 'compress_method';
-   CONSTANT bunzip_method       VARCHAR2(15) := 'bunzip_method';
-   CONSTANT unzip_method        VARCHAR2(15) := 'unzip_method';
+   CONSTANT bzip_method         VARCHAR2(15) := 'bzip_method';
+   CONSTANT zip_method          VARCHAR2(15) := 'zip_method';
 
    PROCEDURE directory_list( p_directory VARCHAR2 );
 

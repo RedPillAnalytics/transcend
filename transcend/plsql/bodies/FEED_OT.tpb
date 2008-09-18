@@ -359,7 +359,7 @@ AS
          -- reset variables used in the cursor
          l_numlines := 0;
 	 
-	 -- if this feed uses a work_directory, then we need to copy the files there
+	 -- if this feed uses a work_directory, then we need to copy the file there
 	 IF SELF.work_directory IS NOT NULL
 	 THEN
             td_utils.copy_file ( p_source_directory => SELF.directory, 
@@ -367,6 +367,10 @@ AS
 			         p_directory	    => SELF.work_directory,
 				 p_filename	    => c_dir_list.source_filename 
 			       );
+	 END IF;
+	 
+	 -- now, I need to write an audit record for the file
+	 -- this also stores the file as a CLOB
 	 
          -- first, write an audit record for the file from source
 	 -- we do this for all files, even the ones that won't go to target

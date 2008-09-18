@@ -164,8 +164,8 @@ AS
       l_compressed     BOOLEAN         := TRUE;
       l_filebase       VARCHAR2( 50 );
       l_filesuf        VARCHAR2( 20 );
-      l_filepath       VARCHAR2( 200 ) := get_dir_path( p_dirpath ) || '/' || p_filename;
-      l_filebasepath   VARCHAR2( 200 );
+      l_filepath       VARCHAR2( 200 );
+      l_filebasepath;
       l_cmd            VARCHAR2( 200 );
       l_return         VARCHAR2( 200 );
       l_file_exists    BOOLEAN;
@@ -174,9 +174,14 @@ AS
       l_blocksize      NUMBER;
       o_ev             evolve_ot       := evolve_ot( p_module => 'expand_file' );
    BEGIN
-      l_filebase := REGEXP_REPLACE( p_filename, '\.[^\.]+$', NULL, 1, 1, 'i' );
-      l_filesuf := REGEXP_SUBSTR( p_filename, '[^\.]+$' );
-      l_filebasepath := get_dir_path( p_directory )|| '/' || l_filebase;
+      -- construct the absolute path of the file
+      l_filepath := get_dir_path( p_dirpath ) || '/' || p_filename;
+      -- construct the filename minus the very last extension to the file
+      l_filebase := REGEXP_REPLACE( p_filename, '(.+)(\.)([^\.]+$)', '\1', 1, 0, 'i' );
+      
+      -- construct the file suffix
+      l_filesuf := REGEXP_REPLACE( p_filename, '(.+)(\.)([^\.]+$)', '\3', 1, 0, 'i' );
+
       evolve.log_msg( l_filepath || ' checked for compression using standard libraries', 3 );
       
       -- determine the method for expanding the file
@@ -226,7 +231,7 @@ AS
       THEN
          l_return := l_filebase;
       ELSE
-         l_return := l_filebase || '.' || l_filesuf;
+         l_return := l_filebase || '.' || l_filesuf
       END IF;
 
       IF evolve.is_debugmode
