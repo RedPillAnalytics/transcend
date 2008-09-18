@@ -911,11 +911,12 @@ IS
 	   file_datestamp      VARCHAR2(30),
 	   baseurl             VARCHAR2(500),
 	   passphrase          VARCHAR2(100),
-	   characterset	       VARCHAR2(20),
 	   source_directory    VARCHAR2(50),
 	   source_regexp       VARCHAR2(100),
 	   match_parameter     VARCHAR2(10),
 	   source_policy       VARCHAR2(10),
+	   store_files_native  VARCHAR2(20),
+	   characterset	       VARCHAR2(20),
 	   required            VARCHAR2(3),
 	   delete_source       VARCHAR2(3),
 	   delete_target       VARCHAR2(3),
@@ -960,6 +961,12 @@ IS
 	 (
 	   CONSTRAINT files_conf_ck4
 	   CHECK (lob_type IN ('clob','blob')
+	 )|';
+	   
+         EXECUTE IMMEDIATE q'|ALTER TABLE files_conf ADD 
+	 (
+	   CONSTRAINT files_conf_ck5
+	   CHECK (store_files_native IN ('all','none','non-target',NULL))
 	 )|';
 
 
@@ -2402,11 +2409,12 @@ IS
 	   file_datestamp      VARCHAR2(30),
 	   baseurl             VARCHAR2(500),
 	   passphrase          VARCHAR2(100),
-	   characterset	       VARCHAR2(20),
 	   source_directory    VARCHAR2(50),
 	   source_regexp       VARCHAR2(100),
 	   match_parameter     VARCHAR2(10),
 	   source_policy       VARCHAR2(10),
+	   store_files_native  VARCHAR2(20),
+	   characterset	       VARCHAR2(20),
 	   required            VARCHAR2(3),
 	   delete_source       VARCHAR2(3),
 	   delete_target       VARCHAR2(3),
@@ -2451,7 +2459,14 @@ IS
 	 (
 	   CONSTRAINT files_conf_ck4
 	   CHECK (lob_type IN ('clob','blob')
+	  )|';
+	   
+         EXECUTE IMMEDIATE q'|ALTER TABLE files_conf ADD 
+	 (
+	   CONSTRAINT files_conf_ck5
+	   CHECK (store_files_native IN ('all','none','non-target',NULL))
 	 )|';
+
 	 
 	 EXECUTE IMMEDIATE q'|drop table files_detail|';
 	 

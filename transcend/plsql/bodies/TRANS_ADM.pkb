@@ -74,6 +74,10 @@ IS
           p_message      => 'External tables used in Transcend Files must contain a single location'
          );
       evolve_adm.set_error_conf
+         (p_name         => 'work_dir_name',
+           p_message      => 'The values provided for DIRECTORY and WORK_DIRECTORY cannot be the same'
+         );
+      evolve_adm.set_error_conf
                    (p_name         => 'no_ext_tab',
                     p_message      => 'The specified external table does not exist'
                    );

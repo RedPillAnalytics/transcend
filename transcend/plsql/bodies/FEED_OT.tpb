@@ -9,15 +9,17 @@ AS
          SELECT file_label, file_group, file_type, object_owner, object_name, DIRECTORY,
                 filename, work_directory, file_datestamp, min_bytes, max_bytes, baseurl,
                 passphrase, source_directory, source_regexp, match_parameter, source_policy,
-                required, delete_source, delete_target, reject_limit, lob_type
+                required, delete_source, delete_target, reject_limit, lob_type, store_files_native,
+		characterset
            INTO SELF.file_label, SELF.file_group, SELF.file_type, SELF.object_owner, SELF.object_name, SELF.DIRECTORY,
                 SELF.filename, SELF.work_directory, SELF.file_datestamp, SELF.min_bytes, SELF.max_bytes, SELF.baseurl,
                 SELF.passphrase, SELF.source_directory, SELF.source_regexp, SELF.match_parameter, SELF.source_policy,
-                SELF.required, SELF.delete_source, SELF.delete_target, SELF.reject_limit, SELF.lob_type
+                SELF.required, SELF.delete_source, SELF.delete_target, SELF.reject_limit, SELF.lob_type, SELF.store_files_native,
+		SELF.characterset
            FROM (SELECT file_label, file_group, file_type, object_owner, object_name, DIRECTORY, filename,
                         work_directory, file_datestamp, min_bytes, max_bytes, baseurl, passphrase, source_directory,
                         source_regexp, match_parameter, source_policy, required, delete_source, delete_target,
-                        reject_limit, lob_type
+                        reject_limit, lob_type, store_files_native, characterset
                    FROM files_conf
                   WHERE REGEXP_LIKE (file_type, '^feed$', 'i') AND file_group = p_file_group
                         AND file_label = p_file_label);
@@ -33,6 +35,7 @@ AS
       -- return the self reference
       RETURN;
    END feed_ot;
+
    MEMBER PROCEDURE verify
    IS
       l_dir_path    all_directories.directory_path%TYPE;
@@ -74,10 +77,17 @@ AS
          END IF;
       END IF;
 
+      -- also, make sure that the work_directory and directory are not the same
+      IF SELF.directory = SELF.work_directory
+      THEN
+	 evolve.raise_err( 'work_dir_name' );
+      END IF;
+
       evolve.log_msg ('FEED confirmation completed successfully', 5);
       -- reset the evolve_object
       o_ev.clear_app_info;
    END verify;
+
    -- audits information about external tables after the file(s) have been put in place
    MEMBER PROCEDURE audit_ext_tab (p_num_lines NUMBER)
    IS
@@ -245,6 +255,7 @@ AS
       l_ext_tab         VARCHAR2 (61)                      := object_owner || '.' || object_name;
       l_files_url       VARCHAR2 (1000);
       l_message         notification_events.MESSAGE%TYPE;
+      l_directory	files_conf.directory%type	   := NVL( SELF.work_directory, SELF.directory );
       l_results         NUMBER;
       e_no_files        EXCEPTION;
       PRAGMA EXCEPTION_INIT (e_no_files, -1756);
@@ -347,6 +358,15 @@ AS
          l_rows_dirlist := TRUE;
          -- reset variables used in the cursor
          l_numlines := 0;
+	 
+	 -- if this feed uses a work_directory, then we need to copy the files there
+	 IF SELF.work_directory IS NOT NULL
+	 THEN
+            td_utils.copy_file ( p_source_directory => SELF.directory, 
+				 p_source_filename  => c_dir_list.source_filename,
+			         p_directory	    => SELF.work_directory,
+				 p_filename	    => c_dir_list.source_filename 
+			       );
 	 
          -- first, write an audit record for the file from source
 	 -- we do this for all files, even the ones that won't go to target
