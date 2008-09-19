@@ -576,6 +576,9 @@ IS
                          p_message      => 'Java Error: method copyFile was unable to copy' );
          set_error_conf( p_name => 'utl_mail_err', p_message => 'Fatal UTL_MAIL error occured' );
          set_error_conf( p_name => 'invalid_compress_method', p_message => 'The specified compression method is not valid' );
+         set_error_conf( p_name => 'invalid_encrypt_method', p_message => 'The specified encryption method is not valid' );
+         set_error_conf( p_name => 'invalid_compress_ext', p_message => 'The file extension does not have a recognized compression library' );
+         set_error_conf( p_name => 'invalid_encrypt_ext', p_message => 'The file extension does not have a recognized encryption library' );
       END IF;
    END set_default_configs;
 

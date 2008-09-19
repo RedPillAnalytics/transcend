@@ -2,11 +2,17 @@ CREATE OR REPLACE PACKAGE td_utils AUTHID CURRENT_USER
 AS
 
    -- constants used for EXPAND_FILE
-   CONSTANT extension_method    VARCHAR2(15) := 'extension_based';
    CONSTANT gzip_method         VARCHAR2(15) := 'gzip_method';
    CONSTANT compress_method     VARCHAR2(15) := 'compress_method';
    CONSTANT bzip_method         VARCHAR2(15) := 'bzip_method';
    CONSTANT zip_method          VARCHAR2(15) := 'zip_method';
+
+   -- constants used for EXPAND_FILE
+   CONSTANT gpg_method          VARCHAR2(15) := 'gpg_method';
+
+   -- constant for both EXPAND_FILE and DECRYPT_FILE
+   -- this constant is used to dictate that a file extension should determin the method used
+   CONSTANT extension_method    VARCHAR2(15) := 'extension_based';
 
    PROCEDURE directory_list( p_directory VARCHAR2 );
 
@@ -36,11 +42,24 @@ AS
    FUNCTION get_numlines( p_dirname IN VARCHAR2, p_filename IN VARCHAR2 )
       RETURN NUMBER;
 
-   FUNCTION decrypt_file( p_dirpath VARCHAR2, p_filename VARCHAR2, p_passphrase VARCHAR2 )
-      RETURN VARCHAR2;
+   PROCEDURE expand_file( 
+      p_directory   VARCHAR2, 
+      p_filename    VARCHAR2,
+      r_filename    VARCHAR2 OUT,
+      r_filesize    NUMBER   OUT,
+      r_blocksize   NUMBER   OUT,
+      p_comp_method DEFAULT extension_method
+   );
 
-   FUNCTION expand_file( p_directory VARCHAR2, p_filename VARCHAR2, p_method DEFAULT extension_method )
-      RETURN VARCHAR2;
+   PROCEDURE decrypt_file( 
+      p_directory      VARCHAR2, 
+      p_filename       VARCHAR2,
+      p_passphrase     VARCHAR2,
+      r_filename       VARCHAR2 OUT,
+      r_filesize       NUMBER   OUT,
+      r_blocksize      NUMBER   OUT,
+      p_encrypt_method DEFAULT extension_method
+   );
 
    FUNCTION extract_query(
       p_query       VARCHAR2,

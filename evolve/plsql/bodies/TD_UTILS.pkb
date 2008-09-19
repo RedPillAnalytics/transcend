@@ -60,7 +60,8 @@ AS
       p_source_directory VARCHAR2, 
       p_source_filename VARCHAR2, 
       p_directory VARCHAR2, 
-      p_filename VARCHAR2 )
+      p_filename VARCHAR2
+   )
    AS
       l_srcfile  VARCHAR2(300) := td_utils.get_dir_path( p_source_directory ) || '/' || p_source_filename;
       l_dstfile  VARCHAR2(300) := td_utils.get_dir_path( p_directory ) || '/' || p_filename;
@@ -155,23 +156,25 @@ AS
       END IF;
    END get_numlines;
 
-   -- a function used to expand a file regardless of which library was used to zip it
+   -- a procedure used to expand a file regardless of which library was used to zip it
    -- currently contains functionality for the following libraries: gzip, zip, compress, and bzip2
-   -- function returns what the name should be after the unzip process
-   FUNCTION expand_file( p_directory VARCHAR2, p_filename VARCHAR2, p_comp_method DEFAULT extension_method )
-      RETURN VARCHAR2
+   -- returns several out parameters, including expected filename, filesize, and blocksize
+   PROCEDURE expand_file( 
+      p_directory   VARCHAR2, 
+      p_filename    VARCHAR2,
+      r_filename    VARCHAR2 OUT,
+      r_filesize    NUMBER   OUT,
+      r_blocksize   NUMBER   OUT,
+      p_comp_method DEFAULT extension_method
+   )
    AS
       l_compressed     BOOLEAN         := TRUE;
       l_filebase       VARCHAR2( 50 );
-      l_filesuf        VARCHAR2( 20 );
+      l_file_ext       VARCHAR2( 20 );
       l_filepath       VARCHAR2( 200 );
-      l_filebasepath;
-      l_cmd            VARCHAR2( 200 );
-      l_return         VARCHAR2( 200 );
+      l_filebasepath   VARCHAR2( 200 );
       l_file_exists    BOOLEAN;
-      l_file_size      NUMBER;
       l_comp_method    files_conf.compression_method%type;
-      l_blocksize      NUMBER;
       o_ev             evolve_ot       := evolve_ot( p_module => 'expand_file' );
    BEGIN
       -- construct the absolute path of the file
@@ -180,29 +183,30 @@ AS
       l_filebase := REGEXP_REPLACE( p_filename, '(.+)(\.)([^\.]+$)', '\1', 1, 0, 'i' );
       
       -- construct the file suffix
-      l_filesuf := REGEXP_REPLACE( p_filename, '(.+)(\.)([^\.]+$)', '\3', 1, 0, 'i' );
+      l_file_ext := REGEXP_REPLACE( p_filename, '(.+)(\.)([^\.]+$)', '\3', 1, 0, 'i' );
 
-      evolve.log_msg( l_filepath || ' checked for compression using standard libraries', 3 );
-      
       -- determine the method for expanding the file
       -- can actually specify how it should be done using the attribute COMPRESS_METHOD
       -- or we can let the file extension dictate the method by providing EXTENSTION_METHOD constant
       l_comp_method := 
       CASE 
       WHEN p_comp_method <> extension_method THEN p_comp_method
-      WHEN p_comp_method = extension_method AND l_filesuf = 'gz'  THEN gzip_method
-      WHEN p_comp_method = extension_method AND l_filesuf = 'Z'   THEN compress_method
-      WHEN p_comp_method = extension_method AND l_filesuf = 'bz2' THEN bzip_method
-      WHEN p_comp_method = extension_method AND l_filesuf = 'zip' THEN zip_method
+      WHEN p_comp_method = extension_method AND l_file_ext = 'gz'  THEN gzip_method
+      WHEN p_comp_method = extension_method AND l_file_ext = 'Z'   THEN compress_method
+      WHEN p_comp_method = extension_method AND l_file_ext = 'bz2' THEN bzip_method
+      WHEN p_comp_method = extension_method AND l_file_ext = 'zip' THEN zip_method
+      -- not a valid compression method
+      -- this is handled in the next IF block
       ELSE NULL
       END;
       
       -- if l_comp_method is NULL, then we didn't get a valid method
       IF l_comp_method IS NULL
       THEN
-	 evolve.raise_err('invalid_compress_method');
+	 evolve.raise_err('invalid_compress_method', p_comp_method );
       END IF;
 
+      -- now figure out what to do with each method
       CASE l_comp_method
          WHEN gzip_method
          THEN
@@ -221,27 +225,21 @@ AS
             host_cmd( 'unzip ' || l_filepath );
             evolve.log_msg( l_filepath || ' unzipped', 3 );
          ELSE
-            -- this is the only case where the file wasn't compressed
-            l_compressed := FALSE;
+	    -- we did not recognize the file extension
+	    evolve.raise_err( 'invalid_compress_ext', UPPER( l_file_ext );
       END CASE;
 
-      -- return either the expected uncompressed filename
-      -- or the provided filename if no unzip process was performed
-      IF l_compressed
-      THEN
-         l_return := l_filebase;
-      ELSE
-         l_return := l_filebase || '.' || l_filesuf
-      END IF;
+      -- return the expected uncompressed filename
+      r_filename := l_filebase;
 
       IF evolve.is_debugmode
       THEN
-         evolve.log_msg( 'File returned by EXPAND_FILE: ' || l_return );
+         evolve.log_msg( 'File returned by EXPAND_FILE: ' || l_file_return );
       ELSE
          o_ev.change_action( 'Check for extracted file' );
          -- check and make sure the unzip process worked
          -- do this by checking to see if the expected file exists
-         UTL_FILE.fgetattr( td_utils.get_dir_name( p_dirpath ), l_return, l_file_exists, l_file_size, l_blocksize );
+         UTL_FILE.fgetattr( p_directory, l_filebase, l_file_exists, r_filesize, r_blocksize );
 
          IF NOT l_file_exists
          THEN
@@ -250,69 +248,90 @@ AS
       END IF;
 
       o_ev.clear_app_info;
-      RETURN l_return;
    END expand_file;
-
-   -- a function used to decrypt a file regardless of which method was used to encrypt it
+   
+   -- a procedure used to decrypt a file regardless of which method was used to encrypt it
    -- currently contains functionality for the following encryption methods: gpg
-   -- function returns what the name should be after the decryption process
-   FUNCTION decrypt_file( p_dirpath VARCHAR2, p_filename VARCHAR2, p_passphrase VARCHAR2 )
-      RETURN VARCHAR2
+   -- returns several out parameters, including expected filename, filesize, and blocksize
+   PROCEDURE decrypt_file( 
+      p_directory      VARCHAR2, 
+      p_filename       VARCHAR2,
+      p_passphrase     VARCHAR2,
+      r_filename       VARCHAR2 OUT,
+      r_filesize       NUMBER   OUT,
+      r_blocksize      NUMBER   OUT,
+      p_encrypt_method DEFAULT extension_method
+   )
    AS
       l_encrypted      BOOLEAN         := TRUE;
       l_filebase       VARCHAR2( 50 );
-      l_filesuf        VARCHAR2( 20 );
-      l_filepath       VARCHAR2( 200 ) := p_dirpath || '/' || p_filename;
-      l_filebasepath   VARCHAR2( 200 );
-      l_cmd            VARCHAR2( 200 );
-      l_return         VARCHAR2( 200 );
+      l_file_ext       VARCHAR2( 20 );
+      l_filepath       VARCHAR2( 200 );
+      l_filepath       VARCHAR2( 200 );
       l_file_exists    BOOLEAN;
-      l_file_size      NUMBER;
-      l_blocksize      NUMBER;
+      l_encrypt_method files_conf.encryption_method%type;
       o_ev             evolve_ot       := evolve_ot( p_module => 'decrypt_file' );
    BEGIN
-      l_filebase := REGEXP_REPLACE( p_filename, '\.[^\.]+$', NULL, 1, 1, 'i' );
-      l_filesuf := REGEXP_SUBSTR( p_filename, '[^\.]+$' );
-      l_filebasepath := p_dirpath || '/' || l_filebase;
+      -- construct the absolute path of the file
+      l_filepath := get_dir_path( p_dirpath ) || '/' || p_filename;
+      -- construct the filename minus the very last extension to the file
+      l_filebase := REGEXP_REPLACE( p_filename, '(.+)(\.)([^\.]+$)', '\1', 1, 0, 'i' );
+      
+      -- construct the file suffix
+      l_file_ext := REGEXP_REPLACE( p_filename, '(.+)(\.)([^\.]+$)', '\3', 1, 0, 'i' );
 
-      CASE l_filesuf
-         WHEN 'gpg'
+      -- determine the method for expanding the file
+      -- can actually specify how it should be done using the attribute ENCRYPT_METHOD
+      -- or we can let the file extension dictate the method by providing EXTENSTION_METHOD constant
+      l_encrypt_method := 
+      CASE 
+      WHEN p_encrypt_method <> extension_method THEN p_encrypt_method
+      WHEN p_encrypt_method = extension_method AND l_file_ext = 'gpg'  THEN gpg_method
+      -- not a valid encryption method
+      -- this is handled in the next IF block
+      ELSE NULL
+      END;
+      
+      -- if l_encrypt_method is NULL, then we didn't get a valid method
+      IF l_decrypt_method IS NULL
+      THEN
+	 evolve.raise_err('invalid_encrypt_method', p_decrypt_method );
+      END IF;
+
+      -- now figure out what to do with each method
+      CASE l_encrypt_method
+         WHEN gpg_method
          THEN
             host_cmd( 'gpg --no-tty --passphrase-fd 0 --batch --decrypt --output ' || l_filepath || ' '
                       || l_filebasepath,
                       p_passphrase
                     );
+            evolve.log_msg( l_filepath || ' decrypted', 3 );
          ELSE
-            -- this is the only case where the extension wasn't recognized
-            l_encrypted := FALSE;
+	    -- we did not recognize the file extension
+	    evolve.raise_err( 'invalid_encrypt_ext', UPPER( l_file_ext );
       END CASE;
 
-      -- return either the expected decrypted filename
-      -- or the provided filename if the decryption process was performed
-      IF l_encrypted
-      THEN
-         l_return := l_filebasepath;
-      ELSE
-         l_return := l_filepath;
-      END IF;
+      -- return the expected uncompressed filename
+      r_filename := l_filebase;
 
       IF evolve.is_debugmode
       THEN
-         evolve.log_msg( 'File returned by DECRYPT_FILE: ' || l_return );
+         evolve.log_msg( 'File returned by DECRYPT_FILE: ' || l_file_return );
       ELSE
-         o_ev.change_action( 'Check for decrypted file' );
+         o_ev.change_action( 'Check for extracted file' );
          -- check and make sure the unzip process worked
          -- do this by checking to see if the expected file exists
-         UTL_FILE.fgetattr( td_utils.get_dir_name( p_dirpath ), l_return, l_file_exists, l_file_size, l_blocksize );
+         UTL_FILE.fgetattr( p_directory, l_filebase, l_file_exists, p_filesize, p_blocksize );
 
          IF NOT l_file_exists
          THEN
-            evolve.raise_err( 'file_not_found', p_dirpath );
+            evolve.raise_err( 'file_not_found' );
          END IF;
       END IF;
 
       o_ev.clear_app_info;
-      RETURN l_return;
+      RETURN l_file_return;
    END decrypt_file;
 
    -- checks things about a table depending on the parameters passed
