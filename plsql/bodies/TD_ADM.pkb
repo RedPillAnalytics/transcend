@@ -916,6 +916,8 @@ IS
 	   match_parameter     VARCHAR2(10),
 	   source_policy       VARCHAR2(10),
 	   store_files_native  VARCHAR2(20),
+   	   compress_method     VARCHAR2( 20 ),
+   	   encrypt_method      VARCHAR2( 20 ),
 	   characterset	       VARCHAR2(20),
 	   required            VARCHAR2(3),
 	   delete_source       VARCHAR2(3),
@@ -969,6 +971,17 @@ IS
 	   CHECK (store_files_native IN ('all','none','non-target',NULL))
 	 )|';
 
+         EXECUTE IMMEDIATE q'|ALTER TABLE files_conf ADD 
+	 (
+	   CONSTRAINT files_conf_ck6
+	   CHECK (compress_method IN ('extension_method','gzip_method','compress_method','bzip_method','zip_method'))
+	 )|';
+
+         EXECUTE IMMEDIATE q'|ALTER TABLE files_conf ADD 
+	 (
+	   CONSTRAINT files_conf_ck7
+	   CHECK (encrypt_method IN ('extension_method','gpg_method'))
+	 )|';
 
          -- FILES_DETAIL table
          EXECUTE IMMEDIATE q'|CREATE TABLE files_detail
@@ -2414,6 +2427,8 @@ IS
 	   match_parameter     VARCHAR2(10),
 	   source_policy       VARCHAR2(10),
 	   store_files_native  VARCHAR2(20),
+   	   compress_method     VARCHAR2( 20 ),
+   	   encrypt_method      VARCHAR2( 20 ),
 	   characterset	       VARCHAR2(20),
 	   required            VARCHAR2(3),
 	   delete_source       VARCHAR2(3),
@@ -2459,7 +2474,7 @@ IS
 	 (
 	   CONSTRAINT files_conf_ck4
 	   CHECK (lob_type IN ('clob','blob')
-	  )|';
+	 )|';
 	   
          EXECUTE IMMEDIATE q'|ALTER TABLE files_conf ADD 
 	 (
@@ -2467,6 +2482,17 @@ IS
 	   CHECK (store_files_native IN ('all','none','non-target',NULL))
 	 )|';
 
+         EXECUTE IMMEDIATE q'|ALTER TABLE files_conf ADD 
+	 (
+	   CONSTRAINT files_conf_ck6
+	   CHECK (compress_method IN ('extension_method','gzip_method','compress_method','bzip_method','zip_method'))
+	 )|';
+
+         EXECUTE IMMEDIATE q'|ALTER TABLE files_conf ADD 
+	 (
+	   CONSTRAINT files_conf_ck7
+	   CHECK (encrypt_method IN ('extension_method','gpg_method'))
+	 )|';
 	 
 	 EXECUTE IMMEDIATE q'|drop table files_detail|';
 	 

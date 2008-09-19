@@ -2,7 +2,6 @@ CREATE OR REPLACE TYPE feed_ot UNDER file_ot(
    source_regexp      VARCHAR2( 100 ),
    match_parameter    VARCHAR2( 10 ),
    source_policy      VARCHAR2( 10 ),
-   store_files_native VARCHAR2( 20 ),
    characterset       VARCHAR2( 20 ),
    required           VARCHAR2( 8 ),
    delete_source      VARCHAR2( 3 ),
