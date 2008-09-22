@@ -261,6 +261,8 @@ AS
       l_filesize	NUMBER;
       l_blocksize	NUMBER;
       e_no_files        EXCEPTION;
+      l_expanded	BOOLEAN;
+      l_decrypted	BOOLEAN;
       PRAGMA EXCEPTION_INIT (e_no_files, -1756);
       o_ev              evolve_ot                          := evolve_ot (p_module => 'process');
    BEGIN
@@ -363,42 +365,63 @@ AS
          l_numlines := 0;
 	 
 	 -- get the filename we are working with and store in a variable
-	 l_filename := c_dir_list.source_filename;
+	 l_source_filename := c_dir_list.source_filename;
 	 
 	
 	 -- if this feed uses a work_directory, then we need to copy the file there
 	 IF SELF.work_directory IS NOT NULL
 	 THEN
             td_utils.copy_file ( p_source_directory => SELF.directory, 
-				 p_source_filename  => l_filename,
+				 p_source_filename  => l_source_filename,
 			         p_directory	    => SELF.work_directory,
-				 p_filename	    => l_filename 
+				 p_filename	    => l_source_filename 
 			       );
 	 END IF;
 	 
-	 -- check STORE_FILES_NATIVE and COMPRESS_METHOD
-	 -- need to see whether to expand files prior to auditing them
-	 IF self.compress_method IS NOT NULL AND lower(self.sore_files_native) = 'none'
+	 -- check STORE_FILES_NATIVE
+	 -- need to see whether to expand and decrypt files prior to auditing them
+	 -- and we don't store any files in their native format (meaning, we store them expanded and decrypted)
+	 IF lower(self.store_files_native) = 'none'
+	 -- we only store non-target files natively, meaning those not getting copied to the target location
+	 -- and this file is a target file, meaning it will get copied to the target location
+	 OR ( lower(self.store_files_native) = 'non-target' AND c_dir_list.targ_file_ind = 'Y' )
 	 THEN
-	    td_utils.expand_file( p_directory => l_source_directory, 
-				  p_filename  => l_filename, 
-				  r_filename  => l_filename,
-				  r_filesize  => l_filesize,
-				  r_blocksize => l_blocksize,
-				  p_comp_method => self.compress_method );
-	 END IF;
+	    
+	    -- now, specifically working on compression
+	    -- if we have a valid compression method, meaning SELF.compress_method is not null
+	    IF self.compress_method IS NOT NULL
+	    THEN
+	       -- we need to expand the file
+	       td_utils.expand_file( p_directory => l_source_directory, 
+				     p_filename  => l_source_filename, 
+				     r_filename  => l_source_filename,
+				     r_filesize  => l_filesize,
+				     r_blocksize => l_blocksize,
+				     r_expanded  => l_expanded,
+				     p_comp_method => self.compress_method );
+	    END IF;
 	 
-	 
-	 -- check STORE_FILES_NATIVE and ENCRYPT_METHOD
-	 -- need to see whether to decrypt files prior to auditing them
-	 IF self.encrypt_method IS NOT NULL AND lower(self.sore_files_native) = 'none'
-	 THEN
-	    td_utils.decrypt_file( p_directory => l_source_directory, 
-				   p_filename  => l_filename, 
-				   r_filename  => l_filename,
-				   r_filesize  => l_filesize,
-				   r_blocksize => l_blocksize,
-				   p_comp_method => self.compress_method );
+	    
+	    -- now, specifically working on decryption
+	    -- if we have a valid encryption method, meaning SELF.decrypt_method is not null
+	    IF self.encrypt_method IS NOT NULL
+	    THEN
+	       -- we need to decrypt the file
+	       td_utils.decrypt_file( p_directory => l_source_directory, 
+				      p_filename  => l_source_filename,
+				      p_passphrase => self.passphrase, 
+				      r_filename  => l_source_filename,
+				      r_filesize  => l_filesize,
+				      r_blocksize => l_blocksize,
+				      r_decrypted => l_decrypted,
+				      p_comp_method => self.compress_method );
+	    END IF;
+	    
+	    
+	    -- get the number of lines in the file now that the file has been decrypted and expanded
+	    -- otherwise, these values don't make any sense
+	    l_numlines := td_utils.get_numlines (l_source_directory, l_source_filename);
+	    
 	 END IF;
 	 
 
@@ -410,8 +433,8 @@ AS
          THEN
             o_ev.change_action ('audit feed');
             SELF.audit_file (p_filename             => c_dir_list.filename,
-                             p_source_filename      => c_dir_list.source_filename,
-                             p_num_bytes            => c_dir_list.file_size,
+                             p_source_filename      => l_source_filename,
+                             p_num_bytes            => l_filesize,
                              p_num_lines            => l_numlines,
                              p_file_dt              => c_dir_list.file_dt
                             );
@@ -422,40 +445,56 @@ AS
 
          IF c_dir_list.targ_file_ind = 'Y'
          THEN
+	    
+	    -- now, we need to expand and decrypt any files that have a STORE_FILES_NATIVE value of 'all'
+	    IF lower( SELF.store_files_native ) = 'all'
+	    THEN
+
+	       -- if we have a valid compress method, meaning were are expanding the file
+	       IF self.compress_method IS NOT NULL
+	       THEN
+		  -- we need to expand the file
+		  td_utils.expand_file( p_directory => l_source_directory, 
+					p_filename  => l_source_filename, 
+					r_filename  => l_source_filename,
+					r_filesize  => l_filesize,
+					r_blocksize => l_blocksize,
+					r_expanded  => l_expanded,
+					p_comp_method => self.compress_method );
+	       END IF;
+	       
+
+	       -- if we have a valid encrypt method, meaning were are decrypting the file
+	       IF self.encrypt_method IS NOT NULL
+	       THEN
+		  -- we need to decrypt the file
+		  td_utils.decrypt_file( p_directory => l_source_directory, 
+					 p_filename  => l_source_filename,
+					 p_passphrase => self.passphrase, 
+					 r_filename  => l_source_filename,
+					 r_filesize  => l_filesize,
+					 r_blocksize => l_blocksize,
+					 r_decrypted => l_decrypted,
+					 p_comp_method => self.compress_method );
+	       END IF;
+	       
+	    END IF;
+	    
             -- get the DDL to alter the external table after the loop is complete
             -- this statement will be the same no matter which of the rows we pull it from.
             -- might as well use the last
             l_ext_tab_ddl := c_dir_list.alt_ddl;
-            -- RECORD the number of external table files
+            
+	    -- RECORD the number of external table files
             l_targ_file_cnt := c_dir_list.targ_file_cnt;
-            -- RECORD the files url
+            
+	    -- RECORD the files url
             l_files_url := c_dir_list.files_url;
-            -- first move the file to the target destination without changing the name
-            -- because the file might be zipped or encrypted
-            td_utils.copy_file (c_dir_list.arch_filepath, c_dir_list.pre_mv_filepath);
-            -- decrypt the file if it's encrypted
-            -- currently only supports gpg
-            -- decrypt_file will return the decrypted filename
-            -- IF the file isn't a recognized encrypted file type, it just returns the name passed
-            l_filepath := td_utils.decrypt_file (dirpath, c_dir_list.source_filename, SELF.passphrase);
-            -- unzip the file if it's zipped
-            -- currently will unzip, or gunzip, or bunzip2 or uncompress
-            -- unzip_file will return the unzipped filename
-            -- IF the file isn't a recognized zip archive file, it just returns the name passed
-            l_filepath := td_utils.unzip_file (dirpath, c_dir_list.source_filename);
+            
+	    -- the file now needs to be put into the target location
+	    -- if the source is the work directory, then this is a rename
+	    -- if not, it needs to be a copy
 
-            -- now move the file to the expected name
-            -- do this with a copy/delete
-            IF dirpath || '/' || l_filepath <> c_dir_list.filepath
-            THEN
-               td_utils.copy_file (dirpath || '/' || l_filepath, c_dir_list.filepath);
-               td_utils.delete_file (DIRECTORY, l_filepath);
-               evolve.log_msg (   'Source file '
-                               || c_dir_list.source_filepath
-                               || ' moved to destination '
-                               || c_dir_list.filepath
-                              );
-            END IF;
 
             -- get the number of lines in the file now that it is decrypted and uncompressed
             l_numlines := td_utils.get_numlines (SELF.DIRECTORY, c_dir_list.filename);
