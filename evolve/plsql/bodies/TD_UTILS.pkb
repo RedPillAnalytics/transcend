@@ -66,22 +66,41 @@ AS
       l_srcfile  VARCHAR2(300) := td_utils.get_dir_path( p_source_directory ) || '/' || p_source_filename;
       l_dstfile  VARCHAR2(300) := td_utils.get_dir_path( p_directory ) || '/' || p_filename;
       l_retval   NUMBER;
+      l_src_fh	 utl_file.file_type := utl_file.fopen( p_source_directory, p_source_filename,'rb')
+      l_dest_fh  utl_file.file_type := utl_file.fopen( p_directory, p_filename, 'wb')
+      l_buf 	 RAW(32000);
+
       o_ev       evolve_ot := evolve_ot( p_module => 'copy_file' );
    BEGIN
-      DBMS_JAVA.set_output( 1000000 );
-
       IF NOT evolve.is_debugmode
       THEN
-         l_retval := copy_file( l_srcfile, l_dstfile );
 
-         IF l_retval <> 0
-         THEN
-            evolve.raise_err( 'copy_file' );
-         END IF;
+	 BEGIN
+	    o_ev.change_action( 'copy file' );
+	    LOOP
+	       utl_file.get_raw(f1,l_buf,32000);
+	       utl_file.put_raw(f2,l_buf,TRUE); -- AND flush
+	    END LOOP;
+	
+	    evolve.log_msg( 'File ' || l_srcfile || ' copied to ' || l_dstfile, 3 );
+
+	 EXCEPTION
+	    WHEN no_data_found 
+	    THEN
+	       -- this is not really an exception
+	       -- just done with all the data
+	       NULL; -- done
+	    WHEN others 
+	    THEN
+	       -- make sure we close the previous file handles
+	       utl_file.fclose(f1);
+	       utl_file.fclose(f2);
+	       RAISE;
+	 END; 
       END IF;
-
-      evolve.log_msg( 'File ' || l_srcfile || ' copied to ' || l_dstfile, 3 );
+	 
       o_ev.clear_app_info;
+   
    END copy_file;
 
    -- uses UTL_FILE to remove an OS level file
@@ -165,10 +184,10 @@ AS
       r_filename    VARCHAR2 OUT,
       r_filesize    NUMBER   OUT,
       r_blocksize   NUMBER   OUT,
+      r_expanded    BOOLEAN  OUT,
       p_comp_method DEFAULT extension_method
    )
    AS
-      l_compressed     BOOLEAN         := TRUE;
       l_filebase       VARCHAR2( 50 );
       l_file_ext       VARCHAR2( 20 );
       l_filepath       VARCHAR2( 200 );
@@ -196,16 +215,27 @@ AS
       WHEN p_comp_method = extension_method AND l_file_ext = 'bz2' THEN bzip_method
       WHEN p_comp_method = extension_method AND l_file_ext = 'zip' THEN zip_method
       -- not a valid compression method
-      -- this is handled in the next IF block
+      -- that means that we did not expand the file
+      -- this is a valid result
+      -- we do more with the NULL result in the next block
       ELSE NULL
       END;
-      
-      -- if l_comp_method is NULL, then we didn't get a valid method
+
+      -- if l_comp_method is NULL, then we know that EXTENSION_METHOD was specified
+      -- and we also know that the extension was not recognized for compression
+      -- that means we aren't expanding the file
+      -- this is just fine, and a feature of using EXTENSION_METHOD
       IF l_comp_method IS NULL
       THEN
-	 evolve.raise_err('invalid_compress_method', p_comp_method );
+	 -- set Boolean and return original filename
+	 r_expanded   := FALSE;
+	 r_filename   := p_filename;
+      ELSE
+	 -- set Boolean and return the expected uncompressed filename
+	 r_expanded   := TRUE;
+	 r_filename   := l_filebase;
       END IF;
-
+      
       -- now figure out what to do with each method
       CASE l_comp_method
          WHEN gzip_method
@@ -228,15 +258,14 @@ AS
 	    -- we did not recognize the file extension
 	    evolve.raise_err( 'invalid_compress_ext', UPPER( l_file_ext );
       END CASE;
-
-      -- return the expected uncompressed filename
-      r_filename := l_filebase;
-
-      IF evolve.is_debugmode
+      
+      -- we are not in debug mode
+      -- we are expected that our expand process was successful
+      -- let's see if it was
+      IF NOT evolve.is_debugmode AND r_expanded
       THEN
-         evolve.log_msg( 'File returned by EXPAND_FILE: ' || l_file_return );
-      ELSE
          o_ev.change_action( 'Check for extracted file' );
+
          -- check and make sure the unzip process worked
          -- do this by checking to see if the expected file exists
          UTL_FILE.fgetattr( p_directory, l_filebase, l_file_exists, r_filesize, r_blocksize );
@@ -245,6 +274,7 @@ AS
          THEN
             evolve.raise_err( 'file_not_found' );
          END IF;
+
       END IF;
 
       o_ev.clear_app_info;
@@ -260,6 +290,7 @@ AS
       r_filename       VARCHAR2 OUT,
       r_filesize       NUMBER   OUT,
       r_blocksize      NUMBER   OUT,
+      r_decrypted      BOOLEAN  OUT,
       p_encrypt_method DEFAULT extension_method
    )
    AS
@@ -295,7 +326,13 @@ AS
       -- if l_encrypt_method is NULL, then we didn't get a valid method
       IF l_decrypt_method IS NULL
       THEN
-	 evolve.raise_err('invalid_encrypt_method', p_decrypt_method );
+	 -- set Boolean and return original filename
+	 r_decrypteded   := FALSE;
+	 r_filename      := p_filename;
+      ELSE
+	 -- set Boolean and return the expected uncompressed filename
+	 r_decrypted   := TRUE;
+	 r_filename    := l_filebase;
       END IF;
 
       -- now figure out what to do with each method
@@ -312,17 +349,17 @@ AS
 	    evolve.raise_err( 'invalid_encrypt_ext', UPPER( l_file_ext );
       END CASE;
 
-      -- return the expected uncompressed filename
-      r_filename := l_filebase;
-
-      IF evolve.is_debugmode
+      -- we are not in debug mode
+      -- we are expected that our decryption process was successful
+      -- let's see if it was
+      IF NOT evolve.is_debugmode AND r_decrypted
       THEN
-         evolve.log_msg( 'File returned by DECRYPT_FILE: ' || l_file_return );
-      ELSE
-         o_ev.change_action( 'Check for extracted file' );
+         o_ev.change_action( 'Check for decrypted file' );
+         evolve.log_msg( 'File returned by DECRYPT_FILE: ' || l_file_return, 3 );
+
          -- check and make sure the unzip process worked
          -- do this by checking to see if the expected file exists
-         UTL_FILE.fgetattr( p_directory, l_filebase, l_file_exists, p_filesize, p_blocksize );
+         UTL_FILE.fgetattr( p_directory, l_filebase, l_file_exists, r_filesize, r_blocksize );
 
          IF NOT l_file_exists
          THEN
@@ -331,7 +368,6 @@ AS
       END IF;
 
       o_ev.clear_app_info;
-      RETURN l_file_return;
    END decrypt_file;
 
    -- checks things about a table depending on the parameters passed

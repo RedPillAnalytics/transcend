@@ -48,6 +48,7 @@ AS
       r_filename    VARCHAR2 OUT,
       r_filesize    NUMBER   OUT,
       r_blocksize   NUMBER   OUT,
+      r_expanded    NUMBER   OUT,
       p_comp_method DEFAULT extension_method
    );
 
@@ -58,6 +59,7 @@ AS
       r_filename       VARCHAR2 OUT,
       r_filesize       NUMBER   OUT,
       r_blocksize      NUMBER   OUT,
+      r_decrypted      BOOLEAN  OUT,
       p_encrypt_method DEFAULT extension_method
    );
 
