@@ -18,13 +18,12 @@ CREATE OR REPLACE TYPE file_ot AUTHID CURRENT_USER AS object(
    encrypt_method	 VARCHAR2( 20 ),
    passphrase       	 VARCHAR2( 100 ),
    MEMBER PROCEDURE audit_file(
-      p_num_bytes        NUMBER,
-      p_num_lines        NUMBER,
-      p_file_dt          DATE,
-      p_filename         VARCHAR2 DEFAULT NULL,
-      p_source_filename	 VARCHAR2 DEFAULT NULL,
-      p_clob		 CLOB DEFAULT NULL,
-      p_blob		 BLOB DEFAULT NULL
+      p_num_bytes         NUMBER,
+      p_num_lines         NUMBER,
+      p_file_dt           DATE,
+      p_filename          VARCHAR2 DEFAULT NULL,
+      p_source_filename	  VARCHAR2 DEFAULT NULL,
+      p_lob_type	  VARCHAR2 DEFAULT 'clob'
    ),
    MEMBER PROCEDURE announce_file(
       p_files_url        VARCHAR2,

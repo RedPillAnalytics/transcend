@@ -255,8 +255,11 @@ AS
       l_ext_tab         VARCHAR2 (61)                      := object_owner || '.' || object_name;
       l_files_url       VARCHAR2 (1000);
       l_message         notification_events.MESSAGE%TYPE;
-      l_directory	files_conf.directory%type	   := NVL( SELF.work_directory, SELF.directory );
+      l_source_directory  files_conf.directory%type	   := NVL( SELF.work_directory, SELF.source_directory );
       l_results         NUMBER;
+      l_filename	files_conf.filename%type;
+      l_filesize	NUMBER;
+      l_blocksize	NUMBER;
       e_no_files        EXCEPTION;
       PRAGMA EXCEPTION_INIT (e_no_files, -1756);
       o_ev              evolve_ot                          := evolve_ot (p_module => 'process');
@@ -317,7 +320,7 @@ AS
               FROM (SELECT object_name, object_owner, source_filename, file_dt, file_size, targ_file_ind,
                            
                            -- rank gives us a number to use to auto increment files in case SOURCE_POLICY attribute is 'all'
-                           RANK () OVER (PARTITION BY 1 ORDER BY targ_file_ind DESC, source_filename) file_number,
+                           ROWNUM OVER (PARTITION BY 1 ORDER BY targ_file_ind DESC, source_filename) file_number,
                            
                            -- this gives us a count of how many files will be copied to the target
                            -- have this for each line
@@ -359,22 +362,50 @@ AS
          -- reset variables used in the cursor
          l_numlines := 0;
 	 
+	 -- get the filename we are working with and store in a variable
+	 l_filename := c_dir_list.source_filename;
+	 
+	
 	 -- if this feed uses a work_directory, then we need to copy the file there
 	 IF SELF.work_directory IS NOT NULL
 	 THEN
             td_utils.copy_file ( p_source_directory => SELF.directory, 
-				 p_source_filename  => c_dir_list.source_filename,
+				 p_source_filename  => l_filename,
 			         p_directory	    => SELF.work_directory,
-				 p_filename	    => c_dir_list.source_filename 
+				 p_filename	    => l_filename 
 			       );
 	 END IF;
 	 
-	 -- now, I need to write an audit record for the file
-	 -- this also stores the file as a CLOB
+	 -- check STORE_FILES_NATIVE and COMPRESS_METHOD
+	 -- need to see whether to expand files prior to auditing them
+	 IF self.compress_method IS NOT NULL AND lower(self.sore_files_native) = 'none'
+	 THEN
+	    td_utils.expand_file( p_directory => l_source_directory, 
+				  p_filename  => l_filename, 
+				  r_filename  => l_filename,
+				  r_filesize  => l_filesize,
+				  r_blocksize => l_blocksize,
+				  p_comp_method => self.compress_method );
+	 END IF;
 	 
-         -- first, write an audit record for the file from source
-	 -- we do this for all files, even the ones that won't go to target
-	 -- this also stores the file in the database
+	 
+	 -- check STORE_FILES_NATIVE and ENCRYPT_METHOD
+	 -- need to see whether to decrypt files prior to auditing them
+	 IF self.encrypt_method IS NOT NULL AND lower(self.sore_files_native) = 'none'
+	 THEN
+	    td_utils.decrypt_file( p_directory => l_source_directory, 
+				   p_filename  => l_filename, 
+				   r_filename  => l_filename,
+				   r_filesize  => l_filesize,
+				   r_blocksize => l_blocksize,
+				   p_comp_method => self.compress_method );
+	 END IF;
+	 
+
+	 -- need to audit the file now
+	 -- this writes auditing information in the repository
+	 -- also stores the file in the database
+	 -- depending on the attributes STORE_FILES_NATIVE and LOB_TYPE determines whether the file is stored as a CLOB or a BLOB
          IF NOT evolve.is_debugmode
          THEN
             o_ev.change_action ('audit feed');
