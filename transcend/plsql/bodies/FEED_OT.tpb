@@ -1,13 +1,20 @@
 CREATE OR REPLACE TYPE BODY feed_ot
 AS
-   CONSTRUCTOR FUNCTION feed_ot (p_file_group VARCHAR2, p_file_label VARCHAR2)
+   -- constructor function for the FEED_OT object type
+   -- some of the attributes can be overriden: both SOURCE_DIRECTORY and WORK_DIRECTORY
+   CONSTRUCTOR FUNCTION feed_ot (p_file_group       VARCHAR2, 
+   	       			 p_file_label 	    VARCHAR2,
+				 p_source_directory VARCHAR2 DEFAULT NULL )
       RETURN SELF AS RESULT
    AS
    BEGIN
       BEGIN
          -- load all the feed attributes
          SELECT file_label, file_group, file_type, object_owner, object_name, DIRECTORY,
-                filename, work_directory, file_datestamp, min_bytes, max_bytes, baseurl,
+                filename,  CASE WHEN work_directory IS NOT NULL AND lower(work_directory) <> lower(source_directory)
+		                THEN work_directory
+		                ELSE NULL 
+		            END work_directory, file_datestamp, min_bytes, max_bytes, baseurl,
                 passphrase, source_directory, source_regexp, match_parameter, source_policy,
                 required, delete_source, delete_target, reject_limit, lob_type, store_files_native,
 		characterset
@@ -17,7 +24,8 @@ AS
                 SELF.required, SELF.delete_source, SELF.delete_target, SELF.reject_limit, SELF.lob_type, SELF.store_files_native,
 		SELF.characterset
            FROM (SELECT file_label, file_group, file_type, object_owner, object_name, DIRECTORY, filename,
-                        work_directory, file_datestamp, min_bytes, max_bytes, baseurl, passphrase, source_directory,
+                        work_directory, file_datestamp, min_bytes, max_bytes, baseurl, passphrase, 
+			NVL( p_source_directory, source_directory),
                         source_regexp, match_parameter, source_policy, required, delete_source, delete_target,
                         reject_limit, lob_type, store_files_native, characterset
                    FROM files_conf
@@ -229,18 +237,23 @@ AS
       -- reset the evolve_object
       o_ev.clear_app_info;
    END delete_target_files;
-   MEMBER PROCEDURE process
+   MEMBER PROCEDURE process( p_source_directory    VARCHAR2  DEFAULT NULL )
    IS
+   -- is there an external table associated with this feed
       l_ext_tab_ind     BOOLEAN                            := CASE
          WHEN SELF.object_name IS NULL
             THEN FALSE
          ELSE TRUE
       END;
+	    -- is there a new filename associated with this feed
       l_filename_ind    BOOLEAN                            := CASE
          WHEN SELF.filename IS NULL
             THEN FALSE
          ELSE TRUE
       END;
+      -- is there a work directory or not	
+      l_workdir_exists := CASE WHEN self.work_directory IS NULL THEN FALSE ELSE TRUE END;
+	    
       l_rows_dirlist    BOOLEAN                            := FALSE;
       -- TO catch empty cursors
       l_rows_delete     BOOLEAN                            := FALSE;
@@ -255,14 +268,15 @@ AS
       l_ext_tab         VARCHAR2 (61)                      := object_owner || '.' || object_name;
       l_files_url       VARCHAR2 (1000);
       l_message         notification_events.MESSAGE%TYPE;
-      l_source_directory  files_conf.directory%type	   := NVL( SELF.work_directory, SELF.source_directory );
       l_results         NUMBER;
       l_filename	files_conf.filename%type;
+      l_source_filename	files_conf.filename%type;
+      l_working_filename	files_conf.filename%type;
       l_filesize	NUMBER;
       l_blocksize	NUMBER;
-      e_no_files        EXCEPTION;
       l_expanded	BOOLEAN;
       l_decrypted	BOOLEAN;
+      e_no_files        EXCEPTION;
       PRAGMA EXCEPTION_INIT (e_no_files, -1756);
       o_ev              evolve_ot                          := evolve_ot (p_module => 'process');
    BEGIN
@@ -274,7 +288,7 @@ AS
       -- now we need to see all the source files in the source directory that match the regular expression
       -- USE java stored procedure to populate global temp table DIR_LIST with all the files in the directory
       o_ev.change_action ('evaluate source directory');
-      td_utils.directory_list (source_directory);
+      td_utils.directory_list ( self.source_directory );
 
       -- look at the contents of the DIR_LIST table to evaluate source files
       -- pull out only the ones matching the regular expression
@@ -358,22 +372,28 @@ AS
                             WHERE  REGEXP_LIKE (filename, SELF.source_regexp, SELF.match_parameter)))
 		   ORDER BY targ_file_ind ASC))
       LOOP
-         evolve.log_msg ('Processing file ' || c_dir_list.source_filepath, 3);
+
+	 -- get the source filename we are working with and store it in two variable
+	 l_source_filename    := c_dir_list.source_filename;
+	 l_working_filename   := l_source_filename;
+
+	 -- get the target filename we are working with and store in a variable
+	 l_filename := c_dir_list.filename;
+	 
+         evolve.log_msg ('Processing file ' || l_source_filename || ' in directory '||self.source_directory, 3);
+
          -- catch empty cursor sets
          l_rows_dirlist := TRUE;
          -- reset variables used in the cursor
-         l_numlines := 0;
-	 
-	 -- get the filename we are working with and store in a variable
-	 l_source_filename := c_dir_list.source_filename;
-	 
+         l_numlines := 0;	 
 	
-	 -- if this feed uses a work_directory, then we need to copy the file there
-	 IF SELF.work_directory IS NOT NULL
+	 -- if this feed uses a work_directory (l_workdir_exists variable)
+	 -- then we need to copy the file to the work directory
+	 IF l_workdir_exists
 	 THEN
-            td_utils.copy_file ( p_source_directory => SELF.directory, 
+            td_utils.copy_file ( p_source_directory => SELF.source_directory, 
 				 p_source_filename  => l_source_filename,
-			         p_directory	    => SELF.work_directory,
+			         p_directory	    => SELF.work_directory
 				 p_filename	    => l_source_filename 
 			       );
 	 END IF;
@@ -392,9 +412,9 @@ AS
 	    IF self.compress_method IS NOT NULL
 	    THEN
 	       -- we need to expand the file
-	       td_utils.expand_file( p_directory => l_source_directory, 
+	       td_utils.expand_file( p_directory => SELF.source_directory, 
 				     p_filename  => l_source_filename, 
-				     r_filename  => l_source_filename,
+				     r_filename  => l_working_filename,
 				     r_filesize  => l_filesize,
 				     r_blocksize => l_blocksize,
 				     r_expanded  => l_expanded,
@@ -407,10 +427,10 @@ AS
 	    IF self.encrypt_method IS NOT NULL
 	    THEN
 	       -- we need to decrypt the file
-	       td_utils.decrypt_file( p_directory => l_source_directory, 
+	       td_utils.decrypt_file( p_directory => SELF.source_directory, 
 				      p_filename  => l_source_filename,
 				      p_passphrase => self.passphrase, 
-				      r_filename  => l_source_filename,
+				      r_filename  => l_working_filename,
 				      r_filesize  => l_filesize,
 				      r_blocksize => l_blocksize,
 				      r_decrypted => l_decrypted,
@@ -420,11 +440,10 @@ AS
 	    
 	    -- get the number of lines in the file now that the file has been decrypted and expanded
 	    -- otherwise, these values don't make any sense
-	    l_numlines := td_utils.get_numlines (l_source_directory, l_source_filename);
-	    
+	    l_numlines := td_utils.get_numlines ( SELF.source_directory, l_working_filename );
+
 	 END IF;
 	 
-
 	 -- need to audit the file now
 	 -- this writes auditing information in the repository
 	 -- also stores the file in the database
@@ -432,19 +451,18 @@ AS
          IF NOT evolve.is_debugmode
          THEN
             o_ev.change_action ('audit feed');
-            SELF.audit_file (p_filename             => c_dir_list.filename,
-                             p_source_filename      => l_source_filename,
+            SELF.audit_file (p_filename             => l_filename,
+                             p_source_filename      => l_working_filename,
                              p_num_bytes            => l_filesize,
                              p_num_lines            => l_numlines,
                              p_file_dt              => c_dir_list.file_dt
                             );
          END IF;
 	 
-
-         o_ev.change_action ('copy external table files');
-
          IF c_dir_list.targ_file_ind = 'Y'
          THEN
+	    o_ev.change_action ('process target files');
+
 	    
 	    -- now, we need to expand and decrypt any files that have a STORE_FILES_NATIVE value of 'all'
 	    IF lower( SELF.store_files_native ) = 'all'
@@ -454,9 +472,9 @@ AS
 	       IF self.compress_method IS NOT NULL
 	       THEN
 		  -- we need to expand the file
-		  td_utils.expand_file( p_directory => l_source_directory, 
+		  td_utils.expand_file( p_directory => SELF.source_directory, 
 					p_filename  => l_source_filename, 
-					r_filename  => l_source_filename,
+					r_filename  => l_working_filename,
 					r_filesize  => l_filesize,
 					r_blocksize => l_blocksize,
 					r_expanded  => l_expanded,
@@ -468,17 +486,28 @@ AS
 	       IF self.encrypt_method IS NOT NULL
 	       THEN
 		  -- we need to decrypt the file
-		  td_utils.decrypt_file( p_directory => l_source_directory, 
-					 p_filename  => l_source_filename,
-					 p_passphrase => self.passphrase, 
-					 r_filename  => l_source_filename,
-					 r_filesize  => l_filesize,
-					 r_blocksize => l_blocksize,
-					 r_decrypted => l_decrypted,
+		  td_utils.decrypt_file( p_directory   => SELF.source_directory, 
+					 p_filename    => l_source_filename,
+					 p_passphrase  => self.passphrase, 
+					 r_filename    => l_working_filename,
+					 r_filesize    => l_filesize,
+					 r_blocksize   => l_blocksize,
+					 r_decrypted   => l_decrypted,
 					 p_comp_method => self.compress_method );
 	       END IF;
 	       
 	    END IF;
+
+
+            -- get a total count of all the lines in all the files moving to target
+            l_sum_numlines := l_sum_numlines + l_numlines;
+
+            -- see if this is the maximum line number size
+            -- if it is, then keep it
+            IF l_numlines > l_max_numlines
+            THEN
+               l_max_numlines := l_numlines;
+            END IF;
 	    
             -- get the DDL to alter the external table after the loop is complete
             -- this statement will be the same no matter which of the rows we pull it from.
@@ -494,19 +523,22 @@ AS
 	    -- the file now needs to be put into the target location
 	    -- if the source is the work directory, then this is a rename
 	    -- if not, it needs to be a copy
+	    IF l_workdir_exists
+	    THEN
+	       o_ev.change_action ('copy to target location');
+	       td_utils.copy_file( l_source_directory, l_source_filename, c_dir_list.directory, c_dir_list.filename );
+	    ELSE
+	       o_ev.change_action ('move to target location');
+	       BEGIN
+		  td_utils.copy_file( l_source_directory, l_source_filename, c_dir_list.directory, c_dir_list.filename );
+	       EXCEPTION
+		  WHEN td_utils.different_filesystems
+		  THEN
+		     evolve.raise_err( 'work_dir_fs' );
+	       END;
 
+	    END IF;
 
-            -- get the number of lines in the file now that it is decrypted and uncompressed
-            l_numlines := td_utils.get_numlines (SELF.DIRECTORY, c_dir_list.filename);
-            -- get a total count of all the lines in all the files making up the external table
-            l_sum_numlines := l_sum_numlines + l_numlines;
-
-            -- see if this is the maximum line number size
-            -- if it is, then keep it
-            IF l_numlines > l_max_numlines
-            THEN
-               l_max_numlines := l_numlines;
-            END IF;
          END IF;
 
          -- IF we get this far, then we need to delete the source files
@@ -515,7 +547,7 @@ AS
 
          IF td_core.is_true (delete_source)
          THEN
-            td_utils.delete_file (source_directory, c_dir_list.source_filename);
+            td_utils.delete_file (SELF.source_directory, c_dir_list.source_filename);
          END IF;
       END LOOP;
 
@@ -533,16 +565,17 @@ AS
       CASE
          -- there were no files found, and the file is required
          -- then we should fail
-      WHEN NOT l_rows_dirlist AND td_core.is_true (required)
+      WHEN NOT l_rows_dirlist AND td_core.is_true (SELF.required)
          THEN
             evolve.raise_err ('no_files_found');
          -- there were no files found
          -- however, the REQUIRED attribute is "no"
+	 -- and, there is a configured external table
          -- therefore, any load process dependent on this job should proceed
          -- but need a "business logic" way of saying "no rows for today"
          -- so I empty the file out
          -- an external table with a zero-byte file gives "no rows returned"
-      WHEN NOT l_rows_dirlist AND NOT td_core.is_true (required)
+      WHEN NOT l_rows_dirlist AND NOT td_core.is_true (required) AND l_ext_tab_ind
          THEN
             evolve.log_msg ('No files found... but none are required', 3);
             o_ev.change_action ('empty previous files');
