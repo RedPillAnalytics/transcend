@@ -982,6 +982,12 @@ IS
 	   CONSTRAINT files_conf_ck7
 	   CHECK (encrypt_method IN ('extension_method','gpg_method'))
 	 )|';
+	   
+         EXECUTE IMMEDIATE q'|ALTER TABLE files_conf ADD 
+	 (
+	   CONSTRAINT files_conf_ck8
+	   CHECK ( file_type = CASE store_files_native WHEN 'non-target' THEN 'feed' ELSE file_type END )
+	 )|';
 
          -- FILES_DETAIL table
          EXECUTE IMMEDIATE q'|CREATE TABLE files_detail
@@ -2493,7 +2499,13 @@ IS
 	   CONSTRAINT files_conf_ck7
 	   CHECK (encrypt_method IN ('extension_method','gpg_method'))
 	 )|';
-	 
+		
+         EXECUTE IMMEDIATE q'|ALTER TABLE files_conf ADD 
+	 (
+	   CONSTRAINT files_conf_ck8
+	   CHECK ( store_files_native <> CASE file_type WHEN 'extract' THEN 'non-target' ELSE NULL END )
+	 )|';
+   
 	 EXECUTE IMMEDIATE q'|drop table files_detail|';
 	 
          EXECUTE IMMEDIATE q'|CREATE TABLE files_detail
