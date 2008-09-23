@@ -237,7 +237,7 @@ AS
       -- reset the evolve_object
       o_ev.clear_app_info;
    END delete_target_files;
-   MEMBER PROCEDURE process( p_source_directory    VARCHAR2  DEFAULT NULL )
+   MEMBER PROCEDURE process
    IS
    -- is there an external table associated with this feed
       l_ext_tab_ind     BOOLEAN                            := CASE
@@ -256,26 +256,21 @@ AS
 	    
       l_rows_dirlist    BOOLEAN                            := FALSE;
       -- TO catch empty cursors
-      l_rows_delete     BOOLEAN                            := FALSE;
       l_numlines        NUMBER;
       l_max_numlines    NUMBER                             := 0;
-      l_cmd             VARCHAR2 (500);
-      l_filepath        VARCHAR2 (200);
-      l_numfiles        NUMBER;
       l_sum_numlines    NUMBER                             := 0;
       l_targ_file_cnt   NUMBER                             := 0;
-      l_ext_tab_ddl     VARCHAR2 (2000);
       l_ext_tab         VARCHAR2 (61)                      := object_owner || '.' || object_name;
-      l_files_url       VARCHAR2 (1000);
-      l_message         notification_events.MESSAGE%TYPE;
-      l_results         NUMBER;
       l_filename	files_conf.filename%type;
       l_source_filename	files_conf.filename%type;
       l_working_filename	files_conf.filename%type;
+      l_source_directory 	files_conf.source_directory%type := SELF.source_directory;
       l_filesize	NUMBER;
       l_blocksize	NUMBER;
       l_expanded	BOOLEAN;
       l_decrypted	BOOLEAN;
+      l_loc_list	VARCHAR2(2000);
+      l_url_list	VARCHAR2(2000);
       e_no_files        EXCEPTION;
       PRAGMA EXCEPTION_INIT (e_no_files, -1756);
       o_ev              evolve_ot                          := evolve_ot (p_module => 'process');
@@ -288,7 +283,7 @@ AS
       -- now we need to see all the source files in the source directory that match the regular expression
       -- USE java stored procedure to populate global temp table DIR_LIST with all the files in the directory
       o_ev.change_action ('evaluate source directory');
-      td_utils.directory_list ( self.source_directory );
+      td_utils.directory_list ( l_source_directory );
 
       -- look at the contents of the DIR_LIST table to evaluate source files
       -- pull out only the ones matching the regular expression
@@ -300,21 +295,7 @@ AS
 		 -- name of the target file 
                  filename,
                    file_dt, file_size, targ_file_ind, targ_file_cnt,
-                      
-                      -- USE analytics (stragg function) to construct the alter table command (if needed)
-                      'alter table '
-                   || l_ext_tab
-                   || ' location ('
-                   || REGEXP_REPLACE
-                         (stragg (   SELF.DIRECTORY
-                               || ':'''
-                               || filename
-                              ) OVER (PARTITION BY targ_file_ind),
-                          ',',
-                          ''','
-                         )
-                   || ''')' alt_ddl,
-                   
+                            
                    -- construct a file_url if BASEURL attribute is configured
                    -- this constructs a STRAGGED list of URL's if multiple files exist
                    -- otherwise it's null
@@ -380,7 +361,7 @@ AS
 	 -- get the target filename we are working with and store in a variable
 	 l_filename := c_dir_list.filename;
 	 
-         evolve.log_msg ('Processing file ' || l_source_filename || ' in directory '||self.source_directory, 3);
+         evolve.log_msg ('Processing file ' || l_source_filename || ' in directory '||l_source_directory, 3);
 
          -- catch empty cursor sets
          l_rows_dirlist := TRUE;
@@ -391,11 +372,13 @@ AS
 	 -- then we need to copy the file to the work directory
 	 IF l_workdir_exists
 	 THEN
-            td_utils.copy_file ( p_source_directory => SELF.source_directory, 
+            td_utils.copy_file ( p_source_directory => l_source_directory, 
 				 p_source_filename  => l_source_filename,
 			         p_directory	    => SELF.work_directory
 				 p_filename	    => l_source_filename 
 			       );
+	    -- we are now concerned with the work_directory as the source_directory
+	    l_source_directory := self.work_directory;
 	 END IF;
 	 
 	 -- check STORE_FILES_NATIVE
@@ -412,7 +395,7 @@ AS
 	    IF self.compress_method IS NOT NULL
 	    THEN
 	       -- we need to expand the file
-	       td_utils.expand_file( p_directory => SELF.source_directory, 
+	       td_utils.expand_file( p_directory => l_source_directory, 
 				     p_filename  => l_source_filename, 
 				     r_filename  => l_working_filename,
 				     r_filesize  => l_filesize,
@@ -427,7 +410,7 @@ AS
 	    IF self.encrypt_method IS NOT NULL
 	    THEN
 	       -- we need to decrypt the file
-	       td_utils.decrypt_file( p_directory => SELF.source_directory, 
+	       td_utils.decrypt_file( p_directory => l_source_directory, 
 				      p_filename  => l_source_filename,
 				      p_passphrase => self.passphrase, 
 				      r_filename  => l_working_filename,
@@ -440,7 +423,7 @@ AS
 	    
 	    -- get the number of lines in the file now that the file has been decrypted and expanded
 	    -- otherwise, these values don't make any sense
-	    l_numlines := td_utils.get_numlines ( SELF.source_directory, l_working_filename );
+	    l_numlines := td_utils.get_numlines ( l_source_directory, l_working_filename );
 
 	 END IF;
 	 
@@ -472,7 +455,7 @@ AS
 	       IF self.compress_method IS NOT NULL
 	       THEN
 		  -- we need to expand the file
-		  td_utils.expand_file( p_directory => SELF.source_directory, 
+		  td_utils.expand_file( p_directory => l_source_directory, 
 					p_filename  => l_source_filename, 
 					r_filename  => l_working_filename,
 					r_filesize  => l_filesize,
@@ -486,7 +469,7 @@ AS
 	       IF self.encrypt_method IS NOT NULL
 	       THEN
 		  -- we need to decrypt the file
-		  td_utils.decrypt_file( p_directory   => SELF.source_directory, 
+		  td_utils.decrypt_file( p_directory   => l_source_directory, 
 					 p_filename    => l_source_filename,
 					 p_passphrase  => self.passphrase, 
 					 r_filename    => l_working_filename,
@@ -508,17 +491,11 @@ AS
             THEN
                l_max_numlines := l_numlines;
             END IF;
-	    
-            -- get the DDL to alter the external table after the loop is complete
+
+	    -- RECORD the number of external table files	    
             -- this statement will be the same no matter which of the rows we pull it from.
             -- might as well use the last
-            l_ext_tab_ddl := c_dir_list.alt_ddl;
-            
-	    -- RECORD the number of external table files
             l_targ_file_cnt := c_dir_list.targ_file_cnt;
-            
-	    -- RECORD the files url
-            l_files_url := c_dir_list.files_url;
             
 	    -- the file now needs to be put into the target location
 	    -- if the source is the work directory, then this is a rename
@@ -526,11 +503,11 @@ AS
 	    IF l_workdir_exists
 	    THEN
 	       o_ev.change_action ('copy to target location');
-	       td_utils.copy_file( l_source_directory, l_source_filename, c_dir_list.directory, c_dir_list.filename );
+	       td_utils.copy_file( l_source_directory, l_working_filename, self.directory, l_filename );
 	    ELSE
 	       o_ev.change_action ('move to target location');
 	       BEGIN
-		  td_utils.copy_file( l_source_directory, l_source_filename, c_dir_list.directory, c_dir_list.filename );
+		  td_utils.move_file( l_source_directory, l_working_filename, self.directory, l_filename );
 	       EXCEPTION
 		  WHEN td_utils.different_filesystems
 		  THEN
@@ -538,6 +515,14 @@ AS
 	       END;
 
 	    END IF;
+	    
+	    -- add the filename to the ALTER EXTERNAL TABLE location list
+	    -- this will be used to alter the external table (possibly) when the loop is complete
+	    l_loc_list := l_loc_list ||CASE l_loc_list WHEN NULL THEN NULL ELSE ',' end|| self.directory || ':' || l_working_filename;
+	    
+	    -- add the filename to the URL list
+	    l_url_list := l_url_list ||CASE l_url_list WHEN NULL THEN NULL ELSE CHR(10) end|| self.baseurl || '/' || l_working_filename;
+
 
          END IF;
 
@@ -547,8 +532,9 @@ AS
 
          IF td_core.is_true (delete_source)
          THEN
-            td_utils.delete_file (SELF.source_directory, c_dir_list.source_filename);
+            td_utils.delete_file (SELF.source_directory, l_source_filename);
          END IF;
+	 
       END LOOP;
 
       -- series of debug statements
@@ -593,7 +579,7 @@ AS
             o_ev.change_action ('alter external table');
 
             BEGIN
-               l_results := evolve.exec_sql (p_sql => l_ext_tab_ddl, p_auto => 'yes');
+               evolve.exec_sql (p_sql => 'alter table ' ||l_ext_tab||' location ('|| l_loc_list ||')', p_auto => 'yes');
                evolve.log_msg ('External table ' || l_ext_tab || ' altered', 3);
             EXCEPTION
                WHEN e_no_files
@@ -619,7 +605,7 @@ AS
 
       -- notify about successful arrival of feed
       o_ev.change_action ('notify success');
-      SELF.announce_file (p_num_files => l_targ_file_cnt, p_num_lines => l_max_numlines, p_files_url => l_files_url);
+      SELF.announce_file (p_num_files => l_targ_file_cnt, p_num_lines => l_max_numlines, p_files_url => l_url_list);
       o_ev.clear_app_info;
    END process;
 END;
