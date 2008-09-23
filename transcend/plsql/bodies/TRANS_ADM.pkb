@@ -78,6 +78,10 @@ IS
            p_message      => 'The values provided for DIRECTORY and WORK_DIRECTORY cannot be the same'
          );
       evolve_adm.set_error_conf
+         (p_name         => 'work_dir_fs',
+           p_message      => 'The directories configured for DIRECTORY and WORK_DIRECTORY cannot be on the same filesystem'
+         );
+      evolve_adm.set_error_conf
                    (p_name         => 'no_ext_tab',
                     p_message      => 'The specified external table does not exist'
                    );
