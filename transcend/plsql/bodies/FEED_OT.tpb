@@ -382,7 +382,7 @@ AS
 	 END IF;
 	 
 	 -- check STORE_FILES_NATIVE
-	 -- need to see whether to expand and decrypt files prior to auditing them
+	 -- need to see whether to expand and decrypt files prior to archiving them
 	 -- and we don't store any files in their native format (meaning, we store them expanded and decrypted)
 	 IF lower(self.store_files_native) = 'none'
 	 -- we only store non-target files natively, meaning those not getting copied to the target location
@@ -427,19 +427,19 @@ AS
 
 	 END IF;
 	 
-	 -- need to audit the file now
+	 -- need to archive the file now
 	 -- this writes auditing information in the repository
 	 -- also stores the file in the database
 	 -- depending on the attributes STORE_FILES_NATIVE and LOB_TYPE determines whether the file is stored as a CLOB or a BLOB
          IF NOT evolve.is_debugmode
          THEN
-            o_ev.change_action ('audit feed');
-            SELF.audit_file (p_filename             => l_filename,
-                             p_source_filename      => l_working_filename,
-                             p_num_bytes            => l_filesize,
-                             p_num_lines            => l_numlines,
-                             p_file_dt              => c_dir_list.file_dt
-                            );
+            o_ev.change_action ( 'archive feed' );
+            SELF.archive_file ( p_filename             => l_filename,
+				p_source_filename      => l_working_filename,
+				p_num_bytes            => l_filesize,
+				p_num_lines            => l_numlines,
+				p_file_dt              => c_dir_list.file_dt
+                              );
          END IF;
 	 
          IF c_dir_list.targ_file_ind = 'Y'

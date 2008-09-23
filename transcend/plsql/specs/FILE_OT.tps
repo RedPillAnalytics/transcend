@@ -17,7 +17,7 @@ CREATE OR REPLACE TYPE file_ot AUTHID CURRENT_USER AS object(
    compress_method	 VARCHAR2( 20 ),
    encrypt_method	 VARCHAR2( 20 ),
    passphrase       	 VARCHAR2( 100 ),
-   MEMBER PROCEDURE audit_file(
+   MEMBER PROCEDURE archive(
       p_num_bytes         NUMBER,
       p_num_lines         NUMBER,
       p_file_dt           DATE,
@@ -25,7 +25,15 @@ CREATE OR REPLACE TYPE file_ot AUTHID CURRENT_USER AS object(
       p_source_filename	  VARCHAR2 DEFAULT NULL,
       p_lob_type	  VARCHAR2 DEFAULT 'clob'
    ),
-   MEMBER PROCEDURE announce_file(
+   MEMBER PROCEDURE withdraw(
+      p_num_bytes         NUMBER,
+      p_num_lines         NUMBER,
+      p_file_dt           DATE,
+      p_filename          VARCHAR2 DEFAULT NULL,
+      p_source_filename	  VARCHAR2 DEFAULT NULL,
+      p_lob_type	  VARCHAR2 DEFAULT NULL
+   ),
+   MEMBER PROCEDURE announce(
       p_files_url        VARCHAR2,
       p_num_lines   	 NUMBER,
       p_num_files   	 NUMBER DEFAULT 1
