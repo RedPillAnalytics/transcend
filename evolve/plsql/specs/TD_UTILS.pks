@@ -1,6 +1,9 @@
 CREATE OR REPLACE PACKAGE td_utils AUTHID CURRENT_USER
 AS
 
+   different_filesystems       EXCEPTION;
+   duplicate_file              EXCEPTION;
+   
    -- constants used for EXPAND_FILE
    CONSTANT gzip_method         VARCHAR2(15) := 'gzip_method';
    CONSTANT compress_method     VARCHAR2(15) := 'compress_method';

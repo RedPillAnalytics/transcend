@@ -6,13 +6,6 @@ AS
       LANGUAGE JAVA
       NAME 'TdUtils.getDirList( java.lang.String )';
 
-   -- procedure to copy a file from one place to another
-   FUNCTION copy_file( p_srcfile VARCHAR2, p_dstfile VARCHAR2 )
-      RETURN NUMBER
-   AS
-      LANGUAGE JAVA
-      NAME 'TdUtils.copyFile( java.lang.String, java.lang.String ) return integer';
-      
    -- procedure executes the copy_file function and raises an exception with the return code
    PROCEDURE directory_list( p_directory IN VARCHAR2 )   
    AS
@@ -56,6 +49,32 @@ AS
    END host_cmd;
 
    -- procedure executes the copy_file function and raises an exception with the return code
+   PROCEDURE check_duplicate ( 
+      p_source_directory VARCHAR2, 
+      p_source_filename VARCHAR2, 
+      p_directory VARCHAR2, 
+      p_filename VARCHAR2
+   )
+   AS
+      l_duplicate BOOLEAN  := FALSE;
+      o_ev       evolve_ot := evolve_ot( p_module => 'check_duplicate' );
+   BEGIN
+      -- if the copy process is just a duplicate process, then raise and exception
+      IF lower( p_source_directory ) = lower( p_directory )
+	 AND lower( source_filename ) = lower( p_filename )
+      THEN
+	 evolve.log_msg( 'DUPLICATE_FILE exception raised', 4 );
+	 l_duplicate := TRUE;
+	 RAISE duplicate_file;
+      END IF;
+
+      evolve.log_msg( 'File ' || p_source_filename || ' in directory '|| p_source_directory||' is '||case l_duplicate WHEN TRUE THEN 'not ' ELSE NULL END||' a duplicate of ' ||p_filename||' in directory '|| p_directory, 4 );
+      
+      o_ev.clear_app_info;
+   
+   END check_duplicate;
+
+   -- procedure executes the copy_file function and raises an exception with the return code
    PROCEDURE copy_file( 
       p_source_directory VARCHAR2, 
       p_source_filename VARCHAR2, 
@@ -63,15 +82,18 @@ AS
       p_filename VARCHAR2
    )
    AS
-      l_srcfile  VARCHAR2(300) := td_utils.get_dir_path( p_source_directory ) || '/' || p_source_filename;
-      l_dstfile  VARCHAR2(300) := td_utils.get_dir_path( p_directory ) || '/' || p_filename;
-      l_retval   NUMBER;
       l_src_fh	 utl_file.file_type := utl_file.fopen( p_source_directory, p_source_filename,'rb')
       l_dest_fh  utl_file.file_type := utl_file.fopen( p_directory, p_filename, 'wb')
       l_buf 	 RAW(32000);
 
       o_ev       evolve_ot := evolve_ot( p_module => 'copy_file' );
    BEGIN
+      -- if the copy process is just a duplicate process, then raise and exception
+      check_duplicate( p_source_directory => p_source_directory,
+      		       p_source_filename  => p_source_filename,
+		       p_directory	  => p_directory,
+		       p_filename	  => p_filename );
+
       IF NOT evolve.is_debugmode
       THEN
 
@@ -82,8 +104,6 @@ AS
 	       utl_file.put_raw(f2,l_buf,TRUE); -- AND flush
 	    END LOOP;
 	
-	    evolve.log_msg( 'File ' || l_srcfile || ' copied to ' || l_dstfile, 3 );
-
 	 EXCEPTION
 	    WHEN no_data_found 
 	    THEN
@@ -98,26 +118,66 @@ AS
 	       RAISE;
 	 END; 
       END IF;
-	 
+
+      evolve.log_msg( 'File ' || p_source_filename || ' in directory '|| p_source_directory||' copied to filename ' ||p_filename||' in directory '|| p_directory, 3 );
+
+      
       o_ev.clear_app_info;
    
    END copy_file;
+   
+   -- procedure executes the move_file function and raises an exception with the return code
+   PROCEDURE move_file( 
+      p_source_directory VARCHAR2, 
+      p_source_filename VARCHAR2, 
+      p_directory VARCHAR2, 
+      p_filename VARCHAR2
+   )
+   AS
+      e_diff_fs  EXCEPTION;
+      PRAGMA EXCEPTION_INIT (e_diff_fs, -29292);
+
+      o_ev       evolve_ot := evolve_ot( p_module => 'move_file' );
+   BEGIN
+
+      -- if the copy process is just a duplicate process, then raise and exception
+      check_duplicate( p_source_directory => p_source_directory,
+      		       p_source_filename  => p_source_filename,
+		       p_directory	  => p_directory,
+		       p_filename	  => p_filename );
+
+
+      IF NOT evolve.is_debugmode
+      THEN
+
+	 BEGIN
+	    utl_file.frename( l_source_directory, l_source_filename, c_dir_list.directory, c_dir_list.filename );
+	 EXCEPTION
+	    WHEN e_diff_fs
+	    THEN
+	       RAISE different_filesystems;
+	 END;
+      END IF;
+
+      evolve.log_msg( 'File ' || p_source_filename || ' in directory '|| p_source_directory||' moved to filename ' ||p_filename||' in directory '|| p_directory, 3 );
+	 
+      o_ev.clear_app_info;
+   
+   END move_file;
+   
 
    -- uses UTL_FILE to remove an OS level file
    PROCEDURE delete_file( p_directory VARCHAR2, p_filename VARCHAR2 )
    AS
-      l_retval     NUMBER;
-      l_filepath   VARCHAR2( 100 );
       o_ev         evolve_ot       := evolve_ot( p_module => 'delete_file' );
    BEGIN
-      l_filepath := td_utils.get_dir_path( p_directory ) || '/' || p_filename;
 
       IF NOT evolve.is_debugmode
       THEN
          UTL_FILE.fremove( p_directory, p_filename );
       END IF;
-
-      evolve.log_msg( 'File ' || l_filepath || ' deleted', 3 );
+      
+      evolve.log_msg( 'File ' || p_source_filename || ' in directory '|| p_source_directory||' deleted', 3 );
       o_ev.clear_app_info;
    EXCEPTION
       WHEN UTL_FILE.invalid_operation
@@ -129,18 +189,23 @@ AS
    PROCEDURE create_file( p_directory VARCHAR2, p_filename VARCHAR2 )
    AS
       l_fh        UTL_FILE.file_type;
-      l_dirpath   VARCHAR2( 100 );
       o_ev        evolve_ot          := evolve_ot( p_module => 'create_file' );
    BEGIN
-      l_dirpath := td_utils.get_dir_path( p_directory ) || '/' || p_filename;
 
       IF NOT evolve.is_debugmode
       THEN
          l_fh := UTL_FILE.fopen( p_directory, p_filename, 'W' );
+         UTL_FILE.fclose( l_fh );
       END IF;
+      
+      evolve.log_msg( 'File ' || p_source_filename || ' in directory '|| p_source_directory||' created', 3 );
 
-      evolve.log_msg( 'File ' || l_dirpath || ' created', 3 );
       o_ev.clear_app_info;
+   EXCEPTION
+      WHEN others
+      THEN
+	 UTL_FILE.fclose( l_fh );
+	 RAISE;
    END create_file;
 
    -- get the number of lines in a file
