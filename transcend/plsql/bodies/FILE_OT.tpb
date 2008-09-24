@@ -102,13 +102,9 @@ AS
    END archive;
 
    -- store audit information about the feed or extract
-   MEMBER PROCEDURE withdraw(
-      p_num_bytes         NUMBER,
-      p_num_lines         NUMBER,
-      p_file_dt           DATE,
-      p_filename          VARCHAR2 DEFAULT NULL,
-      p_source_filename	  VARCHAR2 DEFAULT NULL,
-      p_lob_type	  VARCHAR2 DEFAULT NULL
+   MEMBER PROCEDURE unarchive(
+      p_file_detail_id    NUMBER,
+      p_directory         VARCHAR2 DEFAULT NULL
    )
    AS
       l_dest_clob    CLOB;
@@ -123,7 +119,7 @@ AS
       l_source_directory  files_conf.source_directory%type := NVL( SELF.work_directory, SELF.source_directory );
       -- determine the lob_type
       l_lob_type     VARCHAR2(4) := NVL( p_lob_type, self.lob_type );
-      o_ev   evolve_ot := evolve_ot( p_module => 'withdraw' );
+      o_ev   evolve_ot := evolve_ot( p_module => 'unarchive' );
    BEGIN
       
       -- open the bfile
@@ -199,7 +195,7 @@ AS
       END IF;
 
       o_ev.clear_app_info;
-   END withdraw;
+   END unarchive;
    MEMBER PROCEDURE announce(
       p_files_url   VARCHAR2,
       p_num_lines   NUMBER,

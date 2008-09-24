@@ -25,13 +25,9 @@ CREATE OR REPLACE TYPE file_ot AUTHID CURRENT_USER AS object(
       p_source_filename	  VARCHAR2 DEFAULT NULL,
       p_lob_type	  VARCHAR2 DEFAULT 'clob'
    ),
-   MEMBER PROCEDURE withdraw(
-      p_num_bytes         NUMBER,
-      p_num_lines         NUMBER,
-      p_file_dt           DATE,
-      p_filename          VARCHAR2 DEFAULT NULL,
-      p_source_filename	  VARCHAR2 DEFAULT NULL,
-      p_lob_type	  VARCHAR2 DEFAULT NULL
+   MEMBER PROCEDURE unarchive(
+      p_file_detail_id    NUMBER,
+      p_directory         VARCHAR2 DEFAULT NULL
    ),
    MEMBER PROCEDURE announce(
       p_files_url        VARCHAR2,
