@@ -9,19 +9,18 @@ AS
    BEGIN
       BEGIN
          -- load all the feed attributes
-         SELECT file_label, file_group, file_type, object_owner, object_name, DIRECTORY,
-                filename,  CASE WHEN work_directory IS NOT NULL AND lower(work_directory) <> lower(source_directory)
-		                THEN work_directory
-		                ELSE NULL 
-		            END work_directory, file_datestamp, min_bytes, max_bytes, baseurl,
-                passphrase, source_directory, source_regexp, match_parameter, source_policy,
-                required, delete_source, delete_target, reject_limit, lob_type, store_files_native,
-		characterset
-           INTO SELF.file_label, SELF.file_group, SELF.file_type, SELF.object_owner, SELF.object_name, SELF.DIRECTORY,
-                SELF.filename, SELF.work_directory, SELF.file_datestamp, SELF.min_bytes, SELF.max_bytes, SELF.baseurl,
-                SELF.passphrase, SELF.source_directory, SELF.source_regexp, SELF.match_parameter, SELF.source_policy,
-                SELF.required, SELF.delete_source, SELF.delete_target, SELF.reject_limit, SELF.lob_type, SELF.store_files_native,
-		SELF.characterset
+         SELECT file_detail_id, file_label, file_group, file_type, 
+                directory, filename, source_directory, source_filename, 
+                work_directory, lob_type, num_bytes, num_lines, file_dt, 
+                characterset, store_files_native, compress_method, 
+                encrypt_method, passphrase, file_clob, file_blob,
+                processed_ts, session_id
+           INTO self.file_detail_id, SELF.file_label, SELF.file_group, SELF.file_type, 
+                SELF.directory, SELF.filename, SELF.source_directory, SELF.source_filename,
+                SELF.work_directory, SELF.lob_type, SELF.num_bytes, SELF.num_lines, SELF.file_dt, 
+                SELF.characterset, SELF.store_files_native, SELF.compress_method,
+                SELF.encrypt_method, SELF.passphrase, SELF.FILE_CLOB, SELF.FILE_BLOB,
+                SELF.processed_ts, SELF.session_id		
            FROM (SELECT file_label, file_group, file_type, object_owner, object_name, DIRECTORY, filename,
                         work_directory, file_datestamp, min_bytes, max_bytes, baseurl, passphrase, 
 			NVL( p_source_directory, source_directory),
