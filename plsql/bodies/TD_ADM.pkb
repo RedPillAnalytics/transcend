@@ -905,7 +905,6 @@ IS
 	   directory	       VARCHAR2(30)	NOT NULL,
 	   filename	       VARCHAR2(50),		
 	   work_directory      VARCHAR2(30),
-	   lob_type	       VARCHAR2(4) 	DEFAULT 'clob',
 	   min_bytes	       NUMBER 		DEFAULT 0 NOT NULL,
 	   max_bytes           NUMBER 		DEFAULT 0 NOT NULL,
 	   file_datestamp      VARCHAR2(30),
@@ -915,7 +914,7 @@ IS
 	   source_regexp       VARCHAR2(100),
 	   match_parameter     VARCHAR2(10),
 	   source_policy       VARCHAR2(10),
-	   store_files_native  VARCHAR2(20),
+	   store_files_native  VARCHAR2(3)	NOT NULL,
    	   compress_method     VARCHAR2( 20 ),
    	   encrypt_method      VARCHAR2( 20 ),
 	   characterset	       VARCHAR2(20),
@@ -958,37 +957,25 @@ IS
 	   CONSTRAINT files_conf_ck3
 	 CHECK ( 0 = CASE WHEN object_owner IS NULL AND object_name IS NOT NULL THEN 1 
 		 WHEN object_owner IS NOT NULL AND object_name IS NULL THEN 1 ELSE 0 END )|';
-	 
+	 	   
          EXECUTE IMMEDIATE q'|ALTER TABLE files_conf ADD 
 	 (
 	   CONSTRAINT files_conf_ck4
-	   CHECK (lob_type IN ('clob','blob')
-	 )|';
-	   
-         EXECUTE IMMEDIATE q'|ALTER TABLE files_conf ADD 
-	 (
-	   CONSTRAINT files_conf_ck5
-	   CHECK (store_files_native IN ('all','none','non-target',NULL))
+	   CHECK (store_files_native IN ('yes','no'))
 	 )|';
 
          EXECUTE IMMEDIATE q'|ALTER TABLE files_conf ADD 
 	 (
-	   CONSTRAINT files_conf_ck6
+	   CONSTRAINT files_conf_ck5
 	   CHECK (compress_method IN ('extension_method','gzip_method','compress_method','bzip_method','zip_method'))
 	 )|';
 
          EXECUTE IMMEDIATE q'|ALTER TABLE files_conf ADD 
 	 (
-	   CONSTRAINT files_conf_ck7
+	   CONSTRAINT files_conf_ck6
 	   CHECK (encrypt_method IN ('extension_method','gpg_method'))
 	 )|';
-	   
-         EXECUTE IMMEDIATE q'|ALTER TABLE files_conf ADD 
-	 (
-	   CONSTRAINT files_conf_ck8
-	   CHECK ( file_type = CASE store_files_native WHEN 'non-target' THEN 'feed' ELSE file_type END )
-	 )|';
-
+	 
          -- FILES_DETAIL table
          EXECUTE IMMEDIATE q'|CREATE TABLE files_detail
 	 ( 

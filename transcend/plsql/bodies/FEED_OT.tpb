@@ -27,7 +27,11 @@ AS
                         work_directory, file_datestamp, min_bytes, max_bytes, baseurl, passphrase, 
 			NVL( p_source_directory, source_directory),
                         source_regexp, match_parameter, source_policy, required, delete_source, delete_target,
-                        reject_limit, lob_type, store_files_native, characterset
+                        reject_limit, 
+			CASE 
+			WHEN lower( store_files_native ) = 'no' AND self.characterset IS NOT NULL THEN 'clob' 
+			ELSE 'blob' 
+			END lob_type, store_files_native, characterset
                    FROM files_conf
                   WHERE REGEXP_LIKE (file_type, '^feed$', 'i') AND file_group = p_file_group
                         AND file_label = p_file_label);
@@ -81,16 +85,22 @@ AS
          -- now compare the two and make sure they are the same
          IF UPPER (SELF.DIRECTORY) <> l_directory
          THEN
-            evolve.raise_err ('no_dir_match');
+	    evolve.raise_err ('parms_not_compatible','The values specified for DIRECTORY must also be the location of the specified external table');
          END IF;
       END IF;
 
       -- also, make sure that the work_directory and directory are not the same
       IF SELF.directory = SELF.work_directory
       THEN
-	 evolve.raise_err( 'work_dir_name' );
+	 evolve.raise_err ('parms_not_compatible','The values specified for DIRECTORY and WORK_DIRECTORY cannot be the same');
       END IF;
-
+      
+      -- check that feeds with an associated external table have a characterset
+      IF object_name IS NOT NULL AND characterset IS NULL
+      THEN
+	 evolve.raise_err ('parms_not_compatible','A feed with an associated external table must have a CHARACTERSET provided');
+      END IF;
+      
       evolve.log_msg ('FEED confirmation completed successfully', 5);
       -- reset the evolve_object
       o_ev.clear_app_info;
