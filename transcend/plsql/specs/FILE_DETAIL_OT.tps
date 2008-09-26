@@ -12,6 +12,7 @@ CREATE OR REPLACE TYPE file_ot AUTHID CURRENT_USER AS object(
    num_bytes        	 NUMBER,
    num_lines        	 NUMBER,
    file_dt               DATE,
+   characterset          VARCHAR2( 20 ),                                                           
    store_files_native    VARCHAR2( 20 ),
    compress_method	 VARCHAR2( 20 ),
    encrypt_method	 VARCHAR2( 20 ),
