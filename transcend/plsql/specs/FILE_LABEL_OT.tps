@@ -1,7 +1,7 @@
-CREATE OR REPLACE TYPE file_ot AUTHID CURRENT_USER AS object(
+CREATE OR REPLACE TYPE file_label_ot AUTHID CURRENT_USER AS object(
    file_label            VARCHAR2( 100 ),
    file_group       	 VARCHAR2( 64 ),
-   file_type        	 VARCHAR2( 7 ),
+   label_type        	 VARCHAR2( 7 ),
    object_owner     	 VARCHAR2( 30 ),
    object_name      	 VARCHAR2( 30 ),
    directory        	 VARCHAR2( 30 ),

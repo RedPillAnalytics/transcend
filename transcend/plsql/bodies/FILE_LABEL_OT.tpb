@@ -1,4 +1,4 @@
-CREATE OR REPLACE TYPE BODY file_ot
+CREATE OR REPLACE TYPE BODY file_label_ot
 AS
 
    -- store audit information about the feed or extract
@@ -28,7 +28,7 @@ AS
       
       -- open the bfile
       o_ev.change_action( 'open BFILE' );
-      l_src_lob := BFILENAME ( CASE self.file_type WHEN 'feed' THEN l_source_directory ELSE SELF.directory END, l_filename );
+      l_src_lob := BFILENAME ( CASE self.label_type WHEN 'feed' THEN l_source_directory ELSE SELF.directory END, l_filename );
       
       o_ev.change_action( 'Insert file detail' );
       
@@ -37,13 +37,13 @@ AS
       -- this is done regardless of runmode
       INSERT INTO files_detail
              ( file_detail_id, file_label, file_group,
-               file_type, directory, filename, source_directory, 
+               label_type, directory, filename, source_directory, 
 	       source_filename, work_directory, num_bytes, num_lines, 
                file_dt, store_files_native, compress_method, encrypt_method, 
                passphrase, file_clob, file_blob 
              )
 	     VALUES ( files_detail_seq.NEXTVAL, file_label, file_group,
-		      file_type, SELF.directory, l_filename, SELF.source_directory, 
+		      label_type, SELF.directory, l_filename, SELF.source_directory, 
                       p_source_filename, SELF.work_directory, p_num_bytes, p_num_lines, 
                       p_file_dt, self.store_files_native, self.compress_method, self.encrypt_method,
                       self.passphrase, EMPTY_CLOB(), EMPTY_BLOB()
