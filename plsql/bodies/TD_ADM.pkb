@@ -246,9 +246,9 @@ IS
       BEGIN
 	 
 	 -- tables
-         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON FILES_CONF TO ' || p_grantee;
+         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON FILE_CONF TO ' || p_grantee;
 
-         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON FILES_DETAIL TO ' || p_grantee;
+         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON FILE_DETAIL TO ' || p_grantee;
 
          EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON FILES_OBJ_DETAIL TO ' || p_grantee;
 
@@ -267,7 +267,7 @@ IS
          EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON COLUMN_TYPE_LIST TO ' || p_grantee;
 	 
 	 -- sequence
-         EXECUTE IMMEDIATE 'GRANT SELECT ON files_detail_seq TO ' || p_grantee;
+         EXECUTE IMMEDIATE 'GRANT SELECT ON file_detail_seq TO ' || p_grantee;
 
          EXECUTE IMMEDIATE 'GRANT SELECT ON files_obj_detail_seq TO ' || p_grantee;
 
@@ -804,7 +804,7 @@ IS
       END;
 
       BEGIN
-         EXECUTE IMMEDIATE q'|DROP TABLE files_detail|';
+         EXECUTE IMMEDIATE q'|DROP TABLE file_detail|';
       EXCEPTION
          WHEN e_no_tab
          THEN
@@ -812,7 +812,7 @@ IS
       END;
 
       BEGIN
-         EXECUTE IMMEDIATE q'|DROP TABLE files_conf|';
+         EXECUTE IMMEDIATE q'|DROP TABLE file_conf|';
       EXCEPTION
          WHEN e_no_tab
          THEN
@@ -844,7 +844,7 @@ IS
       END;
 
       BEGIN
-         EXECUTE IMMEDIATE q'|DROP sequence files_detail_seq|';
+         EXECUTE IMMEDIATE q'|DROP sequence file_detail_seq|';
       EXCEPTION
          WHEN e_no_seq
          THEN
@@ -894,8 +894,8 @@ IS
          -- create the statitics table
          DBMS_STATS.create_stat_table( p_schema, 'OPT_STATS' );
 
-         -- FILES_CONF table
-         EXECUTE IMMEDIATE q'|CREATE TABLE files_conf
+         -- FILE_CONF table
+         EXECUTE IMMEDIATE q'|CREATE TABLE file_conf
 	 ( 
 	   file_label	       VARCHAR2(100) 	NOT NULL,
 	   file_group	       VARCHAR2(64) 	NOT NULL,
@@ -934,50 +934,50 @@ IS
 	   description         VARCHAR2(100)
 	 )|';
 
-         EXECUTE IMMEDIATE q'|ALTER TABLE files_conf ADD 
+         EXECUTE IMMEDIATE q'|ALTER TABLE file_conf ADD 
 	 (
-	   CONSTRAINT files_conf_pk
+	   CONSTRAINT file_conf_pk
 	   PRIMARY KEY
 	   (file_label, file_group)
 	   USING INDEX
 	 )|';
 
-         EXECUTE IMMEDIATE q'|ALTER TABLE files_conf ADD 
+         EXECUTE IMMEDIATE q'|ALTER TABLE file_conf ADD 
 	 (
-	   CONSTRAINT files_conf_ck1
+	   CONSTRAINT file_conf_ck1
 	   CHECK (source_policy IN ('oldest','newest','all','fail',NULL))
 	 )|';
 
-         EXECUTE IMMEDIATE q'|ALTER TABLE files_conf ADD
-	   CONSTRAINT files_conf_ck2
+         EXECUTE IMMEDIATE q'|ALTER TABLE file_conf ADD
+	   CONSTRAINT file_conf_ck2
 	   CHECK (file_type = case when source_directory is null or source_regexp is null then 'extract' ELSE file_type END )|';
 	 
 	 
-         EXECUTE IMMEDIATE q'|ALTER TABLE files_conf ADD
-	   CONSTRAINT files_conf_ck3
+         EXECUTE IMMEDIATE q'|ALTER TABLE file_conf ADD
+	   CONSTRAINT file_conf_ck3
 	 CHECK ( 0 = CASE WHEN object_owner IS NULL AND object_name IS NOT NULL THEN 1 
 		 WHEN object_owner IS NOT NULL AND object_name IS NULL THEN 1 ELSE 0 END )|';
 	 	   
-         EXECUTE IMMEDIATE q'|ALTER TABLE files_conf ADD 
+         EXECUTE IMMEDIATE q'|ALTER TABLE file_conf ADD 
 	 (
-	   CONSTRAINT files_conf_ck4
+	   CONSTRAINT file_conf_ck4
 	   CHECK (store_files_native IN ('yes','no'))
 	 )|';
 
-         EXECUTE IMMEDIATE q'|ALTER TABLE files_conf ADD 
+         EXECUTE IMMEDIATE q'|ALTER TABLE file_conf ADD 
 	 (
-	   CONSTRAINT files_conf_ck5
+	   CONSTRAINT file_conf_ck5
 	   CHECK (compress_method IN ('extension_method','gzip_method','compress_method','bzip_method','zip_method'))
 	 )|';
 
-         EXECUTE IMMEDIATE q'|ALTER TABLE files_conf ADD 
+         EXECUTE IMMEDIATE q'|ALTER TABLE file_conf ADD 
 	 (
-	   CONSTRAINT files_conf_ck6
+	   CONSTRAINT file_conf_ck6
 	   CHECK (encrypt_method IN ('extension_method','gpg_method'))
 	 )|';
 	 
-         -- FILES_DETAIL table
-         EXECUTE IMMEDIATE q'|CREATE TABLE files_detail
+         -- FILE_DETAIL table
+         EXECUTE IMMEDIATE q'|CREATE TABLE file_detail
 	 ( 
 	   file_detail_id	NUMBER		NOT NULL,
 	   file_label 		VARCHAR2(50)	NOT NULL,
@@ -1001,7 +1001,7 @@ IS
 	   session_id		NUMBER 		DEFAULT sys_context('USERENV','SESSIONID') NOT NULL
 	 )|';
 
-         EXECUTE IMMEDIATE q'|ALTER TABLE files_detail ADD 
+         EXECUTE IMMEDIATE q'|ALTER TABLE file_detail ADD 
 	 (
 	   CONSTRAINT file_detail_pk
 	   PRIMARY KEY
@@ -1009,15 +1009,15 @@ IS
 	   USING INDEX
 	 )|';
 
-         EXECUTE IMMEDIATE q'|ALTER TABLE files_detail ADD 
+         EXECUTE IMMEDIATE q'|ALTER TABLE file_detail ADD 
 	 (
 	   CONSTRAINT file_detail_fk1
 	   FOREIGN KEY ( file_label, file_group )
-	   REFERENCES files_conf
+	   REFERENCES file_conf
 	   ( file_label, file_group )
 	 )|';
 
-         EXECUTE IMMEDIATE q'|CREATE SEQUENCE files_detail_seq|';
+         EXECUTE IMMEDIATE q'|CREATE SEQUENCE file_detail_seq|';
 
          -- FILES_OBJ_DETAIL table
          EXECUTE IMMEDIATE q'|CREATE TABLE files_obj_detail
@@ -1479,7 +1479,7 @@ IS
    BEGIN
       -- create the synonyms
       BEGIN
-         EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.FILES_CONF for ' || p_schema || '.FILES_CONF';
+         EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.FILE_CONF for ' || p_schema || '.FILE_CONF';
       EXCEPTION
          WHEN e_same_name
          THEN
@@ -1487,8 +1487,8 @@ IS
       END;
 
       BEGIN
-         EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.FILES_DETAIL for ' || p_schema
-                           || '.FILES_DETAIL';
+         EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.FILE_DETAIL for ' || p_schema
+                           || '.FILE_DETAIL';
       EXCEPTION
          WHEN e_same_name
          THEN
@@ -1498,9 +1498,9 @@ IS
       BEGIN
          EXECUTE IMMEDIATE    'create or replace synonym '
                            || p_user
-                           || '.FILES_DETAIL_SEQ for '
+                           || '.FILE_DETAIL_SEQ for '
                            || p_schema
-                           || '.FILES_DETAIL_SEQ';
+                           || '.FILE_DETAIL_SEQ';
       EXCEPTION
          WHEN e_same_name
          THEN
@@ -1600,9 +1600,9 @@ IS
       BEGIN
          EXECUTE IMMEDIATE    'create or replace synonym '
                            || p_user
-                           || '.FILES_DETAIL_SEQ for '
+                           || '.FILE_DETAIL_SEQ for '
                            || p_schema
-                           || '.FILES_DETAIL_SEQ';
+                           || '.FILE_DETAIL_SEQ';
       EXCEPTION
          WHEN e_same_name
          THEN
@@ -2399,11 +2399,11 @@ IS
 	 -- ticket 103
 	 -- drop the Java source as it's getting a new name
 	 EXECUTE IMMEDIATE q'|drop java source TdCore|';
-	 -- add and remove columns from the FILES_CONF table
-	 EXECUTE IMMEDIATE q'|drop table files_conf|';
+	 -- add and remove columns from the FILE_CONF table
+	 EXECUTE IMMEDIATE q'|drop table file_conf|';
 	 -- no clients using Transcend Files currently
 	 -- rebuilding table is a better option	 
-         EXECUTE IMMEDIATE q'|CREATE TABLE files_conf
+         EXECUTE IMMEDIATE q'|CREATE TABLE file_conf
 	 ( 
 	   file_label	       VARCHAR2(100) 	NOT NULL,
 	   file_group	       VARCHAR2(64) 	NOT NULL,
@@ -2443,63 +2443,63 @@ IS
 	   description         VARCHAR2(100)
 	 )|';
 
-         EXECUTE IMMEDIATE q'|ALTER TABLE files_conf ADD 
+         EXECUTE IMMEDIATE q'|ALTER TABLE file_conf ADD 
 	 (
-	   CONSTRAINT files_conf_pk
+	   CONSTRAINT file_conf_pk
 	   PRIMARY KEY
 	   (file_label, file_group)
 	   USING INDEX
 	 )|';
 
-         EXECUTE IMMEDIATE q'|ALTER TABLE files_conf ADD 
+         EXECUTE IMMEDIATE q'|ALTER TABLE file_conf ADD 
 	 (
-	   CONSTRAINT files_conf_ck1
+	   CONSTRAINT file_conf_ck1
 	   CHECK (source_policy IN ('oldest','newest','all','fail',NULL))
 	 )|';
 
-         EXECUTE IMMEDIATE q'|ALTER TABLE files_conf ADD
-	   CONSTRAINT files_conf_ck2
+         EXECUTE IMMEDIATE q'|ALTER TABLE file_conf ADD
+	   CONSTRAINT file_conf_ck2
 	   CHECK (file_type = case when source_directory is null or source_regexp is null then 'extract' ELSE file_type END )|';
 	 
 	 
-         EXECUTE IMMEDIATE q'|ALTER TABLE files_conf ADD
-	   CONSTRAINT files_conf_ck3
+         EXECUTE IMMEDIATE q'|ALTER TABLE file_conf ADD
+	   CONSTRAINT file_conf_ck3
 	 CHECK ( 0 = CASE WHEN object_owner IS NULL AND object_name IS NOT NULL THEN 1 
 		 WHEN object_owner IS NOT NULL AND object_name IS NULL THEN 1 ELSE 0 END )|';
 	 
-         EXECUTE IMMEDIATE q'|ALTER TABLE files_conf ADD 
+         EXECUTE IMMEDIATE q'|ALTER TABLE file_conf ADD 
 	 (
-	   CONSTRAINT files_conf_ck4
+	   CONSTRAINT file_conf_ck4
 	   CHECK (lob_type IN ('clob','blob')
 	 )|';
 	   
-         EXECUTE IMMEDIATE q'|ALTER TABLE files_conf ADD 
+         EXECUTE IMMEDIATE q'|ALTER TABLE file_conf ADD 
 	 (
-	   CONSTRAINT files_conf_ck5
+	   CONSTRAINT file_conf_ck5
 	   CHECK (store_files_native IN ('all','none','non-target',NULL))
 	 )|';
 
-         EXECUTE IMMEDIATE q'|ALTER TABLE files_conf ADD 
+         EXECUTE IMMEDIATE q'|ALTER TABLE file_conf ADD 
 	 (
-	   CONSTRAINT files_conf_ck6
+	   CONSTRAINT file_conf_ck6
 	   CHECK (compress_method IN ('extension_method','gzip_method','compress_method','bzip_method','zip_method'))
 	 )|';
 
-         EXECUTE IMMEDIATE q'|ALTER TABLE files_conf ADD 
+         EXECUTE IMMEDIATE q'|ALTER TABLE file_conf ADD 
 	 (
-	   CONSTRAINT files_conf_ck7
+	   CONSTRAINT file_conf_ck7
 	   CHECK (encrypt_method IN ('extension_method','gpg_method'))
 	 )|';
 		
-         EXECUTE IMMEDIATE q'|ALTER TABLE files_conf ADD 
+         EXECUTE IMMEDIATE q'|ALTER TABLE file_conf ADD 
 	 (
-	   CONSTRAINT files_conf_ck8
+	   CONSTRAINT file_conf_ck8
 	   CHECK ( store_files_native <> CASE file_type WHEN 'extract' THEN 'non-target' ELSE NULL END )
 	 )|';
    
-	 EXECUTE IMMEDIATE q'|drop table files_detail|';
+	 EXECUTE IMMEDIATE q'|drop table file_detail|';
 	 
-         EXECUTE IMMEDIATE q'|CREATE TABLE files_detail
+         EXECUTE IMMEDIATE q'|CREATE TABLE file_detail
 	 ( 
 	   file_detail_id	NUMBER		NOT NULL,
 	   file_label 		VARCHAR2(50)	NOT NULL,
@@ -2519,7 +2519,7 @@ IS
 	   session_id		NUMBER 		DEFAULT sys_context('USERENV','SESSIONID') NOT NULL
 	 )|';
 
-         EXECUTE IMMEDIATE q'|ALTER TABLE files_detail ADD 
+         EXECUTE IMMEDIATE q'|ALTER TABLE file_detail ADD 
 	 (
 	   CONSTRAINT file_detail_pk
 	   PRIMARY KEY
@@ -2527,11 +2527,11 @@ IS
 	   USING INDEX
 	 )|';
 
-         EXECUTE IMMEDIATE q'|ALTER TABLE files_detail ADD 
+         EXECUTE IMMEDIATE q'|ALTER TABLE file_detail ADD 
 	 (
 	   CONSTRAINT file_detail_fk1
 	   FOREIGN KEY ( file_label, file_group )
-	   REFERENCES files_conf
+	   REFERENCES file_conf
 	   ( file_label, file_group )
 	 )|';
 
