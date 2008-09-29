@@ -938,7 +938,7 @@ IS
 	 (
 	   CONSTRAINT file_conf_pk
 	   PRIMARY KEY
-	   (file_label, file_group)
+	   (file_label)
 	   USING INDEX
 	 )|';
 
