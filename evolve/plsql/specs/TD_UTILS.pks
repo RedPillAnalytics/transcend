@@ -42,7 +42,7 @@ AS
    -- procedure executes the run_cmd function and raises an exception with the return code
    PROCEDURE host_cmd( p_cmd VARCHAR2, p_stdin VARCHAR2 DEFAULT ' ' );
 
-   FUNCTION get_numlines( p_dirname IN VARCHAR2, p_filename IN VARCHAR2 )
+   FUNCTION get_numlines( p_directory IN VARCHAR2, p_filename IN VARCHAR2 )
       RETURN NUMBER;
 
    PROCEDURE expand_file( 
@@ -68,7 +68,7 @@ AS
 
    FUNCTION extract_query(
       p_query       VARCHAR2,
-      p_dirname     VARCHAR2,
+      p_directory   VARCHAR2,
       p_filename    VARCHAR2,
       p_delimiter   VARCHAR2 DEFAULT '|',
       p_quotechar   VARCHAR2 DEFAULT NULL,
@@ -79,7 +79,7 @@ AS
    FUNCTION extract_object(
       p_owner       VARCHAR2,
       p_object      VARCHAR2,
-      p_dirname     VARCHAR2,
+      p_directory   VARCHAR2,
       p_filename    VARCHAR2,
       p_delimiter   VARCHAR2 DEFAULT '|',
       p_quotechar   VARCHAR2 DEFAULT NULL,
@@ -102,7 +102,7 @@ AS
 
    PROCEDURE check_object( p_owner VARCHAR2, p_object VARCHAR2, p_object_type VARCHAR2 DEFAULT NULL );
 
-   FUNCTION get_dir_path( p_dirname VARCHAR2 )
+   FUNCTION get_dir_path( p_directory VARCHAR2 )
       RETURN VARCHAR2;
 
    FUNCTION get_dir_name( p_dir_path VARCHAR2 )

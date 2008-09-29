@@ -209,7 +209,7 @@ AS
    END create_file;
 
    -- get the number of lines in a file
-   FUNCTION get_numlines( p_dirname IN VARCHAR2, p_filename IN VARCHAR2 )
+   FUNCTION get_numlines( p_directory IN VARCHAR2, p_filename IN VARCHAR2 )
       RETURN NUMBER
    AS
       l_fh     UTL_FILE.file_type;
@@ -224,7 +224,7 @@ AS
          RETURN 0;
       ELSE
          BEGIN
-            l_fh := UTL_FILE.fopen( p_dirname, p_filename, 'R', 32767 );
+            l_fh := UTL_FILE.fopen( p_directory, p_filename, 'R', 32767 );
 
             LOOP
                UTL_FILE.get_line( l_fh, l_line );
@@ -611,7 +611,7 @@ AS
    END check_object;
 
    -- used to get the path associated with a directory location
-   FUNCTION get_dir_path( p_dirname VARCHAR2 )
+   FUNCTION get_dir_path( p_directory VARCHAR2 )
       RETURN VARCHAR2
    AS
       l_path   all_directories.directory_path%TYPE;
@@ -619,13 +619,13 @@ AS
       SELECT directory_path
         INTO l_path
         FROM all_directories
-       WHERE directory_name = UPPER( p_dirname );
+       WHERE directory_name = UPPER( p_directory );
 
       RETURN l_path;
    EXCEPTION
       WHEN NO_DATA_FOUND
       THEN
-         evolve.raise_err( 'no_dir_obj', p_dirname );
+         evolve.raise_err( 'no_dir_obj', p_directory );
    END get_dir_path;
 
    -- used to get a directory name associated with a directory path
@@ -816,7 +816,7 @@ AS
    -- 2. allow FOR a FILE TO be appended TO
    FUNCTION extract_query(
       p_query       VARCHAR2,
-      p_dirname     VARCHAR2,
+      p_directory   VARCHAR2,
       p_filename    VARCHAR2,
       p_delimiter   VARCHAR2 DEFAULT '|',
       p_quotechar   VARCHAR2 DEFAULT NULL,
@@ -843,7 +843,7 @@ AS
       PRAGMA EXCEPTION_INIT( e_no_var, -1007 );
       o_ev            evolve_ot          := evolve_ot( p_module => 'extract_query' );
    BEGIN
-      l_output := UTL_FILE.fopen( p_dirname, p_filename, l_mode, 32767 );
+      l_output := UTL_FILE.fopen( p_directory, p_filename, l_mode, 32767 );
       DBMS_SQL.parse( l_thecursor, p_query, DBMS_SQL.native );
       o_ev.change_action( 'define columns' );
 
@@ -895,7 +895,7 @@ AS
    FUNCTION extract_object(
       p_owner       VARCHAR2,
       p_object      VARCHAR2,
-      p_dirname     VARCHAR2,
+      p_directory   VARCHAR2,
       p_filename    VARCHAR2,
       p_delimiter   VARCHAR2 DEFAULT '|',
       p_quotechar   VARCHAR2 DEFAULT NULL,
@@ -937,7 +937,7 @@ AS
             o_ev.change_action( 'Extract headers to file' );
             l_cnt :=
                extract_query( p_query          => l_head_sql,
-                              p_dirname        => p_dirname,
+                              p_directory      => p_directory,
                               p_filename       => p_filename,
                               p_delimiter      => p_delimiter,
                               p_quotechar      => NULL,
@@ -949,7 +949,7 @@ AS
          l_cnt :=
               l_cnt
             + extract_query( p_query          => l_extract_sql,
-                             p_dirname        => p_dirname,
+                             p_directory      => p_directory,
                              p_filename       => p_filename,
                              p_delimiter      => p_delimiter,
                              p_quotechar      => p_quotechar,
