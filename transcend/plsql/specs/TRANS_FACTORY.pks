@@ -11,6 +11,12 @@ IS
       p_table	VARCHAR2
    )
       RETURN mapping_ot;
+   
+   FUNCTION get_file_label_ot( 
+      p_file_label VARCHAR2,
+      p_directory  VARCHAR2 DEFAULT NULL
+   )
+      RETURN file_label_ot;
 
 END trans_factory;
 /

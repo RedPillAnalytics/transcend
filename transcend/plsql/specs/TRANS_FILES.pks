@@ -10,7 +10,7 @@ IS
    PROCEDURE extract_object(
       p_owner       VARCHAR2,
       p_object      VARCHAR2,
-      p_dirname     VARCHAR2,
+      p_directory   VARCHAR2,
       p_filename    VARCHAR2,
       p_delimiter   VARCHAR2 DEFAULT '|',
       p_quotechar   VARCHAR2 DEFAULT '',
@@ -18,9 +18,14 @@ IS
       p_append      VARCHAR2 DEFAULT 'no'
    );
 
-   PROCEDURE process_files(
-      p_file_group   VARCHAR2,
-      p_file_label    VARCHAR2 DEFAULT NULL
+   PROCEDURE process_file(
+      p_file_label   VARCHAR2,
+      p_directory    VARCHAR2 DEFAULT NULL
    );
+
+   PROCEDURE process_group(
+      p_file_group   VARCHAR2,
+      p_file_type    VARCHAR2 DEFAULT NULL
+   );      
 END trans_files;
 /

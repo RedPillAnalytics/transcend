@@ -59,6 +59,54 @@ IS
          evolve.log_err;
          RAISE;
    END get_mapping_ot;
+
+   -- takes a table name and table_owner and returns a subtype of file_ot
+   FUNCTION get_file_label_ot( 
+      p_file_label VARCHAR2,
+      p_directory  VARCHAR2 DEFAULT NULL
+   )
+      RETURN file_label_ot
+   IS
+      l_label_type      file_conf.label_type%TYPE;
+      -- need object for the parent type
+      o_label     file_label_ot;
+      -- also need an object for any subtypes
+      o_extract   extract_ot;
+      o_feed      feed_ot;
+      -- and then the basic Evolve instrumentation object
+      o_ev        evolve_ot                        := evolve_ot( p_module => 'get_file_label_ot' );
+   BEGIN
+      -- get the file name and file type
+      SELECT lower( label_type )
+        INTO l_label_type
+        FROM file_conf
+       WHERE LOWER( file_label ) = LOWER( p_file_label );
+
+      -- instantiate an object based on label_type
+      -- polymorph the file_detail_ot based on the label_type
+      CASE l_label_type
+      WHEN 'feed'
+      THEN
+         o_feed := feed_ot( p_file_label => p_file_label
+                            p_directory  => p_directory );
+         o_label := o_feed;
+      WHEN 'extract'
+      THEN
+         o_extract := extract_ot( p_file_label => p_file_label,
+                                  p_directory  => p_directory );
+         o_label := o_extract;
+      END CASE;
+
+      -- now simply return the type
+      o_ev.clear_app_info;
+      RETURN o_label;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         evolve.log_err;
+         RAISE;
+   END get_file_label_ot;
+
 END trans_factory;
 /
 
