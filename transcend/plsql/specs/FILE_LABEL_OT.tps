@@ -12,6 +12,7 @@ CREATE OR REPLACE TYPE file_label_ot AUTHID CURRENT_USER AS object(
    file_datestamp   	 VARCHAR2( 30 ),
    min_bytes        	 NUMBER,
    max_bytes        	 NUMBER,
+   reject_limit          NUMBER,
    baseurl          	 VARCHAR2( 2000 ),
    store_files_native    VARCHAR2( 20 ),
    compress_method	 VARCHAR2( 20 ),
@@ -25,11 +26,14 @@ CREATE OR REPLACE TYPE file_label_ot AUTHID CURRENT_USER AS object(
       p_source_filename	  VARCHAR2 DEFAULT NULL,
       p_lob_type	  VARCHAR2 DEFAULT 'clob'
    ),
+   MEMBER PROCEDURE audit_object( p_num_lines NUMBER ),
    MEMBER PROCEDURE announce(
       p_files_url        VARCHAR2,
       p_num_lines   	 NUMBER,
       p_num_files   	 NUMBER DEFAULT 1
-   )
+   ),
+   MEMBER PROCEDURE verify NOT instantiable,
+   MEMBER PROCEDURE process NOT instantiable
 )
 NOT FINAL;
 /

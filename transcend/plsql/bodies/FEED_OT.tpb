@@ -105,148 +105,6 @@ AS
       -- reset the evolve_object
       o_ev.clear_app_info;
    END verify;
-
-   -- audits information about external tables after the file(s) have been put in place
-   MEMBER PROCEDURE audit_ext_tab (p_num_lines NUMBER)
-   IS
-      l_num_rows         NUMBER         := 0;
-      l_pct_miss         NUMBER;
-      l_sql              VARCHAR2 (100);
-      l_ext_tab          VARCHAR2 (61)  := SELF.object_owner || '.' || SELF.object_name;
-      e_data_cartridge   EXCEPTION;
-      PRAGMA EXCEPTION_INIT (e_data_cartridge, -29913);
-      e_no_table         EXCEPTION;
-      PRAGMA EXCEPTION_INIT (e_no_table, -942);
-      e_no_files         EXCEPTION;
-      PRAGMA EXCEPTION_INIT (e_no_files, -1756);
-      o_ev               evolve_ot      := evolve_ot (p_module => 'audit_ext_tab');
-   BEGIN
-      -- type object which handles logging and application registration for instrumentation purposes
-      -- defaults to registering with DBMS_APPLICATION_INFO
-      o_ev.change_action ('get count from table');
-      l_sql := 'SELECT count(*) FROM ' || l_ext_tab;
-      evolve.log_msg ('Count SQL: ' || l_sql, 3);
-      o_ev.change_action ('get external table count');
-
-      IF NOT evolve.is_debugmode
-      THEN
-         BEGIN
-            EXECUTE IMMEDIATE l_sql
-                         INTO l_num_rows;
-         EXCEPTION
-            WHEN e_data_cartridge
-            THEN
-               -- no matter what happens, we want to log the error
-               -- this is prior to the case on purpose
-               evolve.log_err;
-
-                    -- use a regular expression to pull the KUP error out of SQLERRM
-               -- this tells us the explicit issue with the external table
-               CASE REGEXP_SUBSTR (SQLERRM, '^KUP-[[:digit:]]{5}', 1, 1, 'im')
-                       -- so far, only one known error to check for
-                  -- others will come
-               WHEN 'KUP-04040'
-                  THEN
-                     o_ev.change_action ('external file missing');
-                     o_ev.send (p_label => SELF.file_label);
-                     o_ev.clear_app_info;
-                     evolve.raise_err ('ext_file_missing', l_ext_tab);
-                  -- All other errors get routed here
-               ELSE
-                     o_ev.clear_app_info;
-                     evolve.raise_err ('data_cartridge', l_ext_tab);
-               END CASE;
-         END;
-
-         BEGIN
-            -- calculate the percentage difference
-            l_pct_miss := 100 - ((l_num_rows / p_num_lines) * 100);
-
-            IF l_pct_miss > reject_limit
-            THEN
-               o_ev.change_action ('reject limit exceeded');
-               -- notify if reject limit is exceeded
-               o_ev.send (p_label => SELF.file_label);
-               o_ev.clear_app_info;
-               evolve.raise_err ('reject_limit_exceeded');
-            END IF;
-         EXCEPTION
-            WHEN ZERO_DIVIDE
-            THEN
-               evolve.log_msg ('External table location is an empty file', 3);
-         END;
-
-         INSERT INTO files_obj_detail
-                     (file_obj_detail_id, file_type, file_label, file_group,
-                      object_owner, object_name, num_rows, num_lines, percent_diff
-                     )
-              VALUES (files_obj_detail_seq.NEXTVAL, SELF.file_type, SELF.file_label, SELF.file_group,
-                      SELF.object_owner, SELF.object_name, l_num_rows, p_num_lines, l_pct_miss
-                     );
-      END IF;
-
-      o_ev.clear_app_info;
-   EXCEPTION
-      WHEN e_no_table
-      THEN
-         evolve.raise_err ('no_tab', SELF.object_owner || '.' || SELF.object_name);
-   END audit_ext_tab;
-   MEMBER PROCEDURE delete_target_files
-   IS
-      l_ext_tab_ind    BOOLEAN   := CASE
-         WHEN SELF.object_name IS NULL
-            THEN FALSE
-         ELSE TRUE
-      END;
-      l_filename_ind   BOOLEAN   := CASE
-         WHEN SELF.filename IS NULL
-            THEN FALSE
-         ELSE TRUE
-      END;
-      o_ev             evolve_ot := evolve_ot (p_module => 'delete_target_files');
-   BEGIN
-      IF self.delete_target
-      THEN
-         o_ev.change_action ('delete target files');
-
-	 -- so let's look for matching files to that filename
-	 -- first let's delete them in the work_directory
-	 td_utils.directory_List( self.work_directory );
-
-	 FOR c_files IN ( SELECT *
-			    FROM dir_list
-			   WHERE REGEXP_LIKE( filename, CASE WHEN l_filename_ind THEN REGEXP_REPLACE (SELF.filename, '\.', '_\d.') ELSE SELF.source_regexp END, self.match_paramter )
-			   ORDER BY create_ts )
-	 
-         LOOP
-            l_rows_delete := TRUE;
-            td_utils.delete_file (c_files.DIRECTORY, c_files.LOCATION);
-	    DELETE FROM dir_list WHERE filename = c_files.filename;
-         END LOOP;
-	 
-	 -- now let's delete them in the target directory
-	 td_utils.directory_List( self.directory );
-
-	 FOR c_files IN ( SELECT *
-			    FROM dir_list
-			   WHERE REGEXP_LIKE( filename, CASE WHEN l_filename_ind THEN REGEXP_REPLACE (SELF.filename, '\.', '_\d.') ELSE SELF.source_regexp END, self.match_paramter )
-			   ORDER BY create_ts )
-	 
-         LOOP
-            l_rows_delete := TRUE;
-            td_utils.delete_file (c_files.DIRECTORY, c_files.LOCATION);
-	    DELETE FROM dir_list WHERE filename = c_files.filename;
-         END LOOP;
-
-         IF l_rows_delete
-         THEN
-            evolve.log_msg ('Previous target files files removed', 3);
-         END IF;
-      END IF;
-
-      -- reset the evolve_object
-      o_ev.clear_app_info;
-   END delete_target_files;
    MEMBER PROCEDURE process
    IS
    -- is there an external table associated with this feed
@@ -288,7 +146,44 @@ AS
       evolve.log_msg ('Processing feed "' || file_label || '"', 3);
 
       -- need to delete previous existing target files if so specified
-      delete_target_files;
+      IF self.delete_target
+      THEN
+         o_ev.change_action ('delete target files');
+
+	 -- so let's look for matching files to that filename
+	 -- first let's delete them in the work_directory
+	 td_utils.directory_List( self.work_directory );
+
+	 FOR c_files IN ( SELECT *
+			    FROM dir_list
+			   WHERE REGEXP_LIKE( filename, CASE WHEN l_filename_ind THEN REGEXP_REPLACE (SELF.filename, '\.', '_\d.') ELSE SELF.source_regexp END, self.match_paramter )
+			   ORDER BY create_ts )
+	 
+         LOOP
+            l_rows_delete := TRUE;
+            td_utils.delete_file (c_files.DIRECTORY, c_files.LOCATION);
+	    DELETE FROM dir_list WHERE filename = c_files.filename;
+         END LOOP;
+	 
+	 -- now let's delete them in the target directory
+	 td_utils.directory_List( self.directory );
+
+	 FOR c_files IN ( SELECT *
+			    FROM dir_list
+			   WHERE REGEXP_LIKE( filename, CASE WHEN l_filename_ind THEN REGEXP_REPLACE (SELF.filename, '\.', '_\d.') ELSE SELF.source_regexp END, self.match_paramter )
+			   ORDER BY create_ts )
+	 
+         LOOP
+            l_rows_delete := TRUE;
+            td_utils.delete_file (c_files.DIRECTORY, c_files.LOCATION);
+	    DELETE FROM dir_list WHERE filename = c_files.filename;
+         END LOOP;
+
+         IF l_rows_delete
+         THEN
+            evolve.log_msg ('Previous target files files removed', 3);
+         END IF;
+      END IF;
 
       -- now we need to see all the source files in the source directory that match the regular expression
       -- USE java stored procedure to populate global temp table DIR_LIST with all the files in the directory
