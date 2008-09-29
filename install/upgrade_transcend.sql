@@ -21,8 +21,8 @@ END;
 --CREATE targeted _ots, packages and object views
 @../transcend/plsql/specs/TD_DBUTILS.pks
 @../transcend/plsql/wrapped_bodies/TD_DBUTILS.plb
-@../transcend/plsql/specs/FILE_OT.tps
-@../transcend/plsql/wrapped_bodies/FILE_OT.plb
+@../transcend/plsql/specs/FILE_LABEL_OT.tps
+@../transcend/plsql/wrapped_bodies/FILE_LABEL_OT.plb
 @../transcend/plsql/specs/EXTRACT_OT.tps
 @../transcend/plsql/wrapped_bodies/EXTRACT_OT.plb
 @../transcend/plsql/specs/FEED_OT.tps
