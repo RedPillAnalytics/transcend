@@ -1,9 +1,8 @@
 CREATE OR REPLACE PACKAGE trans_files AUTHID CURRENT_USER
 IS
    FUNCTION calc_rej_ind(
-      p_file_group   VARCHAR2,
-      p_file_label    VARCHAR2,
-      p_rej_limit       NUMBER DEFAULT 20
+      p_file_label   VARCHAR2,
+      p_rej_limit    NUMBER DEFAULT 20
    )
       RETURN VARCHAR2;
 
@@ -25,7 +24,7 @@ IS
 
    PROCEDURE process_group(
       p_file_group   VARCHAR2,
-      p_file_type    VARCHAR2 DEFAULT NULL
+      p_label_type   VARCHAR2 DEFAULT NULL
    );      
 END trans_files;
 /
