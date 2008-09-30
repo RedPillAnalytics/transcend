@@ -899,7 +899,7 @@ IS
 	 ( 
 	   file_label	       VARCHAR2(100) 	NOT NULL,
 	   file_group	       VARCHAR2(64) 	NOT NULL,
-	   file_type	       VARCHAR2(7) 	NOT NULL,
+	   label_type	       VARCHAR2(7) 	NOT NULL,
 	   object_owner	       VARCHAR2(30),
 	   object_name	       VARCHAR2(30),
 	   directory	       VARCHAR2(30)	NOT NULL,
@@ -950,7 +950,7 @@ IS
 
          EXECUTE IMMEDIATE q'|ALTER TABLE file_conf ADD
 	   CONSTRAINT file_conf_ck2
-	   CHECK (file_type = case when source_directory is null or source_regexp is null then 'extract' ELSE file_type END )|';
+	   CHECK (label_type = case when source_directory is null or source_regexp is null then 'extract' ELSE label_type END )|';
 	 
 	 
          EXECUTE IMMEDIATE q'|ALTER TABLE file_conf ADD
@@ -982,7 +982,7 @@ IS
 	   file_detail_id	NUMBER		NOT NULL,
 	   file_label 		VARCHAR2(50)	NOT NULL,
 	   file_group 		VARCHAR2(64)	NOT NULL,
-	   file_type 		VARCHAR2(7)	NOT NULL,
+	   label_type 		VARCHAR2(7)	NOT NULL,
 	   directory	        VARCHAR2(30),
 	   filename	        VARCHAR2(200),
 	   source_directory	VARCHAR2(30),
@@ -1025,7 +1025,7 @@ IS
 	   file_obj_detail_id    NUMBER NOT NULL,
 	   file_label 	         VARCHAR2(30) NOT NULL,
 	   file_group 	      	 VARCHAR2(50) NOT NULL,
-	   file_type 	      	 VARCHAR2(7) NOT NULL,
+	   label_type 	      	 VARCHAR2(7) NOT NULL,
 	   object_owner  	 VARCHAR2(30) NOT NULL,
 	   object_name  	 VARCHAR2(30) NOT NULL,
 	   processed_ts 	 TIMESTAMP DEFAULT systimestamp NOT NULL,
@@ -2407,7 +2407,7 @@ IS
 	 ( 
 	   file_label	       VARCHAR2(100) 	NOT NULL,
 	   file_group	       VARCHAR2(64) 	NOT NULL,
-	   file_type	       VARCHAR2(7) 	NOT NULL,
+	   label_type	       VARCHAR2(7) 	NOT NULL,
 	   object_owner	       VARCHAR2(30),
 	   object_name	       VARCHAR2(30),
 	   directory	       VARCHAR2(30)	NOT NULL,
@@ -2459,7 +2459,7 @@ IS
 
          EXECUTE IMMEDIATE q'|ALTER TABLE file_conf ADD
 	   CONSTRAINT file_conf_ck2
-	   CHECK (file_type = case when source_directory is null or source_regexp is null then 'extract' ELSE file_type END )|';
+	   CHECK (label_type = case when source_directory is null or source_regexp is null then 'extract' ELSE label_type END )|';
 	 
 	 
          EXECUTE IMMEDIATE q'|ALTER TABLE file_conf ADD
@@ -2494,7 +2494,7 @@ IS
          EXECUTE IMMEDIATE q'|ALTER TABLE file_conf ADD 
 	 (
 	   CONSTRAINT file_conf_ck8
-	   CHECK ( store_files_native <> CASE file_type WHEN 'extract' THEN 'non-target' ELSE NULL END )
+	   CHECK ( store_files_native <> CASE label_type WHEN 'extract' THEN 'non-target' ELSE NULL END )
 	 )|';
    
 	 EXECUTE IMMEDIATE q'|drop table file_detail|';
@@ -2504,7 +2504,7 @@ IS
 	   file_detail_id	NUMBER		NOT NULL,
 	   file_label 		VARCHAR2(50)	NOT NULL,
 	   file_group 		VARCHAR2(64)	NOT NULL,
-	   file_type 		VARCHAR2(7)	NOT NULL,
+	   label_type 		VARCHAR2(7)	NOT NULL,
 	   directory	        VARCHAR2(30),
 	   filename	        VARCHAR2(200),
 	   work_directory	VARCHAR2(200),

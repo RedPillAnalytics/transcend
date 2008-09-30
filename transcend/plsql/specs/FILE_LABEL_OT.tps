@@ -24,7 +24,7 @@ CREATE OR REPLACE TYPE file_label_ot AUTHID CURRENT_USER AS object(
       p_file_dt           DATE,
       p_filename          VARCHAR2 DEFAULT NULL,
       p_source_filename	  VARCHAR2 DEFAULT NULL,
-      p_lob_type	  VARCHAR2 DEFAULT 'clob'
+      p_lob_type	  VARCHAR2 DEFAULT NULL
    ),
    MEMBER PROCEDURE audit_object( p_num_lines NUMBER ),
    MEMBER PROCEDURE announce(
