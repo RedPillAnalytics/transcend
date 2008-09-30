@@ -18,9 +18,9 @@ AS
       l_src_offset   NUMBER := 1;
       l_lang_ctx     NUMBER := DBMS_LOB.default_lang_ctx;
       l_warning      NUMBER;
-      l_filename          files_conf.filename%type         := NVL( p_filename, SELF.filename );
+      l_filename          file_conf.filename%type         := NVL( p_filename, SELF.filename );
       -- determine which directory is the source directory for feeds
-      l_source_directory  files_conf.source_directory%type := NVL( SELF.work_directory, SELF.source_directory );
+      l_source_directory  file_conf.source_directory%type := NVL( SELF.work_directory, SELF.source_directory );
       -- determine the lob_type
       l_lob_type     VARCHAR2(4) := NVL( p_lob_type, self.lob_type );
       o_ev   evolve_ot := evolve_ot( p_module => 'archive' );
@@ -35,14 +35,14 @@ AS
       
       -- INSERT into the FILE_DETAIL table to record the movement
       -- this is done regardless of runmode
-      INSERT INTO files_detail
+      INSERT INTO file_detail
              ( file_detail_id, file_label, file_group,
                label_type, directory, filename, source_directory, 
 	       source_filename, work_directory, num_bytes, num_lines, 
                file_dt, store_files_native, compress_method, encrypt_method, 
                passphrase, file_clob, file_blob 
              )
-	     VALUES ( files_detail_seq.NEXTVAL, file_label, file_group,
+	     VALUES ( file_detail_seq.NEXTVAL, file_label, file_group,
 		      label_type, SELF.directory, l_filename, SELF.source_directory, 
                       p_source_filename, SELF.work_directory, p_num_bytes, p_num_lines, 
                       p_file_dt, self.store_files_native, self.compress_method, self.encrypt_method,
@@ -174,11 +174,11 @@ AS
                evolve.log_msg ('A SELECT from the specified object returns no rows', 3);
          END;
 
-         INSERT INTO files_obj_detail
-                     (file_obj_detail_id, file_type, file_label, file_group,
+         INSERT INTO file_object_detail
+                     (file_object_detail_id, file_type, file_label, file_group,
                       object_owner, object_name, num_rows, num_lines, percent_diff
                      )
-              VALUES (files_obj_detail_seq.NEXTVAL, SELF.file_type, SELF.file_label, SELF.file_group,
+              VALUES (file_object_detail_seq.NEXTVAL, SELF.file_type, SELF.file_label, SELF.file_group,
                       SELF.object_owner, SELF.object_name, l_num_rows, p_num_lines, l_pct_miss
                      );
       END IF;

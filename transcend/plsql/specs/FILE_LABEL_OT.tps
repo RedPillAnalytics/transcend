@@ -32,8 +32,8 @@ CREATE OR REPLACE TYPE file_label_ot AUTHID CURRENT_USER AS object(
       p_num_lines   	 NUMBER,
       p_num_files   	 NUMBER DEFAULT 1
    ),
-   MEMBER PROCEDURE verify NOT instantiable,
-   MEMBER PROCEDURE process NOT instantiable
+   NOT instantiable MEMBER PROCEDURE verify,
+   NOT instantiable MEMBER PROCEDURE process
 )
-NOT FINAL;
+NOT FINAL NOT INSTANTIABLE
 /

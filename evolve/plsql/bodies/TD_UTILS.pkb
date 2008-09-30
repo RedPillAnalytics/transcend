@@ -61,7 +61,7 @@ AS
    BEGIN
       -- if the copy process is just a duplicate process, then raise and exception
       IF lower( p_source_directory ) = lower( p_directory )
-	 AND lower( source_filename ) = lower( p_filename )
+	 AND lower( p_source_filename ) = lower( p_filename )
       THEN
 	 evolve.log_msg( 'DUPLICATE_FILE exception raised', 4 );
 	 l_duplicate := TRUE;
@@ -82,8 +82,8 @@ AS
       p_filename VARCHAR2
    )
    AS
-      l_src_fh	 utl_file.file_type := utl_file.fopen( p_source_directory, p_source_filename,'rb')
-      l_dest_fh  utl_file.file_type := utl_file.fopen( p_directory, p_filename, 'wb')
+      l_src_fh	 utl_file.file_type := utl_file.fopen( p_source_directory, p_source_filename,'rb');
+      l_dest_fh  utl_file.file_type := utl_file.fopen( p_directory, p_filename, 'wb');
       l_buf 	 RAW(32000);
 
       o_ev       evolve_ot := evolve_ot( p_module => 'copy_file' );
@@ -100,8 +100,8 @@ AS
 	 BEGIN
 	    o_ev.change_action( 'copy file' );
 	    LOOP
-	       utl_file.get_raw(f1,l_buf,32000);
-	       utl_file.put_raw(f2,l_buf,TRUE); -- AND flush
+	       utl_file.get_raw(l_src_fh,l_buf,32000);
+	       utl_file.put_raw(l_dest_fh,l_buf,TRUE); -- AND flush
 	    END LOOP;
 	
 	 EXCEPTION
@@ -113,8 +113,8 @@ AS
 	    WHEN others 
 	    THEN
 	       -- make sure we close the previous file handles
-	       utl_file.fclose(f1);
-	       utl_file.fclose(f2);
+	       utl_file.fclose(l_src_fh);
+	       utl_file.fclose(l_dest_fh);
 	       RAISE;
 	 END; 
       END IF;
@@ -151,7 +151,7 @@ AS
       THEN
 
 	 BEGIN
-	    utl_file.frename( l_source_directory, l_source_filename, c_dir_list.directory, c_dir_list.filename );
+	    utl_file.frename( p_source_directory, p_source_filename, p_directory, p_filename );
 	 EXCEPTION
 	    WHEN e_diff_fs
 	    THEN
@@ -177,12 +177,12 @@ AS
          UTL_FILE.fremove( p_directory, p_filename );
       END IF;
       
-      evolve.log_msg( 'File ' || p_source_filename || ' in directory '|| p_source_directory||' deleted', 3 );
+      evolve.log_msg( 'File ' || p_filename || ' in directory '|| p_directory||' deleted', 3 );
       o_ev.clear_app_info;
    EXCEPTION
       WHEN UTL_FILE.invalid_operation
       THEN
-         evolve.log_msg( l_filepath || ' could not be deleted, or does not exist', 3 );
+         evolve.log_msg( 'File ' || p_filename || ' in directory '|| p_directory || ' could not be deleted, or does not exist', 3 );
    END delete_file;
 
    -- uses UTL_FILE to "touch" a file
@@ -198,7 +198,7 @@ AS
          UTL_FILE.fclose( l_fh );
       END IF;
       
-      evolve.log_msg( 'File ' || p_source_filename || ' in directory '|| p_source_directory||' created', 3 );
+      evolve.log_msg( 'File ' || p_filename || ' in directory '|| p_directory ||' created', 3 );
 
       o_ev.clear_app_info;
    EXCEPTION
@@ -246,11 +246,11 @@ AS
    PROCEDURE expand_file( 
       p_directory   VARCHAR2, 
       p_filename    VARCHAR2,
-      r_filename    VARCHAR2 OUT,
-      r_filesize    NUMBER   OUT,
-      r_blocksize   NUMBER   OUT,
-      r_expanded    BOOLEAN  OUT,
-      p_comp_method DEFAULT extension_method
+      r_filename    OUT VARCHAR2,
+      r_filesize    OUT NUMBER,
+      r_blocksize   OUT NUMBER,
+      r_expanded    OUT BOOLEAN,
+      p_comp_method VARCHAR2 DEFAULT extension_method
    )
    AS
       l_filebase       VARCHAR2( 50 );
@@ -258,11 +258,11 @@ AS
       l_filepath       VARCHAR2( 200 );
       l_filebasepath   VARCHAR2( 200 );
       l_file_exists    BOOLEAN;
-      l_comp_method    files_conf.compression_method%type;
+      l_comp_method    file_conf.compress_method%type;
       o_ev             evolve_ot       := evolve_ot( p_module => 'expand_file' );
    BEGIN
       -- construct the absolute path of the file
-      l_filepath := get_dir_path( p_dirpath ) || '/' || p_filename;
+      l_filepath := get_dir_path( p_directory ) || '/' || p_filename;
       -- construct the filename minus the very last extension to the file
       l_filebase := REGEXP_REPLACE( p_filename, '(.+)(\.)([^\.]+$)', '\1', 1, 0, 'i' );
       
@@ -321,7 +321,7 @@ AS
             evolve.log_msg( l_filepath || ' unzipped', 3 );
          ELSE
 	    -- we did not recognize the file extension
-	    evolve.raise_err( 'invalid_compress_ext', UPPER( l_file_ext );
+	    evolve.raise_err( 'invalid_compress_ext', UPPER( l_file_ext ));
       END CASE;
       
       -- we are not in debug mode
@@ -352,29 +352,33 @@ AS
       p_directory      VARCHAR2, 
       p_filename       VARCHAR2,
       p_passphrase     VARCHAR2,
-      r_filename       VARCHAR2 OUT,
-      r_filesize       NUMBER   OUT,
-      r_blocksize      NUMBER   OUT,
-      r_decrypted      BOOLEAN  OUT,
-      p_encrypt_method DEFAULT extension_method
+      r_filename       OUT VARCHAR2,
+      r_filesize       OUT NUMBER,
+      r_blocksize      OUT NUMBER,
+      r_decrypted      OUT BOOLEAN,
+      p_encrypt_method VARCHAR2 DEFAULT extension_method
    )
    AS
       l_encrypted      BOOLEAN         := TRUE;
       l_filebase       VARCHAR2( 50 );
       l_file_ext       VARCHAR2( 20 );
-      l_filepath       VARCHAR2( 200 );
+      l_filebasepath   VARCHAR2( 200 );
       l_filepath       VARCHAR2( 200 );
       l_file_exists    BOOLEAN;
-      l_encrypt_method files_conf.encryption_method%type;
+      l_encrypt_method file_conf.encrypt_method%type;
       o_ev             evolve_ot       := evolve_ot( p_module => 'decrypt_file' );
    BEGIN
-      -- construct the absolute path of the file
-      l_filepath := get_dir_path( p_dirpath ) || '/' || p_filename;
       -- construct the filename minus the very last extension to the file
       l_filebase := REGEXP_REPLACE( p_filename, '(.+)(\.)([^\.]+$)', '\1', 1, 0, 'i' );
       
       -- construct the file suffix
       l_file_ext := REGEXP_REPLACE( p_filename, '(.+)(\.)([^\.]+$)', '\3', 1, 0, 'i' );
+
+      -- construct the absolute path of the file
+      l_filepath := get_dir_path( p_directory ) || '/' || p_filename;
+
+      -- construct the absolute path of the file
+      l_filebasepath := get_dir_path( p_directory ) || '/' || l_filebase;
 
       -- determine the method for expanding the file
       -- can actually specify how it should be done using the attribute ENCRYPT_METHOD
@@ -389,11 +393,11 @@ AS
       END;
       
       -- if l_encrypt_method is NULL, then we didn't get a valid method
-      IF l_decrypt_method IS NULL
+      IF l_encrypt_method IS NULL
       THEN
 	 -- set Boolean and return original filename
-	 r_decrypteded   := FALSE;
-	 r_filename      := p_filename;
+	 r_decrypted   := FALSE;
+	 r_filename    := p_filename;
       ELSE
 	 -- set Boolean and return the expected uncompressed filename
 	 r_decrypted   := TRUE;
@@ -411,7 +415,7 @@ AS
             evolve.log_msg( l_filepath || ' decrypted', 3 );
          ELSE
 	    -- we did not recognize the file extension
-	    evolve.raise_err( 'invalid_encrypt_ext', UPPER( l_file_ext );
+	    evolve.raise_err( 'invalid_encrypt_ext', UPPER( l_file_ext ));
       END CASE;
 
       -- we are not in debug mode
@@ -420,7 +424,6 @@ AS
       IF NOT evolve.is_debugmode AND r_decrypted
       THEN
          o_ev.change_action( 'Check for decrypted file' );
-         evolve.log_msg( 'File returned by DECRYPT_FILE: ' || l_file_return, 3 );
 
          -- check and make sure the unzip process worked
          -- do this by checking to see if the expected file exists

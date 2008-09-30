@@ -5,17 +5,17 @@ AS
    duplicate_file              EXCEPTION;
    
    -- constants used for EXPAND_FILE
-   CONSTANT gzip_method         VARCHAR2(15) := 'gzip_method';
-   CONSTANT compress_method     VARCHAR2(15) := 'compress_method';
-   CONSTANT bzip_method         VARCHAR2(15) := 'bzip_method';
-   CONSTANT zip_method          VARCHAR2(15) := 'zip_method';
+   gzip_method CONSTANT         VARCHAR2(15) := 'gzip_method';
+   compress_method CONSTANT     VARCHAR2(15) := 'compress_method';
+   bzip_method CONSTANT         VARCHAR2(15) := 'bzip_method';
+   zip_method CONSTANT          VARCHAR2(15) := 'zip_method';
 
    -- constants used for EXPAND_FILE
-   CONSTANT gpg_method          VARCHAR2(15) := 'gpg_method';
+   gpg_method CONSTANT          VARCHAR2(15) := 'gpg_method';
 
    -- constant for both EXPAND_FILE and DECRYPT_FILE
    -- this constant is used to dictate that a file extension should determin the method used
-   CONSTANT extension_method    VARCHAR2(15) := 'extension_based';
+   extension_method CONSTANT    VARCHAR2(15) := 'extension_based';
 
    PROCEDURE directory_list( p_directory VARCHAR2 );
 
@@ -45,25 +45,25 @@ AS
    FUNCTION get_numlines( p_directory IN VARCHAR2, p_filename IN VARCHAR2 )
       RETURN NUMBER;
 
-   PROCEDURE expand_file( 
+   PROCEDURE expand_file(
       p_directory   VARCHAR2, 
       p_filename    VARCHAR2,
-      r_filename    VARCHAR2 OUT,
-      r_filesize    NUMBER   OUT,
-      r_blocksize   NUMBER   OUT,
-      r_expanded    NUMBER   OUT,
-      p_comp_method DEFAULT extension_method
+      r_filename    OUT VARCHAR2,
+      r_filesize    OUT NUMBER,
+      r_blocksize   OUT NUMBER,
+      r_expanded    OUT BOOLEAN,
+      p_comp_method VARCHAR2 DEFAULT extension_method
    );
 
    PROCEDURE decrypt_file( 
       p_directory      VARCHAR2, 
       p_filename       VARCHAR2,
       p_passphrase     VARCHAR2,
-      r_filename       VARCHAR2 OUT,
-      r_filesize       NUMBER   OUT,
-      r_blocksize      NUMBER   OUT,
-      r_decrypted      BOOLEAN  OUT,
-      p_encrypt_method DEFAULT extension_method
+      r_filename       OUT VARCHAR2,
+      r_filesize       OUT NUMBER,
+      r_blocksize      OUT NUMBER,
+      r_decrypted      OUT BOOLEAN,
+      p_encrypt_method VARCHAR2 DEFAULT extension_method
    );
 
    FUNCTION extract_query(

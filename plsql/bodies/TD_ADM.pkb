@@ -250,7 +250,7 @@ IS
 
          EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON FILE_DETAIL TO ' || p_grantee;
 
-         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON FILES_OBJ_DETAIL TO ' || p_grantee;
+         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON FILES_OBJECT_DETAIL TO ' || p_grantee;
 
          EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON TD_PART_GTT TO ' || p_grantee;
 	 
@@ -269,7 +269,7 @@ IS
 	 -- sequence
          EXECUTE IMMEDIATE 'GRANT SELECT ON file_detail_seq TO ' || p_grantee;
 
-         EXECUTE IMMEDIATE 'GRANT SELECT ON files_obj_detail_seq TO ' || p_grantee;
+         EXECUTE IMMEDIATE 'GRANT SELECT ON files_object_detail_seq TO ' || p_grantee;
 
       EXCEPTION
          WHEN e_no_grantee
@@ -796,7 +796,7 @@ IS
       END;
 
       BEGIN
-         EXECUTE IMMEDIATE q'|DROP TABLE files_obj_detail|';
+         EXECUTE IMMEDIATE q'|DROP TABLE files_object_detail|';
       EXCEPTION
          WHEN e_no_tab
          THEN
@@ -852,7 +852,7 @@ IS
       END;
 
       BEGIN
-         EXECUTE IMMEDIATE q'|DROP sequence files_obj_detail_seq|';
+         EXECUTE IMMEDIATE q'|DROP sequence files_object_detail_seq|';
       EXCEPTION
          WHEN e_no_seq
          THEN
@@ -1012,15 +1012,15 @@ IS
          EXECUTE IMMEDIATE q'|ALTER TABLE file_detail ADD 
 	 (
 	   CONSTRAINT file_detail_fk1
-	   FOREIGN KEY ( file_label, file_group )
+	   FOREIGN KEY ( file_label )
 	   REFERENCES file_conf
-	   ( file_label, file_group )
+	   ( file_label )
 	 )|';
 
          EXECUTE IMMEDIATE q'|CREATE SEQUENCE file_detail_seq|';
 
-         -- FILES_OBJ_DETAIL table
-         EXECUTE IMMEDIATE q'|CREATE TABLE files_obj_detail
+         -- FILES_OBJECT_DETAIL table
+         EXECUTE IMMEDIATE q'|CREATE TABLE files_object_detail
 	 ( 
 	   file_obj_detail_id    NUMBER NOT NULL,
 	   file_label 	         VARCHAR2(30) NOT NULL,
@@ -1035,15 +1035,15 @@ IS
 	   session_id 	      	 NUMBER DEFAULT sys_context('USERENV','SESSIONID') NOT NULL
 	 )|';
 
-         EXECUTE IMMEDIATE q'|ALTER TABLE files_obj_detail ADD 
+         EXECUTE IMMEDIATE q'|ALTER TABLE files_object_detail ADD 
 	 (
-	   CONSTRAINT files_obj_detail_pk
+	   CONSTRAINT files_object_detail_pk
 	   PRIMARY KEY
 	   (file_obj_detail_id)
 	   USING INDEX
 	 )|';
 
-         EXECUTE IMMEDIATE q'|CREATE SEQUENCE files_obj_detail_seq|';
+         EXECUTE IMMEDIATE q'|CREATE SEQUENCE files_object_detail_seq|';
 
          -- TD_PART_GTT table
          EXECUTE IMMEDIATE q'|CREATE global TEMPORARY TABLE td_part_gtt
@@ -1510,9 +1510,9 @@ IS
       BEGIN
          EXECUTE IMMEDIATE    'create or replace synonym '
                            || p_user
-                           || '.FILES_OBJ_DETAIL for '
+                           || '.FILES_OBJECT_DETAIL for '
                            || p_schema
-                           || '.FILES_OBJ_DETAIL';
+                           || '.FILES_OBJECT_DETAIL';
       EXCEPTION
          WHEN e_same_name
          THEN
@@ -1522,9 +1522,9 @@ IS
       BEGIN
          EXECUTE IMMEDIATE    'create or replace synonym '
                            || p_user
-                           || '.FILES_OBJ_DETAIL_SEQ for '
+                           || '.FILES_OBJECT_DETAIL_SEQ for '
                            || p_schema
-                           || '.FILES_OBJ_DETAIL_SEQ';
+                           || '.FILES_OBJECT_DETAIL_SEQ';
       EXCEPTION
          WHEN e_same_name
          THEN
@@ -1612,9 +1612,9 @@ IS
       BEGIN
          EXECUTE IMMEDIATE    'create or replace synonym '
                            || p_user
-                           || '.FILES_OBJ_DETAIL_SEQ for '
+                           || '.FILES_OBJECT_DETAIL_SEQ for '
                            || p_schema
-                           || '.FILES_OBJ_DETAIL_SEQ';
+                           || '.FILES_OBJECT_DETAIL_SEQ';
       EXCEPTION
          WHEN e_same_name
          THEN
