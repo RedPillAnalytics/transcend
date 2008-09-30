@@ -189,6 +189,28 @@ IS
 	 
          -- sequences
          EXECUTE IMMEDIATE 'grant select on CONCURRENT_ID_SEQ to ' || p_grantee;
+         
+         -- views
+         EXECUTE IMMEDIATE 'grant select on log to ' || p_grantee;
+
+         EXECUTE IMMEDIATE 'grant select on log_runtime to ' || p_grantee;
+
+         EXECUTE IMMEDIATE 'grant select on log_runtime_today to ' || p_grantee;
+
+         EXECUTE IMMEDIATE 'grant select on log_my_session to ' || p_grantee;
+
+         EXECUTE IMMEDIATE 'grant select on log_runtime_my_session to ' || p_grantee;
+
+         EXECUTE IMMEDIATE 'grant select on log_debug to ' || p_grantee;
+
+         EXECUTE IMMEDIATE 'grant select on log_debug_today to ' || p_grantee;
+
+         EXECUTE IMMEDIATE 'grant select on log_my_session to ' || p_grantee;
+
+         EXECUTE IMMEDIATE 'grant select on log_runtime_my_session to ' || p_grantee;
+
+         EXECUTE IMMEDIATE 'grant select on log_debug_my_session to ' || p_grantee;
+
 
       EXCEPTION
          WHEN e_no_grantee
@@ -385,8 +407,89 @@ IS
          THEN
          NULL;
       END;
+            
+      -- log table views
+      BEGIN
+         EXECUTE IMMEDIATE 'drop view log';
+      EXCEPTION
+         WHEN e_no_tab
+         THEN
+            NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE 'drop view log_runtime';
+      EXCEPTION
+         WHEN e_no_tab
+         THEN
+            NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE 'drop view log_runtime_today';
+      EXCEPTION
+         WHEN e_no_tab
+         THEN
+            NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE 'drop view log_my_session';
+      EXCEPTION
+         WHEN e_no_tab
+         THEN
+            NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE 'drop view log_runtime_my_session';
+      EXCEPTION
+         WHEN e_no_tab
+         THEN
+            NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE 'drop view log_debug';
+      EXCEPTION
+         WHEN e_no_tab
+         THEN
+            NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE 'drop view log_debug_today';
+      EXCEPTION
+         WHEN e_no_tab
+         THEN
+            NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE 'drop view log_my_session';
+      EXCEPTION
+         WHEN e_no_tab
+         THEN
+            NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE 'drop view log_runtime_my_session';
+      EXCEPTION
+         WHEN e_no_tab
+            N
+            NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE 'drop view log_debug_my_session';
+      EXCEPTION
+         WHEN e_no_tab
+         THEN
+            NULL;
+      END;
       
-      -- create a sequence for concurrent ids
+      -- sequence for concurrent id's
       BEGIN
          EXECUTE IMMEDIATE q'|DROP SEQUENCE concurrent_id_seq|';
       EXCEPTION
@@ -708,6 +811,515 @@ IS
          EXECUTE IMMEDIATE q'|ALTER TABLE parameter_conf ADD CONSTRAINT parameter_conf_ck2 CHECK (value=lower(value))|';
 
          EXECUTE IMMEDIATE q'|ALTER TABLE parameter_conf ADD CONSTRAINT parameter_conf_ck3 CHECK (module=lower(module))|';
+         
+         -- create log_table views
+         EXECUTE IMMEDIATE q'|CREATE OR REPLACE VIEW log
+         ( client_info,
+           module,
+           action,
+           entry_ts,
+           msg,
+           call_stack,
+           back_trace,
+           batch_id,
+           session_id,
+           runmode,
+           current_scn,
+           instance_name,
+           service_name,
+           machine, 
+           dbuser, 
+           osuser, 
+           code )
+         AS 
+         SELECT client_info,
+                module,
+                action,
+                entry_ts,
+                msg,
+                call_stack,
+                back_trace,
+                batch_id,
+                session_id,
+                runmode,
+                current_scn,
+                instance_name,
+                service_name,
+                machine, 
+                dbuser, 
+                osuser, 
+                code 
+           FROM (SELECT client_info,
+                        module,
+                        action,
+                        entry_ts,
+                        msg,
+                        call_stack,
+                        back_trace,
+                        session_id,
+                        runmode,
+                        current_scn,
+                        instance_name,
+                        service_name,
+                        machine, 
+                        dbuser, 
+                        osuser, 
+                        code, 
+                        first_value(batch_id) OVER (partition BY session_id ORDER BY entry_ts) batch_id,
+         	       MAX(entry_ts) OVER (partition BY session_id) last_entry_ts
+         	  FROM log_table
+         	 ORDER BY last_entry_ts,
+         	       session_id,
+         	       entry_ts) |';
+         
+         
+         EXECUTE IMMEDIATE q'|CREATE OR REPLACE VIEW log_runtime
+         ( client_info,
+           module,
+           action,
+           entry_ts,
+           msg,
+           call_stack,
+           back_trace,
+           batch_id,
+           session_id,
+           runmode,
+           current_scn,
+           instance_name,
+           service_name,
+           machine, 
+           dbuser, 
+           osuser, 
+           code )
+         AS 
+         SELECT client_info,
+                module,
+                action,
+                entry_ts,
+                msg,
+                call_stack,
+                back_trace,
+                batch_id,
+                session_id,
+                runmode,
+                current_scn,
+                instance_name,
+                service_name,
+                machine, 
+                dbuser, 
+                osuser, 
+                code 
+           FROM (SELECT client_info,
+                        module,
+                        action,
+                        entry_ts,
+                        msg,
+                        call_stack,
+                        back_trace,
+                        session_id,
+                        runmode,
+                        current_scn,
+                        instance_name,
+                        service_name,
+                        machine, 
+                        dbuser, 
+                        osuser, 
+                        code, 
+                        first_value(batch_id) OVER (partition BY session_id ORDER BY entry_ts) batch_id,
+         	       MAX(entry_ts) OVER (partition BY session_id) last_entry_ts
+         	  FROM log_table
+         	 WHERE runmode='runtime'
+         	 ORDER BY last_entry_ts,
+         	       session_id,
+         	       entry_ts) |';
+         
+         EXECUTE IMMEDIATE q'|CREATE OR REPLACE VIEW log_runtime_today
+         ( client_info,
+           module,
+           action,
+           entry_ts,
+           msg,
+           call_stack,
+           back_trace,
+           batch_id,
+           session_id,
+           runmode,
+           current_scn,
+           instance_name,
+           service_name,
+           machine, 
+           dbuser, 
+           osuser, 
+           code )
+         AS 
+         SELECT client_info,
+                module,
+                action,
+                entry_ts,
+                msg,
+                call_stack,
+                back_trace,
+                batch_id,
+                session_id,
+                runmode,
+                current_scn,
+                instance_name,
+                service_name,
+                machine, 
+                dbuser, 
+                osuser, 
+                code 
+           FROM (SELECT client_info,
+                        module,
+                        action,
+                        entry_ts,
+                        msg,
+                        call_stack,
+                        back_trace,
+                        session_id,
+                        runmode,
+                        current_scn,
+                        instance_name,
+                        service_name,
+                        machine, 
+                        dbuser, 
+                        osuser, 
+                        code, 
+                        first_value(batch_id) OVER (partition BY session_id ORDER BY entry_ts) batch_id,
+         	       MAX(entry_ts) OVER (partition BY session_id) last_entry_ts
+         	  FROM log_table
+         	 WHERE runmode='runtime'
+         	   AND to_char(systimestamp, 'mmddyyyy') = to_char(entry_ts, 'mmddyyyy')
+         	 ORDER BY last_entry_ts,
+         	       session_id,
+         	       entry_ts) |';
+         
+         
+         EXECUTE IMMEDIATE q'|CREATE OR REPLACE VIEW log_my_session
+         ( client_info,
+           module,
+           action,
+           entry_ts,
+           msg,
+           call_stack,
+           back_trace,
+           batch_id,
+           session_id,
+           runmode,
+           current_scn,
+           instance_name,
+           service_name,
+           machine, 
+           dbuser, 
+           osuser, 
+           code )
+         AS 
+         SELECT client_info,
+                module,
+                action,
+                entry_ts,
+                msg,
+                call_stack,
+                back_trace,
+                batch_id,
+                session_id,
+                runmode,
+                current_scn,
+                instance_name,
+                service_name,
+                machine, 
+                dbuser, 
+                osuser, 
+                code 
+           FROM log_table
+          WHERE session_id = sys_context('USERENV','SESSIONID')
+          ORDER BY entry_ts |';
+         
+         EXECUTE IMMEDIATE q'|CREATE OR REPLACE VIEW log_runtime_my_session
+         ( client_info,
+           module,
+           action,
+           entry_ts,
+           msg,
+           call_stack,
+           back_trace,
+           batch_id,
+           session_id,
+           runmode,
+           current_scn,
+           instance_name,
+           service_name,
+           machine, 
+           dbuser, 
+           osuser, 
+           code )
+         AS 
+         SELECT client_info,
+                module,
+                action,
+                entry_ts,
+                msg,
+                call_stack,
+                back_trace,
+                batch_id,
+                session_id,
+                runmode,
+                current_scn,
+                instance_name,
+                service_name,
+                machine, 
+                dbuser, 
+                osuser, 
+                code 
+           FROM log_table
+          WHERE session_id = sys_context('USERENV','SESSIONID')
+            AND runmode='runtime'
+          ORDER BY entry_ts |';
+         
+         
+         EXECUTE IMMEDIATE q'|CREATE OR REPLACE VIEW log_debug
+         ( client_info,
+           module,
+           action,
+           entry_ts,
+           msg,
+           call_stack,
+           back_trace,
+           batch_id,
+           session_id,
+           runmode,
+           current_scn,
+           instance_name,
+           service_name,
+           machine, 
+           dbuser, 
+           osuser, 
+           code )
+         AS 
+         SELECT client_info,
+                module,
+                action,
+                entry_ts,
+                msg,
+                call_stack,
+                back_trace,
+                batch_id,
+                session_id,
+                runmode,
+                current_scn,
+                instance_name,
+                service_name,
+                machine, 
+                dbuser, 
+                osuser, 
+                code 
+           FROM (SELECT client_info,
+                        module,
+                        action,
+                        entry_ts,
+                        msg,
+                        call_stack,
+                        back_trace,
+                        session_id,
+                        runmode,
+                        current_scn,
+                        instance_name,
+                        service_name,
+                        machine, 
+                        dbuser, 
+                        osuser, 
+                        code, 
+                        first_value(batch_id) OVER (partition BY session_id ORDER BY entry_ts) batch_id,
+         	       MAX(entry_ts) OVER (partition BY session_id) last_entry_ts
+         	  FROM log_table
+         	 WHERE runmode='debug'
+         	 ORDER BY last_entry_ts,
+         	       session_id,
+         	       entry_ts) |';
+         
+         EXECUTE IMMEDIATE q'|CREATE OR REPLACE VIEW log_debug_today
+         ( client_info,
+           module,
+           action,
+           entry_ts,
+           msg,
+           call_stack,
+           back_trace,
+           batch_id,
+           session_id,
+           runmode,
+           current_scn,
+           instance_name,
+           service_name,
+           machine, 
+           dbuser, 
+           osuser, 
+           code )
+         AS 
+         SELECT client_info,
+                module,
+                action,
+                entry_ts,
+                msg,
+                call_stack,
+                back_trace,
+                batch_id,
+                session_id,
+                runmode,
+                current_scn,
+                instance_name,
+                service_name,
+                machine, 
+                dbuser, 
+                osuser, 
+                code 
+           FROM (SELECT client_info,
+                        module,
+                        action,
+                        entry_ts,
+                        msg,
+                        call_stack,
+                        back_trace,
+                        session_id,
+                        runmode,
+                        current_scn,
+                        instance_name,
+                        service_name,
+                        machine, 
+                        dbuser, 
+                        osuser, 
+                        code, 
+                        first_value(batch_id) OVER (partition BY session_id ORDER BY entry_ts) batch_id,
+         	       MAX(entry_ts) OVER (partition BY session_id) last_entry_ts
+         	  FROM log_table
+         	 WHERE runmode='debug'
+         	   AND to_char(systimestamp, 'mmddyyyy') = to_char(entry_ts, 'mmddyyyy')
+         	 ORDER BY last_entry_ts,
+         	       session_id,
+         	       entry_ts) |';
+         
+         
+         EXECUTE IMMEDIATE q'|CREATE OR REPLACE VIEW log_my_session
+         ( client_info,
+           module,
+           action,
+           entry_ts,
+           msg,
+           call_stack,
+           back_trace,
+           batch_id,
+           session_id,
+           runmode,
+           current_scn,
+           instance_name,
+           service_name,
+           machine, 
+           dbuser, 
+           osuser, 
+           code )
+         AS 
+         SELECT client_info,
+                module,
+                action,
+                entry_ts,
+                msg,
+                call_stack,
+                back_trace,
+                batch_id,
+                session_id,
+                runmode,
+                current_scn,
+                instance_name,
+                service_name,
+                machine, 
+                dbuser, 
+                osuser, 
+                code 
+           FROM log_table
+          WHERE session_id = sys_context('USERENV','SESSIONID')
+          ORDER BY entry_ts |';
+         
+         EXECUTE IMMEDIATE q'|CREATE OR REPLACE VIEW log_runtime_my_session
+         ( client_info,
+           module,
+           action,
+           entry_ts,
+           msg,
+           call_stack,
+           back_trace,
+           batch_id,
+           session_id,
+           runmode,
+           current_scn,
+           instance_name,
+           service_name,
+           machine, 
+           dbuser, 
+           osuser, 
+           code )
+         AS 
+         SELECT client_info,
+                module,
+                action,
+                entry_ts,
+                msg,
+                call_stack,
+                back_trace,
+                batch_id,
+                session_id,
+                runmode,
+                current_scn,
+                instance_name,
+                service_name,
+                machine, 
+                dbuser, 
+                osuser, 
+                code 
+           FROM log_table
+          WHERE session_id = sys_context('USERENV','SESSIONID')
+            AND runmode='runtime'
+          ORDER BY entry_ts |';
+         
+         EXECUTE IMMEDIATE q'|CREATE OR REPLACE VIEW log_debug_my_session
+         ( client_info,
+           module,
+           action,
+           entry_ts,
+           msg,
+           call_stack,
+           back_trace,
+           batch_id,
+           session_id,
+           runmode,
+           current_scn,
+           instance_name,
+           service_name,
+           machine, 
+           dbuser, 
+           osuser, 
+           code )
+         AS 
+         SELECT client_info,
+                module,
+                action,
+                entry_ts,
+                msg,
+                call_stack,
+                back_trace,
+                batch_id,
+                session_id,
+                runmode,
+                current_scn,
+                instance_name,
+                service_name,
+                machine, 
+                dbuser, 
+                osuser, 
+                code 
+           FROM log_table
+          WHERE session_id = sys_context('USERENV','SESSIONID')
+            AND runmode='debug'
+          ORDER BY entry_ts |';
 	 
 	 -- grant select privileges to the select role
 	 grant_evolve_rep_privs( p_grantee=> l_sel_role, p_mode => 'select');
