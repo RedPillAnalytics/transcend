@@ -205,10 +205,6 @@ IS
 
          EXECUTE IMMEDIATE 'grant select on log_debug_today to ' || p_grantee;
 
-         EXECUTE IMMEDIATE 'grant select on log_my_session to ' || p_grantee;
-
-         EXECUTE IMMEDIATE 'grant select on log_runtime_my_session to ' || p_grantee;
-
          EXECUTE IMMEDIATE 'grant select on log_debug_my_session to ' || p_grantee;
 
 
@@ -462,22 +458,6 @@ IS
       EXCEPTION
          WHEN e_no_tab
          THEN
-            NULL;
-      END;
-
-      BEGIN
-         EXECUTE IMMEDIATE 'drop view log_my_session';
-      EXCEPTION
-         WHEN e_no_tab
-         THEN
-            NULL;
-      END;
-
-      BEGIN
-         EXECUTE IMMEDIATE 'drop view log_runtime_my_session';
-      EXCEPTION
-         WHEN e_no_tab
-            N
             NULL;
       END;
 
@@ -1198,87 +1178,6 @@ IS
          	       session_id,
          	       entry_ts) |';
          
-         
-         EXECUTE IMMEDIATE q'|CREATE OR REPLACE VIEW log_my_session
-         ( client_info,
-           module,
-           action,
-           entry_ts,
-           msg,
-           call_stack,
-           back_trace,
-           batch_id,
-           session_id,
-           runmode,
-           current_scn,
-           instance_name,
-           service_name,
-           machine, 
-           dbuser, 
-           osuser, 
-           code )
-         AS 
-         SELECT client_info,
-                module,
-                action,
-                entry_ts,
-                msg,
-                call_stack,
-                back_trace,
-                batch_id,
-                session_id,
-                runmode,
-                current_scn,
-                instance_name,
-                service_name,
-                machine, 
-                dbuser, 
-                osuser, 
-                code 
-           FROM log_table
-          WHERE session_id = sys_context('USERENV','SESSIONID')
-          ORDER BY entry_ts |';
-         
-         EXECUTE IMMEDIATE q'|CREATE OR REPLACE VIEW log_runtime_my_session
-         ( client_info,
-           module,
-           action,
-           entry_ts,
-           msg,
-           call_stack,
-           back_trace,
-           batch_id,
-           session_id,
-           runmode,
-           current_scn,
-           instance_name,
-           service_name,
-           machine, 
-           dbuser, 
-           osuser, 
-           code )
-         AS 
-         SELECT client_info,
-                module,
-                action,
-                entry_ts,
-                msg,
-                call_stack,
-                back_trace,
-                batch_id,
-                session_id,
-                runmode,
-                current_scn,
-                instance_name,
-                service_name,
-                machine, 
-                dbuser, 
-                osuser, 
-                code 
-           FROM log_table
-          WHERE session_id = sys_context('USERENV','SESSIONID')
-            AND runmode='runtime'
-          ORDER BY entry_ts |';
          
          EXECUTE IMMEDIATE q'|CREATE OR REPLACE VIEW log_debug_my_session
          ( client_info,
