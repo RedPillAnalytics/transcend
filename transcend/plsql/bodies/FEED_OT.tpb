@@ -105,6 +105,14 @@ AS
       THEN
 	 evolve.raise_err ('parms_not_compatible','A feed with an associated external table must have a CHARACTERSET provided');
       END IF;
+
+      -- check that feeds with a characterset don't have a STORE_FILES_NATIVE value of 'yes'
+      -- thats because we don't have any way of knowing whether conversion will take place on a file or not
+      -- part of having a characterset (specifying that a CLOB will be used) means storing files as they are after conversion
+      IF characterset IS NULL AND td_core.is_true( store_files_native )
+      THEN
+	 evolve.raise_err ('parms_not_compatible','A feed with CHARACTERSET specified cannot store files in their original format');
+      END IF;
       
       evolve.log_msg ('FEED confirmation completed successfully', 5);
       -- reset the evolve_object
@@ -281,60 +289,16 @@ AS
 	    -- we are now concerned with the work_directory as the source_directory
 	    l_source_directory := self.work_directory;
 	 END IF;
-	 
-	 -- check STORE_FILES_NATIVE
-	 -- need to see whether to expand and decrypt files prior to archiving them
-	 -- and we don't store any files in their native format (meaning, we store them expanded and decrypted)
-	 IF lower(self.store_files_native) = 'none'
-	 -- we only store non-target files natively, meaning those not getting copied to the target location
-	 -- and this file is a target file, meaning it will get copied to the target location
-	 OR ( lower(self.store_files_native) = 'non-target' AND c_dir_list.targ_file_ind = 'Y' )
-	 THEN
-	    
-	    -- now, specifically working on compression
-	    -- if we have a valid compression method, meaning SELF.compress_method is not null
-	    IF self.compress_method IS NOT NULL
-	    THEN
-	       -- we need to expand the file
-	       td_utils.expand_file( p_directory => l_source_directory, 
-				     p_filename  => l_source_filename, 
-				     r_filename  => l_working_filename,
-				     r_filesize  => l_filesize,
-				     r_blocksize => l_blocksize,
-				     r_expanded  => l_expanded,
-				     p_comp_method => self.compress_method );
-	    END IF;
-	 
-	    
-	    -- now, specifically working on decryption
-	    -- if we have a valid encryption method, meaning SELF.decrypt_method is not null
-	    IF self.encrypt_method IS NOT NULL
-	    THEN
-	       -- we need to decrypt the file
-	       td_utils.decrypt_file( p_directory => l_source_directory, 
-				      p_filename  => l_source_filename,
-				      p_passphrase => self.passphrase, 
-				      r_filename  => l_working_filename,
-				      r_filesize  => l_filesize,
-				      r_blocksize => l_blocksize,
-				      r_decrypted => l_decrypted,
-				      p_encrypt_method => self.encrypt_method );
-	    END IF;
-	    
-	    
-	    -- get the number of lines in the file now that the file has been decrypted and expanded
-	    -- otherwise, these values don't make any sense
-	    l_numlines := td_utils.get_numlines ( l_source_directory, l_working_filename );
 
-	 END IF;
-	 
-	 -- need to archive the file now
-	 -- this writes auditing information in the repository
-	 -- also stores the file in the database
-	 -- depending on the attributes STORE_FILES_NATIVE and LOB_TYPE determines whether the file is stored as a CLOB or a BLOB
-         IF NOT evolve.is_debugmode
+         o_ev.change_action ( 'archive feed' );
+         -- now, we need to know whether the files is archived prior to any conversion process
+         -- by conversion, I mean expanding or decrypting, or both
+         -- if STORE_FILES_NATIVE is true, then we archive them however they came in
+         -- these will be stored as blob, not clobs
+         IF td_core.is_true( self.store_files_native ) AND NOT evolve.is_debugmode
          THEN
-            o_ev.change_action ( 'archive feed' );
+	    -- this writes auditing information in the repository
+	    -- also stores the file in the database
             SELF.archive ( p_filename             => l_filename,
 			   p_source_filename      => l_working_filename,
 			   p_num_bytes            => l_filesize,
@@ -342,46 +306,62 @@ AS
 			   p_file_dt              => c_dir_list.file_dt
                          );
          END IF;
+	    
+	    
+	 -- now, specifically working on compression
+	 -- if we have a valid compression method, meaning SELF.compress_method is not null
+	 IF self.compress_method IS NOT NULL
+	 THEN
+	    -- we need to expand the file
+	    td_utils.expand_file( p_directory => l_source_directory, 
+				  p_filename  => l_source_filename, 
+				  r_filename  => l_working_filename,
+				  r_filesize  => l_filesize,
+				  r_blocksize => l_blocksize,
+				  r_expanded  => l_expanded,
+				  p_comp_method => self.compress_method );
+	 END IF;
 	 
+	 
+	 -- now, specifically working on decryption
+	 -- if we have a valid encryption method, meaning SELF.decrypt_method is not null
+	 IF self.encrypt_method IS NOT NULL
+	 THEN
+	    -- we need to decrypt the file
+	    td_utils.decrypt_file( p_directory => l_source_directory, 
+				   p_filename  => l_source_filename,
+				   p_passphrase => self.passphrase, 
+				   r_filename  => l_working_filename,
+				   r_filesize  => l_filesize,
+				   r_blocksize => l_blocksize,
+				   r_decrypted => l_decrypted,
+				   p_encrypt_method => self.encrypt_method );
+	 END IF;
+	 
+	 
+	 -- get the number of lines in the file now that the file has been decrypted and expanded
+	 -- otherwise, these values don't make any sense
+	 l_numlines := td_utils.get_numlines ( l_source_directory, l_working_filename );
+
+         o_ev.change_action ( 'archive feed' );
+         -- for all the files that are converted prior to archival, here is another archival
+         -- if STORE_FILES_NATIVE is not true, then we archive them now
+         IF NOT td_core.is_true( self.store_files_native ) AND NOT evolve.is_debugmode
+         THEN
+	    -- this writes auditing information in the repository
+	    -- also stores the file in the database
+            SELF.archive ( p_filename             => l_filename,
+			   p_source_filename      => l_working_filename,
+			   p_num_bytes            => l_filesize,
+			   p_num_lines            => l_numlines,
+			   p_file_dt              => c_dir_list.file_dt
+                         );
+         END IF;
+         
+
          IF c_dir_list.targ_file_ind = 'Y'
          THEN
 	    o_ev.change_action ('process target files');
-
-	    
-	    -- now, we need to expand and decrypt any files that have a STORE_FILES_NATIVE value of 'all'
-	    IF lower( SELF.store_files_native ) = 'all'
-	    THEN
-
-	       -- if we have a valid compress method, meaning were are expanding the file
-	       IF self.compress_method IS NOT NULL
-	       THEN
-		  -- we need to expand the file
-		  td_utils.expand_file( p_directory => l_source_directory, 
-					p_filename  => l_source_filename, 
-					r_filename  => l_working_filename,
-					r_filesize  => l_filesize,
-					r_blocksize => l_blocksize,
-					r_expanded  => l_expanded,
-					p_comp_method => self.compress_method );
-	       END IF;
-	       
-
-	       -- if we have a valid encrypt method, meaning were are decrypting the file
-	       IF self.encrypt_method IS NOT NULL
-	       THEN
-		  -- we need to decrypt the file
-		  td_utils.decrypt_file( p_directory   => l_source_directory, 
-					 p_filename    => l_source_filename,
-					 p_passphrase  => self.passphrase, 
-					 r_filename    => l_working_filename,
-					 r_filesize    => l_filesize,
-					 r_blocksize   => l_blocksize,
-					 r_decrypted   => l_decrypted,
-					 p_encrypt_method => self.encrypt_method );
-	       END IF;
-	       
-	    END IF;
-
 
             -- get a total count of all the lines in all the files moving to target
             l_sum_numlines := l_sum_numlines + l_numlines;
@@ -393,8 +373,8 @@ AS
                l_max_numlines := l_numlines;
             END IF;
 
-	    -- RECORD the number of external table files	    
-            -- this statement will be the same no matter which of the rows we pull it from.
+	    -- RECORD the number of target files
+            -- this count will be the same no matter which of the rows we pull it from, as analytics calculated it
             -- might as well use the last
             l_targ_file_cnt := c_dir_list.targ_file_cnt;
             
