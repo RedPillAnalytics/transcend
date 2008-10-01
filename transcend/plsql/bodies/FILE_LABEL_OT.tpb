@@ -7,8 +7,7 @@ AS
       p_num_lines         NUMBER,
       p_file_dt           DATE,
       p_filename          VARCHAR2 DEFAULT NULL,
-      p_source_filename	  VARCHAR2 DEFAULT NULL,
-      p_lob_type	  VARCHAR2 DEFAULT NULL
+      p_source_filename	  VARCHAR2 DEFAULT NULL
    )
    AS
       l_dest_clob    CLOB;
@@ -22,7 +21,6 @@ AS
       -- determine which directory is the source directory for feeds
       l_source_directory  file_conf.source_directory%type := NVL( SELF.work_directory, SELF.source_directory );
       -- determine the lob_type
-      l_lob_type     VARCHAR2(4) := NVL( p_lob_type, self.lob_type );
       o_ev   evolve_ot := evolve_ot( p_module => 'archive' );
    BEGIN
       
@@ -61,7 +59,7 @@ AS
 	 -- oepn the source LOB to get ready to write it
 	 DBMS_LOB.OPEN (l_src_lob, DBMS_LOB.lob_readonly);
 
-	 CASE l_lob_type
+	 CASE self.lob_type
 	 WHEN 'clob'
 	    THEN
 	    DBMS_LOB.loadclobfromfile ( dest_lob          => l_dest_clob,
@@ -175,10 +173,10 @@ AS
          END;
 
          INSERT INTO file_object_detail
-                     (file_object_detail_id, file_type, file_label, file_group,
+                     (file_object_detail_id, label_type, file_label, file_group,
                       object_owner, object_name, num_rows, num_lines, percent_diff
                      )
-              VALUES (file_object_detail_seq.NEXTVAL, SELF.file_type, SELF.file_label, SELF.file_group,
+              VALUES (file_object_detail_seq.NEXTVAL, SELF.label_type, SELF.file_label, SELF.file_group,
                       SELF.object_owner, SELF.object_name, l_num_rows, p_num_lines, l_pct_miss
                      );
       END IF;

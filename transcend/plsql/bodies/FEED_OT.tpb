@@ -2,38 +2,39 @@ CREATE OR REPLACE TYPE BODY feed_ot
 AS
    -- constructor function for the FEED_OT object type
    -- some of the attributes can be overriden: both SOURCE_DIRECTORY and WORK_DIRECTORY
-   CONSTRUCTOR FUNCTION feed_ot (p_file_group       VARCHAR2, 
-   	       			 p_file_label 	    VARCHAR2,
-				 p_source_directory VARCHAR2 DEFAULT NULL )
+   CONSTRUCTOR FUNCTION feed_ot(
+      p_file_label	   VARCHAR2,
+      p_source_directory   VARCHAR2
+   )
       RETURN SELF AS RESULT
    AS
    BEGIN
       BEGIN
          -- load all the feed attributes
-         SELECT file_label, file_group, file_type, object_owner, object_name, DIRECTORY,
+         SELECT file_label, file_group, label_type, object_owner, object_name, DIRECTORY,
                 filename,  CASE WHEN work_directory IS NOT NULL AND lower(work_directory) <> lower(source_directory)
 		                THEN work_directory
 		                ELSE NULL 
-		            END work_directory, file_datestamp, min_bytes, max_bytes, baseurl,
+		            END work_directory,  min_bytes, max_bytes, baseurl,
                 passphrase, source_directory, source_regexp, match_parameter, source_policy,
-                required, delete_source, delete_target, reject_limit, lob_type, store_files_native,
+                required, delete_source, reject_limit, lob_type, store_files_native,
 		characterset
-           INTO SELF.file_label, SELF.file_group, SELF.file_type, SELF.object_owner, SELF.object_name, SELF.DIRECTORY,
-                SELF.filename, SELF.work_directory, SELF.file_datestamp, SELF.min_bytes, SELF.max_bytes, SELF.baseurl,
+           INTO SELF.file_label, SELF.file_group, SELF.label_type, SELF.object_owner, SELF.object_name, SELF.DIRECTORY,
+                SELF.filename, SELF.work_directory, SELF.min_bytes, SELF.max_bytes, SELF.baseurl,
                 SELF.passphrase, SELF.source_directory, SELF.source_regexp, SELF.match_parameter, SELF.source_policy,
-                SELF.required, SELF.delete_source, SELF.delete_target, SELF.reject_limit, SELF.lob_type, SELF.store_files_native,
+                SELF.required, SELF.delete_source, SELF.reject_limit, SELF.lob_type, SELF.store_files_native,
 		SELF.characterset
-           FROM (SELECT file_label, file_group, file_type, object_owner, object_name, DIRECTORY, filename,
-                        work_directory, file_datestamp, min_bytes, max_bytes, baseurl, passphrase, 
+           FROM (SELECT file_label, file_group, label_type, object_owner, object_name, DIRECTORY, filename,
+                        work_directory, min_bytes, max_bytes, baseurl, passphrase, 
 			NVL( p_source_directory, source_directory),
-                        source_regexp, match_parameter, source_policy, required, delete_source, delete_target,
+                        source_regexp, match_parameter, source_policy, required, delete_source,
                         reject_limit, 
 			CASE 
 			WHEN lower( store_files_native ) = 'no' AND self.characterset IS NOT NULL THEN 'clob' 
 			ELSE 'blob' 
 			END lob_type, store_files_native, characterset
-                   FROM files_conf
-                  WHERE REGEXP_LIKE (file_type, '^feed$', 'i') AND file_group = p_file_group
+                   FROM file_conf
+                  WHERE REGEXP_LIKE (label_type, '^feed$', 'i')
                         AND file_label = p_file_label);
       EXCEPTION
          WHEN NO_DATA_FOUND
@@ -48,7 +49,7 @@ AS
       RETURN;
    END feed_ot;
 
-   MEMBER PROCEDURE verify
+   OVERRIDING MEMBER PROCEDURE verify
    IS
       l_dir_path    all_directories.directory_path%TYPE;
       l_directory   all_external_tables.default_directory_name%TYPE;
@@ -58,9 +59,13 @@ AS
       -- check to see if the directories are legitimate
 
       -- if they aren't, the GET_DIR_PATH function raises an error
-      l_dir_path := td_utils.get_dir_path (SELF.arch_directory);
       l_dir_path := td_utils.get_dir_path (SELF.source_directory);
       l_dir_path := td_utils.get_dir_path (SELF.DIRECTORY);
+
+      IF self.work_directory IS NOT NULL
+      THEN
+	 l_dir_path := td_utils.get_dir_path (SELF.work_directory);
+      END IF;
 
       -- if there is an external table associate with this feed
       -- we need to check a few things
@@ -105,7 +110,7 @@ AS
       -- reset the evolve_object
       o_ev.clear_app_info;
    END verify;
-   MEMBER PROCEDURE process
+   OVERRIDING MEMBER PROCEDURE process
    IS
    -- is there an external table associated with this feed
       l_ext_tab_ind     BOOLEAN                            := CASE
@@ -113,15 +118,17 @@ AS
             THEN FALSE
          ELSE TRUE
       END;
+      l_ext_tab_yn	VARCHAR2(1) := CASE l_ext_tab_ind WHEN TRUE THEN 'Y' ELSE 'N' END;
 	    -- is there a new filename associated with this feed
       l_filename_ind    BOOLEAN                            := CASE
          WHEN SELF.filename IS NULL
             THEN FALSE
          ELSE TRUE
       END;
-      -- is there a work directory or not	
-      l_workdir_exists := CASE WHEN self.work_directory IS NULL THEN FALSE ELSE TRUE END;
-	    
+      l_filename_yn	VARCHAR2(1) := CASE l_filename_ind WHEN TRUE THEN 'Y' ELSE 'N' END;
+      -- is there a work directory or not
+      l_workdir_exists  BOOLEAN				   := CASE WHEN self.work_directory IS NULL THEN FALSE ELSE TRUE END;
+      
       l_rows_dirlist    BOOLEAN                            := FALSE;
       -- TO catch empty cursors
       l_numlines        NUMBER;
@@ -129,60 +136,49 @@ AS
       l_sum_numlines    NUMBER                             := 0;
       l_targ_file_cnt   NUMBER                             := 0;
       l_ext_tab         VARCHAR2 (61)                      := object_owner || '.' || object_name;
-      l_filename	files_conf.filename%type;
-      l_source_filename	files_conf.filename%type;
-      l_working_filename	files_conf.filename%type;
-      l_source_directory 	files_conf.source_directory%type := SELF.source_directory;
+      l_filename	file_conf.filename%type;
+      l_source_filename	file_conf.filename%type;
+      l_working_filename	file_conf.filename%type;
+      l_source_directory 	file_conf.source_directory%type := SELF.source_directory;
       l_filesize	NUMBER;
       l_blocksize	NUMBER;
       l_expanded	BOOLEAN;
       l_decrypted	BOOLEAN;
       l_loc_list	VARCHAR2(2000);
       l_url_list	VARCHAR2(2000);
+      l_rows_delete	BOOLEAN		:= FALSE;
       e_no_files        EXCEPTION;
       PRAGMA EXCEPTION_INIT (e_no_files, -1756);
       o_ev              evolve_ot                          := evolve_ot (p_module => 'process');
    BEGIN
       evolve.log_msg ('Processing feed "' || file_label || '"', 3);
 
-      -- need to delete previous existing target files if so specified
-      IF self.delete_target
-      THEN
-         o_ev.change_action ('delete target files');
+      -- we are about to copy files to the target location
+      -- but there might be an eternal table associated with these target files
+      -- IF there is an external table, before copying in new files, we need to remove files placed in on previous runs
+      -- we don't want the possiblity of data for a previous run getting loaded in
+      -- later, if no new files are found, and the REQUIRED attribute is 'N' (meaning this file is not required)
+      -- THEN we will create an empty file in it's place
+      
+      o_ev.change_action( 'delete current locations' );
 
-	 -- so let's look for matching files to that filename
-	 -- first let's delete them in the work_directory
-	 td_utils.directory_List( self.work_directory );
+      IF l_ext_tab_ind
+      THEN	
 
-	 FOR c_files IN ( SELECT *
-			    FROM dir_list
-			   WHERE REGEXP_LIKE( filename, CASE WHEN l_filename_ind THEN REGEXP_REPLACE (SELF.filename, '\.', '_\d.') ELSE SELF.source_regexp END, self.match_paramter )
-			   ORDER BY create_ts )
-	 
-         LOOP
+	 FOR c_location IN ( SELECT  DIRECTORY, LOCATION
+			       FROM dba_external_locations
+			      WHERE owner = UPPER( object_owner ) AND table_name = UPPER( object_name )
+			      ORDER BY LOCATION )
+	 LOOP
             l_rows_delete := TRUE;
-            td_utils.delete_file (c_files.DIRECTORY, c_files.LOCATION);
-	    DELETE FROM dir_list WHERE filename = c_files.filename;
-         END LOOP;
-	 
-	 -- now let's delete them in the target directory
-	 td_utils.directory_List( self.directory );
+            td_utils.delete_file( c_location.DIRECTORY, c_location.LOCATION );
+	 END LOOP;
 
-	 FOR c_files IN ( SELECT *
-			    FROM dir_list
-			   WHERE REGEXP_LIKE( filename, CASE WHEN l_filename_ind THEN REGEXP_REPLACE (SELF.filename, '\.', '_\d.') ELSE SELF.source_regexp END, self.match_paramter )
-			   ORDER BY create_ts )
+	 IF l_rows_delete
+	 THEN
+            evolve.log_msg( 'Previous external table location files removed', 3 );
+	 END IF;
 	 
-         LOOP
-            l_rows_delete := TRUE;
-            td_utils.delete_file (c_files.DIRECTORY, c_files.LOCATION);
-	    DELETE FROM dir_list WHERE filename = c_files.filename;
-         END LOOP;
-
-         IF l_rows_delete
-         THEN
-            evolve.log_msg ('Previous target files files removed', 3);
-         END IF;
       END IF;
 
       -- now we need to see all the source files in the source directory that match the regular expression
@@ -212,17 +208,17 @@ AS
                        ',',
                        CHR (10)
                       ) files_url
-	    FROM (SELECT object_name, object_owner, source_filename, file_dt, file_size, targ_file_ind,
+	    FROM (SELECT object_name, object_owner, source_filename, file_dt, file_size, targ_file_ind, targ_file_cnt,
 			 CASE 
-			 WHEN l_filename_ind AND targ_file_ind = 'Y' AND targ_file_cnt > 1
+			 WHEN l_filename_yn = 'Y' AND targ_file_ind = 'Y' AND targ_file_cnt > 1
                          THEN REGEXP_REPLACE (SELF.filename, '\.', '_' || file_number || '.')
-			 WHEN l_filename_ind AND targ_file_ind = 'Y' AND targ_file_cnt = 1
+			 WHEN l_filename_yn = 'N' AND targ_file_ind = 'Y' AND targ_file_cnt = 1
 			 THEN SELF.filename
 			 ELSE filename END filename
               FROM (SELECT object_name, object_owner, source_filename, file_dt, file_size, targ_file_ind,
                            
                            -- rank gives us a number to use to auto increment files in case SOURCE_POLICY attribute is 'all'
-                           ROWNUM OVER (PARTITION BY 1 ORDER BY targ_file_ind DESC, source_filename) file_number,
+                           ROW_NUMBER() OVER (PARTITION BY 1 ORDER BY targ_file_ind DESC, source_filename) file_number,
                            
                            -- this gives us a count of how many files will be copied to the target
                            -- have this for each line
@@ -279,7 +275,7 @@ AS
 	 THEN
             td_utils.copy_file ( p_source_directory => l_source_directory, 
 				 p_source_filename  => l_source_filename,
-			         p_directory	    => SELF.work_directory
+			         p_directory	    => SELF.work_directory,
 				 p_filename	    => l_source_filename 
 			       );
 	    -- we are now concerned with the work_directory as the source_directory
@@ -322,7 +318,7 @@ AS
 				      r_filesize  => l_filesize,
 				      r_blocksize => l_blocksize,
 				      r_decrypted => l_decrypted,
-				      p_comp_method => self.compress_method );
+				      p_encrypt_method => self.encrypt_method );
 	    END IF;
 	    
 	    
@@ -339,12 +335,12 @@ AS
          IF NOT evolve.is_debugmode
          THEN
             o_ev.change_action ( 'archive feed' );
-            SELF.archive_file ( p_filename             => l_filename,
-				p_source_filename      => l_working_filename,
-				p_num_bytes            => l_filesize,
-				p_num_lines            => l_numlines,
-				p_file_dt              => c_dir_list.file_dt
-                              );
+            SELF.archive ( p_filename             => l_filename,
+			   p_source_filename      => l_working_filename,
+			   p_num_bytes            => l_filesize,
+			   p_num_lines            => l_numlines,
+			   p_file_dt              => c_dir_list.file_dt
+                         );
          END IF;
 	 
          IF c_dir_list.targ_file_ind = 'Y'
@@ -381,7 +377,7 @@ AS
 					 r_filesize    => l_filesize,
 					 r_blocksize   => l_blocksize,
 					 r_decrypted   => l_decrypted,
-					 p_comp_method => self.compress_method );
+					 p_encrypt_method => self.encrypt_method );
 	       END IF;
 	       
 	    END IF;
@@ -494,7 +490,7 @@ AS
 
             -- audit the external table
             o_ev.change_action ('audit external table');
-            SELF.audit_ext_tab (p_num_lines => l_sum_numlines);
+            SELF.audit_object (p_num_lines => l_sum_numlines);
          WHEN l_rows_dirlist AND l_targ_file_cnt = 0
               -- matching files found, but there were no location files
               -- there were files found at the OS level
@@ -510,7 +506,7 @@ AS
 
       -- notify about successful arrival of feed
       o_ev.change_action ('notify success');
-      SELF.announce_file (p_num_files => l_targ_file_cnt, p_num_lines => l_max_numlines, p_files_url => l_url_list);
+      SELF.announce (p_num_files => l_targ_file_cnt, p_num_lines => l_max_numlines, p_files_url => l_url_list);
       o_ev.clear_app_info;
    END process;
 END;
