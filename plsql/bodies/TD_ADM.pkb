@@ -3049,6 +3049,59 @@ IS
       END IF;
 
    END upgrade_transcend_repo;
+   
+   PROCEDURE backup_tables(
+      p_schema       VARCHAR2 DEFAULT DEFAULT_REPOSITORY,
+      p_tablespace   VARCHAR2 DEFAULT NULL
+   )
+   IS
+   BEGIN
+      
+      FOR c_tab IN ( SELECT 'create table '
+                            ||owner
+                            ||'.'
+                            ||table_name
+                            ||'_'
+                            ||version
+                            ||CASE 
+                                 WHEN p_tablespace IS NULL 
+                                 THEN NULL 
+                                 ELSE ' tablespace '||p_tablespace 
+                              END 
+                            ||' as select * from '||table_name DDL
+                       FROM all_tables
+                      WHERE owner=upper( p_schema )
+                   )
+      LOOP
+         
+         EXECUTE IMMEDIATE c_tab.ddl;
+         
+      END LOOP;
+         
+
+   END backup_tables;
+   
+   PROCEDURE drop_tables(
+      p_schema       VARCHAR2 DEFAULT DEFAULT_REPOSITORY,
+      p_tablespace   VARCHAR2 DEFAULT NULL
+   )
+   IS
+   BEGIN
+      
+      FOR c_tab IN ( SELECT 'drop table '
+                            ||owner
+                            ||'.'
+                            ||table_name DDL
+                       FROM all_tables
+                      WHERE owner=upper( p_schema )
+                   )
+      LOOP
+         
+         EXECUTE IMMEDIATE c_tab.ddl;
+         
+      END LOOP;
+
+   END drop_tables;
 
 END td_adm;
 /

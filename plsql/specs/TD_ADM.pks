@@ -5,7 +5,7 @@ IS
    no_sys_repo_entry EXCEPTION;
 
    -- package constatnts
-   version CONSTANT NUMBER := 1.3; 
+   version CONSTANT NUMBER := 1.5; 
    evolve_sys_role CONSTANT VARCHAR2(30) := 'EVOLVE_SYS';
    trans_etl_role CONSTANT VARCHAR2(30) := 'TRANS_ETL_SYS';
    trans_files_role CONSTANT VARCHAR2(30) := 'TRANS_FILES_SYS';
@@ -74,5 +74,15 @@ IS
       p_tablespace  VARCHAR2 DEFAULT default_repository
    );
       
+   PROCEDURE backup_tables(
+      p_schema       VARCHAR2 DEFAULT DEFAULT_REPOSITORY,
+      p_tablespace   VARCHAR2 DEFAULT NULL
+   );
+     
+   PROCEDURE drop_tables(
+      p_schema       VARCHAR2 DEFAULT DEFAULT_REPOSITORY,
+      p_tablespace   VARCHAR2 DEFAULT NULL
+   ); 
+         
 END td_adm;
 /
