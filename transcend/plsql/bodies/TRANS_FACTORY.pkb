@@ -87,8 +87,8 @@ IS
       CASE l_label_type
       WHEN 'feed'
       THEN
-         o_feed := feed_ot( p_file_label => p_file_label
-                            p_directory  => p_directory );
+         o_feed := feed_ot( p_file_label => p_file_label,
+                            p_source_directory  => p_directory );
          o_label := o_feed;
       WHEN 'extract'
       THEN

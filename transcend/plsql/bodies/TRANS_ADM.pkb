@@ -181,11 +181,11 @@ IS
    BEGIN
 
       BEGIN
-         INSERT INTO files_conf
+         INSERT INTO file_conf
                 ( file_label, file_group, file_type,
                   file_description, object_owner,
                   object_name, DIRECTORY, filename,
-                  arch_directory, min_bytes,
+                  in_bytes,
                   max_bytes, file_datestamp, baseurl,
                   passphrase, source_directory,
                   source_regexp, match_parameter,
@@ -249,7 +249,7 @@ IS
    BEGIN
       
       -- if the constant NULL_VALUE is used, then the value should be set to null
-      UPDATE files_conf
+      UPDATE file_conf
          SET file_description =
              CASE
              WHEN p_file_description IS NULL
@@ -366,7 +366,7 @@ IS
       o_ev          evolve_ot     := evolve_ot (p_module      => 'delete_feed');
    BEGIN
 
-      DELETE FROM files_conf
+      DELETE FROM file_conf
        WHERE file_label = LOWER (p_file_label)
          AND file_group = LOWER (p_file_group);
       
@@ -401,7 +401,7 @@ IS
       o_ev         evolve_ot   := evolve_ot (p_module      => 'create_extract');
    BEGIN
       BEGIN
-         INSERT INTO files_conf
+         INSERT INTO file_conf
                 (file_label, file_group, file_type,
                   file_description, object_owner,
                   object_name, DIRECTORY,
@@ -466,7 +466,7 @@ IS
       PRAGMA EXCEPTION_INIT (e_dup_conf, -1);
       o_ev         evolve_ot   := evolve_ot (p_module      => 'modify_extract');
    BEGIN
-         UPDATE files_conf
+         UPDATE file_conf
             SET file_description =
                    CASE
                       WHEN p_file_description IS NULL
@@ -573,7 +573,7 @@ IS
    IS
       o_ev         evolve_ot   := evolve_ot (p_module      => 'delete_extract');
    BEGIN
-      DELETE FROM files_conf
+      DELETE FROM file_conf
        WHERE file_label = LOWER (p_file_label)
          AND file_group = LOWER (p_file_group);
 

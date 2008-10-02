@@ -1431,7 +1431,6 @@ IS
 	   characterset	       VARCHAR2(20),
 	   required            VARCHAR2(3),
 	   delete_source       VARCHAR2(3),
-	   delete_target       VARCHAR2(3),
 	   reject_limit        NUMBER,
 	   dateformat	       VARCHAR2(30),
 	   timestampformat     VARCHAR2(30),

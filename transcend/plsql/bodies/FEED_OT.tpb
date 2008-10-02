@@ -26,7 +26,7 @@ AS
 		SELF.characterset
            FROM (SELECT file_label, file_group, label_type, object_owner, object_name, DIRECTORY, filename,
                         work_directory, min_bytes, max_bytes, baseurl, passphrase, 
-			NVL( p_source_directory, source_directory),
+			NVL( p_source_directory, source_directory) source_directory,
                         source_regexp, match_parameter, source_policy, required, delete_source,
                         reject_limit, 
 			CASE 
