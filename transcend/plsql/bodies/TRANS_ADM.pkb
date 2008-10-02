@@ -5,13 +5,13 @@ IS
    BEGIN
       -- set the notification events
       evolve_adm.set_notification_event
-         ('audit_file',
+         ('archive',
           'file too large',
           'File outside size threshholds',
           'The file referenced below is larger than the configured threshhold:'
          );
       evolve_adm.set_notification_event
-         ('audit_file',
+         ('archive',
           'file too small',
           'File outside size threshholds',
           'The file referenced below is smaller than the configured threshhold:'
@@ -79,7 +79,7 @@ IS
          );
       evolve_adm.set_error_conf
          (p_name         => 'work_dir_fs',
-           p_message      => 'The directories configured for DIRECTORY and WORK_DIRECTORY cannot be on the same filesystem'
+           p_message      => 'The directories configured for DIRECTORY and WORK_DIRECTORY cannot be on the same filesystem%'
          );
       evolve_adm.set_error_conf
                    (p_name         => 'no_ext_tab',
