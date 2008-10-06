@@ -26,6 +26,8 @@ END;
 @../transcend/plsql/wrapped_bodies/TD_DBUTILS.plb
 @../transcend/plsql/specs/FILE_LABEL_OT.tps
 @../transcend/plsql/wrapped_bodies/FILE_LABEL_OT.plb
+@../transcend/plsql/specs/FILE_DETAIL_OT.tps
+@../transcend/plsql/wrapped_bodies/FILE_DETAIL_OT.plb
 @../transcend/plsql/specs/EXTRACT_OT.tps
 @../transcend/plsql/wrapped_bodies/EXTRACT_OT.plb
 @../transcend/plsql/specs/FEED_OT.tps

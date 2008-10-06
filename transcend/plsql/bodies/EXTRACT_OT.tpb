@@ -133,34 +133,19 @@ AS
                           3
                         );
       l_file_dt := SYSDATE;
-
-      -- get file attributes
-      IF evolve.is_debugmode
-      THEN
-         l_num_bytes := 0;
-         evolve.log_msg( 'Reporting 0 size file in debug mode', 3 );
-      ELSE
-         UTL_FILE.fgetattr( DIRECTORY, filename, l_exists, l_num_bytes, l_blocksize );
-
-         IF NOT l_exists
-         THEN
-            evolve.raise_err( 'file_not_found', filename );
-         END IF;
-      END IF;
-
       
       -- now we need to archive the file
       -- this writes important information about the file, as well as the file itself, the the database
       o_ev.change_action ( 'archive extract' );
-      IF NOT evolve.is_debugmode
-      THEN
-	 -- this writes auditing information in the repository
-	 -- also stores the file in the database
-         SELF.archive ( p_num_bytes            => l_num_bytes,
-			p_num_lines            => l_numlines,
-			p_file_dt              => l_file_dt
-                      );
-      END IF;
+
+      -- this writes auditing information in the repository
+      -- also stores the file in the database
+      SELF.archive ( p_loc_directory        => nvl( work_directory, directory),
+                     p_loc_filename         => self.filename,
+                     p_directory            => self.directory,
+                     p_filename             => self.filename,
+		     p_file_dt              => l_file_dt
+                   );
       
       
       -- if there is a work_directory, then the file is there

@@ -56,22 +56,14 @@ AS
    PROCEDURE expand_file(
       p_directory   VARCHAR2, 
       p_filename    VARCHAR2,
-      r_filename    OUT VARCHAR2,
-      r_filesize    OUT NUMBER,
-      r_blocksize   OUT NUMBER,
-      r_expanded    OUT BOOLEAN,
-      p_comp_method VARCHAR2 DEFAULT extension_method
+      p_method      VARCHAR2
    );
 
    PROCEDURE decrypt_file( 
       p_directory      VARCHAR2, 
       p_filename       VARCHAR2,
-      p_passphrase     VARCHAR2,
-      r_filename       OUT VARCHAR2,
-      r_filesize       OUT NUMBER,
-      r_blocksize      OUT NUMBER,
-      r_decrypted      OUT BOOLEAN,
-      p_encrypt_method VARCHAR2 DEFAULT extension_method
+      p_method         VARCHAR2,
+      p_passphrase     VARCHAR2 DEFAULT NULL
    );
 
    FUNCTION extract_query(

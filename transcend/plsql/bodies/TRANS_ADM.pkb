@@ -5,16 +5,22 @@ IS
    BEGIN
       -- set the notification events
       evolve_adm.set_notification_event
-         ('archive',
+         ('audit_file_detail',
           'file too large',
           'File outside size threshholds',
           'The file referenced below is larger than the configured threshhold:'
          );
       evolve_adm.set_notification_event
-         ('archive',
+         ('audit_file_detail',
           'file too small',
           'File outside size threshholds',
           'The file referenced below is smaller than the configured threshhold:'
+         );
+      evolve_adm.set_notification_event
+         ('audit_file_detail',
+          'reject limit',
+          'Too many rejected rows',
+          'The file referenced below has too many rejected rows:'
          );
       -- load the entries into the ERROR_CONF table for Transcend
       evolve_adm.set_error_conf
@@ -196,7 +202,7 @@ IS
 		  filename,
 		  match_parameter,
 		  source_policy,
-		  store_files_native,
+		  store_original_files,
 		  compress_method,
 		  encrypt_method,
 		  passphrase,
@@ -220,7 +226,7 @@ IS
 		  p_filename,
 		  p_match_parameter,
 		  p_source_policy,
-		  p_store_files_native,
+		  p_store_original_files,
 		  p_compress_method,
 		  p_encrypt_method,
 		  p_passphrase,
@@ -248,11 +254,11 @@ IS
 
    PROCEDURE modify_feed (
       p_file_label         VARCHAR2,
-      p_file_group         VARCHAR2,
-      p_directory	   VARCHAR2,
-      p_source_directory   VARCHAR2,
-      p_source_regexp      VARCHAR2,
-      p_work_directory     VARCHAR2,
+      p_file_group         VARCHAR2 DEFAULT NULL,
+      p_directory	   VARCHAR2 DEFAULT NULL,
+      p_source_directory   VARCHAR2 DEFAULT NULL,
+      p_source_regexp      VARCHAR2 DEFAULT NULL,
+      p_work_directory     VARCHAR2 DEFAULT NULL,
       p_owner              VARCHAR2 DEFAULT NULL,
       p_table              VARCHAR2 DEFAULT NULL,
       p_filename           VARCHAR2 DEFAULT NULL,

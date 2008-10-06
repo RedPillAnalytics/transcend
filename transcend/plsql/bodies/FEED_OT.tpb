@@ -11,28 +11,22 @@ AS
    BEGIN
       BEGIN
          -- load all the feed attributes
-         SELECT file_label, file_group, label_type, upper( object_owner ), UPPER( object_name ), directory,
-                filename,  CASE WHEN work_directory IS NOT NULL AND lower(work_directory) <> lower(source_directory)
-		                THEN work_directory
+         SELECT file_label, file_group, label_type, upper( object_owner ), UPPER( object_name ), UPPER( directory ),
+                filename,  CASE WHEN work_directory IS NOT NULL AND UPPER( work_directory ) <> UPPER( source_directory )
+		                THEN UPPER( work_directory )
 		                ELSE NULL 
 		            END work_directory,  min_bytes, max_bytes, baseurl,
-                passphrase, source_directory, source_regexp, match_parameter, source_policy,
-                required, delete_source, reject_limit, lob_type, store_files_native,
-		characterset
+                passphrase, UPPER( source_directory ), source_regexp, match_parameter, source_policy,
+                required, delete_source, reject_limit, store_original_files
            INTO SELF.file_label, SELF.file_group, SELF.label_type, SELF.object_owner, SELF.object_name, SELF.directory,
                 SELF.filename, SELF.work_directory, SELF.min_bytes, SELF.max_bytes, SELF.baseurl,
                 SELF.passphrase, SELF.source_directory, SELF.source_regexp, SELF.match_parameter, SELF.source_policy,
-                SELF.required, SELF.delete_source, SELF.reject_limit, SELF.lob_type, SELF.store_files_native,
-		SELF.characterset
+                SELF.required, SELF.delete_source, SELF.reject_limit, SELF.store_original_files
            FROM (SELECT file_label, file_group, label_type, object_owner, object_name, DIRECTORY, filename,
                         work_directory, min_bytes, max_bytes, baseurl, passphrase, 
 			NVL( p_source_directory, source_directory) source_directory,
                         source_regexp, match_parameter, source_policy, required, delete_source,
-                        reject_limit, 
-			CASE 
-			WHEN lower( store_files_native ) = 'no' AND self.characterset IS NOT NULL THEN 'clob' 
-			ELSE 'blob' 
-			END lob_type, store_files_native, characterset
+                        reject_limit, store_original_files
                    FROM file_conf
                   WHERE REGEXP_LIKE (label_type, '^feed$', 'i')
                         AND file_label = p_file_label);
@@ -99,21 +93,7 @@ AS
       THEN
 	 evolve.raise_err ('parms_not_compatible','The values specified for DIRECTORY and WORK_DIRECTORY cannot be the same');
       END IF;
-      
-      -- check that feeds with an associated external table have a characterset
-      IF object_name IS NOT NULL AND characterset IS NULL
-      THEN
-	 evolve.raise_err ('parms_not_compatible','A feed with an associated external table must have a CHARACTERSET provided');
-      END IF;
-
-      -- check that feeds with a characterset don't have a STORE_FILES_NATIVE value of 'yes'
-      -- thats because we don't have any way of knowing whether conversion will take place on a file or not
-      -- part of having a characterset (specifying that a CLOB will be used) means storing files as they are after conversion
-      IF characterset IS NULL AND td_core.is_true( store_files_native )
-      THEN
-	 evolve.raise_err ('parms_not_compatible','A feed with CHARACTERSET specified cannot store files in their original format');
-      END IF;
-      
+            
       evolve.log_msg ('FEED confirmation completed successfully', 5);
       -- reset the evolve_object
       o_ev.clear_app_info;
@@ -133,12 +113,25 @@ AS
             THEN FALSE
          ELSE TRUE
       END;
+      l_compress_ind    BOOLEAN                            := CASE
+         WHEN SELF.compress_method IS NULL
+            THEN FALSE
+         ELSE TRUE
+      END;
+      l_compress_yn    VARCHAR2(1)   := CASE l_compress_ind WHEN TRUE THEN 'Y' ELSE 'N' END;
+      l_encrypt_ind    BOOLEAN                            := CASE
+         WHEN SELF.encrypt_method IS NULL
+            THEN FALSE
+         ELSE TRUE
+      END;
+      l_encrypt_ind    VARCHAR2(1)   := CASE l_encrypt_ind WHEN TRUE THEN 'Y' ELSE 'N' END;
       l_filename_yn	VARCHAR2(1) := CASE l_filename_ind WHEN TRUE THEN 'Y' ELSE 'N' END;
       -- is there a work directory or not
       l_workdir_exists  BOOLEAN				   := CASE WHEN self.work_directory IS NULL THEN FALSE ELSE TRUE END;
       
       l_rows_dirlist    BOOLEAN                            := FALSE;
       -- TO catch empty cursors
+      l_detail_id       file_detail.file_detail_id%type;
       l_numlines        NUMBER;
       l_max_numlines    NUMBER                             := 0;
       l_sum_numlines    NUMBER                             := 0;
@@ -150,13 +143,13 @@ AS
       l_source_directory 	file_conf.source_directory%type := SELF.source_directory;
       l_filesize	NUMBER;
       l_blocksize	NUMBER;
-      l_expanded	BOOLEAN;
-      l_decrypted	BOOLEAN;
       l_loc_list	VARCHAR2(2000);
       l_url_list	VARCHAR2(2000);
       l_rows_delete	BOOLEAN		:= FALSE;
       e_no_files        EXCEPTION;
       PRAGMA EXCEPTION_INIT (e_no_files, -1756);
+      e_no_loc_file    EXCEPTION;
+      PRAGMA EXCEPTION_INIT (e_no_loc_file, -29280);
       o_ev              evolve_ot                          := evolve_ot (p_module => 'process');
    BEGIN
       evolve.log_msg ('Processing feed "' || file_label || '"', 3);
@@ -179,12 +172,18 @@ AS
 			      ORDER BY LOCATION )
 	 LOOP
             l_rows_delete := TRUE;
-            td_utils.delete_file( c_location.DIRECTORY, c_location.LOCATION );
+            BEGIN
+               td_utils.delete_file( c_location.DIRECTORY, c_location.LOCATION );
+            EXCEPTION
+            WHEN e_no_loc_file
+            THEN
+               evolve.log_msg('No location files exist for external table',3);
+            END;
 	 END LOOP;
 
 	 IF l_rows_delete
 	 THEN
-            evolve.log_msg( 'Previous external table location files removed', 3 );
+            evolve.log_msg( 'Previous external table location files removed' );
 	 END IF;
 	 
       END IF;
@@ -199,11 +198,19 @@ AS
       -- also work in a lot of the attributes to generate all the information needed for the object
       FOR c_dir_list IN
          (SELECT
-                   -- name of each source file
+                 -- name of each source file
                  source_filename,
+
 		 -- name of the target file 
                  filename,
-                   file_dt, file_size, targ_file_ind, targ_file_cnt,
+
+                 -- filename to pass to the DECRYPT_FILE procedure
+                 -- this is the expected filename after EXPAND_FILE
+                 decrypt_filename,
+
+                 -- final filename after all conversions, but prior to being copied to target filename
+                 pre_final_filename,
+                 file_dt, file_size, targ_file_ind, targ_file_cnt,
                             
                    -- construct a file_url if BASEURL attribute is configured
                    -- this constructs a STRAGGED list of URL's if multiple files exist
@@ -217,13 +224,16 @@ AS
                        CHR (10)
                       ) files_url
 	    FROM (SELECT object_name, object_owner, source_filename, file_dt, file_size, targ_file_ind, targ_file_cnt,
+                         decrypt_filename, pre_final_filename,
 			 CASE 
 			 WHEN l_filename_yn = 'Y' AND targ_file_ind = 'Y' AND targ_file_cnt > 1
                          THEN REGEXP_REPLACE (SELF.filename, '\.', '_' || file_number || '.')
-			 WHEN l_filename_yn = 'N' AND targ_file_ind = 'Y' AND targ_file_cnt = 1
+			 WHEN l_filename_yn = 'Y' AND targ_file_ind = 'Y' AND targ_file_cnt = 1
 			 THEN SELF.filename
-			 ELSE filename END filename
-              FROM (SELECT object_name, object_owner, source_filename, file_dt, file_size, targ_file_ind,
+                         WHEN l_filename_yn = 'N' AND targ_file_ind = 'Y'
+                         THEN decrypt_filename
+			 ELSE NULL END filename
+                    FROM (SELECT object_name, object_owner, source_filename, file_dt, file_size, targ_file_ind, expand_filename,
                            
                            -- rank gives us a number to use to auto increment files in case SOURCE_POLICY attribute is 'all'
                            ROW_NUMBER() OVER (PARTITION BY 1 ORDER BY targ_file_ind DESC, source_filename) file_number,
@@ -231,12 +241,17 @@ AS
                            -- this gives us a count of how many files will be copied to the target
                            -- have this for each line
                            -- USE the TARG_FILE_IND derived in the select below
-                           COUNT (*) OVER (PARTITION BY targ_file_ind) targ_file_cnt
+                           COUNT (*) OVER (PARTITION BY targ_file_ind) targ_file_cnt,
+                                 
+                           -- get the filename we expect after a file decryption
+                           CASE WHEN l_encrypted_yn = 'Y' THEN REGEXP_REPLACE( decrypt_filename, '(.+)(\.)([^\.]+$)', '\1', 1, 0, 'i' ) ELSE decrypt_filename END pre_final_filename
                       FROM (SELECT              
 				   -- the DIR_LIST table has a filename column
                                    -- we also have a filename attribute
                                    -- RENAME the filename from the DIR_LIST table as SOURCE_FILENAME
                                    filename source_filename,
+                                   -- get the filename we expect after a file expansion
+                                   CASE WHEN l_compressed_yn = 'Y' THEN REGEXP_REPLACE( filename, '(.+)(\.)([^\.]+$)', '\1', 1, 0, 'i' ) ELSE filename END decrypt_filename,
                                    -- URL location if the target location is web enabled
                                    -- this is for notification purposes to send links for received files
                                    SELF.baseurl baseurl, 
@@ -263,48 +278,50 @@ AS
 		   ORDER BY targ_file_ind ASC))
       LOOP
 
-	 -- get the source filename we are working with and store it in two variable
-	 l_source_filename    := c_dir_list.source_filename;
-	 l_working_filename   := l_source_filename;
-
-	 -- get the target filename we are working with and store in a variable
-	 l_filename := c_dir_list.filename;
-	 
-         evolve.log_msg ('Processing file ' || l_source_filename || ' in directory '||l_source_directory, 3);
+         evolve.log_msg ('Processing file ' || l_source_filename || ' in directory '||l_source_directory );
 
          -- catch empty cursor sets
          l_rows_dirlist := TRUE;
          -- reset variables used in the cursor
-         l_numlines := 0;	 
-	
+         l_numlines := 0;
+
 	 -- if this feed uses a work_directory (l_workdir_exists variable)
 	 -- then we need to copy the file to the work directory
 	 IF l_workdir_exists
 	 THEN
             td_utils.copy_file ( p_source_directory => l_source_directory, 
-				 p_source_filename  => l_source_filename,
+				 p_source_filename  => c_dir_list.source_filename,
 			         p_directory	    => SELF.work_directory,
-				 p_filename	    => l_source_filename 
+				 p_filename	    => c_dir_list.source_filename
 			       );
 	    -- we are now concerned with the work_directory as the source_directory
 	    l_source_directory := self.work_directory;
 	 END IF;
 
          o_ev.change_action ( 'archive feed' );
-         -- now, we need to know whether the files is archived prior to any conversion process
+
+         -- now, we need to know whether the file is archived prior to any conversion process
          -- by conversion, I mean expanding or decrypting, or both
-         -- if STORE_FILES_NATIVE is true, then we archive them however they came in
-         -- these will be stored as blob, not clobs
-         IF td_core.is_true( self.store_files_native ) AND NOT evolve.is_debugmode
+         -- if STORE_ORIGINAL_FILES is true, then we archive them however they came in
+         IF td_core.is_true( self.store_original_files )
+            OR
+            -- we also archive the files now if there is no conversion that takes place
+            -- that means we won't be expanding the file or decrypting it
+            NOT ( l_compress_ind AND l_encrypt_ind)
          THEN
+
 	    -- this writes auditing information in the repository
 	    -- also stores the file in the database
-            SELF.archive ( p_filename             => l_filename,
-			   p_source_filename      => l_working_filename,
-			   p_num_bytes            => l_filesize,
-			   p_num_lines            => l_numlines,
-			   p_file_dt              => c_dir_list.file_dt
-                         );
+            -- get the unique key of the file_detail table returned
+            -- allows us to modify this entry later if we need to
+            l_detail_id := SELF.archive ( p_loc_directory        => l_source_directory,
+                                          p_loc_filename         => c_dir_list.source_filename,
+                                          p_directory            => self.directory,
+                                          p_filename             => c_dir_list.filename,
+                                          p_source_directory     => self.source_directory,
+			                  p_source_filename      => c_dir_list.source_filename,
+			                  p_file_dt              => c_dir_list.file_dt
+                                        );
          END IF;
 	    
 	    
@@ -313,13 +330,9 @@ AS
 	 IF self.compress_method IS NOT NULL
 	 THEN
 	    -- we need to expand the file
-	    td_utils.expand_file( p_directory => l_source_directory, 
-				  p_filename  => l_source_filename, 
-				  r_filename  => l_working_filename,
-				  r_filesize  => l_filesize,
-				  r_blocksize => l_blocksize,
-				  r_expanded  => l_expanded,
-				  p_comp_method => self.compress_method );
+	    td_utils.expand_file( p_directory      => l_source_directory, 
+				  p_filename       => c_dir_list.source_filename,
+				  p_method         => self.compress_method );
 	 END IF;
 	 
 	 
@@ -328,55 +341,71 @@ AS
 	 IF self.encrypt_method IS NOT NULL
 	 THEN
 	    -- we need to decrypt the file
-	    td_utils.decrypt_file( p_directory => l_source_directory, 
-				   p_filename  => l_source_filename,
+	    td_utils.decrypt_file( p_directory => l_source_directory,
+                                   -- passing the expected filename from the EXPAND_FILE procedure
+                                   -- this is either the previous filename or the converted filename
+				   p_filename   => c_dir_list.decrypt_filename,
 				   p_passphrase => self.passphrase, 
-				   r_filename  => l_working_filename,
-				   r_filesize  => l_filesize,
-				   r_blocksize => l_blocksize,
-				   r_decrypted => l_decrypted,
-				   p_encrypt_method => self.encrypt_method );
+				   p_method     => self.encrypt_method );
 	 END IF;
-	 
-	 
-	 -- get the number of lines in the file now that the file has been decrypted and expanded
-	 -- otherwise, these values don't make any sense
-	 l_numlines := td_utils.get_numlines ( l_source_directory, l_working_filename );
+         
+         
 
+	 
          o_ev.change_action ( 'archive feed' );
          -- for all the files that are converted prior to archival, here is another archival
-         -- if STORE_FILES_NATIVE is not true, then we archive them now
-         IF NOT td_core.is_true( self.store_files_native ) AND NOT evolve.is_debugmode
+         -- if STORE_ORIGINAL_FILES is not true, and these files are either expanded or decrypted
+         IF NOT td_core.is_true( self.store_original_files ) 
+            AND ( l_compress_ind OR l_encrypt_ind )
          THEN
 	    -- this writes auditing information in the repository
 	    -- also stores the file in the database
-            SELF.archive ( p_filename             => l_filename,
-			   p_source_filename      => l_working_filename,
-			   p_num_bytes            => l_filesize,
-			   p_num_lines            => l_numlines,
-			   p_file_dt              => c_dir_list.file_dt
-                         );
+            l_detail_id := SELF.archive ( p_filename             => l_filename,
+			                  p_source_filename      => l_working_filename,
+			                  p_num_bytes            => nvl( l_filesize, c_dir_list.file_size ),
+			                  p_num_lines            => l_numlines,
+			                  p_file_dt              => c_dir_list.file_dt
+                                        );
+         -- for those files that are stored before conversion,
+         -- and they are also converted, then we need to update some information for them
+         ELSIF td_core.is_true( self.store_original_files ) 
+            AND ( l_compress_ind OR l_encrypt_ind )
+         THEN 
+            -- need to modify the information for the archive file
+            -- what we currently have stored is information about a compressed or encrypted file
+            SELF.modify_archive ( p_file_detail_id      => l_file_detail_id,
+                                  p_loc_directory       => l_source_directory,
+                                  p_loc_filename        => c_dir_list.pre_final_filename
+                                );            
+
          END IF;
          
-
+         -- now, need to work on those files that are target files
          IF c_dir_list.targ_file_ind = 'Y'
          THEN
 	    o_ev.change_action ('process target files');
-
-            -- get a total count of all the lines in all the files moving to target
-            l_sum_numlines := l_sum_numlines + l_numlines;
-
-            -- see if this is the maximum line number size
-            -- if it is, then keep it
-            IF l_numlines > l_max_numlines
-            THEN
-               l_max_numlines := l_numlines;
-            END IF;
 
 	    -- RECORD the number of target files
             -- this count will be the same no matter which of the rows we pull it from, as analytics calculated it
             -- might as well use the last
             l_targ_file_cnt := c_dir_list.targ_file_cnt;
+
+            -- need to instantiate a FILE_DETAIL_OT object
+            o_detail := file_detail_ot( p_file_detail_id => l_file_detail_id );
+            
+            -- check the business logic and make sure the file passes everything required
+            o_detail.AUDIT( p_max_bytes     => self.max_bytes,
+                            p_min_bytes     => self.min_bytes );
+
+            -- need to get the total amount of lines
+            l_sum_numlines := l_sum_numlines + o_detail.num_lines;
+
+            -- see if this is the maximum line number size
+            -- if it is, then keep it
+            IF o_detail.num_lines > l_max_numlines
+            THEN
+               l_max_numlines := o_detail.num_lines;
+            END IF;
             
 	    -- the file now needs to be put into the target location
 	    -- if the source is the work directory, then this is a rename
@@ -384,11 +413,11 @@ AS
 	    IF l_workdir_exists
 	    THEN
 	       o_ev.change_action ('copy to target location');
-	       td_utils.copy_file( l_source_directory, l_working_filename, self.directory, l_filename );
+	       td_utils.copy_file( l_source_directory, c_dir_list.pre_final_filename, self.directory, l_filename );
 	    ELSE
 	       o_ev.change_action ('move to target location');
 	       BEGIN
-		  td_utils.move_file( l_source_directory, l_working_filename, self.directory, l_filename );
+		  td_utils.move_file( l_source_directory, c_dir_list.pre_final_filename, self.directory, l_filename );
 	       EXCEPTION
 		  WHEN td_utils.different_filesystems
 		  THEN
@@ -399,11 +428,10 @@ AS
 	    
 	    -- add the filename to the ALTER EXTERNAL TABLE location list
 	    -- this will be used to alter the external table (possibly) when the loop is complete
-	    l_loc_list := l_loc_list ||CASE l_loc_list WHEN NULL THEN NULL ELSE ',' end|| self.directory || ':' || l_working_filename;
+	    l_loc_list := l_loc_list ||CASE l_loc_list WHEN NULL THEN NULL ELSE ',' end|| self.directory || ':' || c_dir_list.filename;
 	    
 	    -- add the filename to the URL list
-	    l_url_list := l_url_list ||CASE l_url_list WHEN NULL THEN NULL ELSE CHR(10) end|| self.baseurl || '/' || l_working_filename;
-
+	    l_url_list := l_url_list ||CASE l_url_list WHEN NULL THEN NULL ELSE CHR(10) end|| self.baseurl || '/' || c_dir_list.filename;
 
          END IF;
 
@@ -444,7 +472,7 @@ AS
          -- an external table with a zero-byte file gives "no rows returned"
       WHEN NOT l_rows_dirlist AND NOT td_core.is_true (required) AND l_ext_tab_ind
          THEN
-            evolve.log_msg ('No files found... but none are required', 3);
+            evolve.log_msg ('No files found... but none are required' );
             o_ev.change_action ('empty previous files');
 
             FOR c_location IN (SELECT DIRECTORY, LOCATION
@@ -469,6 +497,9 @@ AS
             END;
 
             -- audit the external table
+
+            -- get the total number of lines for all the target files
+            
             o_ev.change_action ('audit external table');
             SELF.audit_object (p_num_lines => l_sum_numlines);
          WHEN l_rows_dirlist AND l_targ_file_cnt = 0

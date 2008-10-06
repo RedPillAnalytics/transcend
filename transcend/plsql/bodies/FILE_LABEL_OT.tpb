@@ -2,116 +2,183 @@ CREATE OR REPLACE TYPE BODY file_label_ot
 AS
 
    -- store audit information about the feed or extract
-   MEMBER PROCEDURE archive(
-      p_num_bytes         NUMBER,
-      p_num_lines         NUMBER,
-      p_file_dt           DATE,
-      p_filename          VARCHAR2 DEFAULT NULL,
-      p_source_filename	  VARCHAR2 DEFAULT NULL
+   MEMBER FUNCTION archive(
+      p_loc_directory      VARCHAR2,
+      p_loc_filename       VARCHAR2,
+      p_directory          VARCHAR2,
+      p_filename           VARCHAR2,
+      p_source_directory   VARCHAR2 DEFAULT NULL,
+      p_source_filename    VARCHAR2 DEFAULT NULL,
+      p_file_dt            DATE      DEFAULT NULL
    )
+      RETURN NUMBER 
    AS
-      l_dest_clob    CLOB;
+      l_detail_id    file_detail.file_detail_id%type;
       l_dest_blob    BLOB;
       l_src_lob      BFILE;
       l_dst_offset   NUMBER := 1;
       l_src_offset   NUMBER := 1;
       l_lang_ctx     NUMBER := DBMS_LOB.default_lang_ctx;
       l_warning      NUMBER;
-      l_filename          file_conf.filename%type         := NVL( p_filename, SELF.filename );
-      -- determine which directory is the source directory for feeds
-      l_source_directory  file_conf.source_directory%type := NVL( SELF.work_directory, SELF.source_directory );
-      -- determine which directory is the source directory for extracts
-      l_directory         file_conf.directory%type        := NVL( SELF.work_directory, SELF.directory );
-      -- determine the lob_type
+
+      -- variables to hold attributes about the file
+      l_file_exists  BOOLEAN;
+      l_filesize     NUMBER;
+      l_blocksize    NUMBER;
+      l_numlines     NUMBER;
+
+      -- variable for ease of use
+      l_file_dir    VARCHAR2( 100 ) := p_loc_filename||' in directory '||p_loc_directory;
+
+      -- evolve instrumentation object
       o_ev   evolve_ot := evolve_ot( p_module => 'archive' );
    BEGIN
       
-      -- open the bfile
-      o_ev.change_action( 'open BFILE' );
-      l_src_lob := BFILENAME ( CASE self.label_type WHEN 'feed' THEN l_source_directory ELSE l_directory END, l_filename );
-      
-      o_ev.change_action( 'Insert file detail' );
-      
-      
-      -- INSERT into the FILE_DETAIL table to record the movement
-      -- this is done regardless of runmode
-      INSERT INTO file_detail
-             ( file_detail_id, file_label, file_group,
-               label_type, directory, filename, source_directory, 
-	       source_filename, work_directory, num_bytes, num_lines, 
-               file_dt, store_files_native, compress_method, encrypt_method, 
-               passphrase, file_clob, file_blob 
-             )
-	     VALUES ( file_detail_seq.NEXTVAL, file_label, file_group,
-		      label_type, SELF.directory, l_filename, SELF.source_directory, 
-                      p_source_filename, SELF.work_directory, p_num_bytes, p_num_lines, 
-                      p_file_dt, self.store_files_native, self.compress_method, self.encrypt_method,
-                      self.passphrase, EMPTY_CLOB(), EMPTY_BLOB()
-                    )
-	     RETURNING file_clob, file_blob
-	     INTO l_dest_clob, l_dest_blob;
-
-      
-      -- do not want to store the file in the database if were are in debugmode
-      -- might reconsider this after the fact
+      evolve.log_msg( 'Archiving file '||l_file_dir );
 
       IF NOT evolve.is_debugmode
       THEN
-	       
-	 -- oepn the source LOB to get ready to write it
+
+         -- get information about the file
+         evolve.log_msg( 'Getting information about file from UTL_FILE ', 4 );
+         UTL_FILE.fgetattr( location     => p_loc_directory, 
+                            filename     => p_loc_filename, 
+                            fexists      => l_file_exists, 
+                            file_length  => l_filesize, 
+                            block_size   => l_blocksize );
+         
+      ELSE
+         -- set values for DEBUGMODE
+         l_filesize := 0;
+         l_blocksize := 0;
+      END IF;
+
+      -- get number of lines in the file
+      -- in DEBUGMODE returns 0
+      l_numlines := td_utils.get_numlines( p_directory  => p_loc_directory,
+                                          p_filename   => p_loc_filename );
+      
+      IF NOT evolve.is_debugmode
+      THEN
+
+         -- open the bfile
+         o_ev.change_action( 'open BFILE' );
+         l_src_lob := BFILENAME ( p_loc_directory, p_loc_filename );
+         
+      END IF;
+         
+      o_ev.change_action( 'Insert file detail' );
+
+      -- INSERT into the FILE_DETAIL table to record the movement
+      -- this is done regardless of runmode
+      evolve.log_msg( 'Inserting information into FILE_DETAIL', 4 );
+      INSERT INTO file_detail
+             ( file_detail_id, file_label, file_group,
+               label_type, directory, filename, source_directory, 
+	       source_filename, num_bytes, num_lines, 
+               file_dt, store_original_files, compress_method, encrypt_method, 
+               passphrase, label_file
+             )
+       VALUES ( file_detail_seq.NEXTVAL, file_label, file_group,
+		label_type, p_directory, p_filename, p_source_directory, 
+                p_source_filename, l_filesize, l_numlines,
+                p_file_dt, self.store_original_files, self.compress_method, self.encrypt_method,
+                self.passphrase, EMPTY_BLOB()
+              )
+       RETURNING label_file, file_detail_id
+         INTO l_dest_blob, l_detail_id;
+      
+      IF NOT evolve.is_debugmode
+      THEN
+
+         -- open the source LOB to get ready to write it
 	 DBMS_LOB.OPEN (l_src_lob, DBMS_LOB.lob_readonly);
 
-	 CASE self.lob_type
-	 WHEN 'clob'
-	    THEN
-	    DBMS_LOB.loadclobfromfile ( dest_lob          => l_dest_clob,
-					src_bfile         => l_src_lob,
-					amount            => DBMS_LOB.getlength(l_src_lob),
-					dest_offset       => l_dst_offset,
-					src_offset        => l_src_offset,
-					bfile_csid        => NLS_CHARSET_ID( SELF.characterset ),
-					lang_context      => l_lang_ctx,
-					warning           => l_warning
-                                      );
-	    WHEN 'blob'
-	       THEN
-	       DBMS_LOB.loadblobfromfile ( dest_lob          => l_dest_blob,
-					   src_bfile         => l_src_lob,
-					   amount            => DBMS_LOB.getlength(l_src_lob),
-					   dest_offset       => l_dst_offset,
-					   src_offset        => l_src_offset
-					 );
-	       ELSE
-	       evolve.raise_err( 'single_lob' );
-	 END CASE;
+	 DBMS_LOB.loadblobfromfile ( dest_lob          => l_dest_blob,
+				     src_bfile         => l_src_lob,
+				     amount            => DBMS_LOB.getlength(l_src_lob),
+				     dest_offset       => l_dst_offset,
+				     src_offset        => l_src_offset
+				   );
 
 	 -- now close the soure lob      
 	 DBMS_LOB.CLOSE (l_src_lob);
 
-         IF p_num_bytes >= max_bytes AND max_bytes <> 0
-         THEN
-	    o_ev.change_action( 'file too large');
-            o_ev.send( p_label => file_label );
-	    evolve.raise_err( 'file_too_large' );
-         ELSIF p_num_bytes < min_bytes
-         THEN
-	    o_ev.change_action( 'file too small');
-            o_ev.send( p_label => file_label );
-	    evolve.raise_err( 'file_too_small' );
-         END IF;
-
       END IF;
 
       o_ev.clear_app_info;
+      RETURN l_detail_id;
    END archive;
 
+   -- store audit information about the feed or extract
+   MEMBER PROCEDURE modify_archive(
+      p_file_detail_id     NUMBER,
+      p_loc_directory      VARCHAR2,
+      p_loc_filename       VARCHAR2,
+      p_source_directory   VARCHAR2 DEFAULT NULL,
+      p_source_filename    VARCHAR2 DEFAULT NULL,
+      p_directory          VARCHAR2 DEFAULT NULL,
+      p_filename           VARCHAR2 DEFAULT NULL,
+      p_file_dt            DATE     DEFAULT NULL
+   )
+   AS
+      -- variables to hold attributes about the file
+      l_file_exists  BOOLEAN;
+      l_filesize     NUMBER;
+      l_blocksize    NUMBER;
+      l_numlines     NUMBER;
+   
+      -- variable for ease of use
+      l_file_dir    VARCHAR2( 100 ) := p_loc_filename||' in directory '||p_loc_directory; 
+
+      o_ev           evolve_ot      := evolve_ot( p_module => 'modify_archive' );
+   BEGIN
+      
+      IF NOT evolve.is_debugmode
+      THEN
+
+         -- get information about the file
+         evolve.log_msg( 'Getting information about file from UTL_FILE ', 4 );
+         UTL_FILE.fgetattr( location      => p_loc_directory, 
+                            filename      => p_loc_filename, 
+                            fexists       => l_file_exists, 
+                            file_length   => l_filesize, 
+                            block_size    => l_blocksize );
+         
+      ELSE
+         -- set values for DEBUGMODE
+         l_filesize := 0;
+         l_blocksize := 0;
+      END IF;
+
+      -- get number of lines in the file
+      -- in DEBUGMODE returns 0
+      l_numlines := td_utils.get_numlines( p_directory  => p_loc_directory,
+                                           p_filename   => p_loc_filename );
+      
+      -- update attributes in the FILE_DETAIL table as necessary
+      UPDATE file_detail
+         SET num_bytes = l_filesize,
+             num_lines = l_numlines,
+	     source_directory = NVL( p_source_directory, source_directory ),
+	     source_filename = NVL( p_source_filename, source_filename ),
+	     directory = NVL( p_directory, directory ),
+	     filename = NVL( p_filename, filename ),
+	     file_dt = NVL( p_file_dt, file_dt )
+       WHERE file_detail_id = p_file_detail_id;
+
+      o_ev.clear_app_info;
+   END modify_archive;
+   
    -- audits information about external tables after the file(s) have been put in place
-   MEMBER PROCEDURE audit_object (p_num_lines NUMBER)
+   MEMBER PROCEDURE audit_object ( p_file_detail_id NUMBER )
    IS
       l_num_rows         NUMBER         := 0;
       l_pct_miss         NUMBER;
+      l_detail_id        file_detail.file_detail_id%type;
       l_sql              VARCHAR2 (100);
       l_obj_name         VARCHAR2 (61)  := SELF.object_owner || '.' || SELF.object_name;
+      l_numlines         NUMBER;
       e_data_cartridge   EXCEPTION;
       PRAGMA EXCEPTION_INIT (e_data_cartridge, -29913);
       e_no_object         EXCEPTION;
@@ -125,6 +192,14 @@ AS
       o_ev.change_action ('get count from object');
       l_sql := 'SELECT count(*) FROM ' || l_obj_name;
       evolve.log_msg ('Count SQL: ' || l_sql, 3);
+      
+      -- get the number of lines in the file
+      -- i get this by looking at file_detail
+      
+      SELECT num_lines
+        INTO l_numlines
+        FROM file_detail
+       WHERE file_detail_id = p_file_detail_id;
 
       IF NOT evolve.is_debugmode
       THEN
@@ -158,8 +233,8 @@ AS
 
          BEGIN
             -- calculate the percentage difference
-            l_pct_miss := 100 - ((l_num_rows / p_num_lines) * 100);
-
+            l_pct_miss := 100 - ((l_num_rows / l_numlines) * 100);
+            
             IF l_pct_miss > reject_limit
             THEN
                o_ev.change_action ('reject limit exceeded');
@@ -168,6 +243,7 @@ AS
                o_ev.clear_app_info;
                evolve.raise_err ('reject_limit_exceeded');
             END IF;
+
          EXCEPTION
             WHEN ZERO_DIVIDE
             THEN
@@ -179,7 +255,7 @@ AS
                       object_owner, object_name, num_rows, num_lines, percent_diff
                      )
               VALUES (file_object_detail_seq.NEXTVAL, SELF.label_type, SELF.file_label, SELF.file_group,
-                      SELF.object_owner, SELF.object_name, l_num_rows, p_num_lines, l_pct_miss
+                      SELF.object_owner, SELF.object_name, l_num_rows, l_numlines, l_pct_miss
                      );
       END IF;
 

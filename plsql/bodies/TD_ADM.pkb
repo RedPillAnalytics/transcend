@@ -1425,15 +1425,14 @@ IS
 	   source_regexp       VARCHAR2(100),
 	   match_parameter     VARCHAR2(10),
 	   source_policy       VARCHAR2(10),
-	   store_files_native  VARCHAR2(3)	NOT NULL,
+	   store_original_files  VARCHAR2(3)	NOT NULL,
    	   compress_method     VARCHAR2( 20 ),
    	   encrypt_method      VARCHAR2( 20 ),
-	   characterset	       VARCHAR2(20),
 	   required            VARCHAR2(3),
 	   delete_source       VARCHAR2(3),
 	   reject_limit        NUMBER,
 	   dateformat	       VARCHAR2(30),
-	   tsformat            VARCHAR2(30),
+	   timestampformat     VARCHAR2(30),
 	   delimiter	       VARCHAR2(3),
 	   quotechar	       VARCHAR2(2),
 	   headers	       VARCHAR2(3),
@@ -1471,7 +1470,7 @@ IS
          EXECUTE IMMEDIATE q'|ALTER TABLE file_conf ADD 
 	 (
 	   CONSTRAINT file_conf_ck4
-	   CHECK (store_files_native IN ('yes','no'))
+	   CHECK (store_original_files IN ('yes','no'))
 	 )|';
 
          EXECUTE IMMEDIATE q'|ALTER TABLE file_conf ADD 
@@ -1501,9 +1500,8 @@ IS
 	   num_bytes 		NUMBER 		NOT NULL,
 	   num_lines 		NUMBER,
 	   file_dt 		DATE		NOT NULL,
-	   file_clob		CLOB,
-	   file_blob		BLOB,
-           store_files_native   VARCHAR2( 20 ),
+	   label_file		BLOB,
+           store_original_files   VARCHAR2( 20 ),
            compress_method	VARCHAR2( 20 ),
            encrypt_method	VARCHAR2( 20 ),
            passphrase       	VARCHAR2( 100 ),
@@ -2933,10 +2931,9 @@ IS
 	   source_regexp       VARCHAR2(100),
 	   match_parameter     VARCHAR2(10),
 	   source_policy       VARCHAR2(10),
-	   store_files_native  VARCHAR2(20),
+	   store_original_files  VARCHAR2(20),
    	   compress_method     VARCHAR2( 20 ),
    	   encrypt_method      VARCHAR2( 20 ),
-	   characterset	       VARCHAR2(20),
 	   required            VARCHAR2(3),
 	   delete_source       VARCHAR2(3),
 	   delete_target       VARCHAR2(3),
@@ -2986,7 +2983,7 @@ IS
          EXECUTE IMMEDIATE q'|ALTER TABLE file_conf ADD 
 	 (
 	   CONSTRAINT file_conf_ck5
-	   CHECK (store_files_native IN ('all','none','non-target',NULL))
+	   CHECK (store_original_files IN ('all','none','non-target',NULL))
 	 )|';
 
          EXECUTE IMMEDIATE q'|ALTER TABLE file_conf ADD 
@@ -3004,7 +3001,7 @@ IS
          EXECUTE IMMEDIATE q'|ALTER TABLE file_conf ADD 
 	 (
 	   CONSTRAINT file_conf_ck8
-	   CHECK ( store_files_native <> CASE label_type WHEN 'extract' THEN 'non-target' ELSE NULL END )
+	   CHECK ( store_original_files <> CASE label_type WHEN 'extract' THEN 'non-target' ELSE NULL END )
 	 )|';
    
 	 EXECUTE IMMEDIATE q'|drop table file_detail|';

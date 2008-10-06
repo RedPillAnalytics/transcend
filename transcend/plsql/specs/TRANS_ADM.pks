@@ -35,11 +35,11 @@ IS
 
    PROCEDURE modify_feed (
       p_file_label         VARCHAR2,
-      p_file_group         VARCHAR2,
-      p_directory	   VARCHAR2,
-      p_source_directory   VARCHAR2,
-      p_source_regexp      VARCHAR2,
-      p_work_directory     VARCHAR2,
+      p_file_group         VARCHAR2 DEFAULT NULL,
+      p_directory	   VARCHAR2 DEFAULT NULL,
+      p_source_directory   VARCHAR2 DEFAULT NULL,
+      p_source_regexp      VARCHAR2 DEFAULT NULL,
+      p_work_directory     VARCHAR2 DEFAULT NULL,
       p_owner              VARCHAR2 DEFAULT NULL,
       p_table              VARCHAR2 DEFAULT NULL,
       p_filename           VARCHAR2 DEFAULT NULL,
@@ -55,7 +55,7 @@ IS
       p_reject_limit       NUMBER   DEFAULT NULL,
       p_baseurl            VARCHAR2 DEFAULT NULL,
       p_delete_source      VARCHAR2 DEFAULT NULL,
-      p_description   VARCHAR2 DEFAULT NULL
+      p_description        VARCHAR2 DEFAULT NULL
    );
       
    PROCEDURE delete_feed (

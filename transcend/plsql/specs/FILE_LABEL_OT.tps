@@ -8,24 +8,35 @@ CREATE OR REPLACE TYPE file_label_ot AUTHID CURRENT_USER AS object(
    filename         	 VARCHAR2( 50 ),
    source_directory 	 VARCHAR2( 50 ),
    work_directory   	 VARCHAR2( 30 ),
-   characterset          VARCHAR2( 20 ),
-   lob_type	    	 VARCHAR2( 4 ),
    min_bytes        	 NUMBER,
    max_bytes        	 NUMBER,
    reject_limit          NUMBER,
    baseurl          	 VARCHAR2( 2000 ),
-   store_files_native    VARCHAR2( 20 ),
+   store_original_files    VARCHAR2( 20 ),
    compress_method	 VARCHAR2( 20 ),
    encrypt_method	 VARCHAR2( 20 ),
    passphrase       	 VARCHAR2( 100 ),
-   MEMBER PROCEDURE archive(
-      p_num_bytes         NUMBER,
-      p_num_lines         NUMBER,
-      p_file_dt           DATE,
-      p_filename          VARCHAR2 DEFAULT NULL,
-      p_source_filename	  VARCHAR2 DEFAULT NULL
+   MEMBER FUNCTION archive(
+      p_loc_directory      VARCHAR2,
+      p_loc_filename       VARCHAR2,
+      p_directory          VARCHAR2,
+      p_filename           VARCHAR2,
+      p_source_directory   VARCHAR2 DEFAULT NULL,
+      p_source_filename    VARCHAR2 DEFAULT NULL,
+      p_file_dt            DATE     DEFAULT NULL
+   )
+      RETURN NUMBER,
+   MEMBER PROCEDURE modify_archive(
+      p_file_detail_id     NUMBER,
+      p_loc_directory      VARCHAR2,
+      p_loc_filename       VARCHAR2,
+      p_source_directory   VARCHAR2 DEFAULT NULL,
+      p_source_filename    VARCHAR2 DEFAULT NULL,
+      p_directory          VARCHAR2 DEFAULT NULL,
+      p_filename           VARCHAR2 DEFAULT NULL,
+      p_file_dt            DATE     DEFAULT NULL
    ),
-   MEMBER PROCEDURE audit_object( p_num_lines NUMBER ),
+   MEMBER PROCEDURE audit_object ( p_file_detail_id NUMBER ),
    MEMBER PROCEDURE announce(
       p_files_url        VARCHAR2,
       p_num_lines   	 NUMBER,

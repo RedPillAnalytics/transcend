@@ -1,8 +1,7 @@
-CREATE OR REPLACE TYPE BODY file_ot
+CREATE OR REPLACE TYPE BODY file_detail_ot
 AS
 
    -- constructor function for the FILE_DETAIL_OT object type
-   -- some of the attributes can be overriden: both SOURCE_DIRECTORY and WORK_DIRECTORY
    CONSTRUCTOR FUNCTION file_detail_ot ( p_file_detail_id   NUMBER,
                                          p_directory        VARCHAR2(30) )
       RETURN SELF AS RESULT
@@ -11,24 +10,21 @@ AS
       BEGIN
          -- load all the feed attributes
          SELECT file_detail_id, file_label, file_group, file_type, 
-                directory, filename, lob_type, num_bytes, num_lines, file_dt, 
-                characterset, store_files_native, compress_method, 
-                encrypt_method, passphrase, file_clob, file_blob,
+                directory, filename, num_bytes, num_lines, file_dt, 
+                store_files_native, compress_method, 
+                encrypt_method, passphrase, label_file,
                 processed_ts, session_id
            INTO self.file_detail_id, SELF.file_label, SELF.file_group, SELF.file_type,
                 SELF.directory, SELF.filename, SELF.source_directory, SELF.source_filename,
-                SELF.work_directory, SELF.lob_type, SELF.num_bytes, SELF.num_lines, SELF.file_dt, 
-                SELF.characterset, SELF.store_files_native, SELF.compress_method,
-                SELF.encrypt_method, SELF.passphrase, SELF.FILE_CLOB, SELF.FILE_BLOB,
+                SELF.work_directory, SELF.num_bytes, SELF.num_lines, SELF.file_dt, 
+                SELF.store_files_native, SELF.compress_method,
+                SELF.encrypt_method, SELF.passphrase, SELF.FILE_CLOB, SELF.label_file,
                 SELF.processed_ts, SELF.session_id              
            FROM (SELECT file_detail_id, file_label, file_group, file_type,
                         nvl( p_directory, directory ), source_filename filename,
-                        CASE 
-                        WHEN lower( store_files_native ) = 'no' AND self.characterset IS NOT NULL THEN 'clob' 
-                        ELSE 'blob' 
-                	END lob_type, num_bytes, num_lines, file_dt,
-                        characterset, store_files_native, compress_method,
-                        encrypt_method, passphrase, file_clob, file_blob,
+                        num_bytes, num_lines, file_dt,
+                        store_files_native, compress_method,
+                        encrypt_method, passphrase, label_file,
                         processed_ts, session_id
                    FROM files_detail
                   WHERE file_detail_id = p_file_detail_id);
@@ -49,7 +45,7 @@ AS
    IS
       l_dir_path    all_directories.directory_path%TYPE;
       l_directory   all_external_tables.default_directory_name%TYPE;
-      o_ev          evolve_ot                                         := evolve_ot (p_module => 'verify');
+      o_ev          evolve_ot                                         := evolve_ot (p_module => 'verify_file_detail');
    BEGIN
       -- do checks to make sure all the provided information is legitimate
 
@@ -62,10 +58,34 @@ AS
       o_ev.clear_app_info;
    END verify;
 
+   MEMBER PROCEDURE audit(
+      p_max_bytes   NUMBER,
+      p_min_bytes   NUMBER
+   )
+   IS
+      o_ev          evolve_ot    := evolve_ot (p_module => 'audit_file_detail');
+   BEGIN
+
+      -- check and make sure the file sizes are legitimate
+      IF self.file_size >= p_max_bytes AND p_max_bytes IS NOT NULL
+      THEN
+	 o_ev.change_action( 'file too large');
+         o_ev.send( p_label => file_label );
+	 evolve.raise_err( 'file_too_large' );
+      ELSIF self.file_size < p_min_bytes AND p_max_bytes IS NOT NULL
+      THEN
+	 o_ev.change_action( 'file too small');
+         o_ev.send( p_label => file_label );
+	 evolve.raise_err( 'file_too_small' );
+      END IF;
+
+      -- reset the evolve_object
+      o_ev.clear_app_info;
+   END audit;
+
    -- retrieve a file from archive
    MEMBER PROCEDURE unarchive
    AS
-      l_clob            CLOB;
       l_blob            BLOB;
       l_filename        files_detail.filename%type;
       l_max_linesize    NUMBER                  := 32767;
@@ -74,7 +94,7 @@ AS
       l_amount          NUMBER;
       l_offset          NUMBER := 1;
       l_fh              utl_file.file_type;
-      o_ev              evolve_ot               := evolve_ot( p_module => 'unarchive' );
+      o_ev              evolve_ot               := evolve_ot( p_module => 'unarchive_file_detail' );
    BEGIN
       
       -- open the file handle
@@ -85,10 +105,7 @@ AS
                               max_linesize => l_max_linesize);
       
       -- get information about the LOB being used
-      l_buffersize := CASE self.lob_type
-                         WHEN 'clob' THEN DBMS_LOB.GETCHUNKSIZE( self.file_clob )
-                         WHEN 'blob' THEN DBMS_LOB.GETCHUNKSIZE( self.file_blob )
-                       END ;
+      l_buffersize := DBMS_LOB.GETCHUNKSIZE( self.label_file ) ;
 
                      
       -- use the smallest buffer we can
@@ -99,67 +116,31 @@ AS
 
       IF NOT evolve.is_debugmode
       THEN
-      
-         -- now, let write to the actual file
-         CASE self.log_type
-         -- this case is for working with a clob
-         WHEN 'clob'
-         THEN
             
-            -- keep writing output as long as we are getting some from the file
-            -- we know that we still have content as long as the amount read is the same as the buffer
-            WHILE l_amount >= l_buffersize
-            LOOP
-               
-               -- read into the buffer
-               DBMS_LOB.READ( lob_loc    => self.file_clob,
-                              amount     => l_amount,
-                              offset     => l_offset,
-                              buffer     => l_buffer);
-               
-               -- reset the offset based on the amount read in
-               l_offset := l_offset + l_amount;
-               
-               -- now write the contents to the file
-               UTL_FILE.PUT_RAW ( file      => l_fh,
-                                  buffer    => l_buffer,
-                                  autoflush => TRUE);
-
-               -- flush the contents out to the file
-               UTL_FILE.FFLUSH( file => l_fh );
-
-            END LOOP;
+         -- keep writing output as long as we are getting some from the file
+         -- we know that we still have content as long as the amount read is the same as the buffer
+         WHILE l_amount >= l_buffersize
+         LOOP
             
-            -- this is what we do when we have a blob       
-         WHEN 'blob'
-         THEN
+            -- read into the buffer
+            DBMS_LOB.READ( lob_loc    => self.label_file,
+                           amount     => l_amount,
+                           offset     => l_offset,
+                           buffer     => l_buffer);
             
-            -- keep writing output as long as we are getting some from the file
-            -- we know that we still have content as long as the amount read is the same as the buffer
-            WHILE l_amount >= l_buffersize
-            LOOP
-               
-               -- read into the buffer
-               DBMS_LOB.READ( lob_loc    => self.file_blob,
-                              amount     => l_amount,
-                              offset     => l_offset,
-                              buffer     => l_buffer);
-               
-               -- reset the offset based on the amount read in
-               l_offset := l_offset + l_amount;
-               
-               -- now write the contents to the file
-               UTL_FILE.PUT_RAW ( file      => l_fh,
-                                  buffer    => l_buffer,
-                                  autoflush => TRUE);
-
-               -- flush the contents out to the file
-               UTL_FILE.FFLUSH( file => l_fh );
-
-            END LOOP;
+            -- reset the offset based on the amount read in
+            l_offset := l_offset + l_amount;
             
-         END CASE;
+            -- now write the contents to the file
+            UTL_FILE.PUT_RAW ( file      => l_fh,
+                               buffer    => l_buffer,
+                               autoflush => TRUE);
 
+            -- flush the contents out to the file
+            UTL_FILE.FFLUSH( file => l_fh );
+
+         END LOOP;
+            
       END IF;      
       o_ev.clear_app_info;
    
