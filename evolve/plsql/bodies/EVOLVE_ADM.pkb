@@ -494,6 +494,24 @@ IS
 
          set_registration;
       END IF;
+      
+      -- set default notification events
+      IF LOWER( p_config ) IN( 'all', 'notification' )
+      THEN
+         IF td_core.is_true( p_reset )
+         THEN
+            DELETE FROM notification_conf;
+         END IF;
+         
+         -- configure notification event for the support functionality
+         evolve_adm.set_notification_event
+         ( 'evolve_adm',
+           'send support dump',
+           'support dump',
+           'The attached support dump is sent from:'
+         );
+
+      END IF;
 
       -- reset error_conf
       IF LOWER( p_config ) IN( 'all', 'errors' )

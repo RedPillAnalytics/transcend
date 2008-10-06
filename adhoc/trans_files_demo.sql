@@ -3,8 +3,8 @@
 CREATE OR replace directory extdata AS '/transcend/ext';
 GRANT READ,WRITE ON directory extdata TO tdrep;
 
-CREATE OR replace directory archdata AS '/transcend/arch';
-GRANT READ,WRITE ON directory archdata TO tdrep;
+CREATE OR replace directory workdata AS '/transcend/work';
+GRANT READ,WRITE ON directory workdata TO tdrep;
 
 CREATE OR REPLACE directory extractdata AS '/transcend/extract';
 GRANT READ,WRITE ON directory extractdata TO tdrep;
@@ -37,11 +37,11 @@ exec dbms_java.grant_permission( 'TDREP', 'SYS:java.io.FilePermission', '/transc
 EXEC dbms_java.grant_permission( 'TDREP', 'SYS:java.io.FilePermission', '/transcend/source/*', 'read' );
 
 -- CREATE a test feed
-EXEC trans_adm.create_feed( 'test group','test feed',p_directory=>'extdata',p_filename=>'TEST_FEED.dat',p_owner=>'stewart',p_table=>'test_feed',p_arch_directory=>'archdata', p_file_datestamp=>'yyyymmddhhmiss',p_baseurl=>'www.transcendentdata.com/files',p_passphrase=>'passw0rd',p_source_directory=>'sourcedata',p_source_regexp=>'txt$',p_source_policy=>'newest',p_delete_source=>'no');
+EXEC trans_adm.create_feed( 'test group','test feed',p_directory=>'extdata',p_filename=>'TEST_FEED.dat',p_owner=>'stewart',p_table=>'test_feed',p_work_directory=>'workdata', p_baseurl=>'www.transcendentdata.com/files',p_passphrase=>'passw0rd',p_source_directory=>'sourcedata',p_source_regexp=>'txt$',p_source_policy=>'newest',p_delete_source=>'no', p_compress_method=>trans_adm.extension_method);
 
 -- CREATE a test extract
-EXEC trans_adm.create_extract( 'test group','test extract',p_filename=>'TEST_EXTRACT.dat',p_object_owner=>'stewart',p_object_name=>'test_extract',p_arch_directory=>'archdata',p_baseurl=>'www.transcendentdata.com/files',p_passphrase=>'passw0rd',p_directory=>'extractdata');
+EXEC trans_adm.create_extract( 'test group','test extract',p_filename=>'TEST_EXTRACT.dat',p_object_owner=>'stewart',p_object_name=>'test_extract',p_work_directory=>'workdata',p_baseurl=>'www.transcendentdata.com/files',p_passphrase=>'passw0rd',p_directory=>'extractdata');
 
 COMMIT;
 
-EXEC trans_files.process_files( 'test group' );
+EXEC trans_files.process_group( 'test group' );

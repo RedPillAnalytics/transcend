@@ -20,13 +20,15 @@ AS
       l_filename          file_conf.filename%type         := NVL( p_filename, SELF.filename );
       -- determine which directory is the source directory for feeds
       l_source_directory  file_conf.source_directory%type := NVL( SELF.work_directory, SELF.source_directory );
+      -- determine which directory is the source directory for extracts
+      l_directory         file_conf.directory%type        := NVL( SELF.work_directory, SELF.directory );
       -- determine the lob_type
       o_ev   evolve_ot := evolve_ot( p_module => 'archive' );
    BEGIN
       
       -- open the bfile
       o_ev.change_action( 'open BFILE' );
-      l_src_lob := BFILENAME ( CASE self.label_type WHEN 'feed' THEN l_source_directory ELSE SELF.directory END, l_filename );
+      l_src_lob := BFILENAME ( CASE self.label_type WHEN 'feed' THEN l_source_directory ELSE l_directory END, l_filename );
       
       o_ev.change_action( 'Insert file detail' );
       

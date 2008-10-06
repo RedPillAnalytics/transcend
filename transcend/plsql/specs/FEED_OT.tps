@@ -6,7 +6,7 @@ CREATE OR REPLACE TYPE feed_ot UNDER file_label_ot(
    delete_source      VARCHAR2( 3 ),
    CONSTRUCTOR FUNCTION feed_ot(
       p_file_label	   VARCHAR2,
-      p_source_directory   VARCHAR2
+      p_source_directory   VARCHAR2 DEFAULT NULL
    )
       RETURN SELF AS RESULT,
    OVERRIDING MEMBER PROCEDURE verify,

@@ -1,106 +1,111 @@
 CREATE OR REPLACE PACKAGE trans_adm AUTHID CURRENT_USER
 IS
-   null_value   CONSTANT VARCHAR2 (10) := '*null*';
+   null_value             CONSTANT VARCHAR2 (6)  := '*null*';
+
+   extension_method       CONSTANT VARCHAR2 (16) := 'extension_method';
+
+   default_characterset   CONSTANT VARCHAR2 (22) := '*default_characterset*';
 
    PROCEDURE set_default_configs;
 
    PROCEDURE create_feed (
-      p_file_group         VARCHAR2,
       p_file_label         VARCHAR2,
-      p_filename           VARCHAR2,
+      p_file_group         VARCHAR2,
       p_directory	   VARCHAR2,
-      p_arch_directory     VARCHAR2,
       p_source_directory   VARCHAR2,
       p_source_regexp      VARCHAR2,
-      p_owner              VARCHAR2,
-      p_table              VARCHAR2,
+      p_work_directory     VARCHAR2,
+      p_owner              VARCHAR2 DEFAULT NULL,
+      p_table              VARCHAR2 DEFAULT NULL,
+      p_filename           VARCHAR2 DEFAULT NULL,
       p_match_parameter    VARCHAR2 DEFAULT 'i',
       p_source_policy      VARCHAR2 DEFAULT 'newest',
+      p_store_files_native VARCHAR2 DEFAULT 'no',
+      p_compress_method	   VARCHAR2 DEFAULT NULL,
+      p_encrypt_method	   VARCHAR2 DEFAULT NULL,
+      p_passphrase         VARCHAR2 DEFAULT NULL,
       p_required           VARCHAR2 DEFAULT 'yes',
       p_min_bytes          NUMBER   DEFAULT 0,
       p_max_bytes          NUMBER   DEFAULT 0,
       p_reject_limit       NUMBER   DEFAULT 100,
-      p_file_datestamp     VARCHAR2 DEFAULT NULL,
       p_baseurl            VARCHAR2 DEFAULT NULL,
-      p_passphrase         VARCHAR2 DEFAULT NULL,
       p_delete_source      VARCHAR2 DEFAULT 'yes',
-      p_file_description   VARCHAR2 DEFAULT NULL
+      p_description   VARCHAR2 DEFAULT NULL
    );
-      
+
    PROCEDURE modify_feed (
-      p_file_group         VARCHAR2,
       p_file_label         VARCHAR2,
-      p_filename           VARCHAR2 DEFAULT NULL,
-      p_directory	   VARCHAR2 DEFAULT NULL,
-      p_arch_directory     VARCHAR2 DEFAULT NULL,
-      p_source_directory   VARCHAR2 DEFAULT NULL,
-      p_source_regexp      VARCHAR2 DEFAULT NULL,
+      p_file_group         VARCHAR2,
+      p_directory	   VARCHAR2,
+      p_source_directory   VARCHAR2,
+      p_source_regexp      VARCHAR2,
+      p_work_directory     VARCHAR2,
       p_owner              VARCHAR2 DEFAULT NULL,
       p_table              VARCHAR2 DEFAULT NULL,
+      p_filename           VARCHAR2 DEFAULT NULL,
       p_match_parameter    VARCHAR2 DEFAULT NULL,
       p_source_policy      VARCHAR2 DEFAULT NULL,
+      p_store_files_native VARCHAR2 DEFAULT NULL,
+      p_compress_method	   VARCHAR2 DEFAULT NULL,
+      p_encrypt_method	   VARCHAR2 DEFAULT NULL,
+      p_passphrase         VARCHAR2 DEFAULT NULL,
       p_required           VARCHAR2 DEFAULT NULL,
       p_min_bytes          NUMBER   DEFAULT NULL,
       p_max_bytes          NUMBER   DEFAULT NULL,
       p_reject_limit       NUMBER   DEFAULT NULL,
-      p_file_datestamp     VARCHAR2 DEFAULT NULL,
       p_baseurl            VARCHAR2 DEFAULT NULL,
-      p_passphrase         VARCHAR2 DEFAULT NULL,
       p_delete_source      VARCHAR2 DEFAULT NULL,
-      p_file_description   VARCHAR2 DEFAULT NULL
+      p_description   VARCHAR2 DEFAULT NULL
    );
       
    PROCEDURE delete_feed (
-      p_file_group         VARCHAR2,
       p_file_label         VARCHAR2
    );
 
    PROCEDURE create_extract (
-      p_file_group         VARCHAR2,
       p_file_label         VARCHAR2,
+      p_file_group         VARCHAR2,
       p_filename           VARCHAR2,
       p_object_owner       VARCHAR2,
       p_object_name        VARCHAR2,
       p_directory          VARCHAR2,
-      p_arch_directory     VARCHAR2,
-      p_min_bytes          NUMBER   DEFAULT 0,
-      p_max_bytes          NUMBER   DEFAULT 0,
+      p_work_directory     VARCHAR2,
       p_file_datestamp     VARCHAR2 DEFAULT NULL,
-      p_baseurl            VARCHAR2 DEFAULT NULL,
-      p_passphrase         VARCHAR2 DEFAULT NULL,
       p_dateformat         VARCHAR2 DEFAULT 'mm/dd/yyyy hh:mi:ss am',
-      p_timestampformat    VARCHAR2 DEFAULT 'mm/dd/yyyy hh:mi:ss:x:ff am',
+      p_tsformat           VARCHAR2 DEFAULT 'mm/dd/yyyy hh:mi:ss:x:ff am',
       p_delimiter          VARCHAR2 DEFAULT ',',
       p_quotechar          VARCHAR2 DEFAULT NULL,
       p_headers            VARCHAR2 DEFAULT 'yes',
-      p_file_description   VARCHAR2 DEFAULT NULL
+      p_min_bytes          NUMBER   DEFAULT 0,
+      p_max_bytes          NUMBER   DEFAULT 0,
+      p_baseurl            VARCHAR2 DEFAULT NULL,
+      p_reject_limit	   NUMBER   DEFAULT 0,
+      p_description        VARCHAR2 DEFAULT NULL
    );
       
    
    PROCEDURE modify_extract (
-      p_file_group         VARCHAR2,
       p_file_label         VARCHAR2,
+      p_file_group         VARCHAR2 DEFAULT NULL,
       p_filename           VARCHAR2 DEFAULT NULL,
       p_object_owner       VARCHAR2 DEFAULT NULL,
       p_object_name        VARCHAR2 DEFAULT NULL,
       p_directory          VARCHAR2 DEFAULT NULL,
-      p_arch_directory     VARCHAR2 DEFAULT NULL,
-      p_min_bytes          NUMBER DEFAULT NULL,
-      p_max_bytes          NUMBER DEFAULT NULL,
+      p_work_directory     VARCHAR2 DEFAULT NULL,
       p_file_datestamp     VARCHAR2 DEFAULT NULL,
-      p_baseurl            VARCHAR2 DEFAULT NULL,
-      p_passphrase         VARCHAR2 DEFAULT NULL,
       p_dateformat         VARCHAR2 DEFAULT NULL,
-      p_timestampformat    VARCHAR2 DEFAULT NULL,
+      p_tsformat           VARCHAR2 DEFAULT NULL,
       p_delimiter          VARCHAR2 DEFAULT NULL,
       p_quotechar          VARCHAR2 DEFAULT NULL,
       p_headers            VARCHAR2 DEFAULT NULL,
-      p_file_description   VARCHAR2 DEFAULT NULL,
-      p_mode               VARCHAR2 DEFAULT 'upsert'
+      p_min_bytes          NUMBER   DEFAULT NULL,
+      p_max_bytes          NUMBER   DEFAULT NULL,
+      p_baseurl            VARCHAR2 DEFAULT NULL,
+      p_reject_limit	   NUMBER   DEFAULT NULL,
+      p_description        VARCHAR2 DEFAULT NULL
    );   
       
    PROCEDURE delete_extract (
-      p_file_group         VARCHAR2,
       p_file_label         VARCHAR2
    );
    

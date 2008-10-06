@@ -13,11 +13,11 @@ IS
    BEGIN
       SELECT percent_diff
         INTO l_pct_diff
-        FROM files_obj_detail
+        FROM file_object_detail
        WHERE file_label = p_file_label
          AND processed_ts =
                          ( SELECT MAX( processed_ts )
-                            FROM files_obj_detail
+                            FROM file_object_detail
                            WHERE file_label = p_file_label );
 
       IF l_pct_diff > p_rej_limit
@@ -103,19 +103,19 @@ IS
    IS
       l_rows      BOOLEAN    := FALSE;
       o_label     file_label_ot;
-      o_ev        evolve_ot  := evolve_ot( p_module => 'process_files' );
+      o_ev        evolve_ot  := evolve_ot( p_module => 'process_group' );
    BEGIN
-      FOR c_fh_conf IN ( SELECT  file_label, label_type
+      FOR c_labels IN ( SELECT  file_label, label_type
                             FROM file_conf
                           WHERE lower(file_group) = lower(p_file_group)
                             AND REGEXP_LIKE( label_type, NVL( p_label_type, '.' ), 'i' )
-                        ORDER BY file_type DESC )
+                        ORDER BY label_type DESC )
       LOOP
          -- catch empty cursors
          l_rows := TRUE;
          
          -- use the factory to pull the concrete label_type
-         o_label  := trans_factory.get_file_label_ot( p_file_label => p_file_label );
+         o_label  := trans_factory.get_file_label_ot( p_file_label => c_labels.file_label );
          
          -- now process the file
          o_label.process;
@@ -137,7 +137,7 @@ IS
          ROLLBACK;
          o_ev.clear_app_info;
          RAISE;
-   END process_files;
+   END process_group;
 
 END trans_files;
 /

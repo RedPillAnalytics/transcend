@@ -152,26 +152,28 @@ IS
    END set_default_configs;
 
    PROCEDURE create_feed (
-      p_file_group         VARCHAR2,
       p_file_label         VARCHAR2,
-      p_filename           VARCHAR2,
+      p_file_group         VARCHAR2,
       p_directory	   VARCHAR2,
-      p_arch_directory     VARCHAR2,
       p_source_directory   VARCHAR2,
       p_source_regexp      VARCHAR2,
-      p_owner              VARCHAR2,
-      p_table              VARCHAR2,
+      p_work_directory     VARCHAR2,
+      p_owner              VARCHAR2 DEFAULT NULL,
+      p_table              VARCHAR2 DEFAULT NULL,
+      p_filename           VARCHAR2 DEFAULT NULL,
       p_match_parameter    VARCHAR2 DEFAULT 'i',
       p_source_policy      VARCHAR2 DEFAULT 'newest',
+      p_store_files_native VARCHAR2 DEFAULT 'no',
+      p_compress_method	   VARCHAR2 DEFAULT NULL,
+      p_encrypt_method	   VARCHAR2 DEFAULT NULL,
+      p_passphrase         VARCHAR2 DEFAULT NULL,
       p_required           VARCHAR2 DEFAULT 'yes',
       p_min_bytes          NUMBER   DEFAULT 0,
       p_max_bytes          NUMBER   DEFAULT 0,
       p_reject_limit       NUMBER   DEFAULT 100,
-      p_file_datestamp     VARCHAR2 DEFAULT NULL,
       p_baseurl            VARCHAR2 DEFAULT NULL,
-      p_passphrase         VARCHAR2 DEFAULT NULL,
       p_delete_source      VARCHAR2 DEFAULT 'yes',
-      p_file_description   VARCHAR2 DEFAULT NULL
+      p_description        VARCHAR2 DEFAULT NULL
    )
    IS
       e_dup_conf    EXCEPTION;
@@ -182,64 +184,91 @@ IS
 
       BEGIN
          INSERT INTO file_conf
-                ( file_label, file_group, file_type,
-                  file_description, object_owner,
-                  object_name, DIRECTORY, filename,
-                  in_bytes,
-                  max_bytes, file_datestamp, baseurl,
-                  passphrase, source_directory,
-                  source_regexp, match_parameter,
-                  source_policy,
-                  required,
-                  delete_source,
-                  reject_limit
-                )
-                VALUES ( p_file_label, p_file_group, 'feed',
-                         p_file_description, UPPER (p_owner),
-                         UPPER (p_table), UPPER(p_directory), p_filename,
-                         UPPER (p_arch_directory), p_min_bytes,
-                         p_max_bytes, p_file_datestamp, p_baseurl,
-                         p_passphrase, UPPER (p_source_directory),
-                         p_source_regexp, NVL (p_match_parameter, 'i'),
-                         NVL (p_source_policy, 'newest'),
-                         NVL (p_required, 'yes'),
-                         NVL (p_delete_source, 'yes'),
-                         NVL (p_reject_limit, 100)
-                       );
+		( file_label,
+		  file_group,
+		  label_type,
+		  directory,
+		  source_directory,
+		  source_regexp,
+		  work_directory,
+		  object_owner,
+		  object_name,
+		  filename,
+		  match_parameter,
+		  source_policy,
+		  store_files_native,
+		  compress_method,
+		  encrypt_method,
+		  passphrase,
+		  required,
+		  min_bytes,
+		  max_bytes,
+		  reject_limit,
+		  baseurl,
+		  delete_source,
+		  description
+		)
+	 VALUES ( p_file_label,
+		  p_file_group,
+		  'feed',
+		  p_directory,
+		  p_source_directory,
+		  p_source_regexp,
+		  p_work_directory,
+		  p_owner,
+		  p_table,
+		  p_filename,
+		  p_match_parameter,
+		  p_source_policy,
+		  p_store_files_native,
+		  p_compress_method,
+		  p_encrypt_method,
+		  p_passphrase,
+		  p_required,
+		  p_min_bytes,
+		  p_max_bytes,
+		  p_reject_limit,
+		  p_baseurl,
+		  p_delete_source,
+		  p_description
+                );
       EXCEPTION
          WHEN e_dup_conf
          THEN
-         evolve.raise_err ('dup_conf');
+            evolve.raise_err ('dup_conf');
       END;
       
       evolve.log_cnt_msg( SQL%ROWCOUNT, p_level => 4 );
-
-      o_feed := feed_ot ( p_file_group      => p_file_group,
-                	  p_file_label      => p_file_label );
+      
+      -- instantiate the feed_ot type so that the verify method is executed
+      -- this method contains all the business logic to see if parameters are valid
+      o_feed := feed_ot ( p_file_label      => p_file_label );
 
    END create_feed;
 
    PROCEDURE modify_feed (
-      p_file_group         VARCHAR2,
       p_file_label         VARCHAR2,
-      p_filename           VARCHAR2 DEFAULT NULL,
-      p_directory	   VARCHAR2 DEFAULT NULL,
-      p_arch_directory     VARCHAR2 DEFAULT NULL,
-      p_source_directory   VARCHAR2 DEFAULT NULL,
-      p_source_regexp      VARCHAR2 DEFAULT NULL,
+      p_file_group         VARCHAR2,
+      p_directory	   VARCHAR2,
+      p_source_directory   VARCHAR2,
+      p_source_regexp      VARCHAR2,
+      p_work_directory     VARCHAR2,
       p_owner              VARCHAR2 DEFAULT NULL,
       p_table              VARCHAR2 DEFAULT NULL,
+      p_filename           VARCHAR2 DEFAULT NULL,
       p_match_parameter    VARCHAR2 DEFAULT NULL,
       p_source_policy      VARCHAR2 DEFAULT NULL,
+      p_store_files_native VARCHAR2 DEFAULT NULL,
+      p_compress_method	   VARCHAR2 DEFAULT NULL,
+      p_encrypt_method	   VARCHAR2 DEFAULT NULL,
+      p_passphrase         VARCHAR2 DEFAULT NULL,
       p_required           VARCHAR2 DEFAULT NULL,
       p_min_bytes          NUMBER   DEFAULT NULL,
       p_max_bytes          NUMBER   DEFAULT NULL,
       p_reject_limit       NUMBER   DEFAULT NULL,
-      p_file_datestamp     VARCHAR2 DEFAULT NULL,
       p_baseurl            VARCHAR2 DEFAULT NULL,
-      p_passphrase         VARCHAR2 DEFAULT NULL,
       p_delete_source      VARCHAR2 DEFAULT NULL,
-      p_file_description   VARCHAR2 DEFAULT NULL
+      p_description        VARCHAR2 DEFAULT NULL
    )
    IS
       e_dup_conf    EXCEPTION;
@@ -250,61 +279,77 @@ IS
       
       -- if the constant NULL_VALUE is used, then the value should be set to null
       UPDATE file_conf
-         SET file_description =
+         SET file_label =
              CASE
-             WHEN p_file_description IS NULL
-             THEN file_description
-             WHEN p_file_description = null_value
+             WHEN p_file_label IS NULL
+             THEN file_label
+             WHEN p_file_label = null_value
              THEN NULL
-             ELSE p_file_description
+             ELSE p_file_label
              END,
-             filename =
+	     file_group =
+             CASE
+             WHEN p_file_group IS NULL
+             THEN file_group
+             WHEN p_file_group = null_value
+             THEN NULL
+             ELSE p_file_group
+             END,
+	     directory =
+             CASE
+             WHEN p_directory IS NULL
+             THEN directory
+             WHEN p_directory = null_value
+             THEN NULL
+             ELSE p_directory
+             END,
+	     source_directory =
+             CASE
+             WHEN p_source_directory IS NULL
+             THEN source_directory
+             WHEN p_source_directory = null_value
+             THEN NULL
+             ELSE p_source_directory
+             END,
+	     source_regexp =
+             CASE
+             WHEN p_source_regexp IS NULL
+             THEN source_regexp
+             WHEN p_source_regexp = null_value
+             THEN NULL
+             ELSE p_source_regexp
+             END,
+	     work_directory =
+             CASE
+             WHEN p_work_directory IS NULL
+             THEN work_directory
+             WHEN p_work_directory = null_value
+             THEN NULL
+             ELSE p_work_directory
+             END,
+	     object_owner =
+             CASE
+             WHEN p_owner IS NULL
+             THEN object_owner
+             WHEN p_owner = null_value
+             THEN NULL
+             ELSE p_owner
+             END,
+	     object_name =
+             CASE
+             WHEN p_table IS NULL
+             THEN object_name
+             WHEN p_table = null_value
+             THEN NULL
+             ELSE p_table
+             END,
+	     filename =
              CASE
              WHEN p_filename IS NULL
              THEN filename
              WHEN p_filename = null_value
              THEN NULL
              ELSE p_filename
-             END,
-             min_bytes =
-             CASE
-             WHEN p_min_bytes IS NULL
-             THEN min_bytes
-             WHEN p_min_bytes = null_value
-             THEN NULL
-             ELSE p_min_bytes
-             END,
-             max_bytes =
-             CASE
-             WHEN p_max_bytes IS NULL
-             THEN max_bytes
-             WHEN p_max_bytes = null_value
-             THEN NULL
-             ELSE p_max_bytes
-             END,
-             file_datestamp =
-             CASE
-             WHEN p_file_datestamp IS NULL
-             THEN file_datestamp
-             WHEN p_file_datestamp = null_value
-             THEN NULL
-             ELSE p_file_datestamp
-             END,
-             baseurl =
-             CASE
-             WHEN p_baseurl IS NULL
-             THEN baseurl
-             WHEN p_baseurl = null_value
-             THEN NULL
-             ELSE p_baseurl
-             END,
-             passphrase =
-             CASE
-             WHEN p_passphrase IS NULL
-             THEN passphrase
-             WHEN p_passphrase = null_value
-             THEN NULL
-             ELSE p_passphrase
              END,
              match_parameter =
              CASE
@@ -322,6 +367,38 @@ IS
              THEN NULL
              ELSE p_source_policy
              END,
+             store_files_native =
+             CASE
+             WHEN p_store_files_native IS NULL
+             THEN store_files_native
+             WHEN p_store_files_native = null_value
+             THEN NULL
+             ELSE p_store_files_native
+             END,
+             compress_method =
+             CASE
+             WHEN p_compress_method IS NULL
+             THEN compress_method
+             WHEN p_compress_method = null_value
+             THEN NULL
+             ELSE p_compress_method
+             END,
+             encrypt_method =
+             CASE
+             WHEN p_encrypt_method IS NULL
+             THEN encrypt_method
+             WHEN p_encrypt_method = null_value
+             THEN NULL
+             ELSE p_encrypt_method
+             END,
+             passphrase =
+             CASE
+             WHEN p_passphrase IS NULL
+             THEN passphrase
+             WHEN p_passphrase = null_value
+             THEN NULL
+             ELSE p_passphrase
+             END,
              required =
              CASE
              WHEN p_required IS NULL
@@ -330,13 +407,21 @@ IS
              THEN NULL
              ELSE p_required
              END,
-             delete_source =
+             min_bytes =
              CASE
-             WHEN p_delete_source IS NULL
-             THEN delete_source
-             WHEN p_delete_source = null_value
+             WHEN p_min_bytes IS NULL
+             THEN min_bytes
+             WHEN p_min_bytes = null_value
              THEN NULL
-             ELSE p_delete_source
+             ELSE p_min_bytes
+             END,
+             max_bytes =
+             CASE
+             WHEN p_max_bytes IS NULL
+             THEN max_bytes
+             WHEN p_max_bytes = null_value
+             THEN NULL
+             ELSE p_max_bytes
              END,
              reject_limit =
              CASE
@@ -346,20 +431,40 @@ IS
              THEN NULL
              ELSE p_reject_limit
              END,
-             modified_user = SYS_CONTEXT ('USERENV', 'SESSION_USER'),
+             baseurl =
+             CASE
+             WHEN p_baseurl IS NULL
+             THEN baseurl
+             WHEN p_baseurl = null_value
+             THEN NULL
+             ELSE p_baseurl
+             END,
+             delete_source =
+             CASE
+             WHEN p_delete_source IS NULL
+             THEN delete_source
+             WHEN p_delete_source = null_value
+             THEN NULL
+             ELSE p_delete_source
+             END,
+             description =
+             CASE
+             WHEN p_description IS NULL
+             THEN description
+             WHEN p_description = null_value
+             THEN NULL
+             ELSE p_description
+             END,
+	     modified_user = SYS_CONTEXT ('USERENV', 'SESSION_USER'),
              modified_dt = SYSDATE
-       WHERE file_label = LOWER (p_file_label)
-         AND file_group = LOWER (p_file_group);
+       WHERE file_label = LOWER (p_file_label);
 	     
        evolve.log_cnt_msg( SQL%ROWCOUNT, p_level => 4 );
 
-       o_feed := feed_ot ( p_file_group      => p_file_group,
-			   p_file_label      => p_file_label );
+       o_feed := feed_ot ( p_file_label      => p_file_label );
    END modify_feed;
 
-
    PROCEDURE delete_feed (
-      p_file_group         VARCHAR2,
       p_file_label         VARCHAR2
    )
    IS
@@ -367,32 +472,31 @@ IS
    BEGIN
 
       DELETE FROM file_conf
-       WHERE file_label = LOWER (p_file_label)
-         AND file_group = LOWER (p_file_group);
+       WHERE file_label = LOWER (p_file_label);
       
       evolve.log_cnt_msg( SQL%ROWCOUNT, p_level => 4 );
 
    END delete_feed;
       
    PROCEDURE create_extract (
-      p_file_group         VARCHAR2,
       p_file_label         VARCHAR2,
+      p_file_group         VARCHAR2,
       p_filename           VARCHAR2,
       p_object_owner       VARCHAR2,
       p_object_name        VARCHAR2,
       p_directory          VARCHAR2,
-      p_arch_directory     VARCHAR2,
-      p_min_bytes          NUMBER   DEFAULT 0,
-      p_max_bytes          NUMBER   DEFAULT 0,
+      p_work_directory     VARCHAR2,
       p_file_datestamp     VARCHAR2 DEFAULT NULL,
-      p_baseurl            VARCHAR2 DEFAULT NULL,
-      p_passphrase         VARCHAR2 DEFAULT NULL,
       p_dateformat         VARCHAR2 DEFAULT 'mm/dd/yyyy hh:mi:ss am',
-      p_timestampformat    VARCHAR2 DEFAULT 'mm/dd/yyyy hh:mi:ss:x:ff am',
+      p_tsformat           VARCHAR2 DEFAULT 'mm/dd/yyyy hh:mi:ss:x:ff am',
       p_delimiter          VARCHAR2 DEFAULT ',',
       p_quotechar          VARCHAR2 DEFAULT NULL,
       p_headers            VARCHAR2 DEFAULT 'yes',
-      p_file_description   VARCHAR2 DEFAULT NULL
+      p_min_bytes          NUMBER   DEFAULT 0,
+      p_max_bytes          NUMBER   DEFAULT 0,
+      p_baseurl            VARCHAR2 DEFAULT NULL,
+      p_reject_limit	   NUMBER   DEFAULT 0,
+      p_description        VARCHAR2 DEFAULT NULL
    )
    IS
       o_extract    extract_ot;
@@ -401,28 +505,45 @@ IS
       o_ev         evolve_ot   := evolve_ot (p_module      => 'create_extract');
    BEGIN
       BEGIN
-         INSERT INTO file_conf
-                (file_label, file_group, file_type,
-                  file_description, object_owner,
-                  object_name, DIRECTORY,
-                  filename, arch_directory,
-                  min_bytes, max_bytes,
-                  file_datestamp, baseurl, passphrase,
-                  DATEFORMAT,
-                  timestampformat,
-                  delimiter, quotechar,
+	 INSERT INTO file_conf
+		( file_label, 
+                  file_group, 
+                  label_type, 
+                  object_owner, 
+                  object_name, 
+                  directory, 
+                  filename, 
+                  work_directory, 
+                  min_bytes, 
+                  max_bytes, 
+                  reject_limit, 
+                  baseurl, 
+                  file_datestamp, 
+                  dateformat, 
+                  timestampformat, 
+                  delimiter, 
+                  quotechar, 
                   headers
-                )
-                VALUES ( p_file_label, p_file_group, 'extract',
-                         p_file_description, UPPER (p_object_owner),
-                         UPPER (p_object_name), UPPER (p_directory),
-                         p_filename, UPPER (p_arch_directory),
-                         p_min_bytes, p_max_bytes,
-                         p_file_datestamp, p_baseurl, p_passphrase,
-                         p_dateformat, p_timestampformat,
-                         p_delimiter, p_quotechar,
-                         p_headers
-                       );
+		)
+	 VALUES ( p_file_label,
+		  p_file_group, 
+		  'extract', 
+		  UPPER( p_object_owner ), 
+		  UPPER( p_object_name ), 
+		  UPPER( p_directory ), 
+		  p_filename, 
+		  UPPER( p_work_directory ),
+		  p_min_bytes, 
+		  p_max_bytes, 
+		  p_reject_limit, 
+		  p_baseurl, 
+		  p_file_datestamp, 
+		  p_dateformat, 
+		  p_tsformat, 
+		  p_delimiter, 
+		  p_quotechar, 
+		  p_headers
+		);
       EXCEPTION
          WHEN e_dup_conf
          THEN
@@ -430,66 +551,84 @@ IS
       END;
 
       -- instantiate an object to test it      
-      o_extract := extract_ot ( p_file_group      => p_file_group,
-				p_file_label      => p_file_label );
+      o_extract := extract_ot ( p_file_label      => p_file_label );
 
    END create_extract;
    
    PROCEDURE modify_extract (
-      p_file_group         VARCHAR2,
       p_file_label         VARCHAR2,
+      p_file_group         VARCHAR2 DEFAULT NULL,
       p_filename           VARCHAR2 DEFAULT NULL,
       p_object_owner       VARCHAR2 DEFAULT NULL,
       p_object_name        VARCHAR2 DEFAULT NULL,
       p_directory          VARCHAR2 DEFAULT NULL,
-      p_arch_directory     VARCHAR2 DEFAULT NULL,
-      p_min_bytes          NUMBER DEFAULT NULL,
-      p_max_bytes          NUMBER DEFAULT NULL,
+      p_work_directory     VARCHAR2 DEFAULT NULL,
       p_file_datestamp     VARCHAR2 DEFAULT NULL,
-      p_baseurl            VARCHAR2 DEFAULT NULL,
-      p_passphrase         VARCHAR2 DEFAULT NULL,
       p_dateformat         VARCHAR2 DEFAULT NULL,
-      p_timestampformat    VARCHAR2 DEFAULT NULL,
+      p_tsformat           VARCHAR2 DEFAULT NULL,
       p_delimiter          VARCHAR2 DEFAULT NULL,
       p_quotechar          VARCHAR2 DEFAULT NULL,
       p_headers            VARCHAR2 DEFAULT NULL,
-      p_file_description   VARCHAR2 DEFAULT NULL,
-      p_mode               VARCHAR2 DEFAULT 'upsert'
+      p_min_bytes          NUMBER   DEFAULT NULL,
+      p_max_bytes          NUMBER   DEFAULT NULL,
+      p_baseurl            VARCHAR2 DEFAULT NULL,
+      p_reject_limit	   NUMBER   DEFAULT NULL,
+      p_description        VARCHAR2 DEFAULT NULL
    )
    IS
-      l_owner      all_external_tables.owner%TYPE;
-      l_object     all_objects.object_name%TYPE;
-      l_dir_path   all_directories.directory_path%TYPE;
-      l_obj_name   VARCHAR2 (61)    := p_object_owner || '.' || p_object_name;
       o_extract    extract_ot;
       e_dup_conf   EXCEPTION;
       PRAGMA EXCEPTION_INIT (e_dup_conf, -1);
       o_ev         evolve_ot   := evolve_ot (p_module      => 'modify_extract');
    BEGIN
          UPDATE file_conf
-            SET file_description =
+            SET file_group =
                    CASE
-                      WHEN p_file_description IS NULL
-                         THEN file_description
-                      WHEN p_file_description = null_value
+                      WHEN p_file_group IS NULL
+                         THEN file_group
+                      WHEN p_file_group = null_value
                          THEN NULL
-                      ELSE p_file_description
+                      ELSE p_file_group
                    END,
-                min_bytes =
+                filename =
                    CASE
-                      WHEN p_min_bytes IS NULL
-                         THEN min_bytes
-                      WHEN p_min_bytes = null_value
+                      WHEN p_filename IS NULL
+                         THEN filename
+                      WHEN p_filename = null_value
                          THEN NULL
-                      ELSE p_min_bytes
+                      ELSE p_filename
                    END,
-                max_bytes =
+                object_owner =
                    CASE
-                      WHEN p_max_bytes IS NULL
-                         THEN max_bytes
-                      WHEN p_max_bytes = null_value
+                      WHEN p_object_owner IS NULL
+                         THEN object_owner
+                      WHEN p_object_owner = null_value
                          THEN NULL
-                      ELSE p_max_bytes
+                      ELSE p_object_owner
+                   END,
+                object_name =
+                   CASE
+                      WHEN p_object_name IS NULL
+                         THEN object_name
+                      WHEN p_object_name = null_value
+                         THEN NULL
+                      ELSE p_object_name
+                   END,
+                directory =
+                   CASE
+                      WHEN p_directory IS NULL
+                         THEN directory
+                      WHEN p_directory = null_value
+                         THEN NULL
+                      ELSE p_directory
+                   END,
+                work_directory =
+                   CASE
+                      WHEN p_work_directory IS NULL
+                         THEN work_directory
+                      WHEN p_work_directory = null_value
+                         THEN NULL
+                      ELSE p_work_directory
                    END,
                 file_datestamp =
                    CASE
@@ -499,37 +638,21 @@ IS
                          THEN NULL
                       ELSE p_file_datestamp
                    END,
-                baseurl =
-                   CASE
-                      WHEN p_baseurl IS NULL
-                         THEN baseurl
-                      WHEN p_baseurl = null_value
-                         THEN NULL
-                      ELSE p_baseurl
-                   END,
-                passphrase =
-                   CASE
-                      WHEN p_passphrase IS NULL
-                         THEN passphrase
-                      WHEN p_passphrase = null_value
-                         THEN NULL
-                      ELSE p_passphrase
-                   END,
-                DATEFORMAT =
+                dateformat =
                    CASE
                       WHEN p_dateformat IS NULL
-                         THEN DATEFORMAT
+                         THEN dateformat
                       WHEN p_dateformat = null_value
                          THEN NULL
                       ELSE p_dateformat
                    END,
                 timestampformat =
                    CASE
-                      WHEN p_timestampformat IS NULL
+                      WHEN p_tsformat IS NULL
                          THEN timestampformat
-                      WHEN p_timestampformat = null_value
+                      WHEN p_tsformat = null_value
                          THEN NULL
-                      ELSE p_timestampformat
+                      ELSE p_tsformat
                    END,
                 delimiter =
                    CASE
@@ -555,27 +678,64 @@ IS
                          THEN NULL
                       ELSE p_headers
                    END,
+                min_bytes =
+                   CASE
+                      WHEN p_min_bytes IS NULL
+                         THEN min_bytes
+                      WHEN p_min_bytes = null_value
+                         THEN NULL
+                      ELSE p_min_bytes
+                   END,
+                max_bytes =
+                   CASE
+                      WHEN p_max_bytes IS NULL
+                         THEN max_bytes
+                      WHEN p_max_bytes = null_value
+                         THEN NULL
+                      ELSE p_max_bytes
+                   END,
+                baseurl =
+                   CASE
+                      WHEN p_baseurl IS NULL
+                         THEN baseurl
+                      WHEN p_baseurl = null_value
+                         THEN NULL
+                      ELSE p_baseurl
+                   END,
+                reject_limit =
+                   CASE
+                      WHEN p_reject_limit IS NULL
+                         THEN reject_limit
+                      WHEN p_reject_limit = null_value
+                         THEN NULL
+                      ELSE p_reject_limit
+                   END,
+                description =
+                   CASE
+                      WHEN p_description IS NULL
+                         THEN description
+                      WHEN p_description = null_value
+                         THEN NULL
+                      ELSE p_description
+                   END,
                 modified_user = SYS_CONTEXT ('USERENV', 'SESSION_USER'),
                 modified_dt = SYSDATE
           WHERE file_label = LOWER (p_file_label)
             AND file_group = LOWER (p_file_group);
 		   
       -- instantiate the object to verify it
-      o_extract := extract_ot ( p_file_group      => p_file_group,
-				p_file_label      => p_file_label );
+      o_extract := extract_ot ( p_file_label      => p_file_label );
 		
    END modify_extract;
    
    PROCEDURE delete_extract (
-      p_file_group         VARCHAR2,
       p_file_label         VARCHAR2
    )
    IS
       o_ev         evolve_ot   := evolve_ot (p_module      => 'delete_extract');
    BEGIN
       DELETE FROM file_conf
-       WHERE file_label = LOWER (p_file_label)
-         AND file_group = LOWER (p_file_group);
+       WHERE file_label = LOWER (p_file_label);
 
    END delete_extract;
 

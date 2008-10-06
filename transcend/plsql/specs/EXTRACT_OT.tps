@@ -8,7 +8,7 @@ CREATE OR REPLACE TYPE extract_ot UNDER file_label_ot(
    file_url	    VARCHAR2( 1000 ),
    CONSTRUCTOR FUNCTION extract_ot(
       p_file_label   VARCHAR2,
-      p_directory    VARCHAR2
+      p_directory    VARCHAR2 DEFAULT NULL 
    )
       RETURN SELF AS RESULT,
    OVERRIDING MEMBER PROCEDURE verify,

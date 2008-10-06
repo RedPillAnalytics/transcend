@@ -2,7 +2,7 @@ CREATE OR REPLACE TYPE BODY extract_ot
 AS
    CONSTRUCTOR FUNCTION extract_ot(
       p_file_label   VARCHAR2,
-      p_directory    VARCHAR2
+      p_directory    VARCHAR2 DEFAULT NULL 
    )
       RETURN SELF AS RESULT
    AS

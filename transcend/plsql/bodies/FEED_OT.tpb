@@ -4,14 +4,14 @@ AS
    -- some of the attributes can be overriden: both SOURCE_DIRECTORY and WORK_DIRECTORY
    CONSTRUCTOR FUNCTION feed_ot(
       p_file_label	   VARCHAR2,
-      p_source_directory   VARCHAR2
+      p_source_directory   VARCHAR2 DEFAULT NULL
    )
       RETURN SELF AS RESULT
    AS
    BEGIN
       BEGIN
          -- load all the feed attributes
-         SELECT file_label, file_group, label_type, object_owner, object_name, DIRECTORY,
+         SELECT file_label, file_group, label_type, upper( object_owner ), UPPER( object_name ), directory,
                 filename,  CASE WHEN work_directory IS NOT NULL AND lower(work_directory) <> lower(source_directory)
 		                THEN work_directory
 		                ELSE NULL 
@@ -19,7 +19,7 @@ AS
                 passphrase, source_directory, source_regexp, match_parameter, source_policy,
                 required, delete_source, reject_limit, lob_type, store_files_native,
 		characterset
-           INTO SELF.file_label, SELF.file_group, SELF.label_type, SELF.object_owner, SELF.object_name, SELF.DIRECTORY,
+           INTO SELF.file_label, SELF.file_group, SELF.label_type, SELF.object_owner, SELF.object_name, SELF.directory,
                 SELF.filename, SELF.work_directory, SELF.min_bytes, SELF.max_bytes, SELF.baseurl,
                 SELF.passphrase, SELF.source_directory, SELF.source_regexp, SELF.match_parameter, SELF.source_policy,
                 SELF.required, SELF.delete_source, SELF.reject_limit, SELF.lob_type, SELF.store_files_native,

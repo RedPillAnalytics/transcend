@@ -1433,7 +1433,7 @@ IS
 	   delete_source       VARCHAR2(3),
 	   reject_limit        NUMBER,
 	   dateformat	       VARCHAR2(30),
-	   timestampformat     VARCHAR2(30),
+	   tsformat            VARCHAR2(30),
 	   delimiter	       VARCHAR2(3),
 	   quotechar	       VARCHAR2(2),
 	   headers	       VARCHAR2(3),
