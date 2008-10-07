@@ -9,7 +9,7 @@ AS
       p_filename           VARCHAR2,
       p_source_directory   VARCHAR2 DEFAULT NULL,
       p_source_filename    VARCHAR2 DEFAULT NULL,
-      p_file_dt            DATE      DEFAULT NULL
+      p_file_dt            DATE     DEFAULT NULL
    )
       RETURN NUMBER 
    AS
@@ -185,7 +185,7 @@ AS
       PRAGMA EXCEPTION_INIT (e_no_object, -942);
       e_no_files         EXCEPTION;
       PRAGMA EXCEPTION_INIT (e_no_files, -1756);
-      o_ev               evolve_ot      := evolve_ot (p_module => 'audit_object');
+      o_ev               evolve_ot      := evolve_ot (p_module => 'file_label_ot.audit_object');
    BEGIN
       -- type object which handles logging and application registration for instrumentation purposes
       -- defaults to registering with DBMS_APPLICATION_INFO

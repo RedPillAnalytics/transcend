@@ -51,7 +51,7 @@ AS
    IS
       l_dir_path    all_directories.directory_path%TYPE;
       l_directory   all_external_tables.default_directory_name%TYPE;
-      o_ev   evolve_ot := evolve_ot( p_module => 'confirm' );
+      o_ev   evolve_ot := evolve_ot( p_module => 'extract_ot.verify' );
    BEGIN
       -- check to see if the directories are legitimate
       -- if they aren't, the GET_DIR_PATH function raises an error
@@ -81,11 +81,11 @@ AS
       l_blocksize   NUMBER;
       l_exists      BOOLEAN                             DEFAULT FALSE;
       l_file_dt     DATE;
-      l_detail_id   NUMBER;
       l_message     notification_events.MESSAGE%TYPE;
       l_curr_df     nls_session_parameters.VALUE%TYPE;
       l_curr_tsf    nls_session_parameters.VALUE%TYPE;
-      o_ev          evolve_ot                           := evolve_ot( p_module => 'process' );
+      l_detail_id   file_detail.file_detail_id%type;
+      o_ev          evolve_ot                           := evolve_ot( p_module => 'extract_ot.process' );
    BEGIN
       -- get current date format
       SELECT VALUE
@@ -140,12 +140,12 @@ AS
 
       -- this writes auditing information in the repository
       -- also stores the file in the database
-      SELF.archive ( p_loc_directory        => nvl( work_directory, directory),
-                     p_loc_filename         => self.filename,
-                     p_directory            => self.directory,
-                     p_filename             => self.filename,
-		     p_file_dt              => l_file_dt
-                   );
+      l_detail_id := SELF.archive ( p_loc_directory        => nvl( work_directory, directory),
+                                    p_loc_filename         => self.filename,
+                                    p_directory            => self.directory,
+                                    p_filename             => self.filename,
+		                    p_file_dt              => l_file_dt
+                                  );
       
       
       -- if there is a work_directory, then the file is there

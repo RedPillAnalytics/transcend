@@ -2,37 +2,34 @@ CREATE OR REPLACE TYPE BODY file_detail_ot
 AS
 
    -- constructor function for the FILE_DETAIL_OT object type
-   CONSTRUCTOR FUNCTION file_detail_ot ( p_file_detail_id   NUMBER,
-                                         p_directory        VARCHAR2(30) )
+   CONSTRUCTOR FUNCTION file_detail_ot ( 
+      p_file_detail_id   NUMBER,
+      p_directory        VARCHAR2 DEFAULT NULL 
+   )
       RETURN SELF AS RESULT
    AS
    BEGIN
       BEGIN
          -- load all the feed attributes
-         SELECT file_detail_id, file_label, file_group, file_type, 
-                directory, filename, num_bytes, num_lines, file_dt, 
-                store_files_native, compress_method, 
+         SELECT file_detail_id, file_label, file_group, label_type, 
+                nvl( p_directory, directory), filename, source_directory, source_filename,
+                num_bytes, num_lines, file_dt, 
+                store_original_files, compress_method, 
                 encrypt_method, passphrase, label_file,
                 processed_ts, session_id
            INTO self.file_detail_id, SELF.file_label, SELF.file_group, SELF.file_type,
                 SELF.directory, SELF.filename, SELF.source_directory, SELF.source_filename,
-                SELF.work_directory, SELF.num_bytes, SELF.num_lines, SELF.file_dt, 
-                SELF.store_files_native, SELF.compress_method,
-                SELF.encrypt_method, SELF.passphrase, SELF.FILE_CLOB, SELF.label_file,
-                SELF.processed_ts, SELF.session_id              
-           FROM (SELECT file_detail_id, file_label, file_group, file_type,
-                        nvl( p_directory, directory ), source_filename filename,
-                        num_bytes, num_lines, file_dt,
-                        store_files_native, compress_method,
-                        encrypt_method, passphrase, label_file,
-                        processed_ts, session_id
-                   FROM files_detail
-                  WHERE file_detail_id = p_file_detail_id);
+                SELF.num_bytes, SELF.num_lines, SELF.file_dt, 
+                SELF.store_original_files, SELF.compress_method,
+                SELF.encrypt_method, SELF.passphrase, SELF.label_file,
+                SELF.processed_ts, SELF.session_id
+           FROM file_detail
+          WHERE file_detail_id = p_file_detail_id;
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
             -- if there is no record found for this file_lable, raise an exception
-            evolve.raise_err ('no_feed', p_file_label);
+            evolve.raise_err ('no_file_detail', p_file_detail_id);
       END;
 
       -- run the business logic to make sure everything works out fine
@@ -45,7 +42,7 @@ AS
    IS
       l_dir_path    all_directories.directory_path%TYPE;
       l_directory   all_external_tables.default_directory_name%TYPE;
-      o_ev          evolve_ot                                         := evolve_ot (p_module => 'verify_file_detail');
+      o_ev          evolve_ot                                         := evolve_ot (p_module => 'file_detail_ot.verify');
    BEGIN
       -- do checks to make sure all the provided information is legitimate
 
@@ -58,21 +55,21 @@ AS
       o_ev.clear_app_info;
    END verify;
 
-   MEMBER PROCEDURE audit(
+   MEMBER PROCEDURE inspect(
       p_max_bytes   NUMBER,
       p_min_bytes   NUMBER
    )
    IS
-      o_ev          evolve_ot    := evolve_ot (p_module => 'audit_file_detail');
+      o_ev          evolve_ot    := evolve_ot (p_module => 'file_detail_ot.inspect');
    BEGIN
 
       -- check and make sure the file sizes are legitimate
-      IF self.file_size >= p_max_bytes AND p_max_bytes IS NOT NULL
+      IF self.num_bytes >= p_max_bytes AND p_max_bytes IS NOT NULL
       THEN
 	 o_ev.change_action( 'file too large');
          o_ev.send( p_label => file_label );
 	 evolve.raise_err( 'file_too_large' );
-      ELSIF self.file_size < p_min_bytes AND p_max_bytes IS NOT NULL
+      ELSIF self.num_bytes < p_min_bytes AND p_max_bytes IS NOT NULL
       THEN
 	 o_ev.change_action( 'file too small');
          o_ev.send( p_label => file_label );
@@ -81,13 +78,12 @@ AS
 
       -- reset the evolve_object
       o_ev.clear_app_info;
-   END audit;
+   END inspect;
 
    -- retrieve a file from archive
    MEMBER PROCEDURE unarchive
    AS
       l_blob            BLOB;
-      l_filename        files_detail.filename%type;
       l_max_linesize    NUMBER                  := 32767;
       l_buffersize      NUMBER;
       l_buffer          RAW(32767);

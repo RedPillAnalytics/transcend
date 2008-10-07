@@ -47,7 +47,7 @@ AS
    IS
       l_dir_path    all_directories.directory_path%TYPE;
       l_directory   all_external_tables.default_directory_name%TYPE;
-      o_ev          evolve_ot                                         := evolve_ot (p_module => 'verify');
+      o_ev          evolve_ot                                         := evolve_ot (p_module => 'feed_ot.verify');
    BEGIN
       -- do checks to make sure all the provided information is legitimate
       -- check to see if the directories are legitimate
@@ -124,7 +124,7 @@ AS
             THEN FALSE
          ELSE TRUE
       END;
-      l_encrypt_ind    VARCHAR2(1)   := CASE l_encrypt_ind WHEN TRUE THEN 'Y' ELSE 'N' END;
+      l_encrypt_yn      VARCHAR2(1) := CASE l_encrypt_ind WHEN TRUE THEN 'Y' ELSE 'N' END;
       l_filename_yn	VARCHAR2(1) := CASE l_filename_ind WHEN TRUE THEN 'Y' ELSE 'N' END;
       -- is there a work directory or not
       l_workdir_exists  BOOLEAN				   := CASE WHEN self.work_directory IS NULL THEN FALSE ELSE TRUE END;
@@ -146,11 +146,12 @@ AS
       l_loc_list	VARCHAR2(2000);
       l_url_list	VARCHAR2(2000);
       l_rows_delete	BOOLEAN		:= FALSE;
+      o_detail          file_detail_ot;
       e_no_files        EXCEPTION;
       PRAGMA EXCEPTION_INIT (e_no_files, -1756);
       e_no_loc_file    EXCEPTION;
       PRAGMA EXCEPTION_INIT (e_no_loc_file, -29280);
-      o_ev              evolve_ot                          := evolve_ot (p_module => 'process');
+      o_ev              evolve_ot                          := evolve_ot (p_module => 'feed_ot.process');
    BEGIN
       evolve.log_msg ('Processing feed "' || file_label || '"', 3);
 
@@ -233,7 +234,7 @@ AS
                          WHEN l_filename_yn = 'N' AND targ_file_ind = 'Y'
                          THEN decrypt_filename
 			 ELSE NULL END filename
-                    FROM (SELECT object_name, object_owner, source_filename, file_dt, file_size, targ_file_ind, expand_filename,
+                    FROM (SELECT object_name, object_owner, source_filename, file_dt, file_size, targ_file_ind, decrypt_filename,
                            
                            -- rank gives us a number to use to auto increment files in case SOURCE_POLICY attribute is 'all'
                            ROW_NUMBER() OVER (PARTITION BY 1 ORDER BY targ_file_ind DESC, source_filename) file_number,
@@ -244,14 +245,14 @@ AS
                            COUNT (*) OVER (PARTITION BY targ_file_ind) targ_file_cnt,
                                  
                            -- get the filename we expect after a file decryption
-                           CASE WHEN l_encrypted_yn = 'Y' THEN REGEXP_REPLACE( decrypt_filename, '(.+)(\.)([^\.]+$)', '\1', 1, 0, 'i' ) ELSE decrypt_filename END pre_final_filename
+                           CASE WHEN l_encrypt_yn = 'Y' THEN REGEXP_REPLACE( decrypt_filename, '(.+)(\.)([^\.]+$)', '\1', 1, 0, 'i' ) ELSE decrypt_filename END pre_final_filename
                       FROM (SELECT              
 				   -- the DIR_LIST table has a filename column
                                    -- we also have a filename attribute
                                    -- RENAME the filename from the DIR_LIST table as SOURCE_FILENAME
                                    filename source_filename,
                                    -- get the filename we expect after a file expansion
-                                   CASE WHEN l_compressed_yn = 'Y' THEN REGEXP_REPLACE( filename, '(.+)(\.)([^\.]+$)', '\1', 1, 0, 'i' ) ELSE filename END decrypt_filename,
+                                   CASE WHEN l_compress_yn = 'Y' THEN REGEXP_REPLACE( filename, '(.+)(\.)([^\.]+$)', '\1', 1, 0, 'i' ) ELSE filename END decrypt_filename,
                                    -- URL location if the target location is web enabled
                                    -- this is for notification purposes to send links for received files
                                    SELF.baseurl baseurl, 
@@ -360,10 +361,12 @@ AS
          THEN
 	    -- this writes auditing information in the repository
 	    -- also stores the file in the database
-            l_detail_id := SELF.archive ( p_filename             => l_filename,
-			                  p_source_filename      => l_working_filename,
-			                  p_num_bytes            => nvl( l_filesize, c_dir_list.file_size ),
-			                  p_num_lines            => l_numlines,
+            l_detail_id := SELF.archive ( p_loc_directory        => l_source_directory,
+                                          p_loc_filename         => c_dir_list.pre_final_filename,
+                                          p_directory            => self.directory,
+                                          p_filename             => c_dir_list.filename,
+                                          p_source_directory     => self.source_directory,
+			                  p_source_filename      => c_dir_list.source_filename,
 			                  p_file_dt              => c_dir_list.file_dt
                                         );
          -- for those files that are stored before conversion,
@@ -373,7 +376,7 @@ AS
          THEN 
             -- need to modify the information for the archive file
             -- what we currently have stored is information about a compressed or encrypted file
-            SELF.modify_archive ( p_file_detail_id      => l_file_detail_id,
+            SELF.modify_archive ( p_file_detail_id      => l_detail_id,
                                   p_loc_directory       => l_source_directory,
                                   p_loc_filename        => c_dir_list.pre_final_filename
                                 );            
@@ -391,11 +394,11 @@ AS
             l_targ_file_cnt := c_dir_list.targ_file_cnt;
 
             -- need to instantiate a FILE_DETAIL_OT object
-            o_detail := file_detail_ot( p_file_detail_id => l_file_detail_id );
+            o_detail := file_detail_ot( p_file_detail_id => l_detail_id );
             
             -- check the business logic and make sure the file passes everything required
-            o_detail.AUDIT( p_max_bytes     => self.max_bytes,
-                            p_min_bytes     => self.min_bytes );
+            o_detail.inspect( p_max_bytes     => self.max_bytes,
+                              p_min_bytes     => self.min_bytes );
 
             -- need to get the total amount of lines
             l_sum_numlines := l_sum_numlines + o_detail.num_lines;
@@ -501,7 +504,7 @@ AS
             -- get the total number of lines for all the target files
             
             o_ev.change_action ('audit external table');
-            SELF.audit_object (p_num_lines => l_sum_numlines);
+            SELF.audit_object (p_file_detail_id => l_detail_id);
          WHEN l_rows_dirlist AND l_targ_file_cnt = 0
               -- matching files found, but there were no location files
               -- there were files found at the OS level

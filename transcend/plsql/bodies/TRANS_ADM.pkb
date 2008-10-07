@@ -5,19 +5,19 @@ IS
    BEGIN
       -- set the notification events
       evolve_adm.set_notification_event
-         ('audit_file_detail',
+         ('file_detail_ot.inspect',
           'file too large',
           'File outside size threshholds',
           'The file referenced below is larger than the configured threshhold:'
          );
       evolve_adm.set_notification_event
-         ('audit_file_detail',
+         ('file_detail_ot.inspect',
           'file too small',
           'File outside size threshholds',
           'The file referenced below is smaller than the configured threshhold:'
          );
       evolve_adm.set_notification_event
-         ('audit_file_detail',
+         ('file_label_ot.audit_file',
           'reject limit',
           'Too many rejected rows',
           'The file referenced below has too many rejected rows:'
@@ -106,6 +106,10 @@ IS
       evolve_adm.set_error_conf
          (p_name         => 'no_extract',
           p_message      => 'The specified extract has not been configured'
+         );
+      evolve_adm.set_error_conf
+         (p_name         => 'no_file_detail',
+          p_message      => 'The specified file_detail record does not exist'
          );
       evolve_adm.set_error_conf
                  (p_name         => 'no_mapping',
