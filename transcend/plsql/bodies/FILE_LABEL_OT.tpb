@@ -171,14 +171,13 @@ AS
    END modify_archive;
    
    -- audits information about external tables after the file(s) have been put in place
-   MEMBER PROCEDURE audit_object ( p_file_detail_id NUMBER )
+   MEMBER PROCEDURE audit_object ( p_num_lines NUMBER )
    IS
       l_num_rows         NUMBER         := 0;
       l_pct_miss         NUMBER;
       l_detail_id        file_detail.file_detail_id%type;
       l_sql              VARCHAR2 (100);
       l_obj_name         VARCHAR2 (61)  := SELF.object_owner || '.' || SELF.object_name;
-      l_numlines         NUMBER;
       e_data_cartridge   EXCEPTION;
       PRAGMA EXCEPTION_INIT (e_data_cartridge, -29913);
       e_no_object         EXCEPTION;
@@ -193,14 +192,6 @@ AS
       l_sql := 'SELECT count(*) FROM ' || l_obj_name;
       evolve.log_msg ('Count SQL: ' || l_sql, 3);
       
-      -- get the number of lines in the file
-      -- i get this by looking at file_detail
-      
-      SELECT num_lines
-        INTO l_numlines
-        FROM file_detail
-       WHERE file_detail_id = p_file_detail_id;
-
       IF NOT evolve.is_debugmode
       THEN
          BEGIN
@@ -233,7 +224,7 @@ AS
 
          BEGIN
             -- calculate the percentage difference
-            l_pct_miss := 100 - ((l_num_rows / l_numlines) * 100);
+            l_pct_miss := 100 - ((l_num_rows / p_num_lines) * 100);
             
             IF l_pct_miss > reject_limit
             THEN
@@ -255,7 +246,7 @@ AS
                       object_owner, object_name, num_rows, num_lines, percent_diff
                      )
               VALUES (file_object_detail_seq.NEXTVAL, SELF.label_type, SELF.file_label, SELF.file_group,
-                      SELF.object_owner, SELF.object_name, l_num_rows, l_numlines, l_pct_miss
+                      SELF.object_owner, SELF.object_name, l_num_rows, p_num_lines, l_pct_miss
                      );
       END IF;
 

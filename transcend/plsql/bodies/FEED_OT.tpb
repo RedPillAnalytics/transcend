@@ -504,7 +504,7 @@ AS
             -- get the total number of lines for all the target files
             
             o_ev.change_action ('audit external table');
-            SELF.audit_object (p_file_detail_id => l_detail_id);
+            SELF.audit_object ( p_num_lines => l_sum_numlines );
          WHEN l_rows_dirlist AND l_targ_file_cnt = 0
               -- matching files found, but there were no location files
               -- there were files found at the OS level

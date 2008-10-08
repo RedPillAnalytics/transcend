@@ -36,7 +36,7 @@ CREATE OR REPLACE TYPE file_label_ot AUTHID CURRENT_USER AS object(
       p_filename           VARCHAR2 DEFAULT NULL,
       p_file_dt            DATE     DEFAULT NULL
    ),
-   MEMBER PROCEDURE audit_object ( p_file_detail_id NUMBER ),
+   MEMBER PROCEDURE audit_object ( p_num_lines NUMBER ),
    MEMBER PROCEDURE announce(
       p_files_url        VARCHAR2,
       p_num_lines   	 NUMBER,
