@@ -173,7 +173,7 @@ IS
       p_filename           VARCHAR2 DEFAULT NULL,
       p_match_parameter    VARCHAR2 DEFAULT 'i',
       p_source_policy      VARCHAR2 DEFAULT 'newest',
-      p_store_files_native VARCHAR2 DEFAULT 'no',
+      p_store_original     VARCHAR2 DEFAULT 'no',
       p_compress_method	   VARCHAR2 DEFAULT NULL,
       p_encrypt_method	   VARCHAR2 DEFAULT NULL,
       p_passphrase         VARCHAR2 DEFAULT NULL,
@@ -230,7 +230,7 @@ IS
 		  p_filename,
 		  p_match_parameter,
 		  p_source_policy,
-		  p_store_original_files,
+		  p_store_original,
 		  p_compress_method,
 		  p_encrypt_method,
 		  p_passphrase,
@@ -268,7 +268,7 @@ IS
       p_filename           VARCHAR2 DEFAULT NULL,
       p_match_parameter    VARCHAR2 DEFAULT NULL,
       p_source_policy      VARCHAR2 DEFAULT NULL,
-      p_store_files_native VARCHAR2 DEFAULT NULL,
+      p_store_original     VARCHAR2 DEFAULT NULL,
       p_compress_method	   VARCHAR2 DEFAULT NULL,
       p_encrypt_method	   VARCHAR2 DEFAULT NULL,
       p_passphrase         VARCHAR2 DEFAULT NULL,
@@ -377,13 +377,13 @@ IS
              THEN NULL
              ELSE p_source_policy
              END,
-             store_files_native =
+             store_original_files =
              CASE
-             WHEN p_store_files_native IS NULL
-             THEN store_files_native
-             WHEN p_store_files_native = null_value
+             WHEN p_store_original IS NULL
+             THEN store_original_files
+             WHEN p_store_original = null_value
              THEN NULL
-             ELSE p_store_files_native
+             ELSE p_store_original
              END,
              compress_method =
              CASE

@@ -20,7 +20,7 @@ IS
       p_filename           VARCHAR2 DEFAULT NULL,
       p_match_parameter    VARCHAR2 DEFAULT 'i',
       p_source_policy      VARCHAR2 DEFAULT 'newest',
-      p_store_files_native VARCHAR2 DEFAULT 'no',
+      p_store_original     VARCHAR2 DEFAULT 'no',
       p_compress_method	   VARCHAR2 DEFAULT NULL,
       p_encrypt_method	   VARCHAR2 DEFAULT NULL,
       p_passphrase         VARCHAR2 DEFAULT NULL,
@@ -30,7 +30,7 @@ IS
       p_reject_limit       NUMBER   DEFAULT 100,
       p_baseurl            VARCHAR2 DEFAULT NULL,
       p_delete_source      VARCHAR2 DEFAULT 'yes',
-      p_description   VARCHAR2 DEFAULT NULL
+      p_description        VARCHAR2 DEFAULT NULL
    );
 
    PROCEDURE modify_feed (
@@ -45,7 +45,7 @@ IS
       p_filename           VARCHAR2 DEFAULT NULL,
       p_match_parameter    VARCHAR2 DEFAULT NULL,
       p_source_policy      VARCHAR2 DEFAULT NULL,
-      p_store_files_native VARCHAR2 DEFAULT NULL,
+      p_store_original     VARCHAR2 DEFAULT NULL,
       p_compress_method	   VARCHAR2 DEFAULT NULL,
       p_encrypt_method	   VARCHAR2 DEFAULT NULL,
       p_passphrase         VARCHAR2 DEFAULT NULL,
