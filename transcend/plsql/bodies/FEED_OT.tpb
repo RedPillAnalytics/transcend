@@ -279,7 +279,7 @@ AS
 		   ORDER BY targ_file_ind ASC))
       LOOP
 
-         evolve.log_msg ('Processing file ' || l_source_filename || ' in directory '||l_source_directory );
+         evolve.log_msg ('Processing file ' || c_dir_list.source_filename || ' in directory '||l_source_directory );
 
          -- catch empty cursor sets
          l_rows_dirlist := TRUE;
@@ -349,8 +349,6 @@ AS
 				   p_passphrase => self.passphrase, 
 				   p_method     => self.encrypt_method );
 	 END IF;
-         
-         
 
 	 
          o_ev.change_action ( 'archive feed' );
