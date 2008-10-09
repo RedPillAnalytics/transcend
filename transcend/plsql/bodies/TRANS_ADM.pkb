@@ -253,7 +253,7 @@ IS
       -- instantiate the feed_ot type so that the verify method is executed
       -- this method contains all the business logic to see if parameters are valid
       o_feed := feed_ot ( p_file_label      => p_file_label );
-
+      o_ev.clear_app_info;
    END create_feed;
 
    PROCEDURE modify_feed (
@@ -472,6 +472,7 @@ IS
        evolve.log_cnt_msg( SQL%ROWCOUNT, p_level => 4 );
 
        o_feed := feed_ot ( p_file_label      => p_file_label );
+       o_ev.clear_app_info;
    END modify_feed;
 
    PROCEDURE delete_feed (
@@ -485,6 +486,7 @@ IS
        WHERE file_label = LOWER (p_file_label);
       
       evolve.log_cnt_msg( SQL%ROWCOUNT, p_level => 4 );
+      o_ev.clear_app_info;
 
    END delete_feed;
       
@@ -562,6 +564,7 @@ IS
 
       -- instantiate an object to test it      
       o_extract := extract_ot ( p_file_label      => p_file_label );
+      o_ev.clear_app_info;
 
    END create_extract;
    
@@ -735,6 +738,7 @@ IS
 		   
       -- instantiate the object to verify it
       o_extract := extract_ot ( p_file_label      => p_file_label );
+      o_ev.clear_app_info;
 		
    END modify_extract;
    
@@ -746,6 +750,8 @@ IS
    BEGIN
       DELETE FROM file_conf
        WHERE file_label = LOWER (p_file_label);
+      
+      o_ev.clear_app_info;
 
    END delete_extract;
 
@@ -811,7 +817,7 @@ IS
 
       -- initiating the object will run the business logic checks      
       o_map := trans_factory.get_mapping_ot (p_mapping => p_mapping);
-
+      o_ev.clear_app_info;
    EXCEPTION
       WHEN others
       THEN
@@ -1058,10 +1064,9 @@ IS
 
          -- now use the dimension object to validate the new structure
          -- just constructing the object calls the CONFIRM_OBJECTS procedure
-         BEGIN
-            o_map := trans_factory.get_mapping_ot (p_mapping => p_mapping);
-         END;
-
+         o_map := trans_factory.get_mapping_ot (p_mapping => p_mapping);
+             
+         o_ev.clear_app_info;
    END modify_mapping;
 
    
@@ -1075,6 +1080,8 @@ IS
       -- if a delete is specifically requested, then do a delete
       DELETE FROM mapping_conf
        WHERE mapping_name = LOWER (p_mapping);
+      
+      o_ev.clear_app_info;
 
    END delete_mapping;   
 
@@ -1101,6 +1108,8 @@ IS
       END;
       
       delete_mapping( l_mapping );
+      
+      o_ev.clear_app_info;
 
    END delete_mapping;   
 
@@ -1165,6 +1174,9 @@ IS
                       p_concurrent          => p_concurrent
                      );
       o_dim := trans_factory.get_mapping_ot (p_mapping);
+      
+      o_ev.clear_app_info;
+
    END create_dimension;
 
    PROCEDURE modify_dimension (
@@ -1328,6 +1340,8 @@ IS
                       p_statistics          => p_statistics,
                       p_concurrent          => p_concurrent
                      );
+     
+     o_ev.clear_app_info;
    END modify_dimension;
 
    PROCEDURE delete_dimension ( p_owner VARCHAR2, p_table VARCHAR2 )
@@ -1350,6 +1364,8 @@ IS
       -- now make the call to delete the mapping
       delete_mapping ( p_owner => p_owner,
 		       p_table => p_table );
+      
+      o_ev.clear_app_info;
    END delete_dimension;
 
    PROCEDURE create_dim_attribs (
@@ -1557,6 +1573,8 @@ IS
 
       -- confirm the dimension columns
       o_dim.confirm_dim_cols;
+            
+      o_ev.clear_app_info;
    END create_dim_attribs;
    
    PROCEDURE modify_dim_attrib (
@@ -1596,6 +1614,7 @@ IS
       
       -- confirm the dimension columns
       o_dim.confirm_dim_cols;
+      o_ev.clear_app_info;
    END modify_dim_attrib;
    
    PROCEDURE delete_dim_attribs (
@@ -1612,7 +1631,8 @@ IS
       
       -- record the number of rows affected by the last statment
       evolve.log_cnt_msg( SQL%ROWCOUNT, p_level => 4 );
-
+      
+      o_ev.clear_app_info;
    END delete_dim_attribs;
 
 END trans_adm;
