@@ -45,6 +45,7 @@ AS
       WHEN OTHERS
       THEN
          evolve.log_err;
+         o_ev.clear_app_info;
          RAISE;
    END host_cmd;
 
@@ -56,9 +57,16 @@ AS
       p_filename VARCHAR2
    )
    AS
+      l_filename VARCHAR2(61)        := upper( p_directory ) || ':'|| p_filename;
+      l_source_filename VARCHAR2(61) := upper( p_source_directory ) || ':'|| p_source_filename;
+      
       l_duplicate BOOLEAN  := FALSE;
       o_ev       evolve_ot := evolve_ot( p_module => 'check_duplicate' );
    BEGIN
+
+      evolve.log_msg( 'Source file: '|| l_source_filename, 5 );
+      evolve.log_msg( 'File: '|| l_filename, 5 );
+
       -- if the copy process is just a duplicate process, then raise and exception
       IF lower( p_source_directory ) = lower( p_directory )
 	 AND lower( p_source_filename ) = lower( p_filename )
@@ -67,9 +75,9 @@ AS
 	 l_duplicate := TRUE;
 	 RAISE duplicate_file;
       END IF;
-
-      evolve.log_msg( 'File ' || p_source_filename || ' in directory '|| p_source_directory||' is '||case l_duplicate WHEN TRUE THEN 'not ' ELSE NULL END||' a duplicate of ' ||p_filename||' in directory '|| p_directory, 4 );
       
+      evolve.log_msg( 'No duplicate files detected', 4 );
+
       o_ev.clear_app_info;
    
    END check_duplicate;
@@ -85,6 +93,8 @@ AS
       l_src_fh	 utl_file.file_type := utl_file.fopen( p_source_directory, p_source_filename,'rb');
       l_dest_fh  utl_file.file_type := utl_file.fopen( p_directory, p_filename, 'wb');
       l_buf 	 RAW(32000);
+      l_filename VARCHAR2(61)        := upper( p_directory ) || ':'|| p_filename;
+      l_source_filename VARCHAR2(61) := upper( p_source_directory ) || ':'|| p_source_filename;
 
       o_ev       evolve_ot := evolve_ot( p_module => 'copy_file' );
    BEGIN
@@ -109,18 +119,18 @@ AS
 	    THEN
 	       -- this is not really an exception
 	       -- just done with all the data
-	       NULL; -- done
+	       o_ev.clear_app_info;
 	    WHEN others 
 	    THEN
 	       -- make sure we close the previous file handles
 	       utl_file.fclose(l_src_fh);
 	       utl_file.fclose(l_dest_fh);
+               o_ev.clear_app_info;
 	       RAISE;
 	 END; 
       END IF;
 
-      evolve.log_msg( 'File ' || p_source_filename || ' in directory '|| p_source_directory||' copied to filename ' ||p_filename||' in directory '|| p_directory, 3 );
-
+      evolve.log_msg( 'File ' || l_source_filename || ' copied to ' || l_filename, 3 );
       
       o_ev.clear_app_info;
    
@@ -134,6 +144,8 @@ AS
       p_filename VARCHAR2
    )
    AS
+      l_filename VARCHAR2(61)        := upper( p_directory ) || ':'|| p_filename;
+      l_source_filename VARCHAR2(61) := upper( p_source_directory ) || ':'|| p_source_filename;
       e_diff_fs  EXCEPTION;
       PRAGMA EXCEPTION_INIT (e_diff_fs, -29292);
 
@@ -156,11 +168,12 @@ AS
 	    WHEN e_diff_fs
 	    THEN
 	       RAISE different_filesystems;
+               o_ev.clear_app_info;
 	 END;
       END IF;
 
-      evolve.log_msg( 'File ' || p_source_filename || ' in directory '|| p_source_directory||' moved to filename ' ||p_filename||' in directory '|| p_directory, 3 );
-	 
+      evolve.log_msg( 'File ' || l_source_filename||' moved to ' || l_filename, 3 );
+
       o_ev.clear_app_info;
    
    END move_file;
@@ -169,6 +182,8 @@ AS
    -- uses UTL_FILE to remove an OS level file
    PROCEDURE delete_file( p_directory VARCHAR2, p_filename VARCHAR2 )
    AS
+      l_filename VARCHAR2(61)        := upper( p_directory ) || ':'|| p_filename;
+
       o_ev         evolve_ot       := evolve_ot( p_module => 'delete_file' );
    BEGIN
 
@@ -177,18 +192,21 @@ AS
          UTL_FILE.fremove( p_directory, p_filename );
       END IF;
       
-      evolve.log_msg( 'File ' || p_filename || ' in directory '|| p_directory||' deleted', 3 );
+      evolve.log_msg( 'File ' || l_filename || ' deleted', 3 );
       o_ev.clear_app_info;
    EXCEPTION
       WHEN UTL_FILE.invalid_operation
       THEN
-         evolve.log_msg( 'File ' || p_filename || ' in directory '|| p_directory || ' could not be deleted, or does not exist', 3 );
+         evolve.log_msg( 'File ' || l_filename || ' could not be deleted, or does not exist', 3 );
+         o_ev.clear_app_info;
    END delete_file;
 
    -- uses UTL_FILE to "touch" a file
    PROCEDURE create_file( p_directory VARCHAR2, p_filename VARCHAR2 )
    AS
       l_fh        UTL_FILE.file_type;
+      l_filename VARCHAR2(61)        := upper( p_directory ) || ':'|| p_filename;
+
       o_ev        evolve_ot          := evolve_ot( p_module => 'create_file' );
    BEGIN
 
@@ -198,13 +216,14 @@ AS
          UTL_FILE.fclose( l_fh );
       END IF;
       
-      evolve.log_msg( 'Empty file ' || p_filename || ' in directory '|| p_directory ||' created' );
+      evolve.log_msg( 'Empty file ' || l_filename || ' created' );
 
       o_ev.clear_app_info;
    EXCEPTION
       WHEN others
       THEN
 	 UTL_FILE.fclose( l_fh );
+         o_ev.clear_app_info;
 	 RAISE;
    END create_file;
 
@@ -219,7 +238,7 @@ AS
    BEGIN
       IF evolve.is_debugmode
       THEN
-         evolve.log_msg( td_inst.module || ' returning 0 because of DEBUG mode' );
+         evolve.log_msg( 'Returning 0 because of DEBUG mode' );
          o_ev.clear_app_info;
          RETURN 0;
       ELSE
@@ -234,6 +253,7 @@ AS
             WHEN NO_DATA_FOUND
             THEN
                UTL_FILE.fclose( l_fh );
+               log_msg( 'Number of lines returned: '||l_cnt, 4 );
                o_ev.clear_app_info;
                RETURN l_cnt;
          END;
@@ -753,6 +773,7 @@ AS
          EXCEPTION
             WHEN e_no_var
             THEN
+               o_ev.clear_app_info;
                EXIT;
          END;
       END LOOP;
