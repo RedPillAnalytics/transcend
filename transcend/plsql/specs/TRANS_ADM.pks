@@ -2,8 +2,6 @@ CREATE OR REPLACE PACKAGE trans_adm AUTHID CURRENT_USER
 IS
    null_value             CONSTANT VARCHAR2 (6)  := '*null*';
 
-   extension_method       CONSTANT VARCHAR2 (16) := 'extension_method';
-
    default_characterset   CONSTANT VARCHAR2 (22) := '*default_characterset*';
 
    PROCEDURE set_default_configs;
