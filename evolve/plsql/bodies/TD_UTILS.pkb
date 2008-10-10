@@ -253,7 +253,7 @@ AS
             WHEN NO_DATA_FOUND
             THEN
                UTL_FILE.fclose( l_fh );
-               log_msg( 'Number of lines returned: '||l_cnt, 4 );
+               evolve.log_msg( 'Number of lines returned: '||l_cnt, 4 );
                o_ev.clear_app_info;
                RETURN l_cnt;
          END;

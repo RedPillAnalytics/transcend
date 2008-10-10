@@ -1632,7 +1632,6 @@ IS
       -- record the number of rows affected by the last statment
       evolve.log_cnt_msg( SQL%ROWCOUNT, p_level => 4 );
       
-      o_ev.clear_app_info;
    END delete_dim_attribs;
 
 END trans_adm;
