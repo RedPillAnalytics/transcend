@@ -31,10 +31,10 @@ AS
       l_file_dir    VARCHAR2( 100 ) := p_loc_filename||' in directory '||p_loc_directory;
 
       -- evolve instrumentation object
-      o_ev   evolve_ot := evolve_ot( p_module => 'archive' );
+      o_ev   evolve_ot := evolve_ot( p_module => 'file_label_ot.archive' );
    BEGIN
       
-      evolve.log_msg( 'Archiving file '||l_file_dir );
+      evolve.log_msg( 'Archiving file '||l_file_dir, 3 );
 
       IF NOT evolve.is_debugmode
       THEN

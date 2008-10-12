@@ -79,7 +79,7 @@ IS
    IS
       l_rows      BOOLEAN    := FALSE;
       o_label     file_label_ot := trans_factory.get_file_label_ot( p_file_label => p_file_label, p_directory => p_directory );
-      o_ev        evolve_ot  := evolve_ot( p_module => 'process_file' );
+      o_ev        evolve_ot  := evolve_ot( p_module => 'trans_file.process_file' );
    BEGIN
 
       -- process the file

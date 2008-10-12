@@ -9,7 +9,7 @@ IS
       o_map        mapping_ot                       := mapping_ot( p_mapping => p_mapping, p_batch_id => p_batch_id );
       -- also need an object for any subtypes
       o_dim        dimension_ot;
-      o_ev         evolve_ot                        := evolve_ot( p_module => 'get_mapping_ot' );
+      o_ev         evolve_ot                        := evolve_ot( p_module => 'trans_factory.get_mapping_ot' );
    BEGIN
       -- simply check the mapping_type attribute to tell us whether this is dimensional or not
       IF o_map.mapping_type = 'dimension'
@@ -40,7 +40,7 @@ IS
       -- also need an object for any subtypes
       o_dim       dimension_ot;
       -- and then the basic Evolve instrumentation object
-      o_ev        evolve_ot                        := evolve_ot( p_module => 'get_mapping_ot' );
+      o_ev        evolve_ot                        := evolve_ot( p_module => 'trans_factory.get_mapping_ot' );
    BEGIN
       -- get the mapping name and mapping type
       SELECT mapping_name
@@ -74,7 +74,7 @@ IS
       o_extract   extract_ot;
       o_feed      feed_ot;
       -- and then the basic Evolve instrumentation object
-      o_ev        evolve_ot                        := evolve_ot( p_module => 'get_file_label_ot' );
+      o_ev        evolve_ot                        := evolve_ot( p_module => 'trans_factory.get_file_label_ot' );
    BEGIN
       -- get the file name and file type
       SELECT lower( label_type )

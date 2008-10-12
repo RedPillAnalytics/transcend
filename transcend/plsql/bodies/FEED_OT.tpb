@@ -17,16 +17,16 @@ AS
 		                ELSE NULL 
 		            END work_directory,  min_bytes, max_bytes, baseurl,
                 passphrase, UPPER( source_directory ), source_regexp, match_parameter, source_policy,
-                required, delete_source, reject_limit, store_original_files
+                required, delete_source, reject_limit, store_original_files, compress_method, encrypt_method
            INTO SELF.file_label, SELF.file_group, SELF.label_type, SELF.object_owner, SELF.object_name, SELF.directory,
                 SELF.filename, SELF.work_directory, SELF.min_bytes, SELF.max_bytes, SELF.baseurl,
                 SELF.passphrase, SELF.source_directory, SELF.source_regexp, SELF.match_parameter, SELF.source_policy,
-                SELF.required, SELF.delete_source, SELF.reject_limit, SELF.store_original_files
+                SELF.required, SELF.delete_source, SELF.reject_limit, SELF.store_original_files, SELF.compress_method, SELF.encrypt_method
            FROM (SELECT file_label, file_group, label_type, object_owner, object_name, DIRECTORY, filename,
                         work_directory, min_bytes, max_bytes, baseurl, passphrase, 
 			NVL( p_source_directory, source_directory) source_directory,
                         source_regexp, match_parameter, source_policy, required, delete_source,
-                        reject_limit, store_original_files
+                        reject_limit, store_original_files, compress_method, encrypt_method
                    FROM file_conf
                   WHERE REGEXP_LIKE (label_type, '^feed$', 'i')
                         AND file_label = p_file_label);
@@ -139,8 +139,7 @@ AS
       l_ext_tab         VARCHAR2 (61)                      := object_owner || '.' || object_name;
       l_filename	file_conf.filename%type;
       l_source_filename	file_conf.filename%type;
-      l_working_filename	file_conf.filename%type;
-      l_source_directory 	file_conf.source_directory%type := SELF.source_directory;
+      l_source_directory 	file_conf.source_directory%type;
       l_filesize	NUMBER;
       l_blocksize	NUMBER;
       l_loc_list	VARCHAR2(2000);
@@ -178,13 +177,13 @@ AS
             EXCEPTION
             WHEN e_no_loc_file
             THEN
-               evolve.log_msg('No location files exist for external table',3);
+               evolve.log_msg('No location files exist for external table', 3);
             END;
 	 END LOOP;
 
 	 IF l_rows_delete
 	 THEN
-            evolve.log_msg( 'Previous external table location files removed' );
+            evolve.log_msg( 'Previous external table location files removed', 3 );
 	 END IF;
 	 
       END IF;
@@ -192,13 +191,14 @@ AS
       -- now we need to see all the source files in the source directory that match the regular expression
       -- USE java stored procedure to populate global temp table DIR_LIST with all the files in the directory
       o_ev.change_action ('evaluate source directory');
-      td_utils.directory_list ( l_source_directory );
+      td_utils.directory_list ( SELF.source_directory );
 
       -- look at the contents of the DIR_LIST table to evaluate source files
       -- pull out only the ones matching the regular expression
       -- also work in a lot of the attributes to generate all the information needed for the object
       FOR c_dir_list IN
          (SELECT
+                 ROWID,
                  -- name of each source file
                  source_filename,
 
@@ -224,7 +224,8 @@ AS
                        ',',
                        CHR (10)
                       ) files_url
-	    FROM (SELECT object_name, object_owner, source_filename, file_dt, file_size, targ_file_ind, targ_file_cnt,
+	    FROM (SELECT ROWID,
+                         object_name, object_owner, source_filename, file_dt, file_size, targ_file_ind, targ_file_cnt,
                          decrypt_filename, pre_final_filename,
 			 CASE 
 			 WHEN l_filename_yn = 'Y' AND targ_file_ind = 'Y' AND targ_file_cnt > 1
@@ -234,7 +235,8 @@ AS
                          WHEN l_filename_yn = 'N' AND targ_file_ind = 'Y'
                          THEN decrypt_filename
 			 ELSE NULL END filename
-                    FROM (SELECT object_name, object_owner, source_filename, file_dt, file_size, targ_file_ind, decrypt_filename,
+                    FROM (SELECT ROWID,
+                                 object_name, object_owner, source_filename, file_dt, file_size, targ_file_ind, decrypt_filename,
                            
                            -- rank gives us a number to use to auto increment files in case SOURCE_POLICY attribute is 'all'
                            ROW_NUMBER() OVER (PARTITION BY 1 ORDER BY targ_file_ind DESC, source_filename) file_number,
@@ -247,7 +249,8 @@ AS
                            -- get the filename we expect after a file decryption
                            CASE WHEN l_encrypt_yn = 'Y' THEN REGEXP_REPLACE( decrypt_filename, '(.+)(\.)([^\.]+$)', '\1', 1, 0, 'i' ) ELSE decrypt_filename END pre_final_filename
                       FROM (SELECT              
-				   -- the DIR_LIST table has a filename column
+				   ROWID,
+                                   -- the DIR_LIST table has a filename column
                                    -- we also have a filename attribute
                                    -- RENAME the filename from the DIR_LIST table as SOURCE_FILENAME
                                    filename source_filename,
@@ -278,8 +281,9 @@ AS
                             WHERE  REGEXP_LIKE (filename, SELF.source_regexp, SELF.match_parameter)))
 		   ORDER BY targ_file_ind ASC))
       LOOP
-
-         evolve.log_msg ('Processing file ' || c_dir_list.source_filename || ' in directory '||l_source_directory );
+         
+	 l_source_directory := self.source_directory;
+         evolve.log_msg ('Processing '|| CASE c_dir_list.targ_file_ind WHEN 'Y' THEN null ELSE 'non-' END || 'target file ' || c_dir_list.source_filename || ' in directory '||l_source_directory );
 
          -- catch empty cursor sets
          l_rows_dirlist := TRUE;
@@ -308,7 +312,7 @@ AS
             OR
             -- we also archive the files now if there is no conversion that takes place
             -- that means we won't be expanding the file or decrypting it
-            NOT ( l_compress_ind AND l_encrypt_ind)
+            NOT ( l_compress_ind or l_encrypt_ind)
          THEN
 
 	    -- this writes auditing information in the repository
@@ -324,7 +328,9 @@ AS
 			                  p_file_dt              => c_dir_list.file_dt
                                         );
          END IF;
-	    
+	 
+         
+         evolve.log_msg( 'Compress method: '|| SELF.compress_method, 5 );
 	    
 	 -- now, specifically working on compression
 	 -- if we have a valid compression method, meaning SELF.compress_method is not null
@@ -411,14 +417,14 @@ AS
 	    -- the file now needs to be put into the target location
 	    -- if the source is the work directory, then this is a rename
 	    -- if not, it needs to be a copy
-	    IF l_workdir_exists
+	    IF NOT l_workdir_exists
 	    THEN
 	       o_ev.change_action ('copy to target location');
-	       td_utils.copy_file( l_source_directory, c_dir_list.pre_final_filename, self.directory, l_filename );
+	       td_utils.copy_file( l_source_directory, c_dir_list.pre_final_filename, self.directory, c_dir_list.filename );
 	    ELSE
 	       o_ev.change_action ('move to target location');
 	       BEGIN
-		  td_utils.move_file( l_source_directory, c_dir_list.pre_final_filename, self.directory, l_filename );
+		  td_utils.move_file( l_source_directory, c_dir_list.pre_final_filename, self.directory, c_dir_list.filename );
 	       EXCEPTION
 		  WHEN td_utils.different_filesystems
 		  THEN
@@ -429,10 +435,12 @@ AS
 	    
 	    -- add the filename to the ALTER EXTERNAL TABLE location list
 	    -- this will be used to alter the external table (possibly) when the loop is complete
-	    l_loc_list := l_loc_list ||CASE l_loc_list WHEN NULL THEN NULL ELSE ',' end|| self.directory || ':' || c_dir_list.filename;
-	    
+	    l_loc_list := CASE WHEN l_loc_list is NOT NULL THEN l_loc_list || ',' ELSE NULL end || self.directory || ':' || '''' || c_dir_list.filename || '''';
+	    evolve.log_msg( 'External table location list: '||l_loc_list, 5 );
+            
 	    -- add the filename to the URL list
-	    l_url_list := l_url_list ||CASE l_url_list WHEN NULL THEN NULL ELSE CHR(10) end|| self.baseurl || '/' || c_dir_list.filename;
+	    l_url_list := CASE WHEN l_url_list is NOT NULL THEN l_url_list || ',' ELSE NULL end ||self.baseurl || '/' || c_dir_list.filename;
+	    evolve.log_msg( 'Notification URL list: '||l_url_list, 5 );
 
          END IF;
 
@@ -442,8 +450,10 @@ AS
 
          IF td_core.is_true (delete_source)
          THEN
-            td_utils.delete_file (SELF.source_directory, l_source_filename);
+            td_utils.delete_file (SELF.source_directory, c_dir_List.source_filename);
          END IF;
+         
+         DELETE FROM dir_list WHERE ROWID = c_dir_list.ROWID;
 	 
       END LOOP;
 
@@ -473,7 +483,7 @@ AS
          -- an external table with a zero-byte file gives "no rows returned"
       WHEN NOT l_rows_dirlist AND NOT td_core.is_true (required) AND l_ext_tab_ind
          THEN
-            evolve.log_msg ('No files found... but none are required' );
+            evolve.log_msg ('No files found for this FILE_LABEL' );
             o_ev.change_action ('empty previous files');
 
             FOR c_location IN (SELECT DIRECTORY, LOCATION

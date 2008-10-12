@@ -57,15 +57,15 @@ AS
       p_filename VARCHAR2
    )
    AS
-      l_filename VARCHAR2(61)        := upper( p_directory ) || ':'|| p_filename;
-      l_source_filename VARCHAR2(61) := upper( p_source_directory ) || ':'|| p_source_filename;
+      l_file VARCHAR2(61)        := upper( p_directory ) || ':'|| p_filename;
+      l_source_file VARCHAR2(61) := upper( p_source_directory ) || ':'|| p_source_filename;
       
       l_duplicate BOOLEAN  := FALSE;
       o_ev       evolve_ot := evolve_ot( p_module => 'td_utils.check_duplicate' );
    BEGIN
 
-      evolve.log_msg( 'Source file: '|| l_source_filename, 5 );
-      evolve.log_msg( 'File: '|| l_filename, 5 );
+      evolve.log_msg( 'Source file: '|| l_source_file, 5 );
+      evolve.log_msg( 'File: '|| l_file, 5 );
 
       -- if the copy process is just a duplicate process, then raise and exception
       IF lower( p_source_directory ) = lower( p_directory )
@@ -90,14 +90,21 @@ AS
       p_filename VARCHAR2
    )
    AS
-      l_src_fh	 utl_file.file_type := utl_file.fopen( p_source_directory, p_source_filename,'rb');
-      l_dest_fh  utl_file.file_type := utl_file.fopen( p_directory, p_filename, 'wb');
+      l_src_fh	 utl_file.file_type;
+      l_dest_fh  utl_file.file_type;
       l_buf 	 RAW(32000);
-      l_filename VARCHAR2(61)        := upper( p_directory ) || ':'|| p_filename;
-      l_source_filename VARCHAR2(61) := upper( p_source_directory ) || ':'|| p_source_filename;
+      l_file VARCHAR2(61)        := upper( p_directory ) || ':'|| p_filename;
+      l_source_file VARCHAR2(61) := upper( p_source_directory ) || ':'|| p_source_filename;
 
       o_ev       evolve_ot := evolve_ot( p_module => 'td_utils.copy_file' );
    BEGIN
+      
+      evolve.log_msg('Source file: ' || l_source_file, 5 );
+      evolve.log_msg('Destination file: ' || l_file, 5 );
+      
+      l_src_fh	 := utl_file.fopen( p_source_directory, p_source_filename,'rb');
+      l_dest_fh  := utl_file.fopen( p_directory, p_filename, 'wb');
+
       -- if the copy process is just a duplicate process, then raise and exception
       check_duplicate( p_source_directory => p_source_directory,
       		       p_source_filename  => p_source_filename,
@@ -130,7 +137,7 @@ AS
 	 END; 
       END IF;
 
-      evolve.log_msg( 'File ' || l_source_filename || ' copied to ' || l_filename, 3 );
+      evolve.log_msg( 'File ' || l_source_file || ' copied to ' || l_file, 3 );
       
       o_ev.clear_app_info;
    
@@ -144,13 +151,16 @@ AS
       p_filename VARCHAR2
    )
    AS
-      l_filename VARCHAR2(61)        := upper( p_directory ) || ':'|| p_filename;
-      l_source_filename VARCHAR2(61) := upper( p_source_directory ) || ':'|| p_source_filename;
+      l_file VARCHAR2(61)        := upper( p_directory ) || ':'|| p_filename;
+      l_source_file VARCHAR2(61) := upper( p_source_directory ) || ':'|| p_source_filename;
       e_diff_fs  EXCEPTION;
       PRAGMA EXCEPTION_INIT (e_diff_fs, -29292);
 
       o_ev       evolve_ot := evolve_ot( p_module => 'td_utils.move_file' );
    BEGIN
+      
+      evolve.log_msg('Source file: ' || l_source_file, 5 );
+      evolve.log_msg('Destination file: ' || l_file, 5 );
 
       -- if the copy process is just a duplicate process, then raise and exception
       check_duplicate( p_source_directory => p_source_directory,
@@ -172,7 +182,7 @@ AS
 	 END;
       END IF;
 
-      evolve.log_msg( 'File ' || l_source_filename||' moved to ' || l_filename, 3 );
+      evolve.log_msg( 'File ' || l_source_file||' moved to ' || l_file, 3 );
 
       o_ev.clear_app_info;
    
@@ -182,7 +192,7 @@ AS
    -- uses UTL_FILE to remove an OS level file
    PROCEDURE delete_file( p_directory VARCHAR2, p_filename VARCHAR2 )
    AS
-      l_filename VARCHAR2(61)        := upper( p_directory ) || ':'|| p_filename;
+      l_file VARCHAR2(61)        := upper( p_directory ) || ':'|| p_filename;
 
       o_ev         evolve_ot       := evolve_ot( p_module => 'td_utils.delete_file' );
    BEGIN
@@ -192,12 +202,12 @@ AS
          UTL_FILE.fremove( p_directory, p_filename );
       END IF;
       
-      evolve.log_msg( 'File ' || l_filename || ' deleted', 3 );
+      evolve.log_msg( 'File ' || l_file || ' deleted', 3 );
       o_ev.clear_app_info;
    EXCEPTION
       WHEN UTL_FILE.invalid_operation
       THEN
-         evolve.log_msg( 'File ' || l_filename || ' could not be deleted, or does not exist', 3 );
+         evolve.log_msg( 'File ' || l_file || ' could not be deleted, or does not exist', 3 );
          o_ev.clear_app_info;
    END delete_file;
 
@@ -205,7 +215,7 @@ AS
    PROCEDURE create_file( p_directory VARCHAR2, p_filename VARCHAR2 )
    AS
       l_fh        UTL_FILE.file_type;
-      l_filename VARCHAR2(61)        := upper( p_directory ) || ':'|| p_filename;
+      l_file VARCHAR2(61)        := upper( p_directory ) || ':'|| p_filename;
 
       o_ev        evolve_ot          := evolve_ot( p_module => 'td_utils.create_file' );
    BEGIN
@@ -216,7 +226,7 @@ AS
          UTL_FILE.fclose( l_fh );
       END IF;
       
-      evolve.log_msg( 'Empty file ' || l_filename || ' created' );
+      evolve.log_msg( 'Empty file ' || l_file || ' created' );
 
       o_ev.clear_app_info;
    EXCEPTION
@@ -269,6 +279,8 @@ AS
       p_method      VARCHAR2
    )
    AS
+      l_file VARCHAR2(61)        := upper( p_directory ) || ':'|| p_filename;
+
       l_file_exists BOOLEAN;
       -- construct the filename minus the very last extension to the file
       l_filebase       VARCHAR2( 100 ) := REGEXP_REPLACE( p_filename, '(.+)(\.)([^\.]+$)', '\1', 1, 0, 'i' );
@@ -283,6 +295,7 @@ AS
       l_filebasepath   VARCHAR2( 200 ) := get_dir_path( p_directory ) || '/' || l_filebase;
       o_ev             evolve_ot       := evolve_ot( p_module => 'td_utils.expand_file' );
    BEGIN
+      evolve.log_msg('Destination file: ' || l_file, 5 );
       
       -- now figure out what to do with each method
       CASE p_method
@@ -320,6 +333,8 @@ AS
       p_passphrase     VARCHAR2 DEFAULT NULL
    )
    AS
+      l_file VARCHAR2(61)        := upper( p_directory ) || ':'|| p_filename;
+
       l_file_exists BOOLEAN;
       -- construct the filename minus the very last extension to the file
       l_filebase       VARCHAR2( 100 ) := REGEXP_REPLACE( p_filename, '(.+)(\.)([^\.]+$)', '\1', 1, 0, 'i' );
@@ -335,6 +350,7 @@ AS
 
       o_ev             evolve_ot       := evolve_ot( p_module => 'td_utils.decrypt_file' );
    BEGIN
+      evolve.log_msg('Destination file: ' || l_file, 5 );
       
       -- now figure out what to do with each method
       CASE p_method
