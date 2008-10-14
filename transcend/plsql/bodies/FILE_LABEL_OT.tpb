@@ -75,13 +75,13 @@ AS
       INSERT INTO file_detail
              ( file_detail_id, file_label, file_group,
                label_type, directory, filename, source_directory, 
-	       source_filename, num_bytes, num_lines, 
+	       source_filename, archive_filename, num_bytes, num_lines, 
                file_dt, store_original_files, compress_method, encrypt_method, 
                passphrase, label_file
              )
        VALUES ( file_detail_seq.NEXTVAL, file_label, file_group,
 		label_type, p_directory, p_filename, p_source_directory, 
-                p_source_filename, l_filesize, l_numlines,
+                p_source_filename, p_loc_filename, l_filesize, l_numlines,
                 p_file_dt, self.store_original_files, self.compress_method, self.encrypt_method,
                 self.passphrase, EMPTY_BLOB()
               )

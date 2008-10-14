@@ -241,11 +241,14 @@ AS
    FUNCTION get_numlines( p_directory IN VARCHAR2, p_filename IN VARCHAR2 )
       RETURN NUMBER
    AS
+      l_file VARCHAR2(61)        := upper( p_directory ) || ':'|| p_filename;
       l_fh     UTL_FILE.file_type;
       l_line   VARCHAR2( 2000 );
       l_cnt    NUMBER             := 0;
       o_ev     evolve_ot          := evolve_ot( p_module => 'td_utils.get_numlines' );
    BEGIN
+      
+      evolve.log_msg( 'Getting number of lines for: '|| l_file, 4 );
       IF evolve.is_debugmode
       THEN
          evolve.log_msg( 'Returning 0 because of DEBUG mode' );

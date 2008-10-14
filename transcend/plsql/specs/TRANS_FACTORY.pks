@@ -18,5 +18,12 @@ IS
    )
       RETURN file_label_ot;
 
+   FUNCTION get_file_detail_ot( 
+      p_file_detail_id NUMBER,
+      p_directory      VARCHAR2 DEFAULT NULL
+   )
+      RETURN file_detail_ot;
+
+
 END trans_factory;
 /

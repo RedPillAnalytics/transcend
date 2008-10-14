@@ -7,6 +7,7 @@ CREATE OR REPLACE TYPE file_detail_ot AUTHID CURRENT_USER AS object(
    filename         	 VARCHAR2( 50 ),
    source_directory 	 VARCHAR2( 50 ),
    source_filename       VARCHAR2( 200 ),
+   archive_filename      VARCHAR2( 200 ),
    num_bytes        	 NUMBER,
    num_lines        	 NUMBER,
    file_dt               DATE,

@@ -13,13 +13,13 @@ AS
          -- load all the feed attributes
          SELECT file_detail_id, file_label, file_group, label_type, 
                 nvl( p_directory, directory), filename, source_directory, source_filename,
-                num_bytes, num_lines, file_dt, 
+                archive_filename, num_bytes, num_lines, file_dt, 
                 store_original_files, compress_method, 
                 encrypt_method, passphrase, label_file,
                 processed_ts, session_id
            INTO self.file_detail_id, SELF.file_label, SELF.file_group, SELF.file_type,
                 SELF.directory, SELF.filename, SELF.source_directory, SELF.source_filename,
-                SELF.num_bytes, SELF.num_lines, SELF.file_dt, 
+                SELF.archive_filename, SELF.num_bytes, SELF.num_lines, SELF.file_dt, 
                 SELF.store_original_files, SELF.compress_method,
                 SELF.encrypt_method, SELF.passphrase, SELF.label_file,
                 SELF.processed_ts, SELF.session_id
@@ -90,22 +90,26 @@ AS
       l_amount          NUMBER;
       l_offset          NUMBER := 1;
       l_fh              utl_file.file_type;
+      l_file            VARCHAR2(61)            := upper(self.directory)||':'|| self.archive_filename;
       o_ev              evolve_ot               := evolve_ot( p_module => 'unarchive_file_detail' );
    BEGIN
+
+      evolve.log_msg( 'Unarchiving file to '|| l_file );
       
       -- open the file handle
       o_ev.change_action( 'open file handle' );
       l_fh := UTL_FILE.FOPEN( location => self.directory, 
-                              filename => self.filename,
+                              filename => self.archive_filename,
                               open_mode => 'w', 
                               max_linesize => l_max_linesize);
       
       -- get information about the LOB being used
       l_buffersize := DBMS_LOB.GETCHUNKSIZE( self.label_file ) ;
-
+      evolve.log_msg( 'Chunksize: '||l_buffersize );
                      
       -- use the smallest buffer we can
       l_buffersize := CASE WHEN l_buffersize < 32767 THEN l_buffersize ELSE 32767 END;         
+      evolve.log_msg( 'Buffersize: '||l_buffersize );
       
       -- get the amount variable ready for the loop
       l_amount := l_buffersize;

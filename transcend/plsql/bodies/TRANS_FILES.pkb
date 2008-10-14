@@ -138,6 +138,29 @@ IS
          o_ev.clear_app_info;
          RAISE;
    END process_group;
+         
+   PROCEDURE unarchive_file(
+      p_file_detail_id   NUMBER,
+      p_directory        VARCHAR2 DEFAULT NULL
+   )
+   IS
+      l_rows      BOOLEAN        := FALSE;
+      o_detail    file_detail_ot := trans_factory.get_file_detail_ot( p_file_detail_id => p_file_detail_id, p_directory => p_directory );
+      o_ev        evolve_ot      := evolve_ot( p_module => 'trans_file.unarchive_file' );
+   BEGIN
+
+      -- process the file
+      o_detail.unarchive;
+
+      o_ev.clear_app_info;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         evolve.log_err;
+         o_ev.clear_app_info;
+         RAISE;
+   END unarchive_file;
+
 
 END trans_files;
 /

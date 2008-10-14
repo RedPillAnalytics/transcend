@@ -13,10 +13,6 @@ AS
    -- constants used for EXPAND_FILE
    gpg_method CONSTANT          VARCHAR2(15) := 'gpg_method';
 
-   -- constant for both EXPAND_FILE and DECRYPT_FILE
-   -- this constant is used to dictate that a file extension should determin the method used
-   extension_method CONSTANT    VARCHAR2(15) := 'extension_based';
-
    PROCEDURE directory_list( p_directory VARCHAR2 );
 
    -- procedure calls Utils.runCmd java method

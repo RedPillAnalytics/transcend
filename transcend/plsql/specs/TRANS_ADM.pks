@@ -4,6 +4,14 @@ IS
 
    default_characterset   CONSTANT VARCHAR2 (22) := '*default_characterset*';
 
+   gzip_method            CONSTANT VARCHAR2(15) := td_utils.gzip_method;
+   compress_method        CONSTANT VARCHAR2(15) := td_utils.compress_method;
+   bzip_method            CONSTANT VARCHAR2(15) := td_utils.bzip_method;
+   zip_method             CONSTANT VARCHAR2(15) := td_utils.zip_method;
+
+   -- constants used for EXPAND_FILE
+   gpg_method             CONSTANT VARCHAR2(15) := td_utils.gpg_method;
+
    PROCEDURE set_default_configs;
 
    PROCEDURE create_feed (

@@ -107,6 +107,32 @@ IS
          RAISE;
    END get_file_label_ot;
 
+   -- take a FILE_DETAIL_ID and return a FILE_DETAIL_OT
+   FUNCTION get_file_detail_ot( 
+      p_file_detail_id NUMBER,
+      p_directory      VARCHAR2 DEFAULT NULL
+   )
+      RETURN file_detail_ot
+   IS
+      o_detail     file_detail_ot;
+      -- and then the basic Evolve instrumentation object
+      o_ev        evolve_ot                        := evolve_ot( p_module => 'trans_factory.get_file_detail_ot' );
+   BEGIN
+
+     o_detail := file_detail_ot( p_file_detail_id => p_file_detail_id,
+                                 p_directory      => p_directory );
+
+      -- now simply return the type
+      o_ev.clear_app_info;
+      RETURN o_detail;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         evolve.log_err;
+         o_ev.clear_app_info;
+         RAISE;
+   END get_file_detail_ot;
+
 END trans_factory;
 /
 

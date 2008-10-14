@@ -302,9 +302,7 @@ AS
 	    -- we are now concerned with the work_directory as the source_directory
 	    l_source_directory := self.work_directory;
 	 END IF;
-
-         o_ev.change_action ( 'archive feed' );
-
+         
          -- now, we need to know whether the file is archived prior to any conversion process
          -- by conversion, I mean expanding or decrypting, or both
          -- if STORE_ORIGINAL_FILES is true, then we archive them however they came in
@@ -312,9 +310,11 @@ AS
             OR
             -- we also archive the files now if there is no conversion that takes place
             -- that means we won't be expanding the file or decrypting it
-            NOT ( l_compress_ind or l_encrypt_ind)
+            NOT ( l_compress_ind OR l_encrypt_ind)
          THEN
-
+            o_ev.change_action ( 'archive feed' );
+            
+            evolve.log_msg( 'This is the first coded archive', 5 );
 	    -- this writes auditing information in the repository
 	    -- also stores the file in the database
             -- get the unique key of the file_detail table returned
@@ -329,13 +329,16 @@ AS
                                         );
          END IF;
 	 
+
          
          evolve.log_msg( 'Compress method: '|| SELF.compress_method, 5 );
 	    
 	 -- now, specifically working on compression
 	 -- if we have a valid compression method, meaning SELF.compress_method is not null
-	 IF self.compress_method IS NOT NULL
+         IF self.compress_method IS NOT NULL
 	 THEN
+
+            o_ev.change_action ( 'exand feed' );
 	    -- we need to expand the file
 	    td_utils.expand_file( p_directory      => l_source_directory, 
 				  p_filename       => c_dir_list.source_filename,
@@ -344,9 +347,12 @@ AS
 	 
 	 
 	 -- now, specifically working on decryption
-	 -- if we have a valid encryption method, meaning SELF.decrypt_method is not null
-	 IF self.encrypt_method IS NOT NULL
+	 -- if we have a valid encryption method, meaning SELF.encrypt_method is not null
+         IF self.encrypt_method IS NOT NULL
 	 THEN
+            
+            o_ev.change_action ( 'expand feed' );
+
 	    -- we need to decrypt the file
 	    td_utils.decrypt_file( p_directory => l_source_directory,
                                    -- passing the expected filename from the EXPAND_FILE procedure
@@ -363,6 +369,8 @@ AS
          IF NOT td_core.is_true( self.store_original_files ) 
             AND ( l_compress_ind OR l_encrypt_ind )
          THEN
+            evolve.log_msg( 'This is the second coded archive', 5 );
+
 	    -- this writes auditing information in the repository
 	    -- also stores the file in the database
             l_detail_id := SELF.archive ( p_loc_directory        => l_source_directory,
@@ -483,7 +491,7 @@ AS
          -- an external table with a zero-byte file gives "no rows returned"
       WHEN NOT l_rows_dirlist AND NOT td_core.is_true (required) AND l_ext_tab_ind
          THEN
-            evolve.log_msg ('No files found for this FILE_LABEL' );
+            evolve.log_msg ('No files found for file label "' || SELF.file_label ||'"');
             o_ev.change_action ('empty previous files');
 
             FOR c_location IN (SELECT DIRECTORY, LOCATION

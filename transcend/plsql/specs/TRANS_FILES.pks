@@ -25,6 +25,12 @@ IS
    PROCEDURE process_group(
       p_file_group   VARCHAR2,
       p_label_type   VARCHAR2 DEFAULT NULL
-   );      
+   );
+
+   PROCEDURE unarchive_file(
+      p_file_detail_id   NUMBER,
+      p_directory        VARCHAR2 DEFAULT NULL
+   );
+
 END trans_files;
 /
