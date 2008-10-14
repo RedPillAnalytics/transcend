@@ -102,25 +102,28 @@ AS
                               filename => self.archive_filename,
                               open_mode => 'w', 
                               max_linesize => l_max_linesize);
-      
+
+      o_ev.change_action( 'Get LOB information' );      
       -- get information about the LOB being used
       l_buffersize := DBMS_LOB.GETCHUNKSIZE( self.label_file ) ;
-      evolve.log_msg( 'Chunksize: '||l_buffersize );
+      evolve.log_msg( 'Chunksize: '||l_buffersize, 5 );
                      
       -- use the smallest buffer we can
       l_buffersize := CASE WHEN l_buffersize < 32767 THEN l_buffersize ELSE 32767 END;         
-      evolve.log_msg( 'Buffersize: '||l_buffersize );
+      evolve.log_msg( 'Buffersize: '||l_buffersize, 5 );
       
       -- get the amount variable ready for the loop
       l_amount := l_buffersize;
 
       IF NOT evolve.is_debugmode
       THEN
-            
+         
          -- keep writing output as long as we are getting some from the file
          -- we know that we still have content as long as the amount read is the same as the buffer
          WHILE l_amount >= l_buffersize
          LOOP
+   
+            o_ev.change_action( 'Read LOB' );      
             
             -- read into the buffer
             DBMS_LOB.READ( lob_loc    => self.label_file,
@@ -130,17 +133,23 @@ AS
             
             -- reset the offset based on the amount read in
             l_offset := l_offset + l_amount;
+
+            o_ev.change_action( 'Write LOB' );      
             
             -- now write the contents to the file
             UTL_FILE.PUT_RAW ( file      => l_fh,
                                buffer    => l_buffer,
                                autoflush => TRUE);
-
+            
+            o_ev.change_action( 'Flush LOB' );      
             -- flush the contents out to the file
             UTL_FILE.FFLUSH( file => l_fh );
 
          END LOOP;
-            
+
+         -- close the file handle         
+         utl_file.fclose( l_fh );
+
       END IF;      
       o_ev.clear_app_info;
    
