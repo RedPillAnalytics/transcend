@@ -52,11 +52,16 @@ AS
          l_filesize := 0;
          l_blocksize := 0;
       END IF;
+      
+      evolve.log_msg ('Variable l_filesize is: ' || l_filesize, 5);
+      evolve.log_msg ('Variable l_blocksize is: ' || l_blocksize, 5);
 
       -- get number of lines in the file
       -- in DEBUGMODE returns 0
       l_numlines := td_utils.get_numlines( p_directory  => p_loc_directory,
                                           p_filename   => p_loc_filename );
+
+      evolve.log_msg ('Variable l_numlines is: ' || l_numlines, 5);
       
       IF NOT evolve.is_debugmode
       THEN
@@ -71,7 +76,7 @@ AS
 
       -- INSERT into the FILE_DETAIL table to record the movement
       -- this is done regardless of runmode
-      evolve.log_msg( 'Inserting information into FILE_DETAIL', 4 );
+      evolve.log_msg( 'Inserting information into the FILE_DETAIL table', 4 );
       INSERT INTO file_detail
              ( file_detail_id, file_label, file_group,
                label_type, directory, filename, source_directory, 
@@ -86,7 +91,9 @@ AS
                 self.passphrase, EMPTY_BLOB()
               )
        RETURNING label_file, file_detail_id
-         INTO l_dest_blob, l_detail_id;
+            INTO l_dest_blob, l_detail_id;
+      
+      evolve.log_msg ('The DETAIL_ID returned is: ' || l_detail_id, 5);
       
       IF NOT evolve.is_debugmode
       THEN
