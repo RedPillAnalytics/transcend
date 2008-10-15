@@ -513,7 +513,6 @@ IS
       END IF;
    END set_method_conf;
 
-
    PROCEDURE set_default_configs( p_config VARCHAR2 DEFAULT 'all', p_reset VARCHAR2 DEFAULT 'no' )
    IS
    BEGIN
@@ -559,15 +558,14 @@ IS
          END IF;
          
          -- configure notification event for the support functionality
-         evolve_adm.set_notification_event
-         ( 'evolve_adm',
-           'send support dump',
-           'support dump',
-           'The attached support dump is sent from:'
+         set_notification_event
+         ( 'evolve.dump_session',
+           'notify support',
+           'Evolve session dump information',
+           'The attached support dump is sent from '
          );
 
       END IF;
-
 
       -- set the default command values
       IF LOWER( p_config ) IN( 'all', 'commands' )
