@@ -18,6 +18,8 @@ AS
       -- read previous app_info settings
       -- populate attributes with new app_info settings
       td_inst.client_info( NVL( p_client_info, td_inst.client_info ));
+      -- now register the above values
+      td_inst.register;
       RETURN;
    END app_ot;
    MEMBER FUNCTION get_package_name
