@@ -290,6 +290,8 @@ AS
          WHEN no_data_found
             THEN evolve.raise_err( 'invalid_command' );
       END;
+            
+      evolve.log_msg( 'The command: ' || l_command, 5 );      
       
       o_ev.clear_app_info;
       RETURN l_command;
