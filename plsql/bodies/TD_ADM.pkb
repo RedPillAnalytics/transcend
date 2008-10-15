@@ -264,7 +264,7 @@ IS
       BEGIN
 	 
 	 -- tables
-         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON METHOD_CONF TO ' || p_grantee;
+         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON COMMAND_CONF TO ' || p_grantee;
          
          EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON FILE_CONF TO ' || p_grantee;
 
@@ -1325,7 +1325,7 @@ IS
       END;
       
       BEGIN
-         EXECUTE IMMEDIATE q'|DROP TABLE method_conf|';
+         EXECUTE IMMEDIATE q'|DROP TABLE command_conf|';
       EXCEPTION
          WHEN e_no_tab
          THEN
@@ -1415,11 +1415,13 @@ IS
          -- create the statitics table
          DBMS_STATS.create_stat_table( p_schema, 'OPT_STATS' );
          
-         -- METHOD_CONF table
-         EXECUTE IMMEDIATE q'|CREATE TABLE method_conf
+         -- COMMAND_CONF table
+         EXECUTE IMMEDIATE q'|CREATE TABLE command_conf
 	 ( 
-           method_name         VARCHAR2(20) NOT NULL,
-           method_command      VARCHAR2(100),
+           name                VARCHAR2(30) NOT NULL,
+           value               VARCHAR2(30),
+           path                VARCHAR2(200),
+           flags               VARCHAR2(20),
 	   created_user        VARCHAR2(30),
 	   created_dt          DATE,
 	   modified_user       VARCHAR2(30),
@@ -1427,14 +1429,13 @@ IS
 	   description         VARCHAR2(100)
 	 )|';
          
-         EXECUTE IMMEDIATE q'|ALTER TABLE method_conf ADD 
+         EXECUTE IMMEDIATE q'|ALTER TABLE command_conf ADD 
 	 (
-	   CONSTRAINT method_conf_pk
+	   CONSTRAINT command_conf_pk
 	   PRIMARY KEY
 	   (method_name)
 	   USING INDEX
 	 )|';
-
 
          -- FILE_CONF table
          EXECUTE IMMEDIATE q'|CREATE TABLE file_conf
@@ -2084,7 +2085,7 @@ IS
    BEGIN
       -- create the synonyms
       BEGIN
-         EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.METHOD_CONF for ' || p_schema || '.METHOD_CONF';
+         EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.COMMAND_CONF for ' || p_schema || '.COMMAND_CONF';
       EXCEPTION
          WHEN e_same_name
          THEN

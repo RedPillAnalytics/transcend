@@ -275,25 +275,25 @@ AS
 
 
    -- get the number of lines in a file
-   FUNCTION get_method_command( p_method_name IN VARCHAR2 )
+   FUNCTION get_command( p_name IN VARCHAR2 )
       RETURN VARCHAR2
    AS
-      l_command method_conf.method_command%type;
-      o_ev     evolve_ot          := evolve_ot( p_module => 'td_utils.get_method_command' );
+      l_command method_conf.command%type;
+      o_ev     evolve_ot          := evolve_ot( p_module => 'td_utils.get_command' );
    BEGIN
       
       BEGIN
-         SELECT method_command
+         SELECT regexp_replace( path || '/' || command || ' ' || flags, '//','/' )
            INTO l_command
           WHERE lower( method_name ) = lower( p_method_name);
       EXCEPTION
          WHEN no_data_found
-            THEN evolve.raise_err( 'no_method' );
+            THEN evolve.raise_err( 'invalid_command' );
       END;
       
       o_ev.clear_app_info;
       RETURN l_command;
-   END get_method_command;
+   END get_command;
 
    -- a procedure used to expand a file regardless of which library was used to zip it
    -- currently contains functionality for the following libraries: gzip, zip, compress, and bzip2
@@ -326,19 +326,19 @@ AS
       CASE p_method
          WHEN gzip_method
          THEN
-            host_cmd( get_method_command( p_method_name=>gzip_method )||' ' || l_filepath );
+            host_cmd( get_command( p_name=> 'gunzip' )||' ' || l_filepath );
             evolve.log_msg( l_filepath || ' gunzipped', 3 );
          WHEN compress_method
          THEN
-            host_cmd( get_method_command( p_method_name=>compress_method )' ' || l_filepath );
+            host_cmd( get_command( p_name=> 'uncompress' )' ' || l_filepath );
             evolve.log_msg( l_filepath || ' uncompressed', 3 );
          WHEN bzip2_method
          THEN
-            host_cmd( get_method_command( p_method_name=>bzip2_method )' ' || l_filepath );
+            host_cmd( get_command( p_name=>'bunzip2' )' ' || l_filepath );
             evolve.log_msg( l_filepath || ' bunzipped', 3 );
          WHEN zip_method
          THEN
-            host_cmd( get_method_command( p_method_name=>zip_method )' ' || l_filepath );
+            host_cmd( get_command( p_name=>'unzip' )' ' || l_filepath );
             evolve.log_msg( l_filepath || ' unzipped', 3 );
          ELSE
 	    -- we did not recognize the method
@@ -381,7 +381,7 @@ AS
       CASE p_method
          WHEN gpg_method
          THEN
-            host_cmd( 'gpg --no-tty --passphrase-fd 0 --batch --decrypt --output ' || l_filepath || ' '
+            host_cmd( get_command( p_name => 'gpg_decrypt' ) || ' ' || l_filepath || ' '
                       || l_filebasepath,
                       p_passphrase
                     );

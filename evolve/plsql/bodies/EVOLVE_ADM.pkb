@@ -460,10 +460,12 @@ IS
    END set_session_parameter;
 
 
-   PROCEDURE set_method_conf(
-      p_method_name     VARCHAR2,
-      p_method_command  NUMBER,
-      p_mode            VARCHAR2 DEFAULT 'upsert'
+   PROCEDURE set_command_conf(
+      p_name     VARCHAR2,
+      p_value    NUMBER,
+      p_path     VARCHAR2,
+      p_flags    VARCHAR2,
+      p_mode     VARCHAR2 DEFAULT 'upsert'
    )
    IS
       e_dup_conf   EXCEPTION;
@@ -472,21 +474,23 @@ IS
       -- this is the default method... update if it exists or insert it
       IF LOWER( p_mode ) IN( 'upsert', 'update' )
       THEN
-         UPDATE method_conf
-            SET method_command = p_method_command,
+         UPDATE command_conf
+            SET value = p_value,
+                path  = p_path,
+                flags = p_flags,
                 modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
                 modified_dt = SYSDATE
-          WHERE lower( method_name ) = LOWER( p_method_name );
+          WHERE lower( name ) = LOWER( p_name );
       END IF;
 
       -- if the update was unsuccessful above, or an insert it specifically requested, then do an insert
       IF ( SQL%ROWCOUNT = 0 AND LOWER( p_mode ) = 'upsert' ) OR LOWER( p_mode ) = 'insert'
       THEN
          BEGIN
-            INSERT INTO method_conf
-                        ( method_name, method_command
+            INSERT INTO command_conf
+                        ( name, value, path, flags
                         )
-                 VALUES ( lower( p_method_name ), p_method_command
+                 VALUES ( lower( p_name ), value, path, flags
                         );
          EXCEPTION
             WHEN e_dup_conf
@@ -498,8 +502,8 @@ IS
       -- if a delete is specifically requested, then do a delete
       IF LOWER( p_mode ) = 'delete'
       THEN
-         DELETE FROM method_conf
-               WHERE lower( method_name ) = LOWER( p_method_name );
+         DELETE FROM command_conf
+               WHERE lower( name ) = LOWER( p_name );
       END IF;
 
       -- if we still have not affected any records, then there's a problem
@@ -565,38 +569,54 @@ IS
       END IF;
 
 
-      -- set the default method paths
-      IF LOWER( p_config ) IN( 'all', 'methods' )
+      -- set the default command values
+      IF LOWER( p_config ) IN( 'all', 'commands' )
       THEN
          IF td_core.is_true( p_reset )
          THEN
-            DELETE FROM method_conf;
+            DELETE FROM command_conf;
          END IF;
          
-         -- configure execution methods
-         set_method_conf
-         (gzip_method,
-           'gzip -df'
-         );
+         -- configure execution commands
 
-         set_method_conf
-         (zip_method,
-           'unzip'
+         -- command for extracting a gzip archive
+         set_command_conf
+         ( p_name  => 'gunzip',
+           p_value => 'gzip',
+           p_path  => NULL,
+           p_flags => '-df'
          );
-
-         set_method_conf
-         (compress_method,
-           'uncompress'
+         
+         -- command for extracting a zip archive
+         set_command_conf
+         ( p_name  => 'unzip',
+           p_value => 'unzip',
+           p_path  => NULL,
+           p_flags => '-u'
          );
-
-         set_method_conf
-         (bzip2_method,
-           'bunzip2'
+         
+         -- command for extracting a .Z archive
+         set_command_conf
+         ( p_name  => 'uncompress',
+           p_value => 'uncompress',
+           p_path  => NULL,
+           p_flags => '-f'
          );
-
-         set_method_conf
-         (gpg_method,
-           'gpg'
+         
+         -- command for extracting a bzip2 archive
+         set_command_conf
+         ( p_name  => 'bunzip',
+           p_value => 'bzip2',
+           p_path  => NULL,
+           p_flags => '-df'
+         );
+         
+         -- command for extracting a decrypting a GPG file
+         set_command_conf
+         ( p_name  => 'gpg_decrypt',
+           p_value => 'gpg',
+           p_path  => NULL,
+           p_flags => '--no-tty --passphrase-fd 0 --batch --decrypt --output'
          );
 
       END IF;
@@ -684,6 +704,7 @@ IS
          set_error_conf( p_name => 'utl_mail_err', p_message => 'Fatal UTL_MAIL error occured' );
          set_error_conf( p_name => 'invalid_compress_method', p_message => 'The specified compression method is not valid' );
          set_error_conf( p_name => 'invalid_encrypt_method', p_message => 'The specified encryption method is not valid' );
+         set_error_conf( p_name => 'invalid_command', p_message => 'The specified command name does not match a configured value in the COMMAND_CONF table' );
       END IF;
    END set_default_configs;
 
