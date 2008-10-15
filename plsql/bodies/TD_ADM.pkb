@@ -264,6 +264,8 @@ IS
       BEGIN
 	 
 	 -- tables
+         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON METHOD_CONF TO ' || p_grantee;
+         
          EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON FILE_CONF TO ' || p_grantee;
 
          EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON FILE_DETAIL TO ' || p_grantee;
@@ -1321,6 +1323,14 @@ IS
          THEN
          NULL;
       END;
+      
+      BEGIN
+         EXECUTE IMMEDIATE q'|DROP TABLE method_conf|';
+      EXCEPTION
+         WHEN e_no_tab
+         THEN
+         NULL;
+      END;
 
       BEGIN
          EXECUTE IMMEDIATE q'|DROP TABLE file_conf|';
@@ -1404,6 +1414,27 @@ IS
       BEGIN
          -- create the statitics table
          DBMS_STATS.create_stat_table( p_schema, 'OPT_STATS' );
+         
+         -- METHOD_CONF table
+         EXECUTE IMMEDIATE q'|CREATE TABLE method_conf
+	 ( 
+           method_name         VARCHAR2(20) NOT NULL,
+           method_command      VARCHAR2(100),
+	   created_user        VARCHAR2(30),
+	   created_dt          DATE,
+	   modified_user       VARCHAR2(30),
+	   modified_dt         DATE,
+	   description         VARCHAR2(100)
+	 )|';
+         
+         EXECUTE IMMEDIATE q'|ALTER TABLE method_conf ADD 
+	 (
+	   CONSTRAINT method_conf_pk
+	   PRIMARY KEY
+	   (method_name)
+	   USING INDEX
+	 )|';
+
 
          -- FILE_CONF table
          EXECUTE IMMEDIATE q'|CREATE TABLE file_conf
@@ -1442,7 +1473,7 @@ IS
 	   modified_dt         DATE,
 	   description         VARCHAR2(100)
 	 )|';
-
+         
          EXECUTE IMMEDIATE q'|ALTER TABLE file_conf ADD 
 	 (
 	   CONSTRAINT file_conf_pk
@@ -1902,6 +1933,72 @@ IS
          THEN
             NULL;
       END;
+            
+      BEGIN
+         EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.LOG for ' || p_schema || '.LOG';
+      EXCEPTION
+         WHEN e_same_name
+         THEN
+            NULL;
+      END;
+      
+      BEGIN
+         EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.LOG_runtime for ' || p_schema || '.LOG_runtime';
+      EXCEPTION
+         WHEN e_same_name
+         THEN
+            NULL;
+      END;
+            
+      BEGIN
+         EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.LOG_runtime_today for ' || p_schema || '.LOG_runtime_today';
+      EXCEPTION
+         WHEN e_same_name
+         THEN
+            NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.LOG_my_session for ' || p_schema || '.LOG_my_session';
+      EXCEPTION
+         WHEN e_same_name
+         THEN
+            NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.LOG_runtime_my_session for ' || p_schema || '.LOG_runtime_my_session';
+      EXCEPTION
+         WHEN e_same_name
+         THEN
+            NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.LOG_debug for ' || p_schema || '.LOG_debug';
+      EXCEPTION
+         WHEN e_same_name
+         THEN
+            NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.LOG_debug_today for ' || p_schema || '.LOG_debug_today';
+      EXCEPTION
+         WHEN e_same_name
+         THEN
+            NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.LOG_debug_my_session for ' || p_schema || '.LOG_debug_my_session';
+      EXCEPTION
+         WHEN e_same_name
+         THEN
+            NULL;
+      END;
+
+
    END build_evolve_rep_syns;
 
    PROCEDURE build_evolve_app_syns( p_user VARCHAR2, p_schema VARCHAR2 )
@@ -1986,6 +2083,14 @@ IS
    IS
    BEGIN
       -- create the synonyms
+      BEGIN
+         EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.METHOD_CONF for ' || p_schema || '.METHOD_CONF';
+      EXCEPTION
+         WHEN e_same_name
+         THEN
+            NULL;
+      END;
+      
       BEGIN
          EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.FILE_CONF for ' || p_schema || '.FILE_CONF';
       EXCEPTION

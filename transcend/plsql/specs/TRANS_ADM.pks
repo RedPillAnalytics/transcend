@@ -6,7 +6,7 @@ IS
 
    gzip_method            CONSTANT VARCHAR2(15) := td_utils.gzip_method;
    compress_method        CONSTANT VARCHAR2(15) := td_utils.compress_method;
-   bzip_method            CONSTANT VARCHAR2(15) := td_utils.bzip_method;
+   bzip2_method           CONSTANT VARCHAR2(15) := td_utils.bzip2_method;
    zip_method             CONSTANT VARCHAR2(15) := td_utils.zip_method;
 
    -- constants used for EXPAND_FILE

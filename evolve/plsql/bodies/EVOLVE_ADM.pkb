@@ -459,6 +459,57 @@ IS
       END IF;
    END set_session_parameter;
 
+
+   PROCEDURE set_method_conf(
+      p_method_name     VARCHAR2,
+      p_method_command  NUMBER,
+      p_mode            VARCHAR2 DEFAULT 'upsert'
+   )
+   IS
+      e_dup_conf   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_dup_conf, -1 );
+   BEGIN
+      -- this is the default method... update if it exists or insert it
+      IF LOWER( p_mode ) IN( 'upsert', 'update' )
+      THEN
+         UPDATE method_conf
+            SET method_command = p_method_command,
+                modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
+                modified_dt = SYSDATE
+          WHERE lower( method_name ) = LOWER( p_method_name );
+      END IF;
+
+      -- if the update was unsuccessful above, or an insert it specifically requested, then do an insert
+      IF ( SQL%ROWCOUNT = 0 AND LOWER( p_mode ) = 'upsert' ) OR LOWER( p_mode ) = 'insert'
+      THEN
+         BEGIN
+            INSERT INTO method_conf
+                        ( method_name, method_command
+                        )
+                 VALUES ( lower( p_method_name ), p_method_command
+                        );
+         EXCEPTION
+            WHEN e_dup_conf
+            THEN
+	       evolve.raise_err( 'dup_conf' );
+         END;
+      END IF;
+
+      -- if a delete is specifically requested, then do a delete
+      IF LOWER( p_mode ) = 'delete'
+      THEN
+         DELETE FROM method_conf
+               WHERE lower( method_name ) = LOWER( p_method_name );
+      END IF;
+
+      -- if we still have not affected any records, then there's a problem
+      IF SQL%ROWCOUNT = 0
+      THEN
+	 evolve.raise_err( 'no_rep_obj' );
+      END IF;
+   END set_method_conf;
+
+
    PROCEDURE set_default_configs( p_config VARCHAR2 DEFAULT 'all', p_reset VARCHAR2 DEFAULT 'no' )
    IS
    BEGIN
@@ -512,6 +563,44 @@ IS
          );
 
       END IF;
+
+
+      -- set the default method paths
+      IF LOWER( p_config ) IN( 'all', 'methods' )
+      THEN
+         IF td_core.is_true( p_reset )
+         THEN
+            DELETE FROM method_conf;
+         END IF;
+         
+         -- configure execution methods
+         set_method_conf
+         (gzip_method,
+           'gzip -df'
+         );
+
+         set_method_conf
+         (zip_method,
+           'unzip'
+         );
+
+         set_method_conf
+         (compress_method,
+           'uncompress'
+         );
+
+         set_method_conf
+         (bzip2_method,
+           'bunzip2'
+         );
+
+         set_method_conf
+         (gpg_method,
+           'gpg'
+         );
+
+      END IF;
+
 
       -- reset error_conf
       IF LOWER( p_config ) IN( 'all', 'errors' )

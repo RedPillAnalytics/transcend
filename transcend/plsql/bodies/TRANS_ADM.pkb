@@ -22,6 +22,7 @@ IS
           'Too many rejected rows',
           'The file referenced below has too many rejected rows:'
          );
+
       -- load the entries into the ERROR_CONF table for Transcend
       evolve_adm.set_error_conf
                          (p_name         => 'no_files_found',

@@ -3,6 +3,14 @@ IS
 
    all_modules	CONSTANT VARCHAR2(13) := '*all_modules*';
 
+   gzip_method            CONSTANT VARCHAR2(15) := td_utils.gzip_method;
+   compress_method        CONSTANT VARCHAR2(15) := td_utils.compress_method;
+   bzip2_method           CONSTANT VARCHAR2(15) := td_utils.bzip2_method;
+   zip_method             CONSTANT VARCHAR2(15) := td_utils.zip_method;
+
+   -- constants used for EXPAND_FILE
+   gpg_method             CONSTANT VARCHAR2(15) := td_utils.gpg_method;
+
    PROCEDURE set_logging_level(
       p_module          VARCHAR2 DEFAULT all_modules,
       p_logging_level   NUMBER DEFAULT 1,
@@ -54,6 +62,12 @@ IS
       p_value        VARCHAR2,
       p_module       VARCHAR2 DEFAULT all_modules,
       p_mode	     VARCHAR2 DEFAULT 'upsert'
+   );
+
+   PROCEDURE set_method_conf(
+      p_method_name     VARCHAR2,
+      p_method_command  NUMBER,
+      p_mode            VARCHAR2 DEFAULT 'upsert'
    );
 
    PROCEDURE set_default_configs(

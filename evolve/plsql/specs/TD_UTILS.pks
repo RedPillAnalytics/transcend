@@ -7,7 +7,7 @@ AS
    -- constants used for EXPAND_FILE
    gzip_method CONSTANT         VARCHAR2(15) := 'gzip_method';
    compress_method CONSTANT     VARCHAR2(15) := 'compress_method';
-   bzip_method CONSTANT         VARCHAR2(15) := 'bzip_method';
+   bzip2_method CONSTANT        VARCHAR2(15) := 'bzip2_method';
    zip_method CONSTANT          VARCHAR2(15) := 'zip_method';
 
    -- constants used for EXPAND_FILE

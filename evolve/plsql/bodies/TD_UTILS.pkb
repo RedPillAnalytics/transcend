@@ -273,6 +273,28 @@ AS
       END IF;
    END get_numlines;
 
+
+   -- get the number of lines in a file
+   FUNCTION get_method_command( p_method_name IN VARCHAR2 )
+      RETURN VARCHAR2
+   AS
+      l_command method_conf.method_command%type;
+      o_ev     evolve_ot          := evolve_ot( p_module => 'td_utils.get_method_command' );
+   BEGIN
+      
+      BEGIN
+         SELECT method_command
+           INTO l_command
+          WHERE lower( method_name ) = lower( p_method_name);
+      EXCEPTION
+         WHEN no_data_found
+            THEN evolve.raise_err( 'no_method' );
+      END;
+      
+      o_ev.clear_app_info;
+      RETURN l_command;
+   END get_method_command;
+
    -- a procedure used to expand a file regardless of which library was used to zip it
    -- currently contains functionality for the following libraries: gzip, zip, compress, and bzip2
    -- returns several out parameters, including expected filename, filesize, and blocksize
@@ -304,19 +326,19 @@ AS
       CASE p_method
          WHEN gzip_method
          THEN
-            host_cmd( 'gzip -df ' || l_filepath );
+            host_cmd( get_method_command( p_method_name=>gzip_method )||' ' || l_filepath );
             evolve.log_msg( l_filepath || ' gunzipped', 3 );
          WHEN compress_method
          THEN
-            host_cmd( 'uncompress ' || l_filepath );
+            host_cmd( get_method_command( p_method_name=>compress_method )' ' || l_filepath );
             evolve.log_msg( l_filepath || ' uncompressed', 3 );
-         WHEN bzip_method
+         WHEN bzip2_method
          THEN
-            host_cmd( 'bunzip2 ' || l_filepath );
+            host_cmd( get_method_command( p_method_name=>bzip2_method )' ' || l_filepath );
             evolve.log_msg( l_filepath || ' bunzipped', 3 );
          WHEN zip_method
          THEN
-            host_cmd( 'unzip ' || l_filepath );
+            host_cmd( get_method_command( p_method_name=>zip_method )' ' || l_filepath );
             evolve.log_msg( l_filepath || ' unzipped', 3 );
          ELSE
 	    -- we did not recognize the method
