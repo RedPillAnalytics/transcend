@@ -57,6 +57,7 @@ AS
       l_msg      log_table.msg%TYPE;
       l_scn      NUMBER               := DBMS_FLASHBACK.get_system_change_number;
       l_schema   VARCHAR2( 30 );
+      l_entry_ts TIMESTAMP;
       e_no_tab   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_tab, -942 );
    BEGIN
@@ -71,17 +72,20 @@ AS
 
       -- find out what called me
       l_whence := whence;
+      
+      -- get the timestamp for consistency
+      l_entry_ts := systimestamp;
 
       -- check to see the logging level to see if the message should be written
       IF td_inst.logging_level >= p_level
       THEN
          -- write the record to the log table
          INSERT INTO log_table
-                     ( msg, client_info, module, action, service_name,
+                     ( entry_ts, msg, client_info, module, action, service_name,
                        runmode, session_id, current_scn, instance_name, machine,
                        dbuser, osuser, code, call_stack, back_trace, batch_id, logging_level
                      )
-              VALUES ( l_msg, td_inst.client_info, td_inst.module, td_inst.action, td_inst.service_name,
+              VALUES ( l_entry_ts, l_msg, td_inst.client_info, td_inst.module, td_inst.action, td_inst.service_name,
                        td_inst.runmode, td_inst.session_id, l_scn, td_inst.instance_name, td_inst.machine,
                        td_inst.dbuser, td_inst.osuser, 0, l_whence, NULL, td_inst.batch_id, p_level
                      );
@@ -90,7 +94,7 @@ AS
          -- also output the message to the screen
          -- the client can control whether or not they want to see this
          -- in sqlplus, just SET SERVEROUTPUT ON or OFF
-         DBMS_OUTPUT.put_line( p_msg );
+         DBMS_OUTPUT.put_line( chr(10)||upper(td_inst.module)||': '||to_char(l_entry_ts,'hh:mi:ss AM')||chr(10)||l_msg );
       END IF;
    END log_msg;
 
