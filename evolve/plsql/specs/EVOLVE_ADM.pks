@@ -3,6 +3,8 @@ IS
 
    all_modules	CONSTANT VARCHAR2(13) := '*all_modules*';
 
+   null_value   CONSTANT VARCHAR2 (6) := '*null*';
+
    PROCEDURE set_logging_level(
       p_module          VARCHAR2 DEFAULT all_modules,
       p_logging_level   NUMBER DEFAULT 1,
@@ -56,10 +58,12 @@ IS
       p_mode	     VARCHAR2 DEFAULT 'upsert'
    );
 
-   PROCEDURE set_method_conf(
-      p_method_name     VARCHAR2,
-      p_method_command  NUMBER,
-      p_mode            VARCHAR2 DEFAULT 'upsert'
+   PROCEDURE set_command_conf(
+      p_name     VARCHAR2,
+      p_value    VARCHAR2 DEFAULT NULL,
+      p_path     VARCHAR2 DEFAULT NULL,
+      p_flags    VARCHAR2 DEFAULT NULL,
+      p_mode     VARCHAR2 DEFAULT 'upsert'
    );
 
    PROCEDURE set_default_configs(

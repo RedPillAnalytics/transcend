@@ -48,6 +48,9 @@ AS
 
    FUNCTION get_numlines( p_directory IN VARCHAR2, p_filename IN VARCHAR2 )
       RETURN NUMBER;
+      
+   FUNCTION get_command( p_name IN VARCHAR2 )
+      RETURN VARCHAR2;
 
    PROCEDURE expand_file(
       p_directory   VARCHAR2, 

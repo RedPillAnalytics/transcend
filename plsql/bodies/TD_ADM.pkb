@@ -186,6 +186,9 @@ IS
          EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON RUNMODE_CONF TO ' || p_grantee;
 
          EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON ERROR_CONF TO ' || p_grantee;
+         
+         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON COMMAND_CONF TO ' || p_grantee;
+         
 	 
          -- sequences
          EXECUTE IMMEDIATE 'grant select on CONCURRENT_ID_SEQ to ' || p_grantee;
@@ -264,8 +267,6 @@ IS
       BEGIN
 	 
 	 -- tables
-         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON COMMAND_CONF TO ' || p_grantee;
-         
          EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON FILE_CONF TO ' || p_grantee;
 
          EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON FILE_DETAIL TO ' || p_grantee;
@@ -360,6 +361,14 @@ IS
 
       BEGIN
          EXECUTE IMMEDIATE q'|DROP TABLE error_conf|';
+      EXCEPTION
+         WHEN e_no_tab
+         THEN
+         NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE q'|DROP TABLE command_conf|';
       EXCEPTION
          WHEN e_no_tab
          THEN
@@ -593,6 +602,28 @@ IS
 	   created_dt	     DATE DEFAULT SYSDATE NOT NULL,
 	   modified_user     VARCHAR2(30),
 	   modified_dt	     DATE
+	 )|';
+
+         -- COMMAND_CONF table
+         EXECUTE IMMEDIATE q'|CREATE TABLE command_conf
+	 ( 
+           name                VARCHAR2(30) NOT NULL,
+           value               VARCHAR2(30),
+           path                VARCHAR2(200),
+           flags               VARCHAR2(100),
+	   created_user        VARCHAR2(30),
+	   created_dt          DATE,
+	   modified_user       VARCHAR2(30),
+	   modified_dt         DATE,
+	   description         VARCHAR2(100)
+	 )|';
+         
+         EXECUTE IMMEDIATE q'|ALTER TABLE command_conf ADD 
+	 (
+	   CONSTRAINT command_conf_pk
+	   PRIMARY KEY
+	   (name)
+	   USING INDEX
 	 )|';
 
          EXECUTE IMMEDIATE q'|ALTER TABLE error_conf ADD 
@@ -1325,14 +1356,6 @@ IS
       END;
       
       BEGIN
-         EXECUTE IMMEDIATE q'|DROP TABLE command_conf|';
-      EXCEPTION
-         WHEN e_no_tab
-         THEN
-         NULL;
-      END;
-
-      BEGIN
          EXECUTE IMMEDIATE q'|DROP TABLE file_conf|';
       EXCEPTION
          WHEN e_no_tab
@@ -1415,28 +1438,6 @@ IS
          -- create the statitics table
          DBMS_STATS.create_stat_table( p_schema, 'OPT_STATS' );
          
-         -- COMMAND_CONF table
-         EXECUTE IMMEDIATE q'|CREATE TABLE command_conf
-	 ( 
-           name                VARCHAR2(30) NOT NULL,
-           value               VARCHAR2(30),
-           path                VARCHAR2(200),
-           flags               VARCHAR2(20),
-	   created_user        VARCHAR2(30),
-	   created_dt          DATE,
-	   modified_user       VARCHAR2(30),
-	   modified_dt         DATE,
-	   description         VARCHAR2(100)
-	 )|';
-         
-         EXECUTE IMMEDIATE q'|ALTER TABLE command_conf ADD 
-	 (
-	   CONSTRAINT command_conf_pk
-	   PRIMARY KEY
-	   (method_name)
-	   USING INDEX
-	 )|';
-
          -- FILE_CONF table
          EXECUTE IMMEDIATE q'|CREATE TABLE file_conf
 	 ( 
@@ -1508,7 +1509,7 @@ IS
          EXECUTE IMMEDIATE q'|ALTER TABLE file_conf ADD 
 	 (
 	   CONSTRAINT file_conf_ck5
-	   CHECK (compress_method IN ('extension_method','gzip_method','compress_method','bzip_method','zip_method'))
+	   CHECK (compress_method IN ('extension_method','gzip_method','compress_method','bzip2_method','zip_method'))
 	 )|';
 
          EXECUTE IMMEDIATE q'|ALTER TABLE file_conf ADD 
@@ -1846,7 +1847,15 @@ IS
          THEN
             NULL;
       END;
-
+      
+      BEGIN
+         EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.COMMAND_CONF for ' || p_schema || '.COMMAND_CONF';
+      EXCEPTION
+         WHEN e_same_name
+         THEN
+            NULL;
+      END;
+      
       BEGIN
          EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.LOGGING_CONF for ' || p_schema
                            || '.LOGGING_CONF';
@@ -2084,14 +2093,6 @@ IS
    IS
    BEGIN
       -- create the synonyms
-      BEGIN
-         EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.COMMAND_CONF for ' || p_schema || '.COMMAND_CONF';
-      EXCEPTION
-         WHEN e_same_name
-         THEN
-            NULL;
-      END;
-      
       BEGIN
          EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.FILE_CONF for ' || p_schema || '.FILE_CONF';
       EXCEPTION
@@ -3095,7 +3096,7 @@ IS
          EXECUTE IMMEDIATE q'|ALTER TABLE file_conf ADD 
 	 (
 	   CONSTRAINT file_conf_ck6
-	   CHECK (compress_method IN ('extension_method','gzip_method','compress_method','bzip_method','zip_method'))
+	   CHECK (compress_method IN ('extension_method','gzip_method','compress_method','bzip2_method','zip_method'))
 	 )|';
 
          EXECUTE IMMEDIATE q'|ALTER TABLE file_conf ADD 

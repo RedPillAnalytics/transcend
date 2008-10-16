@@ -462,9 +462,9 @@ IS
 
    PROCEDURE set_command_conf(
       p_name     VARCHAR2,
-      p_value    NUMBER,
-      p_path     VARCHAR2,
-      p_flags    VARCHAR2,
+      p_value    VARCHAR2 DEFAULT NULL,
+      p_path     VARCHAR2 DEFAULT NULL,
+      p_flags    VARCHAR2 DEFAULT NULL,
       p_mode     VARCHAR2 DEFAULT 'upsert'
    )
    IS
@@ -475,9 +475,9 @@ IS
       IF LOWER( p_mode ) IN( 'upsert', 'update' )
       THEN
          UPDATE command_conf
-            SET value = p_value,
-                path  = p_path,
-                flags = p_flags,
+            SET value = CASE WHEN p_value = null_value THEN NULL WHEN p_value IS NULL THEN value ELSE p_value end,
+                path = CASE WHEN p_path = null_value THEN NULL WHEN p_path IS NULL THEN path ELSE p_path end,
+                flags = CASE WHEN p_flags = null_value THEN NULL WHEN p_flags IS NULL THEN flags ELSE p_flags end,
                 modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
                 modified_dt = SYSDATE
           WHERE lower( name ) = LOWER( p_name );
@@ -486,11 +486,18 @@ IS
       -- if the update was unsuccessful above, or an insert it specifically requested, then do an insert
       IF ( SQL%ROWCOUNT = 0 AND LOWER( p_mode ) = 'upsert' ) OR LOWER( p_mode ) = 'insert'
       THEN
+
+         -- p_value is required for inserts
+         IF p_value IS NULL
+         THEN
+            evolve.raise_err( 'parm_req', 'P_vALUE' );
+         END IF;
+         
          BEGIN
             INSERT INTO command_conf
                         ( name, value, path, flags
                         )
-                 VALUES ( lower( p_name ), value, path, flags
+                 VALUES ( lower( p_name ), p_value, p_path, p_flags
                         );
          EXCEPTION
             WHEN e_dup_conf
@@ -511,7 +518,7 @@ IS
       THEN
 	 evolve.raise_err( 'no_rep_obj' );
       END IF;
-   END set_method_conf;
+   END set_command_conf;
 
    PROCEDURE set_default_configs( p_config VARCHAR2 DEFAULT 'all', p_reset VARCHAR2 DEFAULT 'no' )
    IS
