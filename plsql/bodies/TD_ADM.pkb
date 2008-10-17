@@ -200,6 +200,10 @@ IS
 
          EXECUTE IMMEDIATE 'grant select on log_runtime_today to ' || p_grantee;
 
+         EXECUTE IMMEDIATE 'grant select on log_today to ' || p_grantee;
+
+         EXECUTE IMMEDIATE 'grant select on log_week to ' || p_grantee;
+
          EXECUTE IMMEDIATE 'grant select on log_my_session to ' || p_grantee;
 
          EXECUTE IMMEDIATE 'grant select on log_runtime_my_session to ' || p_grantee;
@@ -434,6 +438,22 @@ IS
 
       BEGIN
          EXECUTE IMMEDIATE 'drop view log_runtime_today';
+      EXCEPTION
+         WHEN e_no_tab
+         THEN
+            NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE 'drop view log_today';
+      EXCEPTION
+         WHEN e_no_tab
+         THEN
+            NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE 'drop view log_week';
       EXCEPTION
          WHEN e_no_tab
          THEN
@@ -1003,6 +1023,128 @@ IS
          	  FROM log_table
          	 WHERE runmode='runtime'
          	   AND to_char(systimestamp, 'mmddyyyy') = to_char(entry_ts, 'mmddyyyy')
+         	 ORDER BY last_entry_ts,
+         	       session_id,
+         	       entry_ts) |';
+
+
+         EXECUTE IMMEDIATE q'|CREATE OR REPLACE VIEW log_today
+         ( client_info,
+           module,
+           action,
+           entry_ts,
+           msg,
+           call_stack,
+           back_trace,
+           batch_id,
+           session_id,
+           runmode,
+           current_scn,
+           instance_name,
+           service_name,
+           machine, 
+           dbuser, 
+           osuser, 
+           code )
+         AS 
+         SELECT client_info,
+                module,
+                action,
+                entry_ts,
+                msg,
+                call_stack,
+                back_trace,
+                batch_id,
+                session_id,
+                runmode,
+                current_scn,
+                instance_name,
+                service_name,
+                machine, 
+                dbuser, 
+                osuser, 
+                code 
+           FROM (SELECT client_info,
+                        module,
+                        action,
+                        entry_ts,
+                        msg,
+                        call_stack,
+                        back_trace,
+                        session_id,
+                        runmode,
+                        current_scn,
+                        instance_name,
+                        service_name,
+                        machine, 
+                        dbuser, 
+                        osuser, 
+                        code, 
+                        first_value(batch_id) OVER (partition BY session_id ORDER BY entry_ts) batch_id,
+         	       MAX(entry_ts) OVER (partition BY session_id) last_entry_ts
+         	  FROM log_table
+         	 WHERE to_char(systimestamp, 'mmddyyyy') = to_char(entry_ts, 'mmddyyyy')
+         	 ORDER BY last_entry_ts,
+         	       session_id,
+         	       entry_ts) |';
+
+
+         EXECUTE IMMEDIATE q'|CREATE OR REPLACE VIEW log_week
+         ( client_info,
+           module,
+           action,
+           entry_ts,
+           msg,
+           call_stack,
+           back_trace,
+           batch_id,
+           session_id,
+           runmode,
+           current_scn,
+           instance_name,
+           service_name,
+           machine, 
+           dbuser, 
+           osuser, 
+           code )
+         AS 
+         SELECT client_info,
+                module,
+                action,
+                entry_ts,
+                msg,
+                call_stack,
+                back_trace,
+                batch_id,
+                session_id,
+                runmode,
+                current_scn,
+                instance_name,
+                service_name,
+                machine, 
+                dbuser, 
+                osuser, 
+                code 
+           FROM (SELECT client_info,
+                        module,
+                        action,
+                        entry_ts,
+                        msg,
+                        call_stack,
+                        back_trace,
+                        session_id,
+                        runmode,
+                        current_scn,
+                        instance_name,
+                        service_name,
+                        machine, 
+                        dbuser, 
+                        osuser, 
+                        code, 
+                        first_value(batch_id) OVER (partition BY session_id ORDER BY entry_ts) batch_id,
+         	       MAX(entry_ts) OVER (partition BY session_id) last_entry_ts
+         	  FROM log_table
+                 WHERE entry_ts > systimestamp - 7
          	 ORDER BY last_entry_ts,
          	       session_id,
          	       entry_ts) |';
@@ -1962,6 +2104,22 @@ IS
             
       BEGIN
          EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.LOG_runtime_today for ' || p_schema || '.LOG_runtime_today';
+      EXCEPTION
+         WHEN e_same_name
+         THEN
+            NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.LOG_today for ' || p_schema || '.LOG_today';
+      EXCEPTION
+         WHEN e_same_name
+         THEN
+            NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.LOG_week for ' || p_schema || '.LOG_week';
       EXCEPTION
          WHEN e_same_name
          THEN

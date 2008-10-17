@@ -575,6 +575,41 @@ AS
          RAISE;
    END consume_sql;
 
+   -- this procedure will create an extract file with the log from the current session   
+   PROCEDURE dump_log( p_directory VARCHAR2, p_repository VARCHAR2, p_dump_type VARCHAR2 DEFAULT 'session' )
+   AS  
+      l_object   all_objects.object_name%type;
+      l_numrows  NUMBER;
+      l_filename VARCHAR2(50);
+   BEGIN
+      
+      -- determine which view to use
+      l_object :=
+      CASE p_dump_type
+      WHEN 'session' THEN 'log_my_session'
+      WHEN 'day' THEN 'log_today'
+      WHEN 'week' THEN 'log_week'
+      END; 
+         
+      l_filename :=  'evolve_' || sys_context('USERENV','SESSIONID') || '.dmp';
+
+      -- extract data to the file
+      l_numrows := td_utils.extract_object( p_owner     => p_repository,
+                                            p_object    => l_object,
+                                            p_directory => p_directory,
+                                            p_filename  => l_filename,
+                                            p_append    => 'yes' );
+
+      evolve.log_msg( 'Dump file ' || p_directory || ':' || l_filename || ' created' );
+                                            
+      
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         log_err;
+         RAISE;
+   END dump_log;
+
 END evolve;
 /
 

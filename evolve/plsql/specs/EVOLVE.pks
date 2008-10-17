@@ -51,6 +51,8 @@ AS
    );
 
    PROCEDURE consume_sql( p_session_id NUMBER, p_module VARCHAR2, p_action VARCHAR2, p_sql VARCHAR2 );
+      
+   PROCEDURE dump_log( p_directory VARCHAR2, p_repository VARCHAR2, p_dump_type VARCHAR2 DEFAULT 'session' );
 
 END evolve;
 /
