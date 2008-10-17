@@ -100,7 +100,7 @@ AS
       o_ev.change_action( 'open file handle' );
       l_fh := UTL_FILE.FOPEN( location => self.directory, 
                               filename => self.archive_filename,
-                              open_mode => 'w', 
+                              open_mode => 'wb', 
                               max_linesize => l_max_linesize);
 
       o_ev.change_action( 'Get LOB information' );      
