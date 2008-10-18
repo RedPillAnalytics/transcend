@@ -87,6 +87,9 @@ AS
       l_detail_id   file_detail.file_detail_id%type;
       o_ev          evolve_ot                           := evolve_ot( p_module => 'extract_ot.process' );
    BEGIN
+
+      evolve.log_msg ('Processing extract ' || SELF.filename || ' in directory '||SELF.directory );
+
       -- get current date format
       SELECT VALUE
         INTO l_curr_df
@@ -157,7 +160,6 @@ AS
 			     p_source_directory => self.work_directory,
 			     p_source_filename  => self.filename );
 
-	 evolve.log_msg( 'File '||self.filename||' moved from '||self.work_directory||' to '||self.directory );
       END IF;
 
       -- notify about successful arrival of feed

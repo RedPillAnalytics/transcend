@@ -76,11 +76,20 @@ IS
       -- and then the basic Evolve instrumentation object
       o_ev        evolve_ot                        := evolve_ot( p_module => 'trans_factory.get_file_label_ot' );
    BEGIN
-      -- get the file name and file type
-      SELECT lower( label_type )
-        INTO l_label_type
-        FROM file_conf
-       WHERE LOWER( file_label ) = LOWER( p_file_label );
+      BEGIN
+
+         -- get the file name and file type
+         SELECT lower( label_type )
+           INTO l_label_type
+           FROM file_conf
+          WHERE LOWER( file_label ) = LOWER( p_file_label );
+         
+      EXCEPTION
+         WHEN no_data_found
+         THEN 
+            -- if there is no record found for this file_lable, raise an exception
+            evolve.raise_err ('no_feed', '"'||p_file_label||'"');
+      END;
 
       -- instantiate an object based on label_type
       -- polymorph the file_detail_ot based on the label_type

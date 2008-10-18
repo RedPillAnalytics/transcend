@@ -34,7 +34,7 @@ AS
          WHEN NO_DATA_FOUND
          THEN
             -- if there is no record found for this file_lable, raise an exception
-            evolve.raise_err ('no_feed', p_file_label);
+            evolve.raise_err ('no_feed', '"'||p_file_label||'"');
       END;
 
       -- run the business logic to make sure everything works out fine
@@ -500,7 +500,7 @@ AS
             LOOP
                td_utils.create_file (c_location.DIRECTORY, c_location.LOCATION);
             END LOOP;
-         WHEN l_rows_dirlist AND l_targ_file_cnt > 0
+         WHEN l_rows_dirlist AND l_targ_file_cnt > 0 AND l_ext_tab_ind
          -- matching files found, and the number of location files is greater than zero
          -- alter the external table to contain all the files
       THEN

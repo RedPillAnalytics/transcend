@@ -32,9 +32,9 @@ AS
       
    PROCEDURE move_file( 
       p_source_directory VARCHAR2, 
-      p_source_filename VARCHAR2, 
-      p_directory VARCHAR2, 
-      p_filename VARCHAR2
+      p_source_filename  VARCHAR2, 
+      p_directory        VARCHAR2, 
+      p_filename         VARCHAR2
    );
 
    -- procedure executes the delete_file function and translates the return code to an exception

@@ -12,7 +12,7 @@ AS
       BEGIN
          -- load all the feed attributes
          SELECT file_detail_id, file_label, file_group, label_type, 
-                nvl( p_directory, directory), filename, source_directory, source_filename,
+                upper( nvl( p_directory, directory) ), filename, upper( source_directory ), source_filename,
                 archive_filename, num_bytes, num_lines, file_dt, 
                 store_original_files, compress_method, 
                 encrypt_method, passphrase, label_file,

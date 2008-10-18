@@ -146,9 +146,9 @@ AS
    -- procedure executes the move_file function and raises an exception with the return code
    PROCEDURE move_file( 
       p_source_directory VARCHAR2, 
-      p_source_filename VARCHAR2, 
-      p_directory VARCHAR2, 
-      p_filename VARCHAR2
+      p_source_filename  VARCHAR2, 
+      p_directory        VARCHAR2, 
+      p_filename         VARCHAR2
    )
    AS
       l_file VARCHAR2(61)        := upper( p_directory ) || ':'|| p_filename;
@@ -173,7 +173,7 @@ AS
       THEN
 
 	 BEGIN
-	    utl_file.frename( p_source_directory, p_source_filename, p_directory, p_filename );
+	    utl_file.frename( p_source_directory, p_source_filename, p_directory, p_filename, TRUE );
 	 EXCEPTION
 	    WHEN e_diff_fs
 	    THEN
