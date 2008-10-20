@@ -623,6 +623,22 @@ IS
 	   modified_dt	     DATE
 	 )|';
 
+         EXECUTE IMMEDIATE q'|ALTER TABLE error_conf ADD 
+	 (
+	   CONSTRAINT error_conf_pk
+	   PRIMARY KEY
+	   (name)
+	   USING INDEX
+	 )|';
+
+         EXECUTE IMMEDIATE q'|ALTER TABLE error_conf ADD 
+	 (
+	   CONSTRAINT error_conf_uk1
+	   unique
+	   (code)
+	   USING INDEX
+	 )|';
+
          -- COMMAND_CONF table
          EXECUTE IMMEDIATE q'|CREATE TABLE command_conf
 	 ( 
@@ -642,22 +658,6 @@ IS
 	   CONSTRAINT command_conf_pk
 	   PRIMARY KEY
 	   (name)
-	   USING INDEX
-	 )|';
-
-         EXECUTE IMMEDIATE q'|ALTER TABLE error_conf ADD 
-	 (
-	   CONSTRAINT error_conf_pk
-	   PRIMARY KEY
-	   (name)
-	   USING INDEX
-	 )|';
-
-         EXECUTE IMMEDIATE q'|ALTER TABLE error_conf ADD 
-	 (
-	   CONSTRAINT error_conf_uk1
-	   unique
-	   (code)
 	   USING INDEX
 	 )|';
 
@@ -683,26 +683,36 @@ IS
 	   back_trace VARCHAR2(1024),
 	   batch_id number
 	 )|';
-
-         -- LOGGING_CONF table
-         EXECUTE IMMEDIATE q'|CREATE TABLE logging_conf
-	 ( 
-	   logging_level    NUMBER not NULL,
-	   debug_level 	  NUMBER NOT NULL,
-	   module 	  VARCHAR2(48) NOT NULL,
+         
+         -- MODULE_CONF table
+         EXECUTE IMMEDIATE q'|CREATE TABLE module_conf
+	 ( logging_level    NUMBER       NOT NULL,
+	   debug_level 	    NUMBER       NOT NULL,
+           default_runmode  VARCHAR2(10) NOT NULL,
+           registration     VARCHAR2(10) NOT NULL,
+           consistent_name  VARCHAR2(3)  NOT NULL,
+	   module 	    VARCHAR2(48) NOT NULL,
 	   created_user     VARCHAR2(30) DEFAULT sys_context('USERENV','SESSION_USER') NOT NULL,
 	   created_dt       DATE DEFAULT SYSDATE NOT NULL,
 	   modified_user    VARCHAR2(30),
-	   modified_dt	  DATE
+	   modified_dt	    DATE
 	 )|';
-
-         EXECUTE IMMEDIATE q'|ALTER TABLE logging_conf ADD 
+         
+         EXECUTE IMMEDIATE q'|ALTER TABLE module_conf ADD 
 	 (
-	   CONSTRAINT logging_conf_pk
+	   CONSTRAINT module_conf_pk
 	   PRIMARY KEY
 	   (module)
 	   USING INDEX
 	 )|';
+         
+         EXECUTE IMMEDIATE q'|ALTER TABLE module_conf ADD CONSTRAINT module_conf_ck1 CHECK (module=lower(module))|';
+
+         EXECUTE IMMEDIATE q'|ALTER TABLE module_conf ADD CONSTRAINT module_conf_ck2 CHECK (default_runmode=lower(default_runmode))|';
+         
+         EXECUTE IMMEDIATE q'|ALTER TABLE module_conf ADD CONSTRAINT module_conf_ck3 CHECK (registration=lower(registration))|';
+         
+         EXECUTE IMMEDIATE q'|ALTER TABLE module_conf ADD CONSTRAINT module_conf_ck4 CHECK (consistent_name in ('yes','no'))|';
 
          -- NOTIFICATION_EVENTS table
          EXECUTE IMMEDIATE q'|CREATE TABLE notification_events
@@ -771,52 +781,6 @@ IS
          EXECUTE IMMEDIATE q'|ALTER TABLE notification_conf ADD CONSTRAINT notification_conf_ck6 CHECK (sender=lower(sender))|';
 
          EXECUTE IMMEDIATE q'|ALTER TABLE notification_conf ADD CONSTRAINT notification_conf_ck7 CHECK (recipients=lower(recipients))|';
-
-         -- REGISTRATION_CONF table
-         EXECUTE IMMEDIATE q'|CREATE TABLE registration_conf
-	 ( 
-	   registration  	     VARCHAR2(10) NOT NULL,
-	   module 	     VARCHAR2(48),
-	   created_user	     VARCHAR2(30) DEFAULT sys_context('USERENV','SESSION_USER') NOT NULL,
-	   created_dt	     DATE DEFAULT SYSDATE NOT NULL,
-	   modified_user	     VARCHAR2(30),
-	   modified_dt	     DATE
-	 )|';
-
-         EXECUTE IMMEDIATE q'|ALTER TABLE registration_conf ADD 
-	 (
-	   CONSTRAINT registration_conf_pk
-	   PRIMARY KEY
-	   (module)
-	   USING INDEX
-	 )|';
-
-         EXECUTE IMMEDIATE q'|ALTER TABLE registration_conf ADD CONSTRAINT registration_conf_ck1 CHECK (module=lower(module))|';
-
-         EXECUTE IMMEDIATE q'|ALTER TABLE registration_conf ADD CONSTRAINT registration_conf_ck2 CHECK (registration=lower(registration))|';
-
-         -- RUNMODE_CONF table
-         EXECUTE IMMEDIATE q'|CREATE TABLE runmode_conf
-	 ( 
-	   default_runmode  VARCHAR2(10) not NULL,
-	   module 	  VARCHAR2(48),
-	   created_user     VARCHAR2(30) DEFAULT sys_context('USERENV','SESSION_USER') NOT NULL,
-	   created_dt       DATE DEFAULT SYSDATE NOT NULL,
-	   modified_user    VARCHAR2(30),
-	   modified_dt	  DATE
-	 )|';
-
-         EXECUTE IMMEDIATE q'|ALTER TABLE runmode_conf ADD 
-	 (
-	   CONSTRAINT runmode_conf_pk
-	   PRIMARY KEY
-	   (module)
-	   USING INDEX
-	 )|';
-
-         EXECUTE IMMEDIATE q'|ALTER TABLE runmode_conf ADD CONSTRAINT runmode_conf_ck1 CHECK (module=lower(module))|';
-
-         EXECUTE IMMEDIATE q'|ALTER TABLE runmode_conf ADD CONSTRAINT runmode_conf_ck2 CHECK (default_runmode=lower(default_runmode))|';
 
          -- PARAMETER_CONF table
          EXECUTE IMMEDIATE q'|CREATE TABLE parameter_conf

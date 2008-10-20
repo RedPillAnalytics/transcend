@@ -12,6 +12,7 @@ AS
       l_logging_level   NUMBER;
       l_registration    VARCHAR2( 30 );
       l_debug_level     NUMBER;
+      l_consistent_name VARCHAR2( 3 );
    BEGIN
       -- read in all the previous values
       SELF.read_prev_info;
@@ -25,88 +26,59 @@ AS
 
       -- READ CONFIGURATION TABLES TO PULL VALUES
 
-      -- get the runmode value
-      IF NOT td_inst.is_full_debugmode
-      THEN
-         BEGIN
-            SELECT LOWER( default_runmode )
-              INTO l_runmode
-              FROM ( SELECT default_runmode, parameter_level,
-                            MAX( parameter_level ) OVER( PARTITION BY 1 )
-                                                                      max_parameter_level
-                      FROM ( SELECT default_runmode, module,
-                                    CASE
-                                       WHEN module = evolve_adm.all_modules
-                                          THEN 1
-                                       ELSE 2
-                                    END parameter_level
-                              FROM runmode_conf )
-                     WHERE ( module = td_inst.module OR module = evolve_adm.all_modules ))
-             WHERE parameter_level = max_parameter_level;
-         EXCEPTION
-            WHEN NO_DATA_FOUND
-            THEN
-	       evolve.raise_err( 'parm_not_configured','RUNMODE' );
-         END;
-
-         td_inst.runmode( l_runmode );
-      END IF;
-
-      -- get the registration value for this module
+      -- get the MODULE_CONF values
       BEGIN
-         SELECT LOWER( registration )
-           INTO l_registration
-           FROM ( SELECT registration, parameter_level,
+         SELECT logging_level, debug_level, 
+                LOWER( default_runmode ),
+                LOWER( registration ),
+                LOWER( consistent_name )
+           INTO l_logging_level,
+                l_debug_level,
+                l_runmode,
+                l_registration,
+                l_consistent_name
+           FROM ( SELECT logging_level,
+                         debug_level,
+                         default_runmode,
+                         registration,
+                         parameter_level,
                          MAX( parameter_level ) OVER( PARTITION BY 1 )
-                                                                      max_parameter_level
-                   FROM ( SELECT registration, module,
+                                                                   max_parameter_level
+                   FROM ( SELECT logging_level, debug_level,
+                                 default_runmode, 
+                                 registration,
+                                 consistent_name,
+                                 module,
                                  CASE
                                     WHEN module = evolve_adm.all_modules
                                        THEN 1
                                     ELSE 2
                                  END parameter_level
-                           FROM registration_conf )
+                           FROM module_conf )
                   WHERE ( module = td_inst.module OR module = evolve_adm.all_modules ))
           WHERE parameter_level = max_parameter_level;
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
-	    evolve.raise_err( 'parm_not_configured','REGISTRATION' );
+	    evolve.raise_err( 'parm_not_configured','MODULE_NAME' );
       END;
+         
+      -- register the runmode
+      td_inst.runmode( l_runmode );
 
       -- set the registration value
       td_inst.registration( l_registration );
       -- now register the application
       td_inst.REGISTER;
 
-      -- get the logging level
-      BEGIN
-         SELECT LOWER( logging_level ), LOWER( debug_level )
-           INTO l_logging_level, l_debug_level
-           FROM ( SELECT logging_level, debug_level, parameter_level,
-                         MAX( parameter_level ) OVER( PARTITION BY 1 )
-                                                                      max_parameter_level
-                   FROM ( SELECT logging_level, debug_level, module,
-                                 CASE
-                                    WHEN module = evolve_adm.all_modules
-                                       THEN 1
-                                    ELSE 2
-                                 END parameter_level
-                           FROM logging_conf )
-                  WHERE ( module = td_inst.module OR module = evolve_adm.all_modules ))
-          WHERE parameter_level = max_parameter_level;
-      EXCEPTION
-         WHEN NO_DATA_FOUND
-         THEN
-   	    evolve.raise_err( 'parm_not_configured','LOGGING_LEVEL or DEBUG_LEVEL' );
-      END;
-
+      -- set the logging level
       td_inst.logging_level( CASE
                                 WHEN evolve.is_debugmode
                                    THEN l_debug_level
                                 ELSE l_logging_level
                              END
                            );
+
       -- log module and action changes to a high logging level
       evolve.log_msg(    'MODULE "'
                           || td_inst.module
