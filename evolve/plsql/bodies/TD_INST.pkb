@@ -16,7 +16,7 @@ AS
 -- miscelaneous other variables for enhanced framework functionality
    g_batch_id        NUMBER;
    g_registration    VARCHAR2( 30 ) := 'appinfo';
-   g_logging_level   number := 2;
+   g_logging_level   NUMBER         := 2;
    g_runmode         VARCHAR2( 10 ) := 'runtime';
    g_consistent_name VARCHAR2( 3 )  := 'no';
 
