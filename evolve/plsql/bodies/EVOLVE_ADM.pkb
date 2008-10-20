@@ -1,9 +1,12 @@
 CREATE OR REPLACE PACKAGE BODY evolve_adm
 IS
-   PROCEDURE set_logging_level(
+   PROCEDURE set_module_conf(
       p_module          VARCHAR2 DEFAULT all_modules,
-      p_logging_level   NUMBER DEFAULT 1,
-      p_debug_level     NUMBER DEFAULT 3,
+      p_logging_level   NUMBER   DEFAULT 1,
+      p_debug_level     NUMBER   DEFAULT 3,
+      p_default_runmode VARCHAR2 DEFAULT 'runtime',
+      p_registration    VARCHAR2 DEFAULT 'appinfo',
+      p_consistent_name VARCHAR2 DEFAULT 'no',
       p_mode            VARCHAR2 DEFAULT 'upsert'
    )
    IS
@@ -14,11 +17,14 @@ IS
       IF LOWER( p_mode ) IN( 'upsert', 'update' )
       THEN
          UPDATE logging_conf
-            SET logging_level = p_logging_level,
-                debug_level = p_debug_level,
-                modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
-                modified_dt = SYSDATE
-          WHERE module = LOWER( p_module );
+            SET logging_level   = p_logging_level,
+                debug_level     = p_debug_level,
+                default_runmode = lower( p_default_runmode ),
+                registration    = lower( p_registration ),
+                consistent_name = lower( p_consistent_name ),
+                modified_user   = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
+                modified_dt     = SYSDATE
+          WHERE module          = LOWER( p_module );
       END IF;
 
       -- if the update was unsuccessful above, or an insert it specifically requested, then do an insert
@@ -26,9 +32,13 @@ IS
       THEN
          BEGIN
             INSERT INTO logging_conf
-                        ( logging_level, debug_level, module
+                        ( logging_level, debug_level, 
+                          default_runmode, registration, 
+                          consistent_name, module
                         )
-                 VALUES ( p_logging_level, p_debug_level, LOWER( p_module )
+                 VALUES ( p_logging_level, p_debug_level,
+                          lower( p_default_runmode ), lower( p_registration ),
+                          lower( p_consistent_name ), LOWER( p_module )
                         );
          EXCEPTION
             WHEN e_dup_conf
@@ -40,7 +50,7 @@ IS
       -- if a delete is specifically requested, then do a delete
       IF LOWER( p_mode ) = 'delete'
       THEN
-         DELETE FROM logging_conf
+         DELETE FROM module_conf
                WHERE module = LOWER( p_module );
       END IF;
 
@@ -49,110 +59,7 @@ IS
       THEN
 	 evolve.raise_err( 'no_rep_obj' );
       END IF;
-   END set_logging_level;
-
-   PROCEDURE set_runmode(
-      p_module            VARCHAR2 DEFAULT all_modules,
-      p_default_runmode   VARCHAR2 DEFAULT 'runtime',
-      p_mode              VARCHAR2 DEFAULT 'upsert'
-   )
-   IS
-      e_dup_conf   EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_dup_conf, -1 );
-   BEGIN
-      -- this is the default method... update if it exists or insert it
-      IF LOWER( p_mode ) IN( 'upsert', 'update' )
-      THEN
-         UPDATE runmode_conf
-            SET default_runmode = LOWER( p_default_runmode ),
-                modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
-                modified_dt = SYSDATE
-          WHERE module = LOWER( p_module );
-      END IF;
-
-      -- if the update was unsuccessful above, or an insert it specifically requested, then do an insert
-      IF ( SQL%ROWCOUNT = 0 AND LOWER( p_mode ) = 'upsert' ) OR LOWER( p_mode ) = 'insert'
-      THEN
-         BEGIN
-            INSERT INTO runmode_conf
-                        ( default_runmode, module
-                        )
-                 VALUES ( LOWER( p_default_runmode ), LOWER( p_module )
-                        );
-         EXCEPTION
-            WHEN e_dup_conf
-            THEN
-	       evolve.raise_err( 'dup_conf' );
-         END;
-      END IF;
-
-      -- if a delete is specifically requested, then do a delete
-      IF LOWER( p_mode ) = 'delete'
-      THEN
-         DELETE FROM runmode_conf
-               WHERE module = LOWER( p_module );
-      END IF;
-
-      -- if we still have not affected any records, then there's a problem
-      IF SQL%ROWCOUNT = 0
-      THEN
-	 evolve.raise_err( 'no_rep_obj' );
-      END IF;
-   END set_runmode;
-
-   PROCEDURE set_registration(
-      p_module         VARCHAR2 DEFAULT all_modules,
-      p_registration   VARCHAR2 DEFAULT 'appinfo',
-      p_mode           VARCHAR2 DEFAULT 'upsert'
-   )
-   IS
-      e_dup_conf   EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_dup_conf, -1 );
-   BEGIN
-      -- this is the default method... update if it exists or insert it
-      IF LOWER( p_mode ) IN( 'upsert', 'update' )
-      THEN
-         UPDATE registration_conf
-            SET registration = LOWER( p_registration ),
-                modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
-                modified_dt = SYSDATE
-          WHERE module = LOWER( p_module );
-      END IF;
-
-      -- if the update was unsuccessful above, or an insert it specifically requested, then do an insert
-      IF ( SQL%ROWCOUNT = 0 AND LOWER( p_mode ) = 'upsert' ) OR LOWER( p_mode ) = 'insert'
-      THEN
-         BEGIN
-            INSERT INTO registration_conf
-                        ( registration, module
-                        )
-                 VALUES ( LOWER( p_registration ), LOWER( p_module )
-                        );
-         EXCEPTION
-            WHEN e_dup_conf
-            THEN
- 	       evolve.raise_err( 'dup_conf' );
-         END;
-      END IF;
-
-      -- if a delete is specifically requested, then do a delete
-      IF LOWER( p_mode ) = 'delete'
-      THEN
-         DELETE FROM registration_conf
-               WHERE module = LOWER( p_module );
-      END IF;
-
-      -- if we still have not affected any records, then there's a problem
-      IF SQL%ROWCOUNT = 0
-      THEN
- 	 evolve.raise_err( 'no_rep_obj' );
-      END IF;
-   EXCEPTION
-      WHEN OTHERS
-      THEN
-         evolve.log_err;
-         RAISE;
-   END set_registration;
+   END set_module_conf;
 
    PROCEDURE set_notification_event(
       p_module    VARCHAR2,
