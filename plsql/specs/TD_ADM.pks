@@ -6,9 +6,9 @@ IS
 
    -- package constatnts
    version CONSTANT NUMBER := 2.0; 
-   evolve_sys_role CONSTANT VARCHAR2(30) := 'EVOLVE_SYS';
-   trans_etl_role CONSTANT VARCHAR2(30) := 'TRANS_ETL_SYS';
-   trans_files_role CONSTANT VARCHAR2(30) := 'TRANS_FILES_SYS';
+   evolve_sys_role CONSTANT VARCHAR2(30) := 'EVOLVE';
+   trans_etl_role CONSTANT VARCHAR2(30) := 'TRANS_ETL';
+   trans_files_role CONSTANT VARCHAR2(30) := 'TRANS_FILES';
    default_repository CONSTANT VARCHAR2(6) := 'TDREP';
 
 
