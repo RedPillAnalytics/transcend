@@ -159,6 +159,20 @@ AS
    BEGIN
       g_logging_level := p_logging_level;
    END logging_level;
+      
+   -- accessor methods for consistent_name
+   FUNCTION consistent_name
+      RETURN VARCHAR2
+   AS
+   BEGIN
+      RETURN g_consistent_name;
+   END consistent_name;
+
+   PROCEDURE consistent_name( p_consistent_name VARCHAR2 )
+   AS
+   BEGIN
+      g_consistent_name := p_consistent_name;
+   END consistent_name;
 
    -- accessor methods for batch_id
    FUNCTION batch_id
