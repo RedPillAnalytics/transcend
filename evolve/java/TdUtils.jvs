@@ -1,5 +1,5 @@
 create or replace and compile
-java source named TdUtils
+java source named TdUtils AUTHID current_user
 as
 import java.io.*;
 import java.lang.*;
