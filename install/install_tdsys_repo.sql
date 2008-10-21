@@ -49,9 +49,9 @@ DECLARE
    PRAGMA exception_init( e_role_exists, -1921 );
 BEGIN
    BEGIN
-      EXECUTE IMMEDIATE q'|CREATE ROLE evolve_sys|';
-      EXECUTE IMMEDIATE q'|CREATE ROLE trans_etl_sys|';
-      EXECUTE IMMEDIATE q'|CREATE ROLE trans_files_sys|';
+      EXECUTE IMMEDIATE q'|CREATE ROLE evolve|';
+      EXECUTE IMMEDIATE q'|CREATE ROLE trans_etl|';
+      EXECUTE IMMEDIATE q'|CREATE ROLE trans_files|';
       dbms_output.put_line( 'Press RETURN to continue' );
 
    EXCEPTION
@@ -119,9 +119,9 @@ BEGIN
 	 THEN
 	 NULL;
       END;
-      EXECUTE IMMEDIATE q'|CREATE ROLE evolve_sys|';
-      EXECUTE IMMEDIATE q'|CREATE ROLE trans_etl_sys|';
-      EXECUTE IMMEDIATE q'|CREATE ROLE trans_files_sys|';
+      EXECUTE IMMEDIATE q'|CREATE ROLE evolve|';
+      EXECUTE IMMEDIATE q'|CREATE ROLE trans_etl|';
+      EXECUTE IMMEDIATE q'|CREATE ROLE trans_files|';
 
    ELSIF :b_role_exists = 'Y' AND '&drop_repo' = 'N'
    THEN
