@@ -16,7 +16,7 @@ IS
       -- this is the default method... update if it exists or insert it
       IF LOWER( p_mode ) IN( 'upsert', 'update' )
       THEN
-         UPDATE logging_conf
+         UPDATE module_conf
             SET logging_level   = p_logging_level,
                 debug_level     = p_debug_level,
                 default_runmode = lower( p_default_runmode ),
@@ -31,7 +31,7 @@ IS
       IF ( SQL%ROWCOUNT = 0 AND LOWER( p_mode ) = 'upsert' ) OR LOWER( p_mode ) = 'insert'
       THEN
          BEGIN
-            INSERT INTO logging_conf
+            INSERT INTO module_conf
                         ( logging_level, debug_level, 
                           default_runmode, registration, 
                           consistent_name, module

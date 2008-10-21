@@ -5,23 +5,14 @@ IS
 
    null_value   CONSTANT VARCHAR2 (6) := '*null*';
 
-   PROCEDURE set_logging_level(
+   PROCEDURE set_module_conf(
       p_module          VARCHAR2 DEFAULT all_modules,
-      p_logging_level   NUMBER DEFAULT 1,
-      p_debug_level     NUMBER DEFAULT 3,
-      p_mode		VARCHAR2 DEFAULT 'upsert'
-   );
-
-   PROCEDURE set_runmode(
-      p_module            VARCHAR2 DEFAULT all_modules,
-      p_default_runmode   VARCHAR2 DEFAULT 'runtime',
-      p_mode		  VARCHAR2 DEFAULT 'upsert'
-   );
-
-   PROCEDURE set_registration(
-      p_module            VARCHAR2 DEFAULT all_modules,
-      p_registration      VARCHAR2 DEFAULT 'appinfo',
-      p_mode		  VARCHAR2 DEFAULT 'upsert'
+      p_logging_level   NUMBER   DEFAULT 1,
+      p_debug_level     NUMBER   DEFAULT 3,
+      p_default_runmode VARCHAR2 DEFAULT 'runtime',
+      p_registration    VARCHAR2 DEFAULT 'appinfo',
+      p_consistent_name VARCHAR2 DEFAULT 'no',
+      p_mode            VARCHAR2 DEFAULT 'upsert'
    );
 
    PROCEDURE set_notification_event(
