@@ -170,7 +170,7 @@ IS
 
          EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON DIR_LIST TO ' || p_grantee;
 
-         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON LOGGING_CONF TO ' || p_grantee;
+         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON MODULE_CONF TO ' || p_grantee;
 
          EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON LOG_TABLE TO ' || p_grantee;
 
@@ -179,10 +179,6 @@ IS
          EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON NOTIFICATION_EVENTS TO ' || p_grantee;
 
          EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON PARAMETER_CONF TO ' || p_grantee;
-
-         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON REGISTRATION_CONF TO ' || p_grantee;
-
-         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON RUNMODE_CONF TO ' || p_grantee;
 
          EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON ERROR_CONF TO ' || p_grantee;
          
@@ -339,14 +335,6 @@ IS
       END;
 
       BEGIN
-         EXECUTE IMMEDIATE q'|DROP TABLE runmode_conf|';
-      EXCEPTION
-         WHEN e_no_tab
-         THEN
-         NULL;
-      END;
-
-      BEGIN
          EXECUTE IMMEDIATE q'|DROP TABLE parameter_conf|';
       EXCEPTION
          WHEN e_no_tab
@@ -387,7 +375,7 @@ IS
       END;
 
       BEGIN
-         EXECUTE IMMEDIATE q'|DROP TABLE logging_conf|';
+         EXECUTE IMMEDIATE q'|DROP TABLE module_conf|';
       EXCEPTION
          WHEN e_no_tab
          THEN
@@ -410,14 +398,6 @@ IS
          NULL;
       END;
 
-      BEGIN
-         EXECUTE IMMEDIATE q'|DROP TABLE registration_conf|';
-      EXCEPTION
-         WHEN e_no_tab
-         THEN
-         NULL;
-      END;
-            
       -- log table views
       BEGIN
          EXECUTE IMMEDIATE 'drop view log';
@@ -1962,8 +1942,8 @@ IS
       END;
       
       BEGIN
-         EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.LOGGING_CONF for ' || p_schema
-                           || '.LOGGING_CONF';
+         EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.MODULE_CONF for ' || p_schema
+                           || '.MODULE_CONF';
       EXCEPTION
          WHEN e_same_name
          THEN
@@ -2010,27 +1990,6 @@ IS
                            || '.NOTIFICATION_EVENTS for '
                            || p_schema
                            || '.NOTIFICATION_EVENTS';
-      EXCEPTION
-         WHEN e_same_name
-         THEN
-            NULL;
-      END;
-
-      BEGIN
-         EXECUTE IMMEDIATE    'create or replace synonym '
-                           || p_user
-                           || '.REGISTRATION_CONF for '
-                           || p_schema
-                           || '.REGISTRATION_CONF';
-      EXCEPTION
-         WHEN e_same_name
-         THEN
-            NULL;
-      END;
-
-      BEGIN
-         EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.RUNMODE_CONF for ' || p_schema
-                           || '.RUNMODE_CONF';
       EXCEPTION
          WHEN e_same_name
          THEN
