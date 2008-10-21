@@ -41,6 +41,7 @@ AS
                          debug_level,
                          default_runmode,
                          registration,
+                         consistent_name,
                          parameter_level,
                          MAX( parameter_level ) OVER( PARTITION BY 1 )
                                                                    max_parameter_level

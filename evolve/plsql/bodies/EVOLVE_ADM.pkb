@@ -431,36 +431,14 @@ IS
    IS
    BEGIN
       -- reset logging_level
-      IF LOWER( p_config ) IN( 'all', 'logging_level' )
+      IF LOWER( p_config ) IN( 'all', 'module' )
       THEN
          IF td_core.is_true( p_reset )
          THEN
-            DELETE FROM logging_conf;
+            DELETE FROM module_conf;
          END IF;
 
-         set_logging_level;
-      END IF;
-
-      -- reset runmode
-      IF LOWER( p_config ) IN( 'all', 'runmode' )
-      THEN
-         IF td_core.is_true( p_reset )
-         THEN
-            DELETE FROM runmode_conf;
-         END IF;
-
-         set_runmode;
-      END IF;
-
-      -- reset registration
-      IF LOWER( p_config ) IN( 'all', 'registration' )
-      THEN
-         IF td_core.is_true( p_reset )
-         THEN
-            DELETE FROM registration_conf;
-         END IF;
-
-         set_registration;
+         set_module_conf;
       END IF;
       
       -- set default notification events
