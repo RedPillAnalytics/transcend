@@ -102,9 +102,9 @@ AS
    END verify;
    MEMBER PROCEDURE start_map
    AS
-      o_ev   evolve_ot := evolve_ot( p_module => 'mapping '||SELF.mapping_name, p_action => 'execute mapping' );
+      o_ev   evolve_ot := evolve_ot( p_module => 'mapping '||SELF.mapping_name, p_action => 'start mapping' );
    BEGIN
-      evolve.log_msg( 'Starting ETL mapping' );
+      evolve.log_msg( 'Pre-mapping processes beginning' );
 
       -- mark indexes unusable
       IF td_core.is_true( SELF.manage_indexes ) AND SELF.replace_method IS NULL
@@ -131,11 +131,15 @@ AS
                                       p_maint_type             => 'disable'
                                     );
       END IF;
+      evolve.log_msg( 'Pre-mapping processes completed' );
+      o_ev.change_action( 'execute mapping' );
    END start_map;
    MEMBER PROCEDURE end_map
    AS
-      o_ev   evolve_ot := evolve_ot( p_module => 'mapping '||SELF.mapping_name, p_action => 'execute mapping' );
+      o_ev   evolve_ot := evolve_ot( p_module => 'mapping '||SELF.mapping_name, p_action => 'end mapping' );
    BEGIN
+      evolve.log_msg( 'Post-mapping processes beginning' );
+
       -- exchange in the partition
       CASE SELF.replace_method
          WHEN 'exchange'
@@ -185,7 +189,8 @@ AS
 
       -- used to be a commit right here
       -- removing it because I don't think a commit should exist inside mapping functionality
-      evolve.log_msg( 'Ending ETL mapping' );
+      evolve.log_msg( 'Post-mapping processes completed' );
+      o_ev.clear_app_info;
    END end_map;
    -- null procedure for polymorphism only
    MEMBER PROCEDURE LOAD
