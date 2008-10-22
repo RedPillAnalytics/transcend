@@ -1634,6 +1634,27 @@ IS
       evolve.log_cnt_msg( SQL%ROWCOUNT, p_level => 4 );
       
    END delete_dim_attribs;
+   
+   PROCEDURE register_directory (
+      p_directory           VARCHAR2
+   )
+   IS
+      l_app     tdsys.application.application_name%type;
+   BEGIN
+      -- find out which application schema is used
+      BEGIN
+         SELECT application_name
+           INTO l_app
+           FROM tdsys.users
+          WHERE upper(USER) = sys_context( 'USERENV','CURRENT_USER' )
+            AND product     = transcend_product;
+      EXCEPTION
+         WHEN no_data_found
+            THEN 
+            evolve.raise_err( 'not_transcend_user' );
+      END;
+      
+   END register_directory;
 
 END trans_adm;
 /

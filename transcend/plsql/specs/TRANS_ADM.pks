@@ -1,16 +1,21 @@
 CREATE OR REPLACE PACKAGE trans_adm AUTHID CURRENT_USER
 IS
+   -- used to set configuration parameters to null
    null_value             CONSTANT VARCHAR2 (6)  := '*null*';
 
-   default_characterset   CONSTANT VARCHAR2 (22) := '*default_characterset*';
+   -- constants from the TD_ADM package
+   product_version      CONSTANT   NUMBER         := tdsys.td_adm.product_version;
+   transcend_product    CONSTANT   VARCHAR2(9)    := tdsys.td_adm.transcend_product;
+   evolve_product       CONSTANT   VARCHAR2(9)    := tdsys.td_adm.evolve_product;
 
-   gzip_method            CONSTANT VARCHAR2(15) := td_utils.gzip_method;
-   compress_method        CONSTANT VARCHAR2(15) := td_utils.compress_method;
-   bzip2_method           CONSTANT VARCHAR2(15) := td_utils.bzip2_method;
-   zip_method             CONSTANT VARCHAR2(15) := td_utils.zip_method;
+   -- constants for EXPAND_FILE
+   gzip_method          CONSTANT   VARCHAR2(15)   := td_utils.gzip_method;
+   compress_method      CONSTANT   VARCHAR2(15)   := td_utils.compress_method;
+   bzip2_method         CONSTANT   VARCHAR2(15)   := td_utils.bzip2_method;
+   zip_method           CONSTANT   VARCHAR2(15)   := td_utils.zip_method;
 
-   -- constants used for EXPAND_FILE
-   gpg_method             CONSTANT VARCHAR2(15) := td_utils.gpg_method;
+   -- constants used for DECRYPT_FILE
+   gpg_method           CONSTANT   VARCHAR2(15)   := td_utils.gpg_method;
 
    PROCEDURE set_default_configs;
 
