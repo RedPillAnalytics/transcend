@@ -1350,8 +1350,8 @@ IS
          UPDATE tdsys.repositories
 	    SET modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
 		modified_dt = SYSDATE,
-		version = td_adm.version,
-		product = 'evolve'
+		version = product_version,
+		product = evolve_product
 	  WHERE repository_name=upper( p_schema );
 
          IF SQL%ROWCOUNT = 0
@@ -1359,7 +1359,7 @@ IS
             INSERT INTO tdsys.repositories
 		   ( repository_name, product, version)
 		   VALUES
-		   ( upper( p_schema ), 'evolve', td_adm.version );
+		   ( upper( p_schema ), evolve_product, product_version );
          END IF;
       EXCEPTION
          WHEN e_tab_exists
@@ -1857,8 +1857,8 @@ IS
       UPDATE tdsys.repositories
 	 SET modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
 	     modified_dt = SYSDATE,
-	     product = 'transcend',
-	     version = td_adm.version
+	     product = transcend_product,
+	     version = product_version
        WHERE repository_name=upper( p_schema );
       
       IF SQL%ROWCOUNT = 0
@@ -2492,8 +2492,8 @@ IS
       -- write application tracking record
       UPDATE tdsys.applications
 	 SET repository_name = upper( p_repository ),
-	     product = 'evolve',
-	     version = td_adm.version,
+	     product = evolve_product,
+	     version = product_version,
 	     modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
 	     modified_dt = SYSDATE
        WHERE application_name=upper( p_schema );
@@ -2508,8 +2508,8 @@ IS
 		VALUES
 		( upper( p_schema ),
 		  upper( p_repository ),
-		  'evolve',
-		  td_adm.version );
+		  evolve_product,
+		  product_version );
       END IF;
 
       DBMS_OUTPUT.put_line(    ' The CURRENT_SCHEMA is set to '
@@ -2584,8 +2584,8 @@ IS
       UPDATE tdsys.applications
 	 SET modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
 	     modified_dt = SYSDATE,
-	     product = 'transcend',
-	     version = td_adm.version
+	     product = transcend_product,
+	     version = product_version
        WHERE application_name=upper( p_schema );
             
       IF SQL%ROWCOUNT = 0
@@ -2829,7 +2829,7 @@ IS
 
    END drop_transcend_app;
 
-   PROCEDURE create_evolve_user(
+   PROCEDURE register_evolve_user(
       p_user          VARCHAR2,
       p_application   VARCHAR2 DEFAULT DEFAULT_REPOSITORY,
       p_repository    VARCHAR2 DEFAULT DEFAULT_REPOSITORY
@@ -2837,8 +2837,6 @@ IS
    IS
       l_adm_role VARCHAR2(30) := p_repository || '_adm';
    BEGIN
-      -- create the user if it doesn't already exist
-      create_user( p_user => p_user );
       -- create the synonyms to the repository
       build_evolve_rep_syns( p_user => p_user, p_schema => p_repository );
       -- create the synonyms to the application
@@ -2870,8 +2868,8 @@ IS
       UPDATE tdsys.users
 	 SET application_name = upper( p_application ),
 	     repository_name = upper( p_repository ),
-	     version = td_adm.version,
-	     product = 'evolve',
+	     version = product_version,
+	     product = evolve_product,
 	     modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
 	     modified_dt = SYSDATE
        WHERE user_name=upper( p_user );
@@ -2888,12 +2886,12 @@ IS
 		( upper( p_user ),
 		  upper( p_application ),
 		  upper( p_repository ),
-		  'evolve',
-		  td_adm.version );
+		  evolve_product,
+		  product_version );
       END IF;
-   END create_evolve_user;
+   END register_evolve_user;
 
-   PROCEDURE create_transcend_user(
+   PROCEDURE register_transcend_user(
       p_user          VARCHAR2,
       p_application   VARCHAR2 DEFAULT DEFAULT_REPOSITORY,
       p_repository    VARCHAR2 DEFAULT DEFAULT_REPOSITORY
@@ -2901,7 +2899,7 @@ IS
    IS
    BEGIN
       -- register as an evolve user first
-      create_evolve_user( p_user => p_user, p_application => p_application, p_repository => p_repository );
+      register_evolve_user( p_user => p_user, p_application => p_application, p_repository => p_repository );
 
       -- create the synonyms to the repository
       build_transcend_rep_syns( p_user => p_user, p_schema => p_repository );
@@ -2915,13 +2913,50 @@ IS
       UPDATE tdsys.users
 	 SET application_name = upper( p_application ),
 	     repository_name = upper( p_repository ),
-	     version = td_adm.version,
-	     product = 'transcend',
+	     version = product_version,
+	     product = transcend_product,
 	     modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
 	     modified_dt = SYSDATE
        WHERE user_name=upper( p_user );
 
-   END create_transcend_user;
+   END register_transcend_user;
+
+   PROCEDURE register_user(
+      p_user          VARCHAR2,
+      p_application   VARCHAR2 DEFAULT DEFAULT_REPOSITORY,
+      p_repository    VARCHAR2 DEFAULT DEFAULT_REPOSITORY
+   )
+   IS
+      l_product   tdsys.applications.product%type;
+   BEGIN
+
+      -- find out which product the user is registered for
+      BEGIN
+         SELECT product
+           INTO l_product
+           FROM tdsys.applications
+          WHERE lower(application_name) = lower(p_application);
+      EXCEPTION
+         WHEN no_data_found
+         THEN 
+            raise_application_error( -20009, 'Specified APPLICATION does not exist');
+      END;
+      
+      -- now call the appropriate procedure
+      CASE l_product
+         WHEN transcend_product
+         THEN 
+            create_transcend_user( p_user = p_user,
+                                   p_application => p_application,
+                                   p_repository => p_repository );
+         WHEN evolve_product
+         THEN 
+            create_evolve_user( p_user = p_user,
+                                p_application => p_application,
+                                p_repository => p_repository );
+      END CASE;
+
+   END register_user;
       
    PROCEDURE backup_tables(
       p_schema       VARCHAR2 DEFAULT DEFAULT_REPOSITORY,
