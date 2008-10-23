@@ -160,6 +160,10 @@ IS
          (p_name         => 'multiple_surr_key',
            p_message      => 'Multiple surrogate key atributes have been configured for the dimension'
          );
+      evolve_adm.set_error_conf
+         (p_name         => 'not_trans_user',
+           p_message      => 'The executing user is not currently a registered Transcend user'
+         );
    END set_default_configs;
 
    PROCEDURE create_feed (
@@ -1635,27 +1639,6 @@ IS
       
    END delete_dim_attribs;
    
-   PROCEDURE register_directory (
-      p_directory           VARCHAR2
-   )
-   IS
-      l_app     tdsys.application.application_name%type;
-   BEGIN
-      -- find out which application schema is used
-      BEGIN
-         SELECT application_name
-           INTO l_app
-           FROM tdsys.users
-          WHERE upper(USER) = sys_context( 'USERENV','CURRENT_USER' )
-            AND product     = transcend_product;
-      EXCEPTION
-         WHEN no_data_found
-            THEN 
-            evolve.raise_err( 'not_transcend_user' );
-      END;
-      
-   END register_directory;
-
 END trans_adm;
 /
 
