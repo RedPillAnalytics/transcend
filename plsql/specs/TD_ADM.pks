@@ -59,6 +59,12 @@ IS
       p_application  VARCHAR2 DEFAULT DEFAULT_REPOSITORY, 
       p_repository   VARCHAR2 DEFAULT DEFAULT_REPOSITORY
    );
+      
+   PROCEDURE register_directory (
+      p_directory           VARCHAR2,
+      p_application         VARCHAR2,
+      p_user                DEFAULT NULL
+   );
    
    PROCEDURE backup_tables(
       p_schema       VARCHAR2 DEFAULT DEFAULT_REPOSITORY,
