@@ -64,15 +64,14 @@ AS
 	    evolve.raise_err( 'parm_not_configured','MODULE_NAME' );
       END;
          
-      -- register the runmode
+      -- set the environment attributs
       td_inst.runmode( l_runmode );
-
-      -- set the registration value
       td_inst.registration( l_registration );
-      -- now register the application
+      td_inst.consistent_name( l_consistent_name );
       td_inst.REGISTER;
 
-      -- set the logging level
+      -- now set the logging level
+      -- this is determined by both LOGGING_LEVEL and RUNMODE
       td_inst.logging_level( CASE
                                 WHEN evolve.is_debugmode
                                    THEN l_debug_level
@@ -80,7 +79,8 @@ AS
                              END
                            );
 
-      -- log module and action changes to a high logging level
+      -- log module and action changes at a high logging level
+      -- this is level 4
       evolve.log_msg(    'MODULE "'
                           || td_inst.module
                           || '" beginning in RUNMODE "'
