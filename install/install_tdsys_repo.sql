@@ -78,21 +78,21 @@ BEGIN
    IF :b_role_exists = 'Y' AND upper('&drop_repo') = 'Y'
    THEN
       BEGIN
-	 EXECUTE IMMEDIATE q'|DROP ROLE evolve_sys|';
+	 EXECUTE IMMEDIATE q'|DROP ROLE evolve|';
       EXCEPTION
 	 WHEN e_no_role
 	 THEN
 	 NULL;
       END;
       BEGIN
-	 EXECUTE IMMEDIATE q'|DROP ROLE trans_etl_sys|';
+	 EXECUTE IMMEDIATE q'|DROP ROLE trans_etl|';
       EXCEPTION
 	 WHEN e_no_role
 	 THEN
 	 NULL;
       END;
       BEGIN
-	 EXECUTE IMMEDIATE q'|DROP ROLE trans_files_sys|';
+	 EXECUTE IMMEDIATE q'|DROP ROLE trans_files|';
       EXCEPTION
 	 WHEN e_no_role
 	 THEN

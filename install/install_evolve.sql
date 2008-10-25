@@ -20,6 +20,15 @@ SPOOL off
 -- create the tdsys repository
 @install_tdsys_repo.sql
 
+-- grant permissions on the tdsys repository
+GRANT SELECT ON tdsys.applications TO &app_schema;
+GRANT SELECT ON tdsys.repositories TO &app_schema;
+GRANT SELECT ON tdsys.users TO &app_schema;
+
+-- grant permissions on the tdsys package
+GRANT EXECUTE ON tdsys.td_adm TO &app_schema;
+
+
 SPOOL InstallEvolve&suffix append
 
 DECLARE
