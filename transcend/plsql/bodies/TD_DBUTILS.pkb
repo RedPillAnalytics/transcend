@@ -3009,10 +3009,11 @@ AS
                                 p_object_type      => 'table$|view' );
       END IF;
 
-      o_ev.change_action( 'populate PARTNAME table' );
-
       IF p_partname IS NOT NULL OR p_source_object IS NOT NULL
       THEN
+
+         o_ev.change_action( 'populate PARTNAME table' );
+
          -- populate a global temporary table with the indexes to work on
          -- this is a requirement because the dynamic SQL needed to use the tbl$or$idx$part$num function
          populate_partname( p_owner              => p_owner,
