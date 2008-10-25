@@ -2951,14 +2951,14 @@ IS
       CASE l_product
          WHEN transcend_product
          THEN 
-            create_transcend_user( p_user = p_user,
-                                   p_application => p_application,
-                                   p_repository => p_repository );
+            register_transcend_user( p_user => p_user,
+                                     p_application => p_application,
+                                     p_repository => p_repository );
          WHEN evolve_product
          THEN 
-            create_evolve_user( p_user = p_user,
-                                p_application => p_application,
-                                p_repository => p_repository );
+            register_evolve_user( p_user => p_user,
+                                  p_application => p_application,
+                                  p_repository => p_repository );
       END CASE;
 
    END register_user;
@@ -3038,7 +3038,7 @@ IS
                             ||'.'
                             ||table_name
                             ||'_'
-                            ||version
+                            ||product_version
                             ||CASE 
                                  WHEN p_tablespace IS NULL 
                                  THEN NULL 
