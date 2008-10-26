@@ -23,7 +23,7 @@ AS
                          source_object, source_owner || '.' || source_object full_source, sequence_owner, sequence_name,
                          sequence_owner || '.' || sequence_name full_sequence,
                          NVL( staging_owner, table_owner ) staging_owner,
-                         NVL( staging_table, 'TD$_TBL' || TO_CHAR( SYSTIMESTAMP, 'mmddyyyyHHMISS' )) staging_table,
+                         NVL( staging_table, 'TD$_MTBL' || TO_CHAR( SYSTIMESTAMP, 'mmddyyyyHHMISS' )) staging_table,
                          CASE
                             WHEN staging_table IS NULL
                                THEN 'no'
@@ -254,8 +254,10 @@ AS
       l_include_case     LONG;
       l_scd1_analytics   LONG;
       l_rows             BOOLEAN;
-      o_ev               evolve_ot                                := evolve_ot( p_module => 'load_dim' );
+      o_ev               evolve_ot := evolve_ot( p_module => 'mapping '||SELF.mapping_name, p_action => 'start mapping' );
+
    BEGIN
+      
       -- first, confirm that the column values are as they should be
       confirm_dim_cols;
 
