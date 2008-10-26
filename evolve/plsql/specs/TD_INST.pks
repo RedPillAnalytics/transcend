@@ -42,11 +42,6 @@ AS
 
    PROCEDURE logging_level( p_logging_level NUMBER );
 
-   FUNCTION consistent_name
-      RETURN VARCHAR2;
-
-   PROCEDURE consistent_name( p_consistent_name VARCHAR2 );
-
    FUNCTION module
       RETURN VARCHAR2;
 

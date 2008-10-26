@@ -12,7 +12,6 @@ AS
       l_logging_level   NUMBER;
       l_registration    VARCHAR2( 30 );
       l_debug_level     NUMBER;
-      l_consistent_name VARCHAR2( 3 );
    BEGIN
       -- read in all the previous values
       SELF.read_prev_info;
@@ -30,25 +29,21 @@ AS
       BEGIN
          SELECT logging_level, debug_level, 
                 LOWER( default_runmode ),
-                LOWER( registration ),
-                LOWER( consistent_name )
+                LOWER( registration )
            INTO l_logging_level,
                 l_debug_level,
                 l_runmode,
-                l_registration,
-                l_consistent_name
+                l_registration
            FROM ( SELECT logging_level,
                          debug_level,
                          default_runmode,
                          registration,
-                         consistent_name,
                          parameter_level,
                          MAX( parameter_level ) OVER( PARTITION BY 1 )
                                                                    max_parameter_level
                    FROM ( SELECT logging_level, debug_level,
                                  default_runmode, 
                                  registration,
-                                 consistent_name,
                                  module,
                                  CASE
                                     WHEN module = evolve_adm.all_modules
@@ -67,9 +62,8 @@ AS
       -- set the environment attributs
       td_inst.runmode( l_runmode );
       td_inst.registration( l_registration );
-      td_inst.consistent_name( l_consistent_name );
       td_inst.REGISTER;
-
+      
       -- now set the logging level
       -- this is determined by both LOGGING_LEVEL and RUNMODE
       td_inst.logging_level( CASE

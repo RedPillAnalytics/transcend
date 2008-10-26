@@ -11,7 +11,6 @@ IS
       p_debug_level     NUMBER   DEFAULT 3,
       p_default_runmode VARCHAR2 DEFAULT 'runtime',
       p_registration    VARCHAR2 DEFAULT 'appinfo',
-      p_consistent_name VARCHAR2 DEFAULT 'no',
       p_mode            VARCHAR2 DEFAULT 'upsert'
    );
 

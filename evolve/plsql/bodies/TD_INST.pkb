@@ -18,7 +18,6 @@ AS
    g_registration    VARCHAR2( 30 ) := 'appinfo';
    g_logging_level   NUMBER         := 2;
    g_runmode         VARCHAR2( 10 ) := 'runtime';
-   g_consistent_name VARCHAR2( 3 )  := 'no';
 
    -- registers the application
    PROCEDURE REGISTER
@@ -30,19 +29,12 @@ AS
             NULL;
          WHEN 'appinfo'
          THEN
-         
             -- no matter what, we want to change client info   
             DBMS_APPLICATION_INFO.set_client_info( g_client_info );
 
-            -- the consistent name parameter determines whether we want to register module name changes
-            -- if we do not want conistent names, then we should register the module change
-            IF NOT td_core.is_true( consistent_name )
-            THEN
+            -- these are our new values
+            DBMS_APPLICATION_INFO.set_module( g_module, g_action );
 
-               -- these are our new values
-               DBMS_APPLICATION_INFO.set_module( g_module, g_action );
-
-            END IF;
       END CASE;
    END REGISTER;
 
@@ -160,20 +152,6 @@ AS
       g_logging_level := p_logging_level;
    END logging_level;
       
-   -- accessor methods for consistent_name
-   FUNCTION consistent_name
-      RETURN VARCHAR2
-   AS
-   BEGIN
-      RETURN g_consistent_name;
-   END consistent_name;
-
-   PROCEDURE consistent_name( p_consistent_name VARCHAR2 )
-   AS
-   BEGIN
-      g_consistent_name := p_consistent_name;
-   END consistent_name;
-
    -- accessor methods for batch_id
    FUNCTION batch_id
       RETURN NUMBER

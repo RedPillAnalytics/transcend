@@ -94,7 +94,7 @@ AS
          -- also output the message to the screen
          -- the client can control whether or not they want to see this
          -- in sqlplus, just SET SERVEROUTPUT ON or OFF
-         DBMS_OUTPUT.put_line( chr(10)||upper(td_inst.module)||': '||to_char(l_entry_ts,'hh:mi:ss AM')||chr(10)||l_msg );
+         DBMS_OUTPUT.put_line( l_msg );
       END IF;
    END log_msg;
 

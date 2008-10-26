@@ -5,7 +5,6 @@ CREATE OR REPLACE TYPE app_ot AUTHID CURRENT_USER AS object(
    prev_registration	   VARCHAR2( 20 ),
    prev_logging_level	   NUMBER,
    prev_runmode	           VARCHAR2( 10 ),
-   prev_consistent_name	   VARCHAR2( 3 ),
    prev_batch_id	   NUMBER,
    CONSTRUCTOR FUNCTION app_ot(
       p_action        VARCHAR2 DEFAULT 'begin module',

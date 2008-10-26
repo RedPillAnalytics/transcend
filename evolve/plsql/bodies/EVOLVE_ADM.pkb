@@ -6,7 +6,6 @@ IS
       p_debug_level     NUMBER   DEFAULT 3,
       p_default_runmode VARCHAR2 DEFAULT 'runtime',
       p_registration    VARCHAR2 DEFAULT 'appinfo',
-      p_consistent_name VARCHAR2 DEFAULT 'no',
       p_mode            VARCHAR2 DEFAULT 'upsert'
    )
    IS
@@ -21,7 +20,6 @@ IS
                 debug_level     = p_debug_level,
                 default_runmode = lower( p_default_runmode ),
                 registration    = lower( p_registration ),
-                consistent_name = lower( p_consistent_name ),
                 modified_user   = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
                 modified_dt     = SYSDATE
           WHERE module          = LOWER( p_module );
@@ -34,11 +32,11 @@ IS
             INSERT INTO module_conf
                         ( logging_level, debug_level, 
                           default_runmode, registration, 
-                          consistent_name, module
+                          module
                         )
                  VALUES ( p_logging_level, p_debug_level,
                           lower( p_default_runmode ), lower( p_registration ),
-                          lower( p_consistent_name ), LOWER( p_module )
+                          LOWER( p_module )
                         );
          EXCEPTION
             WHEN e_dup_conf

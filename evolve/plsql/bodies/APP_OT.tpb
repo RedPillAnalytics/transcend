@@ -116,7 +116,6 @@ AS
       prev_client_info := td_inst.client_info;
       prev_registration := td_inst.registration;
       prev_logging_level := td_inst.logging_level;
-      prev_consistent_name := td_inst.consistent_name;
       prev_batch_id := td_inst.batch_id;
       prev_runmode := td_inst.runmode;
    END read_prev_info;
