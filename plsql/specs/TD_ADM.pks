@@ -63,7 +63,13 @@ IS
    PROCEDURE register_directory (
       p_directory           VARCHAR2,
       p_application         VARCHAR2,
-      p_user                DEFAULT NULL
+      p_user                VARCHAR2 DEFAULT NULL
+   );
+   
+   PROCEDURE grant_execute_command (
+      p_application     VARCHAR2,
+      p_user            VARCHAR2   DEFAULT NULL,
+      p_name            VARCHAR2   DEFAULT NULL 
    );
    
    PROCEDURE backup_tables(

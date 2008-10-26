@@ -670,7 +670,6 @@ IS
 	   debug_level 	    NUMBER       NOT NULL,
            default_runmode  VARCHAR2(10) NOT NULL,
            registration     VARCHAR2(10) NOT NULL,
-           consistent_name  VARCHAR2(3)  NOT NULL,
 	   module 	    VARCHAR2(48) NOT NULL,
 	   created_user     VARCHAR2(30) DEFAULT sys_context('USERENV','SESSION_USER') NOT NULL,
 	   created_dt       DATE DEFAULT SYSDATE NOT NULL,
@@ -692,8 +691,6 @@ IS
          
          EXECUTE IMMEDIATE q'|ALTER TABLE module_conf ADD CONSTRAINT module_conf_ck3 CHECK (registration=lower(registration))|';
          
-         EXECUTE IMMEDIATE q'|ALTER TABLE module_conf ADD CONSTRAINT module_conf_ck4 CHECK (consistent_name in ('yes','no'))|';
-
          -- NOTIFICATION_EVENTS table
          EXECUTE IMMEDIATE q'|CREATE TABLE notification_events
 	 ( 
@@ -2474,8 +2471,8 @@ IS
             
       -- grant needed permissions, but not needed for code compilation
       -- Java permissions do not affect PL/SQL code compilation
-      dbms_java.grant_permission( p_schema, 'SYS:java.lang.RuntimePermission', 'writeFileDescriptor', NULL );
-      dbms_java.grant_permission( p_schema, 'SYS:java.lang.RuntimePermission', 'readFileDescriptor', NULL );
+      dbms_java.grant_permission( upper(p_schema), 'SYS:java.lang.RuntimePermission', 'writeFileDescriptor', NULL );
+      dbms_java.grant_permission( upper(p_schema), 'SYS:java.lang.RuntimePermission', 'readFileDescriptor', NULL );
       
       -- set CURRENT_SCHEMA to the owner of the repository
       set_current_schema( p_schema => p_repository );
@@ -2966,64 +2963,74 @@ IS
    PROCEDURE register_directory (
       p_directory           VARCHAR2,
       p_application         VARCHAR2,
-      p_user                DEFAULT NULL
+      p_user                VARCHAR2 DEFAULT NULL
    )
    IS
-      l_dir_path        VARCHAR2(200);
-      o_ev   evolve_ot := evolve_ot (p_module => 'register_directory');
+      l_path   all_directories.directory_path%TYPE;
    BEGIN
-      
       -- get the directory path, as Java deals with paths, not directory objects
-      -- this will also raise an error if the specified directory path doesn't exist
-      l_dir_path           := td_utils.get_dir_path( p_directory );
-      
+      BEGIN
+
+         SELECT directory_path
+           INTO l_path
+           FROM all_directories
+          WHERE directory_name = UPPER( p_directory );
+      EXCEPTION
+         WHEN no_data_found
+            THEN
+            raise_application_error( -20010, 'The specified directory object does not exist' );
+      END;
+            
       -- now grant the permissions to the application owner
-      dbms_java.grant_permission( upper( p_application ), 'SYS:java.io.FilePermission', l_dir_path, 'read' );
-      dbms_java.grant_permission( upper( p_application ), 'SYS:java.io.FilePermission', l_dir_path || '/-', 'read' );
-      dbms_java.grant_permission( upper( p_application ), 'SYS:java.io.FilePermission', l_dir_path || '/*', 'write,delete' );
+      dbms_java.grant_permission( upper( p_application ), 'SYS:java.io.FilePermission', l_path, 'read' );
+      dbms_java.grant_permission( upper( p_application ), 'SYS:java.io.FilePermission', l_path || '/-', 'read' );
+      dbms_java.grant_permission( upper( p_application ), 'SYS:java.io.FilePermission', l_path || '/*', 'write,delete' );
       
       -- if a user was specified, then give the permissions there as well
       IF p_user IS NOT NULL
       THEN
-         dbms_java.grant_permission( upper( p_user ), 'SYS:java.io.FilePermission', l_dir_path, 'read' );
-         dbms_java.grant_permission( upper( p_user ), 'SYS:java.io.FilePermission', l_dir_path || '/-', 'read' );
-         dbms_java.grant_permission( upper( p_user ), 'SYS:java.io.FilePermission', l_dir_path || '/*', 'write,delete' );
+         dbms_java.grant_permission( upper( p_user ), 'SYS:java.io.FilePermission', l_path, 'read' );
+         dbms_java.grant_permission( upper( p_user ), 'SYS:java.io.FilePermission', l_path || '/-', 'read' );
+         dbms_java.grant_permission( upper( p_user ), 'SYS:java.io.FilePermission', l_path || '/*', 'write,delete' );
       END IF;
       
-      o_ev.clear_app_info;
    END register_directory;
 
    PROCEDURE grant_execute_command (
       p_application     VARCHAR2,
-      p_user            VARCHAR2   DEFAULT NULL
+      p_user            VARCHAR2   DEFAULT NULL,
       p_name            VARCHAR2   DEFAULT NULL 
    )
    IS
-      l_dir_path        VARCHAR2(200);
-      o_ev              evolve_ot := evolve_ot (p_module => 'grant_execute_command');
+      TYPE com_conf_tt IS TABLE OF VARCHAR2(200);
+      t_com com_conf_tt;
+      l_sql VARCHAR2(2000);
    BEGIN
+
+      -- bulk collect the list of commands into a type
+      -- if p_command is null, then grant on all commands      
+      EXECUTE immediate
+      q'|SELECT regexp_replace( path || CASE WHEN path IS NULL THEN NULL ELSE '/' end || value, '//','/' ) command
+           FROM |'||p_application||q'|.command_conf
+          WHERE REGEXP_LIKE( name, NVL( :b_name, '.' ), 'i' )|'
+      bulk collect INTO t_com
+      USING p_name;
       
-      -- open a cursor and grant execute on the command(s) specified
-      -- if p_command is null, then grant on all commands
-      
-      FOR c_grants IN ( SELECT td_utils.get_command( name ) command 
-                          FROM command_conf
-                         WHERE REGEXP_LIKE( name, NVL( p_name, '.' ), 'i' ))
+      for i IN 1 .. t_com.count
       LOOP
          
          -- now grant the permissions to the application owner
-         dbms_java.grant_permission( upper( p_application ), 'SYS:java.io.FilePermission', c_grants.command, 'execute' );
+         dbms_java.grant_permission( upper( p_application ), 'SYS:java.io.FilePermission', t_com(i), 'execute' );
          
          -- if a user was specified, then give the permissions there as well
          IF p_user IS NOT NULL
          THEN
-            dbms_java.grant_permission( upper( p_user ), 'SYS:java.io.FilePermission', c_grants.command, 'execute' );
+            dbms_java.grant_permission( upper( p_user ), 'SYS:java.io.FilePermission', t_com(i), 'execute' );
          END IF;
 
       END LOOP;
 
          -- also grant to the user if specified
-      o_ev.clear_app_info;
    END grant_execute_command;
    
    PROCEDURE backup_tables(
