@@ -223,8 +223,7 @@ SELECT * FROM testdim.customer_dim
 
 -- lets update the logging_level and get a better idea of what's going on
 BEGIN
-   evolve_adm.set_logging_level( p_module=> evolve_adm.all_modules,
-				 p_logging_level=>3 );
+   evolve_adm.set_module_conf( p_logging_level=>5 );
 END;
 /
 
@@ -237,8 +236,7 @@ END;
 
 -- put the logging level back
 BEGIN
-   evolve_adm.set_logging_level( p_module=> evolve_adm.all_modules,
-				 p_logging_level=>1 );
+   evolve_adm.set_module_conf( p_logging_level=>1 );
 END;
 /
 
