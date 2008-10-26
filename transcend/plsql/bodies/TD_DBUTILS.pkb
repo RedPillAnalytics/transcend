@@ -2680,7 +2680,7 @@ AS
    IS
       l_src_name     VARCHAR2( 61 )               := UPPER( p_owner || '.' || p_source_table );
       l_tab_name     VARCHAR2( 61 )               := UPPER( p_owner || '.' || p_table );
-      l_temp_table   all_tables.table_name%TYPE   := 'TD$_TBL' || TO_CHAR( SYSTIMESTAMP, 'mmddyyyyHHMISS' );
+      l_temp_table   all_tables.table_name%TYPE   := 'TD$_RTBL' || TO_CHAR( SYSTIMESTAMP, 'mmddyyyyHHMISS' );
       l_temp_name    VARCHAR2( 61 )               := UPPER( p_owner || '.' || l_temp_table );
       o_ev           evolve_ot                    := evolve_ot( p_module => 'rename_tables' );
    BEGIN
@@ -2696,12 +2696,11 @@ AS
       -- now rename source to target
       o_ev.change_action( 'rename source table' );
       evolve.exec_sql( p_sql       => 'alter table ' || l_src_name || ' rename to ' || UPPER( p_table ),
-                           p_auto      => 'yes' );
+                       p_auto      => 'yes' );
       -- now rename temporary to source
       o_ev.change_action( 'rename temp table' );
       evolve.exec_sql( p_sql       => 'alter table ' || l_temp_name || ' rename to ' || UPPER( p_source_table ),
-                           p_auto      => 'yes'
-                         );
+                       p_auto      => 'yes' );
       evolve.log_msg( l_src_name || ' and ' || l_tab_name || ' table names interchanged' );
       o_ev.clear_app_info;
    EXCEPTION
@@ -2936,8 +2935,8 @@ AS
       o_ev.change_action( 'rename indexes' );
       -- this statement will pull previously entered DDL statements off the queue and execute them
       l_cnt := dequeue_ddl( p_action     => evolve.get_action,
-				p_module     => evolve.get_module,
-				p_concurrent => p_concurrent );
+			    p_module     => evolve.get_module,
+			    p_concurrent => p_concurrent );
 
 
       -- rename the constraints
