@@ -4,32 +4,12 @@ AS
       RETURN SELF AS RESULT
    AS
    BEGIN
-      evolve.log_msg( 'Notification module: ' || module, 5 );
-      evolve.log_msg( 'Notification action: ' || action, 5 );
-      evolve.print_query(    'SELECT label,'
-                              || 'method,'
-                              || 'enabled,'
-                              || 'required,'
-                              || 'subject,'
-                              || 'message,'
-                              || 'sender,'
-                              || 'recipients '
-                              || 'FROM notification_conf '
-                              || 'JOIN notification_events '
-                              || 'USING ( module,action ) '
-                              || 'WHERE lower(module) = lower('''
-                              || td_inst.module
-                              || ''') AND lower(action) = lower('''
-                              || td_inst.action
-                              || ''') AND lower(label) = lower('''
-                              || p_label
-                              || ''') '
-                            );
+      
 
       BEGIN
-         SELECT label, method, enabled, required, subject, MESSAGE, sender, recipients
-           INTO label, method, enabled, required, subject, MESSAGE, sender, recipients
-           FROM notification_conf JOIN notification_events USING( module, action )
+         SELECT label, event_name, method, enabled, required, subject, MESSAGE, sender, recipients
+           INTO label, event_name, method, enabled, required, subject, MESSAGE, sender, recipients
+           FROM notification_conf JOIN notification_event USING( event_name )
           WHERE LOWER( module ) = LOWER( td_inst.module )
             AND LOWER( action ) = LOWER( td_inst.action )
             AND LOWER( label ) = LOWER( p_label );
@@ -57,6 +37,9 @@ AS
                                   || '"'
                                 );
       END;
+
+      -- log the event_name
+      evolve.log_msg( 'Notification event_name: "' || event_name || '"', 5 );
 
       RETURN;
    END;

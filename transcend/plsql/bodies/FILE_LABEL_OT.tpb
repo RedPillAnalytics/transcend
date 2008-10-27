@@ -138,7 +138,7 @@ AS
       -- variable for ease of use
       l_file_dir    VARCHAR2( 100 ) := p_loc_filename||' in directory '||p_loc_directory; 
 
-      o_ev           evolve_ot      := evolve_ot( p_module => 'modify_archive' );
+      o_ev           evolve_ot      := evolve_ot( p_module => 'file_label_ot.modify_archive' );
    BEGIN
       
       IF NOT evolve.is_debugmode
@@ -270,11 +270,11 @@ AS
       p_num_files   NUMBER DEFAULT 1
    )
    AS
-      o_ev        evolve_ot := evolve_ot( p_module => 'announce' );
-      l_message   notification_events.message%type;
+      o_ev        evolve_ot := evolve_ot( p_module => 'file_label_ot.announce' );
+      l_message   notification_event.message%type;
    BEGIN
       -- notify about successful arrival of feed
-      o_ev.change_action( 'Notify success' );
+      o_ev.change_action( 'notify success' );
       l_message :=
             'The file'
          || CASE

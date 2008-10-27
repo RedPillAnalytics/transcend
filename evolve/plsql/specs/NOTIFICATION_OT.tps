@@ -1,5 +1,6 @@
 CREATE OR REPLACE TYPE notification_ot AS OBJECT(
    label        VARCHAR2( 40 ),
+   event_name   VARCHAR2( 30 ),
    module       VARCHAR2( 48 ),
    action       VARCHAR2( 32 ),
    method       VARCHAR2( 20 ),

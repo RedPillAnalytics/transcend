@@ -20,8 +20,10 @@ EXEC tdsys.td_adm.register_directory('sourcedata','tdrep','stewart');
 
 CREATE VIEW stewart.test_extract AS SELECT * FROM user_tables;
 
+UPDATE command_conf SET path='/usr/bin';
+
 -- give the schema and the user the permission to execute all registered commands
-EXEC tdsys.td_adm.grant_execute_command('tdrep','stewart'>);
+EXEC tdsys.td_adm.grant_execute_command('tdrep','stewart');
 
 -- create test external table
 DROP TABLE stewart.test_feed
@@ -48,6 +50,7 @@ EXEC trans_adm.create_feed( 'test feed','test group',p_directory=>'extdata',p_fi
 -- CREATE a test extract
 EXEC trans_adm.create_extract( 'test extract','test group',p_filename=>'TEST_EXTRACT.dat',p_object_owner=>'stewart',p_object_name=>'test_extract',p_work_directory=>'workdata',p_baseurl=>'www.transcendentdata.com/files',p_directory=>'extractdata');
 
-Commit;
+-- configure notification
+EXEC evolve_adm.set_notification('test extract','announce extract',p_sender=>'noreply@transcendentdata.com',p_recipients=>'stewartbryson@gmail.com');
 
 EXEC trans_files.process_group( 'test group' );

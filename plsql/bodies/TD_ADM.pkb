@@ -176,7 +176,7 @@ IS
 
          EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON NOTIFICATION_CONF TO ' || p_grantee;
 
-         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON NOTIFICATION_EVENTS TO ' || p_grantee;
+         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON NOTIFICATION_EVENT TO ' || p_grantee;
 
          EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON PARAMETER_CONF TO ' || p_grantee;
 
@@ -391,7 +391,7 @@ IS
       END;
 
       BEGIN
-         EXECUTE IMMEDIATE q'|DROP TABLE notification_events|';
+         EXECUTE IMMEDIATE q'|DROP TABLE notification_event|';
       EXCEPTION
          WHEN e_no_tab
          THEN
@@ -691,23 +691,32 @@ IS
          
          EXECUTE IMMEDIATE q'|ALTER TABLE module_conf ADD CONSTRAINT module_conf_ck3 CHECK (registration=lower(registration))|';
          
-         -- NOTIFICATION_EVENTS table
-         EXECUTE IMMEDIATE q'|CREATE TABLE notification_events
+         -- NOTIFICATION_EVENT table
+         EXECUTE IMMEDIATE q'|CREATE TABLE notification_event
 	 ( 
-	   module              VARCHAR2(48) NOT NULL,
-	   action    	     VARCHAR2(32) NOT NULL,
-	   subject             VARCHAR2(100) NOT NULL,
-	   message             VARCHAR2(2000) NOT NULL,
-	   created_user        VARCHAR2(30) DEFAULT SYS_CONTEXT('USERENV','SESSION_USER') NOT NULL,
-	   created_dt   	     DATE DEFAULT SYSDATE NOT NULL,
-	   modified_user       VARCHAR2(30),
-	   modified_dt         DATE
+           event_name          VARCHAR2(30)       NOT NULL,
+           module              VARCHAR2(48)       NOT NULL,
+           action              VARCHAR2(32)       NOT NULL,
+           subject             VARCHAR2(100)      NOT NULL,
+           message             VARCHAR2(2000)     NOT NULL,
+           created_user        VARCHAR2(30)       DEFAULT SYS_CONTEXT('USERENV','SESSION_USER') NOT NULL,
+           created_dt          DATE               DEFAULT SYSDATE NOT NULL,
+           modified_user       VARCHAR2(30),
+           modified_dt         DATE
 	 )|';
 
-         EXECUTE IMMEDIATE q'|ALTER TABLE notification_events ADD
+         EXECUTE IMMEDIATE q'|ALTER TABLE notification_event ADD
 	 (
-	   CONSTRAINT notification_events_pk
+	   CONSTRAINT notification_event_pk
 	   PRIMARY KEY
+	   ( event_name )
+	   USING INDEX
+	 )|';
+         
+         EXECUTE IMMEDIATE q'|ALTER TABLE notification_event ADD
+	 (
+	   CONSTRAINT notification_event_uk1
+	   UNIQUE
 	   ( action, module )
 	   USING INDEX
 	 )|';
@@ -715,60 +724,57 @@ IS
          -- NOTIFICATION_CONF table
          EXECUTE IMMEDIATE q'|CREATE TABLE notification_conf
 	 ( 
-	   label		   VARCHAR2(40) NOT NULL,
-	   module        	   VARCHAR2(48) NOT NULL,
-	   action        	   VARCHAR2(32) NOT NULL,
-	   method      	   VARCHAR2(20) NOT NULL,
-	   enabled     	   VARCHAR2(3) DEFAULT 'yes',
-	   required	   VARCHAR2(3) DEFAULT 'no',
-	   sender            VARCHAR2(1024),
-	   recipients        VARCHAR2(2000) NOT NULL,
-	   created_user      VARCHAR2(30) DEFAULT SYS_CONTEXT('USERENV','SESSION_USER') NOT NULL,
-	   created_dt   	   DATE DEFAULT SYSDATE NOT NULL,
-	   modified_user     VARCHAR2(30),
-	   modified_dt       DATE
+           label           VARCHAR2(40)     NOT NULL,
+           event_name      VARCHAR2(30)     NOT NULL,
+           method          VARCHAR2(20)     NOT NULL,
+           enabled         VARCHAR2(3)      DEFAULT 'yes' NOT NULL,
+           required        VARCHAR2(3)      DEFAULT 'no'  NOT NULL,
+           sender          VARCHAR2(1024)   NOT NULL,
+           recipients      VARCHAR2(2000)   NOT NULL,
+           created_user    VARCHAR2(30)     DEFAULT SYS_CONTEXT('USERENV','SESSION_USER') NOT NULL,
+           created_dt      DATE             DEFAULT SYSDATE NOT NULL,
+           modified_user   VARCHAR2(30),
+           modified_dt     DATE
 	 )|';
 
          EXECUTE IMMEDIATE q'|ALTER TABLE notification_conf ADD
 	 (
 	   CONSTRAINT notification_conf_pk
 	   PRIMARY KEY
-	   ( label,module,action )
+	   ( label, event_name )
 	   USING INDEX
 	 )|';
 
          EXECUTE IMMEDIATE q'|ALTER TABLE notification_conf ADD 
 	 (
 	   CONSTRAINT notification_conf_fk1
-	   FOREIGN KEY ( module, action )
-	   REFERENCES notification_events
-	   ( module, action )
+	   FOREIGN KEY ( event_name )
+	   REFERENCES notification_event
+	   ( event_name )
 	 )|';
 
-         EXECUTE IMMEDIATE q'|ALTER TABLE notification_conf ADD CONSTRAINT notification_conf_ck1 CHECK (module=lower(module))|';
+         EXECUTE IMMEDIATE q'|ALTER TABLE notification_conf ADD CONSTRAINT notification_conf_ck1 CHECK (event_name=lower(event_name))|';
 
-         EXECUTE IMMEDIATE q'|ALTER TABLE notification_conf ADD CONSTRAINT notification_conf_ck2 CHECK (action=lower(action))|';
+         EXECUTE IMMEDIATE q'|ALTER TABLE notification_conf ADD CONSTRAINT notification_conf_ck2 CHECK (method=lower(method))|';
 
-         EXECUTE IMMEDIATE q'|ALTER TABLE notification_conf ADD CONSTRAINT notification_conf_ck3 CHECK (method=lower(method))|';
+         EXECUTE IMMEDIATE q'|ALTER TABLE notification_conf ADD CONSTRAINT notification_conf_ck3 CHECK (enabled=lower(enabled))|';
 
-         EXECUTE IMMEDIATE q'|ALTER TABLE notification_conf ADD CONSTRAINT notification_conf_ck4 CHECK (enabled=lower(enabled))|';
+         EXECUTE IMMEDIATE q'|ALTER TABLE notification_conf ADD CONSTRAINT notification_conf_ck4 CHECK (required=lower(required))|';
 
-         EXECUTE IMMEDIATE q'|ALTER TABLE notification_conf ADD CONSTRAINT notification_conf_ck5 CHECK (required=lower(required))|';
+         EXECUTE IMMEDIATE q'|ALTER TABLE notification_conf ADD CONSTRAINT notification_conf_ck5 CHECK (sender=lower(sender))|';
 
-         EXECUTE IMMEDIATE q'|ALTER TABLE notification_conf ADD CONSTRAINT notification_conf_ck6 CHECK (sender=lower(sender))|';
-
-         EXECUTE IMMEDIATE q'|ALTER TABLE notification_conf ADD CONSTRAINT notification_conf_ck7 CHECK (recipients=lower(recipients))|';
+         EXECUTE IMMEDIATE q'|ALTER TABLE notification_conf ADD CONSTRAINT notification_conf_ck6 CHECK (recipients=lower(recipients))|';
 
          -- PARAMETER_CONF table
          EXECUTE IMMEDIATE q'|CREATE TABLE parameter_conf
 	 ( 
-	   name		VARCHAR2(40) NOT NULL,
-	   value 		VARCHAR2(40),
-	   module 	VARCHAR2(48) NOT NULL,
-	   created_user   VARCHAR2(30) DEFAULT sys_context('USERENV','SESSION_USER') NOT NULL,
-	   created_dt     DATE DEFAULT SYSDATE NOT NULL,
-	   modified_user  VARCHAR2(30),
-	   modified_dt    DATE
+           name           VARCHAR2(40)   NOT NULL,
+           value          VARCHAR2(40)   NOT NULL,
+           module         VARCHAR2(48)   NOT NULL,
+           created_user   VARCHAR2(30)   DEFAULT sys_context('USERENV','SESSION_USER') NOT NULL,
+           created_dt     DATE           DEFAULT SYSDATE NOT NULL,
+           modified_user  VARCHAR2(30),
+           modified_dt    DATE
 	 )|';
 
          EXECUTE IMMEDIATE q'|ALTER TABLE parameter_conf ADD 
@@ -1984,9 +1990,9 @@ IS
       BEGIN
          EXECUTE IMMEDIATE    'create or replace synonym '
                            || p_user
-                           || '.NOTIFICATION_EVENTS for '
+                           || '.NOTIFICATION_EVENT for '
                            || p_schema
-                           || '.NOTIFICATION_EVENTS';
+                           || '.NOTIFICATION_EVENT';
       EXCEPTION
          WHEN e_same_name
          THEN

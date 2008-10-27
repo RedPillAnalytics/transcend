@@ -15,17 +15,17 @@ IS
    );
 
    PROCEDURE set_notification_event(
-      p_module		VARCHAR2,
-      p_action 		VARCHAR2,
-      p_subject		VARCHAR2 DEFAULT NULL,
-      p_message         VARCHAR2 DEFAULT NULL,
-      p_mode		VARCHAR2 DEFAULT 'upsert'
+      p_event_name   VARCHAR2,
+      p_module       VARCHAR2 DEFAULT NULL,
+      p_action       VARCHAR2 DEFAULT NULL,
+      p_subject      VARCHAR2 DEFAULT NULL,
+      p_message      VARCHAR2 DEFAULT NULL,
+      p_mode         VARCHAR2 DEFAULT 'upsert'
    );
 
    PROCEDURE set_notification(
       p_label        VARCHAR2,
-      p_module       VARCHAR2,
-      p_action       VARCHAR2,
+      p_event_name   VARCHAR2,
       p_method       VARCHAR2 DEFAULT NULL,
       p_enabled      VARCHAR2 DEFAULT NULL,
       p_required     VARCHAR2 DEFAULT NULL,

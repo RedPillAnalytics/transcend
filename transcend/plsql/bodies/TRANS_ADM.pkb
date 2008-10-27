@@ -5,22 +5,32 @@ IS
    BEGIN
       -- set the notification events
       evolve_adm.set_notification_event
-         ('file_detail_ot.inspect',
+         ('max file size threshold',
+          'file_detail_ot.inspect',
           'file too large',
-          'File outside size threshholds',
-          'The file referenced below is larger than the configured threshhold:'
+          'File outside size thresholds',
+          'The file referenced below is larger than the configured threshold:'
          );
       evolve_adm.set_notification_event
-         ('file_detail_ot.inspect',
+         ('min file size threshold',
+          'file_detail_ot.inspect',
           'file too small',
-          'File outside size threshholds',
-          'The file referenced below is smaller than the configured threshhold:'
+          'File outside size thresholds',
+          'The file referenced below is smaller than the configured threshold:'
          );
       evolve_adm.set_notification_event
-         ('file_label_ot.audit_file',
+         ('reject limit threshold',
+          'file_label_ot.audit_file',
           'reject limit',
           'Too many rejected rows',
           'The file referenced below has too many rejected rows:'
+         );
+      evolve_adm.set_notification_event
+         ('announce extract',
+          'file_label_ot.announce',
+          'notify success',
+          'Extract file available',
+          'The extract file referenced below is now available:'
          );
 
       -- load the entries into the ERROR_CONF table for Transcend

@@ -41,7 +41,7 @@ IS
          EXCEPTION
             WHEN e_dup_conf
             THEN
-	       evolve.raise_err( 'dup_conf' );
+               evolve.raise_err( 'dup_conf' );
          END;
       END IF;
 
@@ -55,16 +55,17 @@ IS
       -- if we still have not affected any records, then there's a problem
       IF SQL%ROWCOUNT = 0
       THEN
-	 evolve.raise_err( 'no_rep_obj' );
+         evolve.raise_err( 'no_rep_obj' );
       END IF;
    END set_module_conf;
 
    PROCEDURE set_notification_event(
-      p_module    VARCHAR2,
-      p_action    VARCHAR2,
-      p_subject   VARCHAR2 DEFAULT NULL,
-      p_message   VARCHAR2 DEFAULT NULL,
-      p_mode      VARCHAR2 DEFAULT 'upsert'
+      p_event_name   VARCHAR2,
+      p_module       VARCHAR2 DEFAULT NULL,
+      p_action       VARCHAR2 DEFAULT NULL,
+      p_subject      VARCHAR2 DEFAULT NULL,
+      p_message      VARCHAR2 DEFAULT NULL,
+      p_mode         VARCHAR2 DEFAULT 'upsert'
    )
    IS
       e_dup_conf   EXCEPTION;
@@ -73,12 +74,14 @@ IS
       -- this is the default method... update if it exists or insert it
       IF LOWER( p_mode ) IN( 'upsert', 'update' )
       THEN
-         UPDATE notification_events
-            SET subject = NVL( p_subject, subject ),
-                MESSAGE = NVL( p_message, MESSAGE ),
+         UPDATE notification_event
+            SET module        = lower( nvl( p_module, module ) ),
+                action        = lower( nvl( p_action, action ) ),
+                subject       = NVL( p_subject, subject ),
+                MESSAGE       = NVL( p_message, MESSAGE ),
                 modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
-                modified_dt = SYSDATE
-          WHERE module = LOWER( p_module ) AND action = LOWER( p_action );
+                modified_dt   = SYSDATE
+          WHERE lower( event_name )  = LOWER( p_event_name );
       END IF;
 
       -- if the update was unsuccessful above, or an insert it specifically requested, then do an insert
@@ -87,6 +90,12 @@ IS
          evolve.log_msg( 'Update was unsuccessful or insert was specified', 5 );
 	 
          CASE
+            WHEN p_module IS NULL
+            THEN
+               evolve.raise_err( 'parm_req', 'P_MODULE' );
+            WHEN p_action IS NULL
+            THEN
+               evolve.raise_err( 'parm_req', 'P_ACTION' );
             WHEN p_subject IS NULL
             THEN
                evolve.raise_err( 'parm_req', 'P_SUBJECT' );
@@ -98,10 +107,10 @@ IS
          END CASE;
 
          BEGIN
-            INSERT INTO notification_events
-                        ( module, action, subject, MESSAGE
+            INSERT INTO notification_event
+                        ( event_name, module, action, subject, MESSAGE
                         )
-                 VALUES ( LOWER( p_module ), LOWER( p_action ), p_subject, p_message
+                 VALUES ( LOWER( p_event_name ), LOWER( p_module ), LOWER( p_action ), p_subject, p_message
                         );
          EXCEPTION
             WHEN e_dup_conf
@@ -113,8 +122,8 @@ IS
       -- if a delete is specifically requested, then do a delete
       IF LOWER( p_mode ) = 'delete'
       THEN
-         DELETE FROM notification_events
-               WHERE module = LOWER( p_module ) AND action = LOWER( p_action );
+         DELETE FROM notification_event
+               WHERE event_name = LOWER( p_event_name );
       END IF;
 
       -- if we still have not affected any records, then there's a problem
@@ -126,8 +135,7 @@ IS
 
    PROCEDURE set_notification(
       p_label        VARCHAR2,
-      p_module       VARCHAR2,
-      p_action       VARCHAR2,
+      p_event_name   VARCHAR2,
       p_method       VARCHAR2 DEFAULT NULL,
       p_enabled      VARCHAR2 DEFAULT NULL,
       p_required     VARCHAR2 DEFAULT NULL,
@@ -151,22 +159,13 @@ IS
                 recipients = NVL( p_recipients, recipients ),
                 modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
                 modified_dt = SYSDATE
-          WHERE module = LOWER( p_module ) AND action = LOWER( p_action );
+          WHERE lower( event_name ) = LOWER( p_event_name ) AND lower( label ) = lower( p_label );
       END IF;
 
       -- if the update was unsuccessful above, or an insert it specifically requested, then do an insert
       IF ( SQL%ROWCOUNT = 0 AND LOWER( p_mode ) = 'upsert' ) OR LOWER( p_mode ) = 'insert'
       THEN
          CASE
-            WHEN p_method IS NULL
-            THEN
-               evolve.raise_err( 'parm_req', 'P_METHOD' );
-            WHEN p_enabled IS NULL
-            THEN
-               evolve.raise_err( 'parm_req', 'P_ENABLED' );
-            WHEN p_required IS NULL
-            THEN
-               evolve.raise_err( 'parm_req', 'P_REQUIRED' );
             WHEN p_sender IS NULL
             THEN
                evolve.raise_err( 'parm_req', 'P_SENDER' );
@@ -179,11 +178,11 @@ IS
 
          BEGIN
             INSERT INTO notification_conf
-                        ( label, module, action, method,
+                        ( label, event_name, method,
                           enabled, required, sender, recipients
                         )
-                 VALUES ( LOWER( p_label ), LOWER( p_module ), LOWER( p_action ), LOWER( p_method ),
-                          LOWER( p_enabled ), LOWER( p_required ), LOWER( p_sender ), LOWER( p_recipients )
+                 VALUES ( LOWER( p_label ), LOWER( p_event_name ), LOWER( nvl( p_method, 'email') ),
+                          LOWER( nvl( p_enabled, 'yes' ) ), LOWER( nvl( p_required, 'no' ) ), LOWER( p_sender ), LOWER( p_recipients )
                         );
          EXCEPTION
             WHEN e_dup_conf
@@ -195,8 +194,9 @@ IS
       -- if a delete is specifically requested, then do a delete
       IF LOWER( p_mode ) = 'delete'
       THEN
-         DELETE FROM notification_events
-               WHERE module = LOWER( p_module ) AND action = LOWER( p_action );
+         DELETE FROM notification_conf
+               WHERE lower( event_name ) = LOWER( p_event_name )
+                 AND lower( label ) = lower( p_label );
       END IF;
 
       -- if we still have not affected any records, then there's a problem
@@ -449,7 +449,8 @@ IS
          
          -- configure notification event for the support functionality
          set_notification_event
-         ( 'evolve.dump_session',
+         ( 'dump evolve session',
+           'evolve.dump_session',
            'notify support',
            'Evolve session dump information',
            'The attached support dump is sent from '

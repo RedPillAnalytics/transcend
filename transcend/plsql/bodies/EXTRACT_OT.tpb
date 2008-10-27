@@ -81,7 +81,7 @@ AS
       l_blocksize   NUMBER;
       l_exists      BOOLEAN                             DEFAULT FALSE;
       l_file_dt     DATE;
-      l_message     notification_events.MESSAGE%TYPE;
+      l_message     notification_event.MESSAGE%TYPE;
       l_curr_df     nls_session_parameters.VALUE%TYPE;
       l_curr_tsf    nls_session_parameters.VALUE%TYPE;
       l_detail_id   file_detail.file_detail_id%type;
@@ -164,7 +164,7 @@ AS
 
       -- notify about successful arrival of feed
       -- only works if this notification event has been configured for the file label.
-      o_ev.change_action( 'Notify success' );
+      o_ev.change_action( 'notify success' );
       SELF.announce( p_files_url => file_url, p_num_lines => l_numlines );
       -- set date and timestamp NLS formats back to original
       evolve.exec_sql( p_sql      => 'alter session set nls_date_format=''' || l_curr_df || '''',
