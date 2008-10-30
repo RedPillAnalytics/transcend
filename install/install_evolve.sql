@@ -28,16 +28,15 @@ GRANT SELECT ON tdsys.users TO &app_schema;
 -- grant permissions on the tdsys package
 GRANT EXECUTE ON tdsys.td_adm TO &app_schema;
 
-
 SPOOL InstallEvolve&suffix append
 
 DECLARE
    l_drop BOOLEAN := CASE WHEN REGEXP_LIKE('yes','&drop_repo','i') THEN TRUE ELSE FALSE END;
 BEGIN
    -- create the Evolve repository
-   tdsys.td_adm.build_evolve_repo( p_schema => '&rep_schema', p_tablespace => '&tablespace', p_drop => l_drop );
+   tdsys.td_adm.build_repository( p_schema => '&rep_schema', p_product => tdsys.td_adm.evolve_product, p_tablespace => '&tablespace', p_drop => l_drop );
    -- create the Evolve application
-   tdsys.td_adm.build_evolve_app( p_schema => '&app_schema', p_repository => '&rep_schema' );   
+   tdsys.td_adm.build_application( p_schema => '&app_schema', p_product => tdsys.td_adm.evolve_product, p_repository => '&rep_schema' );   
 EXCEPTION
    WHEN tdsys.td_adm.repo_obj_exists
    THEN

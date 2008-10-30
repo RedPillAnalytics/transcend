@@ -33,6 +33,30 @@ IS
    e_already_null EXCEPTION;
    PRAGMA EXCEPTION_INIT( e_already_null, -1451 );
 
+   FUNCTION get_product_name(
+      p_application   VARCHAR2 DEFAULT DEFAULT_REPOSITORY
+   )
+      RETURN VARCHAR2
+   IS
+      l_product       tdsys.applications.product%type;
+   BEGIN
+
+      -- select in the product name for this application
+      BEGIN
+         SELECT product
+           INTO l_product
+           FROM tdsys.applications
+          WHERE lower(application_name) = lower(p_application);
+      EXCEPTION
+         -- make sure there is an application by this name
+         WHEN no_data_found
+         THEN 
+            raise_application_error( -20009, 'Specified APPLICATION does not exist');
+      END;
+      
+      RETURN l_product;
+   END get_product_name;
+
    PROCEDURE create_user( p_user VARCHAR2 DEFAULT DEFAULT_REPOSITORY, p_tablespace VARCHAR2 DEFAULT NULL )
    IS
       l_user           all_users.username%TYPE;
@@ -1883,6 +1907,31 @@ IS
          RAISE;
    END build_transcend_repo;
 
+   PROCEDURE build_repository(
+      p_schema       VARCHAR2 DEFAULT DEFAULT_REPOSITORY,
+      p_product      VARCHAR2 DEFAULT TRANSCEND_PRODUCT,
+      p_tablespace   VARCHAR2 DEFAULT DEFAULT_REPOSITORY,
+      p_drop         BOOLEAN  DEFAULT FALSE
+   )
+   IS
+   BEGIN
+
+      -- now call the appropriate procedure
+      CASE p_product
+         WHEN transcend_product
+         THEN 
+            build_transcend_repo( p_schema      => p_schema,
+                                  p_tablespace  => p_tablespace,
+                                  p_drop        => p_drop );
+         WHEN evolve_product
+         THEN 
+            build_evolve_repo( p_schema      => p_schema,
+                               p_tablespace  => p_tablespace,
+                               p_drop        => p_drop );
+      END CASE;
+
+   END build_repository;
+
    PROCEDURE build_evolve_rep_syns( p_user VARCHAR2, p_schema VARCHAR2 )
    IS
    BEGIN
@@ -2603,6 +2652,28 @@ IS
 
    END build_transcend_app;
 
+   PROCEDURE build_application(
+      p_schema       VARCHAR2 DEFAULT DEFAULT_REPOSITORY,
+      p_repository   VARCHAR2 DEFAULT DEFAULT_REPOSITORY
+      p_product      VARCHAR2 DEFAULT TRANSCEND_PRODUCT
+   )
+   IS
+   BEGIN
+
+      -- now call the appropriate procedure
+      CASE p_product
+         WHEN transcend_product
+         THEN 
+            build_transcend_app( p_schema      => p_schema,
+                                 p_repository  => p_repository );
+         WHEN evolve_product
+         THEN 
+            build_evolve_app( p_schema      => p_schema,
+                              p_repository  => p_repository );
+      END CASE;
+
+   END build_application;
+
    PROCEDURE drop_evolve_app ( p_schema VARCHAR2 )
    IS
    BEGIN
@@ -2939,16 +3010,7 @@ IS
    BEGIN
 
       -- find out which product the user is registered for
-      BEGIN
-         SELECT product
-           INTO l_product
-           FROM tdsys.applications
-          WHERE lower(application_name) = lower(p_application);
-      EXCEPTION
-         WHEN no_data_found
-         THEN 
-            raise_application_error( -20009, 'Specified APPLICATION does not exist');
-      END;
+      l_product := get_product_name;
       
       -- now call the appropriate procedure
       CASE l_product
