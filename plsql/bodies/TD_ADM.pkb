@@ -63,30 +63,17 @@ IS
       l_def_tbs        database_properties.property_value%TYPE;
       l_ddl	       LONG;
    BEGIN
-      -- get the default tablespace
+      -- get the database default tablespace
       SELECT property_value
         INTO l_def_tbs
         FROM database_properties
        WHERE property_name = 'DEFAULT_PERMANENT_TABLESPACE';
-
-      -- find out if the user exists
-      -- also get the current default tablespace of the user
+      
+      -- set the default tablespace for the user
       BEGIN
-         SELECT default_tablespace
-           INTO g_tablespace
-           FROM dba_users
-          WHERE username = UPPER( p_user );
-
-	 IF p_tablespace IS NOT NULL
-	 THEN
-            g_user := p_user;
-
-            EXECUTE IMMEDIATE 'alter user ' || p_user || ' default tablespace ' || p_tablespace;
-	 END IF;	 
-
+         set_default_tablespace( p_user => p_user, p_tablespace => p_tablespace );
       EXCEPTION
-         -- the user does not exist
-         WHEN NO_DATA_FOUND
+         WHEN unknown_user
          THEN
 	    l_ddl :=    'CREATE USER '
                      || p_user
@@ -127,7 +114,7 @@ IS
             raise_application_error( -20008, 'User "' || UPPER( p_schema ) || '" does not exist.' );
       END;
    END set_current_schema;
-
+   
    PROCEDURE reset_default_tablespace
    IS
    BEGIN
@@ -139,6 +126,32 @@ IS
          g_user := NULL;
       END IF;
    END reset_default_tablespace;
+   
+   PROCEDURE set_default_tablespace( p_user VARCHAR2, p_tablespace VARCHAR2 )
+   IS
+   BEGIN
+      -- find out if the user exists
+      -- also get the current default tablespace of the user
+      BEGIN
+         SELECT default_tablespace
+           INTO g_tablespace
+           FROM dba_users
+          WHERE username = UPPER( p_user );
+
+	 IF p_tablespace IS NOT NULL
+	 THEN
+            g_user := p_user;
+
+            EXECUTE IMMEDIATE 'alter user ' || p_user || ' default tablespace ' || p_tablespace;
+	 END IF;	 
+
+      EXCEPTION
+      WHEN no_data_found
+      THEN
+         RAISE unknown_user;
+      END;
+
+   END set_default_tablespace;
 
    PROCEDURE reset_current_schema
    IS
@@ -550,11 +563,6 @@ IS
       l_sel_role	VARCHAR2(30) := upper(p_schema)||'_SEL';
       l_adm_role	VARCHAR2(30) := upper(p_schema)||'_ADM';
    BEGIN
-      -- create the user if it doesn't already exist
-      -- if it does, then simply change the default tablespace for that user
-      create_user( p_user => p_schema, p_tablespace => p_tablespace );
-      -- alter session to CURRENT_SCHEMA
-      set_current_schema( p_schema => p_schema );
 
       -- this will drop all the tables before beginning
       -- also drops the repository roles
@@ -1394,10 +1402,6 @@ IS
             RAISE repo_obj_exists;
       END;
 
-      -- if the default tablespace was changed, then put it back
-      reset_default_tablespace;
-      -- set current_schema back to where it started
-      reset_current_schema;
    EXCEPTION
       WHEN OTHERS
       THEN
@@ -1529,15 +1533,12 @@ IS
    
    PROCEDURE build_transcend_repo(
       p_schema       VARCHAR2 DEFAULT DEFAULT_REPOSITORY,
-      p_tablespace   VARCHAR2 DEFAULT DEFAULT_REPOSITORY,
       p_drop         BOOLEAN DEFAULT FALSE
    )
    IS
       e_stat_tab_exists   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_stat_tab_exists, -20002 );
    BEGIN
-      -- alter session to CURRENT_SCHEMA
-      set_current_schema( p_schema => p_schema );
 
       -- this will drop all the tables before beginning
       IF p_drop
@@ -1893,10 +1894,6 @@ IS
 	 RAISE no_sys_repo_entry;
       END IF;
 
-      -- if the default tablespace was changed, then put it back
-      reset_default_tablespace;
-      -- set current_schema back to where it started
-      reset_current_schema;
    EXCEPTION
       WHEN OTHERS
       THEN
@@ -1910,25 +1907,37 @@ IS
    PROCEDURE build_repository(
       p_schema       VARCHAR2 DEFAULT DEFAULT_REPOSITORY,
       p_product      VARCHAR2 DEFAULT TRANSCEND_PRODUCT,
-      p_tablespace   VARCHAR2 DEFAULT DEFAULT_REPOSITORY,
+      p_tablespace   VARCHAR2 DEFAULT,
       p_drop         BOOLEAN  DEFAULT FALSE
    )
    IS
    BEGIN
+      
+      -- create the user if it doesn't already exist
+      -- if it does, then simply change the default tablespace for that user
+      create_user( p_user => p_schema, p_tablespace => p_tablespace );
+      -- alter session to CURRENT_SCHEMA
+      set_current_schema( p_schema => p_schema );
 
-      -- now call the appropriate procedure
-      CASE p_product
-         WHEN transcend_product
-         THEN 
-            build_transcend_repo( p_schema      => p_schema,
-                                  p_tablespace  => p_tablespace,
-                                  p_drop        => p_drop );
-         WHEN evolve_product
-         THEN 
-            build_evolve_repo( p_schema      => p_schema,
-                               p_tablespace  => p_tablespace,
+      -- always need to build the evolve repository
+      -- this is certainly the case now
+      -- I assume all TD products will always be build on Evolve
+      build_evolve_repo( p_schema      => p_schema,
+                         p_tablespace  => p_tablespace,
+                         p_drop        => p_drop );
+      
+      -- now call any other products required
+      -- currently, this is only Transcend if Transcend is specified
+      IF p_product = TRANSCEND_PRODUCT
+      THEN
+         build_transcend_repo( p_schema      => p_schema,
                                p_drop        => p_drop );
-      END CASE;
+      END IF;
+      
+      -- if the default tablespace was changed, then put it back
+      reset_default_tablespace;
+      -- set current_schema back to where it started
+      reset_current_schema;
 
    END build_repository;
 
@@ -2459,9 +2468,6 @@ IS
    )
    IS
    BEGIN
-      -- create the user if it doesn't already exist
-      create_user( p_user => p_schema );
-      
       -- grant required permissions for code compilation
       BEGIN
 	 EXECUTE IMMEDIATE 'GRANT RESOURCE TO ' || p_schema;
@@ -2537,8 +2543,10 @@ IS
       
       -- create grants to the application owner to all the tables in the repository
       grant_evolve_rep_privs( p_grantee => p_schema );
+
       -- set the CURRENT_SCHEMA back
       reset_current_schema;
+
       -- set the CURRENT_SCHEMA to the application owner
       set_current_schema( p_schema => p_schema );
       -- create the synonyms to the repository
@@ -2546,33 +2554,6 @@ IS
       -- create the dbms_scheduler program
       create_scheduler_metadata;
 
-      -- write application tracking record
-      UPDATE tdsys.applications
-	 SET repository_name = upper( p_repository ),
-	     product = evolve_product,
-	     version = product_version,
-	     modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
-	     modified_dt = SYSDATE
-       WHERE application_name=upper( p_schema );
-      
-      IF SQL%ROWCOUNT = 0
-      THEN
-         INSERT INTO tdsys.applications
-		( application_name,
-		  repository_name,
-		  product,
-		  version )
-		VALUES
-		( upper( p_schema ),
-		  upper( p_repository ),
-		  evolve_product,
-		  product_version );
-      END IF;
-
-      DBMS_OUTPUT.put_line(    ' The CURRENT_SCHEMA is set to '
-                            || SYS_CONTEXT( 'USERENV', 'CURRENT_SCHEMA' )
-                            || ' in preparation for installing application'
-                          );
    END build_evolve_app;
 
    PROCEDURE build_transcend_app(
@@ -2589,10 +2570,13 @@ IS
 
       -- create grants to the application owner to all the tables in the repository
       grant_transcend_rep_privs( p_grantee => p_schema, p_mode => 'admin' );
+
       -- set the CURRENT_SCHEMA back
       reset_current_schema;
+
       -- set the CURRENT_SCHEMA to the application owner
       set_current_schema( p_schema => p_schema );
+
       -- create the synonyms to the repository
       build_transcend_rep_syns( p_user => p_schema, p_schema => p_repository );
 
@@ -2629,27 +2613,12 @@ IS
          THEN
             NULL;
       END;
-
       
-      -- grant full system privileges for Transcend ETL (trans_etl) to the trans_etl_sys role
+      -- grant full system privileges for Transcend ETL (trans_etl) to the trans_etl role
       grant_trans_etl_sys_privs( p_grantee => trans_etl_role );
-      -- grant full system privileges for Transcend Files (trans_files) to the trans_files_sys role
+      -- grant full system privileges for Transcend Files (trans_files) to the trans_files role
       grant_trans_files_sys_privs( p_grantee => trans_files_role );
       
-      -- the reason for this update is to set the product from 'evolve' to 'transcend'      
-      -- write application tracking record
-      UPDATE tdsys.applications
-	 SET modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
-	     modified_dt = SYSDATE,
-	     product = transcend_product,
-	     version = product_version
-       WHERE application_name=upper( p_schema );
-            
-      IF SQL%ROWCOUNT = 0
-      THEN
-	 RAISE no_sys_repo_entry;
-      END IF;
-
    END build_transcend_app;
 
    PROCEDURE build_application(
@@ -2659,18 +2628,55 @@ IS
    )
    IS
    BEGIN
+      
+      -- create the user if it doesn't already exist
+      create_user( p_user => p_schema );
+      
+      -- reset the current schema
+      reset_current_schema;
+      
+      -- always install the evolve piece
+      build_evolve_app( p_schema      => p_schema,
+                        p_repository  => p_repository );
 
-      -- now call the appropriate procedure
-      CASE p_product
-         WHEN transcend_product
-         THEN 
-            build_transcend_app( p_schema      => p_schema,
-                                 p_repository  => p_repository );
-         WHEN evolve_product
-         THEN 
-            build_evolve_app( p_schema      => p_schema,
+
+      -- now build the transcend piece if necessary
+      IF lower( p_product ) = transcend_product
+      THEN
+         build_transcend_app( p_schema      => p_schema,
                               p_repository  => p_repository );
-      END CASE;
+
+      END IF; 
+
+
+      -- write application tracking record
+      UPDATE tdsys.applications
+	 SET repository_name = upper( p_repository ),
+	     product = lower( p_product ),
+	     version = product_version,
+	     modified_user = SYS_CONTEXT( 'USERENV', 'SESSION_USER' ),
+	     modified_dt = SYSDATE
+       WHERE application_name=upper( p_schema );
+      
+      IF SQL%ROWCOUNT = 0
+      THEN
+         INSERT INTO tdsys.applications
+		( application_name,
+		  repository_name,
+		  product,
+		  version )
+		VALUES
+		( upper( p_schema ),
+		  upper( p_repository ),
+		  lower( p_product ),
+		  product_version );
+      END IF;
+
+      DBMS_OUTPUT.put_line(    ' The CURRENT_SCHEMA is set to '
+                            || SYS_CONTEXT( 'USERENV', 'CURRENT_SCHEMA' )
+                            || ' in preparation for installing application'
+                          );
+      
 
    END build_application;
 

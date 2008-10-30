@@ -3,6 +3,7 @@ IS
    -- global exceptions
    repo_obj_exists      EXCEPTION;
    no_sys_repo_entry    EXCEPTION;
+   unknown_user         EXCEPTION;
 
    -- package constants
    product_version      CONSTANT        NUMBER          := 2.0;
