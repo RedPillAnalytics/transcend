@@ -57,6 +57,69 @@ IS
       RETURN l_product;
    END get_product_name;
 
+   PROCEDURE set_current_schema( p_schema VARCHAR2 DEFAULT DEFAULT_REPOSITORY )
+   IS
+      l_current_schema   dba_users.username%TYPE;
+   BEGIN
+      BEGIN
+         -- get the current schema before this
+	 l_current_schema := SYS_CONTEXT( 'USERENV', 'CURRENT_SCHEMA' );
+
+         -- set the session to that user
+         EXECUTE IMMEDIATE 'ALTER SESSION SET current_schema=' || p_schema;
+
+         g_current_schema := l_current_schema;
+      EXCEPTION
+         WHEN e_no_user
+         THEN
+            raise_application_error( -20008, 'User "' || UPPER( p_schema ) || '" does not exist.' );
+      END;
+   END set_current_schema;
+   
+   PROCEDURE reset_current_schema
+   IS
+   BEGIN
+      EXECUTE IMMEDIATE 'alter session set current_schema=' || g_current_schema;
+   END reset_current_schema;
+
+   PROCEDURE set_default_tablespace( p_user VARCHAR2, p_tablespace VARCHAR2 )
+   IS
+   BEGIN
+      -- find out if the user exists
+      -- also get the current default tablespace of the user
+      BEGIN
+         SELECT default_tablespace
+           INTO g_tablespace
+           FROM dba_users
+          WHERE username = UPPER( p_user );
+
+	 IF p_tablespace IS NOT NULL
+	 THEN
+            g_user := p_user;
+
+            EXECUTE IMMEDIATE 'alter user ' || p_user || ' default tablespace ' || p_tablespace;
+	 END IF;	 
+
+      EXCEPTION
+      WHEN no_data_found
+      THEN
+         RAISE unknown_user;
+      END;
+
+   END set_default_tablespace;
+
+   PROCEDURE reset_default_tablespace
+   IS
+   BEGIN
+      IF g_tablespace IS NOT NULL AND g_user IS NOT NULL
+      THEN
+         EXECUTE IMMEDIATE 'alter user ' || g_user || ' default tablespace ' || g_tablespace;
+
+         g_tablespace := NULL;
+         g_user := NULL;
+      END IF;
+   END reset_default_tablespace;
+   
    PROCEDURE create_user( p_user VARCHAR2 DEFAULT DEFAULT_REPOSITORY, p_tablespace VARCHAR2 DEFAULT NULL )
    IS
       l_user           all_users.username%TYPE;
@@ -96,69 +159,6 @@ IS
 
    END create_user;
 
-   PROCEDURE set_current_schema( p_schema VARCHAR2 DEFAULT DEFAULT_REPOSITORY )
-   IS
-      l_current_schema   dba_users.username%TYPE;
-   BEGIN
-      BEGIN
-         -- get the current schema before this
-	 l_current_schema := SYS_CONTEXT( 'USERENV', 'CURRENT_SCHEMA' );
-
-         -- set the session to that user
-         EXECUTE IMMEDIATE 'ALTER SESSION SET current_schema=' || p_schema;
-
-         g_current_schema := l_current_schema;
-      EXCEPTION
-         WHEN e_no_user
-         THEN
-            raise_application_error( -20008, 'User "' || UPPER( p_schema ) || '" does not exist.' );
-      END;
-   END set_current_schema;
-   
-   PROCEDURE reset_default_tablespace
-   IS
-   BEGIN
-      IF g_tablespace IS NOT NULL AND g_user IS NOT NULL
-      THEN
-         EXECUTE IMMEDIATE 'alter user ' || g_user || ' default tablespace ' || g_tablespace;
-
-         g_tablespace := NULL;
-         g_user := NULL;
-      END IF;
-   END reset_default_tablespace;
-   
-   PROCEDURE set_default_tablespace( p_user VARCHAR2, p_tablespace VARCHAR2 )
-   IS
-   BEGIN
-      -- find out if the user exists
-      -- also get the current default tablespace of the user
-      BEGIN
-         SELECT default_tablespace
-           INTO g_tablespace
-           FROM dba_users
-          WHERE username = UPPER( p_user );
-
-	 IF p_tablespace IS NOT NULL
-	 THEN
-            g_user := p_user;
-
-            EXECUTE IMMEDIATE 'alter user ' || p_user || ' default tablespace ' || p_tablespace;
-	 END IF;	 
-
-      EXCEPTION
-      WHEN no_data_found
-      THEN
-         RAISE unknown_user;
-      END;
-
-   END set_default_tablespace;
-
-   PROCEDURE reset_current_schema
-   IS
-   BEGIN
-      EXECUTE IMMEDIATE 'alter session set current_schema=' || g_current_schema;
-   END reset_current_schema;
-
    -- this creates the job metadata (called a program) for submitting concurrent processes
    PROCEDURE create_scheduler_metadata
    IS
@@ -181,6 +181,240 @@ IS
                                   || ' This is the job class Evolve calls by default when the Oracle scheduler is used for concurrent processing'
          );
    END create_scheduler_metadata;
+
+   PROCEDURE drop_evolve_app ( p_schema VARCHAR2 )
+   IS
+   BEGIN
+      
+      -- drop some of the old roles used in earlier versions
+      BEGIN
+         EXECUTE IMMEDIATE 'DROP ROLE '||p_schema||'_java';
+      EXCEPTION
+         when e_no_role
+         THEN
+         NULL;
+      END;
+      
+      BEGIN
+         EXECUTE IMMEDIATE 'DROP ROLE '||p_schema||'_sys';
+      EXCEPTION
+         when e_no_role
+         THEN
+         NULL;
+      END;
+
+      
+      -- this type is created first as it's needed for the TD_CORE
+      BEGIN
+         EXECUTE IMMEDIATE 'DROP TYPE '||p_schema||'.split_ot';
+      EXCEPTION
+         when e_no_obj
+         THEN
+         NULL;
+      END;
+
+
+      -- td_core package
+      BEGIN
+         EXECUTE IMMEDIATE 'DROP package '||p_schema||'.td_core';
+      EXCEPTION
+         when e_no_obj
+         THEN
+         NULL;
+      END;
+
+      -- STRAGG function
+      BEGIN
+         EXECUTE IMMEDIATE 'DROP package '||p_schema||'.string_agg_ot';
+      EXCEPTION
+         when e_no_obj
+         THEN
+         NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE 'DROP function '||p_schema||'.stragg';
+      EXCEPTION
+         when e_no_obj
+         THEN
+         NULL;
+      END;
+      
+      -- java stored procedures
+      BEGIN
+         EXECUTE IMMEDIATE 'DROP java source '||p_schema||'.TdUtils';
+      EXCEPTION
+         when e_no_obj
+         THEN
+         NULL;
+      END;
+      
+      -- td_inst package
+      BEGIN
+         EXECUTE IMMEDIATE 'DROP package '||p_schema||'.td_inst';
+      EXCEPTION
+         when e_no_obj
+         THEN
+         NULL;
+      END;
+      
+      -- evolve package
+      BEGIN
+         EXECUTE IMMEDIATE 'DROP package '||p_schema||'.evolve';
+      EXCEPTION
+         when e_no_obj
+         THEN
+         NULL;
+      END;
+      
+      -- drop some older evolve packages just in case
+      -- these no longer exist in current versions
+      -- evolve package
+      BEGIN
+         EXECUTE IMMEDIATE 'DROP package '||p_schema||'.evolve_app';
+      EXCEPTION
+         when e_no_obj
+         THEN
+         NULL;
+      END;
+      -- evolve package
+      BEGIN
+         EXECUTE IMMEDIATE 'DROP package '||p_schema||'.evolve_log';
+      EXCEPTION
+         when e_no_obj
+         THEN
+         NULL;
+      END;
+      
+      -- types need to be dropped in a specific order
+      BEGIN
+         EXECUTE IMMEDIATE 'DROP TYPE '||p_schema||'.notification_ot';
+      EXCEPTION
+         when e_no_obj
+         THEN
+            NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE 'DROP TYPE '||p_schema||'.evolve_ot';
+      EXCEPTION
+         when e_no_obj
+         THEN
+            NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE 'DROP TYPE '||p_schema||'.app_ot';
+      EXCEPTION
+         when e_no_obj
+         THEN
+            NULL;
+      END;
+
+      -- utilities package
+      BEGIN
+         EXECUTE IMMEDIATE 'DROP package '||p_schema||'.td_utils';
+      EXCEPTION
+         when e_no_obj
+         THEN
+            NULL;
+      END;
+      
+      -- evolve callable packages
+      BEGIN
+         EXECUTE IMMEDIATE 'DROP package '||p_schema||'.evolve';
+      EXCEPTION
+         when e_no_obj
+         THEN
+            NULL;
+      END;
+      
+      BEGIN
+         EXECUTE IMMEDIATE 'DROP package '||p_schema||'.evolve_adm';
+      EXCEPTION
+         when e_no_obj
+         THEN
+            NULL;
+      END;
+
+   END drop_evolve_app;
+
+   PROCEDURE drop_transcend_app ( p_schema VARCHAR2 )
+   IS
+   BEGIN
+      BEGIN
+         EXECUTE IMMEDIATE 'DROP TYPE '||p_schema||'.dimension_ot';
+      EXCEPTION
+         WHEN e_no_obj
+         THEN
+            NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE 'DROP TYPE '||p_schema||'.mapping_ot';
+      EXCEPTION
+         WHEN e_no_obj
+         THEN
+            NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE 'DROP TYPE '||p_schema||'.feed_ot';
+      EXCEPTION
+         WHEN e_no_obj
+         THEN
+            NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE 'DROP TYPE '||p_schema||'.extract_ot';
+      EXCEPTION
+         WHEN e_no_obj
+         THEN
+            NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE 'DROP TYPE '||p_schema||'.file_ot';
+      EXCEPTION
+         WHEN e_no_obj
+         THEN
+            NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE 'DROP package '||p_schema||'.td_dbutils';
+      EXCEPTION
+         WHEN e_no_obj
+         THEN
+            NULL;
+      END;
+      
+      BEGIN
+         EXECUTE IMMEDIATE 'DROP package '||p_schema||'.trans_adm';
+      EXCEPTION
+         WHEN e_no_obj
+         THEN
+            NULL;
+      END;
+      
+      BEGIN
+         EXECUTE IMMEDIATE 'DROP package '||p_schema||'.trans_etl';
+      EXCEPTION
+         WHEN e_no_obj
+         THEN
+            NULL;
+      END;
+      
+      BEGIN
+         EXECUTE IMMEDIATE 'DROP package '||p_schema||'.trans_files';
+      EXCEPTION
+         WHEN e_no_obj
+         THEN
+            NULL;
+      END;
+
+   END drop_transcend_app;
 
    PROCEDURE grant_evolve_rep_privs(
       p_grantee   VARCHAR2,
@@ -1905,9 +2139,9 @@ IS
    END build_transcend_repo;
 
    PROCEDURE build_repository(
-      p_schema       VARCHAR2 DEFAULT DEFAULT_REPOSITORY,
+      p_schema       VARCHAR2,
+      p_tablespace   VARCHAR2,
       p_product      VARCHAR2 DEFAULT TRANSCEND_PRODUCT,
-      p_tablespace   VARCHAR2 DEFAULT,
       p_drop         BOOLEAN  DEFAULT FALSE
    )
    IS
@@ -2622,8 +2856,8 @@ IS
    END build_transcend_app;
 
    PROCEDURE build_application(
-      p_schema       VARCHAR2 DEFAULT DEFAULT_REPOSITORY,
-      p_repository   VARCHAR2 DEFAULT DEFAULT_REPOSITORY
+      p_schema       VARCHAR2,
+      p_repository   VARCHAR2,
       p_product      VARCHAR2 DEFAULT TRANSCEND_PRODUCT
    )
    IS
@@ -2679,240 +2913,6 @@ IS
       
 
    END build_application;
-
-   PROCEDURE drop_evolve_app ( p_schema VARCHAR2 )
-   IS
-   BEGIN
-      
-      -- drop some of the old roles used in earlier versions
-      BEGIN
-         EXECUTE IMMEDIATE 'DROP ROLE '||p_schema||'_java';
-      EXCEPTION
-         when e_no_role
-         THEN
-         NULL;
-      END;
-      
-      BEGIN
-         EXECUTE IMMEDIATE 'DROP ROLE '||p_schema||'_sys';
-      EXCEPTION
-         when e_no_role
-         THEN
-         NULL;
-      END;
-
-      
-      -- this type is created first as it's needed for the TD_CORE
-      BEGIN
-         EXECUTE IMMEDIATE 'DROP TYPE '||p_schema||'.split_ot';
-      EXCEPTION
-         when e_no_obj
-         THEN
-         NULL;
-      END;
-
-
-      -- td_core package
-      BEGIN
-         EXECUTE IMMEDIATE 'DROP package '||p_schema||'.td_core';
-      EXCEPTION
-         when e_no_obj
-         THEN
-         NULL;
-      END;
-
-      -- STRAGG function
-      BEGIN
-         EXECUTE IMMEDIATE 'DROP package '||p_schema||'.string_agg_ot';
-      EXCEPTION
-         when e_no_obj
-         THEN
-         NULL;
-      END;
-
-      BEGIN
-         EXECUTE IMMEDIATE 'DROP function '||p_schema||'.stragg';
-      EXCEPTION
-         when e_no_obj
-         THEN
-         NULL;
-      END;
-      
-      -- java stored procedures
-      BEGIN
-         EXECUTE IMMEDIATE 'DROP java source '||p_schema||'.TdUtils';
-      EXCEPTION
-         when e_no_obj
-         THEN
-         NULL;
-      END;
-      
-      -- td_inst package
-      BEGIN
-         EXECUTE IMMEDIATE 'DROP package '||p_schema||'.td_inst';
-      EXCEPTION
-         when e_no_obj
-         THEN
-         NULL;
-      END;
-      
-      -- evolve package
-      BEGIN
-         EXECUTE IMMEDIATE 'DROP package '||p_schema||'.evolve';
-      EXCEPTION
-         when e_no_obj
-         THEN
-         NULL;
-      END;
-      
-      -- drop some older evolve packages just in case
-      -- these no longer exist in current versions
-      -- evolve package
-      BEGIN
-         EXECUTE IMMEDIATE 'DROP package '||p_schema||'.evolve_app';
-      EXCEPTION
-         when e_no_obj
-         THEN
-         NULL;
-      END;
-      -- evolve package
-      BEGIN
-         EXECUTE IMMEDIATE 'DROP package '||p_schema||'.evolve_log';
-      EXCEPTION
-         when e_no_obj
-         THEN
-         NULL;
-      END;
-      
-      -- types need to be dropped in a specific order
-      BEGIN
-         EXECUTE IMMEDIATE 'DROP TYPE '||p_schema||'.notification_ot';
-      EXCEPTION
-         when e_no_obj
-         THEN
-            NULL;
-      END;
-
-      BEGIN
-         EXECUTE IMMEDIATE 'DROP TYPE '||p_schema||'.evolve_ot';
-      EXCEPTION
-         when e_no_obj
-         THEN
-            NULL;
-      END;
-
-      BEGIN
-         EXECUTE IMMEDIATE 'DROP TYPE '||p_schema||'.app_ot';
-      EXCEPTION
-         when e_no_obj
-         THEN
-            NULL;
-      END;
-
-      -- utilities package
-      BEGIN
-         EXECUTE IMMEDIATE 'DROP package '||p_schema||'.td_utils';
-      EXCEPTION
-         when e_no_obj
-         THEN
-            NULL;
-      END;
-      
-      -- evolve callable packages
-      BEGIN
-         EXECUTE IMMEDIATE 'DROP package '||p_schema||'.evolve';
-      EXCEPTION
-         when e_no_obj
-         THEN
-            NULL;
-      END;
-      
-      BEGIN
-         EXECUTE IMMEDIATE 'DROP package '||p_schema||'.evolve_adm';
-      EXCEPTION
-         when e_no_obj
-         THEN
-            NULL;
-      END;
-
-   END drop_evolve_app;
-
-   PROCEDURE drop_transcend_app ( p_schema VARCHAR2 )
-   IS
-   BEGIN
-      BEGIN
-         EXECUTE IMMEDIATE 'DROP TYPE '||p_schema||'.dimension_ot';
-      EXCEPTION
-         WHEN e_no_obj
-         THEN
-            NULL;
-      END;
-
-      BEGIN
-         EXECUTE IMMEDIATE 'DROP TYPE '||p_schema||'.mapping_ot';
-      EXCEPTION
-         WHEN e_no_obj
-         THEN
-            NULL;
-      END;
-
-      BEGIN
-         EXECUTE IMMEDIATE 'DROP TYPE '||p_schema||'.feed_ot';
-      EXCEPTION
-         WHEN e_no_obj
-         THEN
-            NULL;
-      END;
-
-      BEGIN
-         EXECUTE IMMEDIATE 'DROP TYPE '||p_schema||'.extract_ot';
-      EXCEPTION
-         WHEN e_no_obj
-         THEN
-            NULL;
-      END;
-
-      BEGIN
-         EXECUTE IMMEDIATE 'DROP TYPE '||p_schema||'.file_ot';
-      EXCEPTION
-         WHEN e_no_obj
-         THEN
-            NULL;
-      END;
-
-      BEGIN
-         EXECUTE IMMEDIATE 'DROP package '||p_schema||'.td_dbutils';
-      EXCEPTION
-         WHEN e_no_obj
-         THEN
-            NULL;
-      END;
-      
-      BEGIN
-         EXECUTE IMMEDIATE 'DROP package '||p_schema||'.trans_adm';
-      EXCEPTION
-         WHEN e_no_obj
-         THEN
-            NULL;
-      END;
-      
-      BEGIN
-         EXECUTE IMMEDIATE 'DROP package '||p_schema||'.trans_etl';
-      EXCEPTION
-         WHEN e_no_obj
-         THEN
-            NULL;
-      END;
-      
-      BEGIN
-         EXECUTE IMMEDIATE 'DROP package '||p_schema||'.trans_files';
-      EXCEPTION
-         WHEN e_no_obj
-         THEN
-            NULL;
-      END;
-
-   END drop_transcend_app;
 
    PROCEDURE register_evolve_user(
       p_user          VARCHAR2,

@@ -15,15 +15,15 @@ IS
    default_repository   CONSTANT        VARCHAR2(6)     := 'TDREP';
 
    PROCEDURE build_repository(
-      p_schema       VARCHAR2 DEFAULT DEFAULT_REPOSITORY,
+      p_schema       VARCHAR2,
+      p_tablespace   VARCHAR2,
       p_product      VARCHAR2 DEFAULT TRANSCEND_PRODUCT,
-      p_tablespace   VARCHAR2 DEFAULT DEFAULT_REPOSITORY,
       p_drop         BOOLEAN  DEFAULT FALSE
    );
  
    PROCEDURE build_application(
-      p_schema       VARCHAR2 DEFAULT DEFAULT_REPOSITORY,
-      p_repository   VARCHAR2 DEFAULT DEFAULT_REPOSITORY
+      p_schema       VARCHAR2,
+      p_repository   VARCHAR2,
       p_product      VARCHAR2 DEFAULT TRANSCEND_PRODUCT
    );
 

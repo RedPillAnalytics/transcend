@@ -53,14 +53,14 @@ BEGIN
 END;
 /
 
--- go ahead and create the package spec for TD_ADM
--- this makes the constants in the spec available
-@../plsql/specs/TD_ADM.pks
-
 -- needed to interact with users and their tablespaces
 GRANT SELECT ANY dictionary TO tdsys;
 
 ALTER SESSION SET current_schema=tdsys;
+
+-- go ahead and create the package spec for TD_ADM
+-- this makes the constants in the spec available
+@../plsql/specs/TD_ADM.pks
 
 VARIABLE b_role_exists char(1)
 SET feedback off
