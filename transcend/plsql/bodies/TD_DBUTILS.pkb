@@ -592,7 +592,10 @@ AS
       l_tab_name        VARCHAR2( 61 )                               := UPPER( p_owner || '.' || p_table );
       l_src_name        VARCHAR2( 61 )                              := UPPER( p_source_owner || '.' || p_source_table );
       l_part_type       VARCHAR2( 6 );
-      l_targ_part       all_tables.partitioned%TYPE;
+      l_src_part        BOOLEAN;
+      l_targ_part       BOOLEAN;
+      l_src_part_flg    all_tables.partitioned%TYPE;
+      l_targ_part_flg   all_tables.partitioned%TYPE;
       l_part_position   all_tab_partitions.partition_position%TYPE;
       l_concurrent_id   VARCHAR2( 100 );
       l_rows            BOOLEAN                                      := FALSE;
@@ -616,12 +619,25 @@ AS
       -- register the value of p_concurrent
       evolve.log_msg( 'The value of P_CONCURRENT is: '||p_concurrent, 5 );
 
+      -- register the value of p_partname
+      evolve.log_msg( 'The value of P_PARTNAME is: '||p_partname, 5 );
+
+      -- find out which tables are partitioned
+      l_src_part       := td_utils.is_part_table( p_source_owner, p_source_table);
+      l_src_part_flg   := CASE WHEN l_src_part THEN 'yes' ELSE 'no' END;
+      l_targ_part      := td_utils.is_part_table( p_owner, p_table );
+      l_targ_part_flg  := CASE WHEN l_targ_part THEN 'yes' ELSE 'no' END;
+
+
+      o_ev.change_action( 'check objects' );
       -- confirm that the target table exists
       -- raise an error if it doesn't
       td_utils.check_table( p_owner => p_owner, p_table => p_table );
       -- confirm that the source table
       -- raise an error if it doesn't
       td_utils.check_table( p_owner => p_source_owner, p_table => p_source_table, p_partname => p_partname );
+
+
       -- execute immediate doesn't like ";" on the end
       DBMS_METADATA.set_transform_param( DBMS_METADATA.session_transform, 'SQLTERMINATOR', FALSE );
       -- we need the segment attributes so things go where we want them to
@@ -630,13 +646,7 @@ AS
       DBMS_METADATA.set_transform_param( DBMS_METADATA.session_transform, 'STORAGE', FALSE );
       o_ev.change_action( 'build indexes' );
 
-      -- find out if the target table is partitioned so we know how to formulate the index ddl
-      SELECT partitioned
-        INTO l_targ_part
-        FROM all_tables
-       WHERE table_name = UPPER( p_table ) AND owner = UPPER( p_owner );
-
-      -- if P_PARTNAME is specified, then I need the partition position is required
+      -- if P_PARTNAME is specified, then I need the partition position
       IF p_partname IS NOT NULL
       THEN
          SELECT partition_position
@@ -742,24 +752,24 @@ AS
                                                   -- partitioning decisions are based on the structure of the target table
                                                   CASE
                                                      -- target is not partitioned and neither p_TABLESPACE or p_PARTNAME are provided
-                                                  WHEN l_targ_part = 'NO' AND p_tablespace IS NULL
+                                                  WHEN l_targ_part_flg = 'no' AND p_tablespace IS NULL
                                                        AND p_partname IS NULL
                                                         -- remove all partitioning and the local keyword
                                                   THEN '\s*(\(\s*partition.+\))|local\s*'
                                                      -- target is not partitioned but p_TABLESPACE or p_PARTNAME is provided
-                                                  WHEN l_targ_part = 'NO'
+                                                  WHEN l_targ_part_flg = 'no'
                                                   AND ( p_tablespace IS NOT NULL OR p_partname IS NOT NULL )
                                                         -- strip out partitioned info and local keyword and tablespace clause
                                                   THEN '\s*(\(\s*partition.+\))|local|(tablespace)\s*\S+\s*'
                                                      -- target is partitioned and p_TABLESPACE or p_PARTNAME is provided
-                                                  WHEN l_targ_part = 'YES'
+                                                  WHEN l_targ_part_flg = 'ys'
                                                   AND ( p_tablespace IS NOT NULL OR p_partname IS NOT NULL )
                                                         -- strip out partitioned info keeping local keyword and remove tablespace clause
                                                   THEN '\s*(\(\s*partition.+\))|(tablespace)\s*\S+\s*'
                                                      -- target is partitioned
                                                      -- p_TABLESPACE is null
                                                      -- p_PARTNAME is null
-                                                  WHEN l_targ_part = 'YES' AND p_tablespace IS NULL
+                                                  WHEN l_targ_part_flg = 'yes' AND p_tablespace IS NULL
                                                        AND p_partname IS NULL
                                                         -- leave partitioning and tablespace information as it is
                                                         -- this implies a one-to-one mapping of partitioned names from source to target
@@ -790,7 +800,9 @@ AS
                                                                     AND partition_position = l_part_position )
                                                               )
                                                 ELSE NULL
-                                             END index_ddl,
+                                             END 
+                                          || CASE WHEN td_core.get_yn_ind( l_targ_part_flg ) = 'yes' AND td_core.get_yn_ind( l_src_part_flg ) = 'no' THEN ' LOCAL' ELSE NULL END
+                                          index_ddl,
                                           table_owner, table_name, owner, index_name,
                                           
                                           -- this is the index name that will be used in the first attempt
@@ -2382,6 +2394,10 @@ AS
       l_compress       BOOLEAN                                  := FALSE;
       l_constraints    BOOLEAN                                  := FALSE;
       l_retry_ddl      BOOLEAN                                  := FALSE;
+      l_src_part       BOOLEAN;
+      l_trg_part       BOOLEAN;
+      l_src_part_flg   VARCHAR2(3);
+      l_trg_part_flg   VARCHAR2(3);
       e_no_stats       EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_stats, -20000 );
       e_compress       EXCEPTION;
@@ -2394,33 +2410,58 @@ AS
       PRAGMA EXCEPTION_INIT( e_fk_mismatch, -14128 );
       o_ev             evolve_ot                                := evolve_ot( p_module => 'exchange_partition' );
    BEGIN
-      o_ev.change_action( 'determine partition to use' );
-      -- check to make sure the target table exists, is partitioned, and the partition name exists
-      td_utils.check_table( p_owner => p_owner, p_table => p_table, p_partname => p_partname, p_partitioned => 'yes' );
-      -- check to make sure the source table exists and is not partitioned
-      td_utils.check_table( p_owner => p_source_owner, p_table => p_source_table, p_partitioned => 'no' );
+
+      o_ev.change_action( 'determine partitioned table');
+      -- find out which tables are partitioned
+      l_src_part      := td_utils.is_part_table( p_source_owner, p_source_table);
+      l_src_part_flg  := CASE WHEN l_src_part THEN 'yes' ELSE 'no' END;
+      l_trg_part      := td_utils.is_part_table( p_owner, p_table );
+      l_trg_part_flg  := CASE WHEN l_trg_part THEN 'yes' ELSE 'no' END;
+      
+      CASE
+      -- raise exceptions if both are partitioned
+        WHEN l_src_part AND l_trg_part
+        THEN
+          evolve.raise_err( 'both_part' );
+      -- raise exceptions if neither are partitioned
+        WHEN NOT l_src_part AND NOT l_trg_part
+        THEN
+          evolve.raise_err( 'neither_part' );
+        ELSE
+          NULL;
+      END CASE;
+
+      o_ev.change_action( 'check objects' );
+      -- check to make sure the target table exists, and the partitioning is correct
+      td_utils.check_table( p_owner => CASE WHEN l_trg_part THEN p_owner ELSE p_source_owner END, p_table => CASE WHEN l_trg_part THEN p_table ELSE p_source_table END, p_partname => p_partname, p_partitioned => 'yes' );
+      -- check to make sure the source table exists and the partitioning is correct
+      td_utils.check_table( p_owner => CASE WHEN l_trg_part THEN p_source_owner ELSE p_owner END, p_table => CASE WHEN l_trg_part THEN p_source_table ELSE p_table END, p_partitioned => 'no' );
 
       -- use either the value for P_PARTNAME or the max partition
+      o_ev.change_action( 'get partition name' );
       SELECT NVL( UPPER( p_partname ), partition_name )
         INTO l_partname
         FROM all_tab_partitions
-       WHERE table_name = UPPER( p_table )
-         AND table_owner = UPPER( p_owner )
+       WHERE table_name = UPPER( CASE WHEN l_trg_part_flg = 'yes' THEN p_table ELSE p_source_table END )
+         AND table_owner = UPPER( CASE WHEN l_trg_part_flg = 'yes' THEN p_owner ELSE p_source_owner END )
          AND partition_position IN( SELECT MAX( partition_position )
                                      FROM all_tab_partitions
-                                    WHERE table_name = UPPER( p_table ) AND table_owner = UPPER( p_owner ));
+                                    WHERE table_name = UPPER( CASE WHEN l_trg_part_flg = 'yes' THEN p_table ELSE p_source_table END ) AND table_owner =  UPPER( CASE WHEN l_trg_part_flg = 'yes' THEN p_owner ELSE p_source_owner END ));
 
-      -- we want to gather statistics
-      -- we gather statistics first before the indexes are built
-      -- the indexes will collect there own statistics when they are built
-      -- that is why we don't cascade
       o_ev.change_action( 'manage statistics' );
 
       CASE
+         -- we want to gather statistics
+         -- we gather statistics first before the indexes are built
+         -- the indexes will collect there own statistics when they are built
+         -- that is why we don't cascade
          WHEN REGEXP_LIKE( 'gather', p_statistics, 'i' )
          THEN
             update_stats( p_owner        => p_source_owner,
                           p_table        => p_source_table,
+                          -- if the staging table is partitioned, then we need to specify the partition name
+                          -- otherwise, we don't
+                          p_partname     => CASE WHEN l_trg_part THEN NULL ELSE l_partname END,
                           p_percent      => p_statpercent,
                           p_degree       => p_statdegree,
                           p_method       => p_statmethod,
@@ -2433,9 +2474,10 @@ AS
          THEN
             update_stats( p_owner                => p_source_owner,
                           p_table                => p_source_table,
-                          p_source_partname      => l_partname,
+                          p_partname             => CASE WHEN l_trg_part THEN NULL ELSE l_partname END,
                           p_source_owner         => p_owner,
-                          p_source_table         => p_table
+                          p_source_table         => p_table,
+                          p_source_partname      => CASE WHEN l_trg_part THEN l_partname ELSE NULL END
                         );
          -- do nothing with stats
          -- this is preferable if stats are gathered on the staging segment prior to being exchanged in
@@ -2456,42 +2498,48 @@ AS
                      p_table             => p_source_table,
                      p_source_owner      => p_owner,
                      p_source_table      => p_table,
-                     p_part_type         => 'local',
+                     p_part_type         => CASE WHEN l_trg_part THEN 'local' ELSE NULL END,
                      p_tablespace        => p_index_space,
                      p_concurrent        => p_concurrent,
                      p_partname          => CASE
-                        WHEN p_index_space IS NOT NULL
+                        WHEN p_index_space IS NOT NULL OR l_src_part
                            THEN NULL
                         ELSE l_partname
                      END
                    );
 
       -- disable any unique constraints on the target table that are enforced with global indexes
+      -- this is only if the target table is the partitioned one
       -- there are multiple reasons for this
       -- first off, there are lots of different errors that can occur because of this situation
       -- it would be difficult to handle and except all of them
       -- the other issue is that this just makes sense: the entire constraint would have to be revalidated anyway
       -- because the index it's based on is updated during the exchange
-      o_ev.change_action( 'disable global constraints' );
-      FOR c_glob_cons IN ( SELECT *
-                             FROM all_constraints ac JOIN all_indexes ai
-                                  ON NVL( ac.index_owner, ac.owner ) = ai.owner
-                              AND ac.index_name = ai.index_name
-                            WHERE constraint_type IN( 'U', 'P' )
-                              AND ac.table_name = upper( p_table )
-                              AND ac.owner = upper ( p_owner )
-                              AND partitioned = 'NO' )
-      LOOP
-	 evolve.log_msg( 'Unique constraints based on global indexes found ', 5 );
-	 l_constraints := TRUE;
-         constraint_maint( p_owner                  => p_owner,
-                           p_table                  => p_table,
-                           p_maint_type             => 'disable',
-                           p_constraint_regexp      => '^' || c_glob_cons.constraint_name || '$',
-			   p_queue_module	    => evolve.get_module,
-                           p_queue_action           => 'enable constraints'
-                         );
-      END LOOP;
+      IF l_trg_part
+      THEN
+
+         o_ev.change_action( 'disable global constraints' );
+         FOR c_glob_cons IN ( SELECT *
+                                FROM all_constraints ac JOIN all_indexes ai
+                                     ON NVL( ac.index_owner, ac.owner ) = ai.owner
+                                 AND ac.index_name = ai.index_name
+                               WHERE constraint_type IN( 'U', 'P' )
+                                 AND ac.table_name = upper( p_table )
+                                 AND ac.owner = upper ( p_owner )
+                                 AND partitioned = 'NO' )
+         LOOP
+	    evolve.log_msg( 'Unique constraints based on global indexes found ', 5 );
+	    l_constraints := TRUE;
+            constraint_maint( p_owner                  => p_owner,
+                              p_table                  => p_table,
+                              p_maint_type             => 'disable',
+                              p_constraint_regexp      => '^' || c_glob_cons.constraint_name || '$',
+			      p_queue_module	    => evolve.get_module,
+                              p_queue_action           => 'enable constraints'
+                            );
+         END LOOP;
+         
+      END IF;
 
 
       -- build any constraints on the source table
@@ -2514,15 +2562,15 @@ AS
 
          BEGIN
             evolve.exec_sql( p_sql       =>    'alter table '
-                                                || l_tab_name
+                                                || CASE WHEN l_trg_part THEN l_tab_name ELSE l_src_name END 
                                                 || ' exchange partition '
                                                 || l_partname
                                                 || ' with table '
-                                                || l_src_name
+                                                || CASE WHEN l_trg_part THEN l_src_name ELSE l_tab_name END
                                                 || ' including indexes without validation update global indexes',
                                  p_auto      => 'yes'
                                );
-            evolve.log_msg( l_src_name || ' exchanged for partition ' || l_partname || ' of table ' || l_tab_name );
+            evolve.log_msg( CASE WHEN l_trg_part THEN l_src_name ELSE l_tab_name END || ' exchanged for partition ' || l_partname || ' of table ' || CASE WHEN l_trg_part THEN l_tab_name ELSE l_src_name END );
          EXCEPTION
             WHEN e_fkeys
             THEN

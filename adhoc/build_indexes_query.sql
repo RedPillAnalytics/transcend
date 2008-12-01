@@ -15,31 +15,28 @@ VAR p_table VARCHAR2(30)
 VAR p_tablespace VARCHAR2(30)
 VAR p_source_table VARCHAR2(30)
 VAR p_source_owner VARCHAR2(30)
-VAR p_constraint_regexp VARCHAR2(30)
-VAR p_constraint_type VARCHAR2(30)
-VAR p_seg_attributes VARCHAR2 (3)
 VAR p_part_type VARCHAR2(30)
 VAR p_index_type VARCHAR2(30)
 VAR p_index_regexp VARCHAR2(30)
 VAR p_owner VARCHAR2(30)
 VAR p_table VARCHAR2(30)
 VAR l_targ_part VARCHAR2(30)
+VAR l_src_part VARCHAR2(30)
 VAR p_partname VARCHAR2(30)
 VAR l_part_position number
 VAR p_concurrent VARCHAR2(3)
 
 EXEC :p_tablespace := null;
 EXEC :p_constraint_regexp := NULL;
-EXEC :p_owner := 'staging';
-EXEC :p_table := 'customer_ped';
-EXEC :p_source_owner := 'mdd';
-EXEC :p_source_table := 'customer_dim';
-EXEC :p_constraint_type := NULL;
-EXEC :p_seg_attributes := 'no';
-EXEC :p_part_type := 'local';
+EXEC :p_owner := 'stewart';
+EXEC :p_table := 'sales1';
+EXEC :p_source_owner := 'stewart';
+EXEC :p_source_table := 'sales2';
+EXEC :p_part_type := NULL;
 EXEC :p_index_type := NULL;
 EXEC :p_index_regexp := NULL;
 EXEC :l_targ_part := 'YES';
+EXEC :l_src_part := 'NO';
 EXEC :p_concurrent := 'no'
 
 SET termout on
@@ -178,7 +175,9 @@ SELECT UPPER( :p_owner ) index_owner, new_index_name index_name, owner source_ow
                                                                     AND partition_position = :l_part_position )
                                                               )
                                                 ELSE NULL
-                                             END index_ddl,
+                                             END 
+                                             || CASE WHEN td_core.get_yn_ind( :l_targ_part ) = 'yes' AND td_core.get_yn_ind( :l_src_part ) = 'no' THEN ' LOCAL' ELSE NULL END
+                                             index_ddl,
                                           table_owner, table_name, owner, index_name,
                                           
                                           -- this is the index name that will be used in the first attempt

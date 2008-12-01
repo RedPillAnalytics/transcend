@@ -59,6 +59,14 @@ IS
           p_message      => 'Either a unique constraint must exist on the target table, or a value for P_COLUMNS must be specified'
          );
       evolve_adm.set_error_conf
+         (p_name         => 'both_part',
+          p_message      => 'Both P_TABLE and P_SOURCE_TABLE cannot be partitioned'
+         );
+      evolve_adm.set_error_conf
+         (p_name         => 'neither_part',
+          p_message      => 'Either P_TABLE or P_SOURCE_TABLE have to be partitioned'
+         );
+      evolve_adm.set_error_conf
          (p_name         => 'notify_err',
           p_message      => 'There is an error with configuration for the specified notification'
          );
@@ -73,10 +81,6 @@ IS
       evolve_adm.set_error_conf
          (p_name         => 'file_too_small',
           p_message      => 'The specified file is smaller than the MAX_BYTES parameter'
-         );
-      evolve_adm.set_error_conf
-         (p_name         => 'single_lob',
-           p_message      => 'The AUDIT_FILE procedure requires either a single CLOB or a single BLOB'
          );
       evolve_adm.set_error_conf
                 (p_name         => 'no_stats',
