@@ -1453,147 +1453,188 @@ AS
       -- disable both table and reference constraints for this particular table
       o_ev.change_action( 'constraint maintenance' );
 
-      FOR c_constraints IN ( SELECT  *
-                                FROM ( SELECT
-                                              -- need this to get the order by clause right
-                                              -- when we are disabling, we need references to go first
-                                              -- when we are enabling, we need referenced (primary keys) to go first
-                                              CASE LOWER( p_maint_type )
-                                                 WHEN 'enable'
-                                                    THEN 1
-                                                 ELSE 2
-                                              END ordering, 'table' basis_source, owner table_owner, table_name,
-                                              constraint_name,
-                                                 'alter table '
-                                              || l_tab_name
-                                              || ' disable constraint '
-                                              || constraint_name disable_ddl,
-                                                 'Constraint '
-                                              || constraint_name
-                                              || ' disabled on '
-                                              || l_tab_name disable_msg,
-                                                 'alter table '
-                                              || l_tab_name
-                                              || ' enable constraint '
-                                              || constraint_name enable_ddl,
-                                              'Constraint ' || constraint_name || ' enabled on '
-                                              || l_tab_name enable_msg,
-                                              CASE
-                                                 WHEN REGEXP_LIKE( 'table|all', p_basis, 'i' )
-                                                    THEN 'Y'
-                                                 ELSE 'N'
-                                              END include
-                                        FROM all_constraints
-                                       WHERE table_name = UPPER( p_table )
-                                         AND owner = UPPER( p_owner )
-                                         AND status =
-                                                CASE
-                                                   WHEN REGEXP_LIKE( 'disable', p_maint_type, 'i' )
-                                                      THEN 'ENABLED'
-                                                   WHEN REGEXP_LIKE( 'enable', p_maint_type, 'i' )
-                                                      THEN 'DISABLED'
-                                                END
-                                         AND REGEXP_LIKE( constraint_name, NVL( p_constraint_regexp, '.' ), 'i' )
-                                         AND REGEXP_LIKE( constraint_type, NVL( p_constraint_type, '.' ), 'i' )
-                                      UNION
-                                      SELECT
-                                             -- need this to get the order by clause right
-                                             -- when we are disabling, we need references to go first
-                                             -- when we are enabling, we need referenced (primary keys) to go first
-                                             CASE LOWER( p_maint_type )
-                                                WHEN 'enable'
-                                                   THEN 2
-                                                ELSE 1
-                                             END ordering, 'reference' basis_source, owner table_owner, table_name,
-                                             constraint_name,
-                                                'alter table '
-                                             || owner
-                                             || '.'
-                                             || table_name
-                                             || ' disable constraint '
-                                             || constraint_name disable_ddl,
-                                                'Constraint '
-                                             || constraint_name
-                                             || ' disabled on '
-                                             || owner
-                                             || '.'
-                                             || table_name disable_msg,
-                                                'alter table '
-                                             || owner
-                                             || '.'
-                                             || table_name
-                                             || ' enable constraint '
-                                             || constraint_name enable_ddl,
-                                                'Constraint '
-                                             || constraint_name
-                                             || ' enabled on '
-                                             || owner
-                                             || '.'
-                                             || table_name enable_msg,
+      FOR c_constraints IN ( SELECT 
+                                    CASE maint_type
+                                    WHEN 'validate' THEN validate_ddl
+                                    WHEN 'disable' THEN disable_ddl
+                                    WHEN 'disable validate' THEN disable_ddl
+                                    WHEN 'enable' THEN enable_ddl
+                                    ELSE NULL END ddl,
+                                    CASE maint_type
+                                    WHEN 'validate' THEN validate_msg
+                                    WHEN 'disable' THEN disable_msg
+                                    WHEN 'disable validate' THEN disable_msg
+                                    WHEN 'enable' THEN enable_msg
+                                    ELSE NULL END msg,
+                                    ordering, basis_source, table_owner, table_name, constraint_name,
+                                    disable_ddl, disable_msg, enable_ddl, enable_msg, validate_ddl, validate_msg, 
+                                    basis_include, maint_type
+                               FROM ( SELECT 
+                                             -- need to specify the kind of constraint maintenance that is to be performed
                                              CASE
-                                                WHEN REGEXP_LIKE( 'reference|all', p_basis, 'i' )
-                                                   THEN 'Y'
-                                                ELSE 'N'
-                                             END include
-                                        FROM all_constraints
-                                       WHERE constraint_type = 'R'
-                                         AND status =
-                                                CASE
-                                                   WHEN REGEXP_LIKE( 'disable', p_maint_type, 'i' )
-                                                      THEN 'ENABLED'
-                                                   WHEN REGEXP_LIKE( 'enable', p_maint_type, 'i' )
-                                                      THEN 'DISABLED'
-                                                END
-                                         AND REGEXP_LIKE( constraint_name, NVL( p_constraint_regexp, '.' ), 'i' )
-                                         AND r_constraint_name IN (
-                                                SELECT constraint_name
-                                                  FROM all_constraints
-                                                 WHERE table_name = UPPER( p_table )
-                                                   AND owner = UPPER( p_owner )
-                                                   AND constraint_type = 'P' )
-                                         AND r_owner IN (
-                                                SELECT owner
-                                                  FROM all_constraints
-                                                 WHERE table_name = UPPER( p_table )
-                                                   AND owner = UPPER( p_owner )
-                                                   AND constraint_type = 'P' ))
-                               WHERE include = 'Y'
-                            ORDER BY ordering )
+                                             WHEN lower( p_maint_type ) = 'validate' AND status = 'DISABLED' AND validated = 'NOT VALIDATED'
+                                             THEN 'validate'
+                                             WHEN lower( p_maint_type ) = 'disable' AND status = 'DISABLED' AND validated = 'VALIDATED'
+                                             THEN 'disable validate'
+                                             WHEN lower( p_maint_type ) = 'disable' AND status = 'ENABLED'
+                                             THEN 'disable'         
+                                             WHEN lower( p_maint_type ) = 'enable' AND status = 'DISABLED'
+                                             THEN 'enable'
+                                             ELSE 'none'
+                                             END maint_type,
+                                             ordering, basis_source, table_owner, table_name, constraint_name,
+                                             disable_ddl, disable_msg, enable_ddl, enable_msg, validate_ddl, validate_msg, 
+                                             basis_include
+                                        FROM ( SELECT
+                                                      -- need this to get the order by clause right
+                                                      -- WHEN we are disabling, we need references to go first
+                                                      -- WHEN we are enabling, we need referenced (primary keys) to go first
+                                                      CASE lower( p_maint_type )
+                                                      WHEN 'enable'
+                                                      THEN 1
+                                                      ELSE 2
+                                                      END ordering, 'table' basis_source, owner table_owner, table_name,
+                                                      constraint_name, status, validated,
+                                                      'alter table '
+                                                      || l_tab_name
+                                                      || ' modify constraint '
+                                                      || constraint_name
+                                                      || ' validate' validate_ddl,
+                                                      'Constraint '
+                                                      || constraint_name
+                                                      || ' validated on '
+                                                      || l_tab_name validate_msg,
+                                                      'alter table '
+                                                      || l_tab_name
+                                                      || ' disable constraint '
+                                                      || constraint_name disable_ddl,
+                                                      'Constraint '
+                                                      || constraint_name
+                                                      || ' disabled on '
+                                                      || l_tab_name disable_msg,
+                                                      'alter table '
+                                                      || l_tab_name
+                                                      || ' enable constraint '
+                                                      || constraint_name enable_ddl,
+                                                      'Constraint ' || constraint_name || ' enabled on '
+                                                      || l_tab_name enable_msg,
+                                                      CASE
+                                                      WHEN REGEXP_LIKE( 'table|all', p_basis, 'i' )
+                                                      THEN 'Y'
+                                                      ELSE 'N'
+                                                      END basis_include
+                                                 FROM all_constraints
+                                                WHERE table_name = upper( p_table )
+                                                  AND owner = upper( p_owner )
+                                                  AND REGEXP_LIKE( constraint_name, nvl( p_constraint_regexp, '.' ), 'i' )
+                                                  AND REGEXP_LIKE( constraint_type, nvl( p_constraint_type, '.' ), 'i' )
+                                                UNION
+                                               SELECT
+                                                      -- need this to get the order by clause right
+                                                      -- WHEN we are disabling, we need references to go first
+                                                      -- WHEN we are enabling, we need referenced (primary keys) to go first
+                                                      CASE lower( p_maint_type )
+                                                      WHEN 'enable'
+                                                      THEN 2
+                                                      ELSE 1
+                                                      END ordering, 'reference' basis_source, owner table_owner, table_name,
+                                                      constraint_name, status, validated,
+                                                      'alter table '
+                                                      || owner
+                                                      || '.'
+                                                      || table_name
+                                                      || ' modify constraint '
+                                                      || constraint_name
+                                                      || ' validate' validate_ddl,
+                                                      'Constraint '
+                                                      || constraint_name
+                                                      || ' validated on '
+                                                      || owner
+                                                      || '.'
+                                                      || table_name validate_msg,
+                                                      'alter table '
+                                                      || owner
+                                                      || '.'
+                                                      || table_name
+                                                      || ' disable constraint '
+                                                      || constraint_name disable_ddl,
+                                                      'Constraint '
+                                                      || constraint_name
+                                                      || ' disabled on '
+                                                      || owner
+                                                      || '.'
+                                                      || table_name disable_msg,
+                                                      'alter table '
+                                                      || owner
+                                                      || '.'
+                                                      || table_name
+                                                      || ' enable constraint '
+                                                      || constraint_name enable_ddl,
+                                                      'Constraint '
+                                                      || constraint_name
+                                                      || ' enabled on '
+                                                      || owner
+                                                      || '.'
+                                                      || table_name enable_msg,
+                                                      CASE
+                                                      WHEN REGEXP_LIKE( 'reference|all', p_basis, 'i' )
+                                                      THEN 'Y'
+                                                      ELSE 'N'
+                                                      END basis_include
+                                                 FROM all_constraints
+                                                WHERE constraint_type = 'R'
+                                                  AND REGEXP_LIKE( constraint_name, nvl( p_constraint_regexp, '.' ), 'i' )
+                                                  AND r_constraint_name IN (
+                                                                             SELECT constraint_name
+                                                                               FROM all_constraints
+                                                                              WHERE table_name = upper( p_table )
+                                                                                AND owner = upper( p_owner )
+                                                                                AND constraint_type = 'P' )
+                                                  AND r_owner IN (
+                                                                   SELECT owner
+                                                                     FROM all_constraints
+                                                                    WHERE table_name = upper( p_table )
+                                                                      AND owner = upper( p_owner )
+                                                                      AND constraint_type = 'P' )
+                                             )
+                                    )
+                              WHERE basis_include = 'Y'
+                                AND maint_type <> 'none'
+                              ORDER BY ordering )
       LOOP
          -- catch empty cursor sets
          l_rows    := TRUE;
 
          BEGIN
-            evolve.exec_sql( p_sql                => CASE
-                                    WHEN REGEXP_LIKE( 'disable', p_maint_type, 'i' )
-                                       THEN c_constraints.disable_ddl
-                                    WHEN REGEXP_LIKE( 'enable', p_maint_type, 'i' )
-                                       THEN c_constraints.enable_ddl
-                                 END,
-                                 p_auto               => 'yes',
-                                 p_concurrent_id      => l_concurrent_id
-                               );
+            evolve.exec_sql( p_sql   => c_constraints.ddl,
+                             p_auto               => 'yes',
+                             p_concurrent_id      => l_concurrent_id
+                           );
 
             -- queue up alternative DDL statements for later use
-            -- this allows a call to DEQUEUE_DDL to only work on those that were previously disabled
-            IF REGEXP_LIKE( 'disable', p_maint_type, 'i' )
+            -- first, queue up any ENABLE statements that need to be executed
+            IF c_constraints.maint_type = 'disable'
             THEN
-               o_ev.change_action( 'enqueue disable con DDL' );
-	       enqueue_ddl( p_stmt	  => c_constraints.disable_ddl,
-			    p_msg  	  => c_constraints.disable_msg,
+               o_ev.change_action( 'enqueue enable con DDL' );
+	       enqueue_ddl( p_stmt	  => c_constraints.enable_ddl,
+			    p_msg  	  => c_constraints.enable_msg,
 			    p_module	  => p_queue_module,
 			    p_action	  => p_queue_action );
 
             END IF;
 
-            evolve.log_msg( CASE
-                                   WHEN REGEXP_LIKE( 'disable', p_maint_type, 'i' )
-                                      THEN c_constraints.disable_msg
-                                   WHEN REGEXP_LIKE( 'enable', p_maint_type, 'i' )
-                                      THEN c_constraints.enable_msg
-                                END,
-                                2
-                              );
+            -- now queue up VALIDATE statements
+            IF c_constraints.maint_type = 'validate'
+            THEN
+               o_ev.change_action( 'enqueue enable con DDL' );
+	       enqueue_ddl( p_stmt	  => c_constraints.validate_ddl,
+			    p_msg  	  => c_constraints.validate_msg,
+			    p_module	  => p_queue_module,
+			    p_action	  => p_queue_action );
+
+            END IF;
+            
+            evolve.log_msg( c_constraints.msg, 2 );
             l_con_cnt    := l_con_cnt + 1;
          EXCEPTION
             WHEN e_iot_shc
@@ -2678,7 +2719,6 @@ AS
       THEN
 	 o_ev.change_action( 'enable constraints' );
 	 -- this statement will pull previously entered DDL statements off the queue and execute them
-		  -- this statement will pull previously entered DDL statements off the queue and execute them
 		  l_num_cons := dequeue_ddl( p_action => evolve.get_action,
 					     p_module => evolve.get_module,
 					     p_concurrent => p_concurrent );
