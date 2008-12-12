@@ -368,6 +368,7 @@ AS
       p_table          VARCHAR2,
       p_source_owner   VARCHAR2,
       p_source_table   VARCHAR2,
+      p_partname       VARCHAR2 DEFAULT NULL,
       p_index_space    VARCHAR2 DEFAULT NULL,
       p_concurrent     VARCHAR2 DEFAULT 'no',
       p_statistics     VARCHAR2 DEFAULT 'transfer'
@@ -378,6 +379,7 @@ AS
                                      p_table             => p_table,
                                      p_source_owner      => p_source_owner,
                                      p_source_table      => p_source_table,
+                                     p_partname          => p_partname,
                                      p_index_space       => p_index_space,
                                      p_concurrent        => p_concurrent,
                                      p_statistics        => p_statistics

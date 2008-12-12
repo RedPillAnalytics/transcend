@@ -133,6 +133,7 @@ IS
       p_table          VARCHAR2,
       p_source_owner   VARCHAR2,
       p_source_table   VARCHAR2,
+      p_partname       VARCHAR2 DEFAULT NULL,
       p_index_space    VARCHAR2 DEFAULT NULL,
       p_concurrent     VARCHAR2 DEFAULT 'no',
       p_statistics     VARCHAR2 DEFAULT 'transfer'
