@@ -30,6 +30,7 @@ AS
 
       -- confirm the properties of the mapping
       verify;
+
       -- store the batch_id
       td_inst.batch_id( p_batch_id );
       RETURN;
@@ -54,6 +55,11 @@ AS
    END REGISTER;
    MEMBER PROCEDURE verify
    IS
+      l_src_part       BOOLEAN;
+      l_trg_part       BOOLEAN;
+      l_src_part_flg   VARCHAR2(3);
+      l_trg_part_flg   VARCHAR2(3);
+
       o_ev   evolve_ot := evolve_ot( p_module => 'verify' );
    BEGIN
       -- check to see that the specified table exists
@@ -65,25 +71,37 @@ AS
 
       IF SELF.source_object IS NOT NULL
       THEN
-         -- when we are doing segment switching, then the source object needs to be an actual table
-         -- the target table needs to be partitioned if this is an exchange
-         -- if it's not an exchange, it can be partitioned or not partitioned.
-         td_utils.check_table( p_owner            => SELF.table_owner,
-                               p_table            => SELF.table_name,
-                               p_partitioned      => CASE replace_method
-                                  WHEN 'exchange'
-                                     THEN 'yes'
-                                  ELSE NULL
-                               END
-                             );
-         td_utils.check_object( p_owner            => SELF.source_owner,
-                                p_object           => SELF.source_object,
-                                p_object_type      => CASE
-                                   WHEN replace_method IS NOT NULL
-                                      THEN 'table'
-                                   ELSE 'view|table'
-                                END
-                              );
+         
+         IF replace_method = 'exchange' AND mapping_type = 'table'
+         THEN
+
+            -- if we are doing segment switching, then one of the tables needs to be partitioned
+            -- but they both can't be
+            
+            o_ev.change_action( 'determine partitioned table');
+            -- find out which tables are partitioned
+            l_src_part      := td_utils.is_part_table( source_owner, source_object);
+            l_src_part_flg  := CASE WHEN l_src_part THEN 'yes' ELSE 'no' END;
+            evolve.log_msg( 'Variable L_SRC_PART_FLG: '||l_src_part_flg, 5 );
+            l_trg_part      := td_utils.is_part_table( table_owner, table_name );
+            l_trg_part_flg  := CASE WHEN l_trg_part THEN 'yes' ELSE 'no' END;
+            evolve.log_msg( 'Variable L_TRG_PART_FLG: '||l_trg_part_flg, 5 );
+            
+            CASE
+              -- raise exceptions if both are partitioned
+              WHEN l_src_part AND l_trg_part
+              THEN
+                 evolve.raise_err( 'both_part' );
+              -- raise exceptions if neither are partitioned
+              WHEN NOT l_src_part AND NOT l_trg_part
+              THEN
+                 evolve.raise_err( 'neither_part' );
+              ELSE
+                 NULL;
+            END CASE;
+               
+         END IF;
+
       END IF;
 
       -- if exchange_method is 'rename' then a table rename is used

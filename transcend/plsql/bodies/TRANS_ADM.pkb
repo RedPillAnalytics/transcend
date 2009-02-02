@@ -163,7 +163,7 @@ IS
           p_message      => 'Multiple effective date atributes have been configured for the dimension'
          );
       evolve_adm.set_error_conf
-         (p_name         => 'no_nat_key',
+         ( p_name         => 'no_nat_key',
            p_message      => 'No natural key attribute has been configured for the dimension'
          );
       evolve_adm.set_error_conf
@@ -177,6 +177,14 @@ IS
       evolve_adm.set_error_conf
          (p_name         => 'not_trans_user',
            p_message      => 'The executing user is not currently a registered Transcend user'
+         );
+      evolve_adm.set_error_conf
+         (p_name         => 'no_part_table',
+           p_message      => 'One table has to be partitioned for a partition-exchange load'
+         );
+      evolve_adm.set_error_conf
+         (p_name         => 'wrong_map_type',
+           p_message      => 'A MAPPING_OT object was instantiated when a DIMENSION_OT should have been.'
          );
    END set_default_configs;
 
@@ -893,7 +901,7 @@ IS
 
    END create_mapping;
    
-   PROCEDURE modify_mapping (
+   PROCEDURE update_mapping (
       p_mapping             VARCHAR2,
       p_owner               VARCHAR2 DEFAULT NULL,
       p_table               VARCHAR2 DEFAULT NULL,
@@ -916,7 +924,6 @@ IS
    IS
       l_map_type   mapping_conf.mapping_type%TYPE;
       l_num_rows   NUMBER;
-      o_map        mapping_ot;
       e_dup_conf   EXCEPTION;
       PRAGMA EXCEPTION_INIT (e_dup_conf, -1);
       o_ev          evolve_ot     := evolve_ot (p_module      => 'modify_mapping');
@@ -1079,15 +1086,59 @@ IS
              modified_user = SYS_CONTEXT ('USERENV', 'SESSION_USER'),
              modified_dt = SYSDATE
        WHERE mapping_name = LOWER (p_mapping);
-
-
-         -- now use the dimension object to validate the new structure
-         -- just constructing the object calls the CONFIRM_OBJECTS procedure
-         o_map := trans_factory.get_mapping_ot (p_mapping => p_mapping);
              
          o_ev.clear_app_info;
-   END modify_mapping;
+   END update_mapping;
 
+   PROCEDURE modify_mapping (
+      p_mapping             VARCHAR2,
+      p_owner               VARCHAR2 DEFAULT NULL,
+      p_table               VARCHAR2 DEFAULT NULL,
+      p_partname            VARCHAR2 DEFAULT NULL,
+      p_indexes             VARCHAR2 DEFAULT 'no',
+      p_constraints         VARCHAR2 DEFAULT 'no',
+      p_source_owner        VARCHAR2 DEFAULT NULL,
+      p_source_object       VARCHAR2 DEFAULT NULL,
+      p_source_column       VARCHAR2 DEFAULT NULL,
+      p_replace_method      VARCHAR2 DEFAULT NULL,
+      p_statistics          VARCHAR2 DEFAULT 'transfer',
+      p_concurrent          VARCHAR2 DEFAULT 'no',
+      p_index_regexp        VARCHAR2 DEFAULT NULL,
+      p_index_type          VARCHAR2 DEFAULT NULL,
+      p_part_type           VARCHAR2 DEFAULT NULL,
+      p_constraint_regexp   VARCHAR2 DEFAULT NULL,
+      p_constraint_type     VARCHAR2 DEFAULT NULL,
+      p_description         VARCHAR2 DEFAULT NULL
+   )
+   IS
+      o_map mapping_ot;
+   BEGIN
+    
+      update_mapping ( p_mapping             => p_mapping,
+                       p_owner               => p_owner,
+                       p_table               => p_table,
+                       p_partname            => p_partname,
+                       p_indexes             => p_indexes,
+                       p_constraints         => p_constraints,
+                       p_source_owner        => p_source_owner,
+                       p_source_object       => p_source_object,
+                       p_source_column       => p_source_column,
+                       p_replace_method      => p_replace_method,
+                       p_statistics          => p_statistics,
+                       p_concurrent          => p_concurrent,
+                       p_index_regexp        => p_index_regexp,
+                       p_index_type          => p_index_type,
+                       p_part_type           => p_part_type,
+                       p_constraint_regexp   => p_constraint_regexp,
+                       p_constraint_type     => p_constraint_type,
+                       p_description         => p_description
+                     );
+
+      -- now use the dimension object to validate the new structure
+      -- just constructing the object calls the CONFIRM_OBJECTS procedure
+      o_map := trans_factory.get_mapping_ot (p_mapping => p_mapping );
+
+   END modify_mapping;
    
    PROCEDURE delete_mapping (
       p_mapping             VARCHAR2
@@ -1221,8 +1272,8 @@ IS
    )
    IS
       l_mapping    mapping_conf.mapping_name%TYPE;
-      o_dim   mapping_ot;
-      o_ev    evolve_ot  := evolve_ot (p_module => 'modify_dimension');
+      o_dim        mapping_ot;
+      o_ev         evolve_ot  := evolve_ot (p_module => 'modify_dimension');
    BEGIN
       UPDATE dimension_conf
          SET sequence_owner =
@@ -1350,7 +1401,7 @@ IS
      END IF;
 
       -- now make the call to modify the mapping
-      modify_mapping (p_mapping             => nvl( p_mapping, l_mapping),
+      update_mapping (p_mapping             => nvl( p_mapping, l_mapping),
                       p_table               => p_table,
                       p_owner               => p_owner,
                       p_source_owner        => p_source_owner,
@@ -1360,6 +1411,8 @@ IS
                       p_concurrent          => p_concurrent
                      );
      
+     o_dim := trans_factory.get_mapping_ot (p_mapping => nvl( p_mapping, l_mapping ));
+
      o_ev.clear_app_info;
    END modify_dimension;
 

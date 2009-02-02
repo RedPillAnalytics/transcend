@@ -11,6 +11,8 @@ IS
       o_dim        dimension_ot;
       o_ev         evolve_ot                        := evolve_ot( p_module => 'trans_factory.get_mapping_ot' );
    BEGIN
+      -- let's register what the mapping_type is
+      evolve.log_msg( 'Attribute MAPPING_TYPE: '||o_map.mapping_type, 5 );
       -- simply check the mapping_type attribute to tell us whether this is dimensional or not
       IF o_map.mapping_type = 'dimension'
       THEN
