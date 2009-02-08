@@ -28,7 +28,7 @@ AS
       -- get the MODULE_CONF values
       BEGIN
          SELECT logging_level, debug_level, 
-                LOWER( default_runmode ),
+                CASE td_inst.runmode WHEN 'full debug' THEN 'full debug' ELSE LOWER( default_runmode ) end,
                 LOWER( registration )
            INTO l_logging_level,
                 l_debug_level,
