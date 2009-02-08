@@ -1,4 +1,4 @@
---SET echo off
+SET echo off
 SET verify off
 SET serveroutput on size unlimited
 SET timing off
