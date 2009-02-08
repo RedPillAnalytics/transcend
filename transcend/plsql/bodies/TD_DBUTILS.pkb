@@ -1667,6 +1667,8 @@ AS
                                       THEN 'enabled'
                                    WHEN REGEXP_LIKE( 'enable', p_maint_type, 'i' )
                                       THEN 'disabled'
+                                   WHEN REGEXP_LIKE( 'validate', p_maint_type, 'i' )
+                                      THEN 'disabled'
                                 END
                              || ' constraints found.', 2
                            );
