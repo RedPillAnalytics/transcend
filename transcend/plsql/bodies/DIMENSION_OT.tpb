@@ -46,13 +46,18 @@ AS
    OVERRIDING MEMBER PROCEDURE verify
    IS
       l_src_part       BOOLEAN;
-      l_trg_part       BOOLEAN;
-      l_src_part_flg   VARCHAR2(3);
-      l_trg_part_flg   VARCHAR2(3);
+      l_tab_part       BOOLEAN;
       o_ev   evolve_ot := evolve_ot( p_module => 'verify' );
    BEGIN
       -- now investigate the dimensional object
+      -- check to make sure the dimension table exists
+      td_utils.check_table( p_owner => SELF.table_owner, p_table => SELF.table_name );
+      
+      -- let's find out if it's partitioned
+      l_tab_part      := td_utils.is_part_table( table_owner, table_name);
+   
       evolve.log_msg( 'Constant staging: ' || SELF.constant_staging, 5 );
+
       -- check that the sequence exists
       evolve.log_msg( 'The sequence owner: ' || SELF.sequence_owner, 5 );
       evolve.log_msg( 'The sequence name: ' || SELF.sequence_name, 5 );
@@ -60,50 +65,47 @@ AS
                              p_object           => SELF.sequence_name,
                              p_object_type      => 'sequence'
                            );
-
-      -- check to see if the staging table is constant
-      IF td_core.is_true( SELF.constant_staging )
+      
+      -- constant staging
+      IF td_core.is_true( self.constant_staging )
       THEN
+
          evolve.log_msg( 'Full stage: ' || SELF.full_stage, 5 );
          -- if it is, then make sure that it exists
          td_utils.check_table( p_owner => SELF.staging_owner, p_table => SELF.staging_table );
-      END IF;
-
-      IF td_core.is_true( self.constant_staging )
-      THEN
+         
+         -- we need to find out whether source object is partitioned or not         
+         l_src_part      := td_utils.is_part_table( staging_owner, staging_table);
          
          IF replace_method = 'exchange'
          THEN
 
             -- if we are doing segment switching, then one of the tables needs to be partitioned
             -- but they both can't be
-            
-            o_ev.change_action( 'determine partitioned table');
-            -- find out which tables are partitioned
-            l_src_part      := td_utils.is_part_table( staging_owner, staging_table);
-            l_src_part_flg  := CASE WHEN l_src_part THEN 'yes' ELSE 'no' END;
-            evolve.log_msg( 'Variable L_SRC_PART_FLG: '||l_src_part_flg, 5 );
-            l_trg_part      := td_utils.is_part_table( table_owner, table_name );
-            l_trg_part_flg  := CASE WHEN l_trg_part THEN 'yes' ELSE 'no' END;
-            evolve.log_msg( 'Variable L_TRG_PART_FLG: '||l_trg_part_flg, 5 );
-            
-            CASE
-              -- raise exceptions if both are partitioned
-              WHEN l_src_part AND l_trg_part
-              THEN
-                 evolve.raise_err( 'both_part' );
-              -- raise exceptions if neither are partitioned
-              WHEN NOT l_src_part AND NOT l_trg_part
-              THEN
-                 evolve.raise_err( 'neither_part' );
-              ELSE
-                 NULL;
-            END CASE;
-               
+   
+            IF l_src_part AND l_tab_part
+            THEN
+               evolve.raise_err( 'both_part' );
+            ELSIF (NOT l_src_part AND NOT l_tab_part)
+            THEN
+               evolve.raise_err( 'neither_part' );
+            END IF;
+                           
          END IF;
-
+         
+      ELSE
+         -- there is no constant staging
+         -- that means that a new table will have to be created
+         -- this can work with an exchange, as long as the target table is partition
+         IF NOT l_tab_part AND replace_method = 'exchange'
+         THEN
+            -- we have to create a staging table
+            -- but the target table is not partitioned
+            -- this is not supported
+            evolve.raise_err('part_targ');
+         END IF;
+         
       END IF;
-
 
       evolve.log_msg( 'Dimension confirmation completed successfully', 5 );
       -- reset the evolve_object

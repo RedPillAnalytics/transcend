@@ -35,6 +35,7 @@ AS
       td_inst.batch_id( p_batch_id );
       RETURN;
    END mapping_ot;
+
    MEMBER PROCEDURE REGISTER( p_mapping VARCHAR2, p_batch_id NUMBER DEFAULT NULL )
    IS
       o_ev   evolve_ot := evolve_ot( p_module => 'register' );
@@ -53,57 +54,88 @@ AS
       -- reset the evolve_object
       o_ev.clear_app_info;
    END REGISTER;
+
    MEMBER PROCEDURE verify
    IS
       l_src_part       BOOLEAN;
-      l_trg_part       BOOLEAN;
-      l_src_part_flg   VARCHAR2(3);
-      l_trg_part_flg   VARCHAR2(3);
+      l_tab_part       BOOLEAN;
 
       o_ev   evolve_ot := evolve_ot( p_module => 'verify' );
-   BEGIN
-      -- check to see that the specified table exists
+   BEGIN      
+
+      -- if the table name is not null
+      -- then that means the mapping is associated with a table
+      -- and we will most likely have things to do on that table
       IF SELF.table_name IS NOT NULL
       THEN
+
+         -- make sure we also have a table owner
+         IF self.table_owner IS NULL
+         THEN
+            evolve.raise_err( 'parms_group', 'P_OWNER and P_TABLE' );
+         END IF;
+         
          -- when a table_name is specified, check to make sure it exists
          td_utils.check_table( p_owner => SELF.table_owner, p_table => SELF.table_name );
-      END IF;
+         
+         -- let's find out if it's partitioned
+         l_tab_part      := td_utils.is_part_table( table_owner, table_name);
 
+      END IF;
+      
+      -- if source object is not null, then there are two possibilites
+      -- we are either affecting indexes on TABLE based on this source
+      -- or, we are doing a table replace of some sorts
+      -- this is determined by REPLACE_METHOD... if it's null, then only indexes are affected
       IF SELF.source_object IS NOT NULL
       THEN
          
+         -- make sure we also have a regular table in place
+         IF self.table_owner IS NULL
+         THEN
+            evolve.raise_err( 'parms_group', 'P_SOURCE_OBJECT and P_TABLE' );
+         END IF;
+         
+         -- make sure the table name has an owner
+         IF self.source_owner IS NULL
+         THEN
+            evolve.raise_err( 'parms_group', 'P_SOURCE_OWNER and P_SOURCE_OBJECT' );
+         END IF;
+         
+         -- when a source object is specified, check to make sure it exists
+         td_utils.check_object( p_owner            => SELF.source_owner,
+                                p_object           => SELF.source_object,
+                                p_object_type      => 'table|view'
+                              );
+         
+         -- now, depending on REPLACE_METHOD, we are either affecting indexes only or doing a replace
          IF replace_method = 'exchange' AND mapping_type = 'table'
          THEN
-
-            -- if we are doing segment switching, then one of the tables needs to be partitioned
-            -- but they both can't be
-            
-            o_ev.change_action( 'determine partitioned table');
-            -- find out which tables are partitioned
+   
+            -- we need to find out whether source object is partitioned or not         
             l_src_part      := td_utils.is_part_table( source_owner, source_object);
-            l_src_part_flg  := CASE WHEN l_src_part THEN 'yes' ELSE 'no' END;
-            evolve.log_msg( 'Variable L_SRC_PART_FLG: '||l_src_part_flg, 5 );
-            l_trg_part      := td_utils.is_part_table( table_owner, table_name );
-            l_trg_part_flg  := CASE WHEN l_trg_part THEN 'yes' ELSE 'no' END;
-            evolve.log_msg( 'Variable L_TRG_PART_FLG: '||l_trg_part_flg, 5 );
+   
+            IF l_src_part AND l_tab_part
+            THEN
+               evolve.raise_err( 'both_part' );
+            ELSIF (NOT l_src_part AND NOT l_tab_part)
+            THEN
+               evolve.raise_err( 'neither_part' );
+            END IF;
             
-            CASE
-              -- raise exceptions if both are partitioned
-              WHEN l_src_part AND l_trg_part
-              THEN
-                 evolve.raise_err( 'both_part' );
-              -- raise exceptions if neither are partitioned
-              WHEN NOT l_src_part AND NOT l_trg_part
-              THEN
-                 evolve.raise_err( 'neither_part' );
-              ELSE
-                 NULL;
-            END CASE;
-               
          END IF;
-
+         
+      ELSE
+         
+         -- source object is null, but we want to exchange or rename
+         -- that's not cool
+         IF replace_method IS NOT NULL
+         THEN
+            evolve.raise_err('no_source_tab');
+         END IF;
+      
       END IF;
-
+      
       -- if exchange_method is 'rename' then a table rename is used
       -- in that case, the owner and source_owner need to be the same
       IF SELF.replace_method = 'rename' AND SELF.source_owner <> SELF.table_owner AND SELF.mapping_type = 'table'
@@ -118,13 +150,16 @@ AS
       -- reset the evolve_object
       o_ev.clear_app_info;
    END verify;
+
    MEMBER PROCEDURE start_map
    AS
       o_ev   evolve_ot := evolve_ot( p_module => 'mapping '||SELF.mapping_name, p_action => 'start mapping' );
    BEGIN
       evolve.log_msg( 'Pre-mapping processes beginning' );
 
-      -- mark indexes unusable
+      -- we want to manage indexes, but there is no table replace that is occurring
+      -- so we need to explicitly manage the indexes
+      -- so we need to mark indexes unusable beforehand
       IF td_core.is_true( SELF.manage_indexes ) AND SELF.replace_method IS NULL
       THEN
          td_dbutils.unusable_indexes( p_owner              => SELF.table_owner,
@@ -139,7 +174,9 @@ AS
                                     );
       END IF;
 
-      -- disable constraints
+      -- we want to manage constraints, but there is no table replace that is occurring
+      -- so we need to explicitly manage constraints
+      -- so we need to disable constraints beforehand
       IF td_core.is_true( SELF.manage_constraints ) AND SELF.replace_method IS NULL
       THEN
          td_dbutils.constraint_maint( p_owner                  => SELF.table_owner,
@@ -152,13 +189,15 @@ AS
       evolve.log_msg( 'Pre-mapping processes completed' );
       o_ev.change_action( 'execute mapping' );
    END start_map;
+
    MEMBER PROCEDURE end_map
    AS
       o_ev   evolve_ot := evolve_ot( p_module => 'mapping '||SELF.mapping_name, p_action => 'end mapping' );
    BEGIN
       evolve.log_msg( 'Post-mapping processes beginning' );
 
-      -- exchange in the partition
+      -- we exchange the partition
+      -- this handles constraints and indexes
       CASE SELF.replace_method
          WHEN 'exchange'
          THEN
@@ -171,7 +210,8 @@ AS
                                            p_concurrent        => SELF.concurrent
                                          );
          -- replace the table using a rename
-      WHEN 'rename'
+         -- this handles constraints and indexes
+         WHEN 'rename'
          THEN
             td_dbutils.replace_table( p_owner             => SELF.table_owner,
                                       p_table             => SELF.table_name,
@@ -182,7 +222,8 @@ AS
          ELSE
             NULL;
       END CASE;
-
+      
+      -- if there is no replace method, then we need to rebuild indexes
       -- rebuild the indexes
       IF td_core.is_true( SELF.manage_indexes ) AND SELF.replace_method IS NULL
       THEN
@@ -193,6 +234,7 @@ AS
       END IF;
 
       -- enable the constraints
+      -- if there is no replace method, then we need to enable constraints
       IF td_core.is_true( SELF.manage_constraints ) AND SELF.replace_method IS NULL
       THEN
          td_dbutils.constraint_maint( p_owner                  => SELF.table_owner,
@@ -210,6 +252,7 @@ AS
       evolve.log_msg( 'Post-mapping processes completed' );
       o_ev.clear_app_info;
    END end_map;
+
    -- null procedure for polymorphism only
    MEMBER PROCEDURE LOAD
    IS
@@ -220,6 +263,7 @@ AS
       evolve.raise_err( 'wrong_map_type' );
       o_ev.clear_app_info;
    END LOAD;
+
    -- null procedure for polymorphism only
    MEMBER PROCEDURE confirm_dim_cols
    IS

@@ -67,6 +67,10 @@ IS
           p_message      => 'Either P_TABLE or P_SOURCE_TABLE have to be partitioned'
          );
       evolve_adm.set_error_conf
+         (p_name         => 'no_source_tab',
+           p_message      => 'a REPLACE_METHOD requires that a source object is populated'
+         );
+      evolve_adm.set_error_conf
          (p_name         => 'notify_err',
           p_message      => 'There is an error with configuration for the specified notification'
          );
@@ -106,10 +110,6 @@ IS
                    (p_name         => 'no_ext_tab',
                     p_message      => 'The specified external table does not exist'
                    );
-      evolve_adm.set_error_conf
-               (p_name         => 'parms_combo',
-                p_message      => 'The specified parameters are mutually inclusive'
-               );
       evolve_adm.set_error_conf
          (p_name         => 'no_dim',
           p_message      => 'The specified table is not a configured dimension table'
