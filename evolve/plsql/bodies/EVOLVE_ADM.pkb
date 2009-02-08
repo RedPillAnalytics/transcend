@@ -550,6 +550,9 @@ IS
          set_error_conf( p_name         => 'parms_not_compatible',
                          p_message      => 'The specified parameters are not compatible'
                        );
+         set_error_conf( p_name         => 'group_parms',
+                         p_message      => 'The specified parameters are mutually inclusive'
+                       );
          set_error_conf( p_name         => 'parm_not_configured',
                          p_message      => 'The specified parameter is not configured'
                        );
