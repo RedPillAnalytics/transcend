@@ -68,7 +68,16 @@ IS
       p_basis               VARCHAR2 DEFAULT 'table',
       p_concurrent          VARCHAR2 DEFAULT 'no'
    );
-      
+   
+   PROCEDURE validate_constraints(
+      p_owner               VARCHAR2,
+      p_table               VARCHAR2,
+      p_constraint_type     VARCHAR2 DEFAULT NULL,
+      p_constraint_regexp   VARCHAR2 DEFAULT NULL,
+      p_basis               VARCHAR2 DEFAULT 'table',
+      p_concurrent          VARCHAR2 DEFAULT 'no'
+   );
+ 
    PROCEDURE drop_indexes(
       p_owner          VARCHAR2,
       p_table          VARCHAR2,

@@ -567,7 +567,7 @@ AS
          object_grants( p_source_owner       => p_source_owner,
                         p_source_object      => p_source_table,
                        	p_owner              => p_owner,
-                       	p_object             => p_table
+                       	p_object              => p_table
 		      );
       END IF;
 
@@ -1618,7 +1618,7 @@ AS
          l_rows    := TRUE;
 
          BEGIN
-            evolve.exec_sql( p_sql   => c_constraints.ddl,
+            evolve.exec_sql( p_sql                => c_constraints.ddl,
                              p_auto               => 'yes',
                              p_concurrent_id      => l_concurrent_id
                            );

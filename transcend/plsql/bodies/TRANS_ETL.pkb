@@ -197,6 +197,33 @@ AS
          evolve.log_err;
          RAISE;
    END enable_constraints;
+
+   -- validates constraints related to a particular table
+   -- P_OWNER and P_TABLE are required for this procedure
+   PROCEDURE validate_constraints(
+      p_owner               VARCHAR2,
+      p_table               VARCHAR2,
+      p_constraint_type     VARCHAR2 DEFAULT NULL,
+      p_constraint_regexp   VARCHAR2 DEFAULT NULL,
+      p_basis               VARCHAR2 DEFAULT 'table',
+      p_concurrent          VARCHAR2 DEFAULT 'no'
+   )
+   IS
+   BEGIN
+      td_dbutils.constraint_maint( p_owner                  => p_owner,
+                                   p_table                  => p_table,
+                                   p_maint_type             => 'validate',
+                                   p_constraint_type        => p_constraint_type,
+                                   p_constraint_regexp      => p_constraint_regexp,
+                                   p_basis                  => p_basis,
+                                   p_concurrent             => p_concurrent
+                                 );
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         evolve.log_err;
+         RAISE;
+   END validate_constraints;
    
    -- drop particular indexes from a table
    PROCEDURE drop_indexes(
