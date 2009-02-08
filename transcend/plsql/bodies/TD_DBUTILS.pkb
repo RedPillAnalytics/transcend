@@ -291,6 +291,7 @@ AS
       p_constraints    VARCHAR2 DEFAULT 'no',
       p_indexes	       VARCHAR2 DEFAULT 'no',
       p_partitioning   VARCHAR2 DEFAULT 'yes',
+      p_grants         VARCHAR2 DEFAULT 'no',
       p_rows           VARCHAR2 DEFAULT 'no',
       p_statistics     VARCHAR2 DEFAULT 'ignore'
    )
@@ -557,6 +558,17 @@ AS
                        	    p_owner              => p_owner,
                        	    p_table              => p_table
 			  );
+      END IF;
+
+      -- do we want grants as well
+      IF td_core.is_true( p_grants )
+      THEN
+         o_ev.change_action( 'grant privilges' );
+         object_grants( p_source_owner       => p_source_owner,
+                        p_source_object      => p_source_table,
+                       	p_owner              => p_owner,
+                       	p_object             => p_table
+		      );
       END IF;
 
       o_ev.clear_app_info;

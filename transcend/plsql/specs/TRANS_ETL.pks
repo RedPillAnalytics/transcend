@@ -23,6 +23,7 @@ IS
       p_constraints    VARCHAR2 DEFAULT 'no',
       p_indexes	       VARCHAR2 DEFAULT 'no',
       p_partitioning   VARCHAR2 DEFAULT 'yes',
+      p_grants         VARCHAR2 DEFAULT 'no',
       p_rows           VARCHAR2 DEFAULT 'no',
       p_statistics     VARCHAR2 DEFAULT 'ignore'
    );
