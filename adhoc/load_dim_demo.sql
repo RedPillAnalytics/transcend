@@ -324,14 +324,10 @@ CREATE TABLE testdim.customer_dim
          effect_start_dt DATE,
          effect_end_dt DATE,
          current_ind VARCHAR2(1),
-       CONSTRAINT CUSTOMER_DIM_PK PRIMARY KEY (CUSTOMER_KEY)       
-)
+       CONSTRAINT CUSTOMER_DIM_PK PRIMARY KEY (CUSTOMER_KEY)
+       )
     ORGANIZATION INDEX 
          MAPPING TABLE
-     PARTITION BY RANGE (CUSTOMER_KEY) 
-(  
-  PARTITION MAX VALUES LESS THAN (MAXVALUE)
-)
 /
 
 -- create the sequence which will be used for the surrogate key
@@ -364,19 +360,19 @@ insert into testdim.customer_dim VALUES
 	 '01/01/2006','12/31/9999','Y')
 /
 
-CREATE BITMAP INDEX testdim.customer_dim_bi1 on testdim.customer_dim (first_name) local
+CREATE BITMAP INDEX testdim.customer_dim_bi1 on testdim.customer_dim (first_name)
 /
 
-CREATE BITMAP INDEX testdim.customer_dim_bi2 on testdim.customer_dim (last_name) local
+CREATE BITMAP INDEX testdim.customer_dim_bi2 on testdim.customer_dim (last_name)
 /
 
-CREATE BITMAP INDEX testdim.customer_dim_bi3 on testdim.customer_dim (effect_start_dt) local
+CREATE BITMAP INDEX testdim.customer_dim_bi3 on testdim.customer_dim (effect_start_dt)
 /
 
-CREATE BITMAP INDEX testdim.customer_dim_bi4 on testdim.customer_dim (effect_end_dt) local
+CREATE BITMAP INDEX testdim.customer_dim_bi4 on testdim.customer_dim (effect_end_dt)
 /
 
-CREATE BITMAP INDEX testdim.customer_dim_bi5 on testdim.customer_dim (current_ind) local
+CREATE BITMAP INDEX testdim.customer_dim_bi5 on testdim.customer_dim (current_ind)
 /
 
 ALTER TABLE testdim.sales_fact ADD CONSTRAINT sales_fact_fk1 FOREIGN KEY (customer_key) REFERENCES testdim.customer_dim (customer_key)
@@ -400,10 +396,14 @@ CREATE TABLE testdim.customer_scd
          effect_start_dt DATE,
          effect_end_dt DATE,
          current_ind VARCHAR2(1),
-       CONSTRAINT CUSTOMER_SCD_PK PRIMARY KEY (CUSTOMER_KEY)
-       )
+       CONSTRAINT CUSTOMER_SCD_PK PRIMARY KEY (CUSTOMER_KEY)       
+)
     ORGANIZATION INDEX 
          MAPPING TABLE
+     PARTITION BY RANGE (CUSTOMER_KEY) 
+(  
+  PARTITION MAX VALUES LESS THAN (MAXVALUE)
+)
 /
 
 -- now register our preferred replace method with Transcend
