@@ -437,7 +437,7 @@ IS
          EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON TDSYS.USERS TO ' || p_grantee;
 
          -- now the evolve repository tables
-         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON COUNT_TABLE TO ' || p_grantee;
+         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON RESULTS_TABLE TO ' || p_grantee;
 
          EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON DIR_LIST TO ' || p_grantee;
 
@@ -614,7 +614,7 @@ IS
       END;
 
       BEGIN
-         EXECUTE IMMEDIATE q'|DROP TABLE count_table|';
+         EXECUTE IMMEDIATE q'|DROP TABLE results_table|';
       EXCEPTION
          WHEN e_no_tab
          THEN
@@ -836,8 +836,8 @@ IS
 	 )
 	 ON COMMIT DELETE ROWS|';
 
-         -- COUNT_TABLE table
-         EXECUTE IMMEDIATE q'|CREATE TABLE count_table
+         -- RESULTS_TABLE table
+         EXECUTE IMMEDIATE q'|CREATE TABLE results_table
 	 (
 	   entry_ts       TIMESTAMP DEFAULT systimestamp NOT null,
 	   client_info    VARCHAR2(64),
@@ -848,12 +848,13 @@ IS
            object_owner   VARCHAR2(30),
            object_name    VARCHAR2(30),
            dml_category   VARCHAR2(30),
-	   row_cnt        NUMBER NOT null
+	   results_count  NUMBER,
+           duration       NUMBER
 	 )|';
 
-         EXECUTE IMMEDIATE q'|ALTER TABLE count_table ADD 
+         EXECUTE IMMEDIATE q'|ALTER TABLE results_table ADD 
 	 (
-	   CONSTRAINT count_table_pk
+	   CONSTRAINT results_table_pk
 	   PRIMARY KEY
 	   (session_id,entry_ts)
 	   USING INDEX
@@ -2208,7 +2209,7 @@ IS
 
       -- create the repository synonyms
       BEGIN
-         EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.COUNT_TABLE for ' || p_schema || '.COUNT_TABLE';
+         EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.RESULTS_TABLE for ' || p_schema || '.RESULTS_TABLE';
       EXCEPTION
          WHEN e_same_name
          THEN
