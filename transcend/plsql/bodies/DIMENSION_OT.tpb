@@ -605,7 +605,10 @@ AS
       o_ev.change_action( 'load staging table' );
       evolve.exec_sql( l_sql );
       evolve.log_cnt_msg( p_count      => SQL%ROWCOUNT,
-                              p_msg        => 'Number of records inserted into ' || SELF.full_stage );
+                          p_owner      => self.staging_owner,
+                          p_oject      => self.staging_table,
+                          p_category   => 'insert',
+                          p_msg        => 'Number of records inserted into ' || SELF.full_stage );
       COMMIT;
       -- perform the replace method
       o_ev.change_action( 'replace table' );

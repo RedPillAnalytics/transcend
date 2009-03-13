@@ -49,8 +49,7 @@ AS
                      )
               VALUES ( UPPER( p_owner ), UPPER( p_table ), UPPER( p_partname ), l_part_position
                      );
-
-         evolve.log_cnt_msg( SQL%ROWCOUNT, l_num_msg, 4 );
+         evolve.log_msg( SQL%ROWCOUNT||' rows inserted into TD_PART_GTT', 4 );
       ELSE
          -- if P_SOURCE_COLUMN is null, then use the same name as the partitioning source column on the target
          IF p_source_column IS NULL
@@ -89,8 +88,7 @@ AS
                            || UPPER( p_source_object )
                            || ') '
                            || 'ORDER By partition_position';
-
-         evolve.log_cnt_msg( SQL%ROWCOUNT, l_num_msg, 4 );
+         evolve.log_msg( SQL%ROWCOUNT||' rows inserted into TD_PART_GTT', 4 );
       END IF;
 
       -- get count of records affected
@@ -2097,7 +2095,10 @@ AS
       IF NOT evolve.is_debugmode
       THEN
          evolve.log_cnt_msg( p_count      => SQL%ROWCOUNT,
-                                 p_msg        => 'Number of records inserted into ' || l_trg_name );
+                             p_owner      => p_owner,
+                             p_object     => p_table,
+                             p_category   => 'insert',
+                             p_msg        => 'Number of records inserted into ' || l_trg_name );
       END IF;
 
       o_ev.clear_app_info;
@@ -2329,7 +2330,12 @@ AS
       -- record the number of rows affected
       IF NOT evolve.is_debugmode
       THEN
-         evolve.log_cnt_msg( p_count => SQL%ROWCOUNT, p_msg => 'Number of records merged into ' || l_trg_name );
+         evolve.log_cnt_msg( p_count      => SQL%ROWCOUNT,
+                             p_owner      => p_owner,
+                             p_object     => p_table,
+                             p_category   => 'merge',
+                             p_msg        => 'Number of records inserted into ' || l_trg_name );
+         
       END IF;
 
       o_ev.clear_app_info;

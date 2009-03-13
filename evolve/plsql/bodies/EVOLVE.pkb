@@ -98,15 +98,22 @@ AS
       END IF;
    END log_msg;
 
-   PROCEDURE log_cnt_msg( p_count NUMBER, p_msg VARCHAR2 DEFAULT NULL, p_level NUMBER DEFAULT 1 )
+   PROCEDURE log_cnt_msg( 
+      p_count       NUMBER,
+      p_owner       VARCHAR2,
+      p_object      VARCHAR2,
+      p_category    VARCHAR2,
+      p_msg         VARCHAR2 DEFAULT NULL, 
+      p_level       NUMBER   DEFAULT 1
+   )
    AS
       PRAGMA AUTONOMOUS_TRANSACTION;
    BEGIN
       -- store in COUNT_TABLE numbers of records affected by particular actions in modules
       INSERT INTO count_table
-                  ( client_info, module, action, runmode, session_id, row_cnt
+                  ( client_info, module, action, runmode, session_id, row_cnt, object_owner, object_name, dml_category
                   )
-           VALUES ( td_inst.client_info, td_inst.module, td_inst.action, td_inst.runmode, td_inst.session_id, p_count
+           VALUES ( td_inst.client_info, td_inst.module, td_inst.action, td_inst.runmode, td_inst.session_id, p_count, p_owner, p_object, p_category
                   );
 
       -- if a message was provided to this procedure, then write it to the log table

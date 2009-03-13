@@ -845,6 +845,9 @@ IS
 	   action         VARCHAR2(32),
 	   runmode 	  VARCHAR2(10) NOT NULL,
 	   session_id     NUMBER NOT null,
+           object_owner   VARCHAR2(30),
+           object_name    VARCHAR2(30),
+           dml_category   VARCHAR2(30),
 	   row_cnt        NUMBER NOT null
 	 )|';
 
