@@ -848,7 +848,7 @@ IS
            object_owner   VARCHAR2(30),
            object_name    VARCHAR2(30),
            dml_category   VARCHAR2(30),
-	   results_count  NUMBER,
+	   rows           NUMBER,
            duration       NUMBER
 	 )|';
 
