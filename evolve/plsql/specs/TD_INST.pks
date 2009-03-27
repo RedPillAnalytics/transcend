@@ -26,6 +26,11 @@ AS
       RETURN VARCHAR2;
 
    PROCEDURE osuser( p_osuser VARCHAR2 );
+
+   FUNCTION starttime
+      RETURN VARCHAR2;
+
+   PROCEDURE starttime( p_starttime VARCHAR2 );
    
    FUNCTION runmode
       RETURN VARCHAR2;
@@ -72,6 +77,9 @@ AS
 
    FUNCTION is_registered
       RETURN BOOLEAN;
+
+   FUNCTION get_elapsed_time
+      RETURN NUMBER;
 
    PROCEDURE set_scheduler_info(
       p_session_id  NUMBER,

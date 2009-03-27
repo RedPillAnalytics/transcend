@@ -1,6 +1,6 @@
 CREATE OR REPLACE PACKAGE BODY td_inst
 AS
--- global variables placed in the package body because they should be accessed or set outside the package
+   -- global variables placed in the package body because they should be accessed or set outside the package
 
    -- variables for holding information about the current session
    g_service_name    VARCHAR2( 64 ) := SYS_CONTEXT( 'USERENV', 'SERVICE_NAME' );
@@ -9,11 +9,12 @@ AS
    g_machine         VARCHAR2( 64 ) := SYS_CONTEXT( 'USERENV', 'HOST' );
    g_dbuser          VARCHAR2( 30 ) := SYS_CONTEXT( 'USERENV', 'SESSION_USER' );
    g_osuser          VARCHAR2( 30 ) := SYS_CONTEXT( 'USERENV', 'OS_USER' );
--- variables for holding information used to register an application with some other framework, such as DBMS_APPLCIATION_INFO
+   -- variables for holding information used to register an application with some other framework, such as DBMS_APPLCIATION_INFO
    g_client_info     VARCHAR2( 64 ) := SYS_CONTEXT( 'USERENV', 'CLIENT_INFO' );
    g_module          VARCHAR2( 48 ) := SYS_CONTEXT( 'USERENV', 'MODULE' );
    g_action          VARCHAR2( 32 ) := SYS_CONTEXT( 'USERENV', 'ACTION' );
--- miscelaneous other variables for enhanced framework functionality
+   -- miscelaneous other variables for enhanced framework functionality
+   g_starttime       DATE;
    g_batch_id        NUMBER;
    g_registration    VARCHAR2( 30 ) := 'appinfo';
    g_logging_level   NUMBER         := 2;
@@ -39,6 +40,20 @@ AS
    END REGISTER;
 
    -- DEFAULT ACCESSOR METHODS
+
+   -- accessor methods for starttime
+   FUNCTION starttime
+      RETURN VARCHAR2
+   AS
+   BEGIN
+      RETURN g_starttime;
+   END starttime;
+
+   PROCEDURE starttime( p_starttime VARCHAR2 )
+   AS
+   BEGIN
+      g_starttime := p_starttime;
+   END starttime;
 
    -- accessor methods for osuser
    FUNCTION osuser
@@ -249,6 +264,13 @@ AS
    -- CUSTOM METHODS
 
    -- OTHER PROGRAM UNITS
+   -- provide elapsed time since the process started
+   FUNCTION get_elapsed_time
+      RETURN NUMBER
+   AS
+   BEGIN
+      RETURN SYSDATE - starttime;
+   END get_elapsed_time;
 
    -- the standard methods to set up the session aren't applicable for those submitted in the background with DBMS_SCHEDULER
    -- that is why this method has to be used

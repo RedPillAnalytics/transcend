@@ -20,6 +20,8 @@ AS
       td_inst.client_info( NVL( p_client_info, td_inst.client_info ));
       -- now register the above values
       td_inst.register;
+      -- now, set the starttime
+      td_inst.starttime;
       RETURN;
    END app_ot;
    MEMBER FUNCTION get_package_name

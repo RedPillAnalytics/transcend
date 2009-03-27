@@ -107,6 +107,9 @@ AS
          END IF;
       END LOOP;
 
+      -- now, set the starttime
+      td_inst.starttime;
+
       RETURN;
    END evolve_ot;
    

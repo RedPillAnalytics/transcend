@@ -9,7 +9,7 @@ AS
 
    PROCEDURE log_msg( p_msg VARCHAR2, p_level NUMBER DEFAULT 1 );
 
-   PROCEDURE log_cnt_msg( 
+   PROCEDURE log_results_msg( 
       p_count       NUMBER,
       p_owner       VARCHAR2,
       p_object      VARCHAR2,

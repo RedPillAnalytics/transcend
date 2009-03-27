@@ -98,7 +98,7 @@ AS
       END IF;
    END log_msg;
 
-   PROCEDURE log_cnt_msg( 
+   PROCEDURE log_results_msg( 
       p_count       NUMBER,
       p_owner       VARCHAR2,
       p_object      VARCHAR2,
@@ -111,16 +111,16 @@ AS
    BEGIN
       -- store in COUNT_TABLE numbers of records affected by particular actions in modules
       INSERT INTO count_table
-                  ( client_info, module, action, runmode, session_id, row_cnt, object_owner, object_name, dml_category
+             ( client_info, module, action, runmode, session_id, object_owner, object_name, dml_category, row_count, duration
                   )
-           VALUES ( td_inst.client_info, td_inst.module, td_inst.action, td_inst.runmode, td_inst.session_id, p_count, p_owner, p_object, p_category
+           VALUES ( td_inst.client_info, td_inst.module, td_inst.action, td_inst.runmode, td_inst.session_id, p_owner, p_object, p_category, p_count, td_inst.get_elapsed_time
                   );
 
       -- if a message was provided to this procedure, then write it to the log table
       -- if not, then simply use the default message below
       log_msg( NVL( p_msg, 'Number of records selected/affected' ) || ': ' || p_count, p_level );
       COMMIT;
-   END log_cnt_msg;
+   END log_results_msg;
 
    -- writes error information to the log_table
    PROCEDURE log_err
