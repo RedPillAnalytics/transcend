@@ -303,14 +303,6 @@ IS
             NULL;
       END;
 
-      BEGIN
-         EXECUTE IMMEDIATE 'DROP TYPE '||p_schema||'.app_ot';
-      EXCEPTION
-         when e_no_obj
-         THEN
-            NULL;
-      END;
-
       -- utilities package
       BEGIN
          EXECUTE IMMEDIATE 'DROP package '||p_schema||'.td_utils';
@@ -499,8 +491,6 @@ IS
       EXECUTE IMMEDIATE 'grant execute on TDSYS.TD_ADM to ' || p_user;
       
       -- types
-      EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.APP_OT to ' || p_user;
-
       EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.EVOLVE_OT to ' || p_user;
 
       EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.SPLIT_OT to ' || p_user;
@@ -2395,14 +2385,6 @@ IS
    BEGIN
       BEGIN
          EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.TD_ADM for ' || p_schema || '.TD_ADM';
-      EXCEPTION
-         WHEN e_same_name
-         THEN
-            NULL;
-      END;
-
-      BEGIN
-         EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.APP_OT for ' || p_schema || '.APP_OT';
       EXCEPTION
          WHEN e_same_name
          THEN

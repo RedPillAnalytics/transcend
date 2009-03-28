@@ -290,13 +290,8 @@ END;
 -- this contains OS and file level utilites that aren't available in other API's
 @../evolve/java/TdUtils.jvs
 
--- create Evolve pieces that don't use any repository objects
--- this in essence becomes "Evolve-lite" where no configuration or audit tables are required
-@../evolve/plsql/specs/TD_INST.pks
-@../evolve/plsql/specs/APP_OT.tps
-
 -- layer in the utilities that require repository objects
--- this starts to move past "Evolve-lite"
+@../evolve/plsql/specs/TD_INST.pks
 @../evolve/plsql/specs/EVOLVE.pks
 @../evolve/plsql/specs/NOTIFICATION_OT.tps
 @../evolve/plsql/specs/EVOLVE_OT.tps
@@ -311,7 +306,6 @@ END;
 @../evolve/plsql/wrapped_bodies/STRING_AGG_OT.plb
 @../evolve/plsql/wrapped_bodies/TD_CORE.plb
 @../evolve/plsql/wrapped_bodies/TD_INST.plb
-@../evolve/plsql/wrapped_bodies/APP_OT.plb
 @../evolve/plsql/wrapped_bodies/EVOLVE.plb
 @../evolve/plsql/wrapped_bodies/NOTIFICATION_OT.plb
 @../evolve/plsql/wrapped_bodies/EVOLVE_OT.plb
