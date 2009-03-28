@@ -1,6 +1,6 @@
 CREATE OR REPLACE PACKAGE BODY td_adm wrapped 
 a000000
-b2
+1
 abcd
 abcd
 abcd

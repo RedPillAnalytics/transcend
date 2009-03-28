@@ -108,7 +108,7 @@ AS
       END LOOP;
 
       -- now, set the starttime
-      td_inst.starttime;
+      td_inst.starttime(SYSDATE);
 
       RETURN;
    END evolve_ot;

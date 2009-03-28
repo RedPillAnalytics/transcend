@@ -110,7 +110,7 @@ AS
       PRAGMA AUTONOMOUS_TRANSACTION;
    BEGIN
       -- store in COUNT_TABLE numbers of records affected by particular actions in modules
-      INSERT INTO count_table
+      INSERT INTO results_table
              ( client_info, module, action, runmode, session_id, object_owner, object_name, dml_category, row_count, duration
                   )
            VALUES ( td_inst.client_info, td_inst.module, td_inst.action, td_inst.runmode, td_inst.session_id, p_owner, p_object, p_category, p_count, td_inst.get_elapsed_time

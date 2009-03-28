@@ -268,8 +268,9 @@ AS
    FUNCTION get_elapsed_time
       RETURN NUMBER
    AS
+      l_starttime DATE := starttime;
    BEGIN
-      RETURN SYSDATE - starttime;
+      RETURN (SYSDATE - l_starttime);
    END get_elapsed_time;
 
    -- the standard methods to set up the session aren't applicable for those submitted in the background with DBMS_SCHEDULER

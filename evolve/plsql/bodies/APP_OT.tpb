@@ -21,7 +21,7 @@ AS
       -- now register the above values
       td_inst.register;
       -- now, set the starttime
-      td_inst.starttime;
+      td_inst.starttime(SYSDATE);
       RETURN;
    END app_ot;
    MEMBER FUNCTION get_package_name
