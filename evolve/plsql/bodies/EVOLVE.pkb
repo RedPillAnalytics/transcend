@@ -113,7 +113,7 @@ AS
       INSERT INTO results_table
              ( client_info, module, action, runmode, session_id, object_owner, object_name, dml_category, row_count, duration
                   )
-           VALUES ( td_inst.client_info, td_inst.module, td_inst.action, td_inst.runmode, td_inst.session_id, p_owner, p_object, p_category, p_count, td_inst.get_elapsed_time
+             VALUES ( td_inst.client_info, td_inst.module, td_inst.action, td_inst.runmode, td_inst.session_id, upper(p_owner), upper(p_object), p_category, p_count, td_inst.get_elapsed_time
                   );
 
       -- if a message was provided to this procedure, then write it to the log table

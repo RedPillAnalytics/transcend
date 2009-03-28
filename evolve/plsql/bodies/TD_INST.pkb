@@ -270,7 +270,7 @@ AS
    AS
       l_starttime DATE := starttime;
    BEGIN
-      RETURN (SYSDATE - l_starttime);
+      RETURN (SYSDATE - l_starttime)*24*60*60;
    END get_elapsed_time;
 
    -- the standard methods to set up the session aren't applicable for those submitted in the background with DBMS_SCHEDULER
