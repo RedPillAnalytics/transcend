@@ -604,11 +604,12 @@ AS
       -- now run the insert statement to load the staging table
       o_ev.change_action( 'load staging table' );
       evolve.exec_sql( l_sql );
-      evolve.log_cnt_msg( p_count      => SQL%ROWCOUNT,
-                          p_owner      => self.staging_owner,
-                          p_oject      => self.staging_table,
-                          p_category   => 'insert',
-                          p_msg        => 'Number of records inserted into ' || SELF.full_stage );
+      evolve.log_results_msg( p_count          => SQL%ROWCOUNT,
+                              p_owner          => staging_owner,
+                              p_object         => staging_table,
+                              p_category       => 'insert',
+                              p_msg            => 'Number of records inserted into '|| full_stage ); 
+
       COMMIT;
       -- perform the replace method
       o_ev.change_action( 'replace table' );

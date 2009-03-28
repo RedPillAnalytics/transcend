@@ -119,6 +119,8 @@ AS
       td_inst.action( p_action );
       evolve.log_msg( 'ACTION attribute changed to "' || td_inst.action || '"', 4 );
       td_inst.REGISTER;
+      -- now, set the starttime
+      td_inst.starttime(SYSDATE);
    END change_action;
    
    OVERRIDING MEMBER PROCEDURE clear_app_info

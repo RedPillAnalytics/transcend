@@ -274,9 +274,7 @@ IS
          THEN
             evolve.raise_err ('dup_conf');
       END;
-      
-      evolve.log_cnt_msg( SQL%ROWCOUNT, p_level => 4 );
-      
+            
       -- instantiate the feed_ot type so that the verify method is executed
       -- this method contains all the business logic to see if parameters are valid
       o_feed := feed_ot ( p_file_label      => p_file_label );
@@ -496,8 +494,6 @@ IS
              modified_dt = SYSDATE
        WHERE file_label = LOWER (p_file_label);
 	     
-       evolve.log_cnt_msg( SQL%ROWCOUNT, p_level => 4 );
-
        o_feed := feed_ot ( p_file_label      => p_file_label );
        o_ev.clear_app_info;
    END modify_feed;
@@ -512,7 +508,6 @@ IS
       DELETE FROM file_conf
        WHERE file_label = LOWER (p_file_label);
       
-      evolve.log_cnt_msg( SQL%ROWCOUNT, p_level => 4 );
       o_ev.clear_app_info;
 
    END delete_feed;
@@ -1497,7 +1492,6 @@ IS
 	     ( upper( p_owner ), upper( p_table ), upper( p_surrogate ), 'surrogate key' );
       
       -- record the number of rows affected by the last statment
-      evolve.log_cnt_msg( SQL%ROWCOUNT, p_level => 4, p_msg => 'Number of surrogate keys inserted' );
 
       -- write the effective date information
       o_ev.change_action( 'configure effective date' );
@@ -1511,7 +1505,6 @@ IS
 	     ( upper( p_owner ), upper( p_table ), upper( p_effective_dt ), 'effective date' );
       
       -- record the number of rows affected by the last statment
-      evolve.log_cnt_msg( SQL%ROWCOUNT, p_level => 4, p_msg => 'Number of effective dates inserted' );
 
       -- write the expiration date information
       o_ev.change_action( 'configure expire date' );
@@ -1525,7 +1518,6 @@ IS
 	     ( upper( p_owner ), upper( p_table ), upper( p_expiration_dt ), 'expiration date' );
 
       -- record the number of rows affected by the last statment
-      evolve.log_cnt_msg( SQL%ROWCOUNT, p_level => 4, p_msg => 'Number of expiration dates inserted' );
       
       -- write the current indicator information
       o_ev.change_action( 'configure current indicator' );
@@ -1539,7 +1531,6 @@ IS
 	     ( upper( p_owner ), upper( p_table ), upper( p_current_ind ), 'current indicator' );
 
       -- record the number of rows affected by the last statment
-      evolve.log_cnt_msg( SQL%ROWCOUNT, p_level => 4, p_msg => 'Number of current indicators inserted' );
       
       -- write the natural key information
       o_ev.change_action( 'configure natural key' );
@@ -1561,7 +1552,6 @@ IS
 		( upper( p_owner ), upper( p_table ), upper( c_cols.column_name ), 'natural key' );
 	 
 	 -- record the number of rows affected by the last statment
-	 evolve.log_cnt_msg( SQL%ROWCOUNT, p_level => 4, p_msg => 'Number of natural keys inserted' );
 
       END LOOP;
       
@@ -1589,7 +1579,6 @@ IS
 		   ( upper( p_owner ), upper( p_table ), upper( c_cols.column_name ), 'scd type 1' );
 	    
 	    -- record the number of rows affected by the last statment
-	    evolve.log_cnt_msg( SQL%ROWCOUNT, p_level => 4, p_msg => 'Number of scd1 attributes inserted' );
 
 	 END LOOP;
 	 
@@ -1619,7 +1608,6 @@ IS
 		   ( upper( p_owner ), upper( p_table ), upper( c_cols.column_name ), 'scd type 2' );
 
 	    -- record the number of rows affected by the last statment
-	    evolve.log_cnt_msg( SQL%ROWCOUNT, p_level => 4, p_msg => 'Number of scd2 attributes inserted' );
 	    
 	 END LOOP;
       END IF;
@@ -1640,7 +1628,6 @@ IS
             INSERT( t.table_owner, t.table_name, t.column_name, t.column_type )
             VALUES( s.table_owner, s.table_name, s.column_name, s.column_type );
       
-      evolve.log_cnt_msg( SQL%ROWCOUNT, p_level => 4, p_msg => 'Number of rows merged' );
 
 
       -- confirm the dimension columns
@@ -1682,7 +1669,6 @@ IS
 	 AND lower( column_name ) = lower( p_column );
       
       -- record the number of rows affected by the last statment
-      evolve.log_cnt_msg( SQL%ROWCOUNT, p_level => 4 );
       
       -- confirm the dimension columns
       o_dim.confirm_dim_cols;
@@ -1702,7 +1688,6 @@ IS
          AND LOWER (table_name) = LOWER (p_table);
       
       -- record the number of rows affected by the last statment
-      evolve.log_cnt_msg( SQL%ROWCOUNT, p_level => 4 );
       
    END delete_dim_attribs;
    

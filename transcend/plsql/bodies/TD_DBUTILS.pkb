@@ -2094,11 +2094,11 @@ AS
       -- record the number of rows affected
       IF NOT evolve.is_debugmode
       THEN
-         evolve.log_cnt_msg( p_count      => SQL%ROWCOUNT,
-                             p_owner      => p_owner,
-                             p_object     => p_table,
-                             p_category   => 'insert',
-                             p_msg        => 'Number of records inserted into ' || l_trg_name );
+         evolve.log_results_msg( p_count      => SQL%ROWCOUNT,
+                                 p_owner      => p_owner,
+                                 p_object     => p_table,
+                                 p_category   => 'insert',
+                                 p_msg        => 'Number of records inserted into ' || l_trg_name );
       END IF;
 
       o_ev.clear_app_info;
@@ -2330,11 +2330,11 @@ AS
       -- record the number of rows affected
       IF NOT evolve.is_debugmode
       THEN
-         evolve.log_cnt_msg( p_count      => SQL%ROWCOUNT,
-                             p_owner      => p_owner,
-                             p_object     => p_table,
-                             p_category   => 'merge',
-                             p_msg        => 'Number of records inserted into ' || l_trg_name );
+         evolve.log_results_msg( p_count      => SQL%ROWCOUNT,
+                                 p_owner      => p_owner,
+                                 p_object     => p_table,
+                                 p_category   => 'merge',
+                                 p_msg        => 'Number of records inserted into ' || l_trg_name );
          
       END IF;
 

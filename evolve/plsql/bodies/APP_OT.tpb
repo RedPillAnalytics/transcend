@@ -98,6 +98,8 @@ AS
    BEGIN
       td_inst.action( p_action );
       td_inst.REGISTER;
+      -- now, set the starttime
+      td_inst.starttime(SYSDATE);
    END change_action;
 
    MEMBER PROCEDURE clear_app_info
