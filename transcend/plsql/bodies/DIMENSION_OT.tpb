@@ -14,11 +14,11 @@ AS
          SELECT table_owner, table_name, full_table, source_owner, source_object,
                 full_source, sequence_owner, sequence_name, full_sequence, staging_owner,
                 staging_table, staging_owner || '.' || staging_table full_stage, constant_staging, direct_load,
-                replace_method, STATISTICS, concurrent, mapping_name
+                replace_method, STATISTICS, index_concurrency, constraint_concurrency, mapping_name
            INTO SELF.table_owner, SELF.table_name, SELF.full_table, SELF.source_owner, SELF.source_object,
                 SELF.full_source, SELF.sequence_owner, SELF.sequence_name, SELF.full_sequence, SELF.staging_owner,
                 SELF.staging_table, SELF.full_stage, SELF.constant_staging, SELF.direct_load,
-                SELF.replace_method, SELF.STATISTICS, SELF.concurrent, SELF.mapping_name
+                SELF.replace_method, SELF.STATISTICS, SELF.index_concurrency, SELF.constraint_concurrency, SELF.mapping_name
            FROM ( SELECT table_owner, table_name, table_owner || '.' || table_name full_table, source_owner,
                          source_object, source_owner || '.' || source_object full_source, sequence_owner, sequence_name,
                          sequence_owner || '.' || sequence_name full_sequence,
@@ -28,7 +28,7 @@ AS
                             WHEN staging_table IS NULL
                                THEN 'no'
                             ELSE 'yes'
-                         END constant_staging, direct_load, replace_method, STATISTICS, concurrent
+                         END constant_staging, direct_load, replace_method, STATISTICS, index_concurrency, constraint_concurrency
                    FROM dimension_conf JOIN mapping_conf USING( table_owner, table_name )
                   WHERE mapping_name = SELF.mapping_name );
       EXCEPTION

@@ -145,19 +145,21 @@ IS
       p_source_table   VARCHAR2,
       p_partname       VARCHAR2 DEFAULT NULL,
       p_index_space    VARCHAR2 DEFAULT NULL,
-      p_concurrent     VARCHAR2 DEFAULT 'no',
+      p_idx_concurrency   VARCHAR2 DEFAULT 'no',
+      p_con_concurrency   VARCHAR2 DEFAULT 'no',
       p_statistics     VARCHAR2 DEFAULT 'transfer'
    );
 
    PROCEDURE load_dimension( p_owner VARCHAR2, p_table VARCHAR2 );
 
    PROCEDURE replace_table(
-      p_owner          VARCHAR2,
-      p_table          VARCHAR2,
-      p_source_table   VARCHAR2,
-      p_tablespace     VARCHAR2 DEFAULT NULL,
-      p_concurrent     VARCHAR2 DEFAULT 'no',
-      p_statistics     VARCHAR2 DEFAULT 'transfer'
+      p_owner             VARCHAR2,
+      p_table             VARCHAR2,
+      p_source_table      VARCHAR2,
+      p_tablespace        VARCHAR2 DEFAULT NULL,
+      p_idx_concurrency   VARCHAR2 DEFAULT 'no',
+      p_con_concurrency   VARCHAR2 DEFAULT 'no',
+      p_statistics        VARCHAR2 DEFAULT 'transfer'
    );
 
    PROCEDURE unusable_indexes(

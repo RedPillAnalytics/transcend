@@ -1422,8 +1422,8 @@ IS
                       p_source_object       => p_source_object,
                       p_replace_method      => p_replace_method,
                       p_statistics          => p_statistics,
-                      p_idx_concurreny      => p_idx_concurrency,
-                      p_con_concurreny      => p_con_concurrency
+                      p_idx_concurrency     => p_idx_concurrency,
+                      p_con_concurrency     => p_con_concurrency
                      );
      
      o_dim := trans_factory.get_mapping_ot (p_mapping => nvl( p_mapping, l_mapping ));
