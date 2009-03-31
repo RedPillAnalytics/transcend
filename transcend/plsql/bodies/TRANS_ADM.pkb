@@ -783,19 +783,20 @@ IS
       p_owner               VARCHAR2 DEFAULT NULL,
       p_table               VARCHAR2 DEFAULT NULL,
       p_partname            VARCHAR2 DEFAULT NULL,
-      p_indexes             VARCHAR2 DEFAULT 'no',
-      p_constraints         VARCHAR2 DEFAULT 'no',
+      p_indexes             VARCHAR2 DEFAULT 'ignore',
+      p_index_regexp        VARCHAR2 DEFAULT NULL,
+      p_index_type          VARCHAR2 DEFAULT NULL,
+      p_part_type           VARCHAR2 DEFAULT NULL,
+      p_idx_concurrency     VARCHAR2 DEFAULT 'no',
+      p_constraints         VARCHAR2 DEFAULT 'ignore',
+      p_constraint_regexp   VARCHAR2 DEFAULT NULL,
+      p_constraint_type     VARCHAR2 DEFAULT NULL,
+      p_con_concurrency     VARCHAR2 DEFAULT 'no',
       p_source_owner        VARCHAR2 DEFAULT NULL,
       p_source_object       VARCHAR2 DEFAULT NULL,
       p_source_column       VARCHAR2 DEFAULT NULL,
       p_replace_method      VARCHAR2 DEFAULT NULL,
       p_statistics          VARCHAR2 DEFAULT 'transfer',
-      p_concurrent          VARCHAR2 DEFAULT 'no',
-      p_index_regexp        VARCHAR2 DEFAULT NULL,
-      p_index_type          VARCHAR2 DEFAULT NULL,
-      p_part_type           VARCHAR2 DEFAULT NULL,
-      p_constraint_regexp   VARCHAR2 DEFAULT NULL,
-      p_constraint_type     VARCHAR2 DEFAULT NULL,
       p_description         VARCHAR2 DEFAULT NULL
    )
    IS
@@ -811,24 +812,24 @@ IS
 		( mapping_name, mapping_type,
 		  table_owner, table_name,
 		  partition_name, manage_indexes,
-		  manage_constraints,
+                  index_regexp, index_type, 
+                  partition_type, index_concurrency, 
+		  manage_constraints, constraint_regexp,
+		  constraint_type, constraint_concurrency,
 		  source_owner, source_object,
 		  source_column, replace_method,
-		  STATISTICS,
-		  concurrent, index_regexp,
-		  index_type, partition_type, constraint_regexp,
-		  constraint_type, description
+		  statistics, description
 		)
 		VALUES ( LOWER (p_mapping), LOWER (p_mapping_type),
 			 UPPER (p_owner), UPPER (p_table),
-			 UPPER (p_partname), LOWER (NVL (p_indexes, 'no')),
-			 LOWER (p_constraints),
+			 UPPER (p_partname), lower(p_indexes),
+			 p_index_regexp, p_index_type, p_part_type, 
+                         LOWER(p_idx_concurrency),
+                         LOWER (p_constraints), p_constraint_regexp,
+			 p_constraint_type, LOWER(p_con_concurrency),
 			 UPPER (p_source_owner), UPPER (p_source_object),
 			 UPPER (p_source_column), p_replace_method,
-			 LOWER (p_statistics),
-			 LOWER (p_concurrent), p_index_regexp,
-			 p_index_type, p_part_type, p_constraint_regexp,
-			 p_constraint_type, p_description
+			 LOWER (p_statistics),p_description
                        );
       EXCEPTION
 	 WHEN e_dup_conf
@@ -853,44 +854,46 @@ IS
       p_owner               VARCHAR2 DEFAULT NULL,
       p_table               VARCHAR2 DEFAULT NULL,
       p_partname            VARCHAR2 DEFAULT NULL,
-      p_indexes             VARCHAR2 DEFAULT 'no',
-      p_constraints         VARCHAR2 DEFAULT 'no',
+      p_indexes             VARCHAR2 DEFAULT 'ignore',
+      p_index_regexp        VARCHAR2 DEFAULT NULL,
+      p_index_type          VARCHAR2 DEFAULT NULL,
+      p_part_type           VARCHAR2 DEFAULT NULL,
+      p_idx_concurrency     VARCHAR2 DEFAULT 'no',
+      p_constraints         VARCHAR2 DEFAULT 'ignore',
+      p_constraint_regexp   VARCHAR2 DEFAULT NULL,
+      p_constraint_type     VARCHAR2 DEFAULT NULL,
+      p_con_concurrency     VARCHAR2 DEFAULT 'no',
       p_source_owner        VARCHAR2 DEFAULT NULL,
       p_source_object       VARCHAR2 DEFAULT NULL,
       p_source_column       VARCHAR2 DEFAULT NULL,
       p_replace_method      VARCHAR2 DEFAULT NULL,
       p_statistics          VARCHAR2 DEFAULT 'transfer',
-      p_concurrent          VARCHAR2 DEFAULT 'no',
-      p_index_regexp        VARCHAR2 DEFAULT NULL,
-      p_index_type          VARCHAR2 DEFAULT NULL,
-      p_part_type           VARCHAR2 DEFAULT NULL,
-      p_constraint_regexp   VARCHAR2 DEFAULT NULL,
-      p_constraint_type     VARCHAR2 DEFAULT NULL,
       p_description         VARCHAR2 DEFAULT NULL
    )
    IS
       o_ev          evolve_ot     := evolve_ot (p_module  => 'create_mapping');
    BEGIN
       
-      create_mapping ( p_mapping   => p_mapping,
-		       p_mapping_type => 'table',
-		       p_owner => p_owner,
-		       p_table => p_table,
-		       p_partname => p_partname,
-		       p_indexes => p_indexes,
-		       p_constraints => p_constraints,
-		       p_source_owner => p_source_owner,
-		       p_source_object => p_source_object,
-		       p_source_column => p_source_column,
-		       p_replace_method => p_replace_method,
-		       p_statistics => p_statistics,
-		       p_concurrent => p_concurrent,
-		       p_index_regexp => p_index_regexp,
-		       p_index_type => p_index_type,
-		       p_part_type => p_part_type,
-		       p_constraint_regexp => p_constraint_regexp,
-		       p_constraint_type => p_constraint_type,
-		       p_description => p_description );
+      create_mapping ( p_mapping                => p_mapping,
+		       p_mapping_type           => 'table',
+		       p_owner                  => p_owner,
+		       p_table                  => p_table,
+		       p_partname               => p_partname,
+		       p_indexes                => p_indexes,
+		       p_index_regexp           => p_index_regexp,
+		       p_index_type             => p_index_type,
+		       p_part_type              => p_part_type,
+		       p_idx_concurrency        => p_idx_concurrency,
+                       p_constraints            => p_constraints,
+		       p_constraint_regexp      => p_constraint_regexp,
+		       p_constraint_type        => p_constraint_type,
+                       p_con_concurrency        => p_con_concurrency,
+		       p_source_owner           => p_source_owner,
+		       p_source_object          => p_source_object,
+		       p_source_column          => p_source_column,
+		       p_replace_method         => p_replace_method,
+		       p_statistics             => p_statistics,
+		       p_description            => p_description );
       
       o_ev.clear_app_info;
 
@@ -901,27 +904,29 @@ IS
       p_owner               VARCHAR2 DEFAULT NULL,
       p_table               VARCHAR2 DEFAULT NULL,
       p_partname            VARCHAR2 DEFAULT NULL,
-      p_indexes             VARCHAR2 DEFAULT 'no',
-      p_constraints         VARCHAR2 DEFAULT 'no',
+      p_indexes             VARCHAR2 DEFAULT NULL,
+      p_index_regexp        VARCHAR2 DEFAULT NULL,
+      p_index_type          VARCHAR2 DEFAULT NULL,
+      p_part_type           VARCHAR2 DEFAULT NULL,
+      p_idx_concurrency     VARCHAR2 DEFAULT NULL,
+      p_constraints         VARCHAR2 DEFAULT NULL,
+      p_constraint_regexp   VARCHAR2 DEFAULT NULL,
+      p_constraint_type     VARCHAR2 DEFAULT NULL,
+      p_con_concurrency     VARCHAR2 DEFAULT NULL,
       p_source_owner        VARCHAR2 DEFAULT NULL,
       p_source_object       VARCHAR2 DEFAULT NULL,
       p_source_column       VARCHAR2 DEFAULT NULL,
       p_replace_method      VARCHAR2 DEFAULT NULL,
-      p_statistics          VARCHAR2 DEFAULT 'transfer',
-      p_concurrent          VARCHAR2 DEFAULT 'no',
-      p_index_regexp        VARCHAR2 DEFAULT NULL,
-      p_index_type          VARCHAR2 DEFAULT NULL,
-      p_part_type           VARCHAR2 DEFAULT NULL,
-      p_constraint_regexp   VARCHAR2 DEFAULT NULL,
-      p_constraint_type     VARCHAR2 DEFAULT NULL,
+      p_statistics          VARCHAR2 DEFAULT NULL,
       p_description         VARCHAR2 DEFAULT NULL
+
    )
    IS
       l_map_type   mapping_conf.mapping_type%TYPE;
       l_num_rows   NUMBER;
       e_dup_conf   EXCEPTION;
       PRAGMA EXCEPTION_INIT (e_dup_conf, -1);
-      o_ev          evolve_ot     := evolve_ot (p_module      => 'modify_mapping');
+      o_ev          evolve_ot     := evolve_ot (p_module      => 'update_mapping');
    BEGIN
       
       BEGIN
@@ -967,6 +972,15 @@ IS
                      ELSE p_indexes
                      END
                    ),
+             index_concurrency =
+             LOWER (CASE
+                     WHEN p_idx_concurrency IS NULL
+                     THEN index_concurrency
+                     WHEN p_idx_concurrency = null_value
+                     THEN NULL
+                     ELSE p_idx_concurrency
+                     END
+                   ),
              manage_constraints =
              LOWER (CASE
                      WHEN p_constraints IS NULL
@@ -974,6 +988,15 @@ IS
                      WHEN p_constraints = null_value
                      THEN NULL
                      ELSE p_constraints
+                     END
+                   ),
+             constraint_concurrency =
+             LOWER (CASE
+                     WHEN p_con_concurrency IS NULL
+                     THEN constraint_concurrency
+                     WHEN p_con_concurrency = null_value
+                     THEN NULL
+                     ELSE p_con_concurrency
                      END
                    ),
              source_owner =
@@ -1019,15 +1042,6 @@ IS
                      WHEN p_statistics = null_value
                      THEN NULL
                      ELSE p_statistics
-                     END
-                   ),
-             concurrent =
-             LOWER (CASE
-                     WHEN p_concurrent IS NULL
-                     THEN concurrent
-                     WHEN p_concurrent = null_value
-                     THEN NULL
-                     ELSE p_concurrent
                      END
                    ),
              index_regexp =
@@ -1090,19 +1104,20 @@ IS
       p_owner               VARCHAR2 DEFAULT NULL,
       p_table               VARCHAR2 DEFAULT NULL,
       p_partname            VARCHAR2 DEFAULT NULL,
-      p_indexes             VARCHAR2 DEFAULT 'no',
-      p_constraints         VARCHAR2 DEFAULT 'no',
+      p_indexes             VARCHAR2 DEFAULT NULL,
+      p_index_regexp        VARCHAR2 DEFAULT NULL,
+      p_index_type          VARCHAR2 DEFAULT NULL,
+      p_part_type           VARCHAR2 DEFAULT NULL,
+      p_idx_concurrency     VARCHAR2 DEFAULT NULL,
+      p_constraints         VARCHAR2 DEFAULT NULL,
+      p_constraint_regexp   VARCHAR2 DEFAULT NULL,
+      p_constraint_type     VARCHAR2 DEFAULT NULL,
+      p_con_concurrency     VARCHAR2 DEFAULT NULL,
       p_source_owner        VARCHAR2 DEFAULT NULL,
       p_source_object       VARCHAR2 DEFAULT NULL,
       p_source_column       VARCHAR2 DEFAULT NULL,
       p_replace_method      VARCHAR2 DEFAULT NULL,
-      p_statistics          VARCHAR2 DEFAULT 'transfer',
-      p_concurrent          VARCHAR2 DEFAULT 'no',
-      p_index_regexp        VARCHAR2 DEFAULT NULL,
-      p_index_type          VARCHAR2 DEFAULT NULL,
-      p_part_type           VARCHAR2 DEFAULT NULL,
-      p_constraint_regexp   VARCHAR2 DEFAULT NULL,
-      p_constraint_type     VARCHAR2 DEFAULT NULL,
+      p_statistics          VARCHAR2 DEFAULT NULL,
       p_description         VARCHAR2 DEFAULT NULL
    )
    IS
@@ -1114,13 +1129,14 @@ IS
                        p_table               => p_table,
                        p_partname            => p_partname,
                        p_indexes             => p_indexes,
+                       p_idx_concurrency     => p_idx_concurrency,
                        p_constraints         => p_constraints,
+                       p_con_concurrency     => p_con_concurrency,
                        p_source_owner        => p_source_owner,
                        p_source_object       => p_source_object,
                        p_source_column       => p_source_column,
                        p_replace_method      => p_replace_method,
                        p_statistics          => p_statistics,
-                       p_concurrent          => p_concurrent,
                        p_index_regexp        => p_index_regexp,
                        p_index_type          => p_index_type,
                        p_part_type           => p_part_type,
@@ -1192,7 +1208,8 @@ IS
       p_direct_load        VARCHAR2 DEFAULT 'yes',
       p_replace_method     VARCHAR2 DEFAULT 'rename',
       p_statistics         VARCHAR2 DEFAULT 'transfer',
-      p_concurrent         VARCHAR2 DEFAULT 'no',
+      p_idx_concurrency    VARCHAR2 DEFAULT 'no',
+      p_con_concurrency    VARCHAR2 DEFAULT 'no',
       p_stage_key_def      NUMBER DEFAULT -.01,
       p_char_nvl_def       VARCHAR2 DEFAULT '~',
       p_date_nvl_def       DATE DEFAULT TO_DATE ('01/01/9999'),
@@ -1236,7 +1253,8 @@ IS
                       p_source_object       => p_source_object,
                       p_replace_method      => p_replace_method,
                       p_statistics          => p_statistics,
-                      p_concurrent          => p_concurrent
+                      p_idx_concurrency     => p_idx_concurrency,
+                      p_con_concurrency     => p_con_concurrency
                      );
       o_dim := trans_factory.get_mapping_ot (p_mapping);
       
@@ -1258,7 +1276,8 @@ IS
       p_direct_load        VARCHAR2 DEFAULT NULL,
       p_replace_method     VARCHAR2 DEFAULT NULL,
       p_statistics         VARCHAR2 DEFAULT NULL,
-      p_concurrent         VARCHAR2 DEFAULT NULL,
+      p_idx_concurrency    VARCHAR2 DEFAULT NULL,
+      p_con_concurrency    VARCHAR2 DEFAULT NULL,
       p_stage_key_def      NUMBER DEFAULT NULL,
       p_char_nvl_def       VARCHAR2 DEFAULT NULL,
       p_date_nvl_def       DATE DEFAULT NULL,
@@ -1403,7 +1422,8 @@ IS
                       p_source_object       => p_source_object,
                       p_replace_method      => p_replace_method,
                       p_statistics          => p_statistics,
-                      p_concurrent          => p_concurrent
+                      p_idx_concurreny      => p_idx_concurrency,
+                      p_con_concurreny      => p_con_concurrency
                      );
      
      o_dim := trans_factory.get_mapping_ot (p_mapping => nvl( p_mapping, l_mapping ));

@@ -624,7 +624,8 @@ AS
                                            p_owner             => SELF.table_owner,
                                            p_table             => SELF.table_name,
                                            p_statistics        => SELF.STATISTICS,
-                                           p_concurrent        => SELF.concurrent
+                                           p_idx_concurrency   => SELF.index_concurrency,
+                                           p_con_concurrency   => SELF.constraint_concurrency
                                          );
          WHEN SELF.replace_method = 'rename' AND NOT evolve.is_debugmode
          THEN
@@ -634,7 +635,8 @@ AS
                                       p_table             => SELF.table_name,
                                       p_source_table      => SELF.staging_table,
                                       p_statistics        => SELF.STATISTICS,
-                                      p_concurrent        => SELF.concurrent
+                                      p_idx_concurrency   => SELF.index_concurrency,
+                                      p_con_concurrency   => SELF.constraint_concurrency
                                     );
          WHEN SELF.replace_method = 'rename' AND evolve.is_debugmode
          THEN

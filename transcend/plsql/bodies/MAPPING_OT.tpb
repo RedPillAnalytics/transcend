@@ -160,7 +160,7 @@ AS
       -- we want to manage indexes, but there is no table replace that is occurring
       -- so we need to explicitly manage the indexes
       -- so we need to mark indexes unusable beforehand
-      IF td_core.is_true( SELF.manage_indexes ) AND SELF.replace_method IS NULL
+      IF lower(self.manage_indexes) IN ('unusable','both') AND self.replace_method IS NULL
       THEN
          td_dbutils.unusable_indexes( p_owner              => SELF.table_owner,
                                       p_table              => SELF.table_name,
@@ -177,7 +177,7 @@ AS
       -- we want to manage constraints, but there is no table replace that is occurring
       -- so we need to explicitly manage constraints
       -- so we need to disable constraints beforehand
-      IF td_core.is_true( SELF.manage_constraints ) AND SELF.replace_method IS NULL
+      IF lower(self.manage_constraints) IN ('disable','both') AND self.replace_method IS NULL
       THEN
          td_dbutils.constraint_maint( p_owner                  => SELF.table_owner,
                                       p_table                  => SELF.table_name,
@@ -207,7 +207,8 @@ AS
                                            p_table             => SELF.table_name,
                                            p_partname          => SELF.partition_name,
                                            p_statistics        => SELF.STATISTICS,
-                                           p_concurrent        => SELF.concurrent
+                                           p_idx_concurrency   => SELF.index_concurrency,
+                                           p_con_concurrency   => SELF.constraint_concurrency
                                          );
          -- replace the table using a rename
          -- this handles constraints and indexes
@@ -217,7 +218,8 @@ AS
                                       p_table             => SELF.table_name,
                                       p_source_table      => SELF.source_object,
                                       p_statistics        => SELF.STATISTICS,
-                                      p_concurrent        => SELF.concurrent
+                                      p_idx_concurrency   => SELF.index_concurrency,
+                                      p_con_concurrency   => SELF.constraint_concurrency
                                     );
          ELSE
             NULL;
@@ -225,24 +227,24 @@ AS
       
       -- if there is no replace method, then we need to rebuild indexes
       -- rebuild the indexes
-      IF td_core.is_true( SELF.manage_indexes ) AND SELF.replace_method IS NULL
+      IF lower(self.manage_indexes) IN ('usable','both') AND self.replace_method IS NULL
       THEN
          td_dbutils.usable_indexes( p_owner           => SELF.table_owner,
                                     p_table           => SELF.table_name,
-                                    p_concurrent      => SELF.concurrent
+                                    p_concurrent      => SELF.index_concurrency
                                   );
       END IF;
 
       -- enable the constraints
       -- if there is no replace method, then we need to enable constraints
-      IF td_core.is_true( SELF.manage_constraints ) AND SELF.replace_method IS NULL
+      IF lower(self.manage_constraints) IN ('enable','both') AND self.replace_method IS NULL
       THEN
          td_dbutils.constraint_maint( p_owner                  => SELF.table_owner,
                                       p_table                  => SELF.table_name,
                                       p_constraint_regexp      => SELF.constraint_regexp,
                                       p_constraint_type        => SELF.constraint_type,
                                       p_maint_type             => 'enable',
-                                      p_concurrent	       => SELF.concurrent
+                                      p_concurrent	       => SELF.constraint_concurrency
                                     );
 
       END IF;

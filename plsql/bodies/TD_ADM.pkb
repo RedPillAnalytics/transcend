@@ -1983,29 +1983,30 @@ IS
          -- MAPPING_CONF table
          EXECUTE IMMEDIATE q'|CREATE TABLE mapping_conf
 	 ( 
-	   mapping_name		VARCHAR2(40),
-	   mapping_type		VARCHAR2(10),
-	   table_owner 		VARCHAR2(61),
-	   table_name 		VARCHAR2(30),
-	   partition_name	VARCHAR2(30),
-	   manage_indexes 	VARCHAR2(3) NOT NULL,
-	   manage_constraints 	VARCHAR2(3) NOT NULL,
-	   source_owner 	VARCHAR2(30),
-	   source_object 	VARCHAR2(30),
-	   source_column 	VARCHAR2(30),
-	   replace_method 	VARCHAR2(10),
-	   statistics 		VARCHAR2(10),
-	   concurrent 		VARCHAR2(3) NOT NULL,
-	   index_regexp 	VARCHAR2(30),
-	   index_type 		VARCHAR2(30),
-	   partition_type	VARCHAR2(30),
-	   constraint_regexp 	VARCHAR2(100),
-	   constraint_type 	VARCHAR2(100),
-	   description		VARCHAR2(2000),
-	   created_user	     	VARCHAR2(30) DEFAULT sys_context('USERENV','SESSION_USER') NOT NULL,
-	   created_dt	     	DATE DEFAULT SYSDATE NOT NULL,
-	   modified_user  	VARCHAR2(30),
-	   modified_dt    	DATE
+	   mapping_name		      VARCHAR2(40),
+	   mapping_type		      VARCHAR2(10),
+	   table_owner 		      VARCHAR2(61),
+	   table_name 		      VARCHAR2(30),
+	   partition_name             VARCHAR2(30),
+	   manage_indexes 	      VARCHAR2(7) NOT NULL,
+	   index_concurrency 	      VARCHAR2(3) NOT NULL,
+	   manage_constraints 	      VARCHAR2(7) NOT NULL,
+	   constraint_concurrency     VARCHAR2(3) NOT NULL,
+	   source_owner 	      VARCHAR2(30),
+	   source_object 	      VARCHAR2(30),
+	   source_column 	      VARCHAR2(30),
+	   replace_method 	      VARCHAR2(10),
+	   statistics 		      VARCHAR2(10),
+	   index_regexp 	      VARCHAR2(30),
+	   index_type 		      VARCHAR2(30),
+	   partition_type	      VARCHAR2(30),
+	   constraint_regexp 	      VARCHAR2(100),
+	   constraint_type 	      VARCHAR2(100),
+	   description		      VARCHAR2(2000),
+	   created_user	     	      VARCHAR2(30) DEFAULT sys_context('USERENV','SESSION_USER') NOT NULL,
+	   created_dt	     	      DATE DEFAULT SYSDATE NOT NULL,
+	   modified_user  	      VARCHAR2(30),
+	   modified_dt    	      DATE
 	 )|';
 
          EXECUTE IMMEDIATE q'|ALTER TABLE mapping_conf ADD 
@@ -2018,17 +2019,19 @@ IS
 
          EXECUTE IMMEDIATE q'|ALTER TABLE mapping_conf ADD CONSTRAINT mapping_conf_ck1 CHECK (mapping_name=lower(mapping_name))|';
 
-         EXECUTE IMMEDIATE q'|ALTER TABLE mapping_conf ADD CONSTRAINT mapping_conf_ck2 CHECK (manage_indexes in ('yes','no'))|';
+         EXECUTE IMMEDIATE q'|ALTER TABLE mapping_conf ADD CONSTRAINT mapping_conf_ck2 CHECK (manage_indexes in ('usable','unusable','both'))|';
 
-         EXECUTE IMMEDIATE q'|ALTER TABLE mapping_conf ADD CONSTRAINT mapping_conf_ck3 CHECK (manage_constraints in ('yes','no'))|';
+         EXECUTE IMMEDIATE q'|ALTER TABLE mapping_conf ADD CONSTRAINT mapping_conf_ck3 CHECK (manage_constraints in ('usable','unusable','both'))|';
 
-         EXECUTE IMMEDIATE q'|ALTER TABLE mapping_conf ADD CONSTRAINT mapping_conf_ck4 CHECK (concurrent in ('yes','no'))|';
+         EXECUTE IMMEDIATE q'|ALTER TABLE mapping_conf ADD CONSTRAINT mapping_conf_ck4 CHECK (index_concurrency in ('yes','no'))|';
 
-         EXECUTE IMMEDIATE q'|ALTER TABLE mapping_conf ADD CONSTRAINT mapping_conf_ck5 CHECK (replace_method in ('exchange','rename'))|';
+         EXECUTE IMMEDIATE q'|ALTER TABLE mapping_conf ADD CONSTRAINT mapping_conf_ck5 CHECK (constraint_concurrency in ('yes','no'))|';
 
-         EXECUTE IMMEDIATE q'|ALTER TABLE mapping_conf ADD CONSTRAINT mapping_conf_ck6 CHECK (replace_method = case when table_owner <> source_owner and mapping_type = 'table' then 'exchange' else replace_method end )|';
+         EXECUTE IMMEDIATE q'|ALTER TABLE mapping_conf ADD CONSTRAINT mapping_conf_ck6 CHECK (replace_method in ('exchange','rename'))|';
+
+         EXECUTE IMMEDIATE q'|ALTER TABLE mapping_conf ADD CONSTRAINT mapping_conf_ck7 CHECK (replace_method = case when table_owner <> source_owner and mapping_type = 'table' then 'exchange' else replace_method end )|';
 	 
-         EXECUTE IMMEDIATE q'|ALTER TABLE mapping_conf ADD CONSTRAINT mapping_conf_ck7 CHECK (mapping_type in ('dimension','table'))|';
+         EXECUTE IMMEDIATE q'|ALTER TABLE mapping_conf ADD CONSTRAINT mapping_conf_ck8 CHECK (mapping_type in ('dimension','table'))|';
 
          -- DIMENSION_CONF table
          EXECUTE IMMEDIATE q'|CREATE TABLE dimension_conf

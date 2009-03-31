@@ -1322,8 +1322,8 @@ AS
          THEN
             BEGIN
                evolve.exec_sql( p_sql                => c_constraints.constraint_ddl,
-                                    p_auto               => 'yes',
-                                    p_concurrent_id      => l_concurrent_id
+                                p_auto               => 'yes',
+                                p_concurrent_id      => l_concurrent_id
                                   );
                evolve.log_msg(    'Creation of '
                                    || CASE c_constraints.named_constraint
@@ -2431,17 +2431,18 @@ AS
 
    -- procedure to exchange a partitioned table with a non-partitioned table
    PROCEDURE exchange_partition(
-      p_owner          VARCHAR2,
-      p_table          VARCHAR2,
-      p_source_owner   VARCHAR2,
-      p_source_table   VARCHAR2,
-      p_partname       VARCHAR2 DEFAULT NULL,
-      p_index_space    VARCHAR2 DEFAULT NULL,
-      p_concurrent     VARCHAR2 DEFAULT 'no',
-      p_statistics     VARCHAR2 DEFAULT 'transfer',
-      p_statpercent    NUMBER DEFAULT NULL,
-      p_statdegree     NUMBER DEFAULT NULL,
-      p_statmethod     VARCHAR2 DEFAULT NULL
+      p_owner             VARCHAR2,
+      p_table             VARCHAR2,
+      p_source_owner      VARCHAR2,
+      p_source_table      VARCHAR2,
+      p_partname          VARCHAR2 DEFAULT NULL,
+      p_index_space       VARCHAR2 DEFAULT NULL,
+      p_idx_concurrency   VARCHAR2 DEFAULT 'no',
+      p_con_concurrency   VARCHAR2 DEFAULT 'no',
+      p_statistics        VARCHAR2 DEFAULT 'transfer',
+      p_statpercent       NUMBER DEFAULT NULL,
+      p_statdegree        NUMBER DEFAULT NULL,
+      p_statmethod        VARCHAR2 DEFAULT NULL
    )
    IS
       l_src_name       VARCHAR2( 61 )                           := UPPER( p_source_owner || '.' || p_source_table );
@@ -2561,7 +2562,7 @@ AS
                      p_source_table      => p_table,
                      p_part_type         => CASE WHEN l_trg_part THEN 'local' ELSE NULL END,
                      p_tablespace        => p_index_space,
-                     p_concurrent        => p_concurrent,
+                     p_concurrent        => p_idx_concurrency,
                      p_partname          => CASE
                         WHEN p_index_space IS NOT NULL OR l_src_part
                            THEN NULL
@@ -2609,7 +2610,7 @@ AS
                          p_table             => p_source_table,
                          p_source_owner      => p_owner,
                          p_source_table      => p_table,
-                         p_concurrent        => p_concurrent
+                         p_concurrent        => p_con_concurrency
                        );
       -- now exchange the table
       o_ev.change_action( 'exchange table' );
@@ -2681,7 +2682,7 @@ AS
                                   p_source_table         => p_table,
                                   p_constraint_type      => 'r',
                                   p_basis                => 'table',
-                                  p_concurrent           => p_concurrent
+                                  p_concurrent           => p_con_concurrency
                                 );
             WHEN OTHERS
             THEN
@@ -2707,7 +2708,7 @@ AS
 		  -- this statement will pull previously entered DDL statements off the queue and execute them
 		  l_num_cons := dequeue_ddl( p_action => evolve.get_action,
 					     p_module => evolve.get_module,
-					     p_concurrent => p_concurrent );
+					     p_concurrent => p_con_concurrency );
 
 		  -- log a message concerning number of constraints		  
 		  evolve.log_msg(    l_num_cons
@@ -2719,7 +2720,7 @@ AS
                                   END
 				  || ' '
 				  || CASE
-                                  WHEN td_core.is_true( p_concurrent )
+                                  WHEN td_core.is_true( p_con_concurrency )
                                   THEN 'submitted to the Oracle scheduler'
                                   ELSE 'executed'
                                   END, 2
@@ -2741,7 +2742,7 @@ AS
 	 -- this statement will pull previously entered DDL statements off the queue and execute them
 		  l_num_cons := dequeue_ddl( p_action => evolve.get_action,
 					     p_module => evolve.get_module,
-					     p_concurrent => p_concurrent );
+					     p_concurrent => p_con_concurrency );
 
 		  -- log a message concerning number of constraints		  
 		  evolve.log_msg(    l_num_cons
@@ -2753,7 +2754,7 @@ AS
                                   END
 				  || ' '
 				  || CASE
-                                  WHEN td_core.is_true( p_concurrent )
+                                  WHEN td_core.is_true( p_con_concurrency )
                                   THEN 'submitted to the Oracle scheduler'
                                   ELSE 'executed'
                                   END, 2
@@ -2935,12 +2936,13 @@ AS
 
    -- procedure to "swap" two tables using rename
    PROCEDURE replace_table(
-      p_owner          VARCHAR2,
-      p_table          VARCHAR2,
-      p_source_table   VARCHAR2,
-      p_tablespace     VARCHAR2 DEFAULT NULL,
-      p_concurrent     VARCHAR2 DEFAULT 'no',
-      p_statistics     VARCHAR2 DEFAULT 'transfer'
+      p_owner             VARCHAR2,
+      p_table             VARCHAR2,
+      p_source_table      VARCHAR2,
+      p_tablespace        VARCHAR2 DEFAULT NULL,
+      p_idx_concurrency   VARCHAR2 DEFAULT 'no',
+      p_con_concurrency   VARCHAR2 DEFAULT 'no',
+      p_statistics        VARCHAR2 DEFAULT 'transfer'
    )
    IS
       l_src_name       VARCHAR2( 61 ) := UPPER( p_owner || '.' || p_source_table );
@@ -2996,7 +2998,7 @@ AS
                      p_source_owner      => p_owner,
                      p_source_table      => p_table,
                      p_tablespace        => p_tablespace,
-                     p_concurrent        => p_concurrent,
+                     p_concurrent        => p_idx_concurrency,
       		     p_queue_module	 => 'replace_table',
       		     p_queue_action	 => 'rename indexes'
                    );
@@ -3006,7 +3008,7 @@ AS
                          p_source_owner      => p_owner,
                          p_source_table      => p_table,
                          p_basis             => 'all',
-                         p_concurrent        => p_concurrent,
+                         p_concurrent        => p_con_concurrency,
       			 p_queue_module	     => 'replace_table',
       			 p_queue_action	     => 'rename constraints'
                        );
@@ -3043,15 +3045,13 @@ AS
       o_ev.change_action( 'rename indexes' );
       -- this statement will pull previously entered DDL statements off the queue and execute them
       l_cnt := dequeue_ddl( p_action     => evolve.get_action,
-			    p_module     => evolve.get_module,
-			    p_concurrent => p_concurrent );
+			    p_module     => evolve.get_module );
 
 
       -- rename the constraints
       o_ev.change_action( 'rename constraints' );
       l_cnt := dequeue_ddl( p_action     => evolve.get_action,
-			    p_module 	   => evolve.get_module,
-			    p_concurrent => p_concurrent);
+			    p_module 	   => evolve.get_module);
 
       o_ev.clear_app_info;
    EXCEPTION
