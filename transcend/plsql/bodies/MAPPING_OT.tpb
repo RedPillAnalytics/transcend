@@ -12,11 +12,11 @@ AS
 
       -- load information from the mapping_conf table
       BEGIN
-         SELECT manage_indexes, manage_constraints, replace_method, STATISTICS, concurrent,
+         SELECT manage_indexes, manage_constraints, replace_method, STATISTICS, index_concurrency, constraint_concurrency,
                 table_owner, table_name, partition_name, source_owner, source_object,
                 source_column, index_regexp, index_type, partition_type, constraint_regexp,
                 constraint_type, mapping_type
-           INTO SELF.manage_indexes, SELF.manage_constraints, SELF.replace_method, SELF.STATISTICS, SELF.concurrent,
+           INTO SELF.manage_indexes, SELF.manage_constraints, SELF.replace_method, SELF.STATISTICS, SELF.index_concurrency, SELF.constraint_concurrency,
                 SELF.table_owner, SELF.table_name, SELF.partition_name, SELF.source_owner, SELF.source_object,
                 SELF.source_column, SELF.index_regexp, SELF.index_type, SELF.partition_type, SELF.constraint_regexp,
                 SELF.constraint_type, SELF.mapping_type
