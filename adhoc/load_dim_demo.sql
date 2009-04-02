@@ -181,8 +181,7 @@ BEGIN
 			       p_sequence_name=>'customer_dim_seq',
 			       p_default_scd_type=> 2,
 			       p_replace_method=>'rename',
-			       p_statistics=>'transfer',
-			       p_concurrent=>'no');
+			       p_statistics=>'transfer');
 END;
 /
 
@@ -291,7 +290,8 @@ SELECT * FROM testdim.customer_scd
 BEGIN
    trans_adm.modify_dimension( p_owner=>'testdim',
 			       p_table=>'customer_dim',
-			       p_concurrent=>'yes',
+                               p_idx_concurrency=>'yes',
+			       p_con_concurrency=>'no',
 			       p_statistics=>'gather');
 END;
 /
