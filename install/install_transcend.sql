@@ -307,7 +307,6 @@ GRANT EXECUTE ON tdsys.td_adm TO &app_schema;
 @../evolve/plsql/wrapped_bodies/STRING_AGG_OT.plb
 @../evolve/plsql/wrapped_bodies/TD_CORE.plb
 @../evolve/plsql/wrapped_bodies/TD_INST.plb
-@../evolve/plsql/wrapped_bodies/APP_OT.plb
 @../evolve/plsql/wrapped_bodies/EVOLVE.plb
 @../evolve/plsql/wrapped_bodies/NOTIFICATION_OT.plb
 @../evolve/plsql/wrapped_bodies/EVOLVE_OT.plb
