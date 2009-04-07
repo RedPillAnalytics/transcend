@@ -317,3 +317,4 @@ GRANT EXECUTE ON tdsys.td_adm TO &app_schema;
 EXEC evolve_adm.set_default_configs;
 
 SPOOL off
+
