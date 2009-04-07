@@ -92,19 +92,19 @@ IS
            INTO g_tablespace
            FROM dba_users
           WHERE username = UPPER( p_user );
-
-	 IF p_tablespace IS NOT NULL
-	 THEN
-            g_user := p_user;
-
-            EXECUTE IMMEDIATE 'alter user ' || p_user || ' default tablespace ' || p_tablespace;
-	 END IF;	 
-
       EXCEPTION
       WHEN no_data_found
       THEN
          RAISE unknown_user;
       END;
+
+      IF p_tablespace IS NOT NULL
+      THEN
+         g_user := p_user;
+
+         EXECUTE IMMEDIATE 'alter user ' || p_user || ' default tablespace ' || p_tablespace;
+      END IF;	 
+
 
    END set_default_tablespace;
 
