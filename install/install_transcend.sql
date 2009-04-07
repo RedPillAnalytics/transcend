@@ -1,4 +1,4 @@
---SET echo off
+SET echo off
 SET verify off
 SET serveroutput on size unlimited
 SET timing off
@@ -246,14 +246,6 @@ BEGIN
 END;
 /
 
--- grant permissions on the tdsys repository
-GRANT SELECT ON tdsys.applications TO &app_schema;
-GRANT SELECT ON tdsys.repositories TO &app_schema;
-GRANT SELECT ON tdsys.users TO &app_schema;
-
--- grant permissions on the tdsys package
-GRANT EXECUTE ON tdsys.td_adm TO &app_schema;
-
 -------------------------------------------
 -- INSTALL PRODUCT (Either Evolve or Transcend)
 -------------------------------------------
@@ -271,6 +263,15 @@ EXCEPTION
    raise_application_error(-20003,'Repository tables exist. Specify ''Y'' when prompted to issue DROP TABLE statements');
 END;
 /
+
+-- grant permissions on the tdsys repository
+GRANT SELECT ON tdsys.applications TO &app_schema;
+GRANT SELECT ON tdsys.repositories TO &app_schema;
+GRANT SELECT ON tdsys.users TO &app_schema;
+
+-- grant permissions on the tdsys package
+GRANT EXECUTE ON tdsys.td_adm TO &app_schema;
+
 
 -- we always need to install the Evolve objects
 
