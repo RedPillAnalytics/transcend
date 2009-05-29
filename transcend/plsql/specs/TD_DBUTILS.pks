@@ -192,5 +192,18 @@ IS
       p_cascade           VARCHAR2 DEFAULT NULL,
       p_options           VARCHAR2 DEFAULT 'GATHER AUTO'
    );
+      
+   PROCEDURE update_index_stats(
+      p_owner             VARCHAR2,
+      p_index             VARCHAR2,
+      p_partname          VARCHAR2 DEFAULT NULL,
+      p_source_owner      VARCHAR2 DEFAULT NULL,
+      p_source_index      VARCHAR2 DEFAULT NULL,
+      p_source_partname   VARCHAR2 DEFAULT NULL,
+      p_percent           NUMBER DEFAULT NULL,
+      p_degree            NUMBER DEFAULT NULL,
+      p_granularity       VARCHAR2 DEFAULT 'AUTO'
+   );
+
 END td_dbutils;
 /

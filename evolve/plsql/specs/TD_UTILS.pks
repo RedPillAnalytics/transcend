@@ -96,6 +96,16 @@ AS
       p_compressed    VARCHAR2 DEFAULT NULL,
       p_external      VARCHAR2 DEFAULT NULL
    );
+      
+   PROCEDURE check_index(
+      p_owner         VARCHAR2,
+      p_index         VARCHAR2,
+      p_partname      VARCHAR2 DEFAULT NULL,
+      p_partitioned   VARCHAR2 DEFAULT NULL,
+      p_index_type    VARCHAR2 DEFAULT NULL,
+      p_compressed    VARCHAR2 DEFAULT NULL,
+      p_unique        VARCHAR2 DEFAULT NULL
+   );
 
    PROCEDURE check_column( p_owner VARCHAR2, p_table VARCHAR2, p_column VARCHAR2, p_data_type VARCHAR2 DEFAULT NULL );
 
@@ -109,11 +119,20 @@ AS
 
    FUNCTION table_exists( p_owner VARCHAR2, p_table VARCHAR2 )
       RETURN BOOLEAN;
+   
+   FUNCTION index_exists( p_owner VARCHAR2, p_index VARCHAR2 )
+      RETURN BOOLEAN;
+      
+   FUNCTION get_part_type( p_owner VARCHAR2, p_object VARCHAR2, p_subobject VARCHAR2 )
+      RETURN VARCHAR2;
 
    FUNCTION ext_table_exists( p_owner VARCHAR2, p_table VARCHAR2 )
       RETURN BOOLEAN;
 
    FUNCTION is_part_table( p_owner VARCHAR2, p_table VARCHAR2 )
+      RETURN BOOLEAN;
+      
+   FUNCTION is_part_index( p_owner VARCHAR2, p_index VARCHAR2 )
       RETURN BOOLEAN;
 
    FUNCTION is_iot( p_owner VARCHAR2, p_table VARCHAR2 )

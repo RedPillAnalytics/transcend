@@ -515,6 +515,118 @@ AS
             NULL;
       END CASE;
    END check_table;
+   
+   -- checks things about an index depending on the parameters passed
+   -- raises an exception if the specified things are not true
+   PROCEDURE check_index(
+      p_owner         VARCHAR2,
+      p_index         VARCHAR2,
+      p_partname      VARCHAR2 DEFAULT NULL,
+      p_partitioned   VARCHAR2 DEFAULT NULL,
+      p_index_type    VARCHAR2 DEFAULT NULL,
+      p_compressed    VARCHAR2 DEFAULT NULL,
+      p_unique        VARCHAR2 DEFAULT NULL
+   )
+   AS
+      l_ind_name         VARCHAR2( 61 )        := UPPER( p_owner ) || '.' || UPPER( p_index );
+      l_part_name        VARCHAR2( 92 )        := l_ind_name || ':' || UPPER( p_partname );
+      l_partitioned      VARCHAR2( 3 );
+      l_compressed       VARCHAR2( 3 );
+      l_unique           VARCHAR2( 3 );
+      l_partition_name   all_tab_partitions.partition_name%TYPE;
+      l_index_type       all_indexes.index_type%TYPE;
+   BEGIN
+      -- now get compression, partitioning and iot information
+      BEGIN
+         SELECT CASE
+                   WHEN compression = 'DISABLED'
+                      THEN 'no'
+                   WHEN compression = 'N/A'
+                      THEN 'no'
+                   WHEN compression IS NULL
+                      THEN 'no'
+                   ELSE 'yes'
+                END,
+                LOWER( partitioned ) partitioned,
+                lower( index_type) index_type, 
+                CASE uniqueness
+                   WHEN 'UNIQUE'
+                      THEN 'yes'
+                   ELSE 'no'
+                END UNIQUENESS
+           INTO l_compressed,
+                l_partitioned, 
+                l_index_type,
+                l_unique
+           FROM all_indexes
+          WHERE owner = UPPER( p_owner ) AND index_name = UPPER( p_index );
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            evolve.raise_err( 'no_ind', l_ind_name );
+      END;
+
+      -- now just work through the gathered information and raise the appropriate exceptions.
+      IF l_partitioned = 'yes' AND p_partname IS NULL AND p_compressed IS NOT NULL
+      THEN
+         evolve.raise_err( 'parms_not_compatible',
+                               'P_COMPRESSED requires P_PARTNAME when the index is partitioned' );
+      END IF;
+
+      IF p_partname IS NOT NULL
+      THEN
+         IF l_partitioned = 'no'
+         THEN
+            evolve.raise_err( 'not_partitioned', l_ind_name );
+         END IF;
+
+         BEGIN
+            SELECT CASE
+                      WHEN compression = 'DISABLED'
+                         THEN 'no'
+                      WHEN compression = 'N/A'
+                         THEN 'no'
+                      WHEN compression IS NULL
+                         THEN 'no'
+                      ELSE 'yes'
+                   END
+              INTO l_compressed
+              FROM all_ind_partitions
+             WHERE index_owner = UPPER( p_owner )
+               AND index_name = UPPER( p_index )
+               AND partition_name = UPPER( p_partname );
+         EXCEPTION
+            WHEN NO_DATA_FOUND
+            THEN
+               evolve.raise_err( 'no_part', l_part_name );
+         END;
+      END IF;
+
+      CASE
+         WHEN td_core.is_true( p_partitioned, TRUE ) AND NOT td_core.is_true( l_partitioned )
+         THEN
+            evolve.raise_err( 'not_partitioned', l_ind_name );
+         WHEN NOT td_core.is_true( p_partitioned, TRUE ) AND td_core.is_true( l_partitioned )
+         THEN
+            evolve.raise_err( 'partitioned', l_ind_name );
+         WHEN td_core.is_true( p_compressed, TRUE ) AND NOT td_core.is_true( l_compressed )
+         THEN
+            evolve.raise_err( 'not_compressed', CASE
+                                     WHEN p_partname IS NULL
+                                        THEN l_ind_name
+                                     ELSE l_part_name
+                                  END );
+         WHEN NOT td_core.is_true( p_compressed, TRUE ) AND td_core.is_true( l_compressed )
+         THEN
+            evolve.raise_err( 'compressed', CASE
+                                     WHEN p_partname IS NULL
+                                        THEN l_ind_name
+                                     ELSE l_part_name
+                                  END );
+         ELSE
+            NULL;
+      END CASE;
+   END check_index;
 
    -- checks to see if a particular column is part of a table
    -- raises an exception if the specified things are not true
@@ -631,6 +743,26 @@ AS
       THEN
          RETURN FALSE;
    END table_exists;
+   
+   
+   -- returns a boolean
+   -- does a check to see if a index exists
+   FUNCTION index_exists( p_owner VARCHAR2, p_index VARCHAR2 )
+      RETURN BOOLEAN
+   AS
+      l_index   all_indexes.index_name%TYPE;
+   BEGIN
+      SELECT index_name
+        INTO l_index
+        FROM all_indexes
+       WHERE owner = UPPER( p_owner ) AND index_name = UPPER( p_index );
+
+      RETURN TRUE;
+   EXCEPTION
+      WHEN NO_DATA_FOUND
+      THEN
+         RETURN FALSE;
+   END index_exists;
 
    -- returns a boolean
    -- does a check to see if an external table exists
@@ -681,6 +813,37 @@ AS
       THEN
          RETURN FALSE;
    END is_part_table;
+   
+   -- returns a boolean
+   -- does a check to see if index is partitioned
+   FUNCTION is_part_index( p_owner VARCHAR2, p_index VARCHAR2 )
+      RETURN BOOLEAN
+   AS
+      l_partitioned   all_indexes.partitioned%TYPE;
+   BEGIN
+      IF NOT index_exists( UPPER( p_owner ), UPPER( p_index ))
+      THEN
+         evolve.raise_err( 'no_tab', p_owner || '.' || p_index );
+      END IF;
+
+      SELECT partitioned
+        INTO l_partitioned
+        FROM all_indexes
+       WHERE owner = UPPER( p_owner ) AND index_name = UPPER( p_index );
+
+      CASE
+         WHEN td_core.is_true( l_partitioned )
+         THEN
+            RETURN TRUE;
+         WHEN NOT td_core.is_true( l_partitioned )
+         THEN
+            RETURN FALSE;
+      END CASE;
+   EXCEPTION
+      WHEN NO_DATA_FOUND
+      THEN
+         RETURN FALSE;
+   END is_part_index;
 
    -- returns a boolean
    -- does a check to see if table is index-organized
@@ -730,6 +893,32 @@ AS
       THEN
          RETURN FALSE;
    END object_exists;
+   
+   
+   -- returns a varchar2
+   -- returns 'part' or 'subpart' depending on the partition type
+   FUNCTION get_part_type( p_owner VARCHAR2, p_object VARCHAR2, p_subobject VARCHAR2 )
+      RETURN VARCHAR2
+   AS
+      l_obj_type   all_objects.object_type%TYPE;
+   BEGIN
+      SELECT CASE 
+             WHEN object_type LIKE '% SUBPARTITION'
+             THEN 'subpart'
+             WHEN object_type LIKE '% PARTITION'
+             THEN 'part'
+             ELSE NULL END object_type
+        INTO l_obj_type
+        FROM all_objects
+       WHERE owner = UPPER( p_owner ) AND object_name = UPPER( p_object )
+         AND subobject_name = UPPER( p_subobject );
+
+      RETURN l_obj_type;
+   EXCEPTION
+      WHEN NO_DATA_FOUND
+      THEN
+         RETURN NULL;
+   END get_part_type;
 
    -- called by the EXEC_SQL function when an autonomous transaction is desired
    -- and the number of results are desired

@@ -535,6 +535,7 @@ IS
                          p_message      => 'The notification method is not valid'
                        );
          set_error_conf( p_name => 'no_tab', p_message => 'The specified table does not exist' );
+         set_error_conf( p_name => 'no_ind', p_message => 'The specified index does not exist' );
          set_error_conf( p_name => 'no_object', p_message => 'The specified object does not exist' );
          set_error_conf( p_name         => 'no_dir_obj',
                          p_message      => 'The specified directory object does not exist' );
@@ -546,7 +547,7 @@ IS
                         p_message      => 'There is more than one directory object defined for the specififed path'
                       );
          set_error_conf( p_name         => 'not_partitioned',
-                         p_message      => 'The specified table is not partititoned' );
+                         p_message      => 'The specified table or index is not partititoned' );
          set_error_conf( p_name         => 'parms_not_compatible',
                          p_message      => 'The specified parameters are not compatible'
                        );

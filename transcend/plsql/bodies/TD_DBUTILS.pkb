@@ -3409,14 +3409,10 @@ AS
       p_options           VARCHAR2 DEFAULT 'GATHER AUTO'
    )
    IS
-      l_numrows     NUMBER;
-      l_numblks     NUMBER;
-      l_avgrlen     NUMBER;
-      l_cachedblk   NUMBER;
-      l_cachehit    NUMBER;
       l_statid      VARCHAR2( 30 )
                               := 'TD$' || SYS_CONTEXT( 'USERENV', 'SESSIONID' )
                                  || TO_CHAR( SYSDATE, 'yyyymmdd_hhmiss' );
+      l_part_type   VARCHAR2(10);
       e_no_stats    EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_stats, -20000 );
       l_rows        BOOLEAN        := FALSE;                                                  -- to catch empty cursors
@@ -3428,17 +3424,17 @@ AS
               OR ( p_source_owner IS NULL AND p_source_table IS NOT NULL )
          THEN
             o_ev.clear_app_info;
-            evolve.raise_err( 'parms_not_compatible', 'P_SOURCE_OWNER and P_SOURCE_OBJECT are mutually inclusive' );
+            evolve.raise_err( 'parms_not_compatible', 'P_SOURCE_OWNER and P_SOURCE_TABLE are mutually inclusive' );
          WHEN p_source_partname IS NOT NULL AND( p_source_owner IS NULL OR p_source_table IS NULL )
          THEN
             o_ev.clear_app_info;
             evolve.raise_err( 'parms_not_compatible',
-                                  'P_SOURCE_PARTNAME requires P_SOURCE_OWNER and P_SOURCE_OBJECT'
+                                  'P_SOURCE_PARTNAME requires P_SOURCE_OWNER and P_SOURCE_TABLE'
                                 );
          WHEN p_partname IS NOT NULL AND( p_owner IS NULL OR p_table IS NULL )
          THEN
             o_ev.clear_app_info;
-            evolve.raise_err( 'parms_not_compatible', 'P_PARTNAME requires P_OWNER and P_OBJECT' );
+            evolve.raise_err( 'parms_not_compatible', 'P_PARTNAME requires P_OWNER and P_TABLE' );
          ELSE
             NULL;
       END CASE;
@@ -3517,7 +3513,50 @@ AS
                UPDATE opt_stats
                   SET c1 = UPPER( p_table )
                 WHERE statid = l_statid;
+               
+               -- update the owner to the new owner
+               UPDATE opt_stats
+                  SET c5 = UPPER( p_owner )
+                WHERE statid = l_statid;
+               
+               CASE
 
+               WHEN p_source_partname IS NOT NULL and p_partname IS NULL 
+                  -- this means that partition level statistics are imported into the table level statistics
+               THEN
+                  -- then we are taking partition level statistics from the partition
+                  -- and applying it to the table
+
+                  UPDATE opt_stats
+                     SET C2=NULL, C3=NULL
+                   WHERE statid=l_statid;
+
+                  WHEN p_source_partname IS NULL AND p_partname IS NOT NULL
+                  -- we are taking table level statistics and importing into partition level statistics
+               THEN
+                  -- we want to move table level statistics to a partition
+                  -- need to find out if this is a partition or subpartition
+                     
+                     l_part_type := td_utils.get_part_type( p_owner, p_table, p_partname );
+                     
+                     CASE
+                     WHEN  l_part_type = 'part'
+                     THEN
+                        -- this is a partition
+                        UPDATE opt_stats
+                           SET C2=p_partname
+                         WHERE statid=l_statid;
+
+                     WHEN  l_part_type = 'subpart'
+                     THEN
+
+                        -- this is a subpartition
+                        UPDATE opt_stats
+                           SET C3=p_partname
+                         WHERE statid=l_statid;
+                        
+                WHEN p
+ 
                CASE
                   -- if the source table is partitioned
                WHEN     td_utils.is_part_table( p_owner => p_source_owner, p_table => p_source_table )
@@ -3588,6 +3627,167 @@ AS
          o_ev.clear_app_info;
          RAISE;
    END update_stats;
+
+   PROCEDURE update_index_stats(
+      p_owner             VARCHAR2,
+      p_index             VARCHAR2,
+      p_partname          VARCHAR2 DEFAULT NULL,
+      p_source_owner      VARCHAR2 DEFAULT NULL,
+      p_source_index      VARCHAR2 DEFAULT NULL,
+      p_source_partname   VARCHAR2 DEFAULT NULL,
+      p_percent           NUMBER DEFAULT NULL,
+      p_degree            NUMBER DEFAULT NULL,
+      p_granularity       VARCHAR2 DEFAULT 'AUTO'
+   )
+   IS
+      l_statid      VARCHAR2( 30 )
+                              := 'TD$' || SYS_CONTEXT( 'USERENV', 'SESSIONID' )
+                                 || TO_CHAR( SYSDATE, 'yyyymmdd_hhmiss' );
+      e_no_stats    EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_no_stats, -20000 );
+      l_rows        BOOLEAN        := FALSE;                                                  -- to catch empty cursors
+      o_ev          evolve_ot      := evolve_ot( p_module => 'update_index_stats' );
+   BEGIN
+      -- check all the parameter requirements
+      CASE
+         WHEN    p_source_owner IS NOT NULL AND p_source_index IS NULL
+              OR ( p_source_owner IS NULL AND p_source_index IS NOT NULL )
+         THEN
+            o_ev.clear_app_info;
+            evolve.raise_err( 'parms_not_compatible', 'P_SOURCE_OWNER and P_SOURCE_INDEX are mutually inclusive' );
+         WHEN p_source_partname IS NOT NULL AND( p_source_owner IS NULL OR p_source_index IS NULL )
+         THEN
+            o_ev.clear_app_info;
+            evolve.raise_err( 'parms_not_compatible',
+                                  'P_SOURCE_PARTNAME requires P_SOURCE_OWNER and P_SOURCE_INDEX'
+                                );
+         ELSE
+            NULL;
+      END CASE;
+
+      -- verify the structure of the target index
+      td_utils.check_index( p_owner => p_owner, p_index => p_index, p_partname => p_partname );
+
+      -- verify the structure of the source index (if specified)
+      IF ( p_source_owner IS NOT NULL OR p_source_index IS NOT NULL )
+      THEN
+         td_utils.check_index( p_owner => p_source_owner, p_index => p_source_index, p_partname => p_source_partname );
+      END IF;
+
+      -- check to see if we are in debug mode
+      IF NOT evolve.is_debugmode
+      THEN
+         -- check to see if source owner is null
+         -- if source owner is null, then we know we aren't transferring statistics
+         -- so we need to gather them
+         IF p_source_owner IS NULL
+         THEN
+	       o_ev.change_action( 'gathering index stats' );
+               DBMS_STATS.gather_index_stats( ownname               => p_owner,
+                                              indname               => p_index,
+                                              partname              => p_partname,
+                                              estimate_percent      => NVL( p_percent, DBMS_STATS.auto_sample_size ),
+                                              DEGREE                => NVL( p_degree, DBMS_STATS.auto_degree ),
+                                              granularity           => p_granularity
+                                            );
+         -- if the source owner isn't null, then we know we are transferring statistics
+            -- we will export and import statistics
+         ELSE
+            o_ev.change_action( 'export stats' );
+            -- this will either take partition level statistics and import into an index
+            -- or, it will take index level statistics and import it into a partition
+            -- or, it will take index level statistics and import it into a index.
+            -- all of this depends on whether P_PARTNAME and P_SOURCE_PARTNAME are defined or not
+            BEGIN
+               DBMS_STATS.export_index_stats( ownname       => p_source_owner,
+                                              indname       => p_source_index,
+                                              partname      => p_source_partname,
+                                              statown       => USER,
+                                              stattab       => 'OPT_STATS',
+                                              statid        => l_statid
+                                            );
+
+               -- now, update the index name in the stats table to the new index name
+               UPDATE opt_stats
+                  SET c1 = UPPER( p_index )
+                WHERE statid = l_statid;
+               
+               -- now update the owner name in the stats table to the new owner
+               UPDATE opt_stats
+                  SET c5 = UPPER( p_owner )
+                WHERE statid = l_statid;
+
+               CASE
+                  -- if the source index is partitioned
+               WHEN     td_utils.is_part_index( p_owner => p_source_owner, p_index => p_source_index )
+                    -- and the target index is not partitioned
+                    AND NOT td_utils.is_part_index( p_owner => p_owner, p_index => p_index )
+                  -- then delete the partition level information from the stats table
+               THEN
+                     DELETE FROM opt_stats
+                           WHERE statid = l_statid AND( c2 IS NOT NULL OR c3 IS NOT NULL );
+                  ELSE
+                     NULL;
+               END CASE;
+
+               -- now import the statistics
+               o_ev.change_action( 'import stats' );
+               DBMS_STATS.import_index_stats( ownname       => p_owner,
+                                              indname       => p_index,
+                                              partname      => p_partname,
+                                              statown       => USER,
+                                              stattab       => 'OPT_STATS',
+                                              statid        => l_statid
+                                            );
+
+               -- now, delete these records from the stats table
+               DELETE FROM opt_stats
+                     WHERE statid = l_statid;
+            END;
+         END IF;
+      END IF;
+
+      evolve.log_msg(    'Statistics '
+                          || CASE
+                                WHEN p_source_index IS NULL
+                                   THEN 'gathered on '
+                                ELSE    'from '
+                                     || CASE
+                                           WHEN p_source_partname IS NULL
+                                              THEN NULL
+                                           ELSE 'partition ' || UPPER( p_source_partname ) || ' of '
+                                        END
+                                     || 'index '
+                                     || UPPER( p_source_owner || '.' || p_source_index )
+                                     || ' transfered to '
+                             END
+                          || CASE
+                                WHEN p_partname IS NULL
+                                   THEN NULL
+                                ELSE 'partition ' || UPPER( p_partname ) || ' of index '
+                             END
+                          || CASE
+                                WHEN p_index IS NULL
+                                   THEN 'schema '
+                                ELSE NULL
+                             END
+                          || UPPER( p_owner )
+                          || CASE
+                                WHEN p_index IS NULL
+                                   THEN NULL
+                                ELSE '.'
+                             END
+                          || UPPER( p_index )
+                        );
+      o_ev.clear_app_info;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         evolve.log_err;
+         o_ev.clear_app_info;
+         RAISE;
+   END update_index_stats;
+
 END td_dbutils;
 /
 
