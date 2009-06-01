@@ -511,17 +511,18 @@ AS
       CASE
          WHEN REGEXP_LIKE( 'gather', p_statistics, 'i' )
          THEN
-            update_stats( p_owner => p_owner, p_table => p_table );
+            gather_stats( p_owner => p_owner, p_segment => p_table, p_segment_type=>'table' );
          -- we want to transfer the statistics from the current segment into the new segment
          -- this is preferable if automatic stats are handling stats collection
          -- and you want the load time not to suffer from statistics gathering
       WHEN REGEXP_LIKE( 'transfer', p_statistics, 'i' )
          THEN
-            update_stats( p_owner             => p_owner,
-                          p_table             => p_table,
-                          p_source_owner      => p_owner,
-                          p_source_table      => p_source_table
-                        );
+            transfer_stats( p_owner             => p_owner,
+                            p_segment           => p_table,
+                            p_source_owner      => p_owner,
+                            p_source_segment    => p_source_table,
+                            p_segment_type      => 'table'
+                           );
          -- do nothing with stats
          -- this is preferable if stats are gathered on the staging segment prior to being exchanged in
          -- OWB can do this, for example
@@ -2519,28 +2520,29 @@ AS
          -- that is why we don't cascade
          WHEN REGEXP_LIKE( 'gather', p_statistics, 'i' )
          THEN
-            update_stats( p_owner        => p_source_owner,
-                          p_table        => p_source_table,
+            gather_stats( p_owner        => p_source_owner,
+                          p_segment      => p_source_table,
                           -- if the staging table is partitioned, then we need to specify the partition name
                           -- otherwise, we don't
                           p_partname     => CASE WHEN l_trg_part THEN NULL ELSE l_partname END,
                           p_percent      => p_statpercent,
                           p_degree       => p_statdegree,
                           p_method       => p_statmethod,
-                          p_cascade      => 'no'
+                          p_cascade      => 'no',
+                          p_segment_type => 'table'
                         );
          -- we want to transfer the statistics from the current segment into the new segment
          -- this is preferable if automatic stats are handling stats collection
          -- and you want the load time not to suffer from statistics gathering
       WHEN REGEXP_LIKE( 'transfer', p_statistics, 'i' )
          THEN
-            update_stats( p_owner                => p_source_owner,
-                          p_table                => p_source_table,
-                          p_partname             => CASE WHEN l_trg_part THEN NULL ELSE l_partname END,
-                          p_source_owner         => p_owner,
-                          p_source_table         => p_table,
-                          p_source_partname      => CASE WHEN l_trg_part THEN l_partname ELSE NULL END
-                        );
+            transfer_stats( p_owner                => p_source_owner,
+                            p_segment              => p_source_table,
+                            p_partname             => CASE WHEN l_trg_part THEN NULL ELSE l_partname END,
+                            p_source_owner         => p_owner,
+                            p_source_segment       => p_table,
+                            p_source_partname      => CASE WHEN l_trg_part THEN l_partname ELSE NULL END
+                           );
          -- do nothing with stats
          -- this is preferable if stats are gathered on the staging segment prior to being exchanged in
          -- OWB can do this, for example
@@ -2965,32 +2967,33 @@ AS
       td_utils.check_table( p_owner => p_owner, p_table => p_source_table );
 
       -- do something with statistics on the new table
-      -- if p_statistics is 'ignore', then do nothing
-      IF REGEXP_LIKE( 'ignore', p_statistics, 'i' )
+      CASE
+         WHEN REGEXP_LIKE( 'gather', p_statistics, 'i' )
       THEN
-         NULL;
-      ELSE
-         -- otherwise, we will either gather or transfer statistics
-         -- this depends on the value of p_statistics
+         -- we are gathering stats
          -- will be building indexes later, which gather their own statistics
-         -- so P_CASCADE is fales
-         update_stats( p_owner             => p_owner,
-                       p_table             => p_source_table,
-                       p_source_owner      => CASE
-                          WHEN REGEXP_LIKE( 'gather', p_statistics, 'i' )
-                             THEN NULL
-                          WHEN REGEXP_LIKE( 'transfer', p_statistics, 'i' )
-                             THEN p_owner
-                       END,
-                       p_source_table      => CASE
-                          WHEN REGEXP_LIKE( 'gather', p_statistics, 'i' )
-                             THEN NULL
-                          WHEN REGEXP_LIKE( 'transfer', p_statistics, 'i' )
-                             THEN p_table
-                       END,
-                       p_cascade           => 'no'
+         -- so P_CASCADE is no
+         gather_stats( p_owner             => p_owner,
+                       p_segment           => p_source_table,
+                       p_cascade           => 'no',
+                       p_segment_type      => 'table'
                      );
-      END IF;
+         WHEN REGEXP_LIKE( 'transfer', p_statistics, 'i' )
+         -- we are transfering stats
+         -- will be building indexes later, which gather their own statistics
+         -- so P_CASCADE is no
+      THEN
+
+         transfer_stats( p_owner             => p_owner,
+                         p_segment           => p_source_table,
+                         p_source_owner      => p_owner,
+                         p_source_segment    => p_table,
+                         p_segment_type      => 'table'
+                       );
+      -- if p_statistics is 'ignore', then do nothing
+
+         ELSE NULL;
+      END CASE;
 
       -- build the indexes on the source table
       build_indexes( p_owner             => p_owner,
@@ -3394,231 +3397,274 @@ AS
          RAISE;
    END usable_indexes;
 
-   PROCEDURE update_stats(
+   PROCEDURE transfer_stats(
       p_owner             VARCHAR2,
-      p_table             VARCHAR2 DEFAULT NULL,
+      p_segment           VARCHAR2,
+      p_source_owner      VARCHAR2,
+      p_source_segment    VARCHAR2,
       p_partname          VARCHAR2 DEFAULT NULL,
-      p_source_owner      VARCHAR2 DEFAULT NULL,
-      p_source_table      VARCHAR2 DEFAULT NULL,
       p_source_partname   VARCHAR2 DEFAULT NULL,
-      p_percent           NUMBER DEFAULT NULL,
-      p_degree            NUMBER DEFAULT NULL,
+      p_segment_type      VARCHAR2 DEFAULT NULL
+   )
+   IS
+      -- generate statid for the OPT_STATS table
+      l_statid            VARCHAR2( 30 )    := 'TD$' || SYS_CONTEXT( 'USERENV', 'SESSIONID' )
+      || TO_CHAR( SYSDATE, 'yyyymmdd_hhmiss' );
+      
+      -- variables for the segment_types
+      l_source_type       dba_segments.segment_type%TYPE;
+      l_target_type       dba_segments.segment_type%TYPE;
+      
+      -- variables to know whether the tables are partitioned or not
+      l_src_part_flg      VARCHAR2(3);
+      l_trg_part_flg      VARCHAR2(3);
+      
+      -- variables to hold qualified segments
+      l_source_seg        VARCHAR2(61) := p_source_owner||'.'||p_source_segment;
+      l_target_seg        VARCHAR2(61) := p_owner||'.'||p_segment;
+
+      e_no_stats    EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_no_stats, -20000 );
+      l_rows        BOOLEAN        := FALSE;                                                  -- to catch empty cursors
+      o_ev          evolve_ot      := evolve_ot( p_module => 'transfer_stats' );
+   BEGIN
+      
+
+      BEGIN
+         SELECT segment_type,
+                CASE WHEN partition_name IS NULL THEN 'no' ELSE 'yes' END
+           INTO l_source_type,
+                l_src_part_flg
+           FROM dba_segments
+          WHERE owner = upper(p_source_owner)
+            AND segment_name = upper(p_source_segment)
+            AND REGEXP_LIKE( NVL(segment_type,'~'), NVL( p_segment_type, '.' ), 'i' )
+            AND REGEXP_LIKE( NVL(partition_name,'~'), NVL( p_source_partname, '.' ), 'i' );
+      EXCEPTION
+         WHEN no_data_found
+         THEN
+            evolve.raise_err( 'no_segment', l_source_seg );
+         WHEN too_many_rows
+         THEN
+            evolve.raise_err( 'multiple_segments', l_source_seg );
+       END;
+
+      BEGIN
+         SELECT segment_type,
+                CASE WHEN partition_name IS NULL THEN 'no' ELSE 'yes' END
+           INTO l_target_type,
+                l_trg_part_flg
+           FROM dba_segments
+          WHERE owner = upper(p_owner)
+            AND segment_name = upper(p_segment)
+            AND REGEXP_LIKE( NVL(segment_type,'~'), NVL( p_segment_type, '.' ), 'i' )
+            AND REGEXP_LIKE( NVL(partition_name,'~'), NVL( p_partname, '.' ), 'i' );
+      EXCEPTION
+         WHEN no_data_found
+         THEN
+            evolve.raise_err( 'no_segment', l_target_seg );
+         WHEN too_many_rows
+         THEN
+            evolve.raise_err( 'multiple_segments', l_target_seg );
+      END;
+            
+      -- this will either take partition level statistics and import into a table
+      -- or, it will take table level statistics and import it into a partition
+      -- or, it will take table level statistics and import it into a table.
+      IF REGEXP_LIKE( l_source_type, 'table','i' )
+      THEN
+         
+         o_ev.change_action( 'export table stats' );
+         DBMS_STATS.export_table_stats( ownname       => p_source_owner,
+                                        tabname       => p_source_segment,
+                                        partname      => p_source_partname,
+                                        statown       => USER,
+                                        stattab       => 'OPT_STATS',
+                                        statid        => l_statid
+                                      );
+      ELSE
+
+         o_ev.change_action( 'export index stats' );
+         DBMS_STATS.export_index_stats( ownname       => p_source_owner,
+                                        indname       => p_source_segment,
+                                        partname      => p_source_partname,
+                                        statown       => USER,
+                                        stattab       => 'OPT_STATS',
+                                        statid        => l_statid
+                                      );
+      END IF;
+
+          -- now, update the table name in the stats table to the new table name
+          UPDATE opt_stats
+             SET c1 = UPPER( p_segment )
+           WHERE statid = l_statid;
+          
+          -- update the owner to the new owner
+          UPDATE opt_stats
+             SET c5 = UPPER( p_owner )
+           WHERE statid = l_statid;
+      
+      -- when the source is a partitioned table, and the target is not
+      IF l_src_part_flg = 'yes' AND l_trg_part_flg = 'no'
+         -- then we need to get rid of all partitioning information
+      THEN
+
+         DELETE FROM opt_stats
+          WHERE statid = l_statid AND( c2 IS NOT NULL OR c3 IS NOT NULL );
+         
+      END IF;
+
+      -- now, import the segment statistics
+      IF REGEXP_LIKE( l_source_type, 'table','i' )
+      THEN
+         
+         o_ev.change_action( 'import table stats' );
+
+         DBMS_STATS.import_table_stats( ownname       => p_owner,
+                                        tabname       => p_segment,
+                                        partname      => p_partname,
+                                        statown       => USER,
+                                        stattab       => 'OPT_STATS',
+                                        statid        => l_statid
+                                      );
+      ELSE
+
+         o_ev.change_action( 'import index stats' );
+
+         DBMS_STATS.import_index_stats( ownname       => p_owner,
+                                        indname       => p_segment,
+                                        partname      => p_partname,
+                                        statown       => USER,
+                                        stattab       => 'OPT_STATS',
+                                        statid        => l_statid
+                                      );
+
+      END IF;
+
+
+      -- now, delete these records from the stats table
+      DELETE FROM opt_stats
+       WHERE statid = l_statid;
+
+      
+      evolve.log_msg(    'Statistics from '
+                       || CASE
+                            WHEN p_source_partname IS NULL
+                              THEN NULL
+                            ELSE 'partition ' || UPPER( p_source_partname ) || ' of '
+                          END
+                      || 'segment '
+                      || UPPER( l_source_seg )
+                      || ' transfered to '
+                      || CASE
+                           WHEN p_partname IS NULL
+                             THEN NULL
+                           ELSE 'partition ' || UPPER( p_partname ) || ' of segment '
+                         END
+                      || UPPER( l_target_seg ) );
+
+           
+      o_ev.clear_app_info;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         evolve.log_err;
+         o_ev.clear_app_info;
+         RAISE;
+   END transfer_stats;
+
+   PROCEDURE gather_stats(
+      p_owner             VARCHAR2,
+      p_segment           VARCHAR2,
+      p_partname          VARCHAR2 DEFAULT NULL,
+      p_percent           NUMBER   DEFAULT NULL,
+      p_degree            NUMBER   DEFAULT NULL,
       p_method            VARCHAR2 DEFAULT 'FOR ALL COLUMNS SIZE AUTO',
       p_granularity       VARCHAR2 DEFAULT 'AUTO',
       p_cascade           VARCHAR2 DEFAULT NULL,
-      p_options           VARCHAR2 DEFAULT 'GATHER AUTO'
+      p_options           VARCHAR2 DEFAULT 'GATHER AUTO',
+      p_segment_type      VARCHAR2 DEFAULT NULL
    )
    IS
-      l_statid      VARCHAR2( 30 )
-                              := 'TD$' || SYS_CONTEXT( 'USERENV', 'SESSIONID' )
-                                 || TO_CHAR( SYSDATE, 'yyyymmdd_hhmiss' );
-      l_part_type   VARCHAR2(10);
+      -- generate statid for the OPT_STATS table
+      l_statid            VARCHAR2( 30 )    := 'TD$' || SYS_CONTEXT( 'USERENV', 'SESSIONID' )
+      || TO_CHAR( SYSDATE, 'yyyymmdd_hhmiss' );
+      
+      -- variables for the segment_types
+      l_target_type       dba_segments.segment_type%TYPE;
+      
+      -- variables to know whether the tables are partitioned or not
+      l_trg_part_flg      VARCHAR2(3);
+      
+      -- variables to hold qualified segments
+      l_target_seg        VARCHAR2(61) := p_owner||'.'||p_segment;
+
       e_no_stats    EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_stats, -20000 );
       l_rows        BOOLEAN        := FALSE;                                                  -- to catch empty cursors
-      o_ev          evolve_ot      := evolve_ot( p_module => 'update_stats' );
+      o_ev          evolve_ot      := evolve_ot( p_module => 'gather_stats' );
    BEGIN
-      -- check all the parameter requirements
-      CASE
-         WHEN    p_source_owner IS NOT NULL AND p_source_table IS NULL
-              OR ( p_source_owner IS NULL AND p_source_table IS NOT NULL )
-         THEN
-            o_ev.clear_app_info;
-            evolve.raise_err( 'parms_not_compatible', 'P_SOURCE_OWNER and P_SOURCE_TABLE are mutually inclusive' );
-         WHEN p_source_partname IS NOT NULL AND( p_source_owner IS NULL OR p_source_table IS NULL )
-         THEN
-            o_ev.clear_app_info;
-            evolve.raise_err( 'parms_not_compatible',
-                                  'P_SOURCE_PARTNAME requires P_SOURCE_OWNER and P_SOURCE_TABLE'
-                                );
-         WHEN p_partname IS NOT NULL AND( p_owner IS NULL OR p_table IS NULL )
-         THEN
-            o_ev.clear_app_info;
-            evolve.raise_err( 'parms_not_compatible', 'P_PARTNAME requires P_OWNER and P_TABLE' );
-         ELSE
-            NULL;
-      END CASE;
+      
 
-      -- verify the structure of the target table
-      -- this is only applicable if a table is having stats gathered, instead of a schema
-      IF p_table IS NOT NULL
+      BEGIN
+         SELECT segment_type,
+                CASE WHEN partition_name IS NULL THEN 'no' ELSE 'yes' END
+           INTO l_target_type,
+                l_trg_part_flg
+           FROM dba_segments
+          WHERE owner = upper(p_owner)
+            AND segment_name = upper(p_segment)
+            AND REGEXP_LIKE( NVL(segment_type,'~'), NVL( p_segment_type, '.' ), 'i' )
+            AND REGEXP_LIKE( NVL(partition_name,'~'), NVL( p_partname, '.' ), 'i' );
+      EXCEPTION
+         WHEN no_data_found
+         THEN
+            evolve.raise_err( 'no_segment', l_target_seg );
+         WHEN too_many_rows
+         THEN
+            evolve.raise_err( 'multiple_segments', l_target_seg );
+      END;
+            
+      -- this will either take partition level statistics and import into a table
+      -- or, it will take table level statistics and import it into a partition
+      -- or, it will take table level statistics and import it into a table.
+      IF REGEXP_LIKE( l_target_type, 'table','i' )
       THEN
-         td_utils.check_table( p_owner => p_owner, p_table => p_table, p_partname => p_partname );
+         
+	 o_ev.change_action( 'gathering table stats' );
+         DBMS_STATS.gather_table_stats( ownname               => p_owner,
+                                        tabname               => p_segment,
+                                        partname              => p_partname,
+                                        estimate_percent      => NVL( p_percent, DBMS_STATS.auto_sample_size ),
+                                        method_opt            => p_method,
+                                        DEGREE                => NVL( p_degree, DBMS_STATS.auto_degree ),
+                                        granularity           => p_granularity,
+                                        CASCADE               => NVL( td_core.is_true( p_cascade, TRUE ),
+                                                                      DBMS_STATS.auto_cascade
+                                                                    )
+                                      );
+      ELSE
+
+         o_ev.change_action( 'export index stats' );
+         DBMS_STATS.gather_index_stats( ownname               => p_owner,
+                                        indname               => p_segment,
+                                        partname              => p_partname,
+                                        estimate_percent      => NVL( p_percent, DBMS_STATS.auto_sample_size ),
+                                        DEGREE                => NVL( p_degree, DBMS_STATS.auto_degree ),
+                                        granularity           => p_granularity
+                                      );
       END IF;
 
-      -- verify the structure of the source table (if specified)
-      IF ( p_source_owner IS NOT NULL OR p_source_table IS NOT NULL )
-      THEN
-         td_utils.check_table( p_owner => p_source_owner, p_table => p_source_table, p_partname => p_source_partname );
-      END IF;
+      evolve.log_msg(    'Statistics from '
+                      || ' gathered on '
+                      || CASE
+                           WHEN p_partname IS NULL
+                             THEN NULL
+                           ELSE 'partition ' || UPPER( p_partname ) || ' of segment '
+                         END
+                      || UPPER( l_target_seg ) );
 
-      -- check to see if we are in debug mode
-      IF NOT evolve.is_debugmode
-      THEN
-         -- check to see if source owner is null
-         -- if source owner is null, then we know we aren't transferring statistics
-         -- so we need to gather them
-         IF p_source_owner IS NULL
-         THEN
-            -- check to see if the table name is null
-            -- if it is, then we are not gathering stats on a particular table, but instead a whole schema
-            -- in that case, we need to call GATHER_SCHEMA_STATS instead of GATHER_TABLE_STATS
-            IF p_table IS NULL
-            THEN
-	       o_ev.change_action( 'gathering schema stats' );
-               DBMS_STATS.gather_schema_stats( ownname               => p_owner,
-                                               estimate_percent      => NVL( p_percent, DBMS_STATS.auto_sample_size ),
-                                               method_opt            => p_method,
-                                               DEGREE                => NVL( p_degree, DBMS_STATS.auto_degree ),
-                                               granularity           => p_granularity,
-                                               CASCADE               => NVL( td_core.is_true( p_cascade, TRUE ),
-                                                                             DBMS_STATS.auto_cascade
-                                                                           ),
-                                               options               => p_options
-                                             );
-            -- if the table name is not null, then we are only collecting stats on a particular table
-            -- will call GATHER_TABLE_STATS as opposed to GATHER_SCHEMA_STATS
-            ELSE
-	       o_ev.change_action( 'gathering table stats' );
-               DBMS_STATS.gather_table_stats( ownname               => p_owner,
-                                              tabname               => p_table,
-                                              partname              => p_partname,
-                                              estimate_percent      => NVL( p_percent, DBMS_STATS.auto_sample_size ),
-                                              method_opt            => p_method,
-                                              DEGREE                => NVL( p_degree, DBMS_STATS.auto_degree ),
-                                              granularity           => p_granularity,
-                                              CASCADE               => NVL( td_core.is_true( p_cascade, TRUE ),
-                                                                            DBMS_STATS.auto_cascade
-                                                                          )
-                                            );
-            END IF;
-         -- if the source owner isn't null, then we know we are transferring statistics
-         -- we will use GET_TABLE_STATS and PUT_TABLE_STATS
-         ELSE
-            o_ev.change_action( 'export stats' );
-            -- this will either take partition level statistics and import into a table
-            -- or, it will take table level statistics and import it into a partition
-            -- or, it will take table level statistics and import it into a table.
-            -- all of this depends on whether P_PARTNAME and P_SOURCE_PARTNAME are defined or not
-            BEGIN
-               DBMS_STATS.export_table_stats( ownname       => p_source_owner,
-                                              tabname       => p_source_table,
-                                              partname      => p_source_partname,
-                                              statown       => USER,
-                                              stattab       => 'OPT_STATS',
-                                              statid        => l_statid
-                                            );
-
-               -- now, update the table name in the stats table to the new table name
-               UPDATE opt_stats
-                  SET c1 = UPPER( p_table )
-                WHERE statid = l_statid;
-               
-               -- update the owner to the new owner
-               UPDATE opt_stats
-                  SET c5 = UPPER( p_owner )
-                WHERE statid = l_statid;
-               
-               CASE
-
-               WHEN p_source_partname IS NOT NULL and p_partname IS NULL 
-                  -- this means that partition level statistics are imported into the table level statistics
-               THEN
-                  -- then we are taking partition level statistics from the partition
-                  -- and applying it to the table
-
-                  UPDATE opt_stats
-                     SET C2=NULL, C3=NULL
-                   WHERE statid=l_statid;
-
-                  WHEN p_source_partname IS NULL AND p_partname IS NOT NULL
-                  -- we are taking table level statistics and importing into partition level statistics
-               THEN
-                  -- we want to move table level statistics to a partition
-                  -- need to find out if this is a partition or subpartition
-                     
-                     l_part_type := td_utils.get_part_type( p_owner, p_table, p_partname );
-                     
-                     CASE
-                     WHEN  l_part_type = 'part'
-                     THEN
-                        -- this is a partition
-                        UPDATE opt_stats
-                           SET C2=p_partname
-                         WHERE statid=l_statid;
-
-                     WHEN  l_part_type = 'subpart'
-                     THEN
-
-                        -- this is a subpartition
-                        UPDATE opt_stats
-                           SET C3=p_partname
-                         WHERE statid=l_statid;
-                        
-                WHEN p
- 
-               CASE
-                  -- if the source table is partitioned
-               WHEN     td_utils.is_part_table( p_owner => p_source_owner, p_table => p_source_table )
-                    -- and the target table is not partitioned
-                    AND NOT td_utils.is_part_table( p_owner => p_owner, p_table => p_table )
-                  -- then delete the partition level information from the stats table
-               THEN
-                     DELETE FROM opt_stats
-                           WHERE statid = l_statid AND( c2 IS NOT NULL OR c3 IS NOT NULL );
-                  ELSE
-                     NULL;
-               END CASE;
-
-               -- now import the statistics
-               o_ev.change_action( 'import stats' );
-               DBMS_STATS.import_table_stats( ownname       => p_owner,
-                                              tabname       => p_table,
-                                              partname      => p_partname,
-                                              statown       => USER,
-                                              stattab       => 'OPT_STATS',
-                                              statid        => l_statid
-                                            );
-
-               -- now, delete these records from the stats table
-               DELETE FROM opt_stats
-                     WHERE statid = l_statid;
-            END;
-         END IF;
-      END IF;
-
-      evolve.log_msg(    'Statistics '
-                          || CASE
-                                WHEN p_source_table IS NULL
-                                   THEN 'gathered on '
-                                ELSE    'from '
-                                     || CASE
-                                           WHEN p_source_partname IS NULL
-                                              THEN NULL
-                                           ELSE 'partition ' || UPPER( p_source_partname ) || ' of '
-                                        END
-                                     || 'table '
-                                     || UPPER( p_source_owner || '.' || p_source_table )
-                                     || ' transfered to '
-                             END
-                          || CASE
-                                WHEN p_partname IS NULL
-                                   THEN NULL
-                                ELSE 'partition ' || UPPER( p_partname ) || ' of table '
-                             END
-                          || CASE
-                                WHEN p_table IS NULL
-                                   THEN 'schema '
-                                ELSE NULL
-                             END
-                          || UPPER( p_owner )
-                          || CASE
-                                WHEN p_table IS NULL
-                                   THEN NULL
-                                ELSE '.'
-                             END
-                          || UPPER( p_table )
-                        );
+           
       o_ev.clear_app_info;
    EXCEPTION
       WHEN OTHERS
@@ -3626,167 +3672,7 @@ AS
          evolve.log_err;
          o_ev.clear_app_info;
          RAISE;
-   END update_stats;
-
-   PROCEDURE update_index_stats(
-      p_owner             VARCHAR2,
-      p_index             VARCHAR2,
-      p_partname          VARCHAR2 DEFAULT NULL,
-      p_source_owner      VARCHAR2 DEFAULT NULL,
-      p_source_index      VARCHAR2 DEFAULT NULL,
-      p_source_partname   VARCHAR2 DEFAULT NULL,
-      p_percent           NUMBER DEFAULT NULL,
-      p_degree            NUMBER DEFAULT NULL,
-      p_granularity       VARCHAR2 DEFAULT 'AUTO'
-   )
-   IS
-      l_statid      VARCHAR2( 30 )
-                              := 'TD$' || SYS_CONTEXT( 'USERENV', 'SESSIONID' )
-                                 || TO_CHAR( SYSDATE, 'yyyymmdd_hhmiss' );
-      e_no_stats    EXCEPTION;
-      PRAGMA EXCEPTION_INIT( e_no_stats, -20000 );
-      l_rows        BOOLEAN        := FALSE;                                                  -- to catch empty cursors
-      o_ev          evolve_ot      := evolve_ot( p_module => 'update_index_stats' );
-   BEGIN
-      -- check all the parameter requirements
-      CASE
-         WHEN    p_source_owner IS NOT NULL AND p_source_index IS NULL
-              OR ( p_source_owner IS NULL AND p_source_index IS NOT NULL )
-         THEN
-            o_ev.clear_app_info;
-            evolve.raise_err( 'parms_not_compatible', 'P_SOURCE_OWNER and P_SOURCE_INDEX are mutually inclusive' );
-         WHEN p_source_partname IS NOT NULL AND( p_source_owner IS NULL OR p_source_index IS NULL )
-         THEN
-            o_ev.clear_app_info;
-            evolve.raise_err( 'parms_not_compatible',
-                                  'P_SOURCE_PARTNAME requires P_SOURCE_OWNER and P_SOURCE_INDEX'
-                                );
-         ELSE
-            NULL;
-      END CASE;
-
-      -- verify the structure of the target index
-      td_utils.check_index( p_owner => p_owner, p_index => p_index, p_partname => p_partname );
-
-      -- verify the structure of the source index (if specified)
-      IF ( p_source_owner IS NOT NULL OR p_source_index IS NOT NULL )
-      THEN
-         td_utils.check_index( p_owner => p_source_owner, p_index => p_source_index, p_partname => p_source_partname );
-      END IF;
-
-      -- check to see if we are in debug mode
-      IF NOT evolve.is_debugmode
-      THEN
-         -- check to see if source owner is null
-         -- if source owner is null, then we know we aren't transferring statistics
-         -- so we need to gather them
-         IF p_source_owner IS NULL
-         THEN
-	       o_ev.change_action( 'gathering index stats' );
-               DBMS_STATS.gather_index_stats( ownname               => p_owner,
-                                              indname               => p_index,
-                                              partname              => p_partname,
-                                              estimate_percent      => NVL( p_percent, DBMS_STATS.auto_sample_size ),
-                                              DEGREE                => NVL( p_degree, DBMS_STATS.auto_degree ),
-                                              granularity           => p_granularity
-                                            );
-         -- if the source owner isn't null, then we know we are transferring statistics
-            -- we will export and import statistics
-         ELSE
-            o_ev.change_action( 'export stats' );
-            -- this will either take partition level statistics and import into an index
-            -- or, it will take index level statistics and import it into a partition
-            -- or, it will take index level statistics and import it into a index.
-            -- all of this depends on whether P_PARTNAME and P_SOURCE_PARTNAME are defined or not
-            BEGIN
-               DBMS_STATS.export_index_stats( ownname       => p_source_owner,
-                                              indname       => p_source_index,
-                                              partname      => p_source_partname,
-                                              statown       => USER,
-                                              stattab       => 'OPT_STATS',
-                                              statid        => l_statid
-                                            );
-
-               -- now, update the index name in the stats table to the new index name
-               UPDATE opt_stats
-                  SET c1 = UPPER( p_index )
-                WHERE statid = l_statid;
-               
-               -- now update the owner name in the stats table to the new owner
-               UPDATE opt_stats
-                  SET c5 = UPPER( p_owner )
-                WHERE statid = l_statid;
-
-               CASE
-                  -- if the source index is partitioned
-               WHEN     td_utils.is_part_index( p_owner => p_source_owner, p_index => p_source_index )
-                    -- and the target index is not partitioned
-                    AND NOT td_utils.is_part_index( p_owner => p_owner, p_index => p_index )
-                  -- then delete the partition level information from the stats table
-               THEN
-                     DELETE FROM opt_stats
-                           WHERE statid = l_statid AND( c2 IS NOT NULL OR c3 IS NOT NULL );
-                  ELSE
-                     NULL;
-               END CASE;
-
-               -- now import the statistics
-               o_ev.change_action( 'import stats' );
-               DBMS_STATS.import_index_stats( ownname       => p_owner,
-                                              indname       => p_index,
-                                              partname      => p_partname,
-                                              statown       => USER,
-                                              stattab       => 'OPT_STATS',
-                                              statid        => l_statid
-                                            );
-
-               -- now, delete these records from the stats table
-               DELETE FROM opt_stats
-                     WHERE statid = l_statid;
-            END;
-         END IF;
-      END IF;
-
-      evolve.log_msg(    'Statistics '
-                          || CASE
-                                WHEN p_source_index IS NULL
-                                   THEN 'gathered on '
-                                ELSE    'from '
-                                     || CASE
-                                           WHEN p_source_partname IS NULL
-                                              THEN NULL
-                                           ELSE 'partition ' || UPPER( p_source_partname ) || ' of '
-                                        END
-                                     || 'index '
-                                     || UPPER( p_source_owner || '.' || p_source_index )
-                                     || ' transfered to '
-                             END
-                          || CASE
-                                WHEN p_partname IS NULL
-                                   THEN NULL
-                                ELSE 'partition ' || UPPER( p_partname ) || ' of index '
-                             END
-                          || CASE
-                                WHEN p_index IS NULL
-                                   THEN 'schema '
-                                ELSE NULL
-                             END
-                          || UPPER( p_owner )
-                          || CASE
-                                WHEN p_index IS NULL
-                                   THEN NULL
-                                ELSE '.'
-                             END
-                          || UPPER( p_index )
-                        );
-      o_ev.clear_app_info;
-   EXCEPTION
-      WHEN OTHERS
-      THEN
-         evolve.log_err;
-         o_ev.clear_app_info;
-         RAISE;
-   END update_index_stats;
+   END gather_stats;
 
 END td_dbutils;
 /
