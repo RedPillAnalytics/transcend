@@ -893,75 +893,43 @@ AS
       THEN
          RETURN FALSE;
    END object_exists;
-   
-   
-   -- returns a varchar2
-   -- returns 'part' or 'subpart' depending on the partition type
-   FUNCTION get_part_type( p_owner VARCHAR2, p_object VARCHAR2, p_subobject VARCHAR2 )
+      
+   -- returns the partition name for a given subpartition name
+   FUNCTION get_part_for_subpart( p_owner VARCHAR2, p_segment VARCHAR2, p_subpart VARCHAR2, p_segment_type VARCHAR2 )
       RETURN VARCHAR2
    AS
-      l_obj_type   all_objects.object_type%TYPE;
+      l_part   all_ind_subpartitions.partition_name%TYPE;
    BEGIN
-      SELECT CASE 
-             WHEN object_type LIKE '% SUBPARTITION'
-             THEN 'subpart'
-             WHEN object_type LIKE '% PARTITION'
-             THEN 'part'
-             ELSE NULL END object_type
-        INTO l_obj_type
-        FROM all_objects
-       WHERE owner = UPPER( p_owner ) AND object_name = UPPER( p_object )
-         AND subobject_name = UPPER( p_subobject );
+      
+      IF lower( p_segment_type ) = 'index'
+      THEN
 
-      RETURN l_obj_type;
+         SELECT partition_name
+           INTO l_part
+           FROM all_ind_subpartitions
+          WHERE index_owner = UPPER( p_owner ) AND index_name = UPPER( p_segment )
+            AND subpartition_name = UPPER( p_subpart );
+         
+      ELSIF lower( p_segment_type ) = 'table'
+      THEN
+         
+         SELECT partition_name
+           INTO l_part
+           FROM all_tab_subpartitions
+          WHERE table_owner = UPPER( p_owner ) AND table_name = UPPER( p_segment )
+            AND subpartition_name = UPPER( p_subpart );
+         
+      ELSE 
+         evolve.raise_err('seg_not_supported',p_segment_type);
+      END IF;
+
+      RETURN l_part;
    EXCEPTION
       WHEN NO_DATA_FOUND
       THEN
          RETURN NULL;
-   END get_part_type;
-
-   -- called by the EXEC_SQL function when an autonomous transaction is desired
-   -- and the number of results are desired
-   FUNCTION exec_auto( p_sql VARCHAR2 )
-      RETURN NUMBER
-   AS
-      PRAGMA AUTONOMOUS_TRANSACTION;
-      l_results   NUMBER;
-   BEGIN
-      EXECUTE IMMEDIATE p_sql;
-
-      l_results := SQL%ROWCOUNT;
-      COMMIT;
-      RETURN l_results;
-   END exec_auto;
-
-   -- accepts the P_AUTO flag and determines whether to execute the statement
-   -- if the P_AUTO flag of 'yes' is passed, then EXEC_AUTO is called
-   FUNCTION exec_sql(
-      p_sql              VARCHAR2,
-      p_auto             VARCHAR2 DEFAULT 'no',
-      p_msg              VARCHAR2 DEFAULT NULL,
-      p_override_debug   VARCHAR2 DEFAULT 'no'
-   )
-      RETURN NUMBER
-   AS
-      l_results   NUMBER;
-   BEGIN
-      IF NOT evolve.is_debugmode OR NOT td_core.is_true( p_override_debug )
-      THEN
-         IF td_core.is_true( p_auto )
-         THEN
-            l_results := exec_auto( p_sql => p_sql );
-         ELSE
-            EXECUTE IMMEDIATE p_sql;
-
-            l_results := SQL%ROWCOUNT;
-         END IF;
-      END IF;
-
-      RETURN l_results;
-   END exec_sql;
-
+   END get_part_for_subpart;
+   
    -- modified FROM tom kyte's "dump_csv":
    -- 1. allow a quote CHARACTER
    -- 2. allow FOR a FILE TO be appended TO

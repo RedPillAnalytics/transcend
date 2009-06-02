@@ -123,9 +123,6 @@ AS
    FUNCTION index_exists( p_owner VARCHAR2, p_index VARCHAR2 )
       RETURN BOOLEAN;
       
-   FUNCTION get_part_type( p_owner VARCHAR2, p_object VARCHAR2, p_subobject VARCHAR2 )
-      RETURN VARCHAR2;
-
    FUNCTION ext_table_exists( p_owner VARCHAR2, p_table VARCHAR2 )
       RETURN BOOLEAN;
 
@@ -140,5 +137,9 @@ AS
 
    FUNCTION object_exists( p_owner VARCHAR2, p_object VARCHAR2 )
       RETURN BOOLEAN;
+      
+   FUNCTION get_part_for_subpart( p_owner VARCHAR2, p_segment VARCHAR2, p_subpart VARCHAR2, p_segment_type VARCHAR2 )
+      RETURN VARCHAR2;
+
 END td_utils;
 /

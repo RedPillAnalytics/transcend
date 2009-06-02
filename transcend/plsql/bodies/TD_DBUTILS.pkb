@@ -3412,16 +3412,24 @@ AS
       || TO_CHAR( SYSDATE, 'yyyymmdd_hhmiss' );
       
       -- variables for the segment_types
-      l_source_type       dba_segments.segment_type%TYPE;
-      l_target_type       dba_segments.segment_type%TYPE;
+      l_src_seg_type       dba_segments.segment_type%TYPE;
+      l_trg_seg_type       dba_segments.segment_type%TYPE;
       
       -- variables to know whether the tables are partitioned or not
       l_src_part_flg      VARCHAR2(3);
       l_trg_part_flg      VARCHAR2(3);
+
+      -- variables to know what type of partitioning is used
+      l_src_part_type     VARCHAR2(20);
+      l_trg_part_type     VARCHAR2(20);
       
       -- variables to hold qualified segments
       l_source_seg        VARCHAR2(61) := p_source_owner||'.'||p_source_segment;
       l_target_seg        VARCHAR2(61) := p_owner||'.'||p_segment;
+      
+      -- partition names for when p_partname is a subpartition
+      l_src_part_name         all_tab_partitions.partition_name%TYPE;
+      l_trg_part_name         all_tab_partitions.partition_name%TYPE;
 
       e_no_stats    EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_stats, -20000 );
@@ -3429,17 +3437,24 @@ AS
       o_ev          evolve_ot      := evolve_ot( p_module => 'transfer_stats' );
    BEGIN
       
-
       BEGIN
-         SELECT segment_type,
-                CASE WHEN partition_name IS NULL THEN 'no' ELSE 'yes' END
-           INTO l_source_type,
-                l_src_part_flg
+                
+         SELECT CASE 
+                WHEN REGEXP_LIKE(segment_type,'^table','i') THEN 'table' 
+                WHEN REGEXP_LIKE(segment_type,'^index','i') THEN 'index' 
+                ELSE 'unknown' END segment_type, 
+                CASE 
+                WHEN REGEXP_LIKE(segment_type,'subpartition$','i') THEN 'subpart' 
+                WHEN REGEXP_LIKE(segment_type,'partition$','i') THEN 'part' 
+                ELSE 'normal' END part_type
+           INTO l_src_seg_type,
+                l_src_part_type
            FROM dba_segments
-          WHERE owner = upper(p_source_owner)
-            AND segment_name = upper(p_source_segment)
+          WHERE owner = upper( p_source_owner )
+            AND segment_name = upper( p_source_segment )
             AND REGEXP_LIKE( NVL(segment_type,'~'), NVL( p_segment_type, '.' ), 'i' )
             AND REGEXP_LIKE( NVL(partition_name,'~'), NVL( p_source_partname, '.' ), 'i' );
+                
       EXCEPTION
          WHEN no_data_found
          THEN
@@ -3447,18 +3462,29 @@ AS
          WHEN too_many_rows
          THEN
             evolve.raise_err( 'multiple_segments', l_source_seg );
-       END;
+      END;
 
-      BEGIN
-         SELECT segment_type,
-                CASE WHEN partition_name IS NULL THEN 'no' ELSE 'yes' END
-           INTO l_target_type,
-                l_trg_part_flg
+      evolve.log_msg( 'Source segment type: '||l_src_seg_type, 5 );
+      evolve.log_msg( 'Source partition type: '||l_src_part_type, 5 );
+      
+       BEGIN
+
+         SELECT CASE 
+                WHEN REGEXP_LIKE(segment_type,'^table','i') THEN 'table' 
+                WHEN REGEXP_LIKE(segment_type,'^index','i') THEN 'index' 
+                ELSE 'unknown' END segment_type, 
+                CASE 
+                WHEN REGEXP_LIKE(segment_type,'subpartition$','i') THEN 'subpart' 
+                WHEN REGEXP_LIKE(segment_type,'partition$','i') THEN 'part' 
+                ELSE 'normal' END part_type
+           INTO l_trg_seg_type,
+                l_trg_part_type
            FROM dba_segments
-          WHERE owner = upper(p_owner)
-            AND segment_name = upper(p_segment)
+          WHERE owner = upper( p_owner )
+            AND segment_name = upper( p_segment )
             AND REGEXP_LIKE( NVL(segment_type,'~'), NVL( p_segment_type, '.' ), 'i' )
             AND REGEXP_LIKE( NVL(partition_name,'~'), NVL( p_partname, '.' ), 'i' );
+          
       EXCEPTION
          WHEN no_data_found
          THEN
@@ -3467,11 +3493,14 @@ AS
          THEN
             evolve.raise_err( 'multiple_segments', l_target_seg );
       END;
-            
+
+      evolve.log_msg( 'Target segment type: '||l_trg_seg_type, 5 );
+      evolve.log_msg( 'Target partition type: '||l_trg_part_type, 5 );
+      
       -- this will either take partition level statistics and import into a table
       -- or, it will take table level statistics and import it into a partition
       -- or, it will take table level statistics and import it into a table.
-      IF REGEXP_LIKE( l_source_type, 'table','i' )
+      IF l_src_seg_type = 'table'
       THEN
          
          o_ev.change_action( 'export table stats' );
@@ -3482,7 +3511,8 @@ AS
                                         stattab       => 'OPT_STATS',
                                         statid        => l_statid
                                       );
-      ELSE
+      ELSIF l_src_seg_type = 'index'
+      THEN
 
          o_ev.change_action( 'export index stats' );
          DBMS_STATS.export_index_stats( ownname       => p_source_owner,
@@ -3492,30 +3522,72 @@ AS
                                         stattab       => 'OPT_STATS',
                                         statid        => l_statid
                                       );
+      ELSE
+         evolve.raise_err('seg_not_supported',l_src_seg_type);
       END IF;
-
-          -- now, update the table name in the stats table to the new table name
-          UPDATE opt_stats
-             SET c1 = UPPER( p_segment )
-           WHERE statid = l_statid;
-          
-          -- update the owner to the new owner
-          UPDATE opt_stats
-             SET c5 = UPPER( p_owner )
-           WHERE statid = l_statid;
       
-      -- when the source is a partitioned table, and the target is not
-      IF l_src_part_flg = 'yes' AND l_trg_part_flg = 'no'
-         -- then we need to get rid of all partitioning information
+      
+      -- if this is a subpartition, then we need the partition name
+      IF l_src_part_type = 'subpart'
       THEN
 
-         DELETE FROM opt_stats
-          WHERE statid = l_statid AND( c2 IS NOT NULL OR c3 IS NOT NULL );
-         
+         l_src_part_name := td_utils.get_part_for_subpart( p_owner, p_segment, p_source_partname, l_src_seg_type );
+   
+         evolve.log_msg( 'Source partition name for subpartition '||p_source_partname||': '||l_src_part_name, 5 );
+
       END IF;
 
+      -- if this is a subpartition, then we need the partition name
+      IF l_trg_part_type = 'subpart'
+      THEN
+
+         l_trg_part_name := td_utils.get_part_for_subpart( p_owner, p_segment, p_partname, l_trg_seg_type );
+
+         evolve.log_msg( 'Target partition name for subpartition '||p_partname||': '||l_trg_part_name, 5 );
+
+      END IF;
+
+
+      -- now, update the table name in the stats table to the new table name
+      UPDATE opt_stats
+         SET c1 = UPPER( p_segment )
+       WHERE statid = l_statid;
+      
+      -- update the owner to the new owner
+      UPDATE opt_stats
+         SET c5 = UPPER( p_owner )
+       WHERE statid = l_statid;
+      
+      -- we are going into a subpartition
+      IF l_trg_part_type = 'subpart'
+      THEN
+         UPDATE opt_stats
+            SET c3 = upper(p_partname),
+                c2 = upper(l_trg_part_name)
+          WHERE statid = l_statid;
+      END IF;
+      
+      -- we are going into a partition
+      IF l_trg_part_type = 'part'
+      THEN
+         UPDATE opt_stats
+            SET c2 = upper(p_partname),
+                c3 = NULL
+          WHERE statid = l_statid;
+      END IF;
+      
+      -- we are going into a table
+      IF l_trg_part_type = 'normal'
+      THEN
+         UPDATE opt_stats
+            SET c2 = NULL,
+                c3 = NULL
+          WHERE statid = l_statid;
+      END IF;
+      
+      
       -- now, import the segment statistics
-      IF REGEXP_LIKE( l_source_type, 'table','i' )
+      IF REGEXP_LIKE( l_src_seg_type, 'table','i' )
       THEN
          
          o_ev.change_action( 'import table stats' );
@@ -3548,19 +3620,18 @@ AS
 
       
       evolve.log_msg(    'Statistics from '
-                       || CASE
-                            WHEN p_source_partname IS NULL
-                              THEN NULL
-                            ELSE 'partition ' || UPPER( p_source_partname ) || ' of '
+                      || CASE l_src_part_type
+                           WHEN 'part' THEN 'partition '||upper(p_source_partname)||' of '
+                           WHEN 'subpart' THEN 'subpartition '||upper(p_source_partname)||' of '
+                           WHEN 'normal' THEN NULL
                           END
-                      || 'segment '
                       || UPPER( l_source_seg )
                       || ' transfered to '
-                      || CASE
-                           WHEN p_partname IS NULL
-                             THEN NULL
-                           ELSE 'partition ' || UPPER( p_partname ) || ' of segment '
-                         END
+                      || CASE l_trg_part_type
+                           WHEN 'part' THEN 'partition '||upper(p_partname)||' of '
+                           WHEN 'subpart' THEN 'subpartition '||upper(p_partname)||' of '
+                           WHEN 'normal' THEN NULL
+                          END
                       || UPPER( l_target_seg ) );
 
            

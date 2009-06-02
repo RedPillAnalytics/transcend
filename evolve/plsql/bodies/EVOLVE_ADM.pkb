@@ -539,6 +539,7 @@ IS
          set_error_conf( p_name => 'no_segment', p_message => 'The specified segment does not exist' );
          set_error_conf( p_name => 'multiple_segments', p_message => 'The specified segment name references more than one segment' );
          set_error_conf( p_name => 'no_object', p_message => 'The specified object does not exist' );
+         set_error_conf( p_name => 'seg_not_supported', p_message => 'The segment type of the specified segment is not supported' );
          set_error_conf( p_name         => 'no_dir_obj',
                          p_message      => 'The specified directory object does not exist' );
          set_error_conf( p_name         => 'no_dir_path',
