@@ -412,10 +412,21 @@ AS
       l_tab_name         VARCHAR2( 61 )        := UPPER( p_owner ) || '.' || UPPER( p_table );
       l_part_name        VARCHAR2( 92 )        := l_tab_name || ':' || UPPER( p_partname );
       l_partitioned      VARCHAR2( 3 );
+      l_part_type        VARCHAR2( 10 );
       l_iot              VARCHAR2( 3 );
       l_compressed       VARCHAR2( 3 );
       l_partition_name   all_tab_partitions.partition_name%TYPE;
    BEGIN
+
+      -- if this is a partitioned table
+      IF ( p_partname IS NOT NULL OR td_core.is_true( p_partitioned ))
+         -- find out if it's partitioned or subpartitioned
+      THEN
+         
+         l_part_type := get_tab_part_type( p_owner, p_table, p_partname );
+         
+      END IF;
+         
       -- now get compression, partitioning and iot information
       BEGIN
          SELECT CASE
@@ -455,28 +466,60 @@ AS
          THEN
             evolve.raise_err( 'not_partitioned', l_tab_name );
          END IF;
+         
+         IF l_part_type = 'part'
+         THEN
 
-         BEGIN
-            SELECT CASE
+            BEGIN
+               SELECT CASE
                       WHEN compression = 'DISABLED'
-                         THEN 'no'
+                      THEN 'no'
                       WHEN compression = 'N/A'
-                         THEN 'no'
+                      THEN 'no'
                       WHEN compression IS NULL
-                         THEN 'no'
+                      THEN 'no'
                       ELSE 'yes'
-                   END
-              INTO l_compressed
-              FROM all_tab_partitions
-             WHERE table_owner = UPPER( p_owner )
-               AND table_name = UPPER( p_table )
-               AND partition_name = UPPER( p_partname );
-         EXCEPTION
-            WHEN NO_DATA_FOUND
-            THEN
-               evolve.raise_err( 'no_part', l_part_name );
-         END;
-      END IF;
+                      END
+                 INTO l_compressed
+                 FROM all_tab_partitions
+                WHERE table_owner = UPPER( p_owner )
+                  AND table_name = UPPER( p_table )
+                  AND partition_name = UPPER( p_partname );
+            EXCEPTION
+               WHEN NO_DATA_FOUND
+                  THEN
+                  evolve.raise_err( 'no_part', l_part_name );
+            END;
+               
+         ELSIF l_part_type = 'subpart'
+         THEN
+
+           BEGIN
+     
+               SELECT CASE
+                      WHEN compression = 'DISABLED'
+                      THEN 'no'
+                      WHEN compression = 'N/A'
+                      THEN 'no'
+                      WHEN compression IS NULL
+                      THEN 'no'
+                      ELSE 'yes'
+                      END
+                 INTO l_compressed
+                 FROM all_tab_subpartitions
+                WHERE table_owner = UPPER( p_owner )
+                  AND table_name = UPPER( p_table )
+                  AND subpartition_name = UPPER( p_partname );
+            EXCEPTION
+               WHEN NO_DATA_FOUND
+                  THEN
+                  evolve.raise_err( 'no_part', l_part_name );
+             END;
+            
+          END IF;
+               
+       END IF;
+       
 
       CASE
          WHEN td_core.is_true( p_partitioned, TRUE ) AND NOT td_core.is_true( l_partitioned )
@@ -893,14 +936,72 @@ AS
       THEN
          RETURN FALSE;
    END object_exists;
+
+   -- returns 'part' or 'subpart' depending on the partition type
+   FUNCTION get_tab_part_type( p_owner VARCHAR2, p_table VARCHAR2, p_partname VARCHAR2 DEFAULT NULL )
+      RETURN VARCHAR2
+   AS
+      l_num     NUMBER;
+      l_obj_type   all_objects.object_type%TYPE;
+   BEGIN
       
+      IF p_partname IS NULL
+      THEN
+
+         SELECT count(*)
+           INTO l_num
+           FROM dba_tab_subpartitions
+          WHERE table_owner = UPPER( p_owner ) AND table_name = UPPER( p_table );
+         
+         IF l_num > 0
+         THEN
+            RETURN 'subpart';
+         END IF;
+         
+         SELECT count(*)
+           INTO l_num
+           FROM dba_tab_subpartitions
+          WHERE table_owner = UPPER( p_owner ) AND table_name = UPPER( p_table );
+         
+         IF l_num > 0
+         THEN
+            RETURN 'part';
+         ELSE
+            RETURN NULL;
+         END IF;
+         
+      ELSE
+         
+         BEGIN
+            SELECT CASE 
+                   WHEN object_type LIKE '% SUBPARTITION'
+                   THEN 'subpart'
+                   WHEN object_type LIKE '% PARTITION'
+                   THEN 'part'
+                   ELSE NULL END object_type
+              INTO l_obj_type
+              FROM all_objects
+             WHERE owner = UPPER( p_owner ) AND object_name = UPPER( p_table )
+               AND subobject_name = UPPER( p_partname );
+
+             RETURN l_obj_type;
+          EXCEPTION
+                   WHEN NO_DATA_FOUND
+                      THEN
+                      RETURN NULL;
+          END;
+
+       END IF;
+
+   END get_tab_part_type;
+   
    -- returns the partition name for a given subpartition name
    FUNCTION get_part_for_subpart( p_owner VARCHAR2, p_segment VARCHAR2, p_subpart VARCHAR2, p_segment_type VARCHAR2 )
       RETURN VARCHAR2
    AS
       l_part   all_ind_subpartitions.partition_name%TYPE;
    BEGIN
-      
+
       IF lower( p_segment_type ) = 'index'
       THEN
 

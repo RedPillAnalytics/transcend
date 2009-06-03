@@ -19,6 +19,11 @@ AS
    );
 
    PROCEDURE log_err;
+      
+   PROCEDURE log_variable( 
+      p_name       VARCHAR2,
+      p_value      VARCHAR2
+   );
 
    PROCEDURE raise_err( p_name VARCHAR2, p_add_msg VARCHAR2 DEFAULT NULL );
 

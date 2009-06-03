@@ -176,19 +176,28 @@ IS
 
    PROCEDURE usable_indexes( p_owner VARCHAR2, p_table VARCHAR2, p_concurrent VARCHAR2 DEFAULT 'no' );
 
-   PROCEDURE update_stats(
+   PROCEDURE transfer_stats(
       p_owner             VARCHAR2,
-      p_table             VARCHAR2 DEFAULT NULL,
+      p_segment           VARCHAR2,
+      p_source_owner      VARCHAR2,
+      p_source_segment    VARCHAR2,
       p_partname          VARCHAR2 DEFAULT NULL,
-      p_source_owner      VARCHAR2 DEFAULT NULL,
-      p_source_table      VARCHAR2 DEFAULT NULL,
       p_source_partname   VARCHAR2 DEFAULT NULL,
-      p_percent           NUMBER DEFAULT NULL,
-      p_degree            NUMBER DEFAULT NULL,
+      p_segment_type      VARCHAR2 DEFAULT NULL
+   );
+
+   PROCEDURE gather_stats(
+      p_owner             VARCHAR2,
+      p_segment           VARCHAR2,
+      p_partname          VARCHAR2 DEFAULT NULL,
+      p_percent           NUMBER   DEFAULT NULL,
+      p_degree            NUMBER   DEFAULT NULL,
       p_method            VARCHAR2 DEFAULT 'FOR ALL COLUMNS SIZE AUTO',
       p_granularity       VARCHAR2 DEFAULT 'AUTO',
       p_cascade           VARCHAR2 DEFAULT NULL,
-      p_options           VARCHAR2 DEFAULT 'GATHER AUTO'
+      p_options           VARCHAR2 DEFAULT 'GATHER AUTO',
+      p_segment_type      VARCHAR2 DEFAULT NULL
    );
+      
 END trans_etl;
 /

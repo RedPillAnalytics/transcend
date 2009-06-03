@@ -12,8 +12,8 @@ IS
       p_source_owner    VARCHAR2 DEFAULT NULL,
       p_source_object   VARCHAR2 DEFAULT NULL,
       p_source_column   VARCHAR2 DEFAULT NULL,
-      p_d_num           NUMBER DEFAULT 0,
-      p_p_num           NUMBER DEFAULT 65535
+      p_d_num           NUMBER DEFAULT 3,
+      p_p_num           NUMBER DEFAULT 1048576
    );
 
    PROCEDURE truncate_table( p_owner VARCHAR2, p_table VARCHAR2, p_reuse VARCHAR2 DEFAULT 'no' );

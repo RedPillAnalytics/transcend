@@ -502,41 +502,76 @@ AS
          RAISE;
    END usable_indexes;
 
-   PROCEDURE update_stats(
+   PROCEDURE transfer_stats(
       p_owner             VARCHAR2,
-      p_table             VARCHAR2 DEFAULT NULL,
+      p_segment           VARCHAR2,
+      p_source_owner      VARCHAR2,
+      p_source_segment    VARCHAR2,
       p_partname          VARCHAR2 DEFAULT NULL,
-      p_source_owner      VARCHAR2 DEFAULT NULL,
-      p_source_table      VARCHAR2 DEFAULT NULL,
       p_source_partname   VARCHAR2 DEFAULT NULL,
-      p_percent           NUMBER DEFAULT NULL,
-      p_degree            NUMBER DEFAULT NULL,
-      p_method            VARCHAR2 DEFAULT 'FOR ALL COLUMNS SIZE AUTO',
-      p_granularity       VARCHAR2 DEFAULT 'AUTO',
-      p_cascade           VARCHAR2 DEFAULT NULL,
-      p_options           VARCHAR2 DEFAULT 'GATHER AUTO'
+      p_segment_type      VARCHAR2 DEFAULT NULL
    )
    IS
+      o_ev          evolve_ot      := evolve_ot( p_module => 'transfer_stats' );
    BEGIN
-      td_dbutils.update_stats( p_owner                => p_owner,
-                               p_table                => p_table,
-                               p_partname             => p_partname,
-                               p_source_owner         => p_source_owner,
-                               p_source_table         => p_source_table,
-                               p_source_partname      => p_source_partname,
-                               p_percent              => p_percent,
-                               p_degree               => p_degree,
-                               p_method               => p_method,
-                               p_granularity          => p_granularity,
-                               p_cascade              => p_cascade,
-                               p_options              => p_options
-                             );
+
+      td_dbutils.transfer_stats( p_owner              => p_owner,
+                                 p_segment            => p_segment,
+                                 p_source_owner       => p_source_owner,
+                                 p_source_segment     => p_source_segment,
+                                 p_partname           => p_partname,
+                                 p_source_partname    => p_source_partname,
+                                 p_segment_type       => p_segment_type
+                               );
+      
+           
+      o_ev.clear_app_info;
    EXCEPTION
       WHEN OTHERS
       THEN
          evolve.log_err;
+         o_ev.clear_app_info;
          RAISE;
-   END update_stats;
+   END transfer_stats;
+   
+   PROCEDURE gather_stats(
+      p_owner             VARCHAR2,
+      p_segment           VARCHAR2,
+      p_partname          VARCHAR2 DEFAULT NULL,
+      p_percent           NUMBER   DEFAULT NULL,
+      p_degree            NUMBER   DEFAULT NULL,
+      p_method            VARCHAR2 DEFAULT 'FOR ALL COLUMNS SIZE AUTO',
+      p_granularity       VARCHAR2 DEFAULT 'AUTO',
+      p_cascade           VARCHAR2 DEFAULT NULL,
+      p_options           VARCHAR2 DEFAULT 'GATHER AUTO',
+      p_segment_type      VARCHAR2 DEFAULT NULL
+   )
+   IS
+      o_ev          evolve_ot      := evolve_ot( p_module => 'gather_stats' );
+   BEGIN
+
+      td_dbutils.gather_stats( p_owner              => p_owner,
+                               p_segment            => p_segment,
+                               p_partname           => p_partname,
+                               p_percent            => p_percent,
+                               p_degree             => p_degree,
+                               p_method             => p_method,
+                               p_granularity        => p_granularity,
+                               p_cascade            => p_cascade,
+                               p_options            => p_options,
+                               p_segment_type       => p_segment_type
+                             );
+      
+           
+      o_ev.clear_app_info;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         evolve.log_err;
+         o_ev.clear_app_info;
+         RAISE;
+   END gather_stats;
+
 END trans_etl;
 /
 

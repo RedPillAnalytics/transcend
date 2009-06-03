@@ -170,6 +170,15 @@ AS
          COMMIT;
       END IF;
    END log_err;
+
+   PROCEDURE log_variable( 
+      p_name       VARCHAR2,
+      p_value      VARCHAR2
+   )
+   AS
+   BEGIN
+      log_msg('The value of variable "'||upper(p_name)||'" is: '||p_value, 5);
+   END log_variable;
    
       -- used to return a distinct error message number by label
    FUNCTION get_err_cd( p_name VARCHAR2 )

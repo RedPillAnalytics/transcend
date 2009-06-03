@@ -14,30 +14,67 @@ AS
       p_source_owner    VARCHAR2 DEFAULT NULL,
       p_source_object   VARCHAR2 DEFAULT NULL,
       p_source_column   VARCHAR2 DEFAULT NULL,
-      p_d_num           NUMBER DEFAULT 0,
-      p_p_num           NUMBER DEFAULT 65535
+      p_d_num           NUMBER DEFAULT 3,
+      p_p_num           NUMBER DEFAULT 1048576
    )
    AS
       o_ev              evolve_ot                                    := evolve_ot( p_module => 'populate_partname' );
       l_dsql            LONG;
       l_num_msg         VARCHAR2( 100 )                              := 'Number of records inserted into TD_PART_GTT table';
-      l_source_column   all_part_key_columns.column_name%TYPE;
+      l_src_part_col    all_part_key_columns.column_name%TYPE;
+      l_src_spart_col   all_subpart_key_columns.column_name%TYPE;
       l_results         NUMBER;
       l_part_position   all_tab_partitions.partition_position%TYPE;
       l_high_value      all_tab_partitions.high_value%TYPE;
       l_num_rows        NUMBER;
+      l_part_type       VARCHAR2(10);
+      l_part_name       all_tab_partitions.partition_name%TYPE;
+
    BEGIN
       td_utils.check_table( p_owner => p_owner, p_table => p_table, p_partname => p_partname, p_partitioned => 'yes' );
-
+      
+      -- find out if the table is partitioned or subpartitioned
+      l_part_type := td_utils.get_tab_part_type( p_owner, p_table );
+      evolve.log_variable('l_part_type',l_part_type);
+            
       -- get the default partname, which is the max partition
       IF p_partname IS NOT NULL
       THEN
-         SELECT partition_position, high_value
-           INTO l_part_position, l_high_value
-           FROM all_tab_partitions
-          WHERE table_owner = UPPER( p_owner ) AND table_name = UPPER( p_table )
-            AND partition_name = UPPER( p_partname );
+         BEGIN
 
+            IF l_part_type = 'part'
+            THEN
+               
+               SELECT partition_position, high_value
+                 INTO l_part_position, l_high_value
+                 FROM all_tab_partitions
+                WHERE table_owner = UPPER( p_owner ) AND table_name = UPPER( p_table )
+                  AND partition_name = UPPER( p_partname );
+               
+            ELSIF l_part_type = 'subpart'
+            THEN
+               
+               SELECT subpartition_position, high_value
+                 INTO l_part_position, l_high_value
+                 FROM all_tab_subpartitions
+                WHERE table_owner = UPPER( p_owner ) AND table_name = UPPER( p_table )
+                  AND subpartition_name = UPPER( p_partname );
+               
+               -- find out the partition_name in case it's subpartitioned
+               l_part_name := td_utils.get_part_for_subpart( p_owner => p_owner, p_segment => p_table, p_subpart => p_partname, p_segment_type => 'table' );
+               evolve.log_variable('l_part_name',l_part_name);
+
+               
+            END IF;
+         EXCEPTION
+            WHEN no_data_found
+            THEN
+               evolve.raise_err( 'no_part', p_partname );
+         END;
+         
+         evolve.log_variable( 'l_part_position', to_char( l_part_position ) );
+         evolve.log_variable( 'l_high_value', to_char( l_high_value ) );
+         
          -- write records to the global temporary table, which will later be used in cursors for other procedures
 
          -- if P_PARTNAME is null, then we want the max partition
@@ -51,43 +88,54 @@ AS
                      );
          evolve.log_msg( SQL%ROWCOUNT||' rows inserted into TD_PART_GTT', 4 );
       ELSE
-         -- if P_SOURCE_COLUMN is null, then use the same name as the partitioning source column on the target
-         IF p_source_column IS NULL
-         THEN
-            SELECT column_name
-              INTO l_source_column
-              FROM all_part_key_columns
-             WHERE NAME = UPPER( p_table ) AND owner = UPPER( p_owner );
-         ELSE
-            l_source_column    := p_source_column;
-         END IF;
+
+         SELECT nvl(p_source_column, pk.column_name),
+                sk.column_name
+           INTO l_src_part_col,
+                l_src_spart_col
+           FROM all_part_key_columns pk
+           left JOIN all_subpart_key_columns sk
+                USING (owner,name)
+          WHERE NAME = UPPER( p_table ) AND owner = UPPER( p_owner );
+
+         evolve.log_variable('l_src_part_col',l_src_part_col);
+         evolve.log_variable('l_src_spart_col',l_src_spart_col);
+               
 
          o_ev.change_action( 'dynamic insert' );
+         
+         l_dsql := 
+         'insert into td_part_gtt (table_owner, table_name, partition_name, partition_position) '
+         || ' SELECT owner, object_name, subobject_name, object_id'
+         || '  FROM all_objects'
+         || ' WHERE owner = '''
+         || UPPER( p_owner )
+         || ''' AND object_name = '''
+         || UPPER( p_table )
+         || ''' AND object_id IN '
+         || ' (SELECT DISTINCT tbl$or$idx$part$num("'
+         || UPPER( p_owner )
+         || '"."'
+         || UPPER( p_table )
+         || '", 0, '
+         || p_d_num
+         || ', '
+         || p_p_num
+         || ', "'
+         || UPPER( l_src_part_col )
+         || '"'
+         || CASE l_part_type WHEN 'subpart' THEN ', "'||upper(l_src_spart_col)||'"' ELSE NULL END
+         || ')	 FROM '
+         || UPPER( p_source_owner )
+         || '.'
+         || UPPER( p_source_object )
+         || ') '
+         || 'ORDER By object_id';
+         
+         evolve.log_msg( 'Dynamic tbl$or$idx$part$num statement: '||l_dsql, 4 );
+         
+         EXECUTE IMMEDIATE l_dsql;
 
-         EXECUTE IMMEDIATE    'insert into td_part_gtt (table_owner, table_name, partition_name, partition_position) '
-                           || ' SELECT table_owner, table_name, partition_name, partition_position'
-                           || '  FROM all_tab_partitions'
-                           || ' WHERE table_owner = '''
-                           || UPPER( p_owner )
-                           || ''' AND table_name = '''
-                           || UPPER( p_table )
-                           || ''' AND partition_position IN '
-                           || ' (SELECT DISTINCT tbl$or$idx$part$num("'
-                           || UPPER( p_owner )
-                           || '"."'
-                           || UPPER( p_table )
-                           || '", 0, '
-                           || p_d_num
-                           || ', '
-                           || p_p_num
-                           || ', "'
-                           || UPPER( l_source_column )
-                           || '")	 FROM '
-                           || UPPER( p_source_owner )
-                           || '.'
-                           || UPPER( p_source_object )
-                           || ') '
-                           || 'ORDER By partition_position';
          evolve.log_msg( SQL%ROWCOUNT||' rows inserted into TD_PART_GTT', 4 );
       END IF;
 

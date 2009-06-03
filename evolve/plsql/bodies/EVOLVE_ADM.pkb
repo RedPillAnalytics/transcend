@@ -566,7 +566,7 @@ IS
                          p_message      => 'The specified table is not an external table' );
          set_error_conf( p_name => 'external', p_message => 'The specified table is an external table' );
          set_error_conf( p_name => 'not_compressed', p_message => 'The specified segment is not compresed' );
-         set_error_conf( p_name => 'no_part', p_message => 'The specified partition does not exist' );
+         set_error_conf( p_name => 'no_part', p_message => 'The specified partition or subpartition does not exist' );
          set_error_conf( p_name => 'partitioned', p_message => 'The specified table is partitioned' );
          set_error_conf( p_name => 'iot', p_message => 'The specified table is index-organized' );
          set_error_conf( p_name => 'compressed', p_message => 'The specified segment is compresed' );
