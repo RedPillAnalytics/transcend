@@ -9,72 +9,47 @@ var p_index_type VARCHAR2(30)
 var p_index_regexp VARCHAR2(30)
 var p_part_type VARCHAR2(30)
 
-EXEC :p_owner := 'whdata';
-EXEC :p_table := 'ar_transaction_fact';
-EXEC :p_part_type := 'local';
+EXEC :p_owner := 'eusb009';
+EXEC :p_table := 'insurquote_policy';
 EXEC :p_index_type := NULL;
-EXEC :p_index_regexp := '_r$';
+EXEC :p_index_regexp :=NULL;
 
 SET feedback on
 SET echo on
 SET timing on
 
-SELECT *
-  FROM (SELECT DISTINCT    'alter index '
-	       || owner
-	       || '.'
-	       || index_name
-	       || ' rebuild'
-	       || CASE idx_ddl_type
-	       WHEN 'I'
-	       THEN NULL
-	       ELSE ' partition ' || partition_name
-	       END ddl,
-	       idx_ddl_type, partition_name, partition_position,
-	       SUM( CASE idx_ddl_type
-		    WHEN 'I'
-		    THEN 1
-		    ELSE 0
-		    END ) OVER( partition BY 1 ) num_indexes,
-	       SUM( CASE idx_ddl_type
-		    WHEN 'P'
-		    THEN 1
-		    ELSE 0
-		    END ) OVER( partition BY 1 ) num_partitions,
-	       CASE idx_ddl_type
-	       WHEN 'I' THEN ai_status
-	       ELSE aip_status
-	       END status
-	  FROM ( SELECT index_type, owner, ai.index_name, partition_name,
-			partition_position, partitioned,
-			aip.status aip_status,
-			ai.status ai_status,
-			CASE
-			WHEN partition_name IS NULL
-		     OR partitioned = 'NO'
-			THEN 'I'
-			ELSE 'P'
-			END idx_ddl_type
-		   FROM all_ind_partitions aip
-			right JOIN all_indexes ai
-			ON ai.index_name = aip.index_name
-		    AND ai.owner = aip.index_owner
-		  WHERE table_name = upper(:p_table )
-		    AND table_owner = upper(:p_owner )
-	       )
-	 WHERE REGEXP_LIKE( index_type, '^' ||:p_index_type, 'i' )
-	   AND REGEXP_LIKE( partitioned,
-			    CASE
-			    WHEN REGEXP_LIKE( 'global',:p_part_type, 'i' )
-			    THEN 'NO'
-			    WHEN REGEXP_LIKE( 'local',:p_part_type, 'i' )
-			    THEN 'YES'
-			    ELSE '.'
-			    END,
-			    'i'
-			  )
-	       -- USE an NVL'd regular expression to determine specific indexes to work on
-	   AND REGEXP_LIKE( index_name, nvl(:p_index_regexp, '.' ), 'i' )
-	   AND NOT REGEXP_LIKE( index_type, 'iot', 'i' )
-	 ORDER BY idx_ddl_type, partition_position ) 
- WHERE status IN ('INVALID','UNUSABLE')
+SELECT  DISTINCT table_name, partition_position,
+       'alter table '
+       || table_owner
+       || '.'
+       || table_name
+       || ' modify '
+       || CASE part_type WHEN 'subpart' THEN 'subpartition ' ELSE 'partition ' end
+       || partition_name
+       || ' rebuild unusable local indexes' DDL,
+       partition_name,
+       part_type
+  FROM ( SELECT table_name,
+                CASE WHEN subpartition_name IS NULL THEN partition_position ELSE subpartition_position END partition_position,
+                table_owner,
+                CASE WHEN subpartition_name IS NULL THEN partition_name ELSE subpartition_name END partition_name,
+                CASE WHEN subpartition_name IS NULL THEN 'part' ELSE 'subpart' END part_type
+           FROM  all_tab_partitions ip
+           left JOIN all_tab_subpartitions isp
+                USING (table_owner, table_name, partition_name ))
+  JOIN ( SELECT table_name,
+                table_owner,
+                CASE WHEN subpartition_name IS NULL THEN ip.status ELSE isp.status END status
+           FROM all_indexes ix
+           JOIN all_ind_partitions ip
+                ON ix.owner = ip.index_owner
+            AND ix.index_name = ip.index_name
+           left JOIN all_ind_subpartitions isp
+                ON ip.index_owner = isp.index_owner
+            AND ip.index_name = isp.index_name
+            AND ip.partition_name = isp.partition_name )
+       USING (table_owner, table_name)
+ WHERE table_name = UPPER( :p_table ) 
+   AND table_owner = UPPER( :p_owner )
+   AND status = 'UNUSABLE'
+ ORDER BY table_name, partition_position
