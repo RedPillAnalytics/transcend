@@ -3323,7 +3323,14 @@ AS
    END unusable_indexes;
 
    -- rebuilds all unusable index segments on a particular table
-   PROCEDURE usable_indexes( p_owner VARCHAR2, p_table VARCHAR2, p_concurrent VARCHAR2 DEFAULT 'no' )
+   PROCEDURE usable_indexes( 
+      p_owner           VARCHAR2, 
+      p_table           VARCHAR2,
+      p_partname        VARCHAR2 DEFAULT NULL,
+      p_index_regexp    VARCHAR2 DEFAULT NULL,
+      p_index_type      VARCHAR2 DEFAULT NULL,
+      p_concurrent      VARCHAR2 DEFAULT 'no' 
+   )
    IS
       l_ddl             VARCHAR2( 2000 );
       l_rows            BOOLEAN          := FALSE;                                            -- to catch empty cursors
@@ -3375,6 +3382,8 @@ AS
                                         USING (table_owner, table_name, partition_name )) tabs 
                           JOIN ( SELECT table_name,
                                         table_owner,
+                                        index_type,
+                                        index_name,
                                         CASE WHEN subpartition_name IS NULL THEN ip.partition_name ELSE isp.subpartition_name END partition_name,
                                         CASE WHEN subpartition_name IS NULL THEN ip.status ELSE isp.status END status
                                    FROM all_indexes ix
@@ -3388,6 +3397,9 @@ AS
                                USING (table_owner, table_name, partition_name)
                          WHERE table_name = UPPER( p_table ) 
                            AND table_owner = UPPER( p_owner )
+                           AND REGEXP_LIKE( partition_name, nvl( p_partname, '.' ), 'i' )
+                           AND REGEXP_LIKE( index_type, nvl( p_index_type, '.' ), 'i' )
+                           AND REGEXP_LIKE( index_name, nvl( p_index_regexp, '.' ), 'i' )
                            AND status = 'UNUSABLE'
                          ORDER BY table_name, partition_position
                       )

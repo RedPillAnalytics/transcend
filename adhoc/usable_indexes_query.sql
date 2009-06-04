@@ -8,11 +8,13 @@ var p_table VARCHAR2(30)
 var p_index_type VARCHAR2(30)
 var p_index_regexp VARCHAR2(30)
 var p_part_type VARCHAR2(30)
+var p_partname VARCHAR2(30)
 
-EXEC :p_owner := 'eusb009';
-EXEC :p_table := 'insurquote_policy';
-EXEC :p_index_type := NULL;
-EXEC :p_index_regexp :=NULL;
+EXEC :p_owner        := 'eusb009';
+EXEC :p_table        := 'insurquote_policy';
+EXEC :p_index_type   := NULL;
+EXEC :p_index_regexp := NULL;
+EXEC :p_partname     := NULL;
 
 SET feedback on
 SET echo on
@@ -52,5 +54,6 @@ SELECT  DISTINCT table_name, partition_position,
        USING (table_owner, table_name, partition_name)
  WHERE table_name = UPPER( :p_table ) 
    AND table_owner = UPPER( :p_owner )
+AND REGEXP_LIKE( partition_name, nvl( :p_partname, '.' ), 'i' )
    AND status = 'UNUSABLE'
  ORDER BY table_name, partition_position

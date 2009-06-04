@@ -491,10 +491,22 @@ AS
       COMMIT;
    END unusable_indexes;
 
-   PROCEDURE usable_indexes( p_owner VARCHAR2, p_table VARCHAR2, p_concurrent VARCHAR2 DEFAULT 'no' )
+   PROCEDURE usable_indexes(
+      p_owner           VARCHAR2, 
+      p_table           VARCHAR2,
+      p_partname        VARCHAR2 DEFAULT NULL,
+      p_index_regexp    VARCHAR2 DEFAULT NULL,
+      p_index_type      VARCHAR2 DEFAULT NULL,
+      p_concurrent      VARCHAR2 DEFAULT 'no' 
+   )
    IS
    BEGIN
-      td_dbutils.usable_indexes( p_owner => p_owner, p_table => p_table, p_concurrent => p_concurrent );
+      td_dbutils.usable_indexes( p_owner        => p_owner, 
+                                 p_table        => p_table,
+                                 p_partname     => p_partname,
+                                 p_index_regexp => p_index_regexp,
+                                 p_index_type   => p_index_type,
+                                 p_concurrent   => p_concurrent );
    EXCEPTION
       WHEN OTHERS
       THEN

@@ -174,7 +174,14 @@ IS
       p_part_type       VARCHAR2 DEFAULT NULL
    );
 
-   PROCEDURE usable_indexes( p_owner VARCHAR2, p_table VARCHAR2, p_concurrent VARCHAR2 DEFAULT 'no' );
+   PROCEDURE usable_indexes(
+      p_owner           VARCHAR2, 
+      p_table           VARCHAR2,
+      p_partname        VARCHAR2 DEFAULT NULL,
+      p_index_regexp    VARCHAR2 DEFAULT NULL,
+      p_index_type      VARCHAR2 DEFAULT NULL,
+      p_concurrent      VARCHAR2 DEFAULT 'no' 
+   );
 
    PROCEDURE transfer_stats(
       p_owner             VARCHAR2,
