@@ -419,7 +419,7 @@ AS
    BEGIN
 
       -- if this is a partitioned table
-      IF ( p_partname IS NOT NULL OR td_core.is_true( p_partitioned ))
+      IF ( p_partname IS NOT NULL OR td_core.is_true( p_partitioned, true ))
          -- find out if it's partitioned or subpartitioned
       THEN
          
@@ -967,7 +967,7 @@ AS
          THEN
             RETURN 'part';
          ELSE
-            RETURN NULL;
+            RETURN 'normal';
          END IF;
          
       ELSE
@@ -978,7 +978,7 @@ AS
                    THEN 'subpart'
                    WHEN object_type LIKE '% PARTITION'
                    THEN 'part'
-                   ELSE NULL END object_type
+                   ELSE 'normal' END object_type
               INTO l_obj_type
               FROM all_objects
              WHERE owner = UPPER( p_owner ) AND object_name = UPPER( p_table )

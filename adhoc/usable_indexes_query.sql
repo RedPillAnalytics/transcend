@@ -36,9 +36,10 @@ SELECT  DISTINCT table_name, partition_position,
                 CASE WHEN subpartition_name IS NULL THEN 'part' ELSE 'subpart' END part_type
            FROM  all_tab_partitions ip
            left JOIN all_tab_subpartitions isp
-                USING (table_owner, table_name, partition_name ))
+                USING (table_owner, table_name, partition_name )) tabs 
   JOIN ( SELECT table_name,
                 table_owner,
+                CASE WHEN subpartition_name IS NULL THEN ip.partition_name ELSE isp.subpartition_name END partition_name,
                 CASE WHEN subpartition_name IS NULL THEN ip.status ELSE isp.status END status
            FROM all_indexes ix
            JOIN all_ind_partitions ip
@@ -47,8 +48,8 @@ SELECT  DISTINCT table_name, partition_position,
            left JOIN all_ind_subpartitions isp
                 ON ip.index_owner = isp.index_owner
             AND ip.index_name = isp.index_name
-            AND ip.partition_name = isp.partition_name )
-       USING (table_owner, table_name)
+            AND ip.partition_name = isp.partition_name ) inds
+       USING (table_owner, table_name, partition_name)
  WHERE table_name = UPPER( :p_table ) 
    AND table_owner = UPPER( :p_owner )
    AND status = 'UNUSABLE'

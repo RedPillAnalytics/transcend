@@ -14,6 +14,7 @@ AS
       p_source_owner    VARCHAR2 DEFAULT NULL,
       p_source_object   VARCHAR2 DEFAULT NULL,
       p_source_column   VARCHAR2 DEFAULT NULL,
+      p_partid          VARCHAR2 DEFAULT NULL,
       p_d_num           NUMBER DEFAULT 3,
       p_p_num           NUMBER DEFAULT 1048576
    )
@@ -72,8 +73,8 @@ AS
                evolve.raise_err( 'no_part', p_partname );
          END;
          
-         evolve.log_variable( 'l_part_position', to_char( l_part_position ) );
-         evolve.log_variable( 'l_high_value', to_char( l_high_value ) );
+         evolve.log_variable( 'l_part_position', l_part_position );
+         evolve.log_variable( 'l_high_value', l_high_value );
          
          -- write records to the global temporary table, which will later be used in cursors for other procedures
 
@@ -82,11 +83,12 @@ AS
          o_ev.change_action( 'static insert' );
 
          INSERT INTO td_part_gtt
-                     ( table_owner, table_name, partition_name, partition_position
+                ( table_owner, table_name, partition_name, partition_position, partid
                      )
-              VALUES ( UPPER( p_owner ), UPPER( p_table ), UPPER( p_partname ), l_part_position
+                VALUES ( UPPER( p_owner ), UPPER( p_table ), UPPER( p_partname ), l_part_position, p_partid
                      );
          evolve.log_msg( SQL%ROWCOUNT||' rows inserted into TD_PART_GTT', 4 );
+
       ELSE
 
          SELECT nvl(p_source_column, pk.column_name),
@@ -105,8 +107,8 @@ AS
          o_ev.change_action( 'dynamic insert' );
          
          l_dsql := 
-         'insert into td_part_gtt (table_owner, table_name, partition_name, partition_position) '
-         || ' SELECT owner, object_name, subobject_name, object_id'
+         'insert into td_part_gtt ( table_owner, table_name, partition_name, partition_position, partid ) '
+         || ' SELECT owner, object_name, subobject_name, object_id, '||p_partid
          || '  FROM all_objects'
          || ' WHERE owner = '''
          || UPPER( p_owner )
@@ -3133,6 +3135,9 @@ AS
       p_part_type       VARCHAR2 DEFAULT NULL
    )
    IS
+      l_partid          VARCHAR2( 30 )    := 'TD$' || SYS_CONTEXT( 'USERENV', 'SESSIONID' )
+                                                   || TO_CHAR( SYSDATE, 'yyyymmdd_hhmiss' );
+
       l_tab_name   VARCHAR2( 61 )   := UPPER( p_owner ) || '.' || UPPER( p_table );
       l_src_name   VARCHAR2( 61 )   := UPPER( p_source_owner ) || '.' || UPPER( p_source_object );
       l_msg        VARCHAR2( 2000 );
@@ -3140,8 +3145,10 @@ AS
       l_pidx_cnt   NUMBER;
       l_idx_cnt    NUMBER;
       l_rows       BOOLEAN          DEFAULT FALSE;
+      l_part_type  VARCHAR2(10)     := td_utils.get_tab_part_type( p_owner, p_table );
       o_ev         evolve_ot        := evolve_ot( p_module => 'unusable_indexes' );
    BEGIN
+
       CASE
          WHEN p_partname IS NOT NULL AND( p_source_owner IS NOT NULL OR p_source_object IS NOT NULL )
          THEN
@@ -3180,6 +3187,7 @@ AS
                             p_source_owner       => p_source_owner,
                             p_source_object      => p_source_object,
                             p_source_column      => p_source_column,
+                            p_partid             => l_partid,
                             p_d_num              => p_d_num,
                             p_p_num              => p_p_num
                           );
@@ -3191,70 +3199,83 @@ AS
       o_ev.change_action( 'calculate indexes to affect' );
 
       FOR c_idx IN ( SELECT *
-                      FROM ( SELECT DISTINCT    'alter index '
-                                             || owner
-                                             || '.'
-                                             || index_name
-                                             || CASE idx_ddl_type
-                                                   WHEN 'I'
-                                                      THEN NULL
-                                                   ELSE ' modify partition ' || partition_name
-                                                END
-                                             || ' unusable' DDL,
-                                             idx_ddl_type, partition_name, partition_position,
-                                             SUM( CASE idx_ddl_type
-                                                     WHEN 'I'
-                                                        THEN 1
-                                                     ELSE 0
-                                                  END ) OVER( PARTITION BY 1 ) num_indexes,
-                                             SUM( CASE idx_ddl_type
-                                                     WHEN 'P'
-                                                        THEN 1
-                                                     ELSE 0
-                                                  END ) OVER( PARTITION BY 1 ) num_partitions,
-                                             CASE idx_ddl_type
-                                                WHEN 'I'
-                                                   THEN ai_status
-                                                ELSE aip_status
-                                             END status, include
-                                       FROM ( SELECT index_type, owner, ai.index_name, partition_name,
-                                                     aip.partition_position, partitioned, aip.status aip_status,
-                                                     ai.status ai_status,
-                                                     CASE
-                                                        WHEN partition_name IS NULL OR partitioned = 'NO'
-                                                           THEN 'I'
-                                                        ELSE 'P'
-                                                     END idx_ddl_type,
-                                                     CASE
-                                                        WHEN( p_source_object IS NOT NULL OR p_partname IS NOT NULL
-                                                            )
-                                                        AND ( partitioned = 'YES' )
-                                                        AND partition_name IS NULL
-                                                           THEN 'N'
-                                                        ELSE 'Y'
-                                                     END include
-                                               FROM td_part_gtt JOIN all_ind_partitions aip USING( partition_name )
-                                                    RIGHT JOIN all_indexes ai
-                                                    ON ai.index_name = aip.index_name AND ai.owner = aip.index_owner
-                                              WHERE ai.table_name = UPPER( p_table )
-                                                AND ai.table_owner = UPPER( p_owner ))
-                                      WHERE REGEXP_LIKE( index_type, '^' || p_index_type, 'i' )
-                                        AND REGEXP_LIKE( partitioned,
-                                                         CASE
-                                                            WHEN REGEXP_LIKE( 'global', p_part_type, 'i' )
-                                                               THEN 'NO'
-                                                            WHEN REGEXP_LIKE( 'local', p_part_type, 'i' )
-                                                               THEN 'YES'
-                                                            ELSE '.'
-                                                         END,
-                                                         'i'
-                                                       )
-                                        -- USE an NVL'd regular expression to determine specific indexes to work on
-                                        AND REGEXP_LIKE( index_name, NVL( p_index_regexp, '.' ), 'i' )
-                                        AND NOT REGEXP_LIKE( index_type, 'iot', 'i' )
-                                        AND include = 'Y'
-                                   ORDER BY idx_ddl_type, partition_position )
-                     WHERE status IN( 'VALID', 'USABLE', 'N/A' ))
+                       FROM ( SELECT DISTINCT    'alter index '
+                                     || owner
+                                     || '.'
+                                     || index_name
+                                     || CASE idx_ddl_type
+                                     WHEN 'I'
+                                     THEN NULL
+                                     ELSE ' modify '
+                                     || part_type
+                                     ||'ition ' || partition_name
+                                     END
+                                     || ' unusable' DDL,
+                                     idx_ddl_type, partition_name,
+                                     SUM( CASE idx_ddl_type
+                                          WHEN 'I'
+                                          THEN 1
+                                          ELSE 0
+                                          END ) OVER( PARTITION BY 1 ) num_indexes,
+                                     SUM( CASE idx_ddl_type
+                                          WHEN 'P'
+                                          THEN 1
+                                          ELSE 0
+                                          END ) OVER( PARTITION BY 1 ) num_partitions,
+                                     CASE idx_ddl_type
+                                     WHEN 'I'
+                                     THEN ai_status
+                                     ELSE aip_status
+                                     END status, include, partition_position,
+                                     part_type
+                                FROM ( SELECT partition_position, index_type, owner, ai.index_name, partition_name,
+                                              partitioned, aip.status aip_status,
+                                              ai.status ai_status,
+                                              part_type,
+                                              CASE
+                                              WHEN partition_name IS NULL OR partitioned = 'NO'
+                                              THEN 'I'
+                                              ELSE 'P'
+                                              END idx_ddl_type,
+                                              CASE
+                                              WHEN( p_source_object IS NOT NULL OR p_partname IS NOT NULL
+                                                  )
+                                          AND ( partitioned = 'YES' )
+                                          AND partition_name IS NULL
+                                              THEN 'N'
+                                              ELSE 'Y'
+                                              END include
+                                         FROM td_part_gtt JOIN 
+                                              (  SELECT DISTINCT CASE WHEN subpartition_name IS NULL THEN partition_name ELSE subpartition_name END partition_name,
+                                                        index_owner,
+                                                        index_name,
+                                                        CASE WHEN subpartition_name IS null THEN ip.status ELSE isp.status END status,
+                                                        CASE WHEN subpartition_name IS null THEN 'part' ELSE 'subpart' END part_type
+                                                   FROM all_ind_partitions ip
+                                                   left JOIN all_ind_subpartitions isp
+                                                        USING (index_owner, index_name, partition_name)
+                                              ) aip USING( partition_name )
+                                        RIGHT JOIN all_indexes ai
+                                              ON ai.index_name = aip.index_name AND ai.owner = aip.index_owner
+                                        WHERE ai.table_name = UPPER( p_table )
+                                          AND ai.table_owner = UPPER( p_owner ))
+                               WHERE REGEXP_LIKE( index_type, '^' || p_index_type, 'i' )
+                                 AND REGEXP_LIKE( partitioned,
+                                                  CASE
+                                                  WHEN REGEXP_LIKE( 'global', p_part_type, 'i' )
+                                                  THEN 'NO'
+                                                  WHEN REGEXP_LIKE( 'local', p_part_type, 'i' )
+                                                  THEN 'YES'
+                                                  ELSE '.'
+                                                  END,
+                                                  'i'
+                                                )
+                                     -- USE an NVL'd regular expression to determine specific indexes to work on
+                                 AND REGEXP_LIKE( index_name, NVL( p_index_regexp, '.' ), 'i' )
+                                 AND NOT REGEXP_LIKE( index_type, 'iot', 'i' )
+                                 AND include = 'Y'
+                               ORDER BY idx_ddl_type )
+                      WHERE status IN( 'VALID', 'USABLE', 'N/A' ))
       LOOP
          o_ev.change_action( 'execute index DDL' );
          l_rows        := TRUE;
@@ -3290,6 +3311,8 @@ AS
          evolve.log_msg( 'No matching usable indexes found on ' || l_tab_name, 2 );
       END IF;
 
+      DELETE FROM td_part_gtt WHERE partid = l_partid;
+
       o_ev.clear_app_info;
    EXCEPTION
       WHEN OTHERS
@@ -3307,57 +3330,96 @@ AS
       l_cnt             NUMBER           := 0;
       l_tab_name        VARCHAR2( 61 )   := UPPER( p_owner || '.' || p_table );
       l_concurrent_id   VARCHAR2( 100 );
+      l_part_type       VARCHAR2( 10 )   := td_utils.get_tab_part_type( p_owner, p_table );
       o_ev              evolve_ot        := evolve_ot( p_module => 'usable_indexes', p_action => 'Rebuild indexes' );
    BEGIN
-      td_utils.check_table( p_owner => p_owner, p_table => p_table );
 
-      IF td_utils.is_part_table( p_owner, p_table )
+      -- record l_part_type value
+      evolve.log_variable( 'l_part_type', l_part_type );      
+      -- make sure the table exists
+      td_utils.check_table( p_owner => p_owner, p_table => p_table );
+      
+      IF l_part_type <> 'normal'
       THEN
-         -- need to get a unique "job header" number in case we are running concurrently
-         o_ev.change_action( 'get concurrent id' );
 
          IF td_core.is_true( p_concurrent )
          THEN
+            -- need to get a unique "job header" number in case we are running concurrently
+            o_ev.change_action( 'get concurrent id' );
+
             l_concurrent_id    := evolve.get_concurrent_id;
+            evolve.log_variable( 'l_concurrent_id', l_concurrent_id );
          END IF;
 
          -- rebuild local indexes first
          o_ev.change_action( 'rebuild local indexes' );
 
-         FOR c_idx IN ( SELECT  table_name, partition_position,
-                                   'alter table '
-                                || table_owner
-                                || '.'
-                                || table_name
-                                || ' modify partition '
-                                || partition_name
-                                || ' rebuild unusable local indexes' DDL,
-                                partition_name
-                           FROM all_tab_partitions
-                          WHERE table_name = UPPER( p_table ) AND table_owner = UPPER( p_owner )
-                       ORDER BY table_name, partition_position )
+         FOR c_idx IN ( SELECT  DISTINCT table_name, partition_position,
+                               'alter table '
+                               || table_owner
+                               || '.'
+                               || table_name
+                               || ' modify '
+                               || CASE part_type WHEN 'subpart' THEN 'subpartition ' ELSE 'partition ' end
+                               || partition_name
+                               || ' rebuild unusable local indexes' DDL,
+                               partition_name,
+                               part_type
+                          FROM ( SELECT table_name,
+                                        CASE WHEN subpartition_name IS NULL THEN partition_position ELSE subpartition_position END partition_position,
+                                        table_owner,
+                                        CASE WHEN subpartition_name IS NULL THEN partition_name ELSE subpartition_name END partition_name,
+                                        CASE WHEN subpartition_name IS NULL THEN 'part' ELSE 'subpart' END part_type
+                                   FROM  all_tab_partitions ip
+                                   left JOIN all_tab_subpartitions isp
+                                        USING (table_owner, table_name, partition_name )) tabs 
+                          JOIN ( SELECT table_name,
+                                        table_owner,
+                                        CASE WHEN subpartition_name IS NULL THEN ip.partition_name ELSE isp.subpartition_name END partition_name,
+                                        CASE WHEN subpartition_name IS NULL THEN ip.status ELSE isp.status END status
+                                   FROM all_indexes ix
+                                   JOIN all_ind_partitions ip
+                                        ON ix.owner = ip.index_owner
+                                    AND ix.index_name = ip.index_name
+                                   left JOIN all_ind_subpartitions isp
+                                        ON ip.index_owner = isp.index_owner
+                                    AND ip.index_name = isp.index_name
+                                    AND ip.partition_name = isp.partition_name ) inds
+                               USING (table_owner, table_name, partition_name)
+                         WHERE table_name = UPPER( p_table ) 
+                           AND table_owner = UPPER( p_owner )
+                           AND status = 'UNUSABLE'
+                         ORDER BY table_name, partition_position
+                      )
          LOOP
             evolve.exec_sql( p_sql => c_idx.DDL, p_auto => 'yes', p_concurrent_id => l_concurrent_id );
             l_cnt    := l_cnt + 1;
          END LOOP;
+         
+         IF l_cnt = 0
+         THEN
+            evolve.log_msg( 'No matching unusable local indexes found', 2 );
+         ELSE
 
-         evolve.log_msg(    'Rebuild processes for any unusable indexes on '
-                             || l_cnt
-                             || ' partition'
-                             || CASE
-                                   WHEN l_cnt = 1
-                                      THEN NULL
-                                   ELSE 's'
-                                END
-                             || ' of table '
-                             || l_tab_name
-                             || ' '
-                             || CASE
-                                   WHEN td_core.is_true( p_concurrent )
-                                      THEN 'submitted to the Oracle scheduler'
-                                   ELSE 'executed'
-                                END
-                           );
+            evolve.log_msg(    'Rebuild processes for unusable indexes on '
+                            || l_cnt
+                            || ' '
+                            || l_part_type || 'ition'
+                            || CASE
+                            WHEN l_cnt = 1
+                            THEN NULL
+                            ELSE 's'
+                            END
+                            || ' of table '
+                            || l_tab_name
+                            || ' '
+                            || CASE
+                            WHEN td_core.is_true( p_concurrent )
+                            THEN 'submitted to the Oracle scheduler'
+                            ELSE 'executed'
+                            END
+                          );
+         END IF;
       END IF;
 
       IF td_core.is_true( p_concurrent )

@@ -138,7 +138,7 @@ AS
    FUNCTION object_exists( p_owner VARCHAR2, p_object VARCHAR2 )
       RETURN BOOLEAN;
 
-      FUNCTION get_tab_part_type( p_owner VARCHAR2, p_table VARCHAR2, p_partname VARCHAR2 DEFAULT NULL )
+   FUNCTION get_tab_part_type( p_owner VARCHAR2, p_table VARCHAR2, p_partname VARCHAR2 DEFAULT NULL )
       RETURN VARCHAR2;
       
    FUNCTION get_part_for_subpart( p_owner VARCHAR2, p_segment VARCHAR2, p_subpart VARCHAR2, p_segment_type VARCHAR2 )

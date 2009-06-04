@@ -12,6 +12,7 @@ IS
       p_source_owner    VARCHAR2 DEFAULT NULL,
       p_source_object   VARCHAR2 DEFAULT NULL,
       p_source_column   VARCHAR2 DEFAULT NULL,
+      p_partid          VARCHAR2 DEFAULT NULL,
       p_d_num           NUMBER DEFAULT 3,
       p_p_num           NUMBER DEFAULT 1048576
    );
