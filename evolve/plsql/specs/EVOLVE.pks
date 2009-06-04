@@ -24,6 +24,21 @@ AS
       p_name       VARCHAR2,
       p_value      VARCHAR2
    );
+      
+   PROCEDURE log_variable( 
+      p_name       VARCHAR2,
+      p_value      NUMBER
+   );
+      
+   PROCEDURE log_variable( 
+      p_name       VARCHAR2,
+      p_value      DATE
+   );
+      
+   PROCEDURE log_variable( 
+      p_name       VARCHAR2,
+      p_value      BOOLEAN
+   );
 
    PROCEDURE raise_err( p_name VARCHAR2, p_add_msg VARCHAR2 DEFAULT NULL );
 

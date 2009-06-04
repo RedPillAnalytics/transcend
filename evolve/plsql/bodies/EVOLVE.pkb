@@ -179,6 +179,33 @@ AS
    BEGIN
       log_msg('The value of variable "'||upper(p_name)||'" is: '||p_value, 5);
    END log_variable;
+
+   PROCEDURE log_variable( 
+      p_name       VARCHAR2,
+      p_value      NUMBER
+   )
+   AS
+   BEGIN
+      log_variable( p_name, to_char( p_value) );
+   END log_variable;
+
+   PROCEDURE log_variable( 
+      p_name       VARCHAR2,
+      p_value      DATE
+   )
+   AS
+   BEGIN
+      log_variable( p_name, to_char( p_value) );
+   END log_variable;
+
+   PROCEDURE log_variable( 
+      p_name       VARCHAR2,
+      p_value      BOOLEAN
+   )
+   AS
+   BEGIN
+      log_variable( p_name, CASE WHEN p_value THEN 'TRUE' ELSE 'FALSE' END );
+   END log_variable;
    
       -- used to return a distinct error message number by label
    FUNCTION get_err_cd( p_name VARCHAR2 )
