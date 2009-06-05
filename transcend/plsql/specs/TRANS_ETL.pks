@@ -180,6 +180,7 @@ IS
       p_partname        VARCHAR2 DEFAULT NULL,
       p_index_regexp    VARCHAR2 DEFAULT NULL,
       p_index_type      VARCHAR2 DEFAULT NULL,
+      p_part_type       VARCHAR2 DEFAULT NULL,
       p_concurrent      VARCHAR2 DEFAULT 'no' 
    );
 

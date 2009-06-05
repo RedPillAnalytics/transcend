@@ -497,6 +497,7 @@ AS
       p_partname        VARCHAR2 DEFAULT NULL,
       p_index_regexp    VARCHAR2 DEFAULT NULL,
       p_index_type      VARCHAR2 DEFAULT NULL,
+      p_part_type       VARCHAR2 DEFAULT NULL,
       p_concurrent      VARCHAR2 DEFAULT 'no' 
    )
    IS
@@ -506,6 +507,7 @@ AS
                                  p_partname     => p_partname,
                                  p_index_regexp => p_index_regexp,
                                  p_index_type   => p_index_type,
+                                 p_part_type    => p_part_type,
                                  p_concurrent   => p_concurrent );
    EXCEPTION
       WHEN OTHERS

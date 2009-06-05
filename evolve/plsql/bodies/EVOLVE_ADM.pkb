@@ -551,6 +551,8 @@ IS
                       );
          set_error_conf( p_name         => 'not_partitioned',
                          p_message      => 'The specified table or index is not partititoned' );
+         set_error_conf( p_name         => 'not_subpartitioned',
+                         p_message      => 'The specified table or index is not subpartititoned' );
          set_error_conf( p_name         => 'parms_not_compatible',
                          p_message      => 'The specified parameters are not compatible'
                        );

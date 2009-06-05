@@ -3329,6 +3329,7 @@ AS
       p_partname        VARCHAR2 DEFAULT NULL,
       p_index_regexp    VARCHAR2 DEFAULT NULL,
       p_index_type      VARCHAR2 DEFAULT NULL,
+      p_part_type       VARCHAR2 DEFAULT NULL,
       p_concurrent      VARCHAR2 DEFAULT 'no' 
    )
    IS
@@ -3338,16 +3339,18 @@ AS
       l_tab_name        VARCHAR2( 61 )   := UPPER( p_owner || '.' || p_table );
       l_concurrent_id   VARCHAR2( 100 );
       l_part_type       VARCHAR2( 10 )   := td_utils.get_tab_part_type( p_owner, p_table );
-      o_ev              evolve_ot        := evolve_ot( p_module => 'usable_indexes', p_action => 'Rebuild indexes' );
+      o_ev              evolve_ot        := evolve_ot( p_module => 'usable_indexes' );
    BEGIN
 
-      -- record l_part_type value
-      evolve.log_variable( 'l_part_type', l_part_type );      
+      evolve.log_variable( 'l_part_type', l_part_type );
+            
       -- make sure the table exists
       td_utils.check_table( p_owner => p_owner, p_table => p_table );
       
-      IF l_part_type <> 'normal'
+      IF l_part_type <> 'normal' OR p_part_type IS NULL OR lower( p_part_type ) IN ('local','all')
       THEN
+         
+         o_ev.change_action( 'process local indexes');
 
          IF td_core.is_true( p_concurrent )
          THEN
@@ -3357,9 +3360,6 @@ AS
             l_concurrent_id    := evolve.get_concurrent_id;
             evolve.log_variable( 'l_concurrent_id', l_concurrent_id );
          END IF;
-
-         -- rebuild local indexes first
-         o_ev.change_action( 'rebuild local indexes' );
 
          FOR c_idx IN ( SELECT  DISTINCT table_name, partition_position,
                                'alter table '
@@ -3408,6 +3408,8 @@ AS
             l_cnt    := l_cnt + 1;
          END LOOP;
          
+         evolve.log_variable( 'L_CNT', l_cnt );
+         
          IF l_cnt = 0
          THEN
             evolve.log_msg( 'No matching unusable local indexes found', 2 );
@@ -3452,62 +3454,68 @@ AS
          l_concurrent_id    := evolve.get_concurrent_id;
       END IF;
 
-      -- now see if any global are still unusable
-      o_ev.change_action( 'rebuild global indexes' );
 
-      FOR c_gidx IN ( SELECT  table_name,
-                              'alter index ' || owner || '.' || index_name || ' rebuild parallel nologging' DDL
-                         FROM all_indexes
-                        WHERE table_name = UPPER( p_table )
-                          AND table_owner = UPPER( p_owner )
-                          AND status = 'UNUSABLE'
-                          AND partitioned = 'NO'
-                     ORDER BY table_name )
-      LOOP
-         l_rows    := TRUE;
-         evolve.exec_sql( p_sql => c_gidx.DDL, p_auto => 'yes', p_concurrent_id => l_concurrent_id );
-         l_cnt     := l_cnt + 1;
-      END LOOP;
-
-      IF l_rows
+      IF l_part_type = 'normal' OR p_part_type IS NULL OR lower( p_part_type ) IN ('global','all')
       THEN
-         IF td_core.is_true( p_concurrent )
-         THEN
-            -- now simply waiting for all the concurrent processes to complete
-            o_ev.change_action( 'wait on concurrent processes' );
-            evolve.coordinate_sql( p_concurrent_id => l_concurrent_id, p_raise_err => 'no' );
-         END IF;
 
-         evolve.log_msg(    l_cnt
-                             || CASE
-                                   WHEN td_utils.is_part_table( p_owner, p_table )
-                                      THEN ' global'
-                                   ELSE NULL
-                                END
-                             || ' index rebuild process'
-                             || CASE l_cnt
-                                   WHEN 1
-                                      THEN NULL
-                                   ELSE 'es'
-                                END
-                             || ' for table '
-                             || l_tab_name
-                             || ' '
-                             || CASE
-                                   WHEN td_core.is_true( p_concurrent )
-                                      THEN 'submitted to the Oracle scheduler'
-                                   ELSE 'executed'
-                                END
-                           );
-      ELSE
-         evolve.log_msg(    'No matching unusable '
-                             || CASE
-                                   WHEN td_utils.is_part_table( p_owner, p_table )
-                                      THEN 'global '
-                                   ELSE NULL
-                                END
-                             || 'indexes found', 2
-                           );
+         -- now see if any global are still unusable
+         o_ev.change_action( 'process global indexes' );
+
+         FOR c_gidx IN ( SELECT  table_name,
+                                'alter index ' || owner || '.' || index_name || ' rebuild parallel nologging' DDL
+                           FROM all_indexes
+                          WHERE table_name = UPPER( p_table )
+                            AND table_owner = UPPER( p_owner )
+                            AND status = 'UNUSABLE'
+                            AND partitioned = 'NO'
+                          ORDER BY table_name )
+         LOOP
+            l_rows    := TRUE;
+            evolve.exec_sql( p_sql => c_gidx.DDL, p_auto => 'yes', p_concurrent_id => l_concurrent_id );
+            l_cnt     := l_cnt + 1;
+         END LOOP;
+
+         IF l_rows
+         THEN
+            IF td_core.is_true( p_concurrent )
+            THEN
+               -- now simply waiting for all the concurrent processes to complete
+               o_ev.change_action( 'wait on concurrent processes' );
+               evolve.coordinate_sql( p_concurrent_id => l_concurrent_id, p_raise_err => 'no' );
+            END IF;
+
+            evolve.log_msg(    l_cnt
+                            || CASE
+                            WHEN td_utils.is_part_table( p_owner, p_table )
+                            THEN ' global'
+                            ELSE NULL
+                            END
+                            || ' index rebuild process'
+                            || CASE l_cnt
+                            WHEN 1
+                            THEN NULL
+                            ELSE 'es'
+                            END
+                            || ' for table '
+                            || l_tab_name
+                            || ' '
+                            || CASE
+                            WHEN td_core.is_true( p_concurrent )
+                            THEN 'submitted to the Oracle scheduler'
+                            ELSE 'executed'
+                            END
+                          );
+         ELSE
+            evolve.log_msg(    'No matching unusable '
+                            || CASE
+                            WHEN td_utils.is_part_table( p_owner, p_table )
+                            THEN 'global '
+                            ELSE NULL
+                            END
+                            || 'indexes found', 2
+                          );
+         END IF;
+         
       END IF;
 
       o_ev.clear_app_info;
