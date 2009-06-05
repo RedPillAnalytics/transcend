@@ -207,6 +207,14 @@ AS
       log_variable( p_name, CASE WHEN p_value THEN 'TRUE' ELSE 'FALSE' END );
    END log_variable;
    
+   PROCEDURE log_exception( 
+      p_name       VARCHAR2
+   )
+   AS
+   BEGIN
+      log_msg('Exception "'||upper(p_name)||'" was handled', 5);
+   END log_exception;
+   
       -- used to return a distinct error message number by label
    FUNCTION get_err_cd( p_name VARCHAR2 )
       RETURN NUMBER
@@ -393,7 +401,7 @@ AS
    AS
       l_results   NUMBER;
    BEGIN
-      log_msg( 'P_AUTO: ' || p_auto, 5 );
+      log_msg( 'This is an AUTONOMOUS_TRANSACTION', 5 );
       log_msg( CASE
                              WHEN p_msg IS NULL
                                 THEN 'SQL: ' || p_sql
@@ -404,6 +412,9 @@ AS
       THEN
          IF td_core.is_true( p_auto )
          THEN
+            
+            log_msg( 'AUTONOMOUS_TRANSACTION initiated', 5 );
+
             l_results := exec_auto( p_sql => p_sql );
          ELSE
             EXECUTE IMMEDIATE p_sql;
@@ -428,6 +439,7 @@ AS
    AS
       l_results   NUMBER;
    BEGIN
+
       log_msg( CASE
                              WHEN p_msg IS NULL
                                 THEN 'SQL: ' || p_sql
@@ -436,7 +448,6 @@ AS
 
       IF NOT is_debugmode
       THEN
-         log_msg( 'P_AUTO: ' || p_auto, 5 );
 
          CASE
             WHEN p_concurrent_id IS NOT NULL
@@ -445,7 +456,11 @@ AS
                submit_sql( p_sql => p_sql, p_concurrent_id => p_concurrent_id );
             WHEN td_core.is_true( p_auto )
             THEN
+
+               log_msg( 'AUTONOMOUS_TRANSACTION initiated', 5 );
+
                l_results := exec_auto( p_sql => p_sql );
+
             ELSE
                EXECUTE IMMEDIATE p_sql;
          END CASE;

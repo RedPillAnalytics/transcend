@@ -206,6 +206,26 @@ IS
       p_options           VARCHAR2 DEFAULT 'GATHER AUTO',
       p_segment_type      VARCHAR2 DEFAULT NULL
    );
-      
+ 
+   PROCEDURE add_range_part( 
+      p_owner           VARCHAR2, 
+      p_table           VARCHAR2,
+      p_partname        VARCHAR2,
+      p_value           VARCHAR2,
+      p_tablespace      VARCHAR2 DEFAULT NULL,
+      p_compress        VARCHAR2 DEFAULT 'no'
+   );
+
+   PROCEDURE add_range_list_subpart( 
+      p_owner           VARCHAR2, 
+      p_table           VARCHAR2,
+      p_partname        VARCHAR2,
+      p_subpartname     VARCHAR2,
+      p_value           VARCHAR2,
+      p_tablespace      VARCHAR2 DEFAULT NULL,
+      p_compress        VARCHAR2 DEFAULT 'no'
+   );
+
+     
 END trans_etl;
 /

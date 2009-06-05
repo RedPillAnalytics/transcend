@@ -678,10 +678,11 @@ AS
       END CASE;
 
       -- register the value of p_concurrent
-      evolve.log_msg( 'The value of P_CONCURRENT is: '||p_concurrent, 5 );
+      evolve.log_variable( 'p_concurrent',p_concurrent );
+      
+      -- register the value of p_concurrent
+      evolve.log_variable( 'p_partname',p_partname );
 
-      -- register the value of p_partname
-      evolve.log_msg( 'The value of P_PARTNAME is: '||p_partname, 5 );
 
       -- find out which tables are partitioned
       l_src_part       := td_utils.is_part_table( p_source_owner, p_source_table);
@@ -1727,7 +1728,7 @@ AS
          THEN
             evolve.coordinate_sql( p_concurrent_id => l_concurrent_id, p_raise_err => 'no' );
          END IF;
-
+         
          evolve.log_msg( 'Value for P_MAINT_TYPE: ' || p_maint_type, 5 );
          evolve.log_msg(    l_con_cnt
                              || ' constraint '
@@ -3716,30 +3717,35 @@ AS
       END IF;
       
       
-      -- now, import the segment statistics
-      IF REGEXP_LIKE( l_src_seg_type, 'table','i' )
+      IF evolve.is_debugmode
       THEN
-         
-         o_ev.change_action( 'import table stats' );
 
-         DBMS_STATS.import_table_stats( ownname       => p_owner,
-                                        tabname       => p_segment,
-                                        partname      => p_partname,
-                                        statown       => USER,
-                                        stattab       => 'OPT_STATS',
-                                        statid        => l_statid
-                                      );
-      ELSE
+         -- now, import the segment statistics
+         IF REGEXP_LIKE( l_src_seg_type, 'table','i' )
+         THEN
+            
+            o_ev.change_action( 'import table stats' );
+            
+            DBMS_STATS.import_table_stats( ownname       => p_owner,
+                                           tabname       => p_segment,
+                                           partname      => p_partname,
+                                           statown       => USER,
+                                           stattab       => 'OPT_STATS',
+                                           statid        => l_statid
+                                         );
+         ELSE
 
-         o_ev.change_action( 'import index stats' );
+            o_ev.change_action( 'import index stats' );
 
-         DBMS_STATS.import_index_stats( ownname       => p_owner,
-                                        indname       => p_segment,
-                                        partname      => p_partname,
-                                        statown       => USER,
-                                        stattab       => 'OPT_STATS',
-                                        statid        => l_statid
-                                      );
+            DBMS_STATS.import_index_stats( ownname       => p_owner,
+                                           indname       => p_segment,
+                                           partname      => p_partname,
+                                           statown       => USER,
+                                           stattab       => 'OPT_STATS',
+                                           statid        => l_statid
+                                         );
+
+         END IF;
 
       END IF;
 
@@ -3825,36 +3831,42 @@ AS
          THEN
             evolve.raise_err( 'multiple_segments', l_target_seg );
       END;
-            
-      -- this will either take partition level statistics and import into a table
-      -- or, it will take table level statistics and import it into a partition
-      -- or, it will take table level statistics and import it into a table.
-      IF REGEXP_LIKE( l_target_type, 'table','i' )
-      THEN
-         
-	 o_ev.change_action( 'gathering table stats' );
-         DBMS_STATS.gather_table_stats( ownname               => p_owner,
-                                        tabname               => p_segment,
-                                        partname              => p_partname,
-                                        estimate_percent      => NVL( p_percent, DBMS_STATS.auto_sample_size ),
-                                        method_opt            => p_method,
-                                        DEGREE                => NVL( p_degree, DBMS_STATS.auto_degree ),
-                                        granularity           => p_granularity,
-                                        CASCADE               => NVL( td_core.is_true( p_cascade, TRUE ),
-                                                                      DBMS_STATS.auto_cascade
-                                                                    )
-                                      );
-      ELSE
 
-         o_ev.change_action( 'export index stats' );
-         DBMS_STATS.gather_index_stats( ownname               => p_owner,
-                                        indname               => p_segment,
-                                        partname              => p_partname,
-                                        estimate_percent      => NVL( p_percent, DBMS_STATS.auto_sample_size ),
-                                        DEGREE                => NVL( p_degree, DBMS_STATS.auto_degree ),
-                                        granularity           => p_granularity
-                                      );
+      IF evolve.is_debugmode
+      THEN
+      
+         -- this will either take partition level statistics and import into a table
+         -- or, it will take table level statistics and import it into a partition
+         -- or, it will take table level statistics and import it into a table.
+         IF REGEXP_LIKE( l_target_type, 'table','i' )
+         THEN
+            
+	    o_ev.change_action( 'gathering table stats' );
+            DBMS_STATS.gather_table_stats( ownname               => p_owner,
+                                           tabname               => p_segment,
+                                           partname              => p_partname,
+                                           estimate_percent      => NVL( p_percent, DBMS_STATS.auto_sample_size ),
+                                           method_opt            => p_method,
+                                           DEGREE                => NVL( p_degree, DBMS_STATS.auto_degree ),
+                                           granularity           => p_granularity,
+                                           CASCADE               => NVL( td_core.is_true( p_cascade, TRUE ),
+                                                                         DBMS_STATS.auto_cascade
+                                                                       )
+                                         );
+         ELSE
+
+            o_ev.change_action( 'export index stats' );
+            DBMS_STATS.gather_index_stats( ownname               => p_owner,
+                                           indname               => p_segment,
+                                           partname              => p_partname,
+                                           estimate_percent      => NVL( p_percent, DBMS_STATS.auto_sample_size ),
+                                           DEGREE                => NVL( p_degree, DBMS_STATS.auto_degree ),
+                                           granularity           => p_granularity
+                                         );
+         END IF;
+         
       END IF;
+
 
       evolve.log_msg(    'Statistics from '
                       || ' gathered on '
@@ -3874,6 +3886,223 @@ AS
          o_ev.clear_app_info;
          RAISE;
    END gather_stats;
+
+   -- procedure to add a partition (and possible subpartition) to a range partitioned table (with possible list underneath)
+   PROCEDURE add_range_part( 
+      p_owner           VARCHAR2, 
+      p_table           VARCHAR2,
+      p_partname        VARCHAR2,
+      p_value           VARCHAR2,
+      p_tablespace      VARCHAR2 DEFAULT NULL,
+      p_compress        VARCHAR2 DEFAULT 'no'
+   )
+   IS
+      l_ddl             LONG;
+      l_tab_name        VARCHAR2( 61 )   := UPPER( p_owner || '.' || p_table );
+      l_part_type       VARCHAR2( 10 )   := td_utils.get_tab_part_type( p_owner, p_table );
+      l_higher_part     all_tab_partitions.partition_name%type;
+
+      e_higher_part     EXCEPTION;
+      PRAGMA            EXCEPTION_INIT( e_higher_part, -14074 );
+
+      o_ev              evolve_ot        := evolve_ot( p_module => 'add_range_part' );
+   BEGIN
+
+      evolve.log_variable( 'l_part_type', l_part_type );
+      
+      -- basic checks about the table to make sure all is well
+      CASE
+      WHEN l_part_type = 'normal'
+      THEN
+         evolve.raise_err( 'not_partioned', l_tab_name );
+      ELSE
+         NULL;
+      END CASE;
+      
+      -- try to construct an ADD statement from the parameters provided
+      l_ddl := 'alter table '
+               || l_tab_name
+               || ' add partition '
+               || upper( p_partname )
+               || ' values less than ('
+               || p_value
+               || ') '
+               || CASE WHEN td_core.is_true( p_compress )
+                  THEN NULL 
+                  ELSE 'no' END
+               || 'compress '
+               || CASE             
+                  WHEN p_tablespace is NULL 
+                  THEN NULL
+                  ELSE ' tablespace '|| upper( p_tablespace )
+                  END
+               || '( subpartition '
+               || upper( p_partname )
+               || '_DEFAULT values (DEFAULT) '
+               || CASE             
+                  WHEN p_tablespace is NULL 
+                  THEN NULL
+                  ELSE ' tablespace '|| upper( p_tablespace )
+                  END
+               || ' )';
+                 
+      BEGIN
+         
+         evolve.exec_sql( p_sql => l_ddl, p_auto => 'yes' );
+         
+      EXCEPTION
+         WHEN e_higher_part
+         THEN
+            
+            -- log that the exception was handled
+            evolve.log_exception( 'e_higher_part' );
+            
+            -- find out whether the particular partition has a default subpartition
+            SELECT DISTINCT last_value( partition_name ) 
+                     OVER ( partition BY table_owner, table_name 
+                            ORDER BY partition_position ROWS BETWEEN unbounded preceding AND unbounded following )
+              INTO l_higher_part
+              FROM all_tab_partitions
+             WHERE table_name = UPPER( p_table )
+               AND table_owner = UPPER( p_owner );
+            
+            evolve.log_variable( 'l_higer_part', l_higher_part );
+  
+            -- try to construct a SPLIT statement from the parameters provided
+            l_ddl := 'alter table '
+            || l_tab_name
+            || ' split partition '
+            || l_higher_part
+            || ' at ('
+            || p_value
+            || ') into ( partition '
+            ||p_partname
+            || CASE 
+               WHEN p_tablespace is NULL 
+               THEN NULL
+               ELSE ' tablespace '||p_tablespace
+               END
+            || ', partition '
+            || l_higher_part
+            || ')';
+            
+            evolve.exec_sql( p_sql => l_ddl, p_auto => 'yes' );
+               
+      END;
+
+      o_ev.clear_app_info;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         evolve.log_err;
+         o_ev.clear_app_info;
+         RAISE;
+   END add_range_part;
+   
+   -- procedure to add a partition (and possible subpartition) to a range partitioned table (with possible list underneath)
+   PROCEDURE add_range_list_subpart( 
+      p_owner           VARCHAR2, 
+      p_table           VARCHAR2,
+      p_partname        VARCHAR2,
+      p_subpartname     VARCHAR2,
+      p_value           VARCHAR2,
+      p_tablespace      VARCHAR2 DEFAULT NULL,
+      p_compress        VARCHAR2 DEFAULT 'no'
+   )
+   IS
+      l_ddl             LONG;
+      l_tab_name        VARCHAR2( 61 )   := UPPER( p_owner || '.' || p_table );
+      l_part_type       VARCHAR2( 10 )   := td_utils.get_tab_part_type( p_owner, p_table );
+      l_default_part    all_tab_subpartitions.subpartition_name%TYPE;
+      
+      e_default_part    EXCEPTION;
+      PRAGMA            EXCEPTION_INIT( e_default_part, -14621 );
+
+      o_ev              evolve_ot        := evolve_ot( p_module => 'add_range_part' );
+   BEGIN
+
+      evolve.log_variable( 'l_part_type', l_part_type );
+      
+      -- make sure this is a sbupartitioned table
+      CASE
+      WHEN l_part_type <> 'subpart'
+      THEN
+         evolve.raise_err( 'not_subpartioned', l_tab_name );
+      ELSE
+         NULL;
+      END CASE;
+      
+      -- try to construct an ADD statement from the parameters provided
+      l_ddl := 'alter table '
+               || l_tab_name
+               || ' modify partition '
+               || p_partname
+               || ' add subpartition '
+               || p_subpartname 
+               || ' values ('
+               || p_value
+               || ')'
+               || CASE 
+                  WHEN p_tablespace is NULL 
+                  THEN NULL
+                  ELSE ' tablespace '||p_tablespace
+                  END;
+ 
+                 
+      BEGIN
+         
+         evolve.exec_sql( p_sql => l_ddl, p_auto => 'yes' );
+         
+      EXCEPTION
+         WHEN e_default_part
+         THEN
+            
+            -- log that the exception was handled
+            evolve.log_exception( 'e_default_part' );
+            
+            -- find out whether the particular partition has a default subpartition
+
+            SELECT DISTINCT last_value( subpartition_name ) 
+                     OVER ( partition BY table_owner, table_name, partition_name 
+                            ORDER BY subpartition_position ROWS BETWEEN unbounded preceding AND unbounded following )
+              INTO l_default_part
+              FROM all_tab_subpartitions
+             WHERE table_name = UPPER( p_table )
+               AND table_owner = UPPER( p_owner )
+               AND partition_name = upper( p_partname );
+            
+            evolve.log_variable( 'l_default_part', l_default_part );
+  
+            -- try to construct a SPLIT statement from the parameters provided
+            l_ddl := 'alter table '
+            || l_tab_name
+            || ' split subpartition '
+            || l_default_part
+            || ' values ('
+            || p_value
+            || ') into ( subpartition '
+            ||p_subpartname
+            || CASE 
+               WHEN p_tablespace is NULL 
+               THEN NULL
+               ELSE ' tablespace '||p_tablespace
+               END
+            || ', subpartition '
+            || l_default_part
+            || ')';
+            
+            evolve.exec_sql( p_sql => l_ddl, p_auto => 'yes' );
+               
+      END;
+
+      o_ev.clear_app_info;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         evolve.log_err;
+         o_ev.clear_app_info;
+         RAISE;
+   END add_range_list_subpart;
 
 END td_dbutils;
 /

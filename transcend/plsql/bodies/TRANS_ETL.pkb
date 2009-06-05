@@ -585,6 +585,66 @@ AS
          o_ev.clear_app_info;
          RAISE;
    END gather_stats;
+   
+   PROCEDURE add_range_part( 
+      p_owner           VARCHAR2, 
+      p_table           VARCHAR2,
+      p_partname        VARCHAR2,
+      p_value           VARCHAR2,
+      p_tablespace      VARCHAR2 DEFAULT NULL,
+      p_compress        VARCHAR2 DEFAULT 'no'
+   )
+   IS
+      o_ev          evolve_ot      := evolve_ot( p_module => 'add_range_part' );
+   BEGIN
+
+      td_dbutils.add_range_part( p_owner        => p_owner,
+                                 p_table        => p_table,
+                                 p_partname     => p_partname,
+                                 p_value        => p_value,
+                                 p_tablespace   => p_tablespace,
+                                 p_compress     => p_compress );
+      
+           
+      o_ev.clear_app_info;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         evolve.log_err;
+         o_ev.clear_app_info;
+         RAISE;
+   END add_range_part;
+
+   PROCEDURE add_range_list_subpart( 
+      p_owner           VARCHAR2, 
+      p_table           VARCHAR2,
+      p_partname        VARCHAR2,
+      p_subpartname     VARCHAR2,
+      p_value           VARCHAR2,
+      p_tablespace      VARCHAR2 DEFAULT NULL,
+      p_compress        VARCHAR2 DEFAULT 'no'
+   )
+   IS
+      o_ev          evolve_ot      := evolve_ot( p_module => 'add_range_list_subpart' );
+   BEGIN
+
+      td_dbutils.add_range_list_subpart( p_owner        => p_owner,
+                                         p_table        => p_table,
+                                         p_partname     => p_partname,
+                                         p_subpartname  => p_subpartname,
+                                         p_value        => p_value,
+                                         p_tablespace   => p_tablespace,
+                                         p_compress     => p_compress );
+      
+           
+      o_ev.clear_app_info;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         evolve.log_err;
+         o_ev.clear_app_info;
+         RAISE;
+   END add_range_list_subpart;
 
 END trans_etl;
 /
