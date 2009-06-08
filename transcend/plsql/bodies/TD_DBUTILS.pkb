@@ -2497,27 +2497,41 @@ AS
       p_statmethod        VARCHAR2 DEFAULT NULL
    )
    IS
-      l_src_full       VARCHAR2( 61 )                           := UPPER( p_source_owner || '.' || p_source_table );
-      l_tab_full       VARCHAR2( 61 )                           := UPPER( p_owner || '.' || p_table );
-      l_part_full      VARCHAR2( 61 );
-      l_nonpart_full   VARCHAR2( 61 );
-      l_target_owner   all_tab_partitions.table_name%TYPE       := p_source_owner;
-      l_rows           BOOLEAN                                  := FALSE;
-      l_partname       all_tab_partitions.partition_name%TYPE;
-      l_ddl            LONG;
-      l_num_cons       NUMBER;
-      l_build_cons     BOOLEAN                                  := FALSE;
-      l_compress       BOOLEAN                                  := FALSE;
-      l_constraints    BOOLEAN                                  := FALSE;
-      l_retry_ddl      BOOLEAN                                  := FALSE;
-      l_src_part       BOOLEAN;
-      l_trg_part       BOOLEAN;
-      l_src_part_flg   VARCHAR2(3);
-      l_trg_part_flg   VARCHAR2(3);
+      
+      -- variables to hold table and owner names based on PART or NONPART
       l_part_table     all_tables.table_name%TYPE;
       l_nonpart_table  all_tables.table_name%TYPE;
       l_part_owner     all_tables.owner%TYPE;
       l_nonpart_owner  all_tables.owner%TYPE;
+
+      -- variable to hold full qualified table names based on SOURCE or TARGET
+      l_src_full       VARCHAR2( 61 )                   := UPPER( p_source_owner || '.' || p_source_table );
+      l_tab_full       VARCHAR2( 61 )                   := UPPER( p_owner || '.' || p_table );
+      
+      -- variables to hold fully qualified table names based on PART or NONPART
+      l_part_full      VARCHAR2( 61 );
+      l_nonpart_full   VARCHAR2( 61 );
+      
+      -- misc variables
+      l_partname       all_tab_partitions.partition_name%TYPE;
+      l_ddl            LONG;
+      l_num_cons       NUMBER;
+      
+      -- Booleans to handle the EXIT LOOP for issuing the EXCHANGE command
+      l_build_cons     BOOLEAN                          := FALSE;
+      l_compress       BOOLEAN                          := FALSE;
+      l_constraints    BOOLEAN                          := FALSE;
+      l_retry_ddl      BOOLEAN                          := FALSE;
+      l_src_part       BOOLEAN;
+      l_trg_part       BOOLEAN;
+      
+      -- escape hatch functionality for the EXIT WHEN loop on the EXCHANGE
+      l_exit_cnt      NUMBER                            := 0;
+            
+      -- catch empty cursors
+      l_rows           BOOLEAN                          := FALSE;
+      
+      -- exceptions
       e_no_stats       EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_stats, -20000 );
       e_compress       EXCEPTION;
@@ -2528,15 +2542,16 @@ AS
       PRAGMA EXCEPTION_INIT( e_uk_mismatch, -14130 );
       e_fk_mismatch    EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_fk_mismatch, -14128 );
-      o_ev             evolve_ot                                := evolve_ot( p_module => 'exchange_partition' );
+      
+      -- Evolve instrumentation
+      o_ev             evolve_ot                        := evolve_ot( p_module => 'exchange_partition' );
    BEGIN
 
       o_ev.change_action( 'determine partitioned table');
+
       -- find out which tables are partitioned
       l_src_part      := td_utils.is_part_table( p_source_owner, p_source_table);
-      l_src_part_flg  := CASE WHEN l_src_part THEN 'yes' ELSE 'no' END;
       l_trg_part      := td_utils.is_part_table( p_owner, p_table );
-      l_trg_part_flg  := CASE WHEN l_trg_part THEN 'yes' ELSE 'no' END;
       
       CASE
       -- raise exceptions if both are partitioned
@@ -2562,6 +2577,7 @@ AS
       l_nonpart_full  := CASE WHEN l_trg_part THEN l_src_full ELSE l_tab_full;
 
       o_ev.change_action( 'check objects' );
+
       -- check to make sure the target table exists, and the partitioning is correct
       td_utils.check_table( p_owner => l_part_owner, 
                             p_table => l_part_table, 
@@ -2702,6 +2718,7 @@ AS
       -- so we are using an EXIT WHEN loop
       -- if an exception that we handle is raised, then we want to rerun the exchange
       -- will try the exchange multiple times until it either succeeds, or an unrecognized exception is raised
+      -- there is also an escape hatch built in: won't try the exchange more than 10 times
       LOOP
          l_retry_ddl    := FALSE;
 
@@ -2719,15 +2736,20 @@ AS
                            );
 
             evolve.log_msg( l_nonpart_full || ' exchanged for partition ' || l_partname || ' of table ' || l_part_full );
+            
+            l_exit_cnt := l_exit_cnt + 1;
 
          EXCEPTION
             WHEN e_fkeys
             THEN
+
                evolve.log_msg( 'ORA-02266 raised involving enabled foreign keys', 4 );
+
                -- disable foreign keys related to both tables
                -- this will enable the exchange to occur
                l_constraints    := TRUE;
                l_retry_ddl      := TRUE;
+
                -- disable foreign keys on the target table
                -- enable them for the queue to be re-enabled later
                o_ev.change_action( 'disable target foreign keys' );
@@ -2738,6 +2760,7 @@ AS
 				 p_queue_module	     => evolve.get_module,
 				 p_queue_action      => 'enable constraints'
                                );
+
                -- disable constraints related to the source
                -- don't queue enable these, as it will be exchanged in and eventually dropped
                o_ev.change_action( 'disable source foreign keys' );
@@ -2746,8 +2769,10 @@ AS
                                  p_maint_type        => 'disable',
                                  p_basis             => 'reference'
                                );
+
             WHEN e_compress
             THEN
+
                evolve.log_msg( 'ORA-14646 raised involving compression', 4 );
                -- need to compress the staging table
                o_ev.change_action( 'compress source table' );
@@ -2755,8 +2780,10 @@ AS
                l_retry_ddl    := TRUE;
                evolve.exec_sql( p_sql => 'alter table ' || l_src_full || ' move compress', p_auto => 'yes' );
                evolve.log_msg( l_src_full || ' compressed to facilitate exchange', 3 );
+               
             WHEN e_fk_mismatch
             THEN
+
                -- need to create foreign key constraints
                evolve.log_msg( 'ORA-14128 raised involving foreign constraint mismatch', 4 );
                -- need to build a foreign keys on the source table
@@ -2818,8 +2845,10 @@ AS
                o_ev.clear_app_info;
                RAISE;
          END;
-
-         EXIT WHEN NOT l_retry_ddl;
+         
+         -- exit when we had a successful exchange
+         -- or we tried 10 times without succeeding
+         EXIT WHEN NOT l_retry_ddl OR l_exit_cnt = 10;
       END LOOP;
 
       -- any constraints need to be enabled
