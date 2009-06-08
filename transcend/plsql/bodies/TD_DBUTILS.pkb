@@ -651,7 +651,7 @@ AS
       l_ddl             LONG;
       l_idx_cnt         NUMBER                                       := 0;
       l_tab_name        VARCHAR2( 61 )                               := UPPER( p_owner || '.' || p_table );
-      l_src_name        VARCHAR2( 61 )                              := UPPER( p_source_owner || '.' || p_source_table );
+      l_src_name        VARCHAR2( 61 )                               := UPPER( p_source_owner || '.' || p_source_table );
       l_part_type       VARCHAR2( 6 );
       l_src_part        BOOLEAN;
       l_targ_part       BOOLEAN;
@@ -713,10 +713,18 @@ AS
       THEN
          SELECT partition_position
            INTO l_part_position
-           FROM all_tab_partitions
+           FROM ( SELECT table_name,
+                         CASE WHEN subpartition_name IS NULL THEN partition_position ELSE subpartition_position END partition_position,
+                         table_owner,
+                         CASE WHEN subpartition_name IS NULL THEN partition_name ELSE subpartition_name END partition_name,
+                         CASE WHEN subpartition_name IS NULL THEN 'part' ELSE 'subpart' END part_type
+                    FROM  all_tab_partitions ip
+                    left JOIN all_tab_subpartitions isp
+                         USING (table_owner, table_name, partition_name ))
           WHERE table_name = UPPER( p_source_table )
             AND table_owner = UPPER( p_source_owner )
             AND partition_name = UPPER( p_partname );
+       
       END IF;
 
       -- need to get a unique "job header" number in case we are running concurrently
@@ -856,10 +864,18 @@ AS
                                                    THEN    ' TABLESPACE '
                                                         || NVL( ai.tablespace_name,
                                                                 ( SELECT tablespace_name
-                                                                   FROM all_ind_partitions
-                                                                  WHERE index_name = ai.index_name
-                                                                    AND index_owner = ai.owner
-                                                                    AND partition_position = l_part_position )
+                                                                    FROM ( SELECT index_name,
+                                                                                  CASE WHEN subpartition_name IS NULL THEN ip.tablespace_name ELSE isp.tablespace_name END tablespace_name,
+                                                                                  CASE WHEN subpartition_name IS NULL THEN partition_position ELSE subpartition_position END partition_position,
+                                                                                  index_owner,
+                                                                                  CASE WHEN subpartition_name IS NULL THEN partition_name ELSE subpartition_name END partition_name,
+                                                                                  CASE WHEN subpartition_name IS NULL THEN 'part' ELSE 'subpart' END part_type
+                                                                             FROM  all_ind_partitions ip
+                                                                             left JOIN all_ind_subpartitions isp
+                                                                                  USING (index_owner, index_name, partition_name ))
+                                                                   WHERE index_name = ai.index_name
+                                                                     AND index_owner = ai.owner
+                                                                     AND partition_position = l_part_position )
                                                               )
                                                 ELSE NULL
                                              END 
@@ -2507,7 +2523,7 @@ AS
       -- variable to hold full qualified table names based on SOURCE or TARGET
       l_src_full       VARCHAR2( 61 )                   := UPPER( p_source_owner || '.' || p_source_table );
       l_tab_full       VARCHAR2( 61 )                   := UPPER( p_owner || '.' || p_table );
-      
+
       -- variables to hold fully qualified table names based on PART or NONPART
       l_part_full      VARCHAR2( 61 );
       l_nonpart_full   VARCHAR2( 61 );
@@ -2516,6 +2532,7 @@ AS
       l_partname       all_tab_partitions.partition_name%TYPE;
       l_ddl            LONG;
       l_num_cons       NUMBER;
+      l_part_type      VARCHAR2(10);
       
       -- Booleans to handle the EXIT LOOP for issuing the EXCHANGE command
       l_build_cons     BOOLEAN                          := FALSE;
@@ -2547,6 +2564,10 @@ AS
       o_ev             evolve_ot                        := evolve_ot( p_module => 'exchange_partition' );
    BEGIN
 
+      -- log variable values      
+      evolve.log_variable('l_src_full', l_src_full);
+      evolve.log_variable('l_tab_full', l_tab_full);
+
       o_ev.change_action( 'determine partitioned table');
 
       -- find out which tables are partitioned
@@ -2567,14 +2588,28 @@ AS
       END CASE;
            
       -- assign the appopriate tables and owners to the partitioned tags
-      l_part_owner    := CASE WHEN l_trg_part THEN p_owner ELSE p_source_owner END;
-      l_part_table    := CASE WHEN l_trg_part THEN p_table ELSE p_source_table END;
+      l_part_owner    := upper( CASE WHEN l_trg_part THEN p_owner ELSE p_source_owner END );
+      l_part_table    := upper( CASE WHEN l_trg_part THEN p_table ELSE p_source_table END );
 
-      l_nonpart_owner := CASE WHEN l_trg_part THEN p_source_owner ELSE p_owner END;
-      l_nonpart_table := CASE WHEN l_trg_part THEN p_source_table ELSE p_table END;
+      l_nonpart_owner := upper( CASE WHEN l_trg_part THEN p_source_owner ELSE p_owner END );
+      l_nonpart_table := upper( CASE WHEN l_trg_part THEN p_source_table ELSE p_table END );
       
-      l_part_full     := CASE WHEN l_trg_part THEN l_tab_full ELSE l_src_full;
-      l_nonpart_full  := CASE WHEN l_trg_part THEN l_src_full ELSE l_tab_full;
+      l_part_full     := upper( CASE WHEN l_trg_part THEN l_tab_full ELSE l_src_full END );
+      l_nonpart_full  := upper( CASE WHEN l_trg_part THEN l_src_full ELSE l_tab_full END );
+      
+      -- get the partitioning type of the partitioned table
+      l_part_type     := td_utils.get_tab_part_type( l_part_owner, l_part_table );
+
+      evolve.log_variable('l_part_owner', l_part_full);
+      evolve.log_variable('l_part_table', l_part_table);
+      evolve.log_variable('l_nonpart_owner', l_nonpart_full);
+      evolve.log_variable('l_nonpart_table', l_nonpart_table);
+
+      evolve.log_variable('l_part_full', l_part_full);
+      evolve.log_variable('l_nonpart_full', l_nonpart_full);
+
+      evolve.log_variable('l_part_type', l_part_type);
+
 
       o_ev.change_action( 'check objects' );
 
@@ -2592,20 +2627,31 @@ AS
       -- use either the value for P_PARTNAME or the max partition
       o_ev.change_action( 'get partition name' );
       
-      SELECT DISTINCT last_value( partition_name ) 
-             OVER ( partition BY table_owner, table_name 
-                    ORDER BY partition_position ROWS BETWEEN unbounded preceding AND unbounded following )
-        INTO l_partname
-        FROM ( SELECT table_name,
-                      CASE WHEN subpartition_name IS NULL THEN partition_position ELSE subpartition_position END partition_position,
-                      table_owner,
-                      CASE WHEN subpartition_name IS NULL THEN partition_name ELSE subpartition_name END partition_name,
-                      CASE WHEN subpartition_name IS NULL THEN 'part' ELSE 'subpart' END part_type
-                 FROM  all_tab_partitions ip
-                 left JOIN all_tab_subpartitions isp
-                      USING (table_owner, table_name, partition_name ))
-       WHERE table_name = UPPER( l_part_table )
-         AND table_owner = UPPER( l_part_owner );
+      IF p_partname IS NULL
+      THEN
+
+         SELECT DISTINCT last_value( partition_name ) 
+                OVER ( partition BY table_owner, table_name 
+                       ORDER BY partition_position ROWS BETWEEN unbounded preceding AND unbounded following )
+           INTO l_partname
+           FROM ( SELECT table_name,
+                         CASE WHEN subpartition_name IS NULL THEN partition_position ELSE subpartition_position END partition_position,
+                         table_owner,
+                         CASE WHEN subpartition_name IS NULL THEN partition_name ELSE subpartition_name END partition_name,
+                         CASE WHEN subpartition_name IS NULL THEN 'part' ELSE 'subpart' END part_type
+                    FROM  all_tab_partitions ip
+                    left JOIN all_tab_subpartitions isp
+                         USING (table_owner, table_name, partition_name ))
+          WHERE table_name = UPPER( l_part_table )
+            AND table_owner = UPPER( l_part_owner );
+         
+      ELSE
+         
+         l_partname := p_partname;
+
+      END IF;
+      
+      evolve.log_variable('l_partname', l_partname );      
 
       o_ev.change_action( 'manage statistics' );
 
@@ -2652,8 +2698,8 @@ AS
       END CASE;
 
       -- now build the indexes
-      -- indexes will get fresh new statistics
-      -- that is why we didn't mess with these above
+      -- indexes generate new statitics during the build
+      -- that is why nothing is done for indexes during the statistics phase
       o_ev.change_action( 'build indexes' );
       build_indexes( p_owner             => p_source_owner,
                      p_table             => p_source_table,
