@@ -651,7 +651,7 @@ AS
       l_ddl             LONG;
       l_idx_cnt         NUMBER                                       := 0;
       l_tab_name        VARCHAR2( 61 )                               := UPPER( p_owner || '.' || p_table );
-      l_src_name        VARCHAR2( 61 )                              := UPPER( p_source_owner || '.' || p_source_table );
+      l_src_name        VARCHAR2( 61 )                               := UPPER( p_source_owner || '.' || p_source_table );
       l_part_type       VARCHAR2( 6 );
       l_src_part        BOOLEAN;
       l_targ_part       BOOLEAN;
@@ -713,10 +713,18 @@ AS
       THEN
          SELECT partition_position
            INTO l_part_position
-           FROM all_tab_partitions
+           FROM ( SELECT table_name,
+                         CASE WHEN subpartition_name IS NULL THEN partition_position ELSE subpartition_position END partition_position,
+                         table_owner,
+                         CASE WHEN subpartition_name IS NULL THEN partition_name ELSE subpartition_name END partition_name,
+                         CASE WHEN subpartition_name IS NULL THEN 'part' ELSE 'subpart' END part_type
+                    FROM  all_tab_partitions ip
+                    left JOIN all_tab_subpartitions isp
+                         USING (table_owner, table_name, partition_name ))
           WHERE table_name = UPPER( p_source_table )
             AND table_owner = UPPER( p_source_owner )
             AND partition_name = UPPER( p_partname );
+       
       END IF;
 
       -- need to get a unique "job header" number in case we are running concurrently
@@ -856,10 +864,18 @@ AS
                                                    THEN    ' TABLESPACE '
                                                         || NVL( ai.tablespace_name,
                                                                 ( SELECT tablespace_name
-                                                                   FROM all_ind_partitions
-                                                                  WHERE index_name = ai.index_name
-                                                                    AND index_owner = ai.owner
-                                                                    AND partition_position = l_part_position )
+                                                                    FROM ( SELECT index_name,
+                                                                                  CASE WHEN subpartition_name IS NULL THEN ip.tablespace_name ELSE isp.tablespace_name END tablespace_name,
+                                                                                  CASE WHEN subpartition_name IS NULL THEN partition_position ELSE subpartition_position END partition_position,
+                                                                                  index_owner,
+                                                                                  CASE WHEN subpartition_name IS NULL THEN partition_name ELSE subpartition_name END partition_name,
+                                                                                  CASE WHEN subpartition_name IS NULL THEN 'part' ELSE 'subpart' END part_type
+                                                                             FROM  all_ind_partitions ip
+                                                                             left JOIN all_ind_subpartitions isp
+                                                                                  USING (index_owner, index_name, partition_name ))
+                                                                   WHERE index_name = ai.index_name
+                                                                     AND index_owner = ai.owner
+                                                                     AND partition_position = l_part_position )
                                                               )
                                                 ELSE NULL
                                              END 
@@ -2497,21 +2513,42 @@ AS
       p_statmethod        VARCHAR2 DEFAULT NULL
    )
    IS
-      l_src_name       VARCHAR2( 61 )                           := UPPER( p_source_owner || '.' || p_source_table );
-      l_tab_name       VARCHAR2( 61 )                           := UPPER( p_owner || '.' || p_table );
-      l_target_owner   all_tab_partitions.table_name%TYPE       := p_source_owner;
-      l_rows           BOOLEAN                                  := FALSE;
+      
+      -- variables to hold table and owner names based on PART or NONPART
+      l_part_table     all_tables.table_name%TYPE;
+      l_nonpart_table  all_tables.table_name%TYPE;
+      l_part_owner     all_tables.owner%TYPE;
+      l_nonpart_owner  all_tables.owner%TYPE;
+
+      -- variable to hold full qualified table names based on SOURCE or TARGET
+      l_src_full       VARCHAR2( 61 )                   := UPPER( p_source_owner || '.' || p_source_table );
+      l_tab_full       VARCHAR2( 61 )                   := UPPER( p_owner || '.' || p_table );
+
+      -- variables to hold fully qualified table names based on PART or NONPART
+      l_part_full      VARCHAR2( 61 );
+      l_nonpart_full   VARCHAR2( 61 );
+      
+      -- misc variables
       l_partname       all_tab_partitions.partition_name%TYPE;
       l_ddl            LONG;
       l_num_cons       NUMBER;
-      l_build_cons     BOOLEAN                                  := FALSE;
-      l_compress       BOOLEAN                                  := FALSE;
-      l_constraints    BOOLEAN                                  := FALSE;
-      l_retry_ddl      BOOLEAN                                  := FALSE;
+      l_part_type      VARCHAR2(10);
+      
+      -- Booleans to handle the EXIT LOOP for issuing the EXCHANGE command
+      l_build_cons     BOOLEAN                          := FALSE;
+      l_compress       BOOLEAN                          := FALSE;
+      l_constraints    BOOLEAN                          := FALSE;
+      l_retry_ddl      BOOLEAN                          := FALSE;
       l_src_part       BOOLEAN;
       l_trg_part       BOOLEAN;
-      l_src_part_flg   VARCHAR2(3);
-      l_trg_part_flg   VARCHAR2(3);
+      
+      -- escape hatch functionality for the EXIT WHEN loop on the EXCHANGE
+      l_exit_cnt      NUMBER                            := 0;
+            
+      -- catch empty cursors
+      l_rows           BOOLEAN                          := FALSE;
+      
+      -- exceptions
       e_no_stats       EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_stats, -20000 );
       e_compress       EXCEPTION;
@@ -2522,15 +2559,20 @@ AS
       PRAGMA EXCEPTION_INIT( e_uk_mismatch, -14130 );
       e_fk_mismatch    EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_fk_mismatch, -14128 );
-      o_ev             evolve_ot                                := evolve_ot( p_module => 'exchange_partition' );
+      
+      -- Evolve instrumentation
+      o_ev             evolve_ot                        := evolve_ot( p_module => 'exchange_partition' );
    BEGIN
 
+      -- log variable values      
+      evolve.log_variable('l_src_full', l_src_full);
+      evolve.log_variable('l_tab_full', l_tab_full);
+
       o_ev.change_action( 'determine partitioned table');
+
       -- find out which tables are partitioned
       l_src_part      := td_utils.is_part_table( p_source_owner, p_source_table);
-      l_src_part_flg  := CASE WHEN l_src_part THEN 'yes' ELSE 'no' END;
       l_trg_part      := td_utils.is_part_table( p_owner, p_table );
-      l_trg_part_flg  := CASE WHEN l_trg_part THEN 'yes' ELSE 'no' END;
       
       CASE
       -- raise exceptions if both are partitioned
@@ -2544,23 +2586,72 @@ AS
         ELSE
           NULL;
       END CASE;
+           
+      -- assign the appopriate tables and owners to the partitioned tags
+      l_part_owner    := upper( CASE WHEN l_trg_part THEN p_owner ELSE p_source_owner END );
+      l_part_table    := upper( CASE WHEN l_trg_part THEN p_table ELSE p_source_table END );
+
+      l_nonpart_owner := upper( CASE WHEN l_trg_part THEN p_source_owner ELSE p_owner END );
+      l_nonpart_table := upper( CASE WHEN l_trg_part THEN p_source_table ELSE p_table END );
+      
+      l_part_full     := upper( CASE WHEN l_trg_part THEN l_tab_full ELSE l_src_full END );
+      l_nonpart_full  := upper( CASE WHEN l_trg_part THEN l_src_full ELSE l_tab_full END );
+      
+      -- get the partitioning type of the partitioned table
+      l_part_type     := td_utils.get_tab_part_type( l_part_owner, l_part_table );
+
+      evolve.log_variable('l_part_owner', l_part_full);
+      evolve.log_variable('l_part_table', l_part_table);
+      evolve.log_variable('l_nonpart_owner', l_nonpart_full);
+      evolve.log_variable('l_nonpart_table', l_nonpart_table);
+
+      evolve.log_variable('l_part_full', l_part_full);
+      evolve.log_variable('l_nonpart_full', l_nonpart_full);
+
+      evolve.log_variable('l_part_type', l_part_type);
+
 
       o_ev.change_action( 'check objects' );
+
       -- check to make sure the target table exists, and the partitioning is correct
-      td_utils.check_table( p_owner => CASE WHEN l_trg_part THEN p_owner ELSE p_source_owner END, p_table => CASE WHEN l_trg_part THEN p_table ELSE p_source_table END, p_partname => p_partname, p_partitioned => 'yes' );
+      td_utils.check_table( p_owner => l_part_owner, 
+                            p_table => l_part_table, 
+                            p_partname => p_partname, 
+                            p_partitioned => 'yes' );
+
       -- check to make sure the source table exists and the partitioning is correct
-      td_utils.check_table( p_owner => CASE WHEN l_trg_part THEN p_source_owner ELSE p_owner END, p_table => CASE WHEN l_trg_part THEN p_source_table ELSE p_table END, p_partitioned => 'no' );
+      td_utils.check_table( p_owner => l_nonpart_owner, 
+                            p_table => l_nonpart_table, 
+                            p_partitioned => 'no' );
 
       -- use either the value for P_PARTNAME or the max partition
       o_ev.change_action( 'get partition name' );
-      SELECT NVL( UPPER( p_partname ), partition_name )
-        INTO l_partname
-        FROM all_tab_partitions
-       WHERE table_name = UPPER( CASE WHEN l_trg_part_flg = 'yes' THEN p_table ELSE p_source_table END )
-         AND table_owner = UPPER( CASE WHEN l_trg_part_flg = 'yes' THEN p_owner ELSE p_source_owner END )
-         AND partition_position IN( SELECT MAX( partition_position )
-                                     FROM all_tab_partitions
-                                    WHERE table_name = UPPER( CASE WHEN l_trg_part_flg = 'yes' THEN p_table ELSE p_source_table END ) AND table_owner =  UPPER( CASE WHEN l_trg_part_flg = 'yes' THEN p_owner ELSE p_source_owner END ));
+      
+      IF p_partname IS NULL
+      THEN
+
+         SELECT DISTINCT last_value( partition_name ) 
+                OVER ( partition BY table_owner, table_name 
+                       ORDER BY partition_position ROWS BETWEEN unbounded preceding AND unbounded following )
+           INTO l_partname
+           FROM ( SELECT table_name,
+                         CASE WHEN subpartition_name IS NULL THEN partition_position ELSE subpartition_position END partition_position,
+                         table_owner,
+                         CASE WHEN subpartition_name IS NULL THEN partition_name ELSE subpartition_name END partition_name,
+                         CASE WHEN subpartition_name IS NULL THEN 'part' ELSE 'subpart' END part_type
+                    FROM  all_tab_partitions ip
+                    left JOIN all_tab_subpartitions isp
+                         USING (table_owner, table_name, partition_name ))
+          WHERE table_name = UPPER( l_part_table )
+            AND table_owner = UPPER( l_part_owner );
+         
+      ELSE
+         
+         l_partname := p_partname;
+
+      END IF;
+      
+      evolve.log_variable('l_partname', l_partname );      
 
       o_ev.change_action( 'manage statistics' );
 
@@ -2582,10 +2673,11 @@ AS
                           p_cascade      => 'no',
                           p_segment_type => 'table'
                         );
+
          -- we want to transfer the statistics from the current segment into the new segment
          -- this is preferable if automatic stats are handling stats collection
          -- and you want the load time not to suffer from statistics gathering
-      WHEN REGEXP_LIKE( 'transfer', p_statistics, 'i' )
+         WHEN REGEXP_LIKE( 'transfer', p_statistics, 'i' )
          THEN
             transfer_stats( p_owner                => p_source_owner,
                             p_segment              => p_source_table,
@@ -2597,7 +2689,7 @@ AS
          -- do nothing with stats
          -- this is preferable if stats are gathered on the staging segment prior to being exchanged in
          -- OWB can do this, for example
-      WHEN REGEXP_LIKE( 'ignore', p_statistics, 'i' )
+         WHEN REGEXP_LIKE( 'ignore', p_statistics, 'i' )
          THEN
             NULL;
          ELSE
@@ -2606,8 +2698,8 @@ AS
       END CASE;
 
       -- now build the indexes
-      -- indexes will get fresh new statistics
-      -- that is why we didn't mess with these above
+      -- indexes generate new statitics during the build
+      -- that is why nothing is done for indexes during the statistics phase
       o_ev.change_action( 'build indexes' );
       build_indexes( p_owner             => p_source_owner,
                      p_table             => p_source_table,
@@ -2617,10 +2709,10 @@ AS
                      p_tablespace        => p_index_space,
                      p_concurrent        => p_idx_concurrency,
                      p_partname          => CASE
-                        WHEN p_index_space IS NOT NULL OR l_src_part
-                           THEN NULL
-                        ELSE l_partname
-                     END
+                                            WHEN p_index_space IS NOT NULL OR l_src_part
+                                            THEN NULL
+                                            ELSE l_partname
+                                            END
                    );
 
       -- disable any unique constraints on the target table that are enforced with global indexes
@@ -2672,28 +2764,38 @@ AS
       -- so we are using an EXIT WHEN loop
       -- if an exception that we handle is raised, then we want to rerun the exchange
       -- will try the exchange multiple times until it either succeeds, or an unrecognized exception is raised
+      -- there is also an escape hatch built in: won't try the exchange more than 10 times
       LOOP
          l_retry_ddl    := FALSE;
 
          BEGIN
-            evolve.exec_sql( p_sql       =>    'alter table '
-                                                || CASE WHEN l_trg_part THEN l_tab_name ELSE l_src_name END 
-                                                || ' exchange partition '
-                                                || l_partname
-                                                || ' with table '
-                                                || CASE WHEN l_trg_part THEN l_src_name ELSE l_tab_name END
-                                                || ' including indexes without validation update global indexes',
-                                 p_auto      => 'yes'
-                               );
-            evolve.log_msg( CASE WHEN l_trg_part THEN l_src_name ELSE l_tab_name END || ' exchanged for partition ' || l_partname || ' of table ' || CASE WHEN l_trg_part THEN l_tab_name ELSE l_src_name END );
+            evolve.exec_sql( p_sql       => 'alter table '
+                                             || l_part_full 
+                                             || ' exchange '
+                                             ||l_part_type
+                                             ||'ition '
+                                             || l_partname
+                                             || ' with table '
+                                             || l_nonpart_full
+                                             || ' including indexes without validation update global indexes',
+                             p_auto      => 'yes'
+                           );
+
+            evolve.log_msg( l_nonpart_full || ' exchanged for partition ' || l_partname || ' of table ' || l_part_full );
+            
+            l_exit_cnt := l_exit_cnt + 1;
+
          EXCEPTION
             WHEN e_fkeys
             THEN
+
                evolve.log_msg( 'ORA-02266 raised involving enabled foreign keys', 4 );
+
                -- disable foreign keys related to both tables
                -- this will enable the exchange to occur
                l_constraints    := TRUE;
                l_retry_ddl      := TRUE;
+
                -- disable foreign keys on the target table
                -- enable them for the queue to be re-enabled later
                o_ev.change_action( 'disable target foreign keys' );
@@ -2704,6 +2806,7 @@ AS
 				 p_queue_module	     => evolve.get_module,
 				 p_queue_action      => 'enable constraints'
                                );
+
                -- disable constraints related to the source
                -- don't queue enable these, as it will be exchanged in and eventually dropped
                o_ev.change_action( 'disable source foreign keys' );
@@ -2712,17 +2815,21 @@ AS
                                  p_maint_type        => 'disable',
                                  p_basis             => 'reference'
                                );
+
             WHEN e_compress
             THEN
+
                evolve.log_msg( 'ORA-14646 raised involving compression', 4 );
                -- need to compress the staging table
                o_ev.change_action( 'compress source table' );
                l_compress     := TRUE;
                l_retry_ddl    := TRUE;
-               evolve.exec_sql( p_sql => 'alter table ' || l_src_name || ' move compress', p_auto => 'yes' );
-               evolve.log_msg( l_src_name || ' compressed to facilitate exchange', 3 );
+               evolve.exec_sql( p_sql => 'alter table ' || l_src_full || ' move compress', p_auto => 'yes' );
+               evolve.log_msg( l_src_full || ' compressed to facilitate exchange', 3 );
+               
             WHEN e_fk_mismatch
             THEN
+
                -- need to create foreign key constraints
                evolve.log_msg( 'ORA-14128 raised involving foreign constraint mismatch', 4 );
                -- need to build a foreign keys on the source table
@@ -2784,8 +2891,10 @@ AS
                o_ev.clear_app_info;
                RAISE;
          END;
-
-         EXIT WHEN NOT l_retry_ddl;
+         
+         -- exit when we had a successful exchange
+         -- or we tried 10 times without succeeding
+         EXIT WHEN NOT l_retry_ddl OR l_exit_cnt = 10;
       END LOOP;
 
       -- any constraints need to be enabled
