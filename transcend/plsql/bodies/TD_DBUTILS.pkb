@@ -3668,8 +3668,16 @@ AS
       l_target_seg        VARCHAR2(61) := p_owner||'.'||p_segment;
       
       -- partition names for when p_partname is a subpartition
-      l_src_part_name         all_tab_partitions.partition_name%TYPE;
-      l_trg_part_name         all_tab_partitions.partition_name%TYPE;
+      l_src_part_name     all_tab_partitions.partition_name%TYPE;
+      l_trg_part_name     all_tab_partitions.partition_name%TYPE;
+      
+      -- number of segments
+      l_src_num_segs      NUMBER;
+      l_trg_num_segs      NUMBER;
+      
+      -- translate number of segments to a Boolean
+      l_src_global        BOOLEAN;
+      l_trg_global        BOOLEAN;
 
       e_no_stats    EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_stats, -20000 );
@@ -3678,65 +3686,84 @@ AS
    BEGIN
       
       BEGIN
-                
-         SELECT CASE 
-                WHEN REGEXP_LIKE(segment_type,'^table','i') THEN 'table' 
-                WHEN REGEXP_LIKE(segment_type,'^index','i') THEN 'index' 
-                ELSE 'unknown' END segment_type, 
-                CASE 
-                WHEN REGEXP_LIKE(segment_type,'subpartition$','i') THEN 'subpart' 
-                WHEN REGEXP_LIKE(segment_type,'partition$','i') THEN 'part' 
-                ELSE 'normal' END part_type
+
+         SELECT segment_type,
+                part_type,
+                count(*) num_segments
            INTO l_src_seg_type,
-                l_src_part_type
-           FROM dba_segments
-          WHERE owner = upper( p_source_owner )
-            AND segment_name = upper( p_source_segment )
-            AND REGEXP_LIKE( NVL(segment_type,'~'), NVL( p_segment_type, '.' ), 'i' )
-            AND REGEXP_LIKE( NVL(partition_name,'~'), NVL( p_source_partname, '.' ), 'i' );
-                
+                l_src_part_type,
+                l_src_num_segs
+           FROM ( SELECT CASE 
+                         WHEN REGEXP_LIKE(segment_type,'^table','i') THEN 'table' 
+                         WHEN REGEXP_LIKE(segment_type,'^index','i') THEN 'index' 
+                         ELSE 'unknown' END segment_type, 
+                         CASE 
+                         WHEN REGEXP_LIKE(segment_type,'subpartition$','i') THEN 'subpart' 
+                         WHEN REGEXP_LIKE(segment_type,'partition$','i') THEN 'part' 
+                         ELSE 'normal' END part_type
+                    FROM dba_segments
+                   WHERE owner = upper( p_source_owner )
+                     AND segment_name = upper( p_source_segment )
+                     AND REGEXP_LIKE( NVL(segment_type,'~'), NVL( p_segment_type, '.' ), 'i' )
+                     AND REGEXP_LIKE( NVL(partition_name,'~'), NVL( p_source_partname, '.' ), 'i' )
+                ) 
+          GROUP BY segment_type,
+                part_type;
+                         
       EXCEPTION
          WHEN no_data_found
          THEN
             evolve.raise_err( 'no_segment', l_source_seg );
-         WHEN too_many_rows
-         THEN
-            evolve.raise_err( 'multiple_segments', l_source_seg );
       END;
-
-      evolve.log_msg( 'Source segment type: '||l_src_seg_type, 5 );
-      evolve.log_msg( 'Source partition type: '||l_src_part_type, 5 );
       
-       BEGIN
+      evolve.log_variable( 'l_src_seg_type',l_src_seg_type );
+      evolve.log_variable( 'l_src_part_type',l_src_part_type );
+      evolve.log_variable( 'l_src_num_segs',l_src_num_segs );
 
-         SELECT CASE 
-                WHEN REGEXP_LIKE(segment_type,'^table','i') THEN 'table' 
-                WHEN REGEXP_LIKE(segment_type,'^index','i') THEN 'index' 
-                ELSE 'unknown' END segment_type, 
-                CASE 
-                WHEN REGEXP_LIKE(segment_type,'subpartition$','i') THEN 'subpart' 
-                WHEN REGEXP_LIKE(segment_type,'partition$','i') THEN 'part' 
-                ELSE 'normal' END part_type
+      -- use number of segments to determine whether we use global stats      
+      l_src_global  := CASE WHEN l_src_num_segs > 1 THEN TRUE WHEN l_src_num_segs = 1 THEN FALSE END;
+      evolve.log_variable( 'l_src_global', l_src_global );
+      
+      BEGIN
+         
+         SELECT segment_type,
+                part_type,
+                count(*) num_segments
            INTO l_trg_seg_type,
-                l_trg_part_type
-           FROM dba_segments
-          WHERE owner = upper( p_owner )
-            AND segment_name = upper( p_segment )
-            AND REGEXP_LIKE( NVL(segment_type,'~'), NVL( p_segment_type, '.' ), 'i' )
-            AND REGEXP_LIKE( NVL(partition_name,'~'), NVL( p_partname, '.' ), 'i' );
+                l_trg_part_type,
+                l_trg_num_segs
+           FROM ( SELECT CASE 
+                         WHEN REGEXP_LIKE(segment_type,'^table','i') THEN 'table' 
+                         WHEN REGEXP_LIKE(segment_type,'^index','i') THEN 'index' 
+                         ELSE 'unknown' END segment_type, 
+                         CASE 
+                         WHEN REGEXP_LIKE(segment_type,'subpartition$','i') THEN 'subpart' 
+                         WHEN REGEXP_LIKE(segment_type,'partition$','i') THEN 'part' 
+                         ELSE 'normal' END part_type
+                    FROM dba_segments
+                   WHERE owner = upper( p_owner )
+                     AND segment_name = upper( p_segment )
+                     AND REGEXP_LIKE( NVL(segment_type,'~'), NVL( p_segment_type, '.' ), 'i' )
+                     AND REGEXP_LIKE( NVL(partition_name,'~'), NVL( p_partname, '.' ), 'i' )
+                ) 
+          GROUP BY segment_type,
+                part_type;
           
       EXCEPTION
          WHEN no_data_found
          THEN
             evolve.raise_err( 'no_segment', l_target_seg );
-         WHEN too_many_rows
-         THEN
-            evolve.raise_err( 'multiple_segments', l_target_seg );
       END;
-
-      evolve.log_msg( 'Target segment type: '||l_trg_seg_type, 5 );
-      evolve.log_msg( 'Target partition type: '||l_trg_part_type, 5 );
       
+      evolve.log_variable( 'l_trg_seg_type',l_trg_seg_type );
+      evolve.log_variable( 'l_trg_part_type',l_trg_part_type );
+      evolve.log_variable( 'l_trg_num_segs',l_trg_num_segs );
+            
+      -- use number of segments to determine whether we use global stats      
+      l_trg_global  := CASE WHEN l_trg_num_segs > 1 THEN TRUE WHEN l_trg_num_segs = 1 THEN FALSE END;
+      evolve.log_variable( 'l_trg_global', l_trg_global );
+      
+
       -- this will either take partition level statistics and import into a table
       -- or, it will take table level statistics and import it into a partition
       -- or, it will take table level statistics and import it into a table.
@@ -3772,8 +3799,7 @@ AS
       THEN
 
          l_src_part_name := td_utils.get_part_for_subpart( p_owner, p_segment, p_source_partname, l_src_seg_type );
-   
-         evolve.log_msg( 'Source partition name for subpartition '||p_source_partname||': '||l_src_part_name, 5 );
+         evolve.log_variable( 'l_src_part_name',l_src_part_name );
 
       END IF;
 
@@ -3782,11 +3808,9 @@ AS
       THEN
 
          l_trg_part_name := td_utils.get_part_for_subpart( p_owner, p_segment, p_partname, l_trg_seg_type );
-
-         evolve.log_msg( 'Target partition name for subpartition '||p_partname||': '||l_trg_part_name, 5 );
+         evolve.log_variable( 'l_trg_part_name',l_trg_part_name );
 
       END IF;
-
 
       -- now, update the table name in the stats table to the new table name
       UPDATE opt_stats
@@ -3798,33 +3822,103 @@ AS
          SET c5 = UPPER( p_owner )
        WHERE statid = l_statid;
       
-      -- we are going into a subpartition
-      IF l_trg_part_type = 'subpart'
-      THEN
-         UPDATE opt_stats
-            SET c3 = upper(p_partname),
-                c2 = upper(l_trg_part_name)
-          WHERE statid = l_statid;
-      END IF;
+      -- now, we'll perform a few operations based on the source and target information
+      CASE 
+
+      -- CASE 1
+      -- we have differing partition types (one subpart, one part)
+      WHEN (( l_src_part_type = 'subpart' AND l_trg_part_type = 'part' )
+             OR ( l_src_part_type = 'part' AND l_trg_part_type = 'subpart'))
       
-      -- we are going into a partition
-      IF l_trg_part_type = 'part'
+      -- and we also have multiple segments brought in
+      -- this means we have global and segment level statistics... multiple rows
+      AND ( l_src_global AND l_trg_global)
+
       THEN
-         UPDATE opt_stats
-            SET c2 = upper(p_partname),
-                c3 = NULL
-          WHERE statid = l_statid;
-      END IF;
+      -- we can't move global stats from partitioned table to subpartitioned table, and vice versa
+      -- just not supported
+      evolve.raise_err( 'incompatible_part_type' );
       
-      -- we are going into a table
-      IF l_trg_part_type = 'normal'
+         
+      -- CASE 2
+      -- we're moving multiple rows to multiple rows
+      -- this will include table and partition level statistics
+      WHEN ( l_src_global AND l_trg_global ) 
+
+
+      -- we know that they are of the same partition type because it passed CASE 1
+      -- we also know there are the same number of segments
+      AND ( l_trg_num_segs = l_src_num_segs )
+
+      THEN NULL;
+      -- we'll assume that the partitioning structure is the same for both tables
+      -- if the partition names are different, than this is not supported
+      -- that's on the end user to guarantee
+      -- so there is really nothing to do here
+         
+
+      -- CASE 3
+      -- we know there are multiple rows in the source
+      -- we know that the target cannot accept multiple rows
+      WHEN l_src_global AND NOT l_trg_global
+            
+      -- we also know that the partition type of the target is subpartitioning
+      AND l_trg_part_type='subpart'
+            
       THEN
+
+      -- we need to delete all the source rows specific to partitioning            
+         DELETE FROM opt_stats
+          WHERE statid = l_statid AND( c2 IS NOT NULL OR c3 IS NOT NULL );
+            
+         -- we also need to set update the partitioning and subpartitioning columns for the remaining single row
          UPDATE opt_stats
-            SET c2 = NULL,
-                c3 = NULL
+            SET c2 = l_trg_part_name,
+                c3 = p_partname
           WHERE statid = l_statid;
-      END IF;
-      
+
+      -- CASE 4
+      -- we know there are multiple rows in the source
+      -- we know that the target cannot accept multiple rows
+      WHEN l_src_global AND NOT l_trg_global
+            
+         -- we also know that the partition type of the target is regular partitioning
+         AND l_trg_part_type = 'part'
+            
+      THEN
+
+         -- we need to delete all the source rows specific to partitioning            
+         DELETE FROM opt_stats
+          WHERE statid = l_statid AND( c2 IS NOT NULL OR c3 IS NOT NULL );
+            
+         -- we also need to update the partitioning column for the remaining single row
+         UPDATE opt_stats
+            SET c2 = p_partname,
+                c3 = null
+          WHERE statid = l_statid;
+
+      -- CASE 5
+      -- we know there is a single row in the source
+      -- we know that the target can handle a single row( table level ) or multiple rows (partition level)            
+      WHEN NOT l_src_global AND l_trg_global
+         
+      -- so we really don't have to do anything
+      -- we'll bring in the single row into the target
+      THEN
+         
+         -- we also need to update the partitioning column for the remaining single row
+         UPDATE opt_stats
+            SET c2 = CASE l_trg_part_type WHEN 'subpart' THEN l_trg_part_name ELSE p_partname end,
+                c3 = CASE l_trg_part_type WHEN 'subpart' THEN p_partname ELSE null END
+          WHERE statid = l_statid;
+               
+               
+      ELSE
+               
+         NULL;
+         
+      END CASE;
+
       
       IF evolve.is_debugmode
       THEN
@@ -3860,8 +3954,13 @@ AS
 
 
       -- now, delete these records from the stats table
-      DELETE FROM opt_stats
-       WHERE statid = l_statid;
+      IF NOT evolve.is_debugmode
+      THEN
+
+         DELETE FROM opt_stats
+          WHERE statid = l_statid;
+         
+      END IF;
 
       
       evolve.log_msg(    'Statistics from '

@@ -186,6 +186,10 @@ IS
          (p_name         => 'wrong_map_type',
            p_message      => 'A MAPPING_OT object was instantiated when a DIMENSION_OT should have been.'
          );
+      
+      evolve_adm.set_error_conf( p_name => 'incompatible_part_type', 
+                                 p_message => 'The statistics transfer cannot be used on different partition types' );
+
    END set_default_configs;
 
    PROCEDURE create_feed (
