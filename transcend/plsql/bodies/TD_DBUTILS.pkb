@@ -3493,7 +3493,7 @@ AS
                           JOIN ( SELECT table_name,
                                         table_owner,
                                         index_type,
-                                        index_name,
+                                        ip.index_name,
                                         CASE WHEN subpartition_name IS NULL THEN ip.partition_name ELSE isp.subpartition_name END partition_name,
                                         CASE WHEN subpartition_name IS NULL THEN ip.status ELSE isp.status END status
                                    FROM all_indexes ix
