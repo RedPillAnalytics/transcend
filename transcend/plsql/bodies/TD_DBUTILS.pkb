@@ -3837,6 +3837,7 @@ AS
       THEN
       -- we can't move global stats from partitioned table to subpartitioned table, and vice versa
       -- just not supported
+      evolve.log_msg('Stats CASE 1 entered',5);
       evolve.raise_err( 'incompatible_part_type' );
       
          
@@ -3850,7 +3851,9 @@ AS
       -- we also know there are the same number of segments
       AND ( l_trg_num_segs = l_src_num_segs )
 
-      THEN NULL;
+      THEN 
+         evolve.log_msg('Stats CASE 2 entered',5);
+
       -- we'll assume that the partitioning structure is the same for both tables
       -- if the partition names are different, than this is not supported
       -- that's on the end user to guarantee
@@ -3866,6 +3869,8 @@ AS
       AND l_trg_part_type='subpart'
             
       THEN
+
+         evolve.log_msg('Stats CASE 3 entered',5);
 
       -- we need to delete all the source rows specific to partitioning            
          DELETE FROM opt_stats
@@ -3887,6 +3892,8 @@ AS
             
       THEN
 
+         evolve.log_msg('Stats CASE 4 entered',5);
+
          -- we need to delete all the source rows specific to partitioning            
          DELETE FROM opt_stats
           WHERE statid = l_statid AND( c2 IS NOT NULL OR c3 IS NOT NULL );
@@ -3905,22 +3912,71 @@ AS
       -- so we really don't have to do anything
       -- we'll bring in the single row into the target
       THEN
+
+         evolve.log_msg('Stats CASE 5 entered',5);
          
          -- we also need to update the partitioning column for the remaining single row
          UPDATE opt_stats
-            SET c2 = CASE l_trg_part_type WHEN 'subpart' THEN l_trg_part_name ELSE p_partname end,
-                c3 = CASE l_trg_part_type WHEN 'subpart' THEN p_partname ELSE null END
+            SET c2 = UPPER( CASE l_trg_part_type WHEN 'subpart' THEN l_trg_part_name ELSE p_partname END ),
+                c3 = UPPER( CASE l_trg_part_type WHEN 'subpart' THEN p_partname ELSE null END )
+          WHERE statid = l_statid;
+
+
+      -- CASE 6
+      -- we know there is a single row in the source
+      -- we know that there is a single row in the target
+      WHEN NOT l_src_global AND NOT l_trg_global
+
+      -- however, we also know that the source is a partition            
+         AND p_source_partname IS NOT NULL 
+
+      -- we also know that the target is a table            
+         AND p_partname IS NULL 
+
+      -- so we need to set both columns C2 and C3 to null       
+      THEN
+
+         evolve.log_msg('Stats CASE 6 entered',5);
+         
+         -- we need to update the partitioning column for the remaining single row
+         UPDATE opt_stats
+            SET c2 = NULL,
+                c3 = NULL
+          WHERE statid = l_statid;
+
+
+      -- CASE 7
+      -- we know there is a single row in the source
+      -- we know that there is a single row in the target
+      WHEN NOT l_src_global AND NOT l_trg_global
+
+      -- however, we also know that the source is a table            
+         AND p_source_partname IS NULL 
+
+      -- we also know that the target is a partition            
+         AND p_partname IS NOT NULL 
+
+      -- so we need to update columns C2 and C3 in the stats table
+      -- with the partition and subpartition (if applicable) 
+      THEN
+
+         evolve.log_msg('Stats CASE 7 entered',5);
+         
+         -- we need to update the partitioning column for the remaining single row
+         UPDATE opt_stats
+            SET c2 = UPPER( CASE l_trg_part_type WHEN 'subpart' THEN l_trg_part_name ELSE p_partname END ),
+                c3 = UPPER( CASE l_trg_part_type WHEN 'subpart' THEN p_partname ELSE null END )
           WHERE statid = l_statid;
                
                
       ELSE
                
-         NULL;
-         
+          evolve.log_msg('No Stats CASE entered',5);
+
       END CASE;
 
       
-      IF evolve.is_debugmode
+      IF NOT evolve.is_debugmode
       THEN
 
          -- now, import the segment statistics
@@ -3962,21 +4018,27 @@ AS
          
       END IF;
 
-      
       evolve.log_msg(    'Statistics from '
-                      || CASE l_src_part_type
-                           WHEN 'part' THEN 'partition '||upper(p_source_partname)||' of '
-                           WHEN 'subpart' THEN 'subpartition '||upper(p_source_partname)||' of '
-                           WHEN 'normal' THEN NULL
-                          END
+                      || CASE 
+                         WHEN p_source_partname IS NOT NULL 
+                         THEN l_src_part_type
+                              || 'ition '
+                              || upper( p_source_partname )
+                              || ' of '
+                         ELSE NULL
+                         END                        
                       || UPPER( l_source_seg )
                       || ' transfered to '
-                      || CASE l_trg_part_type
-                           WHEN 'part' THEN 'partition '||upper(p_partname)||' of '
-                           WHEN 'subpart' THEN 'subpartition '||upper(p_partname)||' of '
-                           WHEN 'normal' THEN NULL
-                          END
-                      || UPPER( l_target_seg ) );
+                      || CASE 
+                         WHEN p_partname IS NOT NULL 
+                         THEN l_trg_part_type
+                              || 'ition '
+                              || upper( p_partname )
+                              || ' of '
+                         ELSE NULL
+                         END                        
+                      || UPPER( l_target_seg )
+                     );
 
            
       o_ev.clear_app_info;
