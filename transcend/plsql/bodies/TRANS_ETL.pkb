@@ -39,6 +39,27 @@ AS
          evolve.log_err;
          RAISE;
    END truncate_table;
+   
+   PROCEDURE truncate_partition
+      ( p_owner VARCHAR2,
+        p_table VARCHAR2, 
+        p_partname VARCHAR2 
+      )
+   IS
+   BEGIN
+
+      td_dbutils.partition_action
+      ( p_owner         => p_owner, 
+        p_table         => p_table, 
+        p_partname      => p_partname,
+        p_action        => 'truncate' );
+      
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         evolve.log_err;
+         RAISE;
+   END truncate_partition;
 
    PROCEDURE drop_table( p_owner VARCHAR2, p_table VARCHAR2, p_purge VARCHAR2 DEFAULT 'yes' )
    IS

@@ -4374,6 +4374,59 @@ AS
          RAISE;
    END add_range_list_subpart;
 
+   PROCEDURE partition_action( 
+      p_owner           VARCHAR2, 
+      p_table           VARCHAR2,
+      p_partname        VARCHAR2,
+      p_action          VARCHAR2 DEFAULT 'truncate'
+   )
+   IS
+      l_ddl             LONG;
+      l_tab_name        VARCHAR2( 61 )   := UPPER( p_owner || '.' || p_table );
+      l_part_type       VARCHAR2( 10 )   := td_utils.get_tab_part_type( p_owner, p_table, p_partname );
+      l_higher_part     all_tab_partitions.partition_name%type;
+
+      o_ev              evolve_ot        := evolve_ot( p_module => 'partition_action' );
+   BEGIN
+
+      evolve.log_variable( 'l_part_type', l_part_type );
+            
+      -- construct a TRUNCATE statement from the parameters provided
+      l_ddl := 'alter table '
+               || l_tab_name
+               || ' '
+               || p_action 
+               || ' '
+               || l_part_type
+               || 'ition '
+               || upper( p_partname );
+                 
+      BEGIN
+         
+         evolve.exec_sql( p_sql => l_ddl, p_auto => 'yes' );
+         
+      END;
+
+      evolve.log_msg( regexp_replace(l_part_type,'^.',upper(regexp_substr(l_part_type,'^.')))
+                      || 'ition '
+                      || upper( p_partname )
+                      || ' '
+                      || p_action
+                      || CASE p_action 
+                         WHEN 'drop' THEN 'ped'
+                         WHEN 'truncate' THEN 'd'
+                         ELSE 'ed'
+                         END );
+
+      o_ev.clear_app_info;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         evolve.log_err;
+         o_ev.clear_app_info;
+         RAISE;
+   END partition_action;
+
 END td_dbutils;
 /
 

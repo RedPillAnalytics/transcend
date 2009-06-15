@@ -11,6 +11,8 @@ IS
    PROCEDURE end_mapping( p_mapping VARCHAR2 DEFAULT SYS_CONTEXT( 'USERENV', 'ACTION' ));
 
    PROCEDURE truncate_table( p_owner VARCHAR2, p_table VARCHAR2, p_reuse VARCHAR2 DEFAULT 'no' );
+      
+   PROCEDURE truncate_partition( p_owner VARCHAR2, p_table VARCHAR2, p_partname VARCHAR2 );
 
    PROCEDURE drop_table( p_owner VARCHAR2, p_table VARCHAR2, p_purge VARCHAR2 DEFAULT 'yes' );
 

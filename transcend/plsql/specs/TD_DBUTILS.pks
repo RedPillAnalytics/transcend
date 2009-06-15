@@ -229,5 +229,12 @@ IS
       p_compress        VARCHAR2 DEFAULT 'no'
    );
 
+   PROCEDURE partition_action( 
+      p_owner           VARCHAR2, 
+      p_table           VARCHAR2,
+      p_partname        VARCHAR2,
+      p_action          VARCHAR2 DEFAULT 'truncate'
+   );
+
 END td_dbutils;
 /

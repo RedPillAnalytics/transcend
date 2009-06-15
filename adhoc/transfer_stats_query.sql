@@ -28,10 +28,10 @@ SELECT segment_type,
                 WHEN REGEXP_LIKE(segment_type,'partition$','i') THEN 'part' 
                 ELSE 'normal' END part_type
            FROM dba_segments
-          WHERE owner = upper( :p_owner )
-            AND segment_name = upper( :p_segment )
-            AND REGEXP_LIKE( NVL(segment_type,'~'), NVL( :p_segment_type, '.' ), 'i' )
-            AND REGEXP_LIKE( NVL(partition_name,'~'), NVL( :p_partname, '.' ), 'i' )
+          WHERE owner = upper( p_owner )
+            AND segment_name = upper( p_segment )
+            AND REGEXP_LIKE( NVL(segment_type,'~'), NVL( p_segment_type, '.' ), 'i' )
+            AND REGEXP_LIKE( NVL(partition_name,'~'), NVL( p_partname, '.' ), 'i' )
        ) 
  GROUP BY segment_type,
        part_type 
