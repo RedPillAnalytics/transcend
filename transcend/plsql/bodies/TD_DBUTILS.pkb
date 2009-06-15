@@ -3664,8 +3664,8 @@ AS
       l_trg_part_type     VARCHAR2(20);
       
       -- variables to hold qualified segments
-      l_source_seg        VARCHAR2(61) := p_source_owner||'.'||p_source_segment;
-      l_target_seg        VARCHAR2(61) := p_owner||'.'||p_segment;
+      l_source_seg        VARCHAR2(61) := upper( p_source_owner||'.'||p_source_segment );
+      l_target_seg        VARCHAR2(61) := upper( p_owner||'.'||p_segment );
       
       -- partition names for when p_partname is a subpartition
       l_src_part_name     all_tab_partitions.partition_name%TYPE;
@@ -3713,7 +3713,17 @@ AS
       EXCEPTION
          WHEN no_data_found
          THEN
-            evolve.raise_err( 'no_segment', l_source_seg );
+            CASE
+            WHEN p_source_partname IS NOT NULL
+            THEN
+            
+               evolve.raise_err( 'no_part', upper( p_source_partname )||' of '||l_source_seg );
+
+            ELSE
+
+               evolve.raise_err( 'no_segment', l_source_seg );
+
+            END CASE;
       END;
       
       evolve.log_variable( 'l_src_seg_type',l_src_seg_type );
@@ -3750,9 +3760,22 @@ AS
                 part_type;
           
       EXCEPTION
+
          WHEN no_data_found
          THEN
-            evolve.raise_err( 'no_segment', l_target_seg );
+            
+            CASE
+            WHEN p_partname IS NOT NULL
+            THEN
+            
+               evolve.raise_err( 'no_part', upper( p_partname )||' of '||l_target_seg );
+
+            ELSE
+
+               evolve.raise_err( 'no_segment', l_target_seg );
+
+            END CASE;
+
       END;
       
       evolve.log_variable( 'l_trg_seg_type',l_trg_seg_type );
@@ -3903,8 +3926,24 @@ AS
             SET c2 = p_partname,
                 c3 = null
           WHERE statid = l_statid;
-
+         
       -- CASE 5
+      -- we know there are multiple rows in the source
+      -- we know that the target cannot accept multiple rows
+      WHEN l_src_global AND NOT l_trg_global
+            
+         -- we also know that the partition type of the target is regular partitioning
+         AND l_trg_part_type = 'normal'
+            
+      THEN
+
+         evolve.log_msg('Stats CASE 5 entered',5);
+
+         -- we need to delete all the source rows specific to partitioning            
+         DELETE FROM opt_stats
+          WHERE statid = l_statid AND( c2 IS NOT NULL OR c3 IS NOT NULL );
+            
+      -- CASE 6
       -- we know there is a single row in the source
       -- we know that the target can handle a single row( table level ) or multiple rows (partition level)            
       WHEN NOT l_src_global AND l_trg_global
@@ -3913,7 +3952,7 @@ AS
       -- we'll bring in the single row into the target
       THEN
 
-         evolve.log_msg('Stats CASE 5 entered',5);
+         evolve.log_msg('Stats CASE 6 entered',5);
          
          -- we also need to update the partitioning column for the remaining single row
          UPDATE opt_stats
@@ -3922,7 +3961,7 @@ AS
           WHERE statid = l_statid;
 
 
-      -- CASE 6
+      -- CASE 7
       -- we know there is a single row in the source
       -- we know that there is a single row in the target
       WHEN NOT l_src_global AND NOT l_trg_global
@@ -3936,7 +3975,7 @@ AS
       -- so we need to set both columns C2 and C3 to null       
       THEN
 
-         evolve.log_msg('Stats CASE 6 entered',5);
+         evolve.log_msg('Stats CASE 7 entered',5);
          
          -- we need to update the partitioning column for the remaining single row
          UPDATE opt_stats
@@ -3945,7 +3984,7 @@ AS
           WHERE statid = l_statid;
 
 
-      -- CASE 7
+      -- CASE 8
       -- we know there is a single row in the source
       -- we know that there is a single row in the target
       WHEN NOT l_src_global AND NOT l_trg_global
@@ -3960,7 +3999,7 @@ AS
       -- with the partition and subpartition (if applicable) 
       THEN
 
-         evolve.log_msg('Stats CASE 7 entered',5);
+         evolve.log_msg('Stats CASE 8 entered',5);
          
          -- we need to update the partitioning column for the remaining single row
          UPDATE opt_stats
