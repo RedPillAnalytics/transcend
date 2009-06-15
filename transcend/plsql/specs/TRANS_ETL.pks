@@ -15,6 +15,8 @@ IS
    PROCEDURE truncate_partition( p_owner VARCHAR2, p_table VARCHAR2, p_partname VARCHAR2 );
 
    PROCEDURE drop_table( p_owner VARCHAR2, p_table VARCHAR2, p_purge VARCHAR2 DEFAULT 'yes' );
+      
+   PROCEDURE drop_partition( p_owner VARCHAR2, p_table VARCHAR2, p_partname VARCHAR2 );
 
    PROCEDURE build_table(
       p_owner          VARCHAR2,

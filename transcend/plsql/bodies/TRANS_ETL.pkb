@@ -71,6 +71,27 @@ AS
          evolve.log_err;
          RAISE;
    END drop_table;
+   
+   PROCEDURE drop_partition
+      ( p_owner VARCHAR2,
+        p_table VARCHAR2, 
+        p_partname VARCHAR2 
+      )
+   IS
+   BEGIN
+
+      td_dbutils.partition_action
+      ( p_owner         => p_owner, 
+        p_table         => p_table, 
+        p_partname      => p_partname,
+        p_action        => 'drop' );
+      
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         evolve.log_err;
+         RAISE;
+   END drop_partition;
 
    PROCEDURE build_table(
       p_owner          VARCHAR2,
