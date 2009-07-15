@@ -3470,7 +3470,8 @@ AS
             l_concurrent_id    := evolve.get_concurrent_id;
             evolve.log_variable( 'l_concurrent_id', l_concurrent_id );
          END IF;
-
+         
+         o_ev.change_action( 'rebuild local indexes' );
          FOR c_idx IN ( SELECT  DISTINCT table_name, partition_position,
                                'alter table '
                                || table_owner
