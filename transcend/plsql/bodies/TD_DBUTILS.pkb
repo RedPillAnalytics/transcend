@@ -4121,18 +4121,28 @@ AS
       l_rows        BOOLEAN        := FALSE;                                                  -- to catch empty cursors
       o_ev          evolve_ot      := evolve_ot( p_module => 'gather_stats' );
    BEGIN
-      
 
       BEGIN
          SELECT segment_type,
-                CASE WHEN partition_name IS NULL THEN 'no' ELSE 'yes' END
+                partitioned
            INTO l_target_type,
                 l_trg_part_flg
-           FROM dba_segments
+           FROM (
+                  SELECT table_name segment_name,
+                         owner,
+                         'table' segment_type,
+                         lower(partitioned) partitioned
+                    FROM all_tables
+                   UNION
+                  SELECT index_name segment_name,
+                         owner,
+                         'index' segment_type,
+                         lower(partitioned) partitioned
+                    FROM all_indexes
+                )
           WHERE owner = upper(p_owner)
             AND segment_name = upper(p_segment)
-            AND REGEXP_LIKE( NVL(segment_type,'~'), NVL( p_segment_type, '.' ), 'i' )
-            AND REGEXP_LIKE( NVL(partition_name,'~'), NVL( p_partname, '.' ), 'i' );
+            AND REGEXP_LIKE( NVL(segment_type,'~'), NVL( p_segment_type, '.' ), 'i' );
       EXCEPTION
          WHEN no_data_found
          THEN
@@ -4142,7 +4152,22 @@ AS
             evolve.raise_err( 'multiple_segments', l_target_seg );
       END;
 
-      IF evolve.is_debugmode
+      -- register variable values
+      evolve.log_variable( 'l_target_type', l_target_type );
+      evolve.log_variable( 'l_trg_part_flg', l_trg_part_flg );
+      
+      
+      -- raise an exception if we expect a partitioned table but didn't get one
+      IF p_partname IS NOT NULL
+         AND l_trg_part_flg = 'no'
+      THEN
+         
+         evolve.raise_err( 'no_part', p_partname );
+         
+      END IF;
+      
+
+      IF NOT evolve.is_debugmode
       THEN
       
          -- this will either take partition level statistics and import into a table
@@ -4178,8 +4203,7 @@ AS
       END IF;
 
 
-      evolve.log_msg(    'Statistics from '
-                      || ' gathered on '
+      evolve.log_msg(    'Statistics gathered on '
                       || CASE
                            WHEN p_partname IS NULL
                              THEN NULL
@@ -4337,7 +4361,7 @@ AS
       CASE
       WHEN l_part_type <> 'subpart'
       THEN
-         evolve.raise_err( 'not_subpartioned', l_tab_name );
+         evolve.raise_err( 'not_subpartitioned', l_tab_name );
       ELSE
          NULL;
       END CASE;

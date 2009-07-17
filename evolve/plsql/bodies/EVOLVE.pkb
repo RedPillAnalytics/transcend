@@ -145,7 +145,7 @@ AS
            INTO l_scn
            FROM v$database;
       EXCEPTION
-         WHEN e_no_tab
+         WHEN others
          THEN
             l_scn := 0;
       END;

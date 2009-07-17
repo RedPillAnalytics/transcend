@@ -950,7 +950,7 @@ AS
 
          SELECT count(*)
            INTO l_num
-           FROM dba_tab_subpartitions
+           FROM all_tab_subpartitions
           WHERE table_owner = UPPER( p_owner ) AND table_name = UPPER( p_table );
          
          IF l_num > 0
@@ -960,7 +960,7 @@ AS
          
          SELECT count(*)
            INTO l_num
-           FROM dba_tab_partitions
+           FROM all_tab_partitions
           WHERE table_owner = UPPER( p_owner ) AND table_name = UPPER( p_table );
          
          IF l_num > 0
