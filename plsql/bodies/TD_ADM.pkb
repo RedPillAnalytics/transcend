@@ -3006,7 +3006,7 @@ IS
    BEGIN
 
       -- find out which product the user is registered for
-      l_product := get_product_name;
+      l_product := get_product_name( p_application );
       
       -- now call the appropriate procedure
       CASE l_product
