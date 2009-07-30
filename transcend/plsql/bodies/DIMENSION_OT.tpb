@@ -34,7 +34,7 @@ AS
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
-            evolve.raise_err( 'no_dim' );
+            evolve.raise_err( 'no_dim', p_mapping );
       END;
 
       -- confirm the objects related to the dimensional configuration
@@ -471,7 +471,7 @@ AS
                          || SELF.effect_dt_col
                          || ' ROWS BETWEEN unbounded preceding AND unbounded following) \1'
                        );
-      evolve.log_msg( 'The scd1 analytics clause: ' || l_scd1_analytics, 5 );
+      evolve.log_msg( 'The SCD1 analytics clause: ' || l_scd1_analytics, 5 );
       -- construct a list of all the columns in the table
       l_all_col_list      :=
                           td_core.format_list( SELF.natural_key_list || ',' || l_scd_list || ',' || SELF.effect_dt_col );
