@@ -122,7 +122,6 @@ IS
    
    PROCEDURE create_mapping (
       p_mapping             VARCHAR2,
-      p_mapping_type        VARCHAR2,
       p_owner               VARCHAR2 DEFAULT NULL,
       p_table               VARCHAR2 DEFAULT NULL,
       p_partname            VARCHAR2 DEFAULT NULL,
