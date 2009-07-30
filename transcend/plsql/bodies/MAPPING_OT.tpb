@@ -8,7 +8,7 @@ AS
       -- however, the constant puts double quotes around it
       -- need to strip these double quotes just in case
       -- set the instrumentation details
-      REGISTER( regexp_replace(p_mapping,'^"|"$',NULL), p_batch_id );
+      REGISTER( p_mapping, p_batch_id );
 
       -- load information from the mapping_conf table
       BEGIN
@@ -41,7 +41,7 @@ AS
       o_ev   evolve_ot := evolve_ot( p_module => 'register' );
    BEGIN
       -- store the mapping name
-      SELF.mapping_name    := LOWER( p_mapping );
+      SELF.mapping_name    := LOWER( regexp_replace(p_mapping,'^"|"$',NULL));
 
       -- store the batch_id
       -- only want to do this if the value is provided
