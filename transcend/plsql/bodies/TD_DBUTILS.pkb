@@ -2684,7 +2684,8 @@ AS
                             p_partname             => CASE WHEN l_trg_part THEN NULL ELSE l_partname END,
                             p_source_owner         => p_owner,
                             p_source_segment       => p_table,
-                            p_source_partname      => CASE WHEN l_trg_part THEN l_partname ELSE NULL END
+                            p_source_partname      => CASE WHEN l_trg_part THEN l_partname ELSE NULL END,
+                            p_segment_type         => 'table'
                            );
          -- do nothing with stats
          -- this is preferable if stats are gathered on the staging segment prior to being exchanged in
@@ -3656,10 +3657,6 @@ AS
       l_src_seg_type       dba_segments.segment_type%TYPE;
       l_trg_seg_type       dba_segments.segment_type%TYPE;
       
-      -- variables to know whether the tables are partitioned or not
-      l_src_part_flg      VARCHAR2(3);
-      l_trg_part_flg      VARCHAR2(3);
-
       -- variables to know what type of partitioning is used
       l_src_part_type     VARCHAR2(20);
       l_trg_part_type     VARCHAR2(20);
@@ -3685,99 +3682,136 @@ AS
       l_rows        BOOLEAN        := FALSE;                                                  -- to catch empty cursors
       o_ev          evolve_ot      := evolve_ot( p_module => 'transfer_stats' );
    BEGIN
-      
-      BEGIN
 
-         SELECT segment_type,
-                part_type,
-                count(*) num_segments
-           INTO l_src_seg_type,
-                l_src_part_type,
+      evolve.log_variable('p_source_partname',p_source_partname);      
+      -- partition type
+      -- get source segment type
+      -- set number of segments
+      BEGIN
+         SELECT nvl(part_type,'normal'),
+                segment_type,
+                count(*)
+           INTO l_src_part_type,
+                l_src_seg_type,
                 l_src_num_segs
-           FROM ( SELECT CASE 
-                         WHEN REGEXP_LIKE(segment_type,'^table','i') THEN 'table' 
-                         WHEN REGEXP_LIKE(segment_type,'^index','i') THEN 'index' 
-                         ELSE 'unknown' END segment_type, 
-                         CASE 
-                         WHEN REGEXP_LIKE(segment_type,'subpartition$','i') THEN 'subpart' 
-                         WHEN REGEXP_LIKE(segment_type,'partition$','i') THEN 'part' 
-                         ELSE 'normal' END part_type
-                    FROM dba_segments
-                   WHERE owner = upper( p_source_owner )
-                     AND segment_name = upper( p_source_segment )
-                     AND REGEXP_LIKE( NVL(segment_type,'~'), NVL( p_segment_type, '.' ), 'i' )
-                     AND REGEXP_LIKE( NVL(partition_name,'~'), NVL( p_source_partname, '.' ), 'i' )
-                ) 
-          GROUP BY segment_type,
-                part_type;
-                         
+           FROM (  SELECT table_name segment_name,
+                          owner,
+                          'table' segment_type,
+                          lower(partitioned) partitioned
+                     FROM all_tables
+                    UNION
+                   SELECT index_name segment_name,
+                          owner,
+                          'index' segment_type,
+                          lower(partitioned) partitioned
+                     FROM all_indexes )
+           left JOIN  ( SELECT table_name segment_name,
+                               table_owner owner,
+                               'table' segment_type,
+                               CASE WHEN subpartition_name IS NULL THEN partition_name ELSE subpartition_name END partition_name,
+                               CASE WHEN subpartition_name IS NULL THEN 'part' ELSE 'subpart' END part_type
+                          FROM  all_tab_partitions ip
+                          left JOIN all_tab_subpartitions isp
+                               USING (table_owner, table_name, partition_name)
+                         UNION
+                        SELECT index_name segment_name,
+                               index_owner owner,
+                               'index' segment_type,
+                               CASE WHEN subpartition_name IS NULL THEN partition_name ELSE subpartition_name END partition_name,
+                               CASE WHEN subpartition_name IS NULL THEN 'part' ELSE 'subpart' END part_type
+                          FROM all_ind_partitions ip
+                          left JOIN all_ind_subpartitions isp
+                               USING (index_owner, index_name, partition_name)
+                      )
+                USING (owner, segment_name, segment_type)
+          WHERE segment_name = upper( p_source_segment )
+            AND owner = upper( p_source_owner )
+            AND REGEXP_LIKE( segment_type, NVL( p_segment_type, '.' ), 'i' )
+            AND REGEXP_LIKE( NVL(partition_name,'~'), NVL( p_source_partname, '.' ), 'i' )
+          GROUP BY part_type,segment_type;
       EXCEPTION
          WHEN no_data_found
          THEN
             CASE
             WHEN p_source_partname IS NOT NULL
-            THEN
-            
+            THEN            
                evolve.raise_err( 'no_part', upper( p_source_partname )||' of '||l_source_seg );
-
             ELSE
-
                evolve.raise_err( 'no_segment', l_source_seg );
-
             END CASE;
+         WHEN too_many_rows
+         THEN
+            evolve.raise_err( 'multiple_segments', l_source_seg );
       END;
-      
+
       evolve.log_variable( 'l_src_seg_type',l_src_seg_type );
-      evolve.log_variable( 'l_src_part_type',l_src_part_type );
-      evolve.log_variable( 'l_src_num_segs',l_src_num_segs );
+      evolve.log_variable( 'l_src_part_flg',l_src_part_type );      
+      evolve.log_variable( 'l_src_seg_type',l_src_seg_type );
 
       -- use number of segments to determine whether we use global stats      
       l_src_global  := CASE WHEN l_src_num_segs > 1 THEN TRUE WHEN l_src_num_segs = 1 THEN FALSE END;
       evolve.log_variable( 'l_src_global', l_src_global );
-      
-      BEGIN
-         
-         SELECT segment_type,
-                part_type,
-                count(*) num_segments
-           INTO l_trg_seg_type,
-                l_trg_part_type,
-                l_trg_num_segs
-           FROM ( SELECT CASE 
-                         WHEN REGEXP_LIKE(segment_type,'^table','i') THEN 'table' 
-                         WHEN REGEXP_LIKE(segment_type,'^index','i') THEN 'index' 
-                         ELSE 'unknown' END segment_type, 
-                         CASE 
-                         WHEN REGEXP_LIKE(segment_type,'subpartition$','i') THEN 'subpart' 
-                         WHEN REGEXP_LIKE(segment_type,'partition$','i') THEN 'part' 
-                         ELSE 'normal' END part_type
-                    FROM dba_segments
-                   WHERE owner = upper( p_owner )
-                     AND segment_name = upper( p_segment )
-                     AND REGEXP_LIKE( NVL(segment_type,'~'), NVL( p_segment_type, '.' ), 'i' )
-                     AND REGEXP_LIKE( NVL(partition_name,'~'), NVL( p_partname, '.' ), 'i' )
-                ) 
-          GROUP BY segment_type,
-                part_type;
-          
-      EXCEPTION
 
+      -- partition type
+      -- get source segment type
+      -- set number of segments
+      BEGIN
+         SELECT nvl(part_type,'normal'),
+                segment_type,
+                count(*)
+           INTO l_trg_part_type,
+                l_trg_seg_type,
+                l_trg_num_segs
+           FROM (  SELECT table_name segment_name,
+                          owner,
+                          'table' segment_type,
+                          lower(partitioned) partitioned
+                     FROM all_tables
+                    UNION
+                   SELECT index_name segment_name,
+                          owner,
+                          'index' segment_type,
+                          lower(partitioned) partitioned
+                     FROM all_indexes )
+           left JOIN  ( SELECT table_name segment_name,
+                               table_owner owner,
+                               'table' segment_type,
+                               CASE WHEN subpartition_name IS NULL THEN partition_name ELSE subpartition_name END partition_name,
+                               CASE WHEN subpartition_name IS NULL THEN 'part' ELSE 'subpart' END part_type
+                          FROM  all_tab_partitions ip
+                          left JOIN all_tab_subpartitions isp
+                               USING (table_owner, table_name, partition_name)
+                         UNION
+                        SELECT index_name segment_name,
+                               index_owner owner,
+                               'index' segment_type,
+                               CASE WHEN subpartition_name IS NULL THEN partition_name ELSE subpartition_name END partition_name,
+                               CASE WHEN subpartition_name IS NULL THEN 'part' ELSE 'subpart' END part_type
+                          FROM all_ind_partitions ip
+                          left JOIN all_ind_subpartitions isp
+                               USING (index_owner, index_name, partition_name)
+                      )
+                USING (owner, segment_name, segment_type)
+          WHERE segment_name = upper( p_segment )
+            AND owner = upper( p_owner )
+            AND REGEXP_LIKE( segment_type, NVL( p_segment_type, '.' ), 'i' )
+            AND REGEXP_LIKE( NVL(partition_name,'~'), NVL( p_partname, '.' ), 'i' )
+          GROUP BY part_type,segment_type;
+      EXCEPTION
          WHEN no_data_found
          THEN
-            
             CASE
-            WHEN p_partname IS NOT NULL
-            THEN
-            
+            WHEN p_source_partname IS NOT NULL
+            THEN            
                evolve.raise_err( 'no_part', upper( p_partname )||' of '||l_target_seg );
-
             ELSE
-
                evolve.raise_err( 'no_segment', l_target_seg );
-
             END CASE;
-
+         WHEN too_many_rows
+         THEN
+            evolve.raise_err( 'multiple_segments', l_target_seg );
       END;
+
       
       evolve.log_variable( 'l_trg_seg_type',l_trg_seg_type );
       evolve.log_variable( 'l_trg_part_type',l_trg_part_type );
