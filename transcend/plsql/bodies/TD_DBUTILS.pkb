@@ -1912,6 +1912,12 @@ AS
                                         FROM all_constraints
                                        WHERE constraint_type = 'R'
                                          AND REGEXP_LIKE( constraint_name, NVL( p_constraint_regexp, '.' ), 'i' )
+                                         AND r_owner IN (
+                                                          SELECT owner
+                                                            FROM all_constraints
+                                                           WHERE table_name = UPPER( p_table )
+                                                             AND owner = UPPER( p_owner )
+                                                             AND constraint_type = 'P' )
                                          AND r_constraint_name IN(
                                                 SELECT constraint_name
                                                   FROM all_constraints
@@ -2926,6 +2932,10 @@ AS
       END IF;
 
       -- drop constraints on the stage table
+      evolve.log_msg( 'Dropping constraints on the staging table', 4 );
+      evolve.log_variable('p_source_owner', p_source_owner );      
+      evolve.log_variable('p_source_table', p_source_table );
+      
       BEGIN
          drop_constraints( p_owner => p_source_owner, p_table => p_source_table, p_basis => 'all' );
       EXCEPTION
@@ -2935,6 +2945,7 @@ AS
       END;
 
       -- drop indexes on the staging table
+      evolve.log_msg( 'Dropping indexes on the staging table', 4 );
       drop_indexes( p_owner => p_source_owner, p_table => p_source_table );
       o_ev.clear_app_info;
    EXCEPTION
