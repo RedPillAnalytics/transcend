@@ -36,6 +36,8 @@ AS
          THEN
             evolve.raise_err( 'no_dim', p_mapping );
       END;
+      
+      evolve.log_variable('self.full_table',SELF.full_table);
 
       -- confirm the objects related to the dimensional configuration
       verify;
@@ -56,11 +58,11 @@ AS
       -- let's find out if it's partitioned
       l_tab_part      := td_utils.is_part_table( table_owner, table_name);
    
-      evolve.log_msg( 'Constant staging: ' || SELF.constant_staging, 5 );
+      evolve.log_variable('self.constant_stagig',SELF.constant_staging);
 
       -- check that the sequence exists
-      evolve.log_msg( 'The sequence owner: ' || SELF.sequence_owner, 5 );
-      evolve.log_msg( 'The sequence name: ' || SELF.sequence_name, 5 );
+      evolve.log_variable('self.sequence_owner',SELF.sequence_owner);
+      evolve.log_variable('self.sequence_name',SELF.sequence_name);
       td_utils.check_object( p_owner            => SELF.sequence_owner,
                              p_object           => SELF.sequence_name,
                              p_object_type      => 'sequence'
@@ -69,8 +71,9 @@ AS
       -- constant staging
       IF td_core.is_true( self.constant_staging )
       THEN
+         
+         evolve.log_variable('self.full_stage',SELF.full_stage);
 
-         evolve.log_msg( 'Full stage: ' || SELF.full_stage, 5 );
          -- if it is, then make sure that it exists
          td_utils.check_table( p_owner => SELF.staging_owner, p_table => SELF.staging_table );
          
