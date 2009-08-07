@@ -1692,7 +1692,6 @@ IS
 	 AND lower( table_name ) = lower( p_table )
 	 AND lower( column_name ) = lower( p_column );
       
-      -- record the number of rows affected by the last statment
       
       -- confirm the dimension columns
       o_dim.confirm_dim_cols;
@@ -1705,13 +1704,15 @@ IS
    )
    IS
    BEGIN
+
+      o_ev   evolve_ot := evolve_ot (p_module => 'delete_dim_attribs');
       
       -- delete the column configuration
       DELETE FROM column_conf
             WHERE LOWER (table_owner) = LOWER (p_owner)
          AND LOWER (table_name) = LOWER (p_table);
       
-      -- record the number of rows affected by the last statment
+      o_ev.clear_app_info;
       
    END delete_dim_attribs;
    
