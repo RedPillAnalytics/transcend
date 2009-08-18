@@ -108,8 +108,8 @@ AS
          
          l_dsql := 
          'insert into td_part_gtt ( table_owner, table_name, partition_name, partition_position, partid ) '
-         || ' SELECT owner, object_name, subobject_name, object_id, '||p_partid
-         || '  FROM all_objects'
+         || ' SELECT owner, object_name, subobject_name, object_id, '''||p_partid
+         || '''  FROM all_objects'
          || ' WHERE owner = '''
          || UPPER( p_owner )
          || ''' AND object_name = '''
