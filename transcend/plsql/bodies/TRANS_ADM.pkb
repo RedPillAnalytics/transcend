@@ -1703,9 +1703,9 @@ IS
       p_table           VARCHAR2
    )
    IS
-   BEGIN
-
       o_ev   evolve_ot := evolve_ot (p_module => 'delete_dim_attribs');
+
+   BEGIN
       
       -- delete the column configuration
       DELETE FROM column_conf
