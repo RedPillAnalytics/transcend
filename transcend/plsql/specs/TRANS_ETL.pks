@@ -207,7 +207,6 @@ IS
       p_method            VARCHAR2 DEFAULT 'FOR ALL COLUMNS SIZE AUTO',
       p_granularity       VARCHAR2 DEFAULT 'AUTO',
       p_cascade           VARCHAR2 DEFAULT NULL,
-      p_options           VARCHAR2 DEFAULT 'GATHER AUTO',
       p_segment_type      VARCHAR2 DEFAULT NULL
    );
  

@@ -128,7 +128,7 @@ IS
       p_indexes             VARCHAR2 DEFAULT 'ignore',
       p_index_regexp        VARCHAR2 DEFAULT NULL,
       p_index_type          VARCHAR2 DEFAULT NULL,
-      p_part_type           VARCHAR2 DEFAULT NULL,
+      p_part_type           VARCHAR2 DEFAULT 'all',
       p_idx_concurrency     VARCHAR2 DEFAULT 'no',
       p_constraints         VARCHAR2 DEFAULT 'ignore',
       p_constraint_regexp   VARCHAR2 DEFAULT NULL,
@@ -138,7 +138,7 @@ IS
       p_source_object       VARCHAR2 DEFAULT NULL,
       p_source_column       VARCHAR2 DEFAULT NULL,
       p_replace_method      VARCHAR2 DEFAULT NULL,
-      p_statistics          VARCHAR2 DEFAULT 'transfer',
+      p_statistics          VARCHAR2 DEFAULT 'ignore',
       p_description         VARCHAR2 DEFAULT NULL
    );
 

@@ -790,7 +790,7 @@ IS
       p_indexes             VARCHAR2 DEFAULT 'ignore',
       p_index_regexp        VARCHAR2 DEFAULT NULL,
       p_index_type          VARCHAR2 DEFAULT NULL,
-      p_part_type           VARCHAR2 DEFAULT NULL,
+      p_part_type           VARCHAR2 DEFAULT 'all',
       p_idx_concurrency     VARCHAR2 DEFAULT 'no',
       p_constraints         VARCHAR2 DEFAULT 'ignore',
       p_constraint_regexp   VARCHAR2 DEFAULT NULL,
@@ -800,7 +800,7 @@ IS
       p_source_object       VARCHAR2 DEFAULT NULL,
       p_source_column       VARCHAR2 DEFAULT NULL,
       p_replace_method      VARCHAR2 DEFAULT NULL,
-      p_statistics          VARCHAR2 DEFAULT 'transfer',
+      p_statistics          VARCHAR2 DEFAULT 'ignore',
       p_description         VARCHAR2 DEFAULT NULL
    )
    IS
@@ -861,7 +861,7 @@ IS
       p_indexes             VARCHAR2 DEFAULT 'ignore',
       p_index_regexp        VARCHAR2 DEFAULT NULL,
       p_index_type          VARCHAR2 DEFAULT NULL,
-      p_part_type           VARCHAR2 DEFAULT NULL,
+      p_part_type           VARCHAR2 DEFAULT 'all',
       p_idx_concurrency     VARCHAR2 DEFAULT 'no',
       p_constraints         VARCHAR2 DEFAULT 'ignore',
       p_constraint_regexp   VARCHAR2 DEFAULT NULL,
@@ -871,7 +871,7 @@ IS
       p_source_object       VARCHAR2 DEFAULT NULL,
       p_source_column       VARCHAR2 DEFAULT NULL,
       p_replace_method      VARCHAR2 DEFAULT NULL,
-      p_statistics          VARCHAR2 DEFAULT 'transfer',
+      p_statistics          VARCHAR2 DEFAULT 'ignore',
       p_description         VARCHAR2 DEFAULT NULL
    )
    IS
@@ -953,8 +953,6 @@ IS
              UPPER (CASE
                      WHEN p_table IS NULL
                      THEN table_name
-                     WHEN p_table = null_value
-                     THEN NULL
                      ELSE p_table
                      END
                    ),
@@ -971,8 +969,6 @@ IS
              LOWER (CASE
                      WHEN p_indexes IS NULL
                      THEN manage_indexes
-                     WHEN p_indexes = null_value
-                     THEN NULL
                      ELSE p_indexes
                      END
                    ),
@@ -980,8 +976,6 @@ IS
              LOWER (CASE
                      WHEN p_idx_concurrency IS NULL
                      THEN index_concurrency
-                     WHEN p_idx_concurrency = null_value
-                     THEN NULL
                      ELSE p_idx_concurrency
                      END
                    ),
@@ -989,8 +983,6 @@ IS
              LOWER (CASE
                      WHEN p_constraints IS NULL
                      THEN manage_constraints
-                     WHEN p_constraints = null_value
-                     THEN NULL
                      ELSE p_constraints
                      END
                    ),
@@ -998,8 +990,6 @@ IS
              LOWER (CASE
                      WHEN p_con_concurrency IS NULL
                      THEN constraint_concurrency
-                     WHEN p_con_concurrency = null_value
-                     THEN NULL
                      ELSE p_con_concurrency
                      END
                    ),
@@ -1043,8 +1033,6 @@ IS
              LOWER (CASE
                      WHEN p_statistics IS NULL
                      THEN statistics
-                     WHEN p_statistics = null_value
-                     THEN NULL
                      ELSE p_statistics
                      END
                    ),
@@ -1226,8 +1214,7 @@ IS
       PRAGMA EXCEPTION_INIT (e_dup_conf, -1);
       o_ev         evolve_ot  := evolve_ot (p_module => 'create_dimension');
    BEGIN
-      BEGIN
-         INSERT INTO dimension_conf
+      BEGIN       INSERT INTO dimension_conf
                      (table_owner, table_name,
                       sequence_owner, sequence_name,
                       staging_owner, staging_table,
@@ -1298,8 +1285,6 @@ IS
                 UPPER (CASE
                           WHEN p_sequence_owner IS NULL
                              THEN sequence_owner
-                          WHEN p_sequence_owner = null_value
-                             THEN NULL
                           ELSE p_sequence_owner
                        END
                       ),
@@ -1307,8 +1292,6 @@ IS
                 UPPER (CASE
                           WHEN p_sequence_name IS NULL
                              THEN sequence_name
-                          WHEN p_sequence_name = null_value
-                             THEN NULL
                           ELSE p_sequence_name
                        END
                       ),
@@ -1334,16 +1317,12 @@ IS
                 CASE
                    WHEN p_default_scd_type IS NULL
                       THEN default_scd_type
-                   WHEN p_default_scd_type = null_value
-                      THEN NULL
                    ELSE p_default_scd_type
                 END,
              direct_load =
                 LOWER (CASE
                           WHEN p_direct_load IS NULL
                              THEN direct_load
-                          WHEN p_direct_load = null_value
-                             THEN NULL
                           ELSE p_direct_load
                        END
                       ),
@@ -1351,32 +1330,24 @@ IS
                 CASE
                    WHEN p_stage_key_def IS NULL
                       THEN stage_key_default
-                   WHEN p_stage_key_def = null_value
-                      THEN NULL
                    ELSE p_stage_key_def
                 END,
              char_nvl_default =
                 CASE
                    WHEN p_char_nvl_def IS NULL
                       THEN char_nvl_default
-                   WHEN p_char_nvl_def = null_value
-                      THEN NULL
                    ELSE p_char_nvl_def
                 END,
              date_nvl_default =
                 CASE
                    WHEN p_date_nvl_def IS NULL
                       THEN date_nvl_default
-                   WHEN p_date_nvl_def = null_value
-                      THEN NULL
                    ELSE p_date_nvl_def
                 END,
              number_nvl_default =
                 CASE
                    WHEN p_num_nvl_def IS NULL
                       THEN number_nvl_default
-                   WHEN p_num_nvl_def = null_value
-                      THEN NULL
                    ELSE p_num_nvl_def
                 END,
              description =

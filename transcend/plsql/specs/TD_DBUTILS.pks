@@ -170,8 +170,8 @@ IS
       p_source_owner    VARCHAR2 DEFAULT NULL,
       p_source_object   VARCHAR2 DEFAULT NULL,
       p_source_column   VARCHAR2 DEFAULT NULL,
-      p_d_num           NUMBER DEFAULT 0,
-      p_p_num           NUMBER DEFAULT 65535,
+      p_d_num           NUMBER DEFAULT 3,
+      p_p_num           NUMBER DEFAULT 1048576,
       p_index_regexp    VARCHAR2 DEFAULT NULL,
       p_index_type      VARCHAR2 DEFAULT NULL,
       p_part_type       VARCHAR2 DEFAULT NULL
@@ -206,7 +206,6 @@ IS
       p_method            VARCHAR2 DEFAULT 'FOR ALL COLUMNS SIZE AUTO',
       p_granularity       VARCHAR2 DEFAULT 'AUTO',
       p_cascade           VARCHAR2 DEFAULT NULL,
-      p_options           VARCHAR2 DEFAULT 'GATHER AUTO',
       p_segment_type      VARCHAR2 DEFAULT NULL
    );
 
