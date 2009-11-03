@@ -222,7 +222,16 @@ AS
                                       p_con_concurrency   => SELF.constraint_concurrency
                                     );
          ELSE
-            NULL;
+         -- this is not a segment-switching situation
+         -- there is a table name specified
+         -- 'gather' IS specified FOR statistics
+           IF REGEXP_LIKE( 'gather', self.statistics, 'i' ) AND self.table_name IS NOT NULL
+            THEN
+               td_dbutils.gather_stats( p_owner               => self.table_owner, 
+                                        p_segment             => self.table_name, 
+                                        p_segment_type        => 'table' );
+           END IF;
+
       END CASE;
       
       -- if there is no replace method, then we need to rebuild indexes
