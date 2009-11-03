@@ -222,7 +222,7 @@ AS
                                       p_con_concurrency   => SELF.constraint_concurrency
                                     );
          ELSE
-            NULL;
+           NULL;
       END CASE;
       
       -- if there is no replace method, then we need to rebuild indexes
@@ -248,6 +248,19 @@ AS
                                     );
 
       END IF;
+
+      -- this is not a segment-switching situation
+      -- there is a table name specified
+      -- 'gather' is specified for statistics
+      IF self.replace_method IS NULL
+         AND self.table_name IS NOT NULL 
+         AND REGEXP_LIKE( 'gather', self.statistics, 'i' )
+      THEN
+         td_dbutils.gather_stats( p_owner               => self.table_owner, 
+                                  p_segment             => self.table_name, 
+                                  p_segment_type        => 'table' );
+      END IF;
+
 
       -- used to be a commit right here
       -- removing it because I don't think a commit should exist inside mapping functionality
