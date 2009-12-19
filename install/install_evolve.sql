@@ -154,7 +154,7 @@ END;
 
 SET feedback on
 
-CREATE TABLE tdsys.repositories
+CREATE TABLE repositories
        ( 
 	 repository_name    VARCHAR2(30) NOT NULL,
 	 product	    VARCHAR2(20),
@@ -165,7 +165,7 @@ CREATE TABLE tdsys.repositories
 	 modified_dt	    DATE
        );
 
-ALTER TABLE tdsys.repositories ADD 
+ALTER TABLE repositories ADD 
       (
         CONSTRAINT repositories_pk
         PRIMARY KEY
@@ -173,7 +173,7 @@ ALTER TABLE tdsys.repositories ADD
 	USING INDEX
       );
 
-CREATE TABLE tdsys.applications
+CREATE TABLE applications
        ( 
 	 application_name   VARCHAR2(30) NOT NULL,
 	 repository_name    VARCHAR2(30) NOT NULL,
@@ -185,7 +185,7 @@ CREATE TABLE tdsys.applications
 	 modified_dt	    DATE
        );
 
-ALTER TABLE tdsys.applications ADD 
+ALTER TABLE applications ADD 
       (
 	CONSTRAINT applications_pk
 	PRIMARY KEY
@@ -193,7 +193,7 @@ ALTER TABLE tdsys.applications ADD
 	USING INDEX
       );
 
-ALTER TABLE tdsys.applications ADD 
+ALTER TABLE applications ADD 
       (
 	CONSTRAINT applications_fk1
 	FOREIGN KEY (repository_name)
@@ -201,7 +201,7 @@ ALTER TABLE tdsys.applications ADD
 	( repository_name )
       );
 
-CREATE TABLE tdsys.users
+CREATE TABLE users
        ( 
 	 user_name          VARCHAR2(30) NOT NULL,
 	 application_name   VARCHAR2(30) NOT NULL,
@@ -214,7 +214,7 @@ CREATE TABLE tdsys.users
 	 modified_dt	    DATE
        );
 
-ALTER TABLE tdsys.users ADD 
+ALTER TABLE users ADD 
       (
 	CONSTRAINT users_pk
 	PRIMARY KEY
@@ -222,7 +222,7 @@ ALTER TABLE tdsys.users ADD
 	USING INDEX
       );
 
-ALTER TABLE tdsys.users ADD 
+ALTER TABLE users ADD 
       (
 	CONSTRAINT users_fk1
 	FOREIGN KEY (repository_name)
@@ -230,7 +230,7 @@ ALTER TABLE tdsys.users ADD
 	( repository_name )
       );
 
-ALTER TABLE tdsys.users ADD 
+ALTER TABLE users ADD 
       (
 	CONSTRAINT users_fk2
 	FOREIGN KEY (application_name)

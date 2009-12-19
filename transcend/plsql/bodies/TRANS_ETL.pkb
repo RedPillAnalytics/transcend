@@ -613,7 +613,6 @@ AS
                                p_method             => p_method,
                                p_granularity        => p_granularity,
                                p_cascade            => p_cascade,
-                               p_options            => p_options,
                                p_segment_type       => p_segment_type
                              );
       

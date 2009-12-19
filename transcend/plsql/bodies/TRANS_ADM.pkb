@@ -3,6 +3,10 @@ IS
    PROCEDURE set_default_configs
    IS
    BEGIN
+
+      -- reset all Evolve defaults      
+      evolve_adm.set_default_configs;
+
       -- set the notification events
       evolve_adm.set_notification_event
          ('max file size threshold',
@@ -1686,6 +1690,54 @@ IS
       o_ev.clear_app_info;
       
    END delete_dim_attribs;
+
+   PROCEDURE set_module_conf(
+      p_module          VARCHAR2 DEFAULT NULL,
+      p_logging_level   NUMBER   DEFAULT 2,
+      p_debug_level     NUMBER   DEFAULT 3,
+      p_default_runmode VARCHAR2 DEFAULT 'runtime',
+      p_registration    VARCHAR2 DEFAULT 'appinfo'
+   )
+   IS
+   BEGIN
+
+      evolve_adm.set_module_conf(
+                                  p_module          => p_module,
+                                  p_logging_level   => p_logging_level,
+                                  p_debug_level     => p_debug_level,
+                                  p_default_runmode => p_default_runmode,
+                                  p_registration    => p_registration
+                                );
+   
+   END set_module_conf;
+
+   PROCEDURE set_session_parameter(
+      p_name      VARCHAR2,
+      p_value     VARCHAR2,
+      p_mapping   VARCHAR2 DEFAULT NULL
+   )
+   IS
+   BEGIN
+      evolve_adm.set_session_parameter(
+                                        p_name       => p_name,
+                                        p_value      => p_value,
+                                        p_module     => p_mapping
+                                      );
+
+   END set_session_parameter;
+
+   PROCEDURE start_debug
+   AS
+   BEGIN
+      evolve.start_debug;
+   END start_debug;
+
+   -- stops debug mode
+   PROCEDURE stop_debug
+   AS
+   BEGIN
+      evolve.stop_debug;
+   END stop_debug;
    
 END trans_adm;
 /
