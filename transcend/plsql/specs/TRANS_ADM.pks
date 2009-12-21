@@ -3,6 +3,8 @@ IS
    -- used to set configuration parameters to null
    null_value             CONSTANT VARCHAR2 (6)  := '*null*';
 
+   all_modules	CONSTANT VARCHAR2(13) := '*all_modules*';
+
    -- constants from the TD_ADM package
    product_version      CONSTANT   NUMBER         := tdsys.td_adm.product_version;
    transcend_product    CONSTANT   VARCHAR2(9)    := tdsys.td_adm.transcend_product;
@@ -241,7 +243,7 @@ IS
    );
 
    PROCEDURE set_module_conf(
-      p_module          VARCHAR2 DEFAULT NULL,
+      p_module          VARCHAR2 DEFAULT all_modules,
       p_logging_level   NUMBER   DEFAULT 2,
       p_debug_level     NUMBER   DEFAULT 3,
       p_default_runmode VARCHAR2 DEFAULT 'runtime',
@@ -251,7 +253,7 @@ IS
    PROCEDURE set_session_parameter(
       p_name         VARCHAR2,
       p_value        VARCHAR2,
-      p_mapping      VARCHAR2 DEFAULT NULL
+      p_module       VARCHAR2 DEFAULT all_modules 
    );
 
    PROCEDURE start_debug;
