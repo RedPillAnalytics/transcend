@@ -1692,7 +1692,7 @@ IS
    END delete_dim_attribs;
 
    PROCEDURE set_module_conf(
-      p_module          VARCHAR2 DEFAULT NULL,
+      p_module          VARCHAR2 DEFAULT all_modules,
       p_logging_level   NUMBER   DEFAULT 2,
       p_debug_level     NUMBER   DEFAULT 3,
       p_default_runmode VARCHAR2 DEFAULT 'runtime',
@@ -1712,16 +1712,16 @@ IS
    END set_module_conf;
 
    PROCEDURE set_session_parameter(
-      p_name      VARCHAR2,
-      p_value     VARCHAR2,
-      p_mapping   VARCHAR2 DEFAULT NULL
+      p_name         VARCHAR2,
+      p_value        VARCHAR2,
+      p_module       VARCHAR2 DEFAULT all_modules 
    )
    IS
    BEGIN
       evolve_adm.set_session_parameter(
                                         p_name       => p_name,
                                         p_value      => p_value,
-                                        p_module     => p_mapping
+                                        p_module     => p_module
                                       );
 
    END set_session_parameter;
