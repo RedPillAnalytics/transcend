@@ -391,11 +391,6 @@ AS
       l_results := SQL%ROWCOUNT;
       COMMIT;
       RETURN l_results;
-   EXCEPTION
-      WHEN OTHERS
-      THEN
-         log_err;
-         RAISE;
    END exec_auto;
 
    -- accepts the P_AUTO flag and determines whether to execute the statement
@@ -429,11 +424,6 @@ AS
       END IF;
 
       RETURN l_results;
-   EXCEPTION
-      WHEN OTHERS
-      THEN
-         log_err;
-         RAISE;
    END exec_sql;
 
    -- if I don't care about the number of results (DDL, for instance), just call this procedure
@@ -477,11 +467,6 @@ AS
 
          l_results := SQL%ROWCOUNT;
       END IF;
-   EXCEPTION
-      WHEN OTHERS
-      THEN
-         log_err;
-         RAISE;
    END exec_sql;
 
    -- uses a sequence to generate a unique concurrent id for concurrent processes
@@ -553,11 +538,6 @@ AS
       log_msg( 'Oracle scheduler job ' || l_job_name || ' created', 2 );
       DBMS_SCHEDULER.ENABLE( l_job_name );
       log_msg( 'Oracle scheduler job ' || l_job_name || ' enabled', 2 );
-   EXCEPTION
-      WHEN OTHERS
-      THEN
-         log_err;
-         RAISE;
    END submit_sql;
 
    -- this process will execute through DBMS_SCHEDULER
@@ -616,11 +596,6 @@ AS
 
          EXIT WHEN l_running = 0;
       END LOOP;
-   EXCEPTION
-      WHEN OTHERS
-      THEN
-         log_err;
-         RAISE;
    END coordinate_sql;
 
    -- this process is called by submitted jobs to DBMS_SCHEDULER
