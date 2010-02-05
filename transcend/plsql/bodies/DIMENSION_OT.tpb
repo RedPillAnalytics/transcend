@@ -472,7 +472,7 @@ AS
                          || SELF.natural_key_list
                          || ' order by '
                          || SELF.effect_dt_col
-                         || ' ROWS BETWEEN unbounded preceding AND unbounded following) \1,'
+                         || ' ROWS BETWEEN unbounded preceding AND unbounded following) \1\2'
                        );
       evolve.log_msg( 'The SCD1 analytics clause: ' || l_scd1_analytics, 5 );
       -- construct a list of all the columns in the table
