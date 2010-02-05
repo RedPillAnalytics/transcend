@@ -298,6 +298,7 @@ AS
       l_all_col_list     LONG;
       l_include_case     LONG;
       l_scd1_analytics   LONG;
+      l_scd1_cnt         NUMBER;
       l_rows             BOOLEAN;
       o_ev               evolve_ot := evolve_ot( p_module => 'mapping '||SELF.mapping_name, p_action => 'start mapping' );
 
@@ -382,9 +383,12 @@ AS
 
       -- get a comma separated list of scd1 columns
       -- use the STRAGG function for this
+      -- also, get a count of the number of columns
       BEGIN
-         SELECT stragg( column_name )
-           INTO l_scd1_list
+         SELECT stragg( column_name ),
+                count(*)
+           INTO l_scd1_list,
+                l_scd1_cnt
            FROM column_conf ic
           WHERE ic.table_owner = SELF.table_owner AND ic.table_name = SELF.table_name AND ic.column_type = 'scd type 1';
       EXCEPTION
@@ -472,7 +476,7 @@ AS
                          || SELF.natural_key_list
                          || ' order by '
                          || SELF.effect_dt_col
-                         || ' ROWS BETWEEN unbounded preceding AND unbounded following) \1,'
+                         || ' ROWS BETWEEN unbounded preceding AND unbounded following) \1\2'
                        );
       evolve.log_msg( 'The SCD1 analytics clause: ' || l_scd1_analytics, 5 );
       -- construct a list of all the columns in the table
