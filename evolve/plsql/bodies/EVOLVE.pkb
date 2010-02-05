@@ -67,7 +67,7 @@ AS
       EXCEPTION
          WHEN VALUE_ERROR
          THEN
-            l_msg := SUBSTR( l_msg, 0, 1998 ) || '>>';
+            l_msg := SUBSTR( p_msg, 0, 1998 ) || '>>';
       END;
 
       -- find out what called me
@@ -261,13 +261,19 @@ AS
    AS
    BEGIN
       log_msg( 'The error name passed: "' || p_name || '"', 5 );
-      raise_application_error( get_err_cd( p_name ),
-                               get_err_msg( p_name ) || CASE
-                                  WHEN p_add_msg IS NULL
-                                     THEN NULL
-                                  ELSE ': ' || p_add_msg
-                               END
-                             );
+      IF is_debugmode
+      THEN
+         log_msg( "Error Raised: "||get_err_cd( p_name )||': '||get_err_msg( p_name );
+      ELSE         
+         raise_application_error( get_err_cd( p_name ),
+                                  get_err_msg( p_name ) || CASE
+                                                           WHEN p_add_msg IS NULL
+                                                           THEN NULL
+                                                           ELSE ': ' || p_add_msg
+                                                           END
+                                );
+      END IF;
+
    END raise_err;
    
    PROCEDURE print_query( p_query IN VARCHAR2 )

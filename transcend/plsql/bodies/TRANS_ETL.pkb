@@ -27,6 +27,11 @@ AS
    -- used to have a commit here.
    -- I don't think a commit should be done inside a mapping
    -- it overrides the commit control of an ETL tool (if any)
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         evolve.log_err;
+         RAISE;
    END end_mapping;
 
    PROCEDURE truncate_table( p_owner VARCHAR2, p_table VARCHAR2, p_reuse VARCHAR2 DEFAULT 'no' )
