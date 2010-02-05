@@ -67,7 +67,7 @@ AS
       EXCEPTION
          WHEN VALUE_ERROR
          THEN
-            l_msg := SUBSTR( l_msg, 0, 1998 ) || '>>';
+            l_msg := SUBSTR( p_msg, 0, 1998 ) || '>>';
       END;
 
       -- find out what called me
