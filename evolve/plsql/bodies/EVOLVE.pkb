@@ -67,7 +67,7 @@ AS
       EXCEPTION
          WHEN VALUE_ERROR
          THEN
-            l_msg := SUBSTR( l_msg, 0, 1998 ) || '>>';
+            l_msg := SUBSTR( p_msg, 0, 1998 ) || '>>';
       END;
 
       -- find out what called me
@@ -395,18 +395,16 @@ AS
 
    -- accepts the P_AUTO flag and determines whether to execute the statement
    -- if the P_AUTO flag of 'yes' is passed, then EXEC_AUTO is called
-   -- if P_BACKGROUND of 'yes' is called, then it is executed through DBMS_SCHEDULER
    FUNCTION exec_sql( p_sql VARCHAR2, p_msg VARCHAR2 DEFAULT NULL, p_auto VARCHAR2 DEFAULT 'no' )
       RETURN NUMBER
    AS
       l_results   NUMBER;
    BEGIN
-      log_msg( 'This is an AUTONOMOUS_TRANSACTION', 5 );
       log_msg( CASE
-                             WHEN p_msg IS NULL
-                                THEN 'SQL: ' || p_sql
-                             ELSE p_msg
-                          END, 3 );
+               WHEN p_msg IS NULL
+               THEN 'SQL: ' || p_sql
+               ELSE p_msg
+               END, 3 );
 
       IF NOT is_debugmode
       THEN
