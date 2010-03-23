@@ -4113,7 +4113,7 @@ AS
                          ELSE NULL
                          END                        
                       || UPPER( l_source_seg )
-                      || ' transfered to '
+                      || ' transferred to '
                       || CASE 
                          WHEN p_partname IS NOT NULL 
                          THEN l_trg_part_type
