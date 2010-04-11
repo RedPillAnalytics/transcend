@@ -31,7 +31,7 @@ IS
    unknown_user         EXCEPTION;
 
    -- package constants
-   product_version      CONSTANT        NUMBER          := 2.0;
+   product_version      CONSTANT        NUMBER          := 2.5;
    transcend_product    CONSTANT        VARCHAR2(9)     := 'transcend';
    evolve_product       CONSTANT        VARCHAR2(9)     := 'evolve';
    evolve_sys_role      CONSTANT        VARCHAR2(30)    := 'EVOLVE';
@@ -1578,152 +1578,755 @@ Kp894swKCJq/+AhIpA8VvjHF40joXAvPH7mfFortLnkgwjsXDWiLcpJqJH7oULo=
 /
 SHOW errors
    
-CREATE OR REPLACE PACKAGE BODY evolve wrapped 
-a000000
-1
-abcd
-abcd
-abcd
-abcd
-abcd
-abcd
-abcd
-abcd
-abcd
-abcd
-abcd
-abcd
-abcd
-abcd
-abcd
-b
-488c 16b7
-+sA1NukFBTFDsfFPm1v3AmyB7NIwg0P9cyAF3zM/Mw81juqFvl4Q3OwcPIsJZ/cRgBNW3vFu
-3wQ5r1KJPHjG/36wTDfkCP7OLvKJJDxVuUC9vVbMXYaG+D/Qw/w6mkKEX9Hxj6tcT6dOrlzG
-2drnqJskBMY/8xt/qwZR0n1i3kDVapVXbbONnDqch5/mozF8U2YZlEiV+NEjQqxK/1oHmXp0
-9mkYDnSGNH0tOKAfSh15JQNKlIzM01/vNB9g2B6vBC04OWBRoXCRcIG508b5PwQ6h46NQvvS
-gDmjsHOxtaKAFt0dIHaUFlMEQ0NT54xLU7my8X5dlJJQsEldD8lM9WjBbWtLhgjnJplB0bjo
-GcvxUnaFJpbxFBWH2EVtWFuHiQsqxZ4L2Hs+z66H7SWwM4ZRfw08pYt2gf2i0PEUzYXRdBB9
-WlemDOuhQ+U9l629IBkHRGMQnAu4StzM8VJpOMswovcnpnbIIm6Wy+hHxh+nrdBMIqVEe+Ky
-d1Sze27wc9r9CjkHHXfpUgl3V8AaI45LUUpget9GC/0CmjhderVXk2j/CsFtxvgTJ4HPf75k
-Qdp7dP11QI6m/Onf1Bdglmal7mewZYWExjbmEbLWMbLYabt5dEmuRtfxpnGttOAarH9zzJeN
-yfTQ1lI52S5AQxYsn8zyPxrkvqV27tV2vcy2JRJH48qU0dc07oWEGVNaBpGJX07ChTRXsVnL
-TC+E3S+lhvn6JtHukSPRYWrCpdFmaNbowZUy5d4MucZiq90NqfyBypub2ZmPZ9BUp+R7lqVN
-Rt6GqNEeoxP4nARvcFR8hClScZGxAfeMZnY4jx4WjduWhkZw8iqVxia8kdwfMcufllZFwONt
-hzQiDYjy+Yx4ofzdmxacXeThU/xafXTV9NRT25OnkbpGhxWOg+k4mE0oGDqSgXhw1a/neyCa
-e+zYoX8Kgm/d54iCeyEmWhs2QBaj7AA1lAK3pq2mZnS+drwAH2YxLWJaVa9UbpSlXhTyiXuF
-n/skV6PRUfb+jC+jcJI14WJ3777j+sJtpopcfR1b7fOfzaY1tdR/X2oav0FevFumn24BNtFa
-ZAzXZB+ZVxFdOpwO5Tum1m1/WYpRFBedIgLiBTVmfaIez1m5mbXx/95pcsvkTTxZQxuATPBM
-0ba26mWVDsgp/1Wj3WtB/lFufVY+TWDV8mBfQAZc8KfTT6QhlHM2eZUDDlKajfHNCSywRRbh
-sLqhChIUJIjwFQZHG9hh2icV8VL3Sm0c5F4MGUP8Ixr9P7k5dSgEZdlnq1keQe52dL//2Hos
-kKciUyasroVZUdWabLvg3qNjhGkglryVP7MzPP6eelnC9vi63oYNxCUNfObZvFnNMnT3nlFK
-2uY/KKWib9oK/Zk1Fm2vfUjEdCtjF/Xg24muWdzWzBS9RIy3v1+kpeBuQug1IF4rJgoPY3W6
-Mnlu6FcewFJXJUEpCUpx8AXiyBZE9DCHdkLeStbxVPj/32x/qpFZ0w/pJWKtf7KVUJvLO+Up
-wDKYYB4nhy54Pc0kG7+/0tTu3B6ywIVk26Hnt3ccLu8CMxEnJW9JN4AAaQZQQS0of/zoDh4f
-UliagBpyh7PxdvvOSqOEsJqo4y3pWytAEyQNtEnG8y147Cg96fS+OiMeygxgffxkN1tUI8UF
-J5l10+NswnEqo+Bs5gBYkaj2fKBi9a25tMq/oAF2L6DkOISNYTe18OeLch8NfIJRAtE7X8aE
-5CJEbZxgZ5viWaZ+KvPs6YlGNW4kyKBPM/jIqDeh+e4HeOuVySqqTobQy3pBNzEAg/S84KVS
-mV4FC0kMdx3ng1EcSw2os6hiXah3p8AJ0FlNXXWW2oXnf0eXnk5p3Agt5k8bTsYYzmOutz1+
-wIJkUILBKaEwDGUes+u3TnTXPI+cQUHOcdEjMpFWonDk/WRAk/ik9sylXqiJvaF1A+Kmn0Y/
-H36v4IYknuI0Fb98RSIwFIu/NlcGlMiE8unLOzmoB2+9pEWsYQ3K9uNmemgzgYrvg86c3oFL
-WGIfYgbkQsJg2PKfHiFGMXRsVxGbC47sNb8MJC+JzIg3fB40dWOiVGROwsj0MUkk9FsAJVGX
-6ZLsivPpxNCHaSwBMPMcacif7VhgjidlzZS40+OuH7j/6sLVGaml9EYb2CtNGSoVSkeZx3Ej
-3qsCIteZda25UR9JcKyv0174Az9N6AOYkzJt5T0nvuHo2LPgvjV4XA1n60MGSDPuUlxVwIaE
-8wDCAn/C9RbvLswTF88nMWLKlkJEUtUfBZ8vEcoKLVI2Suv9HNuhItsVYKn5F0NRFo78WSHx
-/esjfFZrXtb3FKqbrN1NKP2h+NFeFW+Fp+nFKX04woe3Y3qG3quQShRIcuNszB6s43tH2aYP
-XwfvY9AbNz0UddzILsl2M+u3ldQvBeneEbZMJ7R26SvgGJU9MdeuBfU77sifk8xrummHSv4E
-miNSSe91xnh+vDlmgcMPmUa+V1gax9K8nlHiqWLqjPU87v4Jm2IiKtfdyIma0FKfLlSEIN1h
-d19xTUeIL+cJTXr6fYJ0QFTa60t8MyyogLtsPkoM36JkW6KGzFbgshC2AyCKLmcczF/H+xNy
-6IdbV/5tbVpZYugU1xRqIYvr3wQeuhQ/4ustMm3x20hDcMOg9YZz2CTsiBVC95Hm/Gw49p9P
-SLQtyEbuv6K/5BUER6YU0SIbKVocShWF2cpJs3bPanuG/t1L4Yy4IRU15wxn/5G8JisRTDux
-FJKT6v0hEHE7nArAc/Nm5JUHTvyc+vWGEURMTBon2zOMNhptf1P25+OoyM9VsgewR7orOyzB
-Eyojpo7fjxtI5TqbgkW64hlX1J8qXsUbJoGfwelz4eaQuQbcgO9F9+/Tao0jiLQK4RdWp0Si
-LuCt4ole6qX8cX7v3wSbJMlWacejMQT2AQM6763LjvotryfqfNtc7eC4pOrsKHiggpmWfHjh
-QrLxaSvq67vf+fuVaVpHPX/8gV1aPpOSKaa8RP+onzi08zZ3fII+Fp5vdiydaNzHefPWfG8M
-TTvK9S6ZwTxHq4O++mIryopPtP5sgsdheMN5E5GdmHShrBs4dHw+zJH6mDQ5Oe3pED6+G/vE
-JUWz+LEJdjHQpBb2hPrFw1LVMbKsmXa+LfoJlktmxmW0nBADUOKQclAxnmvNoU8rGNwetyoo
-NXdC2IzrSGFhmeNIwx7MzwOl9tMrLNm6Wm7KhCdiZUsUYKdLjVuLoz0OiH9OIslogH9DKtrA
-e2MFVnt7xD3X738N/0ef8gJB5rMRLgaWozhp0rceJX/EeUaplwFEHuAPhLKtjxlVhs9KBECj
-KoQdkU9JoSgTyYFTtEe51cfL+6LUn7Ir89bM8QB20483y6QJQLTHW+O7YqjvoCUf69JcjpQ+
-cp42BTFCy2H0uXn0rUdlJkf7OhahKL4rgpl+JR2LTbdqO6Tz5c0F6I5ITjsDVHsSlPWf06Gu
-SRf2Nqq36Zkp1yEJy2iQrghfKch+9JS7qQllazf4zYxN4eja8RyPH1Sj1zI3ag5IOOpgRzNr
-z3yH7chpAjDh/5B5vAUwaaBhtgTXbwPXfsI4DSQDkQ+csUCskJ1DeEDZZE+s9j29kOYNTRKw
-QXdAfuqOJjeBqgFjGsK4qX5Mkg1zL0YZasMWMZBlSLq/UTjlmE/b4CiWdIMOtxmjsznNUJ3c
-Lhb5tdKFaDOaIqVplQkOqx6L2SHe3G9ujtfpunJtq2zCKcD7vfrlo35QiqfNH/THdIM2QHm3
-H9twj/v1amJ3R3lwWpp1Liqp9TgSVPcb8PweklwzHaTg5nsy903Wg3LxztIOZ8ZK3d+6rGFY
-dIzDSMhuhDGHpHII/oOnXox8C0tpK3FK+HM8gogGIQIi8UclbQj44cnxHh9b1Tbhm0Q7a1sL
-riVy5H9s7M3wGTun/hGEGGg9ctA94KNSrzzd/eZVwmfAbuwggUOxrUKTpiVMB36qhs6XUqS8
-KRw5yz5DvLhBQaA+q4+yWSTDbSfpNgnrFQmxFRFtbye6SaMfjOSHEu9dhJkw/Z7YgIefK7d4
-mhsfYyxCQkgIdM7F9OK4+k+TeMGxkI8b6xHa9Dbm29yut16OiEJP/qKwgyZ5Oo3jNKDxG63e
-fp3nnRMsX8qGDASZ25xJ+GfYZK6QsS+QOxctVi8yk6LyBPcb8CNYiVCFop0CyNi3NfJ0U9ZW
-1pfmW//wc655PdRFfZX62esgSmJbU6vGcmz+ASbpjwX9BgQXGtLVkvX2ceub0qeQoDkn/O1D
-FjyoUxFhIyzHgbtDsgVrJaCHqWVziTLO0oZ+GSckYUJSYXQb0e12t/5Q1XZGGsuD/OV5ZoGL
-aA6nx14QdWLOHxEA3X5zMA+NHk/BTICBhqdUhZ0I4V/lXrsnzyzUmK1hStSwec2k9vv9HjL1
-QOWVzVjHyWPSI5ItRRBu6tWXwvqJQV5Nfy5uwXt5adgbKj9Avkf1Mj+/UOIMWIefs02i37m9
-qSwxjqZuB61LsDRYlrAkrRKsUNe9qVCcnZlngqGf8T2Re2S3U+h0iaERReUw578JnAGhcXYD
-65aDtGTsA6PI7yuSbqBQ75Cw1w2SofFEOFl1fl0neb7xl+hdGcpJ6uuVPyY8ozONgASwq0L2
-D67tCQD6WH2RcaCBirdK8I55dsY4endbFp1lpRXnW4X58ZQFwFnEm87DFc/8mK021Qzu6ZZM
-Ctp7e/LkuyP1MUy+P+8W6r9lM0bKRW35yYvzehldDHeaUKkDKe8N0YqlQFddiFC2dhsgACu4
-VoUpywdy7uQjVog7/VqflY/KR218G0leWvMkoX/aPChSocDpLnu47xpiH7FaKQL8vgcGgrTP
-W5EfcLz7xCjDuxDq70PR3cKw1brE3OAXG1qzUMrS+XYClU+3TsBGqEoQ/nB8WDeVDhsBRc9x
-fhqccIyrvU1FA0nkpzRUMfTvGFjDxsRZt0MB1eERgCBugYbXc36EeqAL1/qhAe7EQU9elxV4
-UuXJ8CLq1QCARTqsG304DW4rHirgV7eL1/HoQjL2GYRCXC02aavOOptq7IqHjAUnHeST/qNu
-VQwM9hCC+vFOt/zZSjYPVbM7U+JVq1Ef6DoUEqmXI4InCsGqiNJIrZ4rwfWhYWKn0P3GRVvl
-DeNyLSrqcD/x3b+v26yyxLGfpZl3xSzQS1l6XBzbnZnvlN9vhf1JFVRHa3gqeK7sBd+L0HtW
-DxE5N3brZGsV/ACD9yP0thDvSpsMoBHVnZph2rkDTpmtMVONPBJyC+rXEK2nG1dWokJFkDv6
-ZDLq4oHgXGlODuENK8XhUdDJLuhz4Bc77FssWXXB+GoUrJQ2uvwKdxUKXqgNx6ey0yXW2bvj
-bfMxZnsgFMh2Z7rKUbnsYyKv7hzKVXeOCnB+Ch8cRfBWJMzIYovfwugQYYUqBNAJBnb0ezY4
-OSWhvDt3jdFq3vEH8Ml7yOhv18iN2TdWNt5YGuRTt1MRM8j+oCAf9gKkSy9diUZsBETBC3Zm
-zbwnZKE8F5ytVgA+ZDvpsL6jRF6IpUlDc5wJoKtMIEkP0kgTbN58I8/i5U/S0dKTodmTXrSg
-KubKsvKuXorxkAe0k5Aao7GY7aq47AejNsyTLRjOjDRbyGXQzy7yPncqIiVjYdz0ryI1QUXS
-u0Le/IUcKERRkbfg7ywoAu/el8jz0AesCCWJFh+6ti6zIZbdGFEAlCw50P4ofcvgosxNzApr
-BfJmo45TiL5kAdXJHmNS+MRhbBVU3fIpQDZMwTEP+R1Mimcv
+CREATE OR REPLACE PACKAGE BODY evolve
+AS
+   -- get the currently configured action
+   FUNCTION get_action
+      RETURN VARCHAR2
+   AS
+      l_action   VARCHAR2( 32 );
+   BEGIN
+      RETURN td_inst.action;
+   END get_action;
 
+   -- get the currently configured module
+   FUNCTION get_module
+      RETURN VARCHAR2
+   AS
+      l_module   VARCHAR2( 32 );
+   BEGIN
+      RETURN td_inst.module;
+   END get_module;
+
+   -- used to pull the calling block from the dictionary
+   -- used to populate CALL_STACK column in the LOG_TABLE
+   FUNCTION whence
+      RETURN VARCHAR2
+   AS
+      l_call_stack    VARCHAR2( 4096 ) DEFAULT DBMS_UTILITY.format_call_stack || CHR( 10 );
+      l_num           NUMBER;
+      l_found_stack   BOOLEAN          DEFAULT FALSE;
+      l_line          VARCHAR2( 255 );
+      l_cnt           NUMBER           := 0;
+   BEGIN
+      LOOP
+         l_num := INSTR( l_call_stack, CHR( 10 ));
+         EXIT WHEN( l_cnt = 4 OR l_num IS NULL OR l_num = 0 );
+         l_line := SUBSTR( l_call_stack, 1, l_num - 1 );
+         l_call_stack := SUBSTR( l_call_stack, l_num + 1 );
+
+         IF ( NOT l_found_stack )
+         THEN
+            IF ( l_line LIKE '%handle%number%name%' )
+            THEN
+               l_found_stack := TRUE;
+            END IF;
+         ELSE
+            l_cnt := l_cnt + 1;
+         END IF;
+      END LOOP;
+
+      RETURN l_line;
+   END whence;
+
+   -- used to write a standard message to the LOG_TABLE
+   PROCEDURE log_msg( p_msg VARCHAR2, p_level NUMBER DEFAULT 1 )
+   AS
+      PRAGMA AUTONOMOUS_TRANSACTION;
+      l_whence   VARCHAR2( 1024 );
+      l_msg      log_table.msg%TYPE;
+      l_scn      NUMBER               := 0;
+      l_schema   VARCHAR2( 30 );
+      l_entry_ts TIMESTAMP;
+      e_no_tab   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_no_tab, -942 );
+   BEGIN
+      -- still write as much to the logfile if we can even if it's too large for the log table
+      BEGIN
+         l_msg := p_msg;
+      EXCEPTION
+         WHEN VALUE_ERROR
+         THEN
+            l_msg := SUBSTR( p_msg, 0, 1998 ) || '>>';
+      END;
+
+      -- find out what called me
+      l_whence := whence;
+      
+      -- get the timestamp for consistency
+      l_entry_ts := systimestamp;
+
+      -- check to see the logging level to see if the message should be written
+      IF td_inst.logging_level >= p_level
+      THEN
+         -- write the record to the log table
+         INSERT INTO log_table
+                     ( entry_ts, msg, client_info, module, action, service_name,
+                       runmode, session_id, current_scn, instance_name, machine,
+                       dbuser, osuser, code, call_stack, back_trace, batch_id, logging_level
+                     )
+              VALUES ( l_entry_ts, l_msg, td_inst.client_info, td_inst.module, td_inst.action, td_inst.service_name,
+                       td_inst.runmode, td_inst.session_id, l_scn, td_inst.instance_name, td_inst.machine,
+                       td_inst.dbuser, td_inst.osuser, 0, l_whence, NULL, td_inst.batch_id, p_level
+                     );
+
+         COMMIT;
+         -- also output the message to the screen
+         -- the client can control whether or not they want to see this
+         -- in sqlplus, just SET SERVEROUTPUT ON or OFF
+         DBMS_OUTPUT.put_line( l_msg );
+      END IF;
+   END log_msg;
+
+   PROCEDURE log_results_msg( 
+      p_count       NUMBER,
+      p_owner       VARCHAR2,
+      p_object      VARCHAR2,
+      p_category    VARCHAR2,
+      p_msg         VARCHAR2 DEFAULT NULL, 
+      p_level       NUMBER   DEFAULT 1
+   )
+   AS
+      PRAGMA AUTONOMOUS_TRANSACTION;
+   BEGIN
+      -- store in COUNT_TABLE numbers of records affected by particular actions in modules
+      INSERT INTO results_table
+             ( client_info, module, action, runmode, session_id, object_owner, object_name, dml_category, row_count, duration
+                  )
+             VALUES ( td_inst.client_info, td_inst.module, td_inst.action, td_inst.runmode, td_inst.session_id, upper(p_owner), upper(p_object), p_category, p_count, td_inst.get_elapsed_time
+                  );
+
+      -- if a message was provided to this procedure, then write it to the log table
+      -- if not, then simply use the default message below
+      log_msg( NVL( p_msg, 'Number of records selected/affected' ) || ': ' || p_count, p_level );
+      COMMIT;
+   END log_results_msg;
+
+   -- writes error information to the log_table
+   PROCEDURE log_err
+   AS
+      PRAGMA AUTONOMOUS_TRANSACTION;
+      l_whence   VARCHAR2( 1024 );
+      l_code     NUMBER               := SQLCODE;
+      l_msg      log_table.msg%TYPE   := SQLERRM;
+      l_scn      NUMBER;
+      e_no_tab   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_no_tab, -942 );
+   BEGIN
+      -- find out what called me
+      l_whence := whence;
+
+      -- using invokers rights model
+      -- some users won't have access to see the SCN
+      -- need to except this just in case
+      -- if cannot see the scn, then use a 0
+      BEGIN
+         SELECT current_scn
+           INTO l_scn
+           FROM v$database;
+      EXCEPTION
+         WHEN others
+         THEN
+            l_scn := 0;
+      END;
+
+      -- check to see the logging level to see if the message should be written
+      IF td_inst.logging_level >= 1
+      THEN
+         -- write the record to the log table
+         INSERT INTO log_table
+                     ( msg, client_info, module, action, service_name,
+                       runmode, session_id, current_scn, instance_name, machine,
+                       dbuser, osuser, code, call_stack,
+                       back_trace, batch_id, logging_level
+                     )
+              VALUES ( l_msg, td_inst.client_info, td_inst.module, td_inst.action, td_inst.service_name,
+                       td_inst.runmode, td_inst.session_id, l_scn, td_inst.instance_name, td_inst.machine,
+                       td_inst.dbuser, td_inst.osuser, l_code, l_whence,
+                       REGEXP_REPLACE( SUBSTR( DBMS_UTILITY.format_error_backtrace, 1, 4000 ), '[[:cntrl:]]', '; ' ),
+                       td_inst.batch_id, 1
+                     );
+
+         COMMIT;
+      END IF;
+   END log_err;
+
+   PROCEDURE log_variable( 
+      p_name       VARCHAR2,
+      p_value      VARCHAR2
+   )
+   AS
+   BEGIN
+      log_msg('The value of variable "'||upper(p_name)||'" is: '||p_value, 5);
+   END log_variable;
+
+   PROCEDURE log_variable( 
+      p_name       VARCHAR2,
+      p_value      NUMBER
+   )
+   AS
+   BEGIN
+      log_variable( p_name, to_char( p_value) );
+   END log_variable;
+
+   PROCEDURE log_variable( 
+      p_name       VARCHAR2,
+      p_value      DATE
+   )
+   AS
+   BEGIN
+      log_variable( p_name, to_char( p_value) );
+   END log_variable;
+
+   PROCEDURE log_variable( 
+      p_name       VARCHAR2,
+      p_value      BOOLEAN
+   )
+   AS
+   BEGIN
+      log_variable( p_name, CASE WHEN p_value THEN 'TRUE' ELSE 'FALSE' END );
+   END log_variable;
+   
+   PROCEDURE log_exception( 
+      p_name       VARCHAR2
+   )
+   AS
+   BEGIN
+      log_msg('Exception "'||upper(p_name)||'" was handled', 5);
+   END log_exception;
+   
+      -- used to return a distinct error message number by label
+   FUNCTION get_err_cd( p_name VARCHAR2 )
+      RETURN NUMBER
+   AS
+      l_code   error_conf.code%TYPE;
+   BEGIN
+      BEGIN
+         SELECT (0 - code)
+           INTO l_code
+           FROM error_conf
+          WHERE NAME = p_name;
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            raise_application_error( -20001, 'The specified error has not been configured: '||p_name );
+      END;
+
+      RETURN l_code;
+   END get_err_cd;
+
+   -- used to return a distinct error message text string by label
+   FUNCTION get_err_msg( p_name VARCHAR2 )
+      RETURN VARCHAR2
+   AS
+      l_msg   error_conf.MESSAGE%TYPE;
+   BEGIN
+      BEGIN
+         SELECT MESSAGE
+           INTO l_msg
+           FROM error_conf
+          WHERE NAME = p_name;
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            raise_application_error( -20001, 'The specified error has not been configured: '||p_name );
+      END;
+
+      RETURN l_msg;
+   END get_err_msg;
+
+   -- raises an error using RAISE_APPLICATION_ERROR
+   -- uses a configuration table to find the error code and the message
+   PROCEDURE raise_err( p_name VARCHAR2, p_add_msg VARCHAR2 DEFAULT NULL )
+   AS
+   BEGIN
+      log_msg( 'The error name passed: "' || p_name || '"', 5 );
+      IF is_debugmode
+      THEN
+         log_msg( 'Error Raised: "'||get_err_cd( p_name )||': '||get_err_msg( p_name )||'"');
+      ELSE         
+         raise_application_error( get_err_cd( p_name ),
+                                  get_err_msg( p_name ) || CASE
+                                                           WHEN p_add_msg IS NULL
+                                                           THEN NULL
+                                                           ELSE ': ' || p_add_msg
+                                                           END
+                                );
+      END IF;
+
+   END raise_err;
+   
+   PROCEDURE print_query( p_query IN VARCHAR2 )
+   IS
+      l_thecursor     INTEGER           DEFAULT DBMS_SQL.open_cursor;
+      l_columnvalue   VARCHAR2( 4000 );
+      l_status        INTEGER;
+      l_desctbl       DBMS_SQL.desc_tab;
+      l_colcnt        NUMBER;
+      l_cs            VARCHAR2( 255 );
+      l_date_fmt      VARCHAR2( 255 );
+
+      -- small inline procedure to restore the sessions state
+      -- we may have modified the cursor sharing and nls date format
+      -- session variables, this just restores them
+      PROCEDURE restore
+      IS
+      BEGIN
+         IF ( UPPER( l_cs ) NOT IN( 'FORCE', 'SIMILAR' ))
+         THEN
+            EXECUTE IMMEDIATE 'alter session set cursor_sharing=exact';
+         END IF;
+
+         DBMS_SQL.close_cursor( l_thecursor );
+      END restore;
+   BEGIN
+      log_msg( 'Results printed below for:' || CHR( 10 ) || p_query || CHR( 10 ) || '-----------------', 4 );
+
+      -- to be bind variable friendly on this ad-hoc queries, we
+      -- look to see if cursor sharing is already set to FORCE or
+      -- similar, if not, set it so when we parse -- literals
+      -- are replaced with binds
+      IF ( DBMS_UTILITY.get_parameter_value( 'cursor_sharing', l_status, l_cs ) = 1 )
+      THEN
+         IF ( UPPER( l_cs ) NOT IN( 'FORCE', 'SIMILAR' ))
+         THEN
+            EXECUTE IMMEDIATE 'alter session set cursor_sharing=force';
+         END IF;
+      END IF;
+
+      -- parse and describe the query sent to us.  we need
+      -- to know the number of columns and their names.
+      DBMS_SQL.parse( l_thecursor, p_query, DBMS_SQL.native );
+      DBMS_SQL.describe_columns( l_thecursor, l_colcnt, l_desctbl );
+
+      -- define all columns to be cast to varchar2's, we
+      -- are just printing them out
+      FOR i IN 1 .. l_colcnt
+      LOOP
+         IF ( l_desctbl( i ).col_type NOT IN( 113 ))
+         THEN
+            DBMS_SQL.define_column( l_thecursor, i, l_columnvalue, 4000 );
+         END IF;
+      END LOOP;
+
+      -- execute the query, so we can fetch
+      l_status := DBMS_SQL.EXECUTE( l_thecursor );
+
+      -- loop and print out each column on a separate line
+      -- bear in mind that dbms_output only prints 255 characters/line
+      -- so we'll only see the first 200 characters by my design...
+      WHILE( DBMS_SQL.fetch_rows( l_thecursor ) > 0 )
+      LOOP
+         FOR i IN 1 .. l_colcnt
+         LOOP
+            IF ( l_desctbl( i ).col_type NOT IN( 113 ))
+            THEN
+               DBMS_SQL.COLUMN_VALUE( l_thecursor, i, l_columnvalue );
+               log_msg( RPAD( l_desctbl( i ).col_name, 30 ) || ': ' || SUBSTR( l_columnvalue, 1, 200 ), 4 );
+            END IF;
+         END LOOP;
+
+         log_msg( '-----------------', 4 );
+      END LOOP;
+
+      -- now, restore the session state, no matter what
+      restore;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         restore;
+         RAISE;
+   END print_query;
+
+   -- return a Boolean determining runmode
+   FUNCTION is_debugmode
+      RETURN BOOLEAN
+   AS
+   BEGIN
+      RETURN CASE
+         WHEN REGEXP_LIKE( td_inst.runmode, 'debug', 'i' )
+            THEN TRUE
+         ELSE FALSE
+      END;
+   END is_debugmode;
+
+   -- begins debug mode
+   PROCEDURE start_debug
+   AS
+   BEGIN
+      td_inst.runmode( 'full debug' );
+   END start_debug;
+
+   -- stops debug mode
+   PROCEDURE stop_debug
+   AS
+   BEGIN
+      td_inst.runmode( 'runtime' );
+   END stop_debug;
+   
+   -- called by the EXEC_SQL function when an autonomous transaction is desired
+   -- and the number of results are desired
+   FUNCTION exec_auto( p_sql VARCHAR2 )
+      RETURN NUMBER
+   AS
+      PRAGMA AUTONOMOUS_TRANSACTION;
+      l_results   NUMBER;
+   BEGIN
+      EXECUTE IMMEDIATE p_sql;
+
+      l_results := SQL%ROWCOUNT;
+      COMMIT;
+      RETURN l_results;
+   END exec_auto;
+
+   -- accepts the P_AUTO flag and determines whether to execute the statement
+   -- if the P_AUTO flag of 'yes' is passed, then EXEC_AUTO is called
+   -- if P_BACKGROUND of 'yes' is called, then it is executed through DBMS_SCHEDULER
+   FUNCTION exec_sql( p_sql VARCHAR2, p_msg VARCHAR2 DEFAULT NULL, p_auto VARCHAR2 DEFAULT 'no' )
+      RETURN NUMBER
+   AS
+      l_results   NUMBER;
+   BEGIN
+      log_msg( 'This is an AUTONOMOUS_TRANSACTION', 5 );
+      log_msg( CASE
+                             WHEN p_msg IS NULL
+                                THEN 'SQL: ' || p_sql
+                             ELSE p_msg
+                          END, 3 );
+
+      IF NOT is_debugmode
+      THEN
+         IF td_core.is_true( p_auto )
+         THEN
+            
+            log_msg( 'AUTONOMOUS_TRANSACTION initiated', 5 );
+
+            l_results := exec_auto( p_sql => p_sql );
+         ELSE
+            EXECUTE IMMEDIATE p_sql;
+         END IF;
+
+         l_results := SQL%ROWCOUNT;
+      END IF;
+
+      RETURN l_results;
+   END exec_sql;
+
+   -- if I don't care about the number of results (DDL, for instance), just call this procedure
+   -- accepts the P_AUTO flag and determines whether to execute the statement autonomously
+   -- if the P_AUTO flag of 'yes' is passed, then EXEC_AUTO is called
+   -- if P_BACKGROUND of 'yes' is called, then it is executed through SUBMIT_SQL
+   PROCEDURE exec_sql(
+      p_sql             VARCHAR2,
+      p_msg             VARCHAR2 DEFAULT NULL,
+      p_auto            VARCHAR2 DEFAULT 'no',
+      p_concurrent_id   VARCHAR2 DEFAULT NULL
+   )
+   AS
+      l_results   NUMBER;
+   BEGIN
+
+      log_msg( CASE
+                             WHEN p_msg IS NULL
+                                THEN 'SQL: ' || p_sql
+                             ELSE p_msg || ': ' || p_sql
+                          END, 3 );
+
+      IF NOT is_debugmode
+      THEN
+
+         CASE
+            WHEN p_concurrent_id IS NOT NULL
+            THEN
+               log_msg( 'The concurrent id is: ' || p_concurrent_id, 5 );
+               submit_sql( p_sql => p_sql, p_concurrent_id => p_concurrent_id );
+            WHEN td_core.is_true( p_auto )
+            THEN
+
+               log_msg( 'AUTONOMOUS_TRANSACTION initiated', 5 );
+
+               l_results := exec_auto( p_sql => p_sql );
+
+            ELSE
+               EXECUTE IMMEDIATE p_sql;
+         END CASE;
+
+         l_results := SQL%ROWCOUNT;
+      END IF;
+   END exec_sql;
+
+   -- uses a sequence to generate a unique concurrent id for concurrent processes
+   -- this id is set with DBMS_SESSION.SET_IDENTIFIER
+   FUNCTION get_concurrent_id
+      RETURN VARCHAR2
+   AS
+      l_seq_value     NUMBER;
+      l_concurrent_id VARCHAR2(100);
+   BEGIN
+      -- select the sequence nextval
+      SELECT concurrent_id_seq.NEXTVAL
+        INTO l_seq_value
+        FROM DUAL;
+      
+      -- print the concurrent id to the log
+      log_msg( 'The value from the sequence: ' || l_seq_value, 5 );
+      
+      l_concurrent_id := to_char(sys_context('USERENV','SESSIONID')||'-'||l_seq_value);
+      -- print the concurrent id to the log
+      log_msg( 'The generated concurrent_id is: ' || l_concurrent_id, 5 );
+      RETURN l_concurrent_id;
+   END get_concurrent_id;
+
+   -- this process will execute through DBMS_SCHEDULER
+   PROCEDURE submit_sql( p_sql VARCHAR2, p_concurrent_id VARCHAR2, p_job_class VARCHAR2 DEFAULT 'EVOLVE_DEFAULT_CLASS' )
+   AS
+      PRAGMA AUTONOMOUS_TRANSACTION;
+      l_job_name          all_scheduler_jobs.job_name%TYPE;
+      l_module            VARCHAR2( 48 )                       := td_inst.module;
+      l_action            VARCHAR2( 32 )                       := td_inst.action;
+      l_session_id        NUMBER                               := SYS_CONTEXT( 'USERENV', 'SESSIONID' );
+      l_job_action        all_scheduler_jobs.job_action%TYPE;
+      e_invalid_jobname   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_invalid_jobname, -23481 );
+   BEGIN
+      BEGIN
+         l_job_name := DBMS_SCHEDULER.generate_job_name( td_inst.module );
+      EXCEPTION
+         WHEN e_invalid_jobname
+         THEN
+            l_job_name := DBMS_SCHEDULER.generate_job_name;
+      END;
+      
+      -- record the job name
+      log_msg( 'The job name is: ' || l_job_name, 5 );
+
+      -- use the unique concurrent id
+      log_msg( 'The child concurrent_id is: ' || p_concurrent_id, 5 );
+      DBMS_SESSION.set_identifier( p_concurrent_id );
+      -- generate the job action
+      l_job_action :=
+            'begin evolve.consume_sql('
+         || l_session_id
+         || ','''
+         || l_module
+         || ''','''
+         || l_action
+         || ''','''
+         || p_sql
+         || '''); end;';
+      log_msg( 'The scheduler job action is: ' || l_job_action, 4 );
+      -- schedule the job
+      log_msg( 'Oracle scheduler job ' || l_job_name || ' created', 2 );
+      log_msg( 'Oracle scheduler job ' || l_job_name || ' enabled', 2 );
+   END submit_sql;
+
+   -- this process will execute through DBMS_SCHEDULER
+   PROCEDURE coordinate_sql(
+      p_concurrent_id   VARCHAR2,
+      p_raise_err       VARCHAR2 DEFAULT 'yes',
+      p_sleep           NUMBER DEFAULT 5,
+      p_timeout         NUMBER DEFAULT 0
+   )
+   AS
+      l_running      NUMBER;
+      l_failed       NUMBER;
+      l_start_secs   NUMBER := DBMS_UTILITY.get_time;
+   BEGIN
+      LOOP
+         -- the amount of time to wait
+         DBMS_LOCK.sleep( p_sleep );
+
+         -- get the count of running jobs
+         SELECT COUNT( * )
+           INTO l_running
+           FROM all_scheduler_jobs
+          WHERE client_id = p_concurrent_id AND state = 'RUNNING';
+
+         -- get the count of failed jobs
+         SELECT COUNT( * )
+           INTO l_failed
+           FROM ( SELECT DISTINCT MIN( operation ) OVER( PARTITION BY job_name ) operation,
+                                  MIN( status ) OVER( PARTITION BY job_name ) status,
+                                  MAX( client_id ) OVER( PARTITION BY job_name ) client_id, job_name
+                            FROM all_scheduler_job_log )
+          WHERE client_id = p_concurrent_id AND status = 'FAILED';
+
+         log_msg( 'Failed job count: ' || l_failed, 5 );
+
+         -- raise an error if there are failed jobs, but only if desired
+         CASE
+            WHEN td_core.is_true( p_raise_err ) AND l_failed > 0
+            THEN
+               raise_err( 'submit_sql' );
+            WHEN NOT td_core.is_true( p_raise_err ) AND l_failed > 0
+            THEN
+               log_msg
+                  ( 'Errors were generated by a process submitted to the Oracle scheduler. See the scheduler logs for details.',
+                    3
+                  );
+            ELSE
+               NULL;
+         END CASE;
+
+         -- check for the timeout
+         IF ( ( DBMS_UTILITY.get_time - l_start_secs ) > p_timeout ) AND p_timeout <> 0
+         THEN
+            raise_err( 'submit_sql_timeout' );
+         END IF;
+
+         EXIT WHEN l_running = 0;
+      END LOOP;
+   END coordinate_sql;
+
+   -- this process is called by submitted jobs to DBMS_SCHEDULER
+   -- when SQL is submitted through SUBMIT_SQL, this is what those submitted jobs actually call
+   PROCEDURE consume_sql( p_session_id NUMBER, p_module VARCHAR2, p_action VARCHAR2, p_sql VARCHAR2 )
+   AS
+   BEGIN
+      -- use the SET_SCHEDULER_SESSION_ID procedure to register with the framework
+      -- this allows all logging entries to be kept together
+      td_inst.set_scheduler_info( p_session_id => p_session_id, p_module => p_module, p_action => p_action );
+
+      -- load session parameters configured in PARAMETER_CONF for this module
+      -- this is usually done by EVOLVE_OT, but that is not applicable here
+      FOR c_params IN ( SELECT CASE
+                                  WHEN REGEXP_LIKE( NAME, 'enable|disable', 'i' )
+                                     THEN 'alter session ' || NAME || ' ' || VALUE
+                                  ELSE 'alter session set ' || NAME || '=' || VALUE
+                               END DDL
+                         FROM parameter_conf
+                        WHERE LOWER( module ) = td_inst.module )
+      LOOP
+         -- use the standard execute immediate instead of the EXEC_SQL api
+         -- there is no concept of DEBUG mode inside scheduler jobs, so don't complicate it
+         EXECUTE IMMEDIATE c_params.DDL;
+      END LOOP;
+
+      -- use the standard execute immediate instead of the EXEC_SQL api
+      -- there is no concept of DEBUG mode inside scheduler jobs, so don't complicate it
+      EXECUTE IMMEDIATE p_sql;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         log_err;
+         RAISE;
+   END consume_sql;
+
+   -- this procedure will create an extract file with the log from the current session   
+   PROCEDURE dump_log( p_directory VARCHAR2, p_repository VARCHAR2, p_dump_type VARCHAR2 DEFAULT 'session' )
+   AS  
+      l_object   all_objects.object_name%type;
+      l_numrows  NUMBER;
+      l_filename VARCHAR2(50);
+   BEGIN
+      
+      -- determine which view to use
+      l_object :=
+      CASE p_dump_type
+      WHEN 'session' THEN 'log_my_session'
+      WHEN 'day' THEN 'log_today'
+      WHEN 'week' THEN 'log_week'
+      END; 
+         
+      l_filename :=  'evolve_' || sys_context('USERENV','SESSIONID') || '.dmp';
+
+      -- extract data to the file
+      l_numrows := td_utils.extract_object( p_owner     => p_repository,
+                                            p_object    => l_object,
+                                            p_directory => p_directory,
+                                            p_filename  => l_filename,
+                                            p_append    => 'yes' );
+
+      evolve.log_msg( 'Dump file ' || p_directory || ':' || l_filename || ' created' );
+                                            
+      
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         log_err;
+         RAISE;
+   END dump_log;
+
+END evolve;
 /
+
 SHOW errors
 
-CREATE OR REPLACE TYPE BODY notification_ot wrapped 
-a000000
-1
-abcd
-abcd
-abcd
-abcd
-abcd
-abcd
-abcd
-abcd
-abcd
-abcd
-abcd
-abcd
-abcd
-abcd
-abcd
-e
-1024 56f
-609sSLVoFfzhc1rsqgh2POLaSIMwg+3qVSAF3y+ax/kYhA9dppNhVx5h6H2mo1GklNMp8YkD
-er3iOxSrkSa4XZ8dksa7TShtwkNg31AZ1mL3NJqku7r8P/I425ASWgN6P+MfTnr/JXzZcuN6
-HaYTgiaicNXRcHZ8ur5u+4aXpJjfs5ao6h11QByIzCjJorTEonTucU5mveXhr2cJIHSiBgp0
-emP+8tLzkFPYeyMrcxP2WoXyeURE+URQiAHFkduwH49eMtmkcQuRXczPL9KEj55zFNazEl0l
-FxoUtnpWPsdNUBd+v/xm436iplNZCLtW4FZTmt927J90u76YC3LmIjYlAbc3a0c8Guy5SCYO
-jwjaxTmPx0mluCwZPdWXvUz1BQHtC/z7Rq2BrQlFA9YDGa3bk0UFcNjvj+R5lea1YSnD1m5Y
-ox6YQMvMFHZOqa3XQRXtp3x7hhlfhyPP05LTYjeRLdiUY0uFJQfOUgNKp6XIO6hYql/TMAEN
-uEV9HrGjmiKAO+qlbP9PcI1ieKF3tp3NrEHgiynTi20GJ8ahPlU9rhgyCAa+modXLTJlw9xc
-bgciOP5rj79gdyzA5criGqiU4KYr7lC1FRHtuWtUNSsgJCxDKbYQEBjErk7+PhxkEPkGrxsg
-WE5h0ZWBJdzF4ByroQQQSiV6WcEKfTkga0OI6QoYVzA7RMO4Aa4WXZQVpZqw+eOedZ5IXknd
-Jej2JtHFXFJ5q22Exja650vdTpebovypjGvSPcMHlB/qcMMOkideNRsi3jyz8eKroDrRj8Hu
-E+4sqqs5f2EHSRXLDLSamvVqh0/nEkyvh1xLyR5ox4N+QX5RUdwrVYo58iA97dfS99o898nH
-NZZMiAamZ1vXNXNFebLNdoAifskNuJEyfRZ1cKMEoS3qlH5m3j0nv4agTdEroOzG+od0u+6J
-oIIkdY4WKNmJHkyn7lzfisn4VQ8yKLv36nDSOmISA3coUatmo6vDx+mW+XsAdD/fTl/bMUpJ
-uBm2s4HeTdJpU+mgm32a5Jywz43SJszJIHzelhwmn8V6Cwipegrgs3zeD3Yanpcuf1Pq6cxF
-LSNMYcqO9poY+3FzRYK5NNsB+hZMYPbDcxZhZds/Rj9mo9tP4CGlLcWfrkua118T0LWibYyN
-2NNDgBF9gHJyTsZ9VLITVopyM0W7s//kfQRFLsXl3pguBhdMmK/NVnG/76RN7WwyKtCSain9
-6LUbG/XL0BN6vTK5nIbvhSgc4vhb9gc5CBTNqBo+XvyheNcU+rzbKe8RaqaeatHsYm+S2Yzl
-cRCihsG32rn1uio5gWnSpTbtGJuwfojUKcFC05Y7TC6g9VUR8D1h5tQTP4kCCZLBsLX7vrdn
-Qw==
+CREATE OR REPLACE TYPE BODY notification_ot
+AS
+   CONSTRUCTOR FUNCTION notification_ot( p_label VARCHAR2 )
+      RETURN SELF AS RESULT
+   AS
+   BEGIN
+      
 
+      BEGIN
+         SELECT label, event_name, method, enabled, required, subject, MESSAGE, sender, recipients
+           INTO label, event_name, method, enabled, required, subject, MESSAGE, sender, recipients
+           FROM notification_conf JOIN notification_event USING( event_name )
+          WHERE LOWER( module ) = LOWER( td_inst.module )
+            AND LOWER( action ) = LOWER( td_inst.action )
+            AND LOWER( label ) = LOWER( p_label );
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            evolve.log_msg(    'No notification configured for label "'
+                                || p_label
+                                || '" with module "'
+                                || td_inst.module
+                                || '" and action "'
+                                || td_inst.action
+                                || '"',
+                                4
+                              );
+         WHEN TOO_MANY_ROWS
+         THEN
+            evolve.raise_err( 'notify_err',
+                                     'label "'
+                                  || p_label
+                                  || '" with module "'
+                                  || td_inst.module
+                                  || '" and action "'
+                                  || td_inst.action
+                                  || '"'
+                                );
+      END;
+
+      -- log the event_name
+      evolve.log_msg( 'Notification event_name: "' || event_name || '"', 5 );
+
+      RETURN;
+   END;
+   MEMBER PROCEDURE send( p_message VARCHAR2 DEFAULT NULL )
+   AS
+      e_smtp_error1   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_smtp_error1, -29278 );
+      e_smtp_error2   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_smtp_error2, -29269 );
+      e_smtp_error3   EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_smtp_error3, -29261 );
+   BEGIN
+      evolve.log_msg( 'Value for ENABLED: ' || enabled, 5 );
+
+      IF td_core.is_true( enabled, TRUE )
+      THEN
+         IF NOT evolve.is_debugmode
+         THEN
+            CASE method
+               WHEN 'email'
+               THEN
+                  BEGIN
+                     NULL;
+                  END;
+               ELSE
+                  evolve.raise_err( 'notify_method_invalid' );
+            END CASE;
+         END IF;
+      END IF;
+   END send;
+END;
 /
+
 SHOW errors
 
 CREATE OR REPLACE TYPE BODY evolve_ot wrapped 
