@@ -2134,7 +2134,7 @@ AS
    BEGIN
       LOOP
          -- the amount of time to wait
-         DBMS_LOCK.sleep( p_sleep );
+         --DBMS_LOCK.sleep( p_sleep );
 
          -- get the count of running jobs
          SELECT COUNT( * )
