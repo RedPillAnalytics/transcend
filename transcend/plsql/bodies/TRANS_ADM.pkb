@@ -190,6 +190,10 @@ IS
          (p_name         => 'wrong_map_type',
            p_message      => 'A MAPPING_OT object was instantiated when a DIMENSION_OT should have been.'
          );
+      evolve_adm.set_error_conf
+         (p_name         => 'part_targ',
+           p_message      => 'If a partition-exchange is used in a dimension, and the dimension table is non-partitioned, then a constant staging table that is partitioned must be configured.'
+         );
       
       evolve_adm.set_error_conf( p_name => 'incompatible_part_type', 
                                  p_message => 'The statistics transfer cannot be used on different partition types' );
