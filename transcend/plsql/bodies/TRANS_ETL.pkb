@@ -17,9 +17,12 @@ AS
          RAISE;
    END start_mapping;
 
-   PROCEDURE end_mapping( p_mapping VARCHAR2 DEFAULT SYS_CONTEXT( 'USERENV', 'ACTION' ))
+   PROCEDURE end_mapping( 
+      p_mapping VARCHAR2 DEFAULT SYS_CONTEXT( 'USERENV', 'ACTION' ),
+      p_batch_id   NUMBER DEFAULT NULL
+   )
    AS
-      o_map   mapping_ot := trans_factory.get_mapping_ot( p_mapping => p_mapping );
+      o_map   mapping_ot := trans_factory.get_mapping_ot( p_mapping => p_mapping, p_batch_id => p_batch_id );
    BEGIN
       evolve.log_msg( 'Mapping type: ' || o_map.mapping_type, 5 );
       -- now, regardless of which object type this is, the following call is correct
