@@ -188,7 +188,7 @@ IS
       p_con_concurrency    VARCHAR2 DEFAULT 'no',
       p_stage_key_def      NUMBER DEFAULT -.01,
       p_char_nvl_def       VARCHAR2 DEFAULT '~',
-      p_date_nvl_def       DATE DEFAULT TO_DATE ('01/01/9999'),
+      p_date_nvl_def       DATE DEFAULT TO_DATE ('01/01/9999','mm/dd/yyyy'),
       p_num_nvl_def        NUMBER DEFAULT -.01,
       p_description        VARCHAR2 DEFAULT NULL
    );

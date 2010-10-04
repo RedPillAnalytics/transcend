@@ -31,8 +31,6 @@ AS
       -- confirm the properties of the mapping
       verify;
 
-      -- store the batch_id
-      td_inst.batch_id( p_batch_id );
       RETURN;
    END mapping_ot;
 
@@ -44,12 +42,10 @@ AS
       SELF.mapping_name    := LOWER( regexp_replace(p_mapping,'^"|"$',NULL));
 
       -- store the batch_id
-      -- only want to do this if the value is provided
-      -- otherwise, keep the previous value
-      IF p_batch_id IS NOT NULL
-      THEN
-         td_inst.batch_id( p_batch_id );
-      END IF;
+      -- used to have this only set the batch_id if it was explicitly set
+      -- I changed that to set it every time
+      -- this also came with the setting to have P_BATCH_ID also on the END_MAPPING procedure
+      td_inst.batch_id( p_batch_id );
 
       -- reset the evolve_object
       o_ev.clear_app_info;
