@@ -1,8 +1,10 @@
 SET termout off
 COLUMN index_ddl format a130
-COLUMN rename_ddl format a150
-COLUMN idx_rename format a30
-COLUMN idx_rename_adj format a30
+COLUMN rename_ddl format a50
+COLUMN rename_msg format a50
+COLUMN drop_ddl format a50
+COLUMN drop_msg format a50
+
 SET echo off
 
 EXEC DBMS_METADATA.set_transform_param( DBMS_METADATA.session_transform,'SQLTERMINATOR',FALSE);
@@ -20,24 +22,26 @@ VAR p_index_type VARCHAR2(30)
 VAR p_index_regexp VARCHAR2(30)
 VAR p_owner VARCHAR2(30)
 VAR p_table VARCHAR2(30)
-VAR l_targ_part VARCHAR2(30)
-VAR l_src_part VARCHAR2(30)
 VAR p_partname VARCHAR2(30)
 VAR l_part_position number
 VAR p_concurrent VARCHAR2(3)
+VAR l_targ_part_flg VARCHAR2(3)
+VAR l_src_part_flg VARCHAR2(3)
+VAR default_tablespace VARCHAR2(30)
 
 EXEC :p_tablespace := null;
 EXEC :p_constraint_regexp := NULL;
 EXEC :p_owner := 'stewart';
-EXEC :p_table := 'sales1';
+EXEC :p_table := 'events_stg';
 EXEC :p_source_owner := 'stewart';
-EXEC :p_source_table := 'sales2';
+EXEC :p_source_table := 'events_fact';
 EXEC :p_part_type := NULL;
 EXEC :p_index_type := NULL;
 EXEC :p_index_regexp := NULL;
-EXEC :l_targ_part := 'YES';
-EXEC :l_src_part := 'NO';
 EXEC :p_concurrent := 'no'
+EXEC :l_targ_part_flg := 'no'
+EXEC :l_src_part_flg := 'yes'
+EXEC :default_tablespace := '#*default_tablespace*#';
 
 SET termout on
 
@@ -59,7 +63,15 @@ SELECT UPPER( :p_owner ) index_owner, new_index_name index_name, owner source_ow
                   -- this column was added for the REPLACE_TABLE procedure
                   -- in that procedure, after cloning the indexes, the table is renamed
                   -- we have to rename the indexes back to their original names
-                  'Index ' || owner || '.' || new_index_name || ' renamed to ' || index_name rename_msg
+                  'Index ' || owner || '.' || new_index_name || ' renamed to ' || index_name rename_msg,
+
+                  -- this column was added for the EXCHANGE_PARTITION procedure
+                  -- this is to drop only the indexes that were added by the procedure
+                  ' drop index ' || owner || '.' || new_index_name drop_ddl,
+                  
+                  -- this column was added for the EXCHANGE_PARTITION procedure
+                  -- this is to drop only the indexes that were added by the procedure
+                  'Index ' || owner || '.' || new_index_name || ' dropped' drop_msg
             FROM ( SELECT CASE
                              -- this case statement uses GENERIC_IDX plus other factors to determine what the new index name will be
                              -- IDX_RENAME is simply the current index name replacing any mentions of the source_table with target_table
@@ -127,24 +139,24 @@ SELECT UPPER( :p_owner ) index_owner, new_index_name index_name, owner source_ow
                                                   -- partitioning decisions are based on the structure of the target table
                                                   CASE
                                                      -- target is not partitioned and neither :p_TABLESPACE or :p_PARTNAME are provided
-                                                  WHEN :l_targ_part = 'NO' AND :p_tablespace IS NULL
+                                                  WHEN :l_targ_part_flg = 'no' AND :p_tablespace IS NULL
                                                        AND :p_partname IS NULL
                                                         -- remove all partitioning and the local keyword
                                                   THEN '\s*(\(\s*partition.+\))|local\s*'
                                                      -- target is not partitioned but :p_TABLESPACE or :p_PARTNAME is provided
-                                                  WHEN :l_targ_part = 'NO'
+                                                  WHEN :l_targ_part_flg = 'no'
                                                   AND ( :p_tablespace IS NOT NULL OR :p_partname IS NOT NULL )
                                                         -- strip out partitioned info and local keyword and tablespace clause
                                                   THEN '\s*(\(\s*partition.+\))|local|(tablespace)\s*\S+\s*'
                                                      -- target is partitioned and :p_TABLESPACE or :p_PARTNAME is provided
-                                                  WHEN :l_targ_part = 'YES'
+                                                  WHEN :l_targ_part_flg = 'ys'
                                                   AND ( :p_tablespace IS NOT NULL OR :p_partname IS NOT NULL )
                                                         -- strip out partitioned info keeping local keyword and remove tablespace clause
                                                   THEN '\s*(\(\s*partition.+\))|(tablespace)\s*\S+\s*'
                                                      -- target is partitioned
                                                      -- :p_TABLESPACE is null
                                                      -- :p_PARTNAME is null
-                                                  WHEN :l_targ_part = 'YES' AND :p_tablespace IS NULL
+                                                  WHEN :l_targ_part_flg = 'yes' AND :p_tablespace IS NULL
                                                        AND :p_partname IS NULL
                                                         -- leave partitioning and tablespace information as it is
                                                         -- this implies a one-to-one mapping of partitioned names from source to target
@@ -156,10 +168,10 @@ SELECT UPPER( :p_owner ) index_owner, new_index_name index_name, owner source_ow
                                                   'in'
                                                 )
                                           || CASE
-                                                -- if 'default' is passed, then use the users default tablespace
+                                                -- if constant default_tablespace is passed, then use the users default tablespace
                                                 -- a non-null value for :p_tablespace already stripped all tablespace information above
                                                 -- now just need to not put in the 'TABLESPACE' information here
-                                             WHEN LOWER( :p_tablespace ) = 'default'
+                                             WHEN LOWER( :p_tablespace ) = :default_tablespace
                                                    THEN NULL
                                                 -- if :p_TABLESPACE is provided, then previous tablespace information was stripped (above)
                                                 -- now we can just tack the new tablespace information on the end
@@ -169,15 +181,23 @@ SELECT UPPER( :p_owner ) index_owner, new_index_name index_name, owner source_ow
                                                    THEN    ' TABLESPACE '
                                                         || NVL( ai.tablespace_name,
                                                                 ( SELECT tablespace_name
-                                                                   FROM all_ind_partitions
-                                                                  WHERE index_name = ai.index_name
-                                                                    AND index_owner = ai.owner
-                                                                    AND partition_position = :l_part_position )
+                                                                    FROM ( SELECT index_name,
+                                                                                  CASE WHEN subpartition_name IS NULL THEN ip.tablespace_name ELSE isp.tablespace_name END tablespace_name,
+                                                                                  CASE WHEN subpartition_name IS NULL THEN partition_position ELSE subpartition_position END partition_position,
+                                                                                  index_owner,
+                                                                                  CASE WHEN subpartition_name IS NULL THEN partition_name ELSE subpartition_name END partition_name,
+                                                                                  CASE WHEN subpartition_name IS NULL THEN 'part' ELSE 'subpart' END part_type
+                                                                             FROM  all_ind_partitions ip
+                                                                             left JOIN all_ind_subpartitions isp
+                                                                                  USING (index_owner, index_name, partition_name ))
+                                                                   WHERE index_name = ai.index_name
+                                                                     AND index_owner = ai.owner
+                                                                     AND partition_position = :l_part_position )
                                                               )
                                                 ELSE NULL
                                              END 
-                                             || CASE WHEN td_core.get_yn_ind( :l_targ_part ) = 'yes' AND td_core.get_yn_ind( :l_src_part ) = 'no' THEN ' LOCAL' ELSE NULL END
-                                             index_ddl,
+                                          || CASE WHEN td_core.get_yn_ind( :l_targ_part_flg ) = 'yes' AND td_core.get_yn_ind( :l_src_part_flg ) = 'no' THEN ' LOCAL' ELSE NULL END
+                                          index_ddl,
                                           table_owner, table_name, owner, index_name,
                                           
                                           -- this is the index name that will be used in the first attempt
