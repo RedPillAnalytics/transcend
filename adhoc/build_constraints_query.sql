@@ -1,7 +1,13 @@
 SET termout off
+SET echo off
 
 COLUMN constraint_name format a30
+COL rename_ddl format a50
+COL rename_msg format a30
+COL drop_ddl format a50
+COL drop_msg format a30
 
+VAR p_owner VARCHAR2(30)
 VAR p_table VARCHAR2(30)
 VAR p_tablespace VARCHAR2(30)
 VAR p_source_table VARCHAR2(30)
@@ -10,24 +16,24 @@ VAR p_constraint_regexp VARCHAR2(30)
 VAR p_constraint_type VARCHAR2(30)
 VAR p_seg_attributes VARCHAR2 (3)
 VAR l_targ_part VARCHAR2(3)
-VAR p_owner VARCHAR2(30)
-VAR p_table VARCHAR2(30)
+VAR l_iot_type  VARCHAR2(10)
 VAR p_partname VARCHAR2(30)
 VAR p_basis VARCHAR2(10)
 VAR l_part_position NUMBER
 var default_tablespace VARCHAR2(30)
 
+EXEC :p_owner := 'stewart';
+EXEC :p_table := 'entitlement_stg';
+EXEC :p_source_owner := 'stewart';
+EXEC :p_source_table := 'entitlement_dim';
 EXEC :p_tablespace := NULL;
 EXEC :p_constraint_regexp := NULL;
-EXEC :p_owner := 'mi_scd';
-EXEC :p_table := 'pex_product';
-EXEC :p_source_owner := 'mi_dwuser';
-EXEC :p_source_table := 'dim_product';
 EXEC :p_constraint_type := NULL;
 EXEC :p_seg_attributes := NULL;
-EXEC :l_targ_part := NULL;
+EXEC :l_targ_part := 'NO';
+EXEC :l_iot_type  := NULL;
 EXEC :p_partname := NULL;
-EXEC :p_basis := NULL;
+EXEC :p_basis := 'table';
 EXEC :l_part_position := NULL;
 EXEC :default_tablespace := '#*default_tablespace*#';
 
@@ -37,13 +43,18 @@ SET termout on
 -- this case statement uses GENERIC_CON column to determine the final index name
 -- GENERIC_CON is a case statement that is generated below
 -- IF we are using a generic name, then perform the replace
-          SELECT   constraint_owner, CASE generic_con
-                      WHEN 'Y'
-                         THEN con_rename_adj
-                      ELSE con_rename
-                   END constraint_name, source_owner, source_table, source_constraint, constraint_type, index_owner,
-                   index_name,
-                   REGEXP_REPLACE( constraint_ddl,
+          SELECT constraint_owner, CASE generic_con
+                 WHEN 'Y'
+                 THEN con_rename_adj
+                 ELSE con_rename
+                 END constraint_name, 
+                 source_owner, 
+                 source_table, 
+                 source_constraint, 
+                 constraint_type, 
+                 index_owner,
+                 index_name,
+                 REGEXP_REPLACE( constraint_ddl,
                                    '(constraint )("?)(\w+)("?)',
                                    '\1' || CASE generic_con
                                       WHEN 'Y'
@@ -53,7 +64,7 @@ SET termout on
                                    1,
                                    0,
                                    'i'
-                                 ) constraint_ddl,
+                               ) constraint_ddl,
                       
                       -- this column was added for the REPLACE_TABLE procedure
                       -- IN that procedure, after cloning the indexes, the table is renamed
@@ -85,7 +96,35 @@ SET termout on
                    || '.'
                    || source_table
                    || ' renamed to '
-                   || source_constraint rename_msg,
+                 || source_constraint rename_msg,
+                 
+                 -- this column was added for the EXCHANGE_PARTITION procedure
+                 -- so we can drop only the constraints we added
+                      ' alter table '
+                   || source_owner
+                   || '.'
+                   || source_table
+                   || ' drop constraint '
+                   || CASE generic_con
+                         WHEN 'Y'
+                            THEN con_rename_adj
+                         ELSE con_rename
+                      END drop_ddl,
+                      
+                 -- this column was added for the EXCHANGE_PARTITION procedure
+                 -- so we can drop only the constraints we added
+                      'Constraint '
+                   || CASE generic_con
+                         WHEN 'Y'
+                            THEN con_rename_adj
+                         ELSE con_rename
+                      END
+                   || ' on table '
+                   || source_owner
+                   || '.'
+                   || source_table
+                   || ' droped' rename_msg,
+
                    basis_source, generic_con, named_constraint
               FROM ( SELECT
                             -- IF con_rename already exists (constructed below), then we will try to rename the constraint to something generic
@@ -211,7 +250,7 @@ SET termout on
                                           -- if the INDEX_NAME column is null, then there is no index associated with this constraint
                                           -- that means that tablespace information would be meaningless.
                                           -- also, IF constant default_tablespace is passed, then use the users default tablespace
-                                    WHEN ac.index_name IS NULL OR LOWER( :p_tablespace ) = :default_tablespace
+                                       WHEN ac.index_name IS NULL OR LOWER( :p_tablespace ) = :default_tablespace
                                              THEN NULL
                                           -- IF :p_TABLESPACE is provided, then previous tablespace information was stripped (above)
                                           -- now we can just tack the new tablespace information on the end
@@ -290,4 +329,4 @@ SET termout on
                            ON acc.constraint_name_confirm = con.con_rename
                          AND acc.constraint_owner_confirm = constraint_owner
                            )
-          ORDER BY basis_source DESC
+           ORDER BY basis_source DESC
