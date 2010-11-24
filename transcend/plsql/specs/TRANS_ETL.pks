@@ -154,6 +154,7 @@ IS
       p_index_space        VARCHAR2 DEFAULT NULL,
       p_idx_concurrency    VARCHAR2 DEFAULT 'no',
       p_con_concurrency    VARCHAR2 DEFAULT 'no',
+      p_drop_deps          VARCHAR2 DEFAULT 'yes',
       p_statistics         VARCHAR2 DEFAULT 'transfer'
    );
 

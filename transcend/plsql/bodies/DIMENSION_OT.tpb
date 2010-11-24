@@ -13,22 +13,22 @@ AS
          -- now load the other attributes
          SELECT table_owner, table_name, full_table, source_owner, source_object,
                 full_source, sequence_owner, sequence_name, full_sequence, staging_owner,
-                staging_table, staging_owner || '.' || staging_table full_stage, constant_staging, direct_load,
+                staging_table, staging_owner || '.' || staging_table full_stage, named_staging, direct_load,
                 replace_method, STATISTICS, index_concurrency, constraint_concurrency, mapping_name
            INTO SELF.table_owner, SELF.table_name, SELF.full_table, SELF.source_owner, SELF.source_object,
                 SELF.full_source, SELF.sequence_owner, SELF.sequence_name, SELF.full_sequence, SELF.staging_owner,
-                SELF.staging_table, SELF.full_stage, SELF.constant_staging, SELF.direct_load,
+                SELF.staging_table, SELF.full_stage, SELF.named_staging, SELF.direct_load,
                 SELF.replace_method, SELF.STATISTICS, SELF.index_concurrency, SELF.constraint_concurrency, SELF.mapping_name
            FROM ( SELECT table_owner, table_name, table_owner || '.' || table_name full_table, source_owner,
                          source_object, source_owner || '.' || source_object full_source, sequence_owner, sequence_name,
                          sequence_owner || '.' || sequence_name full_sequence,
                          NVL( staging_owner, table_owner ) staging_owner,
-                         NVL( staging_table, 'TD$PEX$' || table_name ) staging_table,
+                         NVL( staging_table, substr('TD$PEX$' || table_name, 1, 30) ) staging_table,
                          CASE
                             WHEN staging_table IS NULL
                                THEN 'no'
                             ELSE 'yes'
-                         END constant_staging, direct_load, replace_method, STATISTICS, index_concurrency, constraint_concurrency
+                         END named_staging, direct_load, replace_method, STATISTICS, index_concurrency, constraint_concurrency
                    FROM dimension_conf JOIN mapping_conf USING( table_owner, table_name )
                   WHERE mapping_name = SELF.mapping_name );
       EXCEPTION
@@ -58,7 +58,7 @@ AS
       -- let's find out if it's partitioned
       l_tab_part      := td_utils.is_part_table( table_owner, table_name);
    
-      evolve.log_variable('self.constant_stagig',SELF.constant_staging);
+      evolve.log_variable('self.named_stagig',SELF.named_staging);
 
       -- check that the sequence exists
       evolve.log_variable('self.sequence_owner',SELF.sequence_owner);
@@ -71,7 +71,7 @@ AS
       -- constant staging
       -- this means that we won't have to create a staging table
       -- we have already created it, and is managed outside the framework
-      IF td_core.is_true( self.constant_staging )
+      IF td_core.is_true( self.named_staging )
       THEN
          
          evolve.log_variable('self.full_stage',SELF.full_stage);
@@ -272,6 +272,8 @@ AS
    END confirm_dim_cols;
    OVERRIDING MEMBER PROCEDURE LOAD
    IS
+      e_dup_tab_name     EXCEPTION;
+      PRAGMA             EXCEPTION_INIT( e_dup_tab_name, -955 );
       -- default comparision types
       l_char_nvl         dimension_conf.char_nvl_default%TYPE;
       l_num_nvl          dimension_conf.number_nvl_default%TYPE;
@@ -560,43 +562,48 @@ AS
          || ')'
          || ' where include=''Y''';
 
-      -- check to see if the staging table is constant
-      IF NOT td_core.is_true( SELF.constant_staging )
-      THEN
-         -- if it isn't, then create the staging table for temporary use
-         o_ev.change_action( 'create staging table' );
+      -- if it isn't, then create the staging table for temporary use
+      o_ev.change_action( 'create staging table' );
+
+      BEGIN
+
          td_dbutils.build_table( p_source_owner      => SELF.table_owner,
                                  p_source_table      => SELF.table_name,
                                  p_owner             => SELF.table_owner,
                                  p_table             => SELF.staging_table,
                                  p_partitioning      => CASE
-                                 WHEN self.replace_method = 'exchange' AND l_tab_part 
-                                 THEN 'remove'
-                                 WHEN self.replace_method = 'exchange' AND NOT l_tab_part
-                                 THEN 'single'
-                                 ELSE 'keep'
-                                 END
+                                                        WHEN self.replace_method = 'exchange' AND l_tab_part 
+                                                        THEN 'remove'
+                                                        WHEN self.replace_method = 'exchange' AND NOT l_tab_part
+                                                        THEN 'single'
+                                                        ELSE 'keep'
+                                                        END
                                );
-      ELSE
-         -- drop constraints on the segment in preparation for loading
-         o_ev.change_action( 'drop constraints on staging' );
+      EXCEPTION
+         WHEN e_dup_tab_name
+         THEN
+            NULL;
+      END;
 
-         BEGIN
-            td_dbutils.drop_constraints( p_owner => SELF.staging_owner, p_table => SELF.staging_table );
-         EXCEPTION
-            WHEN td_dbutils.drop_iot_key
-            THEN
-               NULL;
-         END;
+      -- drop constraints on the segment in preparation for loading
+      o_ev.change_action( 'drop constraints on staging' );
 
-         -- drop indexes on the segment in preparation for loading
-         o_ev.change_action( 'drop indexes on staging' );
-         td_dbutils.drop_indexes( p_owner => SELF.staging_owner, p_table => SELF.staging_table );
-         -- truncate the staging table to get ready for a new run
-         o_ev.change_action( 'truncate staging table' );
-         td_dbutils.truncate_table( p_owner => SELF.staging_owner, p_table => SELF.staging_table );
-      END IF;
+      BEGIN
+         td_dbutils.drop_constraints( p_owner => SELF.staging_owner, p_table => SELF.staging_table );
+      EXCEPTION
+         WHEN td_dbutils.drop_iot_key
+         THEN
+            NULL;
+      END;
 
+      -- drop indexes on the segment in preparation for loading
+      o_ev.change_action( 'drop indexes on staging' );
+      td_dbutils.drop_indexes( p_owner => SELF.staging_owner, p_table => SELF.staging_table );
+      
+      -- truncate the staging table to get ready for a new run
+      o_ev.change_action( 'truncate staging table' );
+      td_dbutils.truncate_table( p_owner => SELF.staging_owner, p_table => SELF.staging_table );
+      
       -- now run the insert statement to load the staging table
       o_ev.change_action( 'load staging table' );
       evolve.exec_sql( l_sql );
@@ -640,13 +647,6 @@ AS
          ELSE
             NULL;
       END CASE;
-
-      IF NOT td_core.is_true( SELF.constant_staging )
-      THEN
-         -- now drop the source table, which is now the previous target table
-         o_ev.change_action( 'drop staging table' );
-         td_dbutils.drop_table( p_owner => SELF.staging_owner, p_table => SELF.staging_table );
-      END IF;
 
       -- reset the evolve_object
       o_ev.clear_app_info;

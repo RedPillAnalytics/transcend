@@ -123,7 +123,7 @@ SET termout on
                    || source_owner
                    || '.'
                    || source_table
-                   || ' droped' rename_msg,
+                   || ' droped' drop_msg,
 
                    basis_source, generic_con, named_constraint
               FROM ( SELECT
