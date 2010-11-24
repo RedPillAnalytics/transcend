@@ -23,7 +23,7 @@ AS
                          source_object, source_owner || '.' || source_object full_source, sequence_owner, sequence_name,
                          sequence_owner || '.' || sequence_name full_sequence,
                          NVL( staging_owner, table_owner ) staging_owner,
-                         NVL( staging_table, 'TD$_MTBL' || TO_CHAR( SYSTIMESTAMP, 'mmddyyyyHHMISS' )) staging_table,
+                         NVL( staging_table, 'TD$PEX$' || table_name ) staging_table,
                          CASE
                             WHEN staging_table IS NULL
                                THEN 'no'
@@ -69,6 +69,8 @@ AS
                            );
       
       -- constant staging
+      -- this means that we won't have to create a staging table
+      -- we have already created it, and is managed outside the framework
       IF td_core.is_true( self.constant_staging )
       THEN
          
@@ -85,7 +87,7 @@ AS
 
             -- if we are doing segment switching, then one of the tables needs to be partitioned
             -- but they both can't be
-   
+            -- this is a simple check to make sure that only one of the tables is partitioned, but not both
             IF l_src_part AND l_tab_part
             THEN
                evolve.raise_err( 'both_part' );
@@ -95,19 +97,6 @@ AS
             END IF;
                            
          END IF;
-         
-      ELSE
-         -- there is no constant staging
-         -- that means that a new table will have to be created
-         -- this can work with an exchange, as long as the target table is partition
-         IF NOT l_tab_part AND replace_method = 'exchange'
-         THEN
-            -- we have to create a staging table
-            -- but the target table is not partitioned
-            -- this is not supported
-            evolve.raise_err('part_targ');
-         END IF;
-         
       END IF;
 
       evolve.log_msg( 'Dimension confirmation completed successfully', 5 );
@@ -298,6 +287,7 @@ AS
       l_all_col_list     LONG;
       l_include_case     LONG;
       l_scd1_analytics   LONG;
+      l_tab_part         BOOLEAN;
       l_rows             BOOLEAN;
       o_ev               evolve_ot := evolve_ot( p_module => 'mapping '||SELF.mapping_name, p_action => 'start mapping' );
 
@@ -305,6 +295,9 @@ AS
       
       -- first, confirm that the column values are as they should be
       confirm_dim_cols;
+      
+      -- let's find out if it's partitioned
+      l_tab_part      := td_utils.is_part_table( table_owner, table_name);
 
       -- need to get some of the default comparision values
       BEGIN
@@ -576,12 +569,12 @@ AS
                                  p_source_table      => SELF.table_name,
                                  p_owner             => SELF.table_owner,
                                  p_table             => SELF.staging_table,
-                                 -- if the data will be replaced in using an exchange, then need the table to not be partitioned
-                                 -- everything else can be created just like the source table
-                                 p_partitioning      => CASE SELF.replace_method
-                                    WHEN 'exchange'
-                                       THEN 'no'
-                                    ELSE 'yes'
+                                 p_partitioning      => CASE
+                                 WHEN self.replace_method = 'exchange' AND l_tab_part 
+                                 THEN 'remove'
+                                 WHEN self.replace_method = 'exchange' AND NOT l_tab_part
+                                 THEN 'single'
+                                 ELSE 'keep'
                                  END
                                );
       ELSE
