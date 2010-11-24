@@ -338,7 +338,7 @@ AS
       p_tablespace     VARCHAR2 DEFAULT NULL,
       p_constraints    VARCHAR2 DEFAULT 'no',
       p_indexes	       VARCHAR2 DEFAULT 'no',
-      p_partitioning   VARCHAR2 DEFAULT 'yes',
+      p_partitioning   VARCHAR2 DEFAULT 'keep',
       p_grants         VARCHAR2 DEFAULT 'no',
       p_rows           VARCHAR2 DEFAULT 'no',
       p_statistics     VARCHAR2 DEFAULT 'ignore'
@@ -353,6 +353,8 @@ AS
       l_src_name       VARCHAR2( 61 )                := UPPER( p_source_owner || '.' || p_source_table );
       l_part_type      VARCHAR2( 6 );
       l_targ_part      all_tables.partitioned%TYPE;
+      l_part_col       all_part_key_columns.column_name%TYPE;
+      l_col1           all_tab_columns.column_name%TYPE;
       l_rows           BOOLEAN                       := FALSE;
       e_dup_idx_name   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_idx_name, -955 );
@@ -360,7 +362,7 @@ AS
       PRAGMA EXCEPTION_INIT( e_dup_col_list, -1408 );
       o_ev             evolve_ot                     := evolve_ot( p_module => 'build_table' );
    BEGIN
-      -- confirm that the source table
+      -- confirm that the source table exists
       -- raise an error if it doesn't
       td_utils.check_table( p_owner => p_source_owner, p_table => p_source_table );
       -- don't want any constraints pulled
@@ -373,6 +375,7 @@ AS
       -- don't want all the other storage aspects though
       DBMS_METADATA.set_transform_param( DBMS_METADATA.session_transform, 'STORAGE', FALSE );
       o_ev.change_action( 'extract DDL' );
+ 
 
 -- SELECT DDL into a variable
       SELECT REGEXP_REPLACE(
@@ -446,12 +449,18 @@ AS
                           (
                             -- this regular expression evaluates p_PARTITIONING paramater and removes partitioning information if necessary
                             REGEXP_REPLACE( table_ddl,
-                                            CASE td_core.get_yn_ind( p_partitioning )
-                                               -- don't want partitioning
-                                            WHEN 'no'
-                                                  -- remove all partitioning
-                                            THEN '(\(\s*partition.+\))\s*|(partition by).+\)\s*'
-                                               ELSE NULL
+                                            CASE 
+
+                                            -- we want to keep partitioning
+                                            WHEN REGEXP_LIKE( 'keep', p_partitioning, 'i' )
+                                            -- don't do anything
+                                            -- keep the partitioning information exactly how it is
+                                            THEN NULL
+
+                                            -- in any other situations, we don't want partitioning
+                                            -- this is "remove" or "single"
+                                            ELSE '(\(\s*partition.+\))\s*|(partition by).+\)\s*'
+
                                             END,
                                             NULL,
                                             1,
@@ -536,8 +545,38 @@ AS
                                 FROM all_constraints ) g2
                              ON g1.con_rename = g2.constraint_name_confirm
                            AND g2.constraint_owner_confirm = UPPER( p_owner )
-                             ));
+                     ));
+                
 
+      o_ev.change_action( 'single-part check' );
+
+      -- if p_partitioning is 'single', then we have a few steps
+      CASE
+        WHEN REGEXP_LIKE( 'single', p_partitioning, 'i' )
+        THEN
+           -- get the first column attribute to use as the partition key
+           -- this is a single partition table, so it doesn't matter what we use
+           SELECT column_name
+             INTO l_col1
+             FROM all_tab_columns
+            WHERE table_name = upper(p_source_table)
+              AND owner      = upper(p_source_owner)
+              AND column_id = 1;
+
+           l_table_ddl := l_table_ddl 
+           || ' partition by range ('||l_col1||')'
+           || ' ( partition pmax values less than (maxvalue))';
+        WHEN REGEXP_LIKE( 'keep', p_partitioning, 'i' )
+        THEN
+           NULL;
+        WHEN REGEXP_LIKE( 'remove', p_partitioning, 'i' )
+        THEN
+           NULL;
+        ELSE
+            evolve.raise_err( 'unrecognized_parm', p_partitioning );
+      END CASE;
+
+      
       o_ev.change_action( 'execute DDL' );
       evolve.exec_sql( p_sql => l_table_ddl, p_auto => 'yes' );
       evolve.log_msg( 'Table ' || l_tab_name || ' created' );
@@ -616,7 +655,7 @@ AS
          object_grants( p_source_owner       => p_source_owner,
                         p_source_object      => p_source_table,
                        	p_owner              => p_owner,
-                       	p_object              => p_table
+                       	p_object             => p_table
 		      );
       END IF;
 
