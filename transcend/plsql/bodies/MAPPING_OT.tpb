@@ -147,16 +147,17 @@ AS
       o_ev.clear_app_info;
    END verify;
 
-   MEMBER PROCEDURE start_map
+   MEMBER PROCEDURE pre_map
    AS
-      o_ev   evolve_ot := evolve_ot( p_module => 'mapping '||SELF.mapping_name, p_action => 'start mapping' );
+      o_ev   evolve_ot := evolve_ot( p_module => 'pre_map' );
    BEGIN
       evolve.log_msg( 'Pre-mapping processes beginning' );
 
       -- we want to manage indexes, but there is no table replace that is occurring
       -- so we need to explicitly manage the indexes
       -- so we need to mark indexes unusable beforehand
-      IF lower(self.manage_indexes) IN ('unusable','both') AND self.replace_method IS NULL
+      IF lower(self.manage_indexes) IN ('unusable','both') 
+         AND NVL(self.replace_method,'NA') NOT IN ('exchange','rename')
       THEN
          td_dbutils.unusable_indexes( p_owner              => SELF.table_owner,
                                       p_table              => SELF.table_name,
@@ -173,7 +174,8 @@ AS
       -- we want to manage constraints, but there is no table replace that is occurring
       -- so we need to explicitly manage constraints
       -- so we need to disable constraints beforehand
-      IF lower(self.manage_constraints) IN ('disable','both') AND self.replace_method IS NULL
+      IF lower(self.manage_constraints) IN ('disable','both') 
+         AND NVL(self.replace_method,'NA') NOT IN ('exchange','rename')
       THEN
          td_dbutils.constraint_maint( p_owner                  => SELF.table_owner,
                                       p_table                  => SELF.table_name,
@@ -183,15 +185,14 @@ AS
                                     );
       END IF;
       evolve.log_msg( 'Pre-mapping processes completed' );
-      o_ev.change_action( 'execute mapping' );
-   END start_map;
-
-   MEMBER PROCEDURE end_map
+   END pre_map;
+   
+   MEMBER PROCEDURE post_map
    AS
-      o_ev   evolve_ot := evolve_ot( p_module => 'mapping '||SELF.mapping_name, p_action => 'end mapping' );
+      o_ev   evolve_ot := evolve_ot( p_module => 'post_map' );
    BEGIN
       evolve.log_msg( 'Post-mapping processes beginning' );
-
+      
       -- we exchange the partition
       -- this handles constraints and indexes
       CASE SELF.replace_method
@@ -223,17 +224,20 @@ AS
       
       -- if there is no replace method, then we need to rebuild indexes
       -- rebuild the indexes
-      IF lower(self.manage_indexes) IN ('usable','both') AND self.replace_method IS NULL
+      IF lower(self.manage_indexes) IN ('usable','both') 
+         AND NVL(self.replace_method,'NA') NOT IN ('rename','exchange')
       THEN
          td_dbutils.usable_indexes( p_owner           => SELF.table_owner,
                                     p_table           => SELF.table_name,
-                                    p_concurrent      => SELF.index_concurrency
+                                    p_concurrent      => SELF.index_concurrency,
+                                    p_index_regexp    => SELF.index_regexp
                                   );
       END IF;
 
       -- enable the constraints
       -- if there is no replace method, then we need to enable constraints
-      IF lower(self.manage_constraints) IN ('enable','both') AND self.replace_method IS NULL
+      IF lower(self.manage_constraints) IN ('enable','both') 
+         AND NVL(self.replace_method,'NA') NOT IN ('rename','exchange')
       THEN
          td_dbutils.constraint_maint( p_owner                  => SELF.table_owner,
                                       p_table                  => SELF.table_name,
@@ -248,7 +252,7 @@ AS
       -- this is not a segment-switching situation
       -- there is a table name specified
       -- 'gather' is specified for statistics
-      IF self.replace_method IS NULL
+      IF self.replace_method NOT IN ('exchange','rename')
          AND self.table_name IS NOT NULL 
          AND REGEXP_LIKE( 'gather', self.statistics, 'i' )
       THEN
@@ -262,9 +266,24 @@ AS
       -- removing it because I don't think a commit should exist inside mapping functionality
       evolve.log_msg( 'Post-mapping processes completed' );
       o_ev.clear_app_info;
+   END post_map;
+   
+   MEMBER PROCEDURE start_map
+   AS
+      o_ev   evolve_ot := evolve_ot( p_module => 'mapping '||SELF.mapping_name, p_action => 'start mapping' );
+   BEGIN
+      pre_map;
+      o_ev.change_action( 'execute mapping' );
+   END start_map;
+
+   MEMBER PROCEDURE end_map
+   AS
+      o_ev   evolve_ot := evolve_ot( p_module => 'mapping '||SELF.mapping_name, p_action => 'end mapping' );
+   BEGIN
+      post_map;
+      o_ev.clear_app_info;
    END end_map;
 
-   -- null procedure for polymorphism only
    MEMBER PROCEDURE LOAD
    IS
       o_ev   evolve_ot := evolve_ot( p_module => 'load' );

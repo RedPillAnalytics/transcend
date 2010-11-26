@@ -8,6 +8,7 @@ CREATE OR REPLACE TYPE dimension_ot UNDER mapping_ot(
    staging_table       VARCHAR2( 30 ),
    full_stage          VARCHAR2( 61 ),
    named_staging       VARCHAR2( 3 ),
+   late_arriving       VARCHAR2( 3 ),
    direct_load         VARCHAR2( 3 ),
    current_ind_col     VARCHAR2( 30 ),
    effect_dt_col       VARCHAR2( 30 ),

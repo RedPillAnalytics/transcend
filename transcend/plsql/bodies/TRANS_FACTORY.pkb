@@ -32,36 +32,6 @@ IS
          RAISE;
    END get_mapping_ot;
 
-   -- takes a table name and table_owner and returns a subtype of mapping_ot
-   FUNCTION get_mapping_ot( p_owner VARCHAR2, p_table VARCHAR2 )
-      RETURN mapping_ot
-   IS
-      l_mapping   mapping_conf.mapping_name%TYPE;
-      -- need object for the parent type
-      o_map       mapping_ot;
-      -- also need an object for any subtypes
-      o_dim       dimension_ot;
-      -- and then the basic Evolve instrumentation object
-      o_ev        evolve_ot                        := evolve_ot( p_module => 'trans_factory.get_mapping_ot' );
-   BEGIN
-      -- get the mapping name and mapping type
-      SELECT mapping_name
-        INTO l_mapping
-        FROM mapping_conf
-       WHERE LOWER( table_name ) = LOWER( p_table ) AND LOWER( table_owner ) = LOWER( p_owner );
-
-      -- use another GET_MAPPING_OT function
-      o_map    := get_mapping_ot( l_mapping );
-      -- now simply return the type
-      o_ev.clear_app_info;
-      RETURN o_map;
-   EXCEPTION
-      WHEN OTHERS
-      THEN
-         evolve.log_err;
-         RAISE;
-   END get_mapping_ot;
-
    -- takes a table name and table_owner and returns a subtype of file_ot
    FUNCTION get_file_label_ot( 
       p_file_label VARCHAR2,

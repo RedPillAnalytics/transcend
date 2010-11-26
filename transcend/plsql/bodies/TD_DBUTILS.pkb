@@ -2526,7 +2526,7 @@ AS
                                  p_owner      => p_owner,
                                  p_object     => p_table,
                                  p_category   => 'merge',
-                                 p_msg        => 'Number of records inserted into ' || l_trg_name );
+                                 p_msg        => 'Number of records merged into ' || l_trg_name );
          
       END IF;
 

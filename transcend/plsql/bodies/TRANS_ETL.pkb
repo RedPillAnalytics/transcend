@@ -503,10 +503,10 @@ AS
    END replace_table;
 
    -- uses SQL analytics to load a hybrid SCD dimension table
-   PROCEDURE load_dimension( p_owner VARCHAR2, p_table VARCHAR2 )
+   PROCEDURE load_dimension( p_mapping VARCHAR2 )
    IS
       -- use the object factory to return a dimension object
-      o_dim   mapping_ot := trans_factory.get_mapping_ot( p_owner => p_owner, p_table => p_table );
+      o_dim   mapping_ot := trans_factory.get_mapping_ot( p_mapping => p_mapping );
    BEGIN
       -- execute the load
       o_dim.LOAD;

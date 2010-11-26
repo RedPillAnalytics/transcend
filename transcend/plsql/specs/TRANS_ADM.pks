@@ -181,6 +181,7 @@ IS
       p_staging_owner      VARCHAR2 DEFAULT NULL,
       p_staging_table      VARCHAR2 DEFAULT NULL,
       p_default_scd_type   NUMBER DEFAULT 2,
+      p_late_arriving      VARCHAR2 DEFAULT 'no',
       p_direct_load        VARCHAR2 DEFAULT 'yes',
       p_replace_method     VARCHAR2 DEFAULT 'rename',
       p_statistics         VARCHAR2 DEFAULT 'transfer',
@@ -194,9 +195,9 @@ IS
    );
 
    PROCEDURE modify_dimension (
-      p_owner              VARCHAR2,
-      p_table              VARCHAR2,
-      p_mapping            VARCHAR2 DEFAULT NULL,
+      p_mapping            VARCHAR2,
+      p_owner              VARCHAR2 DEFAULT NULL,
+      p_table              VARCHAR2 DEFAULT NULL,
       p_source_owner       VARCHAR2 DEFAULT NULL,
       p_source_object      VARCHAR2 DEFAULT NULL,
       p_sequence_owner     VARCHAR2 DEFAULT NULL,
@@ -204,6 +205,7 @@ IS
       p_staging_owner      VARCHAR2 DEFAULT NULL,
       p_staging_table      VARCHAR2 DEFAULT NULL,
       p_default_scd_type   NUMBER DEFAULT NULL,
+      p_late_arriving      VARCHAR2 DEFAULT 'no',
       p_direct_load        VARCHAR2 DEFAULT NULL,
       p_replace_method     VARCHAR2 DEFAULT NULL,
       p_statistics         VARCHAR2 DEFAULT NULL,
@@ -216,11 +218,10 @@ IS
       p_description        VARCHAR2 DEFAULT NULL
   );
    
-   PROCEDURE delete_dimension ( p_owner VARCHAR2, p_table VARCHAR2 );
+   PROCEDURE delete_dimension ( p_mapping VARCHAR2 );
    
    PROCEDURE create_dim_attribs (
-      p_owner           VARCHAR2,
-      p_table           VARCHAR2,
+      p_mapping         VARCHAR2,
       p_surrogate       VARCHAR2,
       p_effective_dt    VARCHAR2,
       p_expiration_dt   VARCHAR2,
@@ -231,15 +232,13 @@ IS
    );
 
    PROCEDURE modify_dim_attrib (
-      p_owner           VARCHAR2,
-      p_table           VARCHAR2,
+      p_mapping         VARCHAR2,
       p_column		VARCHAR2,
       p_column_type	VARCHAR2
    );
 
    PROCEDURE delete_dim_attribs (
-      p_owner           VARCHAR2,
-      p_table           VARCHAR2
+      p_mapping      VARCHAR2
    );
 
    PROCEDURE set_module_conf(
