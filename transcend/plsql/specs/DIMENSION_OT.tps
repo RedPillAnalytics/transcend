@@ -4,8 +4,8 @@ CREATE OR REPLACE TYPE dimension_ot UNDER mapping_ot(
    sequence_owner      VARCHAR2( 30 ),
    sequence_name       VARCHAR2( 30 ),
    full_sequence       VARCHAR2( 61 ),
-   staging_owner       VARCHAR2( 30 ),
-   staging_table       VARCHAR2( 30 ),
+   source_owner        VARCHAR2( 30 ),
+   source_table        VARCHAR2( 30 ),
    full_stage          VARCHAR2( 61 ),
    named_staging       VARCHAR2( 3 ),
    late_arriving       VARCHAR2( 3 ),
@@ -20,8 +20,6 @@ CREATE OR REPLACE TYPE dimension_ot UNDER mapping_ot(
    OVERRIDING MEMBER PROCEDURE verify,
    MEMBER PROCEDURE initialize_cols,
    OVERRIDING MEMBER PROCEDURE confirm_dim_cols,
-   OVERRIDING MEMBER PROCEDURE start_map,
-   OVERRIDING MEMBER PROCEDURE end_map,
    OVERRIDING MEMBER PROCEDURE LOAD
 );
 /

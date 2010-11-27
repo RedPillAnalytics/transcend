@@ -7,7 +7,7 @@ AS
    AS
       o_map   mapping_ot := trans_factory.get_mapping_ot( p_mapping => p_mapping, p_batch_id => p_batch_id );
    BEGIN
-      evolve.log_msg( 'Mapping type: ' || o_map.mapping_type, 5 );
+      evolve.log_variable( 'MAPPING_TYPE', o_map.mapping_type);
       -- now, regardless of which object type this is, the following call is correct
       o_map.start_map;
    EXCEPTION

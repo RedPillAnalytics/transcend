@@ -23,9 +23,9 @@ VAR l_part_position NUMBER
 var default_tablespace VARCHAR2(30)
 
 EXEC :p_owner := 'stewart';
-EXEC :p_table := 'entitlement_stg';
+EXEC :p_table := 'clickstream_stg';
 EXEC :p_source_owner := 'stewart';
-EXEC :p_source_table := 'entitlement_dim';
+EXEC :p_source_table := 'clickstream_fact';
 EXEC :p_tablespace := NULL;
 EXEC :p_constraint_regexp := NULL;
 EXEC :p_constraint_type := NULL;

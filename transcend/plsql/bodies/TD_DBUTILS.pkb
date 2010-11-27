@@ -3077,7 +3077,7 @@ AS
          evolve.log_msg( 'Dropping constraints on the staging table', 4 );
    
          BEGIN
-            drop_constraints( p_owner => p_source_owner, p_table => p_source_table, p_basis => 'all' );
+            drop_constraints( p_owner => p_source_owner, p_table => p_source_table );
          EXCEPTION
             WHEN drop_iot_key
             THEN

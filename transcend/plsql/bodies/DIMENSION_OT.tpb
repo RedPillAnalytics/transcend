@@ -11,26 +11,28 @@ AS
 
       BEGIN
          -- now load the other attributes
-         SELECT table_owner, table_name, full_table, source_owner, source_object,
+         SELECT mapping_type, table_owner, table_name, full_table, source_owner, source_table,
                 full_source, sequence_owner, sequence_name, full_sequence, staging_owner,
                 staging_table, staging_owner || '.' || staging_table full_stage, named_staging, direct_load,
-                replace_method, STATISTICS, index_concurrency, constraint_concurrency, mapping_name, manage_indexes, manage_constraints, late_arriving
-           INTO SELF.table_owner, SELF.table_name, SELF.full_table, SELF.source_owner, SELF.source_object,
+                replace_method, STATISTICS, index_concurrency, constraint_concurrency, mapping_name, manage_indexes, 
+                manage_constraints, late_arriving, drop_dependent_objects
+           INTO SELF.mapping_type, SELF.table_owner, SELF.table_name, SELF.full_table, SELF.source_owner, SELF.source_table,
                 SELF.full_source, SELF.sequence_owner, SELF.sequence_name, SELF.full_sequence, SELF.staging_owner,
                 SELF.staging_table, SELF.full_stage, SELF.named_staging, SELF.direct_load,
                 SELF.replace_method, SELF.STATISTICS, SELF.index_concurrency, 
-                SELF.constraint_concurrency, SELF.mapping_name, SELF.manage_indexes, SELF.manage_constraints, SELF.late_arriving
+                SELF.constraint_concurrency, SELF.mapping_name, SELF.manage_indexes,
+                SELF.manage_constraints, SELF.late_arriving, SELF.drop_dependent_objects
            FROM ( SELECT table_owner, table_name, table_owner || '.' || table_name full_table, source_owner,
-                         source_object, source_owner || '.' || source_object full_source, sequence_owner, sequence_name,
+                         source_table, source_owner || '.' || source_table full_source, sequence_owner, sequence_name,
                          sequence_owner || '.' || sequence_name full_sequence,
                          NVL( staging_owner, table_owner ) staging_owner,
-                         NVL( staging_table, substr('DST$' || table_name, 1, 30) ) staging_table,
+                         NVL( staging_table, substr('STG$' || table_name, 1, 30) ) staging_table,
                          CASE
                             WHEN staging_table IS NULL
                                THEN 'no'
                             ELSE 'yes'
                          END named_staging, direct_load, replace_method, STATISTICS, index_concurrency,
-                         constraint_concurrency, manage_indexes, manage_constraints, late_arriving
+                         constraint_concurrency, manage_indexes, manage_constraints, late_arriving, drop_dependent_objects
                    FROM dimension_conf JOIN mapping_conf USING( mapping_name )
                   WHERE mapping_name = SELF.mapping_name );
       EXCEPTION
@@ -39,8 +41,9 @@ AS
             evolve.raise_err( 'no_dim', p_mapping );
       END;
       
-      evolve.log_variable('self.full_table',SELF.full_table);
-      evolve.log_variable('self.full_stage',SELF.full_stage);
+      evolve.log_variable( 'SELF.full_table',SELF.full_table );
+      evolve.log_variable( 'SELF.full_stage',SELF.full_stage );
+      evolve.log_variable( 'SELF.drop_dependent_objects', SELF.drop_dependent_objects );
 
       -- confirm the objects related to the dimensional configuration
       verify;
@@ -52,7 +55,7 @@ AS
    IS
       l_src_part       BOOLEAN;
       l_tab_part       BOOLEAN;
-      o_ev   evolve_ot := evolve_ot( p_module => 'verify' );
+      o_ev   evolve_ot := evolve_ot( p_module => 'dimension_ot.verify' );
    BEGIN
       -- now investigate the dimensional object
       -- check to make sure the dimension table exists
@@ -61,7 +64,7 @@ AS
       -- let's find out if it's partitioned
       l_tab_part      := td_utils.is_part_table( table_owner, table_name);
    
-      evolve.log_variable('self.named_stagig',SELF.named_staging);
+      evolve.log_variable('self.named_staging',SELF.named_staging);
 
       -- check that the sequence exists
       evolve.log_variable('self.sequence_owner',SELF.sequence_owner);
@@ -248,7 +251,7 @@ AS
                                    UNION ALL
                                    SELECT column_name, data_type, data_length, TO_NUMBER( NULL ) src1, 2 src2
                                      FROM all_tab_columns
-                                    WHERE owner = SELF.source_owner AND table_name = SELF.source_object )
+                                    WHERE owner = SELF.source_owner AND table_name = SELF.source_table )
                          GROUP BY column_name, data_type, data_length
                            HAVING COUNT( src1 ) <> COUNT( src2 )) src )
           WHERE EXCEPT = 'Y';
@@ -304,6 +307,7 @@ AS
       l_scd1_analytics   LONG;
       l_ind_filter       LONG;
       l_rep_ind_ins      LONG;
+      l_bt_part          VARCHAR2(10);
       l_tab_part         BOOLEAN;
       l_rows             BOOLEAN;
       o_ev               evolve_ot := evolve_ot( p_module => 'mapping '||SELF.mapping_name, p_action => 'start mapping' );
@@ -622,30 +626,34 @@ AS
       evolve.log_msg( 'The non-merge, non-late-arriving insert: ' || l_rep_ind_ins, 5 );  
 
 
-      -- create the DST (dimensional source table) table
+      -- create the staging table table
       -- this is a staging table that holds the results of the dimensional analysis
       -- it is then either exchanged in, table-renamed, or the source for a merge
-      o_ev.change_action( 'create DST table' );
+      o_ev.change_action( 'create staging table' );
 
       BEGIN
+
+         l_bt_part      := CASE
+                           WHEN self.replace_method = 'exchange' AND l_tab_part 
+                           THEN 'remove'
+                           WHEN self.replace_method = 'exchange' AND NOT l_tab_part
+                           THEN 'single'
+                           ELSE 'keep'
+                              END;
+                              
+         evolve.log_variable( 'L_BT_PART', l_bt_part );
 
          td_dbutils.build_table( p_source_owner      => SELF.table_owner,
                                  p_source_table      => SELF.table_name,
                                  p_owner             => SELF.staging_owner,
                                  p_table             => SELF.staging_table,
-                                 p_partitioning      => CASE
-                                                        WHEN self.replace_method = 'exchange' AND l_tab_part 
-                                                        THEN 'remove'
-                                                        WHEN self.replace_method = 'exchange' AND NOT l_tab_part
-                                                        THEN 'single'
-                                                        ELSE 'keep'
-                                                        END
+                                 p_partitioning      => l_bt_part
                                );
       EXCEPTION
          -- the table already exists
          WHEN e_dup_tab_name
             THEN
-            evolve.log_msg( 'The DST table already exists', 4 );
+            evolve.log_msg( 'The staging table already exists', 4 );
             -- since the table already exists, we need to "clean" it
             -- drop constraints
             -- drop indexes
@@ -674,15 +682,15 @@ AS
 
       -- if later arriving dimensions are disabled, and the replace_method is NOT 'merge'
       -- then I need to get all the records from the dimension table that have a current_ind='N'
-      -- this is because with 'rename' and 'exchange', I have to pull all records over into the DST table
+      -- this is because with 'rename' and 'exchange', I have to pull all records over into the staging table
       
       -- we are doing full segment-switching
-      -- that means that all rows have to make it to the DST table
+      -- that means that all rows have to make it to the staging table
       IF SELF.replace_method <> 'merge'
       -- we are not doing late arriving
       -- this means that all rows are not coming through the main SCD analysis query
       -- only the CURRENT_INDICATOR='Y' are going through that query
-      -- so we need to make sure the CURRENT_INDICATOR='N' rows get into the DST table as well
+      -- so we need to make sure the CURRENT_INDICATOR='N' rows get into the staging table as well
          AND self.late_arriving = 'no'
       THEN
          -- now run the insert statement to load the staging table
@@ -708,71 +716,10 @@ AS
                               p_msg            => 'Number of records inserted into '|| full_stage ); 
 
       COMMIT;
-      -- perform the replace method
-      o_ev.change_action( 'replace table' );
-
-      CASE
-         WHEN SELF.replace_method = 'exchange'
-         THEN
-            -- partition exchange the staging table into the max partition of the target table
-            -- this requires that the dimension table is a single partition table
-            td_dbutils.exchange_partition( p_source_owner      => SELF.staging_owner,
-                                           p_source_table      => SELF.staging_table,
-                                           p_owner             => SELF.table_owner,
-                                           p_table             => SELF.table_name,
-                                           p_statistics        => SELF.STATISTICS,
-                                           p_idx_concurrency   => SELF.index_concurrency,
-                                           p_con_concurrency   => SELF.constraint_concurrency,
-                                           p_drop_deps         => 'no'
-                                         );
-         WHEN SELF.replace_method = 'rename' AND NOT evolve.is_debugmode
-         THEN
-            -- switch the two tables using rename
-            -- requires that the tables both exist in the same schema
-            td_dbutils.replace_table( p_owner             => SELF.table_owner,
-                                      p_table             => SELF.table_name,
-                                      p_source_table      => SELF.staging_table,
-                                      p_statistics        => SELF.STATISTICS,
-                                      p_idx_concurrency   => SELF.index_concurrency,
-                                      p_con_concurrency   => SELF.constraint_concurrency
-                                    );
-         WHEN SELF.replace_method = 'rename' AND evolve.is_debugmode
-         THEN
-            evolve.log_msg( 'Cannot simulate a REPLACE_METHOD of "rename" when in DEBUGMODE', 4 );
-         WHEN SELF.replace_method = 'merge'
-         THEN
-            -- switch the two tables using rename
-            -- requires that the tables both exist in the same schema
-            td_dbutils.merge_table( p_owner             => SELF.table_owner,
-                                    p_table             => SELF.table_name,
-                                    p_source_owner      => self.staging_owner,
-                                    p_source_object     => SELF.staging_table,
-                                    p_columns           => SELF.surrogate_key_col
-                                  );
-         ELSE
-            NULL;
-      END CASE;
 
       -- reset the evolve_object
       o_ev.clear_app_info;
    END LOAD;
-
-   OVERRIDING MEMBER PROCEDURE start_map
-   AS
-      o_ev   evolve_ot := evolve_ot( p_module => 'mapping '||SELF.mapping_name, p_action => 'execute dimension mapping' );
-   BEGIN
-      evolve.log_msg( 'Starting ETL mapping' );
-   END start_map;
-
-   OVERRIDING MEMBER PROCEDURE end_map
-   AS
-      o_ev   evolve_ot := evolve_ot( p_module => 'mapping '||SELF.mapping_name, p_action => 'execute dimension mapping' );
-   BEGIN
-      -- now simply execute the dimension_ot.load methodj
-      LOAD;
-      -- signify the end
-      evolve.log_msg( 'Ending ETL mapping' );
-   END;
 END;
 /
 

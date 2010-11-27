@@ -1993,9 +1993,10 @@ IS
 	   index_concurrency 	      VARCHAR2(3)       DEFAULT 'no'            NOT NULL,
 	   manage_constraints 	      VARCHAR2(7)       DEFAULT 'ignore'        NOT NULL,
 	   constraint_concurrency     VARCHAR2(3)       DEFAULT 'no'            NOT NULL,
-	   source_owner 	      VARCHAR2(30)      DEFAULT NULL,
-	   source_object 	      VARCHAR2(30)      DEFAULT NULL,
-	   source_column 	      VARCHAR2(30)      DEFAULT NULL,
+           drop_dependent_objects     VARCHAR2(3)       DEFAULT 'yes'           NOT NULL,
+	   staging_owner 	      VARCHAR2(30)      DEFAULT NULL,
+	   staging_table 	      VARCHAR2(30)      DEFAULT NULL,
+	   staging_column 	      VARCHAR2(30)      DEFAULT NULL,
 	   replace_method 	      VARCHAR2(10)      DEFAULT NULL,
 	   statistics 		      VARCHAR2(10)      DEFAULT 'ignore'        NOT NULL,
 	   index_regexp 	      VARCHAR2(30)      DEFAULT NULL,
@@ -2036,14 +2037,16 @@ IS
          
          EXECUTE IMMEDIATE q'|ALTER TABLE mapping_conf ADD CONSTRAINT mapping_conf_ck10 CHECK (statistics in ('gather','transfer','ignore'))|';
 
+         EXECUTE IMMEDIATE q'|ALTER TABLE mapping_conf ADD CONSTRAINT mapping_conf_ck11 CHECK (drop_dependent_objects in ('yes','no'))|';
+
          -- DIMENSION_CONF table
          EXECUTE IMMEDIATE q'|CREATE TABLE dimension_conf
 	 ( 
 	   mapping_name		VARCHAR2(40) NOT NULL,
 	   sequence_owner  	VARCHAR2(30) NOT NULL,
 	   sequence_name  	VARCHAR2(30) NOT NULL,
-	   staging_owner	VARCHAR2(30) DEFAULT NULL,
-	   staging_table	VARCHAR2(30) DEFAULT NULL,
+	   source_owner	        VARCHAR2(30) DEFAULT NULL,
+	   source_table	        VARCHAR2(30) DEFAULT NULL,
 	   default_scd_type	NUMBER(1,0) DEFAULT 2 NOT NULL,
            late_arriving        VARCHAR2(30) DEFAULT 'no' NOT NULL,
 	   direct_load		VARCHAR2(3) DEFAULT 'yes' NOT NULL,

@@ -808,9 +808,10 @@ IS
       p_constraint_regexp   VARCHAR2 DEFAULT NULL,
       p_constraint_type     VARCHAR2 DEFAULT NULL,
       p_con_concurrency     VARCHAR2 DEFAULT 'no',
-      p_source_owner        VARCHAR2 DEFAULT NULL,
-      p_source_object       VARCHAR2 DEFAULT NULL,
-      p_source_column       VARCHAR2 DEFAULT NULL,
+      p_drop_dep            VARCHAR2 DEFAULT 'yes',
+      p_staging_owner       VARCHAR2 DEFAULT NULL,
+      p_staging_table       VARCHAR2 DEFAULT NULL,
+      p_staging_column      VARCHAR2 DEFAULT NULL,
       p_replace_method      VARCHAR2 DEFAULT NULL,
       p_statistics          VARCHAR2 DEFAULT 'ignore',
       p_description         VARCHAR2 DEFAULT NULL
@@ -832,9 +833,9 @@ IS
                   partition_type, index_concurrency, 
 		  manage_constraints, constraint_regexp,
 		  constraint_type, constraint_concurrency,
-		  source_owner, source_object,
-		  source_column, replace_method,
-		  statistics, description
+		  staging_owner, staging_table,
+		  staging_column, replace_method,
+		  statistics, description, drop_dependent_objects
 		)
 		VALUES ( LOWER (p_mapping), LOWER (p_mapping_type),
 			 UPPER (p_owner), UPPER (p_table),
@@ -843,9 +844,9 @@ IS
                          LOWER(p_idx_concurrency),
                          LOWER (p_constraints), p_constraint_regexp,
 			 p_constraint_type, LOWER(p_con_concurrency),
-			 UPPER (p_source_owner), UPPER (p_source_object),
-			 UPPER (p_source_column), p_replace_method,
-			 LOWER (p_statistics),p_description
+			 UPPER (p_staging_owner), UPPER (p_staging_table),
+			 UPPER (p_staging_column), p_replace_method,
+			 LOWER (p_statistics), p_description, LOWER (p_drop_dep)
                        );
       EXCEPTION
 	 WHEN e_dup_conf
@@ -879,9 +880,10 @@ IS
       p_constraint_regexp   VARCHAR2 DEFAULT NULL,
       p_constraint_type     VARCHAR2 DEFAULT NULL,
       p_con_concurrency     VARCHAR2 DEFAULT 'no',
-      p_source_owner        VARCHAR2 DEFAULT NULL,
-      p_source_object       VARCHAR2 DEFAULT NULL,
-      p_source_column       VARCHAR2 DEFAULT NULL,
+      p_drop_dep            VARCHAR2 DEFAULT 'yes',
+      p_staging_owner       VARCHAR2 DEFAULT NULL,
+      p_staging_table       VARCHAR2 DEFAULT NULL,
+      p_staging_column      VARCHAR2 DEFAULT NULL,
       p_replace_method      VARCHAR2 DEFAULT NULL,
       p_statistics          VARCHAR2 DEFAULT 'ignore',
       p_description         VARCHAR2 DEFAULT NULL
@@ -904,9 +906,9 @@ IS
 		       p_constraint_regexp      => p_constraint_regexp,
 		       p_constraint_type        => p_constraint_type,
                        p_con_concurrency        => p_con_concurrency,
-		       p_source_owner           => p_source_owner,
-		       p_source_object          => p_source_object,
-		       p_source_column          => p_source_column,
+		       p_staging_owner          => p_staging_owner,
+		       p_staging_table          => p_staging_table,
+		       p_staging_column         => p_staging_column,
 		       p_replace_method         => p_replace_method,
 		       p_statistics             => p_statistics,
 		       p_description            => p_description );
@@ -929,9 +931,10 @@ IS
       p_constraint_regexp   VARCHAR2 DEFAULT NULL,
       p_constraint_type     VARCHAR2 DEFAULT NULL,
       p_con_concurrency     VARCHAR2 DEFAULT NULL,
-      p_source_owner        VARCHAR2 DEFAULT NULL,
-      p_source_object       VARCHAR2 DEFAULT NULL,
-      p_source_column       VARCHAR2 DEFAULT NULL,
+      p_drop_dep            VARCHAR2 DEFAULT NULL,
+      p_staging_owner       VARCHAR2 DEFAULT NULL,
+      p_staging_table       VARCHAR2 DEFAULT NULL,
+      p_staging_column      VARCHAR2 DEFAULT NULL,
       p_replace_method      VARCHAR2 DEFAULT NULL,
       p_statistics          VARCHAR2 DEFAULT NULL,
       p_description         VARCHAR2 DEFAULT NULL
@@ -1005,31 +1008,38 @@ IS
                      ELSE p_con_concurrency
                      END
                    ),
-             source_owner =
-             UPPER (CASE
-                     WHEN p_source_owner IS NULL
-                     THEN source_owner
-                     WHEN p_source_owner = null_value
-                     THEN NULL
-                     ELSE p_source_owner
+             drop_dependent_objects =
+             LOWER (CASE
+                     WHEN p_drop_dep IS NULL
+                     THEN drop_dependent_objects
+                     ELSE p_drop_dep
                      END
                    ),
-             source_object =
+             staging_owner =
              UPPER (CASE
-                     WHEN p_source_object IS NULL
-                     THEN source_object
-                     WHEN p_source_object = null_value
+                     WHEN p_staging_owner IS NULL
+                     THEN staging_owner
+                     WHEN p_staging_owner = null_value
                      THEN NULL
-                     ELSE p_source_object
+                     ELSE p_staging_owner
                      END
                    ),
-             source_column =
+             staging_table =
              UPPER (CASE
-                     WHEN p_source_column IS NULL
-                     THEN source_column
-                     WHEN p_source_column = null_value
+                     WHEN p_staging_table IS NULL
+                     THEN staging_table
+                     WHEN p_staging_table = null_value
                      THEN NULL
-                     ELSE p_source_column
+                     ELSE p_staging_table
+                     END
+                   ),
+             staging_column =
+             UPPER (CASE
+                     WHEN p_staging_column IS NULL
+                     THEN staging_column
+                     WHEN p_staging_column = null_value
+                     THEN NULL
+                     ELSE p_staging_column
                      END
                    ),
              replace_method =
@@ -1117,9 +1127,9 @@ IS
       p_constraint_regexp   VARCHAR2 DEFAULT NULL,
       p_constraint_type     VARCHAR2 DEFAULT NULL,
       p_con_concurrency     VARCHAR2 DEFAULT NULL,
-      p_source_owner        VARCHAR2 DEFAULT NULL,
-      p_source_object       VARCHAR2 DEFAULT NULL,
-      p_source_column       VARCHAR2 DEFAULT NULL,
+      p_staging_owner       VARCHAR2 DEFAULT NULL,
+      p_staging_table       VARCHAR2 DEFAULT NULL,
+      p_staging_column      VARCHAR2 DEFAULT NULL,
       p_replace_method      VARCHAR2 DEFAULT NULL,
       p_statistics          VARCHAR2 DEFAULT NULL,
       p_description         VARCHAR2 DEFAULT NULL
@@ -1136,9 +1146,9 @@ IS
                        p_idx_concurrency     => p_idx_concurrency,
                        p_constraints         => p_constraints,
                        p_con_concurrency     => p_con_concurrency,
-                       p_source_owner        => p_source_owner,
-                       p_source_object       => p_source_object,
-                       p_source_column       => p_source_column,
+                       p_staging_owner       => p_staging_owner,
+                       p_staging_table       => p_staging_table,
+                       p_staging_column      => p_staging_column,
                        p_replace_method      => p_replace_method,
                        p_statistics          => p_statistics,
                        p_index_regexp        => p_index_regexp,
@@ -1170,40 +1180,12 @@ IS
 
    END delete_mapping;   
 
-   PROCEDURE delete_mapping (
-      p_owner              VARCHAR2,
-      p_table              VARCHAR2
-   )
-   IS
-      l_mapping    mapping_conf.mapping_name%TYPE;
-      o_ev          evolve_ot     := evolve_ot (p_module      => 'delete_mapping');
-   BEGIN
-      
-      BEGIN
-
-	 SELECT mapping_name
-	   INTO l_mapping
-	   FROM mapping_conf
-	  WHERE lower( table_owner ) = lower( p_owner )
-	    AND lower( table_name ) = lower( p_table );
-      EXCEPTION
-	 WHEN no_data_found
-	 THEN
-	 evolve.raise_err( 'no_dim' );
-      END;
-      
-      delete_mapping( l_mapping );
-      
-      o_ev.clear_app_info;
-
-   END delete_mapping;   
-
    PROCEDURE create_dimension (
       p_mapping            VARCHAR2,
       p_owner              VARCHAR2,
       p_table              VARCHAR2,
       p_source_owner       VARCHAR2,
-      p_source_object      VARCHAR2,
+      p_source_table       VARCHAR2,
       p_sequence_owner     VARCHAR2,
       p_sequence_name      VARCHAR2,
       p_staging_owner      VARCHAR2 DEFAULT NULL,
@@ -1233,8 +1215,8 @@ IS
                 ( mapping_name,
                   sequence_owner, 
                   sequence_name,
-                  staging_owner, 
-                  staging_table,
+                  source_owner, 
+                  source_table,
                   default_scd_type,
                   late_arriving,
                   direct_load,
@@ -1247,8 +1229,8 @@ IS
                 VALUES ( p_mapping,
                          UPPER (p_sequence_owner), 
                          UPPER (p_sequence_name),
-                         UPPER (p_staging_owner), 
-                         UPPER (p_staging_table),
+                         UPPER (p_source_owner), 
+                         UPPER (p_source_table),
                          p_default_scd_type,
                          LOWER (p_late_arriving), 
                          LOWER (p_direct_load),
@@ -1266,16 +1248,17 @@ IS
       END;
 
       -- now make the call to create the mapping
-      create_mapping (p_mapping             => p_mapping,
-                      p_mapping_type        => 'dimension',
-                      p_table               => p_table,
-                      p_owner               => p_owner,
-                      p_source_owner        => p_source_owner,
-                      p_source_object       => p_source_object,
-                      p_replace_method      => p_replace_method,
-                      p_statistics          => p_statistics,
-                      p_idx_concurrency     => p_idx_concurrency,
-                      p_con_concurrency     => p_con_concurrency
+      create_mapping ( p_mapping             => p_mapping,
+                       p_mapping_type        => 'dimension',
+                       p_table               => p_table,
+                       p_owner               => p_owner,
+                       p_staging_owner       => p_staging_owner,
+                       p_staging_table       => p_staging_table,
+                       p_replace_method      => p_replace_method,
+                       p_statistics          => p_statistics,
+                       p_idx_concurrency     => p_idx_concurrency,
+                       p_con_concurrency     => p_con_concurrency,
+                       p_drop_dep            => 'no'            
                      );
       o_dim := trans_factory.get_mapping_ot (p_mapping);
       
@@ -1288,7 +1271,7 @@ IS
       p_owner              VARCHAR2 DEFAULT NULL,
       p_table              VARCHAR2 DEFAULT NULL,
       p_source_owner       VARCHAR2 DEFAULT NULL,
-      p_source_object      VARCHAR2 DEFAULT NULL,
+      p_source_table       VARCHAR2 DEFAULT NULL,
       p_sequence_owner     VARCHAR2 DEFAULT NULL,
       p_sequence_name      VARCHAR2 DEFAULT NULL,
       p_staging_owner      VARCHAR2 DEFAULT NULL,
@@ -1326,22 +1309,22 @@ IS
                           ELSE p_sequence_name
                        END
                       ),
-             staging_owner =
+             source_owner =
                 UPPER (CASE
-                          WHEN p_staging_owner IS NULL
-                             THEN staging_owner
-                          WHEN p_staging_owner = null_value
+                          WHEN p_source_owner IS NULL
+                             THEN source_owner
+                          WHEN p_source_owner = null_value
                              THEN NULL
-                          ELSE p_staging_owner
+                          ELSE p_source_owner
                        END
                       ),
-             staging_table =
+             source_table =
                 UPPER (CASE
-                          WHEN p_staging_table IS NULL
-                             THEN staging_table
-                          WHEN p_staging_table = null_value
+                          WHEN p_source_table IS NULL
+                             THEN source_table
+                          WHEN p_source_table = null_value
                              THEN NULL
-                          ELSE p_staging_table
+                          ELSE p_source_table
                        END
                       ),
              default_scd_type =
@@ -1351,7 +1334,7 @@ IS
                    ELSE p_default_scd_type
                 END,
              late_arriving =
-                UPPER (CASE
+                lower (CASE
                           WHEN p_late_arriving IS NULL
                              THEN late_arriving
                           WHEN p_late_arriving = null_value
@@ -1409,10 +1392,10 @@ IS
 
       -- now make the call to modify the mapping
       update_mapping (p_mapping             => p_mapping,
-                      p_table               => p_table,
                       p_owner               => p_owner,
-                      p_source_owner        => p_source_owner,
-                      p_source_object       => p_source_object,
+                      p_table               => p_table,
+                      p_staging_owner       => p_staging_owner,
+                      p_staging_table       => p_staging_table,
                       p_replace_method      => p_replace_method,
                       p_statistics          => p_statistics,
                       p_idx_concurrency     => p_idx_concurrency,
