@@ -8,7 +8,10 @@ IS
       p_batch_id   NUMBER DEFAULT NULL
    );
 
-   PROCEDURE end_mapping( p_mapping VARCHAR2 DEFAULT SYS_CONTEXT( 'USERENV', 'ACTION' ));
+   PROCEDURE end_mapping( 
+      p_mapping    VARCHAR2 DEFAULT SYS_CONTEXT( 'USERENV', 'ACTION' ),
+      p_batch_id   NUMBER DEFAULT NULL
+   );
 
    PROCEDURE truncate_table( p_owner VARCHAR2, p_table VARCHAR2, p_reuse VARCHAR2 DEFAULT 'no' );
       
@@ -26,7 +29,7 @@ IS
       p_tablespace     VARCHAR2 DEFAULT NULL,
       p_constraints    VARCHAR2 DEFAULT 'no',
       p_indexes	       VARCHAR2 DEFAULT 'no',
-      p_partitioning   VARCHAR2 DEFAULT 'yes',
+      p_partitioning   VARCHAR2 DEFAULT 'keep',
       p_grants         VARCHAR2 DEFAULT 'no',
       p_rows           VARCHAR2 DEFAULT 'no',
       p_statistics     VARCHAR2 DEFAULT 'ignore'
@@ -151,10 +154,11 @@ IS
       p_index_space        VARCHAR2 DEFAULT NULL,
       p_idx_concurrency    VARCHAR2 DEFAULT 'no',
       p_con_concurrency    VARCHAR2 DEFAULT 'no',
+      p_drop_deps          VARCHAR2 DEFAULT 'yes',
       p_statistics         VARCHAR2 DEFAULT 'transfer'
    );
 
-   PROCEDURE load_dimension( p_owner VARCHAR2, p_table VARCHAR2 );
+   PROCEDURE load_dimension( p_mapping VARCHAR2 );
 
    PROCEDURE replace_table(
       p_owner             VARCHAR2,

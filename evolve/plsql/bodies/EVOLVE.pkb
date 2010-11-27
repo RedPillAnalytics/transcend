@@ -94,7 +94,7 @@ AS
          -- also output the message to the screen
          -- the client can control whether or not they want to see this
          -- in sqlplus, just SET SERVEROUTPUT ON or OFF
-         DBMS_OUTPUT.put_line( l_msg );
+         DBMS_OUTPUT.put_line( p_msg );
       END IF;
    END log_msg;
 
@@ -263,7 +263,7 @@ AS
       log_msg( 'The error name passed: "' || p_name || '"', 5 );
       IF is_debugmode
       THEN
-         log_msg( "Error Raised: "||get_err_cd( p_name )||': '||get_err_msg( p_name ));
+         log_msg( 'Error Raised: "'||get_err_cd( p_name )||': '||get_err_msg( p_name )||'"');
       ELSE         
          raise_application_error( get_err_cd( p_name ),
                                   get_err_msg( p_name ) || CASE

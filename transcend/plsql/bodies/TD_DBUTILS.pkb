@@ -166,11 +166,19 @@ AS
    AS
       o_ev              evolve_ot     := evolve_ot( p_module => 'enqueue_ddl' );
    BEGIN
-         INSERT INTO ddl_queue
-                     ( stmt_ddl, stmt_msg, module, action, stmt_order
-                     )
-              VALUES ( p_stmt, p_msg, p_module, p_action, p_order
-                     );
+
+      -- register variables
+      evolve.log_variable( 'p_stmt',    p_stmt );
+      evolve.log_variable( 'p_msg',     p_msg );
+      evolve.log_variable( 'p_module',  p_module );
+      evolve.log_variable( 'p_action',  p_action );     
+      evolve.log_variable( 'p_order',   p_order );     
+
+      INSERT INTO ddl_queue
+             ( stmt_ddl, stmt_msg, module, action, stmt_order
+             )
+             VALUES ( p_stmt, p_msg, p_module, p_action, p_order
+                    );
 
       o_ev.clear_app_info;
    EXCEPTION
@@ -196,6 +204,12 @@ AS
       -- this procedure needs to be transparent for a reason
       o_ev              evolve_ot := evolve_ot( p_module => 'dequeue_ddl' );
    BEGIN
+      
+      -- register variables
+      evolve.log_variable( 'p_concurrent',p_concurrent );
+      evolve.log_variable( 'p_raise_err',p_raise_err );
+      evolve.log_variable( 'p_module',p_module );
+      evolve.log_variable( 'p_action',p_action );
 
       -- need to get a unique "job header" number in case we are running concurrently
       IF td_core.is_true( p_concurrent )
@@ -224,9 +238,14 @@ AS
             evolve.exec_sql( p_sql => c_stmts.stmt_ddl, p_auto => 'yes', p_concurrent_id => l_stmtcurrent_id );
             evolve.log_msg( c_stmts.stmt_msg );
 	    
-	    -- delete the row from the queue once it's executed
-	    DELETE FROM ddl_queue
-	     WHERE ROWID = c_stmts.rowid;
+            IF NOT evolve.is_debugmode
+            THEN
+
+	       -- delete the row from the queue once it's executed
+	       DELETE FROM ddl_queue
+	        WHERE ROWID = c_stmts.rowid;
+               
+            END IF;
 
             l_stmt_cnt    := l_stmt_cnt + 1;
          END;
@@ -338,7 +357,7 @@ AS
       p_tablespace     VARCHAR2 DEFAULT NULL,
       p_constraints    VARCHAR2 DEFAULT 'no',
       p_indexes	       VARCHAR2 DEFAULT 'no',
-      p_partitioning   VARCHAR2 DEFAULT 'yes',
+      p_partitioning   VARCHAR2 DEFAULT 'keep',
       p_grants         VARCHAR2 DEFAULT 'no',
       p_rows           VARCHAR2 DEFAULT 'no',
       p_statistics     VARCHAR2 DEFAULT 'ignore'
@@ -353,6 +372,8 @@ AS
       l_src_name       VARCHAR2( 61 )                := UPPER( p_source_owner || '.' || p_source_table );
       l_part_type      VARCHAR2( 6 );
       l_targ_part      all_tables.partitioned%TYPE;
+      l_part_col       all_part_key_columns.column_name%TYPE;
+      l_col1           all_tab_columns.column_name%TYPE;
       l_rows           BOOLEAN                       := FALSE;
       e_dup_idx_name   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_dup_idx_name, -955 );
@@ -360,7 +381,7 @@ AS
       PRAGMA EXCEPTION_INIT( e_dup_col_list, -1408 );
       o_ev             evolve_ot                     := evolve_ot( p_module => 'build_table' );
    BEGIN
-      -- confirm that the source table
+      -- confirm that the source table exists
       -- raise an error if it doesn't
       td_utils.check_table( p_owner => p_source_owner, p_table => p_source_table );
       -- don't want any constraints pulled
@@ -373,6 +394,7 @@ AS
       -- don't want all the other storage aspects though
       DBMS_METADATA.set_transform_param( DBMS_METADATA.session_transform, 'STORAGE', FALSE );
       o_ev.change_action( 'extract DDL' );
+ 
 
 -- SELECT DDL into a variable
       SELECT REGEXP_REPLACE(
@@ -446,12 +468,18 @@ AS
                           (
                             -- this regular expression evaluates p_PARTITIONING paramater and removes partitioning information if necessary
                             REGEXP_REPLACE( table_ddl,
-                                            CASE td_core.get_yn_ind( p_partitioning )
-                                               -- don't want partitioning
-                                            WHEN 'no'
-                                                  -- remove all partitioning
-                                            THEN '(\(\s*partition.+\))\s*|(partition by).+\)\s*'
-                                               ELSE NULL
+                                            CASE 
+
+                                            -- we want to keep partitioning
+                                            WHEN REGEXP_LIKE( 'keep', p_partitioning, 'i' )
+                                            -- don't do anything
+                                            -- keep the partitioning information exactly how it is
+                                            THEN NULL
+
+                                            -- in any other situations, we don't want partitioning
+                                            -- this is "remove" or "single"
+                                            ELSE '(\(\s*partition.+\))\s*|(partition by).+\)\s*'
+
                                             END,
                                             NULL,
                                             1,
@@ -536,8 +564,38 @@ AS
                                 FROM all_constraints ) g2
                              ON g1.con_rename = g2.constraint_name_confirm
                            AND g2.constraint_owner_confirm = UPPER( p_owner )
-                             ));
+                     ));
+                
 
+      o_ev.change_action( 'single-part check' );
+
+      -- if p_partitioning is 'single', then we have a few steps
+      CASE
+        WHEN REGEXP_LIKE( 'single', p_partitioning, 'i' )
+        THEN
+           -- get the first column attribute to use as the partition key
+           -- this is a single partition table, so it doesn't matter what we use
+           SELECT column_name
+             INTO l_col1
+             FROM all_tab_columns
+            WHERE table_name = upper(p_source_table)
+              AND owner      = upper(p_source_owner)
+              AND column_id = 1;
+
+           l_table_ddl := l_table_ddl 
+           || ' partition by range ('||l_col1||')'
+           || ' ( partition pmax values less than (maxvalue))';
+        WHEN REGEXP_LIKE( 'keep', p_partitioning, 'i' )
+        THEN
+           NULL;
+        WHEN REGEXP_LIKE( 'remove', p_partitioning, 'i' )
+        THEN
+           NULL;
+        ELSE
+            evolve.raise_err( 'unrecognized_parm', p_partitioning );
+      END CASE;
+
+      
       o_ev.change_action( 'execute DDL' );
       evolve.exec_sql( p_sql => l_table_ddl, p_auto => 'yes' );
       evolve.log_msg( 'Table ' || l_tab_name || ' created' );
@@ -616,7 +674,7 @@ AS
          object_grants( p_source_owner       => p_source_owner,
                         p_source_object      => p_source_table,
                        	p_owner              => p_owner,
-                       	p_object              => p_table
+                       	p_object             => p_table
 		      );
       END IF;
 
@@ -676,13 +734,12 @@ AS
          ELSE
             NULL;
       END CASE;
-
-      -- register the value of p_concurrent
-      evolve.log_variable( 'p_concurrent',p_concurrent );
       
-      -- register the value of p_concurrent
+      -- register variables
+      evolve.log_variable( 'p_concurrent',p_concurrent );
       evolve.log_variable( 'p_partname',p_partname );
-
+      evolve.log_variable( 'p_queue_module',p_queue_module );
+      evolve.log_variable( 'p_queue_action',p_queue_action );
 
       -- find out which tables are partitioned
       l_src_part       := td_utils.is_part_table( p_source_owner, p_source_table);
@@ -754,7 +811,15 @@ AS
                   -- this column was added for the REPLACE_TABLE procedure
                   -- in that procedure, after cloning the indexes, the table is renamed
                   -- we have to rename the indexes back to their original names
-                  'Index ' || owner || '.' || new_index_name || ' renamed to ' || index_name rename_msg
+                  'Index ' || owner || '.' || new_index_name || ' renamed to ' || index_name rename_msg,
+
+                  -- this column was added for the EXCHANGE_PARTITION procedure
+                  -- this is to drop only the indexes that were added by the procedure
+                  ' drop index ' || owner || '.' || new_index_name drop_ddl,
+                  
+                  -- this column was added for the EXCHANGE_PARTITION procedure
+                  -- this is to drop only the indexes that were added by the procedure
+                  'Index ' || owner || '.' || new_index_name || ' dropped' drop_msg
             FROM ( SELECT CASE
                              -- this case statement uses GENERIC_IDX plus other factors to determine what the new index name will be
                              -- IDX_RENAME is simply the current index name replacing any mentions of the source_table with target_table
@@ -964,18 +1029,22 @@ AS
                                 2
                               );
             l_idx_cnt    := l_idx_cnt + 1;
-            o_ev.change_action( 'enqueue idx rename DDL' );
 
+            o_ev.change_action( 'enqueue idx rename DDL' );
+            
             -- queue up alternative DDL statements for later use
             -- in this case, queue up index rename statements
             -- these statements are used by module 'replace_table' and action 'rename indexes'
-            IF p_queue_module = 'replace_table' AND p_queue_action = 'rename indexes'
+            IF p_queue_module = 'replace_table' AND p_queue_action = 'build indexes'
             THEN
 	       enqueue_ddl( p_stmt     => c_indexes.rename_ddl,
 			    p_msg      => c_indexes.rename_msg,
 			    p_module   => p_queue_module,
-			    p_action   => p_queue_action );
+			    p_action   => 'rename indexes' );
             END IF;
+
+            o_ev.change_action( 'enqueue idx rename DDL' );
+
          EXCEPTION
             -- if a duplicate column list of indexes already exist, log it, but continue
             WHEN e_dup_col_list
@@ -992,7 +1061,7 @@ AS
 
       IF NOT l_rows
       THEN
-         evolve.log_msg( 'No matching indexes found on ' || l_src_name, 2 );
+         evolve.log_msg( 'No matching indexes found on ' || l_src_name, 1 );
       ELSE
          IF td_core.is_true( p_concurrent )
          THEN
@@ -1100,6 +1169,9 @@ AS
         FROM all_tables
        WHERE table_name = UPPER( p_table ) AND owner = UPPER( p_owner );
 
+       evolve.log_variable('l_targ_part',l_targ_part);
+       evolve.log_variable('l_iot_type', l_iot_type);
+
       -- if P_PARTNAME is specified, then I need the partition position is required
       IF p_partname IS NOT NULL
       THEN
@@ -1111,6 +1183,8 @@ AS
             AND partition_name = UPPER( p_partname );
       END IF;
 
+       evolve.log_variable('l_part_position',l_part_position);
+
       -- need to get a unique "job header" number in case we are running concurrently
       o_ev.change_action( 'get concurrent id' );
 
@@ -1119,20 +1193,27 @@ AS
          l_concurrent_id    := evolve.get_concurrent_id;
       END IF;
 
-      o_ev.change_action( 'build constraints' );
+       evolve.log_variable('l_concurrent_id',l_concurrent_id);
+
+      o_ev.change_action( 'main cursor' );
 
       FOR c_constraints IN
          (
--- this case statement uses GENERIC_CON column to determine the final index name
--- GENERIC_CON is a case statement that is generated below
--- IF we are using a generic name, then perform the replace
-          SELECT   constraint_owner, CASE generic_con
-                      WHEN 'Y'
-                         THEN con_rename_adj
-                      ELSE con_rename
-                   END constraint_name, source_owner, source_table, source_constraint, constraint_type, index_owner,
-                   index_name,
-                   REGEXP_REPLACE( constraint_ddl,
+           -- this case statement uses GENERIC_CON column to determine the final index name
+           -- GENERIC_CON is a case statement that is generated below
+           -- IF we are using a generic name, then perform the replace
+          SELECT constraint_owner, CASE generic_con
+                 WHEN 'Y'
+                 THEN con_rename_adj
+                 ELSE con_rename
+                 END constraint_name, 
+                 source_owner, 
+                 source_table, 
+                 source_constraint, 
+                 constraint_type, 
+                 index_owner,
+                 index_name,
+                 REGEXP_REPLACE( constraint_ddl,
                                    '(constraint )("?)(\w+)("?)',
                                    '\1' || CASE generic_con
                                       WHEN 'Y'
@@ -1142,7 +1223,7 @@ AS
                                    1,
                                    0,
                                    'i'
-                                 ) constraint_ddl,
+                               ) constraint_ddl,
                       
                       -- this column was added for the REPLACE_TABLE procedure
                       -- IN that procedure, after cloning the indexes, the table is renamed
@@ -1174,7 +1255,35 @@ AS
                    || '.'
                    || source_table
                    || ' renamed to '
-                   || source_constraint rename_msg,
+                 || source_constraint rename_msg,
+                 
+                 -- this column was added for the EXCHANGE_PARTITION procedure
+                 -- so we can drop only the constraints we added
+                      ' alter table '
+                   || source_owner
+                   || '.'
+                   || source_table
+                   || ' drop constraint '
+                   || CASE generic_con
+                         WHEN 'Y'
+                            THEN con_rename_adj
+                         ELSE con_rename
+                      END drop_ddl,
+                      
+                 -- this column was added for the EXCHANGE_PARTITION procedure
+                 -- so we can drop only the constraints we added
+                      'Constraint '
+                   || CASE generic_con
+                         WHEN 'Y'
+                            THEN con_rename_adj
+                         ELSE con_rename
+                      END
+                   || ' on table '
+                   || source_owner
+                   || '.'
+                   || source_table
+                   || ' dropped' drop_msg,
+
                    basis_source, generic_con, named_constraint
               FROM ( SELECT
                             -- IF con_rename already exists (constructed below), then we will try to rename the constraint to something generic
@@ -1379,7 +1488,7 @@ AS
                            ON acc.constraint_name_confirm = con.con_rename
                          AND acc.constraint_owner_confirm = constraint_owner
                            )
-          ORDER BY basis_source DESC )
+           ORDER BY basis_source DESC )
       LOOP
          -- catch empty cursor sets
          l_rows    := TRUE;
@@ -1389,6 +1498,9 @@ AS
          IF NOT( td_utils.is_iot( p_owner, p_table ) AND c_constraints.constraint_type = 'P' )
          THEN
             BEGIN
+
+               o_ev.change_action( 'exec constraint DDL' );
+
                evolve.exec_sql( p_sql                => c_constraints.constraint_ddl,
                                 p_auto               => 'yes',
                                 p_concurrent_id      => l_concurrent_id
@@ -1408,20 +1520,26 @@ AS
                                    2
                                  );
                l_con_cnt    := l_con_cnt + 1;
-               o_ev.change_action( 'enqueue build idx DDL' );
 
                -- only insert for rename if the constraint is a named constraint
                -- queue up alternative DDL statements for later use
                -- in this case, queue up constraint rename statements
                -- these statements are used by module 'replace_table' and action 'rename constraints'
-               IF c_constraints.named_constraint = 'Y' AND p_queue_module = 'replace_table' AND p_queue_action = 'rename constraints'
+
+
+               IF c_constraints.named_constraint = 'Y' 
+                  AND p_queue_module = 'replace_table'
+                  AND p_queue_action = 'build constraints'
                THEN
+
+                  o_ev.change_action( 'enqueue build idx DDL' );
+
 		  enqueue_ddl( p_stmt	     => c_constraints.rename_ddl,
 			       p_msg  	     => c_constraints.rename_msg,
 			       p_module	     => p_queue_module,
-			       p_action	     => p_queue_action );
-
+			       p_action	     => 'rename constraints' );
                END IF;
+
             EXCEPTION
                WHEN e_dup_pk
                THEN
@@ -1450,7 +1568,7 @@ AS
 
       IF NOT l_rows
       THEN
-         evolve.log_msg( 'No matching constraints found on ' || l_src_name, 2 );
+         evolve.log_msg( 'No matching constraints found on ' || l_src_name, 1 );
       ELSE
          IF td_core.is_true( p_concurrent )
          THEN
@@ -1837,7 +1955,7 @@ AS
 
       IF NOT l_rows
       THEN
-         evolve.log_msg( 'No matching indexes to drop found on ' || l_tab_name, 2 );
+         evolve.log_msg( 'No matching indexes to drop found on ' || l_tab_name, 1 );
       ELSE
          evolve.log_msg( l_idx_cnt || ' index' || CASE
                                 WHEN l_idx_cnt = 1
@@ -1948,7 +2066,7 @@ AS
 
       IF NOT l_rows
       THEN
-         evolve.log_msg( 'No matching constraints to drop found on ' || l_tab_name, 2 );
+         evolve.log_msg( 'No matching constraints to drop found on ' || l_tab_name, 1 );
       ELSE
          evolve.log_msg(    l_con_cnt
                              || ' constraint'
@@ -2408,7 +2526,7 @@ AS
                                  p_owner      => p_owner,
                                  p_object     => p_table,
                                  p_category   => 'merge',
-                                 p_msg        => 'Number of records inserted into ' || l_trg_name );
+                                 p_msg        => 'Number of records merged into ' || l_trg_name );
          
       END IF;
 
@@ -2513,6 +2631,7 @@ AS
       p_index_space       VARCHAR2 DEFAULT NULL,
       p_idx_concurrency   VARCHAR2 DEFAULT 'no',
       p_con_concurrency   VARCHAR2 DEFAULT 'no',
+      p_drop_deps         VARCHAR2 DEFAULT 'yes',
       p_statistics        VARCHAR2 DEFAULT 'transfer',
       p_statpercent       NUMBER DEFAULT NULL,
       p_statdegree        NUMBER DEFAULT NULL,
@@ -2569,10 +2688,13 @@ AS
       -- Evolve instrumentation
       o_ev             evolve_ot                        := evolve_ot( p_module => 'exchange_partition' );
    BEGIN
-
+      
       -- log variable values      
-      evolve.log_variable('l_src_full', l_src_full);
-      evolve.log_variable('l_tab_full', l_tab_full);
+      evolve.log_variable( 'p_source_owner',     p_source_owner );      
+      evolve.log_variable( 'p_source_table',     p_source_table );
+      evolve.log_variable( 'l_src_full',         l_src_full );
+      evolve.log_variable( 'l_tab_full',         l_tab_full );
+      evolve.log_variable( 'p_drop_deps',        p_drop_deps );
 
       o_ev.change_action( 'determine partitioned table');
 
@@ -2748,13 +2870,12 @@ AS
                               p_table                  => p_table,
                               p_maint_type             => 'disable',
                               p_constraint_regexp      => '^' || c_glob_cons.constraint_name || '$',
-			      p_queue_module	    => evolve.get_module,
+			      p_queue_module	       => evolve.get_module,
                               p_queue_action           => 'enable constraints'
                             );
          END LOOP;
          
       END IF;
-
 
       -- build any constraints on the source table
       o_ev.change_action( 'build constraints' );
@@ -2764,6 +2885,7 @@ AS
                          p_source_table      => p_table,
                          p_concurrent        => p_con_concurrency
                        );
+
       -- now exchange the table
       o_ev.change_action( 'exchange table' );
 
@@ -2856,17 +2978,7 @@ AS
                -- first log the error
                -- provide a backtrace from this exception handler to the next exception
                evolve.log_err;
-               -- need to drop indexes if there is an exception
-               -- this is for rerunability
-               -- now record the reason for the index drops
-               evolve.log_msg( 'Dropping indexes for restartability', 3 );
-               drop_indexes( p_owner => p_source_owner, p_table => p_source_table );
-
-               -- need to drop constraints if there is an exception
-               -- this is for rerunability	    
-               -- now record the reason for the index drops
-               evolve.log_msg( 'Dropping constraints for restartability', 3 );
-               drop_constraints( p_owner => p_source_owner, p_table => p_source_table );
+               
 
                -- any constraints need to be enabled
                IF l_constraints
@@ -2893,6 +3005,32 @@ AS
                                   END, 2
 				);
 
+               END IF;
+
+               -- need to drop constraints and indexes if there is an exception
+               -- this is for rerunability
+               -- record the reason for the constraint and index drops
+               -- only do this if P_DROP_DEPS is 'yes'
+               
+               -- drop the constraints on the staging table
+               IF td_core.is_true( p_drop_deps )
+               THEN
+
+                  o_ev.change_action( 'drop constraints for rerun');
+                  evolve.log_msg( 'Dropping constraints for restartability', 3 );
+                  
+                  drop_constraints( p_owner      => p_source_owner,
+                                    p_table      => p_source_table
+                                  );
+               
+                  -- drop indexes on the staging table
+                  o_ev.change_action( 'drop indexes for rerun' );
+                  evolve.log_msg( 'Dropping indexes for restartability', 3 );
+
+                  drop_indexes( p_owner      => p_source_owner,
+                                p_table      => p_source_table
+                              );
+                  
                END IF;
 
                o_ev.clear_app_info;
@@ -2930,23 +3068,28 @@ AS
 				);
 
       END IF;
-
-      -- drop constraints on the stage table
-      evolve.log_msg( 'Dropping constraints on the staging table', 4 );
-      evolve.log_variable('p_source_owner', p_source_owner );      
-      evolve.log_variable('p_source_table', p_source_table );
       
-      BEGIN
-         drop_constraints( p_owner => p_source_owner, p_table => p_source_table, p_basis => 'all' );
-      EXCEPTION
-         WHEN drop_iot_key
-         THEN
-            NULL;
-      END;
+      -- only drop dependent objects if desired
+      IF td_core.is_true( p_drop_deps )
+      THEN
+      
+         -- drop constraints on the stage table
+         evolve.log_msg( 'Dropping constraints on the staging table', 4 );
+   
+         BEGIN
+            drop_constraints( p_owner => p_source_owner, p_table => p_source_table );
+         EXCEPTION
+            WHEN drop_iot_key
+            THEN
+               NULL;
+         END;
 
-      -- drop indexes on the staging table
-      evolve.log_msg( 'Dropping indexes on the staging table', 4 );
-      drop_indexes( p_owner => p_source_owner, p_table => p_source_table );
+         -- drop indexes on the staging table
+         evolve.log_msg( 'Dropping indexes on the staging table', 4 );
+         drop_indexes( p_owner => p_source_owner, p_table => p_source_table );
+         
+      END IF;
+
       o_ev.clear_app_info;
    EXCEPTION
       WHEN OTHERS
@@ -3166,7 +3309,8 @@ AS
 
          ELSE NULL;
       END CASE;
-
+      
+      o_ev.change_action( 'build indexes' );
       -- build the indexes on the source table
       build_indexes( p_owner             => p_owner,
                      p_table             => p_source_table,
@@ -3174,18 +3318,20 @@ AS
                      p_source_table      => p_table,
                      p_tablespace        => p_tablespace,
                      p_concurrent        => p_idx_concurrency,
-      		     p_queue_module	 => 'replace_table',
-      		     p_queue_action	 => 'rename indexes'
+      		     p_queue_module	 => evolve.get_module,
+      		     p_queue_action	 => evolve.get_action
                    );
+
       -- build the constraints on the source table
+      o_ev.change_action( 'build constraints' );
       build_constraints( p_owner             => p_owner,
                          p_table             => p_source_table,
                          p_source_owner      => p_owner,
                          p_source_table      => p_table,
                          p_basis             => 'all',
                          p_concurrent        => p_con_concurrency,
-      			 p_queue_module	     => 'replace_table',
-      			 p_queue_action	     => 'rename constraints'
+      		         p_queue_module	     => evolve.get_module,
+      		         p_queue_action	     => evolve.get_action
                        );
       -- grant privileges on the source table
       object_grants( p_owner              => p_owner,
@@ -3430,7 +3576,7 @@ AS
                               );
          END IF;
       ELSE
-         evolve.log_msg( 'No matching usable indexes found on ' || l_tab_name, 2 );
+         evolve.log_msg( 'No matching usable indexes found on ' || l_tab_name, 1 );
       END IF;
 
       DELETE FROM td_part_gtt WHERE partid = l_partid;
@@ -3535,7 +3681,7 @@ AS
          
          IF l_cnt = 0
          THEN
-            evolve.log_msg( 'No matching unusable local indexes found', 2 );
+            evolve.log_msg( 'No matching unusable local indexes found', 1 );
          ELSE
 
             evolve.log_msg(    'Rebuild processes for unusable indexes on '
@@ -3635,7 +3781,7 @@ AS
                             THEN 'global '
                             ELSE NULL
                             END
-                            || 'indexes found', 2
+                            || 'indexes found', 1
                           );
          END IF;
          

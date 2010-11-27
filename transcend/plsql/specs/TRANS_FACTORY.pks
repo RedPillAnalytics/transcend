@@ -5,12 +5,6 @@ IS
       p_batch_id NUMBER DEFAULT NULL
    )
       RETURN mapping_ot;
-      
-   FUNCTION get_mapping_ot(
-      p_owner	VARCHAR2,
-      p_table	VARCHAR2
-   )
-      RETURN mapping_ot;
    
    FUNCTION get_file_label_ot( 
       p_file_label VARCHAR2,

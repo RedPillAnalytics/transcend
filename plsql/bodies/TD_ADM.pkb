@@ -1985,24 +1985,25 @@ IS
          EXECUTE IMMEDIATE q'|CREATE TABLE mapping_conf
 	 ( 
 	   mapping_name		      VARCHAR2(40),
-	   mapping_type		      VARCHAR2(10),
-	   table_owner 		      VARCHAR2(61),
-	   table_name 		      VARCHAR2(30),
-	   partition_name             VARCHAR2(30),
-	   manage_indexes 	      VARCHAR2(7) NOT NULL,
-	   index_concurrency 	      VARCHAR2(3) NOT NULL,
-	   manage_constraints 	      VARCHAR2(7) NOT NULL,
-	   constraint_concurrency     VARCHAR2(3) NOT NULL,
-	   source_owner 	      VARCHAR2(30),
-	   source_object 	      VARCHAR2(30),
-	   source_column 	      VARCHAR2(30),
-	   replace_method 	      VARCHAR2(10),
-	   statistics 		      VARCHAR2(10),
-	   index_regexp 	      VARCHAR2(30),
-	   index_type 		      VARCHAR2(30),
-	   partition_type	      VARCHAR2(30),
-	   constraint_regexp 	      VARCHAR2(100),
-	   constraint_type 	      VARCHAR2(100),
+	   mapping_type		      VARCHAR2(10)      NOT NULL,
+	   table_owner 		      VARCHAR2(61)      DEFAULT NULL,
+	   table_name 		      VARCHAR2(30)      DEFAULT NULL,
+	   partition_name             VARCHAR2(30)      DEFAULT NULL,
+	   manage_indexes 	      VARCHAR2(7)       DEFAULT 'ignore'        NOT NULL,
+	   index_concurrency 	      VARCHAR2(3)       DEFAULT 'no'            NOT NULL,
+	   manage_constraints 	      VARCHAR2(7)       DEFAULT 'ignore'        NOT NULL,
+	   constraint_concurrency     VARCHAR2(3)       DEFAULT 'no'            NOT NULL,
+           drop_dependent_objects     VARCHAR2(3)       DEFAULT 'yes'           NOT NULL,
+	   staging_owner 	      VARCHAR2(30)      DEFAULT NULL,
+	   staging_table 	      VARCHAR2(30)      DEFAULT NULL,
+	   staging_column 	      VARCHAR2(30)      DEFAULT NULL,
+	   replace_method 	      VARCHAR2(10)      DEFAULT NULL,
+	   statistics 		      VARCHAR2(10)      DEFAULT 'ignore'        NOT NULL,
+	   index_regexp 	      VARCHAR2(30)      DEFAULT NULL,
+	   index_type 		      VARCHAR2(30)      DEFAULT NULL,
+	   partition_type	      VARCHAR2(30)      DEFAULT 'all',
+	   constraint_regexp 	      VARCHAR2(100)     DEFAULT NULL,
+	   constraint_type 	      VARCHAR2(100)     DEFAULT NULL,
 	   description		      VARCHAR2(2000),
 	   created_user	     	      VARCHAR2(30) DEFAULT sys_context('USERENV','SESSION_USER') NOT NULL,
 	   created_dt	     	      DATE DEFAULT SYSDATE NOT NULL,
@@ -2028,9 +2029,7 @@ IS
 
          EXECUTE IMMEDIATE q'|ALTER TABLE mapping_conf ADD CONSTRAINT mapping_conf_ck5 CHECK (constraint_concurrency in ('yes','no'))|';
 
-         EXECUTE IMMEDIATE q'|ALTER TABLE mapping_conf ADD CONSTRAINT mapping_conf_ck6 CHECK (replace_method in ('exchange','rename'))|';
-
-         EXECUTE IMMEDIATE q'|ALTER TABLE mapping_conf ADD CONSTRAINT mapping_conf_ck7 CHECK (replace_method = case when table_owner <> source_owner and mapping_type = 'table' then 'exchange' else replace_method end )|';
+         EXECUTE IMMEDIATE q'|ALTER TABLE mapping_conf ADD CONSTRAINT mapping_conf_ck6 CHECK (replace_method in ('exchange','rename', 'merge'))|';
 	 
          EXECUTE IMMEDIATE q'|ALTER TABLE mapping_conf ADD CONSTRAINT mapping_conf_ck8 CHECK (mapping_type in ('dimension','table'))|';
          
@@ -2038,16 +2037,18 @@ IS
          
          EXECUTE IMMEDIATE q'|ALTER TABLE mapping_conf ADD CONSTRAINT mapping_conf_ck10 CHECK (statistics in ('gather','transfer','ignore'))|';
 
+         EXECUTE IMMEDIATE q'|ALTER TABLE mapping_conf ADD CONSTRAINT mapping_conf_ck11 CHECK (drop_dependent_objects in ('yes','no'))|';
+
          -- DIMENSION_CONF table
          EXECUTE IMMEDIATE q'|CREATE TABLE dimension_conf
 	 ( 
-	   table_owner		VARCHAR2(30) NOT NULL,
-	   table_name		VARCHAR2(30) NOT NULL,
+	   mapping_name		VARCHAR2(40) NOT NULL,
 	   sequence_owner  	VARCHAR2(30) NOT NULL,
 	   sequence_name  	VARCHAR2(30) NOT NULL,
-	   staging_owner	VARCHAR2(30) DEFAULT NULL,
-	   staging_table	VARCHAR2(30) DEFAULT NULL,
+	   source_owner	        VARCHAR2(30) DEFAULT NULL,
+	   source_table	        VARCHAR2(30) DEFAULT NULL,
 	   default_scd_type	NUMBER(1,0) DEFAULT 2 NOT NULL,
+           late_arriving        VARCHAR2(30) DEFAULT 'no' NOT NULL,
 	   direct_load		VARCHAR2(3) DEFAULT 'yes' NOT NULL,
 	   stage_key_default	NUMBER DEFAULT -.01 NOT NULL,
 	   char_nvl_default	VARCHAR2(1000) DEFAULT '~' NOT NULL,
@@ -2064,19 +2065,18 @@ IS
 	 (
 	   CONSTRAINT dimension_conf_pk
 	   PRIMARY KEY
-	   ( table_owner, table_name )
+	   ( mapping_name )
 	   USING INDEX
 	 )|';
 	 	 
          -- COLUMN_CONF table
          EXECUTE IMMEDIATE q'|CREATE TABLE column_conf
 	 ( 
-	   table_owner	VARCHAR2(30) NOT NULL,
-	   table_name	VARCHAR2(30) NOT NULL,
-	   column_name	VARCHAR2(30) NOT NULL,
-	   column_type	VARCHAR2(30) NOT NULL,
-	   created_user	VARCHAR2(30) DEFAULT sys_context('USERENV','SESSION_USER') NOT NULL,
-	   created_dt	DATE DEFAULT SYSDATE NOT NULL,
+	   mapping_name         VARCHAR2(40) NOT NULL,
+           column_name	        VARCHAR2(30) NOT NULL,
+	   column_type	        VARCHAR2(30) NOT NULL,
+	   created_user	        VARCHAR2(30) DEFAULT sys_context('USERENV','SESSION_USER') NOT NULL,
+	   created_dt	        DATE DEFAULT SYSDATE NOT NULL,
 	   modified_user  	VARCHAR2(30),
 	   modified_dt    	DATE
 	 )|';
@@ -2085,7 +2085,7 @@ IS
 	 (
 	   CONSTRAINT column_conf_pk
 	   PRIMARY KEY
-	   ( table_owner, table_name, column_name )
+	   ( mapping_name, column_name )
 	   USING INDEX
 	 )|';
 
@@ -2100,9 +2100,9 @@ IS
          EXECUTE IMMEDIATE q'|ALTER TABLE column_conf ADD 
 	 (
 	   CONSTRAINT column_conf_fk2
-	   FOREIGN KEY ( table_owner, table_name )
+	   FOREIGN KEY ( mapping_name )
 	   REFERENCES dimension_conf  
-	   ( table_owner, table_name )
+	   ( mapping_name )
 	 )|';
 
 	 -- grant select privileges to the select role
@@ -2138,7 +2138,7 @@ IS
          -- set current_schema back to where it started
          reset_current_schema;
          RAISE;
-   END build_transcend_repo;
+    END build_transcend_repo;
 
    PROCEDURE build_repository(
       p_schema       VARCHAR2,
