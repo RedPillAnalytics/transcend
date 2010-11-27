@@ -6,52 +6,39 @@ IS
    IS
       l_map_type   mapping_conf.mapping_type%TYPE;
       -- need object for the parent type
-      o_map        mapping_ot                       := mapping_ot( p_mapping => p_mapping, p_batch_id => p_batch_id );
+      o_map        mapping_ot;
       -- also need an object for any subtypes
       o_dim        dimension_ot;
       o_ev         evolve_ot                        := evolve_ot( p_module => 'trans_factory.get_mapping_ot' );
    BEGIN
+      
+      -- get the mapping type
+
+      SELECT mapping_type
+        INTO l_map_type
+        FROM mapping_conf
+       WHERE lower ( mapping_name ) = lower ( p_mapping );
+
       -- let's register what the mapping_type is
-      evolve.log_msg( 'Attribute MAPPING_TYPE: '||o_map.mapping_type, 5 );
+      evolve.log_msg( 'Attribute MAPPING_TYPE: '||l_map_type, 5 );
+      
       -- simply check the mapping_type attribute to tell us whether this is dimensional or not
-      IF o_map.mapping_type = 'dimension'
+      IF l_map_type = 'dimension'
       THEN
          -- instantiate the subtype
          o_dim    := dimension_ot( p_mapping => p_mapping, p_batch_id => p_batch_id );
          -- now polymorph the type
          o_map    := o_dim;
+         evolve.log_msg( 'TRANS_FACTORY returned a DIMENSION_OT', 5 );
+      ELSE 
+
+         -- instantiate the subtype
+         o_map    := mapping_ot( p_mapping => p_mapping, p_batch_id => p_batch_id );
+
+         evolve.log_msg( 'TRANS_FACTOY returned a MAPPING_OT', 5 );
+         
       END IF;
 
-      -- now simply return the type
-      o_ev.clear_app_info;
-      RETURN o_map;
-   EXCEPTION
-      WHEN OTHERS
-      THEN
-         evolve.log_err;
-         RAISE;
-   END get_mapping_ot;
-
-   -- takes a table name and table_owner and returns a subtype of mapping_ot
-   FUNCTION get_mapping_ot( p_owner VARCHAR2, p_table VARCHAR2 )
-      RETURN mapping_ot
-   IS
-      l_mapping   mapping_conf.mapping_name%TYPE;
-      -- need object for the parent type
-      o_map       mapping_ot;
-      -- also need an object for any subtypes
-      o_dim       dimension_ot;
-      -- and then the basic Evolve instrumentation object
-      o_ev        evolve_ot                        := evolve_ot( p_module => 'trans_factory.get_mapping_ot' );
-   BEGIN
-      -- get the mapping name and mapping type
-      SELECT mapping_name
-        INTO l_mapping
-        FROM mapping_conf
-       WHERE LOWER( table_name ) = LOWER( p_table ) AND LOWER( table_owner ) = LOWER( p_owner );
-
-      -- use another GET_MAPPING_OT function
-      o_map    := get_mapping_ot( l_mapping );
       -- now simply return the type
       o_ev.clear_app_info;
       RETURN o_map;

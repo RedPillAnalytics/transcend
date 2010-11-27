@@ -7,7 +7,7 @@ AS
    AS
       o_map   mapping_ot := trans_factory.get_mapping_ot( p_mapping => p_mapping, p_batch_id => p_batch_id );
    BEGIN
-      evolve.log_msg( 'Mapping type: ' || o_map.mapping_type, 5 );
+      evolve.log_variable( 'MAPPING_TYPE', o_map.mapping_type);
       -- now, regardless of which object type this is, the following call is correct
       o_map.start_map;
    EXCEPTION
@@ -17,9 +17,12 @@ AS
          RAISE;
    END start_mapping;
 
-   PROCEDURE end_mapping( p_mapping VARCHAR2 DEFAULT SYS_CONTEXT( 'USERENV', 'ACTION' ))
+   PROCEDURE end_mapping( 
+      p_mapping VARCHAR2 DEFAULT SYS_CONTEXT( 'USERENV', 'ACTION' ),
+      p_batch_id   NUMBER DEFAULT NULL
+   )
    AS
-      o_map   mapping_ot := trans_factory.get_mapping_ot( p_mapping => p_mapping );
+      o_map   mapping_ot := trans_factory.get_mapping_ot( p_mapping => p_mapping, p_batch_id => p_batch_id );
    BEGIN
       evolve.log_msg( 'Mapping type: ' || o_map.mapping_type, 5 );
       -- now, regardless of which object type this is, the following call is correct
@@ -106,7 +109,7 @@ AS
       p_tablespace     VARCHAR2 DEFAULT NULL,
       p_constraints    VARCHAR2 DEFAULT 'no',
       p_indexes	       VARCHAR2 DEFAULT 'no',
-      p_partitioning   VARCHAR2 DEFAULT 'yes',
+      p_partitioning   VARCHAR2 DEFAULT 'keep',
       p_grants         VARCHAR2 DEFAULT 'no',
       p_rows           VARCHAR2 DEFAULT 'no',
       p_statistics     VARCHAR2 DEFAULT 'ignore'
@@ -440,15 +443,16 @@ AS
 
    -- procedure to exchange a partitioned table with a non-partitioned table
    PROCEDURE exchange_partition(
-      p_owner          VARCHAR2,
-      p_table          VARCHAR2,
-      p_source_owner   VARCHAR2,
-      p_source_table   VARCHAR2,
-      p_partname       VARCHAR2 DEFAULT NULL,
-      p_index_space    VARCHAR2 DEFAULT NULL,
-      p_idx_concurrency   VARCHAR2 DEFAULT 'no',
-      p_con_concurrency   VARCHAR2 DEFAULT 'no',
-      p_statistics     VARCHAR2 DEFAULT 'transfer'
+      p_owner              VARCHAR2,
+      p_table              VARCHAR2,
+      p_source_owner       VARCHAR2,
+      p_source_table       VARCHAR2,
+      p_partname           VARCHAR2 DEFAULT NULL,
+      p_index_space        VARCHAR2 DEFAULT NULL,
+      p_idx_concurrency    VARCHAR2 DEFAULT 'no',
+      p_con_concurrency    VARCHAR2 DEFAULT 'no',
+      p_drop_deps          VARCHAR2 DEFAULT 'yes',
+      p_statistics         VARCHAR2 DEFAULT 'transfer'
    )
    IS
    BEGIN
@@ -460,6 +464,7 @@ AS
                                      p_index_space       => p_index_space,
                                      p_idx_concurrency   => p_idx_concurrency,
                                      p_con_concurrency   => p_con_concurrency,
+                                     p_drop_deps         => p_drop_deps,
                                      p_statistics        => p_statistics
                                    );
    EXCEPTION
@@ -498,10 +503,10 @@ AS
    END replace_table;
 
    -- uses SQL analytics to load a hybrid SCD dimension table
-   PROCEDURE load_dimension( p_owner VARCHAR2, p_table VARCHAR2 )
+   PROCEDURE load_dimension( p_mapping VARCHAR2 )
    IS
       -- use the object factory to return a dimension object
-      o_dim   mapping_ot := trans_factory.get_mapping_ot( p_owner => p_owner, p_table => p_table );
+      o_dim   mapping_ot := trans_factory.get_mapping_ot( p_mapping => p_mapping );
    BEGIN
       -- execute the load
       o_dim.LOAD;

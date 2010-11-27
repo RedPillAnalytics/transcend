@@ -67,6 +67,10 @@ IS
           p_message      => 'Both P_TABLE and P_SOURCE_TABLE cannot be partitioned'
          );
       evolve_adm.set_error_conf
+         (p_name         => 'rename_owners',
+          p_message      => 'When P_REPLACE_METHOD is "rename", then P_OWNER and P_STAGING_OWNER have to be the same'
+         );
+      evolve_adm.set_error_conf
          (p_name         => 'neither_part',
           p_message      => 'Either P_TABLE or P_SOURCE_TABLE have to be partitioned'
          );
@@ -189,6 +193,10 @@ IS
       evolve_adm.set_error_conf
          (p_name         => 'wrong_map_type',
            p_message      => 'A MAPPING_OT object was instantiated when a DIMENSION_OT should have been.'
+         );
+      evolve_adm.set_error_conf
+         (p_name         => 'part_targ',
+           p_message      => 'If a partition-exchange is used in a dimension, and the dimension table is non-partitioned, then a constant staging table that is partitioned must be configured.'
          );
       
       evolve_adm.set_error_conf( p_name => 'incompatible_part_type', 
@@ -800,9 +808,10 @@ IS
       p_constraint_regexp   VARCHAR2 DEFAULT NULL,
       p_constraint_type     VARCHAR2 DEFAULT NULL,
       p_con_concurrency     VARCHAR2 DEFAULT 'no',
-      p_source_owner        VARCHAR2 DEFAULT NULL,
-      p_source_object       VARCHAR2 DEFAULT NULL,
-      p_source_column       VARCHAR2 DEFAULT NULL,
+      p_drop_dep            VARCHAR2 DEFAULT 'yes',
+      p_staging_owner       VARCHAR2 DEFAULT NULL,
+      p_staging_table       VARCHAR2 DEFAULT NULL,
+      p_staging_column      VARCHAR2 DEFAULT NULL,
       p_replace_method      VARCHAR2 DEFAULT NULL,
       p_statistics          VARCHAR2 DEFAULT 'ignore',
       p_description         VARCHAR2 DEFAULT NULL
@@ -824,9 +833,9 @@ IS
                   partition_type, index_concurrency, 
 		  manage_constraints, constraint_regexp,
 		  constraint_type, constraint_concurrency,
-		  source_owner, source_object,
-		  source_column, replace_method,
-		  statistics, description
+		  staging_owner, staging_table,
+		  staging_column, replace_method,
+		  statistics, description, drop_dependent_objects
 		)
 		VALUES ( LOWER (p_mapping), LOWER (p_mapping_type),
 			 UPPER (p_owner), UPPER (p_table),
@@ -835,9 +844,9 @@ IS
                          LOWER(p_idx_concurrency),
                          LOWER (p_constraints), p_constraint_regexp,
 			 p_constraint_type, LOWER(p_con_concurrency),
-			 UPPER (p_source_owner), UPPER (p_source_object),
-			 UPPER (p_source_column), p_replace_method,
-			 LOWER (p_statistics),p_description
+			 UPPER (p_staging_owner), UPPER (p_staging_table),
+			 UPPER (p_staging_column), p_replace_method,
+			 LOWER (p_statistics), p_description, LOWER (p_drop_dep)
                        );
       EXCEPTION
 	 WHEN e_dup_conf
@@ -871,9 +880,10 @@ IS
       p_constraint_regexp   VARCHAR2 DEFAULT NULL,
       p_constraint_type     VARCHAR2 DEFAULT NULL,
       p_con_concurrency     VARCHAR2 DEFAULT 'no',
-      p_source_owner        VARCHAR2 DEFAULT NULL,
-      p_source_object       VARCHAR2 DEFAULT NULL,
-      p_source_column       VARCHAR2 DEFAULT NULL,
+      p_drop_dep            VARCHAR2 DEFAULT 'yes',
+      p_staging_owner       VARCHAR2 DEFAULT NULL,
+      p_staging_table       VARCHAR2 DEFAULT NULL,
+      p_staging_column      VARCHAR2 DEFAULT NULL,
       p_replace_method      VARCHAR2 DEFAULT NULL,
       p_statistics          VARCHAR2 DEFAULT 'ignore',
       p_description         VARCHAR2 DEFAULT NULL
@@ -896,9 +906,9 @@ IS
 		       p_constraint_regexp      => p_constraint_regexp,
 		       p_constraint_type        => p_constraint_type,
                        p_con_concurrency        => p_con_concurrency,
-		       p_source_owner           => p_source_owner,
-		       p_source_object          => p_source_object,
-		       p_source_column          => p_source_column,
+		       p_staging_owner          => p_staging_owner,
+		       p_staging_table          => p_staging_table,
+		       p_staging_column         => p_staging_column,
 		       p_replace_method         => p_replace_method,
 		       p_statistics             => p_statistics,
 		       p_description            => p_description );
@@ -921,9 +931,10 @@ IS
       p_constraint_regexp   VARCHAR2 DEFAULT NULL,
       p_constraint_type     VARCHAR2 DEFAULT NULL,
       p_con_concurrency     VARCHAR2 DEFAULT NULL,
-      p_source_owner        VARCHAR2 DEFAULT NULL,
-      p_source_object       VARCHAR2 DEFAULT NULL,
-      p_source_column       VARCHAR2 DEFAULT NULL,
+      p_drop_dep            VARCHAR2 DEFAULT NULL,
+      p_staging_owner       VARCHAR2 DEFAULT NULL,
+      p_staging_table       VARCHAR2 DEFAULT NULL,
+      p_staging_column      VARCHAR2 DEFAULT NULL,
       p_replace_method      VARCHAR2 DEFAULT NULL,
       p_statistics          VARCHAR2 DEFAULT NULL,
       p_description         VARCHAR2 DEFAULT NULL
@@ -997,31 +1008,38 @@ IS
                      ELSE p_con_concurrency
                      END
                    ),
-             source_owner =
-             UPPER (CASE
-                     WHEN p_source_owner IS NULL
-                     THEN source_owner
-                     WHEN p_source_owner = null_value
-                     THEN NULL
-                     ELSE p_source_owner
+             drop_dependent_objects =
+             LOWER (CASE
+                     WHEN p_drop_dep IS NULL
+                     THEN drop_dependent_objects
+                     ELSE p_drop_dep
                      END
                    ),
-             source_object =
+             staging_owner =
              UPPER (CASE
-                     WHEN p_source_object IS NULL
-                     THEN source_object
-                     WHEN p_source_object = null_value
+                     WHEN p_staging_owner IS NULL
+                     THEN staging_owner
+                     WHEN p_staging_owner = null_value
                      THEN NULL
-                     ELSE p_source_object
+                     ELSE p_staging_owner
                      END
                    ),
-             source_column =
+             staging_table =
              UPPER (CASE
-                     WHEN p_source_column IS NULL
-                     THEN source_column
-                     WHEN p_source_column = null_value
+                     WHEN p_staging_table IS NULL
+                     THEN staging_table
+                     WHEN p_staging_table = null_value
                      THEN NULL
-                     ELSE p_source_column
+                     ELSE p_staging_table
+                     END
+                   ),
+             staging_column =
+             UPPER (CASE
+                     WHEN p_staging_column IS NULL
+                     THEN staging_column
+                     WHEN p_staging_column = null_value
+                     THEN NULL
+                     ELSE p_staging_column
                      END
                    ),
              replace_method =
@@ -1109,9 +1127,9 @@ IS
       p_constraint_regexp   VARCHAR2 DEFAULT NULL,
       p_constraint_type     VARCHAR2 DEFAULT NULL,
       p_con_concurrency     VARCHAR2 DEFAULT NULL,
-      p_source_owner        VARCHAR2 DEFAULT NULL,
-      p_source_object       VARCHAR2 DEFAULT NULL,
-      p_source_column       VARCHAR2 DEFAULT NULL,
+      p_staging_owner       VARCHAR2 DEFAULT NULL,
+      p_staging_table       VARCHAR2 DEFAULT NULL,
+      p_staging_column      VARCHAR2 DEFAULT NULL,
       p_replace_method      VARCHAR2 DEFAULT NULL,
       p_statistics          VARCHAR2 DEFAULT NULL,
       p_description         VARCHAR2 DEFAULT NULL
@@ -1128,9 +1146,9 @@ IS
                        p_idx_concurrency     => p_idx_concurrency,
                        p_constraints         => p_constraints,
                        p_con_concurrency     => p_con_concurrency,
-                       p_source_owner        => p_source_owner,
-                       p_source_object       => p_source_object,
-                       p_source_column       => p_source_column,
+                       p_staging_owner       => p_staging_owner,
+                       p_staging_table       => p_staging_table,
+                       p_staging_column      => p_staging_column,
                        p_replace_method      => p_replace_method,
                        p_statistics          => p_statistics,
                        p_index_regexp        => p_index_regexp,
@@ -1162,45 +1180,18 @@ IS
 
    END delete_mapping;   
 
-   PROCEDURE delete_mapping (
-      p_owner              VARCHAR2,
-      p_table              VARCHAR2
-   )
-   IS
-      l_mapping    mapping_conf.mapping_name%TYPE;
-      o_ev          evolve_ot     := evolve_ot (p_module      => 'delete_mapping');
-   BEGIN
-      
-      BEGIN
-
-	 SELECT mapping_name
-	   INTO l_mapping
-	   FROM mapping_conf
-	  WHERE lower( table_owner ) = lower( p_owner )
-	    AND lower( table_name ) = lower( p_table );
-      EXCEPTION
-	 WHEN no_data_found
-	 THEN
-	 evolve.raise_err( 'no_dim' );
-      END;
-      
-      delete_mapping( l_mapping );
-      
-      o_ev.clear_app_info;
-
-   END delete_mapping;   
-
    PROCEDURE create_dimension (
       p_mapping            VARCHAR2,
       p_owner              VARCHAR2,
       p_table              VARCHAR2,
       p_source_owner       VARCHAR2,
-      p_source_object      VARCHAR2,
+      p_source_table       VARCHAR2,
       p_sequence_owner     VARCHAR2,
       p_sequence_name      VARCHAR2,
       p_staging_owner      VARCHAR2 DEFAULT NULL,
       p_staging_table      VARCHAR2 DEFAULT NULL,
       p_default_scd_type   NUMBER DEFAULT 2,
+      p_late_arriving      VARCHAR2 DEFAULT 'no',
       p_direct_load        VARCHAR2 DEFAULT 'yes',
       p_replace_method     VARCHAR2 DEFAULT 'rename',
       p_statistics         VARCHAR2 DEFAULT 'transfer',
@@ -1208,7 +1199,7 @@ IS
       p_con_concurrency    VARCHAR2 DEFAULT 'no',
       p_stage_key_def      NUMBER DEFAULT -.01,
       p_char_nvl_def       VARCHAR2 DEFAULT '~',
-      p_date_nvl_def       DATE DEFAULT TO_DATE ('01/01/9999'),
+      p_date_nvl_def       DATE DEFAULT TO_DATE ('01/01/9999','mm/dd/yyyy'),
       p_num_nvl_def        NUMBER DEFAULT -.01,
       p_description        VARCHAR2 DEFAULT NULL
    )
@@ -1218,21 +1209,38 @@ IS
       PRAGMA EXCEPTION_INIT (e_dup_conf, -1);
       o_ev         evolve_ot  := evolve_ot (p_module => 'create_dimension');
    BEGIN
-      BEGIN       INSERT INTO dimension_conf
-                     (table_owner, table_name,
-                      sequence_owner, sequence_name,
-                      staging_owner, staging_table,
-                      default_scd_type, direct_load,
-                      stage_key_default, char_nvl_default,
-		      date_nvl_default, number_nvl_default, description
-                     )
-              VALUES (UPPER (p_owner), UPPER (p_table),
-                      UPPER (p_sequence_owner), UPPER (p_sequence_name),
-                      UPPER (p_staging_owner), UPPER (p_staging_table),
-                      p_default_scd_type, LOWER (p_direct_load),
-                      p_stage_key_def, p_char_nvl_def, p_date_nvl_def,
-                      p_num_nvl_def, p_description
-                     );
+      BEGIN
+
+         INSERT INTO dimension_conf
+                ( mapping_name,
+                  sequence_owner, 
+                  sequence_name,
+                  source_owner, 
+                  source_table,
+                  default_scd_type,
+                  late_arriving,
+                  direct_load,
+                  stage_key_default, 
+                  char_nvl_default,
+		  date_nvl_default, 
+                  number_nvl_default, 
+                  description
+                )
+                VALUES ( p_mapping,
+                         UPPER (p_sequence_owner), 
+                         UPPER (p_sequence_name),
+                         UPPER (p_source_owner), 
+                         UPPER (p_source_table),
+                         p_default_scd_type,
+                         LOWER (p_late_arriving), 
+                         LOWER (p_direct_load),
+                         p_stage_key_def, 
+                         p_char_nvl_def, 
+                         p_date_nvl_def,
+                         p_num_nvl_def, 
+                         p_description
+                       );
+
       EXCEPTION
          WHEN e_dup_conf
          THEN
@@ -1240,16 +1248,17 @@ IS
       END;
 
       -- now make the call to create the mapping
-      create_mapping (p_mapping             => p_mapping,
-                      p_mapping_type        => 'dimension',
-                      p_table               => p_table,
-                      p_owner               => p_owner,
-                      p_source_owner        => p_source_owner,
-                      p_source_object       => p_source_object,
-                      p_replace_method      => p_replace_method,
-                      p_statistics          => p_statistics,
-                      p_idx_concurrency     => p_idx_concurrency,
-                      p_con_concurrency     => p_con_concurrency
+      create_mapping ( p_mapping             => p_mapping,
+                       p_mapping_type        => 'dimension',
+                       p_table               => p_table,
+                       p_owner               => p_owner,
+                       p_staging_owner       => p_staging_owner,
+                       p_staging_table       => p_staging_table,
+                       p_replace_method      => p_replace_method,
+                       p_statistics          => p_statistics,
+                       p_idx_concurrency     => p_idx_concurrency,
+                       p_con_concurrency     => p_con_concurrency,
+                       p_drop_dep            => 'no'            
                      );
       o_dim := trans_factory.get_mapping_ot (p_mapping);
       
@@ -1258,16 +1267,17 @@ IS
    END create_dimension;
 
    PROCEDURE modify_dimension (
-      p_owner              VARCHAR2,
-      p_table              VARCHAR2,
-      p_mapping            VARCHAR2 DEFAULT NULL,
+      p_mapping            VARCHAR2,
+      p_owner              VARCHAR2 DEFAULT NULL,
+      p_table              VARCHAR2 DEFAULT NULL,
       p_source_owner       VARCHAR2 DEFAULT NULL,
-      p_source_object      VARCHAR2 DEFAULT NULL,
+      p_source_table       VARCHAR2 DEFAULT NULL,
       p_sequence_owner     VARCHAR2 DEFAULT NULL,
       p_sequence_name      VARCHAR2 DEFAULT NULL,
       p_staging_owner      VARCHAR2 DEFAULT NULL,
       p_staging_table      VARCHAR2 DEFAULT NULL,
       p_default_scd_type   NUMBER DEFAULT NULL,
+      p_late_arriving      VARCHAR2 DEFAULT 'no',
       p_direct_load        VARCHAR2 DEFAULT NULL,
       p_replace_method     VARCHAR2 DEFAULT NULL,
       p_statistics         VARCHAR2 DEFAULT NULL,
@@ -1299,22 +1309,22 @@ IS
                           ELSE p_sequence_name
                        END
                       ),
-             staging_owner =
+             source_owner =
                 UPPER (CASE
-                          WHEN p_staging_owner IS NULL
-                             THEN staging_owner
-                          WHEN p_staging_owner = null_value
+                          WHEN p_source_owner IS NULL
+                             THEN source_owner
+                          WHEN p_source_owner = null_value
                              THEN NULL
-                          ELSE p_staging_owner
+                          ELSE p_source_owner
                        END
                       ),
-             staging_table =
+             source_table =
                 UPPER (CASE
-                          WHEN p_staging_table IS NULL
-                             THEN staging_table
-                          WHEN p_staging_table = null_value
+                          WHEN p_source_table IS NULL
+                             THEN source_table
+                          WHEN p_source_table = null_value
                              THEN NULL
-                          ELSE p_staging_table
+                          ELSE p_source_table
                        END
                       ),
              default_scd_type =
@@ -1323,6 +1333,15 @@ IS
                       THEN default_scd_type
                    ELSE p_default_scd_type
                 END,
+             late_arriving =
+                lower (CASE
+                          WHEN p_late_arriving IS NULL
+                             THEN late_arriving
+                          WHEN p_late_arriving = null_value
+                             THEN NULL
+                          ELSE p_late_arriving
+                       END
+                      ),
              direct_load =
                 LOWER (CASE
                           WHEN p_direct_load IS NULL
@@ -1364,41 +1383,19 @@ IS
                 END,
              modified_user = SYS_CONTEXT ('USERENV', 'SESSION_USER'),
              modified_dt = SYSDATE
-       WHERE LOWER (table_owner) = LOWER (p_owner)
-         AND LOWER (table_name) = LOWER (p_table);
+       WHERE LOWER ( mapping_name ) = LOWER ( mapping_name );
 
      IF sql%rowcount = 0
      THEN
 	evolve.raise_err( 'no_dim' );
      END IF;
 
-      -- get the mapping name
-      o_ev.change_action ('get mapping name');
-
-      SELECT mapping_name
-        INTO l_mapping
-        FROM mapping_conf
-       WHERE LOWER (table_owner) = LOWER (p_owner)
-         AND LOWER (table_name) = LOWER (p_table);
-
-      -- update the mapping name in case it's been changed
-      o_ev.change_action ('rename mapping name');
-     
-     IF p_mapping IS NOT NULL
-     THEN
-
-	UPDATE mapping_conf
-           SET mapping_name = LOWER (p_mapping)
-	 WHERE mapping_name = l_mapping;
-	
-     END IF;
-
       -- now make the call to modify the mapping
-      update_mapping (p_mapping             => nvl( p_mapping, l_mapping),
-                      p_table               => p_table,
+      update_mapping (p_mapping             => p_mapping,
                       p_owner               => p_owner,
-                      p_source_owner        => p_source_owner,
-                      p_source_object       => p_source_object,
+                      p_table               => p_table,
+                      p_staging_owner       => p_staging_owner,
+                      p_staging_table       => p_staging_table,
                       p_replace_method      => p_replace_method,
                       p_statistics          => p_statistics,
                       p_idx_concurrency     => p_idx_concurrency,
@@ -1410,33 +1407,30 @@ IS
      o_ev.clear_app_info;
    END modify_dimension;
 
-   PROCEDURE delete_dimension ( p_owner VARCHAR2, p_table VARCHAR2 )
+   PROCEDURE delete_dimension ( p_mapping VARCHAR2 )
    IS
       o_ev   evolve_ot := evolve_ot (p_module => 'delete_dimension');
    BEGIN
       -- delete the column configuration
-      delete_dim_attribs( p_owner => p_owner, p_table => p_table );
+      delete_dim_attribs( p_mapping => p_mapping );
 
       -- now delete the dimension configuration
       BEGIN
 	 DELETE FROM dimension_conf
-	  WHERE LOWER (table_owner) = LOWER (p_owner)
-            AND LOWER (table_name) = LOWER (p_table);
+	  WHERE LOWER ( mapping_name ) = LOWER ( p_mapping );
       EXCEPTION
 	 WHEN no_data_found
 	 THEN
 	 evolve.raise_err( 'no_dim' );
       END;
       -- now make the call to delete the mapping
-      delete_mapping ( p_owner => p_owner,
-		       p_table => p_table );
+      delete_mapping ( p_mapping => p_mapping );
       
       o_ev.clear_app_info;
    END delete_dimension;
 
    PROCEDURE create_dim_attribs (
-      p_owner           VARCHAR2,
-      p_table           VARCHAR2,
+      p_mapping         VARCHAR2,
       p_surrogate       VARCHAR2,
       p_effective_dt    VARCHAR2,
       p_expiration_dt   VARCHAR2,
@@ -1455,8 +1449,7 @@ IS
    BEGIN
       -- construct a DIMENSION_OT object
       -- this is done using the supertype MAPPING_OT
-      o_dim := trans_factory.get_mapping_ot ( p_owner => p_owner,
-					      p_table => p_table );
+      o_dim := trans_factory.get_mapping_ot ( p_mapping => p_mapping );
 
       -- construct the list for instrumentation purposes      
       l_col_list :=
@@ -1481,53 +1474,61 @@ IS
 
       -- write the surrogate key information
       o_ev.change_action( 'configure surrogate key' );
-      td_utils.check_column( p_owner	=> p_owner,
-			     p_table	=> p_table,
-			     p_column	=> p_surrogate );
+      td_utils.check_column( 
+                             p_owner	=> o_dim.table_owner,
+			     p_table	=> o_dim.table_name,
+			     p_column	=> p_surrogate 
+                           );
       
       INSERT INTO column_conf
-	     ( table_owner, table_name, column_name, column_type )
+	     ( mapping_name, column_name, column_type )
 	     VALUES 
-	     ( upper( p_owner ), upper( p_table ), upper( p_surrogate ), 'surrogate key' );
+	     ( lower( p_mapping ), upper( p_surrogate ), 'surrogate key' );
       
       -- record the number of rows affected by the last statment
 
       -- write the effective date information
       o_ev.change_action( 'configure effective date' );
-      td_utils.check_column( p_owner	=> p_owner,
-			     p_table	=> p_table,
-			     p_column	=> p_effective_dt );
+      td_utils.check_column( 
+                             p_owner	=> o_dim.table_owner,
+			     p_table	=> o_dim.table_name,
+			     p_column	=> p_effective_dt
+                           );
       
       INSERT INTO column_conf
-	     ( table_owner, table_name, column_name, column_type )
+	     ( mapping_name, column_name, column_type )
 	     VALUES 
-	     ( upper( p_owner ), upper( p_table ), upper( p_effective_dt ), 'effective date' );
+	     ( lower( p_mapping ), upper( p_effective_dt ), 'effective date' );
       
       -- record the number of rows affected by the last statment
 
       -- write the expiration date information
       o_ev.change_action( 'configure expire date' );
-      td_utils.check_column( p_owner	=> p_owner,
-			     p_table	=> p_table,
-			     p_column	=> p_expiration_dt );
+      td_utils.check_column( 
+                             p_owner	=> o_dim.table_owner,
+			     p_table	=> o_dim.table_name,
+			     p_column	=> p_expiration_dt
+                           );
       
       INSERT INTO column_conf
-	     ( table_owner, table_name, column_name, column_type )
+	     ( mapping_name, column_name, column_type )
 	     VALUES 
-	     ( upper( p_owner ), upper( p_table ), upper( p_expiration_dt ), 'expiration date' );
+	     ( lower( p_mapping ), upper( p_expiration_dt ), 'expiration date' );
 
       -- record the number of rows affected by the last statment
       
       -- write the current indicator information
       o_ev.change_action( 'configure current indicator' );
-      td_utils.check_column( p_owner	=> p_owner,
-			     p_table	=> p_table,
-			     p_column	=> p_current_ind );
+      td_utils.check_column( 
+                             p_owner	=> o_dim.table_owner,
+			     p_table	=> o_dim.table_name,
+			     p_column	=> p_current_ind
+                           );
       
       INSERT INTO column_conf
-	     ( table_owner, table_name, column_name, column_type )
+	     ( mapping_name, column_name, column_type )
 	     VALUES 
-	     ( upper( p_owner ), upper( p_table ), upper( p_current_ind ), 'current indicator' );
+	     ( lower( p_mapping ), upper( p_current_ind ), 'current indicator' );
 
       -- record the number of rows affected by the last statment
       
@@ -1540,15 +1541,16 @@ IS
       LOOP
 	 
 	 evolve.log_msg( 'The natural key column being configured is: '||c_cols.column_name, 5 );
-         td_utils.check_column (p_owner       => p_owner,
-                                p_table       => p_table,
-                                p_column      => c_cols.column_name
-                               );
+         td_utils.check_column( 
+                                p_owner         => o_dim.table_owner,
+			        p_table	        => o_dim.table_name,
+			        p_column	=> c_cols.column_name
+                              );
 
 	 INSERT INTO column_conf
-		( table_owner, table_name, column_name, column_type )
+		( mapping_name, column_name, column_type )
 		VALUES 
-		( upper( p_owner ), upper( p_table ), upper( c_cols.column_name ), 'natural key' );
+		( lower( p_mapping ), upper( c_cols.column_name ), 'natural key' );
 	 
 	 -- record the number of rows affected by the last statment
 
@@ -1567,15 +1569,16 @@ IS
                                      ))
 	 LOOP
 	    evolve.log_msg( 'The scd1 column being configured is: '||c_cols.column_name, 5 );
-            td_utils.check_column (p_owner       => p_owner,
-                                    p_table       => p_table,
-                                    p_column      => c_cols.column_name
-				  );
+            td_utils.check_column( 
+                                   p_owner      => o_dim.table_owner,
+			           p_table      => o_dim.table_name,
+			           p_column	=> c_cols.column_name
+                                 );
 
 	    INSERT INTO column_conf
-		   ( table_owner, table_name, column_name, column_type )
+		   ( mapping_name, column_name, column_type )
 		   VALUES 
-		   ( upper( p_owner ), upper( p_table ), upper( c_cols.column_name ), 'scd type 1' );
+		   ( lower( p_mapping ), upper( c_cols.column_name ), 'scd type 1' );
 	    
 	    -- record the number of rows affected by the last statment
 
@@ -1596,15 +1599,16 @@ IS
                                      ))
 	 LOOP
 	    evolve.log_msg( 'The scd2 column being configured is: '||c_cols.column_name, 5 );
-            td_utils.check_column (p_owner       => p_owner,
-                                    p_table       => p_table,
-                                    p_column      => c_cols.column_name
-				  );
+            td_utils.check_column( 
+                                   p_owner      => o_dim.table_owner,
+			           p_table	=> o_dim.table_name,
+			           p_column	=> c_cols.column_name
+                                 );
 
 	    INSERT INTO column_conf
-		   ( table_owner, table_name, column_name, column_type )
+		   ( mapping_name, column_name, column_type )
 		   VALUES 
-		   ( upper( p_owner ), upper( p_table ), upper( c_cols.column_name ), 'scd type 2' );
+		   ( lower( p_mapping ), upper( c_cols.column_name ), 'scd type 2' );
 
 	    -- record the number of rows affected by the last statment
 	    
@@ -1613,19 +1617,24 @@ IS
       
       -- EXECUTE the merge statement to write any columns that have been left off
       MERGE INTO column_conf t
-         USING ( SELECT table_owner, dc.table_name, column_name,
-                        CASE default_scd_type
-                           WHEN 1
-                              THEN 'scd type 1'
-                           ELSE 'scd type 2'
-                        END column_type
-                  FROM all_tab_columns atc JOIN dimension_conf dc
-                       ON atc.owner = dc.table_owner AND atc.table_name = dc.table_name
-                 WHERE table_owner = UPPER( p_owner ) AND dc.table_name = UPPER( p_table )) s
-         ON (t.table_owner = s.table_owner AND t.table_name = s.table_name AND t.column_name = s.column_name )
-         WHEN NOT MATCHED THEN
-            INSERT( t.table_owner, t.table_name, t.column_name, t.column_type )
-            VALUES( s.table_owner, s.table_name, s.column_name, s.column_type );
+      USING ( SELECT mapping_name, 
+                     column_name,
+                     CASE default_scd_type
+                     WHEN 1
+                     THEN 'scd type 1'
+                     ELSE 'scd type 2'
+                     END column_type
+                FROM all_tab_columns atc 
+                JOIN mapping_conf mc
+                     ON atc.owner = mc.table_owner AND atc.table_name = mc.table_name
+                JOIN dimension_conf dc
+                     USING ( mapping_name )
+               WHERE mc.table_owner = UPPER( o_dim.table_owner ) 
+                 AND mc.table_name = UPPER( o_dim.table_name )) s
+         ON (t.mapping_name = s.mapping_name AND t.column_name = s.column_name )
+            WHEN NOT MATCHED THEN
+            INSERT( t.mapping_name, t.column_name, t.column_type )
+            VALUES( s.mapping_name, s.column_name, s.column_type );
       
 
 
@@ -1636,8 +1645,7 @@ IS
    END create_dim_attribs;
    
    PROCEDURE modify_dim_attrib (
-      p_owner           VARCHAR2,
-      p_table           VARCHAR2,
+      p_mapping         VARCHAR2,
       p_column		VARCHAR2,
       p_column_type	VARCHAR2
    )
@@ -1650,23 +1658,22 @@ IS
    BEGIN
       -- construct a DIMENSION_OT object
       -- this is done using the supertype MAPPING_OT
-      o_dim := trans_factory.get_mapping_ot ( p_owner => p_owner,
-					      p_table => p_table );
+      o_dim := trans_factory.get_mapping_ot ( p_mapping => p_mapping );
 
       evolve.log_msg ('The column being modified: ' || p_column, 5);
 
       -- modify the attribute type
       o_ev.change_action( 'modify attribute type' );
-      td_utils.check_column( p_owner	=> p_owner,
-			     p_table	=> p_table,
-			     p_column	=> p_column );
+      td_utils.check_column( 
+                             p_owner	=> o_dim.table_owner,
+			     p_table	=> o_dim.table_name,
+			     p_column	=> p_column 
+                           );
       
       UPDATE column_conf
 	 SET column_type = p_column_type
-       WHERE lower( table_owner ) = lower( p_owner )
-	 AND lower( table_name ) = lower( p_table )
-	 AND lower( column_name ) = lower( p_column );
-      
+       WHERE lower( mapping_name ) = lower( p_mapping )
+	 AND lower( column_name ) = lower( p_column );      
       
       -- confirm the dimension columns
       o_dim.confirm_dim_cols;
@@ -1674,8 +1681,7 @@ IS
    END modify_dim_attrib;
    
    PROCEDURE delete_dim_attribs (
-      p_owner           VARCHAR2,
-      p_table           VARCHAR2
+      p_mapping      VARCHAR2
    )
    IS
       o_ev   evolve_ot := evolve_ot (p_module => 'delete_dim_attribs');
@@ -1684,8 +1690,7 @@ IS
       
       -- delete the column configuration
       DELETE FROM column_conf
-            WHERE LOWER (table_owner) = LOWER (p_owner)
-         AND LOWER (table_name) = LOWER (p_table);
+       WHERE LOWER ( mapping_name ) = LOWER ( p_mapping );
       
       o_ev.clear_app_info;
       
