@@ -20,7 +20,7 @@ IS
        WHERE lower ( mapping_name ) = lower ( p_mapping );
 
       -- let's register what the mapping_type is
-      evolve.log_msg( 'Attribute MAPPING_TYPE: '||l_map_type, 5 );
+      evolve.log_variable( 'l_map_type',l_map_type );
       
       -- simply check the mapping_type attribute to tell us whether this is dimensional or not
       IF l_map_type = 'dimension'

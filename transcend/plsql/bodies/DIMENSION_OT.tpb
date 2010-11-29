@@ -4,7 +4,7 @@ AS
       RETURN SELF AS RESULT
    AS
       l_load_sql   LONG;
-      o_ev         evolve_ot := evolve_ot( p_module => 'dimension_ot' );
+      o_ev         evolve_ot := evolve_ot( p_module => 'dimension_ot.constructor' );
    BEGIN
       -- first register instrumentation details
       SELF.REGISTER( p_mapping => p_mapping, p_batch_id => p_batch_id );
@@ -32,7 +32,8 @@ AS
                                THEN 'no'
                             ELSE 'yes'
                          END named_staging, direct_load, replace_method, STATISTICS, index_concurrency,
-                         constraint_concurrency, manage_indexes, manage_constraints, late_arriving, drop_dependent_objects
+                         constraint_concurrency, manage_indexes, manage_constraints, late_arriving, 
+                         drop_dependent_objects, mapping_type
                    FROM dimension_conf JOIN mapping_conf USING( mapping_name )
                   WHERE mapping_name = SELF.mapping_name );
       EXCEPTION
@@ -44,6 +45,7 @@ AS
       evolve.log_variable( 'SELF.full_table',SELF.full_table );
       evolve.log_variable( 'SELF.full_stage',SELF.full_stage );
       evolve.log_variable( 'SELF.drop_dependent_objects', SELF.drop_dependent_objects );
+      evolve.log_variable( 'SELF.mapping_type', SELF.mapping_type );
 
       -- confirm the objects related to the dimensional configuration
       verify;

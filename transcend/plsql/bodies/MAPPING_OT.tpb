@@ -154,6 +154,9 @@ AS
    AS
       o_ev   evolve_ot := evolve_ot( p_module => 'mapping_ot.pre_map' );
    BEGIN
+      
+      evolve.log_variable( 'SELF.manage_indexes', SELF.manage_indexes );
+      evolve.log_variable( 'SELF.manage_constraints', SELF.manage_constraints );
 
       -- we want to manage indexes, but there is no table replace that is occurring
       -- so we need to explicitly manage the indexes
@@ -186,6 +189,7 @@ AS
                                       p_maint_type             => 'disable'
                                     );
       END IF;
+      o_ev.clear_app_info;
    END pre_map;
    
    MEMBER PROCEDURE post_map
@@ -261,6 +265,7 @@ AS
                                     p_source_owner      => self.staging_owner,
                                     p_source_object     => SELF.staging_table
                                   );
+            COMMIT;
          ELSE
             NULL;
       END CASE;
@@ -317,7 +322,8 @@ AS
    BEGIN
       
       evolve.log_msg( 'Pre-mapping processes beginning' );
-
+      
+      LOAD;
       pre_map;
       o_ev.change_action( 'execute mapping' );
       
@@ -331,7 +337,6 @@ AS
    BEGIN
       evolve.log_msg( 'Post-mapping processes beginning' );
 
-      LOAD;
       post_map;
 
       evolve.log_msg( 'Post-mapping processes completed' );

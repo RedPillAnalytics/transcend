@@ -64,7 +64,6 @@ AS
                -- find out the partition_name in case it's subpartitioned
                l_part_name := td_utils.get_part_for_subpart( p_owner => p_owner, p_segment => p_table, p_subpart => p_partname, p_segment_type => 'table' );
                evolve.log_variable('l_part_name',l_part_name);
-
                
             END IF;
          EXCEPTION
@@ -179,6 +178,7 @@ AS
              )
              VALUES ( p_stmt, p_msg, p_module, p_action, p_order
                     );
+      COMMIT;
 
       o_ev.clear_app_info;
    EXCEPTION
@@ -1185,12 +1185,14 @@ AS
 
        evolve.log_variable('l_part_position',l_part_position);
 
-      -- need to get a unique "job header" number in case we are running concurrently
-      o_ev.change_action( 'get concurrent id' );
-
       IF td_core.is_true( p_concurrent )
       THEN
+
+         -- need to get a unique "job header" number in case we are running concurrently
+         o_ev.change_action( 'get concurrent id' );
+
          l_concurrent_id    := evolve.get_concurrent_id;
+
       END IF;
 
        evolve.log_variable('l_concurrent_id',l_concurrent_id);
@@ -1830,7 +1832,7 @@ AS
 
             END IF;
             
-            evolve.log_msg( c_constraints.msg, 2 );
+            evolve.log_msg( c_constraints.msg, 3 );
             l_con_cnt    := l_con_cnt + 1;
          EXCEPTION
             WHEN e_iot_shc
@@ -2224,11 +2226,13 @@ AS
       td_utils.check_table( p_owner => p_owner, p_table => p_table );
       -- check that the source object exists.
       td_utils.check_object( p_owner => p_source_owner, p_object => p_source_object, p_object_type => 'table|view|synonym' );
-      o_ev.change_action( 'issue log_errors warning' );
-
+      
       -- warning concerning using LOG ERRORS clause and the APPEND hint
       IF td_core.is_true( p_direct ) AND p_log_table IS NOT NULL
       THEN
+         
+         o_ev.change_action( 'issue log_errors warning' );
+
          evolve.log_msg
                  ( 'Unique constraints can still be violated when using P_LOG_TABLE in conjunction with P_DIRECT mode',
                    3
@@ -3406,7 +3410,7 @@ AS
       l_partid          VARCHAR2( 30 )    := 'TD$' || SYS_CONTEXT( 'USERENV', 'SESSIONID' )
                                                    || TO_CHAR( SYSDATE, 'yyyymmdd_hhmiss' );
 
-      l_tab_name   VARCHAR2( 61 )   := UPPER( p_owner ) || '.' || UPPER( p_table );
+      l_tab_name   VARCHAR2( 61 )   := UPPER( p_owner )        || '.' || UPPER( p_table );
       l_src_name   VARCHAR2( 61 )   := UPPER( p_source_owner ) || '.' || UPPER( p_source_object );
       l_msg        VARCHAR2( 2000 );
       l_ddl        VARCHAR2( 2000 );
@@ -3418,10 +3422,16 @@ AS
    BEGIN
 
       CASE
-         WHEN p_partname IS NOT NULL AND( p_source_owner IS NOT NULL OR p_source_object IS NOT NULL )
-         THEN
-            o_ev.clear_app_info;
-            evolve.raise_err( 'parms_not_compatible', 'P_PARTNAME with either P_SOURCE_OWNER or P_SOURCE_OBJECT' );
+
+      -- A partition name is passed in and either source_owner or source_object is passed in
+      -- this used to cause an error
+      -- this should now be allowed
+      -- P_PARTNAME will just drive the process instead
+      
+      -- WHEN p_partname IS NOT NULL AND( p_source_owner IS NOT NULL OR p_source_object IS NOT NULL )
+      -- THEN
+            -- o_ev.clear_app_info;
+            -- evolve.raise_err( 'parms_not_compatible', 'P_PARTNAME with either P_SOURCE_OWNER or P_SOURCE_OBJECT' );
          WHEN p_source_owner IS NULL AND p_source_object IS NOT NULL
          THEN
             o_ev.clear_app_info;
@@ -3441,8 +3451,19 @@ AS
          td_utils.check_object( p_owner            => p_source_owner, p_object => p_source_object,
                                 p_object_type      => 'table$|view' );
       END IF;
-
-      IF p_partname IS NOT NULL OR p_source_object IS NOT NULL
+      
+      -- a partition name is passed
+      -- or, a source table is passed
+      -- this means that we want to only affect particular partitions on the target table
+      -- but this should only work if the target table is actually partitioned
+      IF td_utils.is_part_table(
+                                 p_owner   => p_owner,
+                                 p_table   => p_table
+                               )
+         AND (
+               p_partname IS NOT NULL 
+               OR p_source_object IS NOT NULL
+             )
       THEN
 
          o_ev.change_action( 'populate PARTNAME table' );
