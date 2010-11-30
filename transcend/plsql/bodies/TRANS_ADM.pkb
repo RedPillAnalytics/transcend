@@ -1740,6 +1740,21 @@ IS
    
    END set_module_conf;
 
+   PROCEDURE set_logging_level(
+      p_logging_level   NUMBER   DEFAULT 2,
+      p_debug_level     NUMBER   DEFAULT 4
+   )
+   IS
+   BEGIN
+
+      evolve_adm.set_module_conf(
+                                  p_logging_level   => p_logging_level,
+                                  p_debug_level     => p_debug_level
+                                );
+   
+   END set_logging_level;
+   
+
    PROCEDURE set_session_parameter(
       p_name         VARCHAR2,
       p_value        VARCHAR2,

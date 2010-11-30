@@ -3,7 +3,6 @@ AS
    CONSTRUCTOR FUNCTION dimension_ot( p_mapping VARCHAR2, p_batch_id NUMBER DEFAULT NULL )
       RETURN SELF AS RESULT
    AS
-      l_load_sql   LONG;
       o_ev         evolve_ot := evolve_ot( p_module => 'dimension_ot.constructor' );
    BEGIN
       -- first register instrumentation details
@@ -628,7 +627,7 @@ AS
       evolve.log_msg( 'The non-merge, non-late-arriving insert: ' || l_rep_ind_ins, 5 );  
 
 
-      -- create the staging table table
+      -- create the staging table
       -- this is a staging table that holds the results of the dimensional analysis
       -- it is then either exchanged in, table-renamed, or the source for a merge
       o_ev.change_action( 'create staging table' );

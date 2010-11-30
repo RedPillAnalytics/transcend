@@ -1026,7 +1026,7 @@ AS
                                          THEN 'creation submitted to the Oracle scheduler'
                                       ELSE 'built'
                                    END,
-                                2
+                                3
                               );
             l_idx_cnt    := l_idx_cnt + 1;
 
@@ -1947,7 +1947,7 @@ AS
          BEGIN
             evolve.exec_sql( p_sql => c_indexes.index_ddl, p_auto => 'yes' );
             l_idx_cnt    := l_idx_cnt + 1;
-            evolve.log_msg( 'Index ' || c_indexes.index_name || ' dropped', 3 );
+            evolve.log_msg( 'Index ' || c_indexes.full_index_name || ' dropped', 3 );
          EXCEPTION
             WHEN e_pk_idx
             THEN
@@ -2054,7 +2054,7 @@ AS
             o_ev.change_action( 'execute table alter' );
             evolve.exec_sql( p_sql => c_constraints.constraint_ddl, p_auto => 'yes' );
             l_con_cnt    := l_con_cnt + 1;
-            evolve.log_msg( 'Constraint ' || c_constraints.constraint_name || ' dropped', 2 );
+            evolve.log_msg( 'Constraint ' || c_constraints.constraint_name || ' dropped', 3 );
          EXCEPTION
             WHEN e_iot_pk
             THEN
@@ -3500,6 +3500,18 @@ AS
                                      ||'ition ' || partition_name
                                      END
                                      || ' unusable' DDL,
+                                     
+                                     'Index '
+                                     || CASE idx_ddl_type
+                                     WHEN 'I'
+                                     THEN NULL
+                                     ELSE part_type
+                                     ||'ition ' || partition_name || ' of '
+                                     END
+                                     || owner
+                                     || '.'
+                                     || index_name
+                                     || ' altered to unusable' msg,
                                      idx_ddl_type, partition_name,
                                      SUM( CASE idx_ddl_type
                                           WHEN 'I'
@@ -3569,6 +3581,7 @@ AS
          o_ev.change_action( 'execute index DDL' );
          l_rows        := TRUE;
          evolve.exec_sql( p_sql => c_idx.DDL, p_auto => 'yes' );
+         evolve.log_msg( c_idx.msg, 3);
          l_pidx_cnt    := c_idx.num_partitions;
          l_idx_cnt     := c_idx.num_indexes;
       END LOOP;
@@ -3695,6 +3708,15 @@ AS
                       )
          LOOP
             evolve.exec_sql( p_sql => c_idx.DDL, p_auto => 'yes', p_concurrent_id => l_concurrent_id );
+            evolve.log_msg(    'Unusable indexes on '
+                            || l_part_type || 'ition '
+                            || c_idx.partition_name
+                            || ' of table '
+                            || l_tab_name
+                            || ' rebuilt'
+                            , 3
+                          );
+
             l_cnt    := l_cnt + 1;
          END LOOP;
          

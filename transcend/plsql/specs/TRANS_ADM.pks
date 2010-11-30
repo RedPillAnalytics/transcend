@@ -261,6 +261,11 @@ IS
       p_default_runmode VARCHAR2 DEFAULT 'runtime',
       p_registration    VARCHAR2 DEFAULT 'appinfo'
    );
+      
+   PROCEDURE set_logging_level(
+      p_logging_level   NUMBER   DEFAULT 2,
+      p_debug_level     NUMBER   DEFAULT 3
+   );
 
    PROCEDURE set_session_parameter(
       p_name         VARCHAR2,
