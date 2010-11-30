@@ -3,8 +3,7 @@ AS
    CONSTRUCTOR FUNCTION dimension_ot( p_mapping VARCHAR2, p_batch_id NUMBER DEFAULT NULL )
       RETURN SELF AS RESULT
    AS
-      l_load_sql   LONG;
-      o_ev         evolve_ot := evolve_ot( p_module => 'dimension_ot' );
+      o_ev         evolve_ot := evolve_ot( p_module => 'dimension_ot.constructor' );
    BEGIN
       -- first register instrumentation details
       SELF.REGISTER( p_mapping => p_mapping, p_batch_id => p_batch_id );
@@ -32,7 +31,8 @@ AS
                                THEN 'no'
                             ELSE 'yes'
                          END named_staging, direct_load, replace_method, STATISTICS, index_concurrency,
-                         constraint_concurrency, manage_indexes, manage_constraints, late_arriving, drop_dependent_objects
+                         constraint_concurrency, manage_indexes, manage_constraints, late_arriving, 
+                         drop_dependent_objects, mapping_type
                    FROM dimension_conf JOIN mapping_conf USING( mapping_name )
                   WHERE mapping_name = SELF.mapping_name );
       EXCEPTION
@@ -44,6 +44,7 @@ AS
       evolve.log_variable( 'SELF.full_table',SELF.full_table );
       evolve.log_variable( 'SELF.full_stage',SELF.full_stage );
       evolve.log_variable( 'SELF.drop_dependent_objects', SELF.drop_dependent_objects );
+      evolve.log_variable( 'SELF.mapping_type', SELF.mapping_type );
 
       -- confirm the objects related to the dimensional configuration
       verify;
@@ -626,7 +627,7 @@ AS
       evolve.log_msg( 'The non-merge, non-late-arriving insert: ' || l_rep_ind_ins, 5 );  
 
 
-      -- create the staging table table
+      -- create the staging table
       -- this is a staging table that holds the results of the dimensional analysis
       -- it is then either exchanged in, table-renamed, or the source for a merge
       o_ev.change_action( 'create staging table' );

@@ -5,6 +5,7 @@ AS
       p_batch_id   NUMBER DEFAULT NULL
    )
    AS
+      o_ev    evolve_ot      := evolve_ot( p_module => 'start_mapping' );
       o_map   mapping_ot := trans_factory.get_mapping_ot( p_mapping => p_mapping, p_batch_id => p_batch_id );
    BEGIN
       evolve.log_variable( 'MAPPING_TYPE', o_map.mapping_type);
@@ -14,6 +15,7 @@ AS
       WHEN OTHERS
       THEN
          evolve.log_err;
+         o_ev.clear_app_info;
          RAISE;
    END start_mapping;
 
@@ -22,18 +24,22 @@ AS
       p_batch_id   NUMBER DEFAULT NULL
    )
    AS
+      o_ev    evolve_ot      := evolve_ot( p_module => 'start_mapping' );
       o_map   mapping_ot := trans_factory.get_mapping_ot( p_mapping => p_mapping, p_batch_id => p_batch_id );
    BEGIN
-      evolve.log_msg( 'Mapping type: ' || o_map.mapping_type, 5 );
+      
+      evolve.log_variable( 'o_map.mapping_type',o_map.mapping_type );
       -- now, regardless of which object type this is, the following call is correct
       o_map.end_map;
    -- used to have a commit here.
    -- I don't think a commit should be done inside a mapping
    -- it overrides the commit control of an ETL tool (if any)
+      o_ev.clear_app_info;
    EXCEPTION
       WHEN OTHERS
       THEN
          evolve.log_err;
+         o_ev.clear_app_info;
          RAISE;
    END end_mapping;
 
