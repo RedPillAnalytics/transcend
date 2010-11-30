@@ -154,18 +154,9 @@ AS
    AS
       o_ev   evolve_ot := evolve_ot( p_module => 'mapping_ot.pre_map' );
    BEGIN
-<<<<<<< .working
       
       evolve.log_variable( 'SELF.manage_indexes', SELF.manage_indexes );
       evolve.log_variable( 'SELF.manage_constraints', SELF.manage_constraints );
-=======
-<<<<<<< .working
-=======
-      
-      evolve.log_variable( 'SELF.manage_indexes', SELF.manage_indexes );
-      evolve.log_variable( 'SELF.manage_constraints', SELF.manage_constraints );
->>>>>>> .merge-right.r2441
->>>>>>> .merge-right.r2442
 
       -- we want to manage indexes, but there is no table replace that is occurring
       -- so we need to explicitly manage the indexes
@@ -198,23 +189,10 @@ AS
                                       p_maint_type             => 'disable'
                                     );
       END IF;
-<<<<<<< .working
       o_ev.clear_app_info;
    END pre_map;
    
    MEMBER PROCEDURE post_map
-=======
-<<<<<<< .working
-   END pre_map;
-   
-   MEMBER PROCEDURE post_map
-=======
-      o_ev.clear_app_info;
-   END pre_map;
-   
-   MEMBER PROCEDURE post_map
->>>>>>> .merge-right.r2441
->>>>>>> .merge-right.r2442
    AS
       o_ev   evolve_ot := evolve_ot( p_module => 'mapping_ot.post_map' );
    BEGIN
@@ -248,7 +226,6 @@ AS
                                       p_idx_concurrency   => SELF.index_concurrency,
                                       p_con_concurrency   => SELF.constraint_concurrency
                                     );
-<<<<<<< .working
 
             -- only drop dependent objects if desired
             IF td_core.is_true( self.drop_dependent_objects )
@@ -289,90 +266,6 @@ AS
                                     p_source_object     => SELF.staging_table
                                   );
             COMMIT;
-=======
-<<<<<<< .working
-
-            -- only drop dependent objects if desired
-            IF td_core.is_true( self.drop_dependent_objects )
-            THEN
-               
-               -- drop constraints on the stage table
-               evolve.log_msg( 'Dropping constraints on the staging table', 4 );
-               
-               BEGIN
-                  td_dbutils.drop_constraints( p_owner => SELF.staging_owner, 
-                                               p_table => SELF.staging_table
-                                             );
-               EXCEPTION
-                  WHEN td_dbutils.drop_iot_key
-                  THEN
-                     NULL;
-               END;
-
-               -- drop indexes on the staging table
-               evolve.log_msg( 'Dropping indexes on the staging table', 4 );
-               td_dbutils.drop_indexes( p_owner => SELF.staging_owner, 
-                                        p_table => SELF.staging_table
-                                      );
-                     
-            END IF;
-
-         WHEN SELF.replace_method = 'rename' AND evolve.is_debugmode
-         THEN
-            evolve.log_msg( 'Cannot simulate a REPLACE_METHOD of "rename" when in DEBUGMODE', 4 );
-   
-         WHEN SELF.replace_method = 'merge'
-         THEN
-            -- switch the two tables using rename
-            -- requires that the tables both exist in the same schema
-            td_dbutils.merge_table( p_owner             => SELF.table_owner,
-                                    p_table             => SELF.table_name,
-                                    p_source_owner      => self.staging_owner,
-                                    p_source_object     => SELF.staging_table
-                                  );
-=======
-
-            -- only drop dependent objects if desired
-            IF td_core.is_true( self.drop_dependent_objects )
-            THEN
-               
-               -- drop constraints on the stage table
-               evolve.log_msg( 'Dropping constraints on the staging table', 4 );
-               
-               BEGIN
-                  td_dbutils.drop_constraints( p_owner => SELF.staging_owner, 
-                                               p_table => SELF.staging_table
-                                             );
-               EXCEPTION
-                  WHEN td_dbutils.drop_iot_key
-                  THEN
-                     NULL;
-               END;
-
-               -- drop indexes on the staging table
-               evolve.log_msg( 'Dropping indexes on the staging table', 4 );
-               td_dbutils.drop_indexes( p_owner => SELF.staging_owner, 
-                                        p_table => SELF.staging_table
-                                      );
-                     
-            END IF;
-
-         WHEN SELF.replace_method = 'rename' AND evolve.is_debugmode
-         THEN
-            evolve.log_msg( 'Cannot simulate a REPLACE_METHOD of "rename" when in DEBUGMODE', 4 );
-   
-         WHEN SELF.replace_method = 'merge'
-         THEN
-            -- switch the two tables using rename
-            -- requires that the tables both exist in the same schema
-            td_dbutils.merge_table( p_owner             => SELF.table_owner,
-                                    p_table             => SELF.table_name,
-                                    p_source_owner      => self.staging_owner,
-                                    p_source_object     => SELF.staging_table
-                                  );
-            COMMIT;
->>>>>>> .merge-right.r2441
->>>>>>> .merge-right.r2442
          ELSE
             NULL;
       END CASE;
@@ -420,7 +313,6 @@ AS
 
       -- used to be a commit right here
       -- removing it because I don't think a commit should exist inside mapping functionality
-<<<<<<< .working
       o_ev.clear_app_info;
    END post_map;
    
@@ -447,63 +339,6 @@ AS
 
       post_map;
 
-=======
-<<<<<<< .working
-      o_ev.clear_app_info;
-   END post_map;
-   
-   MEMBER PROCEDURE start_map
-   AS
-      o_ev   evolve_ot := evolve_ot( p_module => 'mapping '||SELF.mapping_name, p_action => 'start mapping' );
-   BEGIN
-      
-      evolve.log_msg( 'Pre-mapping processes beginning' );
-
-      pre_map;
-      o_ev.change_action( 'execute mapping' );
-      
-      evolve.log_msg( 'Pre-mapping processes completed' );
-
-   END start_map;
-
-   MEMBER PROCEDURE end_map
-   AS
-   o_ev   evolve_ot := evolve_ot( p_module => 'mapping '||SELF.mapping_name, p_action=>'end mapping' );
-   BEGIN
-      evolve.log_msg( 'Post-mapping processes beginning' );
-
-      LOAD;
-      post_map;
-
-=======
-      o_ev.clear_app_info;
-   END post_map;
-   
-   MEMBER PROCEDURE start_map
-   AS
-      o_ev   evolve_ot := evolve_ot( p_module => 'mapping '||SELF.mapping_name, p_action => 'start mapping' );
-   BEGIN
-      
-      evolve.log_msg( 'Pre-mapping processes beginning' );
-      
-      LOAD;
-      pre_map;
-      o_ev.change_action( 'execute mapping' );
-      
-      evolve.log_msg( 'Pre-mapping processes completed' );
-
-   END start_map;
-
-   MEMBER PROCEDURE end_map
-   AS
-   o_ev   evolve_ot := evolve_ot( p_module => 'mapping '||SELF.mapping_name, p_action=>'end mapping' );
-   BEGIN
-      evolve.log_msg( 'Post-mapping processes beginning' );
-
-      post_map;
-
->>>>>>> .merge-right.r2441
->>>>>>> .merge-right.r2442
       evolve.log_msg( 'Post-mapping processes completed' );
 
       o_ev.clear_app_info;

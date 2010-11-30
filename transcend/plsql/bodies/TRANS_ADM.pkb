@@ -1190,14 +1190,8 @@ IS
       p_sequence_name      VARCHAR2,
       p_staging_owner      VARCHAR2 DEFAULT NULL,
       p_staging_table      VARCHAR2 DEFAULT NULL,
-<<<<<<< .working
       p_default_scd_type   NUMBER   DEFAULT 2,
       p_late_arriving      VARCHAR2 DEFAULT 'no',
-=======
-      p_default_scd_type   NUMBER   DEFAULT 2,
-      p_late_arriving      VARCHAR2 DEFAULT 'no',
-      p_late_arriving      VARCHAR2 DEFAULT 'no',
->>>>>>> .merge-right.r2442
       p_direct_load        VARCHAR2 DEFAULT 'yes',
       p_replace_method     VARCHAR2 DEFAULT 'rename',
       p_statistics         VARCHAR2 DEFAULT 'transfer',
@@ -1211,18 +1205,8 @@ IS
       p_con_concurrency    VARCHAR2 DEFAULT 'no',
       p_stage_key_def      NUMBER   DEFAULT -.01,
       p_char_nvl_def       VARCHAR2 DEFAULT '~',
-<<<<<<< .working
       p_date_nvl_def       DATE     DEFAULT TO_DATE ('01/01/9999','mm/dd/yyyy'),
       p_num_nvl_def        NUMBER   DEFAULT -.01,
-=======
-<<<<<<< .working
-      p_date_nvl_def       DATE DEFAULT TO_DATE ('01/01/9999','mm/dd/yyyy'),
-      p_num_nvl_def        NUMBER DEFAULT -.01,
->>>>>>> .merge-right.r2442
-=======
-      p_date_nvl_def       DATE     DEFAULT TO_DATE ('01/01/9999','mm/dd/yyyy'),
-      p_num_nvl_def        NUMBER   DEFAULT -.01,
->>>>>>> .merge-right.r2441
       p_description        VARCHAR2 DEFAULT NULL
    )
    IS
@@ -1270,7 +1254,6 @@ IS
       END;
 
       -- now make the call to create the mapping
-<<<<<<< .working
       create_mapping ( p_mapping             => p_mapping,
                        p_mapping_type        => 'dimension',
                        p_table               => p_table,
@@ -1288,39 +1271,6 @@ IS
                        p_constraint_type     => p_constraint_type,
                        p_con_concurrency     => p_con_concurrency,
                        p_drop_dep            => 'no'
-=======
-<<<<<<< .working
-      create_mapping ( p_mapping             => p_mapping,
-                       p_mapping_type        => 'dimension',
-                       p_table               => p_table,
-                       p_owner               => p_owner,
-                       p_staging_owner       => p_staging_owner,
-                       p_staging_table       => p_staging_table,
-                       p_replace_method      => p_replace_method,
-                       p_statistics          => p_statistics,
-                       p_idx_concurrency     => p_idx_concurrency,
-                       p_con_concurrency     => p_con_concurrency,
-                       p_drop_dep            => 'no'            
-=======
-      create_mapping ( p_mapping             => p_mapping,
-                       p_mapping_type        => 'dimension',
-                       p_table               => p_table,
-                       p_owner               => p_owner,
-                       p_staging_owner       => p_staging_owner,
-                       p_staging_table       => p_staging_table,
-                       p_replace_method      => p_replace_method,
-                       p_statistics          => p_statistics,
-                       p_indexes             => p_indexes,
-                       p_index_regexp        => p_index_regexp,
-                       p_index_type          => p_index_type,
-                       p_idx_concurrency     => p_idx_concurrency,
-                       p_constraints         => p_constraints,
-                       p_constraint_regexp   => p_constraint_regexp,
-                       p_constraint_type     => p_constraint_type,
-                       p_con_concurrency     => p_con_concurrency,
-                       p_drop_dep            => 'no'
->>>>>>> .merge-right.r2441
->>>>>>> .merge-right.r2442
                      );
       o_dim := trans_factory.get_mapping_ot (p_mapping);
       
@@ -1338,14 +1288,8 @@ IS
       p_sequence_name      VARCHAR2 DEFAULT NULL,
       p_staging_owner      VARCHAR2 DEFAULT NULL,
       p_staging_table      VARCHAR2 DEFAULT NULL,
-<<<<<<< .working
       p_default_scd_type   NUMBER   DEFAULT NULL,
       p_late_arriving      VARCHAR2 DEFAULT 'no',
-=======
-      p_default_scd_type   NUMBER   DEFAULT NULL,
-      p_late_arriving      VARCHAR2 DEFAULT 'no',
-      p_late_arriving      VARCHAR2 DEFAULT 'no',
->>>>>>> .merge-right.r2442
       p_direct_load        VARCHAR2 DEFAULT NULL,
       p_replace_method     VARCHAR2 DEFAULT NULL,
       p_statistics         VARCHAR2 DEFAULT NULL,
@@ -1464,21 +1408,9 @@ IS
 	evolve.raise_err( 'no_dim' );
      END IF;
 
-<<<<<<< .working
      -- now make the call to modify the mapping
      update_mapping ( p_mapping             => p_mapping,
                       p_owner               => p_owner,
-=======
-<<<<<<< .working
-      -- now make the call to modify the mapping
-      update_mapping (p_mapping             => p_mapping,
-                      p_owner               => p_owner,
-=======
-     -- now make the call to modify the mapping
-     update_mapping ( p_mapping             => p_mapping,
-                      p_owner               => p_owner,
->>>>>>> .merge-right.r2441
->>>>>>> .merge-right.r2442
                       p_table               => p_table,
                       p_staging_owner       => p_staging_owner,
                       p_staging_table       => p_staging_table,

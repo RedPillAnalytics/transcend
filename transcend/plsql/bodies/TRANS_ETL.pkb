@@ -24,17 +24,8 @@ AS
       p_batch_id   NUMBER DEFAULT NULL
    )
    AS
-<<<<<<< .working
       o_ev    evolve_ot      := evolve_ot( p_module => 'start_mapping' );
       o_map   mapping_ot := trans_factory.get_mapping_ot( p_mapping => p_mapping, p_batch_id => p_batch_id );
-=======
-<<<<<<< .working
-      o_map   mapping_ot := trans_factory.get_mapping_ot( p_mapping => p_mapping, p_batch_id => p_batch_id );
-=======
-      o_ev    evolve_ot      := evolve_ot( p_module => 'start_mapping' );
-      o_map   mapping_ot := trans_factory.get_mapping_ot( p_mapping => p_mapping, p_batch_id => p_batch_id );
->>>>>>> .merge-right.r2441
->>>>>>> .merge-right.r2442
    BEGIN
       
       evolve.log_variable( 'o_map.mapping_type',o_map.mapping_type );
