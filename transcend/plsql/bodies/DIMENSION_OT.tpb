@@ -3,8 +3,7 @@ AS
    CONSTRUCTOR FUNCTION dimension_ot( p_mapping VARCHAR2, p_batch_id NUMBER DEFAULT NULL )
       RETURN SELF AS RESULT
    AS
-      l_load_sql   LONG;
-      o_ev         evolve_ot := evolve_ot( p_module => 'dimension_ot' );
+      o_ev         evolve_ot := evolve_ot( p_module => 'dimension_ot.constructor' );
    BEGIN
       -- first register instrumentation details
       SELF.REGISTER( p_mapping => p_mapping, p_batch_id => p_batch_id );
@@ -31,9 +30,16 @@ AS
                             WHEN staging_table IS NULL
                                THEN 'no'
                             ELSE 'yes'
+<<<<<<< .working
                          END named_staging, direct_load, replace_method, STATISTICS, index_concurrency,
                          constraint_concurrency, manage_indexes, manage_constraints, late_arriving, drop_dependent_objects
                    FROM dimension_conf JOIN mapping_conf USING( mapping_name )
+=======
+                         END named_staging, direct_load, replace_method, STATISTICS, index_concurrency,
+                         constraint_concurrency, manage_indexes, manage_constraints, late_arriving, 
+                         drop_dependent_objects, mapping_type
+                   FROM dimension_conf JOIN mapping_conf USING( mapping_name )
+>>>>>>> .merge-right.r2441
                   WHERE mapping_name = SELF.mapping_name );
       EXCEPTION
          WHEN NO_DATA_FOUND
@@ -41,9 +47,16 @@ AS
             evolve.raise_err( 'no_dim', p_mapping );
       END;
       
+<<<<<<< .working
       evolve.log_variable( 'SELF.full_table',SELF.full_table );
       evolve.log_variable( 'SELF.full_stage',SELF.full_stage );
       evolve.log_variable( 'SELF.drop_dependent_objects', SELF.drop_dependent_objects );
+=======
+      evolve.log_variable( 'SELF.full_table',SELF.full_table );
+      evolve.log_variable( 'SELF.full_stage',SELF.full_stage );
+      evolve.log_variable( 'SELF.drop_dependent_objects', SELF.drop_dependent_objects );
+      evolve.log_variable( 'SELF.mapping_type', SELF.mapping_type );
+>>>>>>> .merge-right.r2441
 
       -- confirm the objects related to the dimensional configuration
       verify;
@@ -608,6 +621,7 @@ AS
          || ')'
          || ' where include=''Y''';
 
+<<<<<<< .working
       -- this statement is needed for a particular "non-merge" situation described below
       l_rep_ind_ins :=  'insert '
                         || CASE td_core.get_yn_ind( SELF.direct_load )
@@ -643,6 +657,43 @@ AS
                               
          evolve.log_variable( 'L_BT_PART', l_bt_part );
 
+=======
+      -- this statement is needed for a particular "non-merge" situation described below
+      l_rep_ind_ins :=  'insert '
+                        || CASE td_core.get_yn_ind( SELF.direct_load )
+                              WHEN 'yes'
+                              THEN '/*+ APPEND */ '
+                              ELSE NULL
+                           END
+                        || 'into '
+                        || SELF.full_stage
+                        || ' select * from '
+                        || SELF.full_table
+                        || ' where '
+                        || SELF.current_ind_col
+                        || ' = ''N''';
+
+      evolve.log_msg( 'The non-merge, non-late-arriving insert: ' || l_rep_ind_ins, 5 );  
+
+
+      -- create the staging table
+      -- this is a staging table that holds the results of the dimensional analysis
+      -- it is then either exchanged in, table-renamed, or the source for a merge
+      o_ev.change_action( 'create staging table' );
+
+      BEGIN
+
+         l_bt_part      := CASE
+                           WHEN self.replace_method = 'exchange' AND l_tab_part 
+                           THEN 'remove'
+                           WHEN self.replace_method = 'exchange' AND NOT l_tab_part
+                           THEN 'single'
+                           ELSE 'keep'
+                              END;
+                              
+         evolve.log_variable( 'L_BT_PART', l_bt_part );
+
+>>>>>>> .merge-right.r2441
          td_dbutils.build_table( p_source_owner      => SELF.table_owner,
                                  p_source_table      => SELF.table_name,
                                  p_owner             => SELF.staging_owner,
