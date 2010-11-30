@@ -264,7 +264,7 @@ IS
       
    PROCEDURE set_logging_level(
       p_logging_level   NUMBER   DEFAULT 2,
-      p_debug_level     NUMBER   DEFAULT 3
+      p_debug_level     NUMBER   DEFAULT 4
    );
 
    PROCEDURE set_session_parameter(
