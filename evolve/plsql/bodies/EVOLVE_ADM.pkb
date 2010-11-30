@@ -3,7 +3,7 @@ IS
    PROCEDURE set_module_conf(
       p_module          VARCHAR2 DEFAULT all_modules,
       p_logging_level   NUMBER   DEFAULT 2,
-      p_debug_level     NUMBER   DEFAULT 4,
+      p_debug_level     NUMBER   DEFAULT 3,
       p_default_runmode VARCHAR2 DEFAULT 'runtime',
       p_registration    VARCHAR2 DEFAULT 'appinfo',
       p_mode            VARCHAR2 DEFAULT 'upsert'

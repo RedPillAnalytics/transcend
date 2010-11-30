@@ -1947,7 +1947,7 @@ IS
 	   action 	    VARCHAR2(24),
 	   stmt_order 	    NUMBER
 	 )
-	 ON COMMIT PRESERVE ROWS|';
+	 ON COMMIT DELETE ROWS|';
 	 
          -- COLUMN_TYPE_LIST table
          EXECUTE IMMEDIATE q'|CREATE TABLE column_type_list

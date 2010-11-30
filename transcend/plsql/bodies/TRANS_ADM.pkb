@@ -1190,29 +1190,17 @@ IS
       p_sequence_name      VARCHAR2,
       p_staging_owner      VARCHAR2 DEFAULT NULL,
       p_staging_table      VARCHAR2 DEFAULT NULL,
-      p_default_scd_type   NUMBER   DEFAULT 2,
-      p_late_arriving      VARCHAR2 DEFAULT 'no',
+      p_default_scd_type   NUMBER DEFAULT 2,
       p_late_arriving      VARCHAR2 DEFAULT 'no',
       p_direct_load        VARCHAR2 DEFAULT 'yes',
       p_replace_method     VARCHAR2 DEFAULT 'rename',
       p_statistics         VARCHAR2 DEFAULT 'transfer',
-      p_indexes            VARCHAR2 DEFAULT 'ignore',
-      p_index_regexp       VARCHAR2 DEFAULT NULL,
-      p_index_type         VARCHAR2 DEFAULT NULL,
       p_idx_concurrency    VARCHAR2 DEFAULT 'no',
-      p_constraints        VARCHAR2 DEFAULT 'ignore',
-      p_constraint_regexp  VARCHAR2 DEFAULT NULL,
-      p_constraint_type    VARCHAR2 DEFAULT NULL,
       p_con_concurrency    VARCHAR2 DEFAULT 'no',
-      p_stage_key_def      NUMBER   DEFAULT -.01,
+      p_stage_key_def      NUMBER DEFAULT -.01,
       p_char_nvl_def       VARCHAR2 DEFAULT '~',
-<<<<<<< .working
       p_date_nvl_def       DATE DEFAULT TO_DATE ('01/01/9999','mm/dd/yyyy'),
       p_num_nvl_def        NUMBER DEFAULT -.01,
-=======
-      p_date_nvl_def       DATE     DEFAULT TO_DATE ('01/01/9999','mm/dd/yyyy'),
-      p_num_nvl_def        NUMBER   DEFAULT -.01,
->>>>>>> .merge-right.r2441
       p_description        VARCHAR2 DEFAULT NULL
    )
    IS
@@ -1260,7 +1248,6 @@ IS
       END;
 
       -- now make the call to create the mapping
-<<<<<<< .working
       create_mapping ( p_mapping             => p_mapping,
                        p_mapping_type        => 'dimension',
                        p_table               => p_table,
@@ -1272,25 +1259,6 @@ IS
                        p_idx_concurrency     => p_idx_concurrency,
                        p_con_concurrency     => p_con_concurrency,
                        p_drop_dep            => 'no'            
-=======
-      create_mapping ( p_mapping             => p_mapping,
-                       p_mapping_type        => 'dimension',
-                       p_table               => p_table,
-                       p_owner               => p_owner,
-                       p_staging_owner       => p_staging_owner,
-                       p_staging_table       => p_staging_table,
-                       p_replace_method      => p_replace_method,
-                       p_statistics          => p_statistics,
-                       p_indexes             => p_indexes,
-                       p_index_regexp        => p_index_regexp,
-                       p_index_type          => p_index_type,
-                       p_idx_concurrency     => p_idx_concurrency,
-                       p_constraints         => p_constraints,
-                       p_constraint_regexp   => p_constraint_regexp,
-                       p_constraint_type     => p_constraint_type,
-                       p_con_concurrency     => p_con_concurrency,
-                       p_drop_dep            => 'no'
->>>>>>> .merge-right.r2441
                      );
       o_dim := trans_factory.get_mapping_ot (p_mapping);
       
@@ -1308,24 +1276,17 @@ IS
       p_sequence_name      VARCHAR2 DEFAULT NULL,
       p_staging_owner      VARCHAR2 DEFAULT NULL,
       p_staging_table      VARCHAR2 DEFAULT NULL,
-      p_default_scd_type   NUMBER   DEFAULT NULL,
-      p_late_arriving      VARCHAR2 DEFAULT 'no',
+      p_default_scd_type   NUMBER DEFAULT NULL,
       p_late_arriving      VARCHAR2 DEFAULT 'no',
       p_direct_load        VARCHAR2 DEFAULT NULL,
       p_replace_method     VARCHAR2 DEFAULT NULL,
       p_statistics         VARCHAR2 DEFAULT NULL,
-      p_indexes            VARCHAR2 DEFAULT 'ignore',
-      p_index_regexp       VARCHAR2 DEFAULT NULL,
-      p_index_type         VARCHAR2 DEFAULT NULL,
-      p_idx_concurrency    VARCHAR2 DEFAULT 'no',
-      p_constraints        VARCHAR2 DEFAULT 'ignore',
-      p_constraint_regexp  VARCHAR2 DEFAULT NULL,
-      p_constraint_type    VARCHAR2 DEFAULT NULL,
-      p_con_concurrency    VARCHAR2 DEFAULT 'no',
-      p_stage_key_def      NUMBER   DEFAULT NULL,
+      p_idx_concurrency    VARCHAR2 DEFAULT NULL,
+      p_con_concurrency    VARCHAR2 DEFAULT NULL,
+      p_stage_key_def      NUMBER DEFAULT NULL,
       p_char_nvl_def       VARCHAR2 DEFAULT NULL,
-      p_date_nvl_def       DATE     DEFAULT NULL,
-      p_num_nvl_def        NUMBER   DEFAULT NULL,
+      p_date_nvl_def       DATE DEFAULT NULL,
+      p_num_nvl_def        NUMBER DEFAULT NULL,
       p_description        VARCHAR2 DEFAULT NULL
    )
    IS
@@ -1429,29 +1390,17 @@ IS
 	evolve.raise_err( 'no_dim' );
      END IF;
 
-<<<<<<< .working
       -- now make the call to modify the mapping
       update_mapping (p_mapping             => p_mapping,
                       p_owner               => p_owner,
-=======
-     -- now make the call to modify the mapping
-     update_mapping ( p_mapping             => p_mapping,
-                      p_owner               => p_owner,
->>>>>>> .merge-right.r2441
                       p_table               => p_table,
                       p_staging_owner       => p_staging_owner,
                       p_staging_table       => p_staging_table,
                       p_replace_method      => p_replace_method,
                       p_statistics          => p_statistics,
-                      p_indexes             => p_indexes,
-                      p_index_regexp        => p_index_regexp,
-                      p_index_type          => p_index_type,
                       p_idx_concurrency     => p_idx_concurrency,
-                      p_constraints         => p_constraints,
-                      p_constraint_regexp   => p_constraint_regexp,
-                      p_constraint_type     => p_constraint_type,
                       p_con_concurrency     => p_con_concurrency
-                    );
+                     );
      
      o_dim := trans_factory.get_mapping_ot (p_mapping => nvl( p_mapping, l_mapping ));
 
@@ -1766,21 +1715,6 @@ IS
                                 );
    
    END set_module_conf;
-
-   PROCEDURE set_logging_level(
-      p_logging_level   NUMBER   DEFAULT 2,
-      p_debug_level     NUMBER   DEFAULT 4
-   )
-   IS
-   BEGIN
-
-      evolve_adm.set_module_conf(
-                                  p_logging_level   => p_logging_level,
-                                  p_debug_level     => p_debug_level
-                                );
-   
-   END set_logging_level;
-   
 
    PROCEDURE set_session_parameter(
       p_name         VARCHAR2,
