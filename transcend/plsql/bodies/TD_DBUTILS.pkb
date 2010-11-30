@@ -166,6 +166,7 @@ AS
       o_ev              evolve_ot     := evolve_ot( p_module => 'enqueue_ddl' );
    BEGIN
 
+<<<<<<< .working
       -- register variables
       evolve.log_variable( 'p_stmt',    p_stmt );
       evolve.log_variable( 'p_msg',     p_msg );
@@ -180,6 +181,38 @@ AS
                     );
       COMMIT;
 
+=======
+<<<<<<< .working
+      -- register variables
+      evolve.log_variable( 'p_stmt',    p_stmt );
+      evolve.log_variable( 'p_msg',     p_msg );
+      evolve.log_variable( 'p_module',  p_module );
+      evolve.log_variable( 'p_action',  p_action );     
+      evolve.log_variable( 'p_order',   p_order );     
+
+      INSERT INTO ddl_queue
+             ( stmt_ddl, stmt_msg, module, action, stmt_order
+             )
+             VALUES ( p_stmt, p_msg, p_module, p_action, p_order
+                    );
+
+=======
+      -- register variables
+      evolve.log_variable( 'p_stmt',    p_stmt );
+      evolve.log_variable( 'p_msg',     p_msg );
+      evolve.log_variable( 'p_module',  p_module );
+      evolve.log_variable( 'p_action',  p_action );     
+      evolve.log_variable( 'p_order',   p_order );     
+
+      INSERT INTO ddl_queue
+             ( stmt_ddl, stmt_msg, module, action, stmt_order
+             )
+             VALUES ( p_stmt, p_msg, p_module, p_action, p_order
+                    );
+      COMMIT;
+
+>>>>>>> .merge-right.r2441
+>>>>>>> .merge-right.r2442
       o_ev.clear_app_info;
    EXCEPTION
       WHEN OTHERS
@@ -1183,7 +1216,18 @@ AS
             AND partition_name = UPPER( p_partname );
       END IF;
 
+<<<<<<< .working
        evolve.log_variable('l_part_position',l_part_position);
+=======
+<<<<<<< .working
+       evolve.log_variable('l_part_position',l_part_position);
+
+      -- need to get a unique "job header" number in case we are running concurrently
+      o_ev.change_action( 'get concurrent id' );
+>>>>>>> .merge-right.r2442
+=======
+       evolve.log_variable('l_part_position',l_part_position);
+>>>>>>> .merge-right.r2441
 
       IF td_core.is_true( p_concurrent )
       THEN
