@@ -70,7 +70,7 @@ AS
          -- make sure we also have a table owner
          IF self.table_owner IS NULL
          THEN
-            evolve.raise_err( 'parms_group', 'P_OWNER and P_TABLE' );
+            evolve.raise_err( 'group_parms', 'P_OWNER and P_TABLE' );
          END IF;
          
          -- when a table_name is specified, check to make sure it exists

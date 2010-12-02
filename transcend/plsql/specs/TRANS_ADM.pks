@@ -159,6 +159,7 @@ IS
       p_constraint_regexp   VARCHAR2 DEFAULT NULL,
       p_constraint_type     VARCHAR2 DEFAULT NULL,
       p_con_concurrency     VARCHAR2 DEFAULT NULL,
+      p_drop_dep            VARCHAR2 DEFAULT NULL,
       p_staging_owner       VARCHAR2 DEFAULT NULL,
       p_staging_table       VARCHAR2 DEFAULT NULL,
       p_staging_column      VARCHAR2 DEFAULT NULL,

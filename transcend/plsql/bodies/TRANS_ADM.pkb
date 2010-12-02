@@ -917,7 +917,7 @@ IS
 
    END create_mapping;
    
-   PROCEDURE update_mapping (
+   PROCEDURE modify_mapping (
       p_mapping             VARCHAR2,
       p_owner               VARCHAR2 DEFAULT NULL,
       p_table               VARCHAR2 DEFAULT NULL,
@@ -938,29 +938,11 @@ IS
       p_replace_method      VARCHAR2 DEFAULT NULL,
       p_statistics          VARCHAR2 DEFAULT NULL,
       p_description         VARCHAR2 DEFAULT NULL
-
    )
    IS
-      l_map_type   mapping_conf.mapping_type%TYPE;
-      l_num_rows   NUMBER;
-      e_dup_conf   EXCEPTION;
-      PRAGMA EXCEPTION_INIT (e_dup_conf, -1);
-      o_ev          evolve_ot     := evolve_ot (p_module      => 'update_mapping');
+      o_map        mapping_ot;
+      o_ev         evolve_ot     := evolve_ot (p_module      => 'modify_mapping');
    BEGIN
-      
-      BEGIN
-         --first, check to make sure that we should be modifying this record
-         SELECT mapping_type
-           INTO l_map_type
-           FROM mapping_conf
-          WHERE LOWER (mapping_name) = LOWER (p_mapping);
-      EXCEPTION
-         WHEN NO_DATA_FOUND
-         THEN
-            -- if there is no record, then raise the error
-	    o_ev.clear_app_info;
-            evolve.raise_err( 'no_mapping' );
-      END;
       
       -- if the constant null_value is used, then the value should be set to null
       UPDATE mapping_conf
@@ -969,6 +951,15 @@ IS
                      WHEN p_table IS NULL
                      THEN table_name
                      ELSE p_table
+                     END
+                   ),
+             table_owner =
+             UPPER (CASE
+                     WHEN p_owner IS NULL
+                     THEN table_owner
+                     WHEN p_owner = null_value
+                     THEN NULL
+                     ELSE p_owner
                      END
                    ),
              partition_name =
@@ -1109,62 +1100,14 @@ IS
              modified_user = SYS_CONTEXT ('USERENV', 'SESSION_USER'),
              modified_dt = SYSDATE
        WHERE mapping_name = LOWER (p_mapping);
+
+       -- now use the dimension object to validate the new structure
+       -- just constructing the object calls the CONFIRM_OBJECTS procedure
+       o_map := trans_factory.get_mapping_ot (p_mapping => p_mapping );
              
-         o_ev.clear_app_info;
-   END update_mapping;
-
-   PROCEDURE modify_mapping (
-      p_mapping             VARCHAR2,
-      p_owner               VARCHAR2 DEFAULT NULL,
-      p_table               VARCHAR2 DEFAULT NULL,
-      p_partname            VARCHAR2 DEFAULT NULL,
-      p_indexes             VARCHAR2 DEFAULT NULL,
-      p_index_regexp        VARCHAR2 DEFAULT NULL,
-      p_index_type          VARCHAR2 DEFAULT NULL,
-      p_part_type           VARCHAR2 DEFAULT NULL,
-      p_idx_concurrency     VARCHAR2 DEFAULT NULL,
-      p_constraints         VARCHAR2 DEFAULT NULL,
-      p_constraint_regexp   VARCHAR2 DEFAULT NULL,
-      p_constraint_type     VARCHAR2 DEFAULT NULL,
-      p_con_concurrency     VARCHAR2 DEFAULT NULL,
-      p_staging_owner       VARCHAR2 DEFAULT NULL,
-      p_staging_table       VARCHAR2 DEFAULT NULL,
-      p_staging_column      VARCHAR2 DEFAULT NULL,
-      p_replace_method      VARCHAR2 DEFAULT NULL,
-      p_statistics          VARCHAR2 DEFAULT NULL,
-      p_description         VARCHAR2 DEFAULT NULL
-   )
-   IS
-      o_map mapping_ot;
-   BEGIN
-    
-      update_mapping ( p_mapping             => p_mapping,
-                       p_owner               => p_owner,
-                       p_table               => p_table,
-                       p_partname            => p_partname,
-                       p_indexes             => p_indexes,
-                       p_idx_concurrency     => p_idx_concurrency,
-                       p_constraints         => p_constraints,
-                       p_con_concurrency     => p_con_concurrency,
-                       p_staging_owner       => p_staging_owner,
-                       p_staging_table       => p_staging_table,
-                       p_staging_column      => p_staging_column,
-                       p_replace_method      => p_replace_method,
-                       p_statistics          => p_statistics,
-                       p_index_regexp        => p_index_regexp,
-                       p_index_type          => p_index_type,
-                       p_part_type           => p_part_type,
-                       p_constraint_regexp   => p_constraint_regexp,
-                       p_constraint_type     => p_constraint_type,
-                       p_description         => p_description
-                     );
-
-      -- now use the dimension object to validate the new structure
-      -- just constructing the object calls the CONFIRM_OBJECTS procedure
-      o_map := trans_factory.get_mapping_ot (p_mapping => p_mapping );
-
+       o_ev.clear_app_info;
    END modify_mapping;
-   
+
    PROCEDURE delete_mapping (
       p_mapping             VARCHAR2
    )
@@ -1409,7 +1352,7 @@ IS
      END IF;
 
      -- now make the call to modify the mapping
-     update_mapping ( p_mapping             => p_mapping,
+     modify_mapping ( p_mapping             => p_mapping,
                       p_owner               => p_owner,
                       p_table               => p_table,
                       p_staging_owner       => p_staging_owner,
@@ -1423,7 +1366,8 @@ IS
                       p_constraints         => p_constraints,
                       p_constraint_regexp   => p_constraint_regexp,
                       p_constraint_type     => p_constraint_type,
-                      p_con_concurrency     => p_con_concurrency
+                      p_con_concurrency     => p_con_concurrency,
+                      p_drop_dep            => 'no'
                     );
      
      o_dim := trans_factory.get_mapping_ot (p_mapping => nvl( p_mapping, l_mapping ));

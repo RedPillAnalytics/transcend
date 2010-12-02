@@ -14,7 +14,6 @@ AS
       p_source_owner    VARCHAR2 DEFAULT NULL,
       p_source_object   VARCHAR2 DEFAULT NULL,
       p_source_column   VARCHAR2 DEFAULT NULL,
-      p_partid          VARCHAR2 DEFAULT NULL,
       p_d_num           NUMBER DEFAULT 3,
       p_p_num           NUMBER DEFAULT 1048576
    )
@@ -82,9 +81,9 @@ AS
          o_ev.change_action( 'static insert' );
 
          INSERT INTO td_part_gtt
-                ( table_owner, table_name, partition_name, partition_position, partid
+                ( table_owner, table_name, partition_name, partition_position
                      )
-                VALUES ( UPPER( p_owner ), UPPER( p_table ), UPPER( p_partname ), l_part_position, p_partid
+                VALUES ( UPPER( p_owner ), UPPER( p_table ), UPPER( p_partname ), l_part_position
                      );
          evolve.log_msg( SQL%ROWCOUNT||' rows inserted into TD_PART_GTT', 4 );
 
@@ -106,9 +105,9 @@ AS
          o_ev.change_action( 'dynamic insert' );
          
          l_dsql := 
-         'insert into td_part_gtt ( table_owner, table_name, partition_name, partition_position, partid ) '
-         || ' SELECT owner, object_name, subobject_name, object_id, '''||p_partid
-         || '''  FROM all_objects'
+         'insert into td_part_gtt ( table_owner, table_name, partition_name, partition_position ) '
+         || ' SELECT owner, object_name, subobject_name, object_id'
+         || '  FROM all_objects'
          || ' WHERE owner = '''
          || UPPER( p_owner )
          || ''' AND object_name = '''
@@ -147,7 +146,6 @@ AS
         FROM td_part_gtt;
 
       evolve.log_msg( 'Number of records currently in TD_PART_GTT:' || l_num_rows, 5 );
-      COMMIT;
       o_ev.clear_app_info;
    EXCEPTION
       WHEN OTHERS
@@ -180,7 +178,6 @@ AS
              )
              VALUES ( p_stmt, p_msg, p_module, p_action, p_order
                     );
-      COMMIT;
 
       o_ev.clear_app_info;
    EXCEPTION
@@ -611,7 +608,6 @@ AS
                        p_owner              => p_owner,
                        p_table              => p_table
                      );
-	 COMMIT;
       END IF;
 
       -- we want to gather statistics
@@ -2254,8 +2250,8 @@ AS
       
       IF td_core.is_true( p_direct )
       THEN
-            
-         evolve.exec_sql( 'commit' );
+         
+         COMMIT;
 
       END IF;
 
@@ -2468,8 +2464,7 @@ AS
          o_ev.change_action( 'alter parallel dml' );
          IF td_core.is_true( p_direct )
          THEN
-            
-            evolve.exec_sql( 'commit' );
+            COMMIT;
          END IF;
 
          -- ENABLE|DISABLE parallel dml depending on the value of P_DIRECT
@@ -3423,9 +3418,6 @@ AS
       p_part_type       VARCHAR2 DEFAULT NULL
    )
    IS
-      l_partid          VARCHAR2( 30 )    := 'TD$' || SYS_CONTEXT( 'USERENV', 'SESSIONID' )
-                                                   || TO_CHAR( SYSDATE, 'yyyymmdd_hhmiss' );
-
       l_tab_name   VARCHAR2( 61 )   := UPPER( p_owner )        || '.' || UPPER( p_table );
       l_src_name   VARCHAR2( 61 )   := UPPER( p_source_owner ) || '.' || UPPER( p_source_object );
       l_msg        VARCHAR2( 2000 );
@@ -3436,6 +3428,9 @@ AS
       l_part_type  VARCHAR2(10)     := td_utils.get_tab_part_type( p_owner, p_table );
       o_ev         evolve_ot        := evolve_ot( p_module => 'unusable_indexes' );
    BEGIN
+      
+      SAVEPOINT before_unusable_indexes;
+
 
       CASE
 
@@ -3483,7 +3478,7 @@ AS
       THEN
 
          o_ev.change_action( 'populate PARTNAME table' );
-
+         
          -- populate a global temporary table with the indexes to work on
          -- this is a requirement because the dynamic SQL needed to use the tbl$or$idx$part$num function
          populate_partname( p_owner              => p_owner,
@@ -3492,7 +3487,6 @@ AS
                             p_source_owner       => p_source_owner,
                             p_source_object      => p_source_object,
                             p_source_column      => p_source_column,
-                            p_partid             => l_partid,
                             p_d_num              => p_d_num,
                             p_p_num              => p_p_num
                           );
@@ -3575,8 +3569,7 @@ AS
                                         RIGHT JOIN all_indexes ai
                                               ON ai.index_name = aip.index_name AND ai.owner = aip.index_owner
                                         WHERE ai.table_name = UPPER( p_table )
-                                          AND ai.table_owner = UPPER( p_owner )
-                                          AND partid = l_partid)
+                                          AND ai.table_owner = UPPER( p_owner ))
                                WHERE REGEXP_LIKE( index_type, '^' || p_index_type, 'i' )
                                  AND REGEXP_LIKE( partitioned,
                                                   CASE
@@ -3629,8 +3622,8 @@ AS
       ELSE
          evolve.log_msg( 'No matching usable indexes found on ' || l_tab_name, 1 );
       END IF;
-
-      DELETE FROM td_part_gtt WHERE partid = l_partid;
+      
+      ROLLBACK TO SAVEPOINT before_unusable_indexes;
 
       o_ev.clear_app_info;
    EXCEPTION

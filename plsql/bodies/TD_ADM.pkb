@@ -1933,10 +1933,9 @@ IS
 	   table_owner        VARCHAR2(30),
 	   table_name         VARCHAR2(30),
 	   partition_name     VARCHAR2(30),
-	   partition_position NUMBER,
-           partid             VARCHAR2(30)
+	   partition_position NUMBER
 	 )
-	 ON COMMIT DELETE ROWS|';
+	 ON COMMIT PRESERVE ROWS|';
 	 
          EXECUTE IMMEDIATE q'|CREATE global temporary table ddl_queue
 	 ( 
