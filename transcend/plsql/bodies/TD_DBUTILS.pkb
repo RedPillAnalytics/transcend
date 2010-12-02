@@ -138,6 +138,7 @@ AS
          EXECUTE IMMEDIATE l_dsql;
 
          evolve.log_msg( SQL%ROWCOUNT||' rows inserted into TD_PART_GTT', 4 );
+
       END IF;
 
       -- get count of records affected
@@ -146,6 +147,7 @@ AS
         FROM td_part_gtt;
 
       evolve.log_msg( 'Number of records currently in TD_PART_GTT:' || l_num_rows, 5 );
+      COMMIT;
       o_ev.clear_app_info;
    EXCEPTION
       WHEN OTHERS
@@ -2249,6 +2251,14 @@ AS
 
       -- enable|disable parallel dml depending on the parameter for P_DIRECT
       o_ev.change_action( 'alter parallel dml' );
+      
+      IF td_core.is_true( p_direct )
+      THEN
+            
+         evolve.exec_sql( 'commit' );
+
+      END IF;
+
       evolve.exec_sql(    'ALTER SESSION '
                            || CASE
                                  WHEN REGEXP_LIKE( 'yes', p_direct, 'i' )
@@ -2456,6 +2466,12 @@ AS
 
       BEGIN
          o_ev.change_action( 'alter parallel dml' );
+         IF td_core.is_true( p_direct )
+         THEN
+            
+            evolve.exec_sql( 'commit' );
+         END IF;
+
          -- ENABLE|DISABLE parallel dml depending on the value of P_DIRECT
          evolve.exec_sql( p_sql      =>    'ALTER SESSION '
                                             || CASE
@@ -3559,7 +3575,8 @@ AS
                                         RIGHT JOIN all_indexes ai
                                               ON ai.index_name = aip.index_name AND ai.owner = aip.index_owner
                                         WHERE ai.table_name = UPPER( p_table )
-                                          AND ai.table_owner = UPPER( p_owner ))
+                                          AND ai.table_owner = UPPER( p_owner )
+                                          AND partid = l_partid)
                                WHERE REGEXP_LIKE( index_type, '^' || p_index_type, 'i' )
                                  AND REGEXP_LIKE( partitioned,
                                                   CASE
