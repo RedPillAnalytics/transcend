@@ -26,11 +26,16 @@ AS OBJECT
      RETURN SELF AS RESULT,
   MEMBER PROCEDURE register ( p_mapping VARCHAR2, p_batch_id NUMBER DEFAULT NULL ),
   MEMBER PROCEDURE verify,
+  MEMBER PROCEDURE unusable_indexes,
+  MEMBER PROCEDURE disable_constraints,
   MEMBER PROCEDURE pre_map,
+  MEMBER PROCEDURE replace_table,
+  MEMBER PROCEDURE usable_indexes,
+  MEMBER PROCEDURE enable_constraints,
+  MEMBER PROCEDURE gather_stats,
   MEMBER PROCEDURE post_map,
   MEMBER PROCEDURE start_map,
   MEMBER PROCEDURE end_map,
-  MEMBER PROCEDURE load,
   MEMBER PROCEDURE confirm_dim_cols
 )
 NOT FINAL;

@@ -22,7 +22,7 @@ AS
                 SELF.constraint_concurrency, SELF.mapping_name, SELF.manage_indexes,
                 SELF.manage_constraints, SELF.late_arriving, SELF.drop_dependent_objects
            FROM ( SELECT table_owner, table_name, table_owner || '.' || table_name full_table, source_owner,
-                         source_table, source_owner || '.' || source_table full_source, sequence_owner, sequence_name,
+                         source_table, source_owner || '.' || source_table full_source, NVL( sequence_owner, table_owner ) sequence_owner, sequence_name,
                          sequence_owner || '.' || sequence_name full_sequence,
                          NVL( staging_owner, table_owner ) staging_owner,
                          NVL( staging_table, substr('STG$' || table_name, 1, 30) ) staging_table,
@@ -287,7 +287,7 @@ AS
       -- reset the evolve_object
       o_ev.clear_app_info;
    END confirm_dim_cols;
-   OVERRIDING MEMBER PROCEDURE LOAD
+   MEMBER PROCEDURE load_staging
    IS
       e_dup_tab_name     EXCEPTION;
       PRAGMA             EXCEPTION_INIT( e_dup_tab_name, -955 );
@@ -708,7 +708,7 @@ AS
       END IF;
 
       -- now run the insert statement to load the staging table
-      o_ev.change_action( 'load staging table' );
+      o_ev.change_action( 'load main insert' );
       evolve.exec_sql( l_sql );
       evolve.log_results_msg( p_count          => SQL%ROWCOUNT,
                               p_owner          => staging_owner,
@@ -720,7 +720,43 @@ AS
 
       -- reset the evolve_object
       o_ev.clear_app_info;
-   END LOAD;
+   END load_staging;
+   
+   OVERRIDING MEMBER PROCEDURE pre_map
+   IS
+      o_ev   evolve_ot := evolve_ot( p_module => 'dimension_ot.pre_map' );
+   BEGIN
+      
+      -- this method is overriden to do nothing
+      -- for a DIMENSION, all processing occurs in POST_MAP
+      evolve.log_msg( 'This method is empty', 4 );
+
+      -- reset the evolve_object
+      o_ev.clear_app_info;
+   END pre_map;
+   
+   OVERRIDING MEMBER PROCEDURE post_map
+   IS
+      o_ev   evolve_ot := evolve_ot( p_module => 'dimension_ot.post_map' );
+   BEGIN
+      
+      -- first process all the SCD rows into the intermediate table
+      -- do this first, because if there's an error, we wouldn't have disturbed anything else
+      load_staging;
+      
+      -- now, do the steps usually done in PRE_MAP in other MAPPING_OT objects
+      SELF.disable_constraints;
+      SELF.unusable_indexes;
+      
+      -- now do the stuff usually done in the POST_MAP method
+      SELF.replace_table;
+      SELF.usable_indexes;
+      SELF.enable_constraints;
+      SELF.gather_stats;
+
+      o_ev.clear_app_info;
+   END post_map;
+
 END;
 /
 

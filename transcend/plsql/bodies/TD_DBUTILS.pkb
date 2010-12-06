@@ -1517,7 +1517,7 @@ AS
                                             THEN 'submitted to the Oracle scheduler'
                                          ELSE 'executed'
                                       END,
-                                   2
+                                   3
                                  );
                l_con_cnt    := l_con_cnt + 1;
 
@@ -3784,7 +3784,8 @@ AS
          o_ev.change_action( 'process global indexes' );
 
          FOR c_gidx IN ( SELECT  table_name,
-                                'alter index ' || owner || '.' || index_name || ' rebuild parallel nologging' DDL
+                                'alter index ' || owner || '.' || index_name || ' rebuild parallel nologging' DDL,
+                                'Index '|| owner || '.' || index_name || ' rebuilt' msg
                            FROM all_indexes
                           WHERE table_name = UPPER( p_table )
                             AND table_owner = UPPER( p_owner )
@@ -3794,6 +3795,7 @@ AS
          LOOP
             l_rows    := TRUE;
             evolve.exec_sql( p_sql => c_gidx.DDL, p_auto => 'yes', p_concurrent_id => l_concurrent_id );
+            evolve.log_msg( c_gidx.msg, 3 );
             l_cnt     := l_cnt + 1;
          END LOOP;
 

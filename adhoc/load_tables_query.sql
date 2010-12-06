@@ -8,10 +8,10 @@ var p_source_regexp VARCHAR2(100)
 var p_suffix VARCHAR2(30)
 var p_part_tabs VARCHAR2(3)
 
-EXEC :p_owner := 'staging';
-EXEC :p_source_owner := 'source_data';
-EXEC :p_source_regexp := '^src_.+_vw$';
-EXEC :p_suffix := 't';
+EXEC :p_source_owner := 'stage';
+EXEC :p_owner := 'stewart';
+EXEC :p_source_regexp := '^tst_.+_src$';
+EXEC :p_suffix := 'src';
 
 SET termout on
 

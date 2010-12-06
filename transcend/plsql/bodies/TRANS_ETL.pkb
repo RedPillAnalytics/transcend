@@ -508,21 +508,6 @@ AS
          RAISE;
    END replace_table;
 
-   -- uses SQL analytics to load a hybrid SCD dimension table
-   PROCEDURE load_dimension( p_mapping VARCHAR2 )
-   IS
-      -- use the object factory to return a dimension object
-      o_dim   mapping_ot := trans_factory.get_mapping_ot( p_mapping => p_mapping );
-   BEGIN
-      -- execute the load
-      o_dim.LOAD;
-   EXCEPTION
-      WHEN OTHERS
-      THEN
-         evolve.log_err;
-         RAISE;
-   END load_dimension;
-
    PROCEDURE unusable_indexes(
       p_owner           VARCHAR2,
       p_table           VARCHAR2,

@@ -150,13 +150,12 @@ AS
       o_ev.clear_app_info;
    END verify;
 
-   MEMBER PROCEDURE pre_map
+   MEMBER PROCEDURE unusable_indexes
    AS
-      o_ev   evolve_ot := evolve_ot( p_module => 'mapping_ot.pre_map' );
+      o_ev   evolve_ot := evolve_ot( p_module => 'mapping_ot.unusable_indexes' );
    BEGIN
       
       evolve.log_variable( 'SELF.manage_indexes', SELF.manage_indexes );
-      evolve.log_variable( 'SELF.manage_constraints', SELF.manage_constraints );
 
       -- we want to manage indexes, but there is no table replace that is occurring
       -- so we need to explicitly manage the indexes
@@ -176,6 +175,16 @@ AS
                                     );
       END IF;
 
+      o_ev.clear_app_info;
+   END unusable_indexes;
+   
+   MEMBER PROCEDURE disable_constraints
+   AS
+      o_ev   evolve_ot := evolve_ot( p_module => 'mapping_ot.disable_constraints' );
+   BEGIN
+      
+      evolve.log_variable( 'SELF.manage_constraints', SELF.manage_constraints );
+
       -- we want to manage constraints, but there is no table replace that is occurring
       -- so we need to explicitly manage constraints
       -- so we need to disable constraints beforehand
@@ -190,11 +199,22 @@ AS
                                     );
       END IF;
       o_ev.clear_app_info;
+   END disable_constraints;
+
+   MEMBER PROCEDURE pre_map
+   AS
+      o_ev   evolve_ot := evolve_ot( p_module => 'mapping_ot.pre_map' );
+   BEGIN
+      
+      disable_constraints;
+      unusable_indexes;
+      
+      o_ev.clear_app_info;
    END pre_map;
    
-   MEMBER PROCEDURE post_map
+   MEMBER PROCEDURE replace_table
    AS
-      o_ev   evolve_ot := evolve_ot( p_module => 'mapping_ot.post_map' );
+      o_ev   evolve_ot := evolve_ot( p_module => 'mapping_ot.replace_table' );
    BEGIN
                   
       CASE
@@ -269,8 +289,15 @@ AS
          ELSE
             NULL;
       END CASE;
-
       
+      o_ev.clear_app_info;
+   END replace_table;
+
+   MEMBER PROCEDURE usable_indexes
+   AS
+      o_ev   evolve_ot := evolve_ot( p_module => 'mapping_ot.usable_indexes' );
+   BEGIN
+                  
       -- if there is no replace method, then we need to rebuild indexes
       -- rebuild the indexes
       IF lower(self.manage_indexes) IN ('usable','both') 
@@ -279,10 +306,19 @@ AS
          td_dbutils.usable_indexes( p_owner           => SELF.table_owner,
                                     p_table           => SELF.table_name,
                                     p_concurrent      => SELF.index_concurrency,
-                                    p_index_regexp    => SELF.index_regexp
+                                    p_index_regexp    => SELF.index_regexp,
+                                    p_index_type      => SELF.index_type
                                   );
       END IF;
 
+      o_ev.clear_app_info;
+   END usable_indexes;
+   
+   MEMBER PROCEDURE enable_constraints
+   AS
+      o_ev   evolve_ot := evolve_ot( p_module => 'mapping_ot.enable_constraints' );
+   BEGIN
+                  
       -- enable the constraints
       -- if there is no replace method, then we need to enable constraints
       IF lower(self.manage_constraints) IN ('enable','both') 
@@ -298,6 +334,14 @@ AS
 
       END IF;
 
+      o_ev.clear_app_info;
+   END enable_constraints;
+   
+   MEMBER PROCEDURE gather_stats
+   AS
+      o_ev   evolve_ot := evolve_ot( p_module => 'mapping_ot.gather_stats' );
+   BEGIN
+                  
       -- this is not a segment-switching situation
       -- there is a table name specified
       -- 'gather' is specified for statistics
@@ -310,9 +354,19 @@ AS
                                   p_segment_type        => 'table' );
       END IF;
 
+      o_ev.clear_app_info;
+   END gather_stats;
+   
+   MEMBER PROCEDURE post_map
+   AS
+      o_ev   evolve_ot := evolve_ot( p_module => 'mapping_ot.post_map' );
+   BEGIN
+                  
+      replace_table;      
+      usable_indexes;
+      enable_constraints;
+      gather_stats;
 
-      -- used to be a commit right here
-      -- removing it because I don't think a commit should exist inside mapping functionality
       o_ev.clear_app_info;
    END post_map;
    
@@ -323,7 +377,6 @@ AS
       
       evolve.log_msg( 'Pre-mapping processes beginning' );
       
-      LOAD;
       pre_map;
       o_ev.change_action( 'execute mapping' );
       
@@ -343,16 +396,6 @@ AS
 
       o_ev.clear_app_info;
    END end_map;
-
-   MEMBER PROCEDURE LOAD
-   IS
-      o_ev   evolve_ot := evolve_ot( p_module => 'mapping_ot.load' );
-   BEGIN
-      -- this procedure is only here for inheritance
-      -- that's why it doesn't do anything
-      evolve.log_msg( 'LOAD procedure is only here for inheritance',5 );
-      o_ev.clear_app_info;
-   END LOAD;
 
    -- null procedure for polymorphism only
    MEMBER PROCEDURE confirm_dim_cols
