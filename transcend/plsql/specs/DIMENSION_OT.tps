@@ -21,6 +21,7 @@ CREATE OR REPLACE TYPE dimension_ot UNDER mapping_ot(
    MEMBER PROCEDURE initialize_cols,
    OVERRIDING MEMBER PROCEDURE confirm_dim_cols,
    MEMBER PROCEDURE load_staging,
+   OVERRIDING MEMBER PROCEDURE replace_table,
    OVERRIDING MEMBER PROCEDURE pre_map,
    OVERRIDING MEMBER PROCEDURE post_map
 );

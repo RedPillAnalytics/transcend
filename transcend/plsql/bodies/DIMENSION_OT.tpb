@@ -65,11 +65,11 @@ AS
       -- let's find out if it's partitioned
       l_tab_part      := td_utils.is_part_table( table_owner, table_name);
    
-      evolve.log_variable('self.named_staging',SELF.named_staging);
+      evolve.log_variable('SELF.named_staging',SELF.named_staging);
 
       -- check that the sequence exists
-      evolve.log_variable('self.sequence_owner',SELF.sequence_owner);
-      evolve.log_variable('self.sequence_name',SELF.sequence_name);
+      evolve.log_variable('SELF.sequence_owner',SELF.sequence_owner);
+      evolve.log_variable('SELF.sequence_name',SELF.sequence_name);
       td_utils.check_object( p_owner            => SELF.sequence_owner,
                              p_object           => SELF.sequence_name,
                              p_object_type      => 'sequence'
@@ -78,10 +78,10 @@ AS
       -- named staging
       -- this means that we are pre-creating a table and registering it with Transcend
       -- we have already created it, and is managed outside the framework
-      IF td_core.is_true( self.named_staging )
+      IF td_core.is_true( SELF.named_staging )
       THEN
          
-         evolve.log_variable('self.full_stage',SELF.full_stage);
+         evolve.log_variable('SELF.full_stage',SELF.full_stage);
 
          -- if it is, then make sure that it exists
          td_utils.check_table( p_owner => SELF.staging_owner, p_table => SELF.staging_table );
@@ -107,7 +107,7 @@ AS
       END IF;
       
       -- a table rename requires that the source and staging schemas are the same
-      IF replace_method = 'rename' AND self.staging_owner <> self.table_owner
+      IF replace_method = 'rename' AND SELF.staging_owner <> SELF.table_owner
       THEN
          
          evolve.raise_err( 'rename_owners' );
@@ -130,7 +130,8 @@ AS
          SELECT column_name
            INTO SELF.current_ind_col
            FROM column_conf
-          WHERE table_owner = SELF.table_owner AND table_name = SELF.table_name AND column_type = 'current indicator';
+          WHERE mapping_name = SELF.mapping_name
+            AND column_type = 'current indicator';
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
@@ -147,7 +148,8 @@ AS
          SELECT column_name
            INTO SELF.expire_dt_col
            FROM column_conf
-          WHERE table_owner = SELF.table_owner AND table_name = SELF.table_name AND column_type = 'expiration date';
+          WHERE mapping_name = SELF.mapping_name
+            AND column_type = 'expiration date';
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
@@ -164,7 +166,8 @@ AS
          SELECT column_name
            INTO SELF.effect_dt_col
            FROM column_conf
-          WHERE table_owner = SELF.table_owner AND table_name = SELF.table_name AND column_type = 'effective date';
+          WHERE mapping_name = SELF.mapping_name
+            AND column_type = 'effective date';
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
@@ -181,7 +184,8 @@ AS
       SELECT stragg( column_name )
         INTO SELF.natural_key_list
         FROM column_conf
-       WHERE table_owner = SELF.table_owner AND table_name = SELF.table_name AND column_type = 'natural key';
+       WHERE mapping_name = SELF.mapping_name
+         AND column_type = 'natural key';
 
       -- NO_DATA_FOUND exception does not work with STRAGG, as returning a null it fine
       -- have to do the logic programiatically
@@ -197,7 +201,8 @@ AS
          SELECT column_name
            INTO SELF.surrogate_key_col
            FROM column_conf
-          WHERE table_owner = SELF.table_owner AND table_name = SELF.table_name AND column_type = 'surrogate key';
+          WHERE mapping_name = SELF.mapping_name
+            AND column_type = 'surrogate key';
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
@@ -326,7 +331,7 @@ AS
          SELECT char_nvl_default, number_nvl_default, date_nvl_default, stage_key_default
            INTO l_char_nvl, l_num_nvl, l_date_nvl, l_stage_key
            FROM dimension_conf
-          WHERE table_owner = SELF.table_owner AND table_name = SELF.table_name;
+          WHERE mapping_name = SELF.mapping_name;
       EXCEPTION
          -- if there is no current indicator, that's okay
          -- it's not necessary
@@ -345,8 +350,7 @@ AS
                 USING (mapping_name)
            JOIN all_tab_columns atc
                 ON mc.table_owner = atc.owner AND mc.table_name = atc.table_name AND cc.column_name = atc.column_name
-          WHERE mc.table_owner = SELF.table_owner
-            AND mc.table_name = SELF.table_name
+          WHERE mapping_name = SELF.mapping_name
             AND column_type = 'scd type 2'
             AND data_type = 'DATE';
       EXCEPTION
@@ -368,8 +372,7 @@ AS
                 USING ( mapping_name )
            JOIN all_tab_columns atc
                 ON mc.table_owner = atc.owner AND mc.table_name = atc.table_name AND cc.column_name = atc.column_name
-          WHERE table_owner = SELF.table_owner
-            AND mc.table_name = SELF.table_name
+          WHERE mapping_name = SELF.mapping_name
             AND column_type = 'scd type 2'
             AND data_type = 'NUMBER';
       EXCEPTION
@@ -391,8 +394,7 @@ AS
                 USING ( mapping_name )
            JOIN all_tab_columns atc
                 ON mc.table_owner = atc.owner AND mc.table_name = atc.table_name AND cc.column_name = atc.column_name
-          WHERE table_owner = SELF.table_owner
-            AND mc.table_name = SELF.table_name
+          WHERE mapping_name = SELF.mapping_name
             AND column_type = 'scd type 2'
             AND data_type NOT IN( 'DATE', 'NUMBER' );
       EXCEPTION
@@ -412,8 +414,7 @@ AS
            FROM column_conf ic
            JOIN mapping_conf mc
                 USING ( mapping_name )
-          WHERE mc.table_owner = SELF.table_owner 
-            AND mc.table_name = SELF.table_name 
+          WHERE mapping_name = SELF.mapping_name
             AND ic.column_type = 'scd type 1';
       EXCEPTION
          WHEN NO_DATA_FOUND
@@ -510,7 +511,7 @@ AS
       -- create a filter clause
       -- this is only needed if LATER_ARRIVING = 'no'
       
-      l_ind_filter := CASE self.late_arriving
+      l_ind_filter := CASE SELF.late_arriving
                       WHEN 'yes' THEN NULL
                       ELSE ' where '
                            ||SELF.current_ind_col
@@ -635,9 +636,9 @@ AS
       BEGIN
 
          l_bt_part      := CASE
-                           WHEN self.replace_method = 'exchange' AND l_tab_part 
+                           WHEN SELF.replace_method = 'exchange' AND l_tab_part 
                            THEN 'remove'
-                           WHEN self.replace_method = 'exchange' AND NOT l_tab_part
+                           WHEN SELF.replace_method = 'exchange' AND NOT l_tab_part
                            THEN 'single'
                            ELSE 'keep'
                               END;
@@ -692,7 +693,7 @@ AS
       -- this means that all rows are not coming through the main SCD analysis query
       -- only the CURRENT_INDICATOR='Y' are going through that query
       -- so we need to make sure the CURRENT_INDICATOR='N' rows get into the staging table as well
-         AND self.late_arriving = 'no'
+         AND SELF.late_arriving = 'no'
       THEN
          -- now run the insert statement to load the staging table
          o_ev.change_action( 'load non current_ind rows' );
@@ -721,6 +722,88 @@ AS
       -- reset the evolve_object
       o_ev.clear_app_info;
    END load_staging;
+
+   OVERRIDING MEMBER PROCEDURE replace_table
+   AS
+      o_ev   evolve_ot := evolve_ot( p_module => 'mapping_ot.replace_table' );
+   BEGIN
+                  
+      CASE
+         WHEN SELF.replace_method = 'exchange'
+         THEN
+            -- partition exchange the staging table into the max partition of the target table
+            -- this requires that the dimension table is a single partition table
+            
+            evolve.log_variable( 'SELF.drop_dependent_objects', SELF.drop_dependent_objects );
+
+            td_dbutils.exchange_partition( p_source_owner      => SELF.staging_owner,
+                                           p_source_table      => SELF.staging_table,
+                                           p_owner             => SELF.table_owner,
+                                           p_table             => SELF.table_name,
+                                           p_partname          => SELF.partition_name,
+                                           p_statistics        => SELF.STATISTICS,
+                                           p_idx_concurrency   => SELF.index_concurrency,
+                                           p_con_concurrency   => SELF.constraint_concurrency,
+                                           p_drop_deps         => SELF.drop_dependent_objects
+                                         );
+         WHEN SELF.replace_method = 'rename' AND NOT evolve.is_debugmode
+         THEN
+            -- switch the two tables using rename
+            -- requires that the tables both exist in the same schema
+            td_dbutils.replace_table( p_owner             => SELF.table_owner,
+                                      p_table             => SELF.table_name,
+                                      p_source_table      => SELF.staging_table,
+                                      p_statistics        => SELF.STATISTICS,
+                                      p_idx_concurrency   => SELF.index_concurrency,
+                                      p_con_concurrency   => SELF.constraint_concurrency
+                                    );
+
+            -- only drop dependent objects if desired
+            IF td_core.is_true( self.drop_dependent_objects )
+            THEN
+               
+               -- drop constraints on the stage table
+               evolve.log_msg( 'Dropping constraints on the staging table', 4 );
+               
+               BEGIN
+                  td_dbutils.drop_constraints( p_owner => SELF.staging_owner, 
+                                               p_table => SELF.staging_table
+                                             );
+               EXCEPTION
+                  WHEN td_dbutils.drop_iot_key
+                  THEN
+                     NULL;
+               END;
+
+               -- drop indexes on the staging table
+               evolve.log_msg( 'Dropping indexes on the staging table', 4 );
+               td_dbutils.drop_indexes( p_owner => SELF.staging_owner, 
+                                        p_table => SELF.staging_table
+                                      );
+                     
+            END IF;
+
+         WHEN SELF.replace_method = 'rename' AND evolve.is_debugmode
+         THEN
+            evolve.log_msg( 'Cannot simulate a REPLACE_METHOD of "rename" when in DEBUGMODE', 4 );
+   
+         WHEN SELF.replace_method = 'merge'
+         THEN
+            -- switch the two tables using rename
+            -- requires that the tables both exist in the same schema
+            td_dbutils.merge_table( p_owner             => SELF.table_owner,
+                                    p_table             => SELF.table_name,
+                                    p_source_owner      => self.staging_owner,
+                                    p_source_object     => SELF.staging_table,
+                                    p_columns           => SELF.surrogate_key_col
+                                  );
+            COMMIT;
+         ELSE
+            NULL;
+      END CASE;
+      
+      o_ev.clear_app_info;
+   END replace_table;
    
    OVERRIDING MEMBER PROCEDURE pre_map
    IS

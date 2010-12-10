@@ -608,6 +608,7 @@ AS
                        p_owner              => p_owner,
                        p_table              => p_table
                      );
+         COMMIT;
       END IF;
 
       -- we want to gather statistics
@@ -1854,7 +1855,7 @@ AS
                                    WHEN REGEXP_LIKE( 'validate', p_maint_type, 'i' )
                                       THEN 'disabled'
                                 END
-                             || ' constraints found.', 2
+                             || ' constraints found on '|| l_tab_name, 2
                            );
       ELSE
          -- wait for the concurrent processes to complete or fail
@@ -2673,10 +2674,12 @@ AS
       l_ddl            LONG;
       l_num_cons       NUMBER;
       l_part_type      VARCHAR2(10);
+      l_ex_stmt        VARCHAR2(32000);
       
       -- Booleans to handle the EXIT LOOP for issuing the EXCHANGE command
       l_build_cons     BOOLEAN                          := FALSE;
       l_compress       BOOLEAN                          := FALSE;
+      l_excluding      BOOLEAN                          := FALSE;
       l_constraints    BOOLEAN                          := FALSE;
       l_retry_ddl      BOOLEAN                          := FALSE;
       l_src_part       BOOLEAN;
@@ -2693,6 +2696,8 @@ AS
       PRAGMA EXCEPTION_INIT( e_no_stats, -20000 );
       e_compress       EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_compress, -14646 );
+      e_hakan       EXCEPTION;
+      PRAGMA EXCEPTION_INIT( e_hakan, -14642 );
       e_fkeys          EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_fkeys, -2266 );
       e_uk_mismatch    EXCEPTION;
@@ -2903,6 +2908,22 @@ AS
 
       -- now exchange the table
       o_ev.change_action( 'exchange table' );
+      
+      -- construct the EXCHANGE statement
+      l_ex_stmt := 'alter table '
+                    || l_part_full 
+                    || ' exchange '
+                    ||l_part_type
+                    ||'ition '
+                    || l_partname
+                    || ' with table '
+                    || l_nonpart_full
+                    || ' '
+                    || CASE
+                       WHEN l_src_part THEN 'excluding'
+                       ELSE 'including'
+                       END 
+                    || ' indexes without validation update global indexes';
 
       -- have several exceptions that we want to handle when an exchange fails
       -- so we are using an EXIT WHEN loop
@@ -2913,16 +2934,8 @@ AS
          l_retry_ddl    := FALSE;
 
          BEGIN
-            evolve.exec_sql( p_sql       => 'alter table '
-                                             || l_part_full 
-                                             || ' exchange '
-                                             ||l_part_type
-                                             ||'ition '
-                                             || l_partname
-                                             || ' with table '
-                                             || l_nonpart_full
-                                             || ' including indexes without validation update global indexes',
-                             p_auto      => 'yes'
+            evolve.exec_sql( p_sql    => l_ex_stmt,
+                             p_auto   => 'yes'
                            );
 
             evolve.log_msg( l_nonpart_full || ' exchanged for partition ' || l_partname || ' of table ' || l_part_full );
@@ -2970,6 +2983,25 @@ AS
                l_retry_ddl    := TRUE;
                evolve.exec_sql( p_sql => 'alter table ' || l_src_full || ' move compress', p_auto => 'yes' );
                evolve.log_msg( l_src_full || ' compressed to facilitate exchange', 3 );
+               
+            WHEN e_hakan
+            THEN
+
+               evolve.log_msg( 'ORA-14642 raised involving bitmap mismatch', 4 );
+               -- need to do EXLUDING INDEXES
+               o_ev.change_action( 'exchange EXCLUDING INDEXES' );
+               
+               -- only set l_excluding if the target table is the partitioned one
+               -- l_excluding say we want to rebuild global indexes on the partitioned table
+               -- but we don't want to do this if the partitioned table is the source
+               -- in those cases... it's a staging table
+               IF l_trg_part
+               THEN
+                  l_excluding    := TRUE;
+               END IF;
+
+               l_retry_ddl    := TRUE;
+               l_ex_stmt      := REPLACE(l_ex_stmt,'including','excluding');
                
             WHEN e_fk_mismatch
             THEN
@@ -3082,6 +3114,17 @@ AS
                                   END, 2
 				);
 
+      END IF;
+
+      -- had to do EXCLUDING INDEXES
+      IF l_excluding 
+      THEN
+	 o_ev.change_action( 'rebuild global indexes' );
+         
+         usable_indexes( p_owner      => l_part_owner,
+                         p_table      => l_part_table,
+                         p_part_type  => 'global'
+                       );
       END IF;
       
       -- only drop dependent objects if desired
@@ -3659,7 +3702,8 @@ AS
       -- make sure the table exists
       td_utils.check_table( p_owner => p_owner, p_table => p_table );
       
-      IF l_part_type <> 'normal' OR p_part_type IS NULL OR lower( p_part_type ) IN ('local','all')
+      IF l_part_type <> 'normal' 
+         AND ( p_part_type IS NULL OR lower( p_part_type ) IN ('local','all') )
       THEN
          
          o_ev.change_action( 'process local indexes');
@@ -3734,7 +3778,7 @@ AS
          
          IF l_cnt = 0
          THEN
-            evolve.log_msg( 'No matching unusable local indexes found', 1 );
+            evolve.log_msg( 'No matching unusable local indexes found on ' || l_tab_name, 1 );
          ELSE
 
             evolve.log_msg(    'Rebuild processes for unusable indexes on '
@@ -3836,7 +3880,7 @@ AS
                             THEN 'global '
                             ELSE NULL
                             END
-                            || 'indexes found', 1
+                            || 'indexes found on '|| l_tab_name, 1
                           );
          END IF;
          
