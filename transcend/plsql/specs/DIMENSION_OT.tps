@@ -15,6 +15,11 @@ CREATE OR REPLACE TYPE dimension_ot UNDER mapping_ot(
    expire_dt_col       VARCHAR2( 30 ),
    surrogate_key_col   VARCHAR2( 30 ),
    natural_key_list    VARCHAR2( 4000 ),
+   scd1_list           VARCHAR2( 4000 ),
+   statement           VARCHAR2(32000),
+   scd1_statement      VARCHAR2(32000),
+   hist_rows_statement VARCHAR2(32000),
+   full_scd1_target    VARCHAR2( 61 ),
    CONSTRUCTOR FUNCTION dimension_ot( p_mapping VARCHAR2, p_batch_id NUMBER DEFAULT NULL )
       RETURN SELF AS RESULT,
    OVERRIDING MEMBER PROCEDURE verify,
