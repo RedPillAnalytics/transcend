@@ -5,8 +5,13 @@ AS
       p_batch_id   NUMBER DEFAULT NULL
    )
    AS
-      o_ev    evolve_ot      := evolve_ot( p_module => 'start_mapping' );
-      o_map   mapping_ot := trans_factory.get_mapping_ot( p_mapping => p_mapping, p_batch_id => p_batch_id );
+      o_ev    evolve_ot  := evolve_ot( p_module => 'start_mapping' );
+
+      -- there is an owb constant that can be used to get the mapping name
+      -- however, the constant puts double quotes around it
+      -- need to strip these double quotes just in case
+      o_map   mapping_ot := trans_factory.get_mapping_ot( p_mapping => LOWER( regexp_replace(p_mapping,'^"|"$',NULL)), 
+                                                          p_batch_id => p_batch_id );
    BEGIN
       evolve.log_variable( 'MAPPING_TYPE', o_map.mapping_type);
       -- now, regardless of which object type this is, the following call is correct

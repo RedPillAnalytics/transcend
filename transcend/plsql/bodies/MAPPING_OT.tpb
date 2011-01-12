@@ -4,9 +4,6 @@ AS
       RETURN SELF AS RESULT
    AS
    BEGIN
-      -- there is an owb constant that can be used to get the mapping name
-      -- however, the constant puts double quotes around it
-      -- need to strip these double quotes just in case
       -- set the instrumentation details
       REGISTER( p_mapping, p_batch_id );
 
@@ -39,7 +36,7 @@ AS
       o_ev   evolve_ot := evolve_ot( p_module => 'mapping_ot.register' );
    BEGIN
       -- store the mapping name
-      SELF.mapping_name    := LOWER( regexp_replace(p_mapping,'^"|"$',NULL));
+      SELF.mapping_name    := p_mapping;
 
       -- store the batch_id
       -- used to have this only set the batch_id if it was explicitly set

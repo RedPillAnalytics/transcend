@@ -13,7 +13,6 @@ IS
    BEGIN
       
       -- get the mapping type
-
       SELECT mapping_type
         INTO l_map_type
         FROM mapping_conf
