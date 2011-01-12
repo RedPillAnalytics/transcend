@@ -6,7 +6,7 @@ AS
       o_ev         evolve_ot := evolve_ot( p_module => 'dimension_ot.constructor' );
    BEGIN
       -- set the instrumentation details
-      REGISTER( p_mapping, p_batch_id );
+      SELF.REGISTER( p_mapping, p_batch_id );
 
       BEGIN
          -- now load the other attributes
