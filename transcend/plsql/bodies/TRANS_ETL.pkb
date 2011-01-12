@@ -7,10 +7,7 @@ AS
    AS
       o_ev    evolve_ot  := evolve_ot( p_module => 'start_mapping' );
 
-      -- there is an owb constant that can be used to get the mapping name
-      -- however, the constant puts double quotes around it
-      -- need to strip these double quotes just in case
-      o_map   mapping_ot := trans_factory.get_mapping_ot( p_mapping => LOWER( regexp_replace(p_mapping,'^"|"$',NULL)), 
+      o_map   mapping_ot := trans_factory.get_mapping_ot( p_mapping  => p_mapping, 
                                                           p_batch_id => p_batch_id );
    BEGIN
       evolve.log_variable( 'MAPPING_TYPE', o_map.mapping_type);
@@ -30,7 +27,8 @@ AS
    )
    AS
       o_ev    evolve_ot      := evolve_ot( p_module => 'start_mapping' );
-      o_map   mapping_ot := trans_factory.get_mapping_ot( p_mapping => p_mapping, p_batch_id => p_batch_id );
+      o_map   mapping_ot := trans_factory.get_mapping_ot( p_mapping  => p_mapping, 
+                                                          p_batch_id => p_batch_id );
    BEGIN
       
       evolve.log_variable( 'o_map.mapping_type',o_map.mapping_type );

@@ -5,6 +5,11 @@ IS
       RETURN mapping_ot
    IS
       l_map_type   mapping_conf.mapping_type%TYPE;
+
+      -- there is an owb constant that can be used to get the mapping name
+      -- however, the constant puts double quotes around it
+      -- need to strip these double quotes just in case
+      l_mapping    mapping_conf.mapping_name%TYPE  := LOWER( regexp_replace(p_mapping,'^"|"$',NULL));
       -- need object for the parent type
       o_map        mapping_ot;
       -- also need an object for any subtypes
@@ -16,7 +21,7 @@ IS
       SELECT mapping_type
         INTO l_map_type
         FROM mapping_conf
-       WHERE lower ( mapping_name ) = lower ( p_mapping );
+       WHERE lower ( mapping_name ) = lower ( l_mapping );
 
       -- let's register what the mapping_type is
       evolve.log_variable( 'l_map_type',l_map_type );
@@ -25,14 +30,14 @@ IS
       IF l_map_type = 'dimension'
       THEN
          -- instantiate the subtype
-         o_dim    := dimension_ot( p_mapping => p_mapping, p_batch_id => p_batch_id );
+         o_dim    := dimension_ot( p_mapping => l_mapping, p_batch_id => p_batch_id );
          -- now polymorph the type
          o_map    := o_dim;
          evolve.log_msg( 'TRANS_FACTORY returned a DIMENSION_OT', 5 );
       ELSE 
 
          -- instantiate the subtype
-         o_map    := mapping_ot( p_mapping => p_mapping, p_batch_id => p_batch_id );
+         o_map    := mapping_ot( p_mapping => l_mapping, p_batch_id => p_batch_id );
 
          evolve.log_msg( 'TRANS_FACTOY returned a MAPPING_OT', 5 );
          
