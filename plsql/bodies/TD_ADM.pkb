@@ -2047,7 +2047,6 @@ IS
 	   source_owner	        VARCHAR2(30) DEFAULT NULL,
 	   source_table	        VARCHAR2(30) DEFAULT NULL,
 	   default_scd_type	NUMBER(1,0) DEFAULT 2 NOT NULL,
-           late_arriving        VARCHAR2(30) DEFAULT 'no' NOT NULL,
 	   direct_load		VARCHAR2(3) DEFAULT 'yes' NOT NULL,
 	   stage_key_default	NUMBER DEFAULT -.01 NOT NULL,
 	   char_nvl_default	VARCHAR2(1000) DEFAULT '~' NOT NULL,

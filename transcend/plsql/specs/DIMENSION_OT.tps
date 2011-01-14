@@ -8,7 +8,6 @@ CREATE OR REPLACE TYPE dimension_ot UNDER mapping_ot(
    source_table        VARCHAR2( 30 ),
    full_stage          VARCHAR2( 61 ),
    named_staging       VARCHAR2( 3 ),
-   late_arriving       VARCHAR2( 3 ),
    direct_load         VARCHAR2( 3 ),
    current_ind_col     VARCHAR2( 30 ),
    effect_dt_col       VARCHAR2( 30 ),
@@ -17,9 +16,7 @@ CREATE OR REPLACE TYPE dimension_ot UNDER mapping_ot(
    natural_key_list    VARCHAR2( 4000 ),
    scd1_list           VARCHAR2( 4000 ),
    statement           VARCHAR2(32000),
-   scd1_statement      VARCHAR2(32000),
-   hist_rows_statement VARCHAR2(32000),
-   full_scd1_target    VARCHAR2( 61 ),
+   nonscd_statement    VARCHAR2(32000),
    CONSTRUCTOR FUNCTION dimension_ot( p_mapping VARCHAR2, p_batch_id NUMBER DEFAULT NULL )
       RETURN SELF AS RESULT,
    OVERRIDING MEMBER PROCEDURE verify,

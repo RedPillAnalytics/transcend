@@ -14,18 +14,13 @@ AS
                 full_source, sequence_owner, sequence_name, full_sequence, staging_owner,
                 staging_table, staging_owner || '.' || staging_table full_stage, named_staging, direct_load,
                 replace_method, STATISTICS, index_concurrency, constraint_concurrency, mapping_name, manage_indexes, 
-                manage_constraints, late_arriving, drop_dependent_objects,
-                CASE REPLACE_METHOD
-                WHEN 'merge' 
-                THEN full_table
-                ELSE staging_owner || '.' || staging_table
-                END full_scd1_target
+                manage_constraints, drop_dependent_objects
            INTO SELF.mapping_type, SELF.table_owner, SELF.table_name, SELF.full_table, SELF.source_owner, SELF.source_table,
                 SELF.full_source, SELF.sequence_owner, SELF.sequence_name, SELF.full_sequence, SELF.staging_owner,
                 SELF.staging_table, SELF.full_stage, SELF.named_staging, SELF.direct_load,
                 SELF.replace_method, SELF.STATISTICS, SELF.index_concurrency, 
                 SELF.constraint_concurrency, SELF.mapping_name, SELF.manage_indexes,
-                SELF.manage_constraints, SELF.late_arriving, SELF.drop_dependent_objects, SELF.full_scd1_target
+                SELF.manage_constraints, SELF.drop_dependent_objects
            FROM ( SELECT table_owner, table_name, table_owner || '.' || table_name full_table, source_owner,
                          source_table, source_owner || '.' || source_table full_source, NVL( sequence_owner, table_owner ) sequence_owner, sequence_name,
                          sequence_owner || '.' || sequence_name full_sequence,
@@ -36,7 +31,7 @@ AS
                                THEN 'no'
                             ELSE 'yes'
                          END named_staging, direct_load, replace_method, STATISTICS, index_concurrency,
-                         constraint_concurrency, manage_indexes, manage_constraints, late_arriving, 
+                         constraint_concurrency, manage_indexes, manage_constraints, 
                          drop_dependent_objects, mapping_type
                    FROM dimension_conf JOIN mapping_conf USING( mapping_name )
                   WHERE mapping_name = SELF.mapping_name );
@@ -51,7 +46,6 @@ AS
       evolve.log_variable( 'SELF.drop_dependent_objects', SELF.drop_dependent_objects );
       evolve.log_variable( 'SELF.mapping_type', SELF.mapping_type );
       evolve.log_variable( 'SELF.replace_method', SELF.replace_method );
-      evolve.log_variable( 'SELF.full_scd1_target',SELF.full_scd1_target );
 
       -- confirm the objects related to the dimensional configuration
       verify;
@@ -120,8 +114,6 @@ AS
          evolve.raise_err( 'rename_owners' );
          
       END IF;
-         
-         
 
       evolve.log_msg( 'Dimension confirmation completed successfully', 5 );
       -- reset the evolve_object
@@ -318,11 +310,9 @@ AS
       l_all_col_list     LONG;
       l_include_case     LONG;
       l_scd1_analytics   LONG;
-      l_ind_filter       LONG;
-      l_rep_ind_ins      LONG;
-      l_scd1_merge       LONG;
-      l_scd1_on          LONG;
-      l_scd1_update      LONG;
+      l_dim_from_clause  LONG;
+      l_dim_in_clause    LONG;
+      l_dim_notin_clause LONG;
       l_bt_part          VARCHAR2(10);
       l_tab_part         BOOLEAN;
       l_rows             BOOLEAN;
@@ -503,6 +493,7 @@ AS
                           )
          || ' else ''N'' end include';
       evolve.log_msg( 'The include CASE: ' || l_include_case, 5 );
+
       -- construct the scd1 analytics list
       -- this is a list of all the LAST_VALUE statements needed for the final statement
       l_scd1_analytics    :=
@@ -515,24 +506,55 @@ AS
                          || ' ROWS BETWEEN unbounded preceding AND unbounded following) \1\2'
                        );
       evolve.log_msg( 'The SCD1 analytics clause: ' || l_scd1_analytics, 5 );
+
       -- construct a list of all the columns in the table
       l_all_col_list      :=
                              td_core.format_list( SELF.natural_key_list || ',' || l_scd_list || ',' || SELF.effect_dt_col );
+
+      -- construct the SCD to DIM IN clause
+      -- this includes a join between the DIM and the SCD table
+      l_dim_in_clause    := 'from '
+                         || self.full_table
+                         || ' where ( '
+                         || SELF.natural_key_list
+                         || ' ) IN ( select '
+                         || SELF.natural_key_list
+                         || ' from '
+                         || SELF.full_source
+                         || ' ) ';
+
+      evolve.log_variable( 'l_dim_in_clause', l_dim_in_clause );
+
+      -- construct the SCD to DIM NOT IN clause
+      -- this includes a join between the DIM and the SCD table
+      l_dim_notin_clause := 'from '
+                         || self.full_table
+                         || ' where ( '
+                         || SELF.natural_key_list
+                         || ' ) NOT IN ( select '
+                         || SELF.natural_key_list
+                         || ' from '
+                         || SELF.full_source
+                         || ' ) ';
+
+      evolve.log_variable( 'l_dim_notin_clause', l_dim_notin_clause );
+
       
-      -- create a filter clause
-      -- this is only needed if LATER_ARRIVING = 'no'
-      
-      l_ind_filter := CASE SELF.late_arriving
-                      WHEN 'yes' THEN NULL
-                      ELSE ' where '
-                           ||SELF.current_ind_col
-                           ||' = ''Y'''
-                      END;
-                      
-      evolve.log_msg( 'The current indicator filter: ' || l_ind_filter, 5 );
-                
+      -- construct the entire from clause for the dim table
+      -- this includes a join between the DIM and the SCD table
+      l_dim_from_clause    := 'from '
+                           || self.full_table
+                           || ' join ( select distinct '
+                           || SELF.natural_key_list
+                           || ' from '
+                           || SELF.full_source
+                           || ' ) using ( '
+                           || SELF.natural_key_list
+                           || ' ))';
+
+      evolve.log_variable( 'l_dim_from_clause', l_dim_from_clause );
+
       -- now, put the statement together
-      -- l_sql was the old variable
       SELF.statement  :=
             'insert '
          || CASE td_core.get_yn_ind( SELF.direct_load )
@@ -542,7 +564,7 @@ AS
             END
          || 'into '
          || SELF.full_stage
-         || '('
+         || ' ( '
          || SELF.surrogate_key_col
          || ','
          || l_all_col_list
@@ -550,8 +572,7 @@ AS
          || SELF.expire_dt_col
          || ','
          || SELF.current_ind_col
-         || ') '
-         || ' SELECT case '
+         || ' ) SELECT case '
          || SELF.surrogate_key_col
          || ' when '
          || l_stage_key
@@ -611,22 +632,19 @@ AS
          || SELF.surrogate_key_col
          || ','
          || l_all_col_list
-         || ' from '
-         || SELF.full_table
-         || l_ind_filter
-         || ')'
-         || ' order by '
+         || ' '
+         || l_dim_in_clause
+         || ' ) order by '
          || SELF.natural_key_list
          || ','
          || SELF.effect_dt_col
-         || ')'
+         || ' )'
          || ' where include=''Y''';
 
       evolve.log_variable( 'SELF.statement',SELF.statement );
 
       -- this statement is needed for a particular "non-merge" situation described below
-      -- used to use l_rep_ind_ins
-      self.hist_rows_statement :=  'insert '
+      SELF.nonscd_statement :=  'insert '
                                  || CASE td_core.get_yn_ind( SELF.direct_load )
                                     WHEN 'yes'
                                     THEN '/*+ APPEND */ '
@@ -634,51 +652,10 @@ AS
                                     END
                                  || 'into '
                                  || SELF.full_stage
-                                 || ' select * from '
-                                 || SELF.full_table
-                                 || ' where '
-                                 || SELF.current_ind_col
-                                 || ' = ''N''';
-
-      evolve.log_variable( 'SELF.hist_rows_statement', SELF.hist_rows_statement );
-                           
-      -- because this is not a late-arriving scenario, all rows are not analyzed: only current rows
-      -- so there is no way for SCD1 changes to be made to all rows for an entity
-      -- so we need to issue a self-contained MERGE statement to handle this
-      l_scd1_on    := replace(
-                        regexp_replace(
-                             SELF.natural_key_list,'([^,]+)','source.\1 = target.\1'
-                                       ),',',' and '
-                              );
-
-
-      evolve.log_variable( 'l_scd1_on',l_scd1_on );
-
-      l_scd1_update := replace(regexp_replace(SELF.scd1_list,'([^,]+)','target.\1 = source.\1'),',',' and ');
-
-      evolve.log_variable( 'l_scd1_update',l_scd1_update );
-
-      -- used to use l_scd1_merge
-      SELF.scd1_statement := 'MERGE into '|| SELF.full_scd1_target
-                                    || ' target USING ( SELECT '
-                                    || self.natural_key_list
-                                    || ','
-                                    || self.scd1_list
-                                    || ' from '
-                                    || self.full_stage
-                                    || ' where '
-                                    || self.current_ind_col
-                                    || ' = ''Y'' '
-                                    || ') source on ( '
-                                    || l_scd1_on
-                                    || ' ) '
-                                    || 'WHEN MATCHED THEN UPDATE SET '
-                                    || l_scd1_update
-                                    || ' where '
-                                    || self.current_ind_col
-                                    || ' = ''N''';
-
-      evolve.log_variable( 'SELF.scd1_statement',SELF.scd1_statement );
+                                 || ' select * '
+                                 || l_dim_notin_clause;
+                                    
+      evolve.log_variable( 'SELF.nonscd_statement', SELF.nonscd_statement );
 
       -- create the staging table
       -- this is a staging table that holds the results of the dimensional analysis
@@ -741,20 +718,15 @@ AS
       -- we are doing full segment-switching
       -- that means that all rows have to make it to the staging table
       IF SELF.replace_method <> 'merge'
-      -- we are not doing late arriving
-      -- this means that all rows are not coming through the main SCD analysis query
-      -- only the CURRENT_INDICATOR='Y' are going through that query
-      -- so we need to make sure the CURRENT_INDICATOR='N' rows get into the staging table as well
-         AND NOT td_core.is_true( SELF.late_arriving )
       THEN
          -- now run the insert statement to load the history rows into the staging table
          o_ev.change_action( 'load history rows' );
-         evolve.exec_sql( self.hist_rows_statement );
+         evolve.exec_sql( self.nonscd_statement );
          evolve.log_results_msg( p_count          => SQL%ROWCOUNT,
                                  p_owner          => staging_owner,
                                  p_object         => staging_table,
                                  p_category       => 'insert',
-                                 p_msg            => 'Number of history records inserted into '|| full_stage );
+                                 p_msg            => 'Number of non-SCD records inserted into '|| full_stage );
 
          COMMIT;
 
@@ -767,32 +739,9 @@ AS
                               p_owner          => staging_owner,
                               p_object         => staging_table,
                               p_category       => 'insert',
-                              p_msg            => 'Number of records processed with analytics into '|| full_stage );
+                              p_msg            => 'Number of records processed with SCD analytics into '|| full_stage );
 
       COMMIT;
-      
-      IF SELF.replace_method <> 'merge'
-      -- we are not doing late arriving
-      -- this means that all rows are not coming through the main SCD analysis query
-      -- only the CURRENT_INDICATOR='Y' are going through that query
-      -- so I need to make sure all SCD1 rows get updated correctly
-         AND NOT td_core.is_true( SELF.late_arriving )
-         -- only need to do this if we actually have SCD1 attributes
-         AND SELF.scd1_list IS NOT NULL
-
-      THEN
-         -- now run the merge statement to handle SCD1 rows
-         o_ev.change_action( 'update SCD1 columns' );
-         evolve.exec_sql( self.scd1_statement );
-         evolve.log_results_msg( p_count          => SQL%ROWCOUNT,
-                                 p_owner          => staging_owner,
-                                 p_object         => staging_table,
-                                 p_category       => 'merge',
-                                 p_msg            => 'Number of SCD1 attributes updated with a MERGE in ' || SELF.full_scd1_target  );
-
-         COMMIT;
-
-      END IF;      
 
       -- reset the evolve_object
       o_ev.clear_app_info;
@@ -821,6 +770,7 @@ AS
                                            p_con_concurrency   => SELF.constraint_concurrency,
                                            p_drop_deps         => SELF.drop_dependent_objects
                                          );
+
          WHEN SELF.replace_method = 'rename' AND NOT evolve.is_debugmode
          THEN
             -- switch the two tables using rename
@@ -864,21 +814,6 @@ AS
    
          WHEN SELF.replace_method = 'merge'
          THEN
-
-         -- only need to do this if we actually have SCD1 attributes
-            IF SELF.scd1_list IS NOT NULL
-            THEN 
-
-               -- now update the SCD1 columns
-               o_ev.change_action( 'update SCD1 columns' );
-               evolve.exec_sql( self.scd1_statement );
-               evolve.log_results_msg( p_count          => SQL%ROWCOUNT,
-                                       p_owner          => SELF.table_owner,
-                                       p_object         => SELF.table_name,
-                                       p_category       => 'merge',
-                                       p_msg            => 'Number of SCD1 attributes updated with a MERGE in ' || SELF.full_scd1_target );
-
-            END IF;
 
             -- use a MERGE statement to load a smaller set of records into the dimension table
             td_dbutils.merge_table( p_owner             => SELF.table_owner,

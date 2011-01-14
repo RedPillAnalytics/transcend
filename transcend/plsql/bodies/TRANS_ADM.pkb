@@ -1134,7 +1134,6 @@ IS
       p_staging_owner      VARCHAR2 DEFAULT NULL,
       p_staging_table      VARCHAR2 DEFAULT NULL,
       p_default_scd_type   NUMBER   DEFAULT 2,
-      p_late_arriving      VARCHAR2 DEFAULT 'no',
       p_direct_load        VARCHAR2 DEFAULT 'yes',
       p_replace_method     VARCHAR2 DEFAULT 'merge',
       p_statistics         VARCHAR2 DEFAULT 'transfer',
@@ -1167,7 +1166,6 @@ IS
                   source_owner, 
                   source_table,
                   default_scd_type,
-                  late_arriving,
                   direct_load,
                   stage_key_default, 
                   char_nvl_default,
@@ -1181,7 +1179,6 @@ IS
                          UPPER (p_source_owner), 
                          UPPER (p_source_table),
                          p_default_scd_type,
-                         LOWER (p_late_arriving), 
                          LOWER (p_direct_load),
                          p_stage_key_def, 
                          p_char_nvl_def, 
@@ -1232,7 +1229,6 @@ IS
       p_staging_owner      VARCHAR2 DEFAULT NULL,
       p_staging_table      VARCHAR2 DEFAULT NULL,
       p_default_scd_type   NUMBER   DEFAULT NULL,
-      p_late_arriving      VARCHAR2 DEFAULT 'no',
       p_direct_load        VARCHAR2 DEFAULT NULL,
       p_replace_method     VARCHAR2 DEFAULT NULL,
       p_statistics         VARCHAR2 DEFAULT NULL,
@@ -1294,15 +1290,6 @@ IS
                       THEN default_scd_type
                    ELSE p_default_scd_type
                 END,
-             late_arriving =
-                lower (CASE
-                          WHEN p_late_arriving IS NULL
-                             THEN late_arriving
-                          WHEN p_late_arriving = null_value
-                             THEN NULL
-                          ELSE p_late_arriving
-                       END
-                      ),
              direct_load =
                 LOWER (CASE
                           WHEN p_direct_load IS NULL
