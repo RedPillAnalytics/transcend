@@ -673,13 +673,21 @@ AS
                            END;
                               
          evolve.log_variable( 'L_BT_PART', l_bt_part );
+                           
+         -- only try to build the table if it already exists
+         IF NOT td_utils.table_exists( p_owner             => SELF.staging_owner,
+                                       p_table             => SELF.staging_table )
+         THEN
 
-         td_dbutils.build_table( p_source_owner      => SELF.table_owner,
-                                 p_source_table      => SELF.table_name,
-                                 p_owner             => SELF.staging_owner,
-                                 p_table             => SELF.staging_table,
-                                 p_partitioning      => l_bt_part
-                               );
+            td_dbutils.build_table( p_source_owner      => SELF.table_owner,
+                                    p_source_table      => SELF.table_name,
+                                    p_owner             => SELF.staging_owner,
+                                    p_table             => SELF.staging_table,
+                                    p_partitioning      => l_bt_part
+                                  );
+         END IF;
+            
+
       EXCEPTION
          -- the table already exists
          WHEN e_dup_tab_name
