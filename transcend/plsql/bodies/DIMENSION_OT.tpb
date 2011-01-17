@@ -662,62 +662,56 @@ AS
       -- it is then either exchanged in, table-renamed, or the source for a merge
       o_ev.change_action( 'create staging table' );
 
-      BEGIN
 
-         l_bt_part      := CASE
-                           WHEN SELF.replace_method = 'exchange' AND l_tab_part 
-                           THEN 'remove'
-                           WHEN SELF.replace_method = 'exchange' AND NOT l_tab_part
-                           THEN 'single'
-                           ELSE 'keep'
-                           END;
+      l_bt_part      := CASE
+                        WHEN SELF.replace_method = 'exchange' AND l_tab_part 
+                        THEN 'remove'
+                        WHEN SELF.replace_method = 'exchange' AND NOT l_tab_part
+                        THEN 'single'
+                        ELSE 'keep'
+                        END;
                               
-         evolve.log_variable( 'L_BT_PART', l_bt_part );
+      evolve.log_variable( 'L_BT_PART', l_bt_part );
                            
-         -- only try to build the table if it already exists
-         IF NOT td_utils.table_exists( p_owner             => SELF.staging_owner,
-                                       p_table             => SELF.staging_table )
-         THEN
+      -- only try to build the table if it already exists
+      IF NOT td_utils.table_exists( p_owner             => SELF.staging_owner,
+                                    p_table             => SELF.staging_table )
+      THEN
 
-            td_dbutils.build_table( p_source_owner      => SELF.table_owner,
-                                    p_source_table      => SELF.table_name,
-                                    p_owner             => SELF.staging_owner,
-                                    p_table             => SELF.staging_table,
-                                    p_partitioning      => l_bt_part
-                                  );
-         END IF;
-            
+         td_dbutils.build_table( p_source_owner      => SELF.table_owner,
+                                 p_source_table      => SELF.table_name,
+                                 p_owner             => SELF.staging_owner,
+                                 p_table             => SELF.staging_table,
+                                 p_partitioning      => l_bt_part
+                               );
+      ELSE
 
-      EXCEPTION
-         -- the table already exists
-         WHEN e_dup_tab_name
-            THEN
-            evolve.log_msg( 'The staging table already exists', 4 );
-            -- since the table already exists, we need to "clean" it
-            -- drop constraints
+         -- since the table already exists, we need to "clean" it
+         -- drop constraints
             -- drop indexes
             -- truncate
 
-            -- drop constraints on the segment in preparation for loading
-            o_ev.change_action( 'drop constraints on staging' );
+         -- drop constraints on the segment in preparation for loading
+         o_ev.change_action( 'drop constraints on staging' );
 
-            BEGIN
-               td_dbutils.drop_constraints( p_owner => SELF.staging_owner, p_table => SELF.staging_table );
-            EXCEPTION
-               WHEN td_dbutils.drop_iot_key
-               THEN
-                  NULL;
-            END;
+         BEGIN
+            td_dbutils.drop_constraints( p_owner => SELF.staging_owner, p_table => SELF.staging_table );
+         EXCEPTION
+            WHEN td_dbutils.drop_iot_key
+            THEN
+              NULL;
+         END;
 
-            -- drop indexes on the segment in preparation for loading
-            o_ev.change_action( 'drop indexes on staging' );
-            td_dbutils.drop_indexes( p_owner => SELF.staging_owner, p_table => SELF.staging_table );
+         -- drop indexes on the segment in preparation for loading
+         o_ev.change_action( 'drop indexes on staging' );
+         td_dbutils.drop_indexes( p_owner => SELF.staging_owner, p_table => SELF.staging_table );
                   
-            -- truncate the staging table to get ready for a new run
-            o_ev.change_action( 'truncate staging table' );
-            td_dbutils.truncate_table( p_owner => SELF.staging_owner, p_table => SELF.staging_table );
-
-      END;
+         -- truncate the staging table to get ready for a new run
+         o_ev.change_action( 'truncate staging table' );
+         td_dbutils.truncate_table( p_owner => SELF.staging_owner, p_table => SELF.staging_table );
+            
+      END IF;
+            
 
       -- if later arriving dimensions are disabled, and the replace_method is NOT 'merge'
       -- then I need to get all the records from the dimension table that have a current_ind='N'
