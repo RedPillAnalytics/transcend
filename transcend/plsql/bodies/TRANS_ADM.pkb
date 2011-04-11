@@ -119,8 +119,8 @@ IS
                     p_message      => 'The specified external table does not exist'
                    );
       evolve_adm.set_error_conf
-         (p_name         => 'no_dim',
-          p_message      => 'The specified table is not a configured dimension table'
+         ( p_name         => 'no_dim',
+           p_message      => 'The specified dimension has not been configured'
          );
       evolve_adm.set_error_conf
          (p_name         => 'no_feed',
