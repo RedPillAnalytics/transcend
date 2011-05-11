@@ -796,6 +796,7 @@ IS
    PROCEDURE create_mapping (
       p_mapping             VARCHAR2,
       p_mapping_type        VARCHAR2,
+      p_restartable         VARCHAR2 DEFAULT 'no',
       p_owner               VARCHAR2 DEFAULT NULL,
       p_table               VARCHAR2 DEFAULT NULL,
       p_partname            VARCHAR2 DEFAULT NULL,
@@ -827,7 +828,7 @@ IS
       BEGIN
 	 INSERT INTO mapping_conf
 		( mapping_name, mapping_type,
-		  table_owner, table_name,
+		  restartable, table_owner, table_name,
 		  partition_name, manage_indexes,
                   index_regexp, index_type, 
                   partition_type, index_concurrency, 
@@ -838,7 +839,7 @@ IS
 		  statistics, description, drop_dependent_objects
 		)
 		VALUES ( LOWER (p_mapping), LOWER (p_mapping_type),
-			 UPPER (p_owner), UPPER (p_table),
+			 lower(p_restartable), UPPER (p_owner), UPPER (p_table),
 			 UPPER (p_partname), lower(p_indexes),
 			 p_index_regexp, p_index_type, p_part_type, 
                          LOWER(p_idx_concurrency),
@@ -868,6 +869,7 @@ IS
 
    PROCEDURE create_mapping (
       p_mapping             VARCHAR2,
+      p_restartable         VARCHAR2 DEFAULT 'no',
       p_owner               VARCHAR2 DEFAULT NULL,
       p_table               VARCHAR2 DEFAULT NULL,
       p_partname            VARCHAR2 DEFAULT NULL,
@@ -894,6 +896,7 @@ IS
       
       create_mapping ( p_mapping                => p_mapping,
 		       p_mapping_type           => 'table',
+                       p_restartable            => p_restartable,
 		       p_owner                  => p_owner,
 		       p_table                  => p_table,
 		       p_partname               => p_partname,
@@ -919,6 +922,7 @@ IS
    
    PROCEDURE modify_mapping (
       p_mapping             VARCHAR2,
+      p_restartable         VARCHAR2 DEFAULT 'no',
       p_owner               VARCHAR2 DEFAULT NULL,
       p_table               VARCHAR2 DEFAULT NULL,
       p_partname            VARCHAR2 DEFAULT NULL,
@@ -946,7 +950,14 @@ IS
       
       -- if the constant null_value is used, then the value should be set to null
       UPDATE mapping_conf
-         SET table_name =
+         SET restartable =
+             UPPER (CASE
+                     WHEN p_restartable IS NULL
+                     THEN restartable
+                     ELSE p_restartable
+                     END
+                   ),
+             table_name =
              UPPER (CASE
                      WHEN p_table IS NULL
                      THEN table_name

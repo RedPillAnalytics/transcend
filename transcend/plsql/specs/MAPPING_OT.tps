@@ -3,7 +3,8 @@ CREATE OR REPLACE TYPE mapping_ot
 AS OBJECT
 (
   mapping_name              VARCHAR2( 30 ),
-  mapping_type		    VARCHAR2( 10 ), 
+  mapping_type		    VARCHAR2( 10 ),
+  restartable		    VARCHAR2( 3 ), 
   table_owner               VARCHAR2( 61 ),
   table_name                VARCHAR2( 30 ),
   partition_name            VARCHAR2( 30 ),

@@ -12,11 +12,11 @@ AS
          SELECT manage_indexes, manage_constraints, replace_method, STATISTICS, index_concurrency, constraint_concurrency,
                 table_owner, table_name, partition_name, staging_owner, staging_table,
                 staging_column, index_regexp, index_type, partition_type, constraint_regexp,
-                constraint_type, mapping_type, drop_dependent_objects
+                constraint_type, mapping_type, drop_dependent_objects, restartable
            INTO SELF.manage_indexes, SELF.manage_constraints, SELF.replace_method, SELF.STATISTICS, SELF.index_concurrency, SELF.constraint_concurrency,
                 SELF.table_owner, SELF.table_name, SELF.partition_name, SELF.staging_owner, SELF.staging_table,
                 SELF.staging_column, SELF.index_regexp, SELF.index_type, SELF.partition_type, SELF.constraint_regexp,
-                SELF.constraint_type, SELF.mapping_type, SELF.drop_dependent_objects
+                SELF.constraint_type, SELF.mapping_type, SELF.drop_dependent_objects, SELF.restartable
            FROM mapping_conf
           WHERE mapping_name = SELF.mapping_name;
       EXCEPTION

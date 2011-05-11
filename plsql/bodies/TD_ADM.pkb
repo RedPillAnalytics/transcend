@@ -1985,6 +1985,7 @@ IS
 	 ( 
 	   mapping_name		      VARCHAR2(40),
 	   mapping_type		      VARCHAR2(10)      NOT NULL,
+           restartable                VARCHAR2(3)       DEFAULT 'no'            NOT NULL,
 	   table_owner 		      VARCHAR2(61)      DEFAULT NULL,
 	   table_name 		      VARCHAR2(30)      DEFAULT NULL,
 	   partition_name             VARCHAR2(30)      DEFAULT NULL,
@@ -2037,6 +2038,8 @@ IS
          EXECUTE IMMEDIATE q'|ALTER TABLE mapping_conf ADD CONSTRAINT mapping_conf_ck10 CHECK (statistics in ('gather','transfer','ignore'))|';
 
          EXECUTE IMMEDIATE q'|ALTER TABLE mapping_conf ADD CONSTRAINT mapping_conf_ck11 CHECK (drop_dependent_objects in ('yes','no'))|';
+
+         EXECUTE IMMEDIATE q'|ALTER TABLE mapping_conf ADD CONSTRAINT mapping_conf_ck12 CHECK (restartable in ('yes','no'))|';
 
          -- DIMENSION_CONF table
          EXECUTE IMMEDIATE q'|CREATE TABLE dimension_conf
