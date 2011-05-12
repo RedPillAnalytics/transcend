@@ -1668,13 +1668,21 @@ IS
       END;
 
       BEGIN
-         EXECUTE IMMEDIATE q'|DROP TABLE mapping_conf|';
+         EXECUTE IMMEDIATE q'|DROP TABLE mapping_control|';
       EXCEPTION
          WHEN e_no_tab
          THEN
          NULL;
       END;
 
+      BEGIN
+         EXECUTE IMMEDIATE q'|DROP TABLE mapping_conf|';
+      EXCEPTION
+         WHEN e_no_tab
+         THEN
+         NULL;
+      END;
+      
       BEGIN
          EXECUTE IMMEDIATE q'|DROP TABLE column_type_list|';
       EXCEPTION
@@ -2040,6 +2048,36 @@ IS
          EXECUTE IMMEDIATE q'|ALTER TABLE mapping_conf ADD CONSTRAINT mapping_conf_ck11 CHECK (drop_dependent_objects in ('yes','no'))|';
 
          EXECUTE IMMEDIATE q'|ALTER TABLE mapping_conf ADD CONSTRAINT mapping_conf_ck12 CHECK (restartable in ('yes','no'))|';
+         
+         
+         -- MAPPING_CONTROL table
+         EXECUTE IMMEDIATE q'|CREATE TABLE mapping_control
+	 ( 
+	   mapping_name		      VARCHAR2(40),
+           session_id                 NUMBER,
+           batch_id                   NUMBER,
+	   control_user	     	      VARCHAR2(30) DEFAULT sys_context('USERENV','SESSION_USER') NOT NULL,
+	   control_dt	     	      DATE DEFAULT SYSDATE NOT NULL
+	 )|';
+
+         EXECUTE IMMEDIATE q'|ALTER TABLE mapping_control ADD 
+	 (
+	   CONSTRAINT mapping_control_pk
+	   PRIMARY KEY
+	   ( mapping_name )
+	   USING INDEX
+	 )|';
+         
+         EXECUTE IMMEDIATE q'|ALTER TABLE mapping_control ADD 
+	 (
+	   CONSTRAINT mapping_control_fk1
+	   FOREIGN KEY ( mapping_name )
+	   REFERENCES mapping_conf
+	   ( mapping_name )
+	 )|';
+
+
+         EXECUTE IMMEDIATE q'|ALTER TABLE mapping_control ADD CONSTRAINT mapping_control_ck1 CHECK (mapping_name=lower(mapping_name))|';
 
          -- DIMENSION_CONF table
          EXECUTE IMMEDIATE q'|CREATE TABLE dimension_conf

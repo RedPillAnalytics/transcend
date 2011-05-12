@@ -18,10 +18,18 @@ IS
    BEGIN
       
       -- get the mapping type
-      SELECT mapping_type
-        INTO l_map_type
-        FROM mapping_conf
-       WHERE lower ( mapping_name ) = lower ( l_mapping );
+      BEGIN
+
+         SELECT mapping_type
+           INTO l_map_type
+           FROM mapping_conf
+          WHERE lower ( mapping_name ) = lower ( l_mapping );
+         
+      EXCEPTION
+         WHEN no_data_found
+         THEN 
+            evolve.raise_err( 'no_mapping');
+      END;
 
       -- let's register what the mapping_type is
       evolve.log_variable( 'l_map_type',l_map_type );

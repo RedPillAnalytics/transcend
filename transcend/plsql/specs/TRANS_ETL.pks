@@ -231,6 +231,20 @@ IS
       p_compress        VARCHAR2 DEFAULT 'no'
    );
 
+   FUNCTION mapping_complete_bool( 
+      p_mapping    VARCHAR2
+   )
+      RETURN BOOLEAN;
      
+   FUNCTION mapping_complete_num( 
+      p_mapping    VARCHAR2
+   )
+      RETURN NUMBER;
+      
+   FUNCTION mapping_complete_str( 
+      p_mapping    VARCHAR2
+   )
+      RETURN VARCHAR2;
+
 END trans_etl;
 /

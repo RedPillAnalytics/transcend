@@ -690,6 +690,74 @@ AS
          RAISE;
    END add_range_list_subpart;
 
+   FUNCTION mapping_complete_bool( 
+      p_mapping    VARCHAR2
+   )
+      RETURN BOOLEAN
+   AS
+      l_mapping_name mapping_control.mapping_name%type;
+      o_map          mapping_ot := trans_factory.get_mapping_ot( p_mapping  => p_mapping );
+
+   BEGIN
+
+      BEGIN
+                  
+      -- look for a completed record from the mapping_status table
+         SELECT mapping_name
+           INTO l_mapping_name
+           FROM mapping_control
+          WHERE mapping_name = lower( p_mapping );
+      EXCEPTION
+         
+         -- if no record is found, then we are OK to run
+         WHEN no_data_found
+         THEN 
+            RETURN FALSE;
+      END;
+            
+      -- otherwise, we need to return a FALSE because this has already completed successfully 
+      RETURN TRUE;
+
+   END mapping_complete_bool;
+
+   FUNCTION mapping_complete_num( 
+      p_mapping    VARCHAR2
+   )
+      RETURN NUMBER
+   AS
+      l_results BOOLEAN;
+   BEGIN
+      
+      l_results := mapping_complete_bool( p_mapping );
+      
+      IF l_results
+      THEN 
+         RETURN 0;
+      ELSE
+         RETURN 1;
+      END IF;
+
+   END mapping_complete_num;
+
+   FUNCTION mapping_complete_str( 
+      p_mapping    VARCHAR2
+   )
+      RETURN VARCHAR2
+   AS
+      l_results BOOLEAN;
+   BEGIN
+      
+      l_results := mapping_complete_bool( p_mapping );
+      
+      IF l_results
+      THEN 
+         RETURN 'Y';
+      ELSE
+         RETURN 'N';
+      END IF;
+
+   END mapping_complete_str;
+   
 END trans_etl;
 /
 
