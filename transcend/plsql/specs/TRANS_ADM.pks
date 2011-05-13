@@ -122,9 +122,17 @@ IS
       p_file_label         VARCHAR2
    );
    
+   PROCEDURE create_map_control (
+      p_mapping             VARCHAR2,
+      p_description         VARCHAR2 DEFAULT NULL
+   );
+      
+   PROCEDURE delete_map_control (
+      p_mapping             VARCHAR2
+   );
+
    PROCEDURE create_mapping (
       p_mapping             VARCHAR2,
-      p_restartable         VARCHAR2 DEFAULT 'no',
       p_owner               VARCHAR2 DEFAULT NULL,
       p_table               VARCHAR2 DEFAULT NULL,
       p_partname            VARCHAR2 DEFAULT NULL,
@@ -148,7 +156,6 @@ IS
 
    PROCEDURE modify_mapping (
       p_mapping             VARCHAR2,
-      p_restartable         VARCHAR2 DEFAULT 'no',
       p_owner               VARCHAR2 DEFAULT NULL,
       p_table               VARCHAR2 DEFAULT NULL,
       p_partname            VARCHAR2 DEFAULT NULL,

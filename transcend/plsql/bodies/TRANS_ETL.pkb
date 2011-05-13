@@ -690,12 +690,12 @@ AS
          RAISE;
    END add_range_list_subpart;
 
-   FUNCTION mapping_complete_bool( 
+   FUNCTION execute_mapping_bool( 
       p_mapping    VARCHAR2
    )
       RETURN BOOLEAN
    AS
-      l_mapping_name mapping_control.mapping_name%type;
+      l_status       mapping_control.status%type;
       o_map          mapping_ot := trans_factory.get_mapping_ot( p_mapping  => p_mapping );
 
    BEGIN
@@ -703,24 +703,25 @@ AS
       BEGIN
                   
       -- look for a completed record from the mapping_status table
-         SELECT mapping_name
-           INTO l_mapping_name
+         SELECT status
+           INTO l_status
            FROM mapping_control
-          WHERE mapping_name = lower( p_mapping );
+          WHERE mapping_name = lower( p_mapping )
+            AND status = 'complete';
       EXCEPTION
          
          -- if no record is found, then we are OK to run
          WHEN no_data_found
          THEN 
-            RETURN FALSE;
+            RETURN TRUE;
       END;
             
       -- otherwise, we need to return a FALSE because this has already completed successfully 
-      RETURN TRUE;
+      RETURN FALSE;
 
-   END mapping_complete_bool;
+   END execute_mapping_bool;
 
-   FUNCTION mapping_complete_num( 
+   FUNCTION execute_mapping_num( 
       p_mapping    VARCHAR2
    )
       RETURN NUMBER
@@ -728,7 +729,7 @@ AS
       l_results BOOLEAN;
    BEGIN
       
-      l_results := mapping_complete_bool( p_mapping );
+      l_results := execute_mapping_bool( p_mapping );
       
       IF l_results
       THEN 
@@ -737,9 +738,9 @@ AS
          RETURN 1;
       END IF;
 
-   END mapping_complete_num;
+   END execute_mapping_num;
 
-   FUNCTION mapping_complete_str( 
+   FUNCTION execute_mapping_str( 
       p_mapping    VARCHAR2
    )
       RETURN VARCHAR2
@@ -747,7 +748,7 @@ AS
       l_results BOOLEAN;
    BEGIN
       
-      l_results := mapping_complete_bool( p_mapping );
+      l_results := execute_mapping_bool( p_mapping );
       
       IF l_results
       THEN 
@@ -756,7 +757,25 @@ AS
          RETURN 'N';
       END IF;
 
-   END mapping_complete_str;
+   END execute_mapping_str;
+   
+   PROCEDURE reset_map_control
+   AS
+      o_ev    evolve_ot  := evolve_ot( p_module => 'reset_map_control' );
+
+   BEGIN
+      
+      -- update all statuses to ready
+      UPDATE mapping_control
+         SET status='ready';
+
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         evolve.log_err;
+         o_ev.clear_app_info;
+         RAISE;
+   END reset_map_control;
    
 END trans_etl;
 /

@@ -793,10 +793,60 @@ IS
 
    END delete_extract;
 
+   PROCEDURE create_map_control (
+      p_mapping             VARCHAR2,
+      p_description         VARCHAR2 DEFAULT NULL
+   )
+   IS
+      l_num_rows   NUMBER;
+      o_map        mapping_ot;
+      e_dup_conf   EXCEPTION;
+      PRAGMA EXCEPTION_INIT (e_dup_conf, -1);
+      o_ev          evolve_ot     := evolve_ot (p_module  => 'create_map_control');
+   BEGIN
+
+      BEGIN
+	 INSERT INTO mapping_control
+		( mapping_name, description, control_mode, status
+		)
+		VALUES ( LOWER (p_mapping), p_description, 'restart', 'ready'
+                       );
+      EXCEPTION
+	 WHEN e_dup_conf
+	 THEN
+            o_ev.clear_app_info;
+            evolve.raise_err ('dup_conf');
+      END;
+
+      -- initiating the object will run the business logic checks      
+      o_map := trans_factory.get_mapping_ot (p_mapping => p_mapping);
+      o_ev.clear_app_info;
+   EXCEPTION
+      WHEN others
+      THEN
+         evolve.log_err;
+      	 o_ev.clear_app_info;
+      	 RAISE;
+   END create_map_control;   
+
+   PROCEDURE delete_map_control (
+      p_mapping             VARCHAR2
+   )
+   IS
+      o_ev          evolve_ot     := evolve_ot (p_module      => 'delete_map_control');
+   BEGIN
+
+      -- if a delete is specifically requested, then do a delete
+      DELETE FROM mapping_control
+       WHERE mapping_name = LOWER (p_mapping);
+      
+      o_ev.clear_app_info;
+
+   END delete_map_control;
+
    PROCEDURE create_mapping (
       p_mapping             VARCHAR2,
       p_mapping_type        VARCHAR2,
-      p_restartable         VARCHAR2 DEFAULT 'no',
       p_owner               VARCHAR2 DEFAULT NULL,
       p_table               VARCHAR2 DEFAULT NULL,
       p_partname            VARCHAR2 DEFAULT NULL,
@@ -828,7 +878,7 @@ IS
       BEGIN
 	 INSERT INTO mapping_conf
 		( mapping_name, mapping_type,
-		  restartable, table_owner, table_name,
+		  table_owner, table_name,
 		  partition_name, manage_indexes,
                   index_regexp, index_type, 
                   partition_type, index_concurrency, 
@@ -839,7 +889,7 @@ IS
 		  statistics, description, drop_dependent_objects
 		)
 		VALUES ( LOWER (p_mapping), LOWER (p_mapping_type),
-			 lower(p_restartable), UPPER (p_owner), UPPER (p_table),
+			 UPPER (p_owner), UPPER (p_table),
 			 UPPER (p_partname), lower(p_indexes),
 			 p_index_regexp, p_index_type, p_part_type, 
                          LOWER(p_idx_concurrency),
@@ -869,7 +919,6 @@ IS
 
    PROCEDURE create_mapping (
       p_mapping             VARCHAR2,
-      p_restartable         VARCHAR2 DEFAULT 'no',
       p_owner               VARCHAR2 DEFAULT NULL,
       p_table               VARCHAR2 DEFAULT NULL,
       p_partname            VARCHAR2 DEFAULT NULL,
@@ -896,7 +945,6 @@ IS
       
       create_mapping ( p_mapping                => p_mapping,
 		       p_mapping_type           => 'table',
-                       p_restartable            => p_restartable,
 		       p_owner                  => p_owner,
 		       p_table                  => p_table,
 		       p_partname               => p_partname,
@@ -922,7 +970,6 @@ IS
    
    PROCEDURE modify_mapping (
       p_mapping             VARCHAR2,
-      p_restartable         VARCHAR2 DEFAULT 'no',
       p_owner               VARCHAR2 DEFAULT NULL,
       p_table               VARCHAR2 DEFAULT NULL,
       p_partname            VARCHAR2 DEFAULT NULL,
@@ -950,14 +997,7 @@ IS
       
       -- if the constant null_value is used, then the value should be set to null
       UPDATE mapping_conf
-         SET restartable =
-             UPPER (CASE
-                     WHEN p_restartable IS NULL
-                     THEN restartable
-                     ELSE p_restartable
-                     END
-                   ),
-             table_name =
+         SET table_name =
              UPPER (CASE
                      WHEN p_table IS NULL
                      THEN table_name
@@ -1129,10 +1169,13 @@ IS
       -- if a delete is specifically requested, then do a delete
       DELETE FROM mapping_conf
        WHERE mapping_name = LOWER (p_mapping);
+
+       delete_map_control( p_mapping );
       
       o_ev.clear_app_info;
 
    END delete_mapping;   
+
 
    PROCEDURE create_dimension (
       p_mapping            VARCHAR2,

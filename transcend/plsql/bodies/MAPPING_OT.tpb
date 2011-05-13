@@ -389,6 +389,15 @@ AS
 
       post_map;
 
+      -- update the MAPPING_CONTROL table with the status      
+      UPDATE mapping_control
+         SET status       = 'complete',
+             session_id   = td_inst.session_id,
+             batch_id     = td_inst.batch_id,
+             control_user = sys_context('USERENV','SESSION_USER'),
+             control_dt   = SYSDATE 
+       WHERE mapping_name = self.mapping_name;
+         
       evolve.log_msg( 'Post-mapping processes completed' );
 
       o_ev.clear_app_info;
@@ -404,6 +413,7 @@ AS
       evolve.raise_err( 'wrong_map_type' );
       o_ev.clear_app_info;
    END confirm_dim_cols;
+
 END;
 /
 
