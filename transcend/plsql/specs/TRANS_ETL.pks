@@ -8,9 +8,10 @@ IS
       p_batch_id   NUMBER DEFAULT NULL
    );
 
-   PROCEDURE end_mapping( 
+   PROCEDURE end_mapping(
       p_mapping    VARCHAR2 DEFAULT SYS_CONTEXT( 'USERENV', 'ACTION' ),
-      p_batch_id   NUMBER DEFAULT NULL
+      p_batch_id   NUMBER DEFAULT NULL,
+      p_results    NUMBER DEFAULT NULL
    );
 
    PROCEDURE truncate_table( p_owner VARCHAR2, p_table VARCHAR2, p_reuse VARCHAR2 DEFAULT 'no' );

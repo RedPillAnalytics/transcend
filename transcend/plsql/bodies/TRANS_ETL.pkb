@@ -21,9 +21,10 @@ AS
          RAISE;
    END start_mapping;
 
-   PROCEDURE end_mapping( 
-      p_mapping VARCHAR2 DEFAULT SYS_CONTEXT( 'USERENV', 'ACTION' ),
-      p_batch_id   NUMBER DEFAULT NULL
+   PROCEDURE end_mapping(
+      p_mapping    VARCHAR2 DEFAULT SYS_CONTEXT( 'USERENV', 'ACTION' ),
+      p_batch_id   NUMBER DEFAULT NULL,
+      p_results    NUMBER DEFAULT NULL
    )
    AS
       o_ev    evolve_ot      := evolve_ot( p_module => 'start_mapping' );
@@ -32,6 +33,19 @@ AS
    BEGIN
       
       evolve.log_variable( 'o_map.mapping_type',o_map.mapping_type );
+
+      -- if the P_RESULTS parameter is populated, then write a count record
+      IF p_results IS NOT NULL
+      THEN 
+
+      evolve.log_results_msg( p_count      => p_results,
+                              p_owner      => o_map.table_owner,
+                              p_object     => o_map.table_name,
+                              p_category   => 'mapping'
+                            );
+         
+      END IF;
+
       -- now, regardless of which object type this is, the following call is correct
       o_map.end_map;
    -- used to have a commit here.
