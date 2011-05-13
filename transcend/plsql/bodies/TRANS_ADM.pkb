@@ -802,6 +802,8 @@ IS
       o_map        mapping_ot;
       e_dup_conf   EXCEPTION;
       PRAGMA EXCEPTION_INIT (e_dup_conf, -1);
+      e_no_parent  EXCEPTION;
+      PRAGMA EXCEPTION_INIT (e_no_parent, -2291);
       o_ev          evolve_ot     := evolve_ot (p_module  => 'create_map_control');
    BEGIN
 
@@ -816,6 +818,9 @@ IS
 	 THEN
             o_ev.clear_app_info;
             evolve.raise_err ('dup_conf');
+         WHEN e_no_parent
+         THEN
+            evolve.raise_err ('no_mapping');
       END;
 
       -- initiating the object will run the business logic checks      
