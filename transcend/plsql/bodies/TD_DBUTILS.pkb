@@ -2265,7 +2265,7 @@ AS
                            || ' PARALLEL DML'
                      );
 
-      o_ev.change_action( 'INSERT into '|| l_trg_name );
+      o_ev.change_action( 'execute insert' );
       evolve.exec_sql( p_sql      =>    'insert '
                                          || CASE
                                                WHEN td_core.is_true( p_direct )
@@ -2479,7 +2479,7 @@ AS
                                             || ' PARALLEL DML'
                         );
          
-         o_ev.change_action( 'MERGE into '|| l_trg_name );
+         o_ev.change_action( 'execute merge statement' );
          -- we put the merge statement together using all the different clauses constructed above
          evolve.exec_sql( p_sql      =>    'MERGE INTO '
                                             || p_owner
