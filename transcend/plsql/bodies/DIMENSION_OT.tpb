@@ -444,7 +444,13 @@ AS
          || SELF.surrogate_key_col
          || ' <> '
          || l_stage_key
-         || ' THEN ''Y'' WHEN '
+         || ' THEN ''Y'' WHEN rank() over (partition by '
+         || SELF.natural_key_list
+         || ' order by '      
+         || SELF.effect_dt_col
+         || ','
+         || SELF.surrogate_key_col
+         || ' desc) = 1 THEN ''Y'' WHEN '
          || SELF.effect_dt_col
          || ' = lag('
          || SELF.effect_dt_col
