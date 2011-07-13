@@ -80,11 +80,14 @@ AS
             THEN
                evolve.raise_err ('no_ext_tab', UPPER (SELF.object_owner || '.' || SELF.object_name));
          END;
-
+               
+         -- log the directory name
+         evolve.log_variable( 'l_directory', l_directory );
+   
          -- now compare the two and make sure they are the same
          IF UPPER (SELF.DIRECTORY) <> l_directory
          THEN
-	    evolve.raise_err ('parms_not_compatible','The values specified for DIRECTORY must also be the location of the specified external table');
+	    evolve.raise_err ('parms_not_compatible','The values specified for P_DIRECTORY must also be the location of the specified external table');
          END IF;
       END IF;
 

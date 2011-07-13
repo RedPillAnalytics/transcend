@@ -82,7 +82,7 @@ IS
       p_object_owner       VARCHAR2,
       p_object_name        VARCHAR2,
       p_directory          VARCHAR2,
-      p_work_directory     VARCHAR2,
+      p_work_directory     VARCHAR2 DEFAULT NULL,
       p_file_datestamp     VARCHAR2 DEFAULT NULL,
       p_dateformat         VARCHAR2 DEFAULT 'mm/dd/yyyy hh:mi:ss am',
       p_tsformat           VARCHAR2 DEFAULT 'mm/dd/yyyy hh:mi:ss:x:ff am',

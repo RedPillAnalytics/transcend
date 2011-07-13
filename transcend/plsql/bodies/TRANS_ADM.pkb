@@ -520,6 +520,9 @@ IS
    IS
       o_ev          evolve_ot     := evolve_ot (p_module      => 'delete_feed');
    BEGIN
+      
+      DELETE FROM file_detail
+       WHERE file_label = LOWER (p_file_label);
 
       DELETE FROM file_conf
        WHERE file_label = LOWER (p_file_label);
@@ -535,7 +538,7 @@ IS
       p_object_owner       VARCHAR2,
       p_object_name        VARCHAR2,
       p_directory          VARCHAR2,
-      p_work_directory     VARCHAR2,
+      p_work_directory     VARCHAR2 DEFAULT NULL,
       p_file_datestamp     VARCHAR2 DEFAULT NULL,
       p_dateformat         VARCHAR2 DEFAULT 'mm/dd/yyyy hh:mi:ss am',
       p_tsformat           VARCHAR2 DEFAULT 'mm/dd/yyyy hh:mi:ss:x:ff am',
@@ -786,6 +789,10 @@ IS
    IS
       o_ev         evolve_ot   := evolve_ot (p_module      => 'delete_extract');
    BEGIN
+      
+      DELETE FROM file_detail
+       WHERE file_label = LOWER (p_file_label);
+
       DELETE FROM file_conf
        WHERE file_label = LOWER (p_file_label);
       
@@ -1170,12 +1177,13 @@ IS
    IS
       o_ev          evolve_ot     := evolve_ot (p_module      => 'delete_mapping');
    BEGIN
+      
+      -- first remove mapping control if it exists
+       delete_map_control( p_mapping );
 
       -- if a delete is specifically requested, then do a delete
       DELETE FROM mapping_conf
        WHERE mapping_name = LOWER (p_mapping);
-
-       delete_map_control( p_mapping );
       
       o_ev.clear_app_info;
 

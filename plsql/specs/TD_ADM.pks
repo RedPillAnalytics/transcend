@@ -14,6 +14,22 @@ IS
    trans_files_role     CONSTANT        VARCHAR2(30)    := 'TRANS_FILES';
    default_repository   CONSTANT        VARCHAR2(6)     := 'TDREP';
 
+   PROCEDURE drop_evolve_repo(
+      p_schema       VARCHAR2 DEFAULT DEFAULT_REPOSITORY
+   );
+
+   PROCEDURE drop_transcend_repo(
+      p_schema       VARCHAR2 DEFAULT DEFAULT_REPOSITORY
+   );
+
+   PROCEDURE drop_evolve_app(
+      p_schema       VARCHAR2
+   );
+
+   PROCEDURE drop_transcend_app(
+      p_schema       VARCHAR2
+   );
+
    PROCEDURE build_repository(
       p_schema       VARCHAR2,
       p_tablespace   VARCHAR2,

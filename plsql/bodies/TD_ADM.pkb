@@ -530,6 +530,8 @@ IS
          EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON FILE_CONF TO ' || p_grantee;
 
          EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON FILE_DETAIL TO ' || p_grantee;
+         
+         EXECUTE IMMEDIATE 'GRANT select ON FILE_DETAIL_V TO ' || p_grantee;
 
          EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON FILE_OBJECT_DETAIL TO ' || p_grantee;
 
@@ -542,6 +544,8 @@ IS
          EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON DIMENSION_CONF TO ' || p_grantee;
 
          EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON MAPPING_CONF TO ' || p_grantee;
+         
+         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON MAPPING_CONTROL TO ' || p_grantee;
 
          EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON COLUMN_CONF TO ' || p_grantee;
 
@@ -1706,13 +1710,21 @@ IS
          THEN
          NULL;
       END;
+            
+      BEGIN
+         EXECUTE IMMEDIATE 'drop view file_detail_v';
+      EXCEPTION
+         WHEN e_no_tab
+         THEN
+            NULL;
+      END;
       
       BEGIN
          EXECUTE IMMEDIATE q'|DROP TABLE file_conf|';
       EXCEPTION
          WHEN e_no_tab
          THEN
-         NULL;
+            NULL;
       END;
 
       BEGIN
@@ -1908,21 +1920,66 @@ IS
 	 )|';
 
          EXECUTE IMMEDIATE q'|CREATE SEQUENCE file_detail_seq|';
+         
+         EXECUTE IMMEDIATE q'|CREATE OR REPLACE VIEW file_detail_v
+         ( 
+           file_detail_id, 
+           file_label, 
+           file_group, 
+           label_type, 
+           directory, 
+           filename, 
+           source_directory, 
+           source_filename, 
+           archive_filename, 
+           num_bytes, 
+           num_lines, 
+           file_dt, 
+           store_original_files, 
+           compress_method, 
+           encrypt_method, 
+           passphrase, 
+           processed_ts, 
+           session_id
+         )
+         AS 
+         SELECT 
+           file_detail_id, 
+           file_label, 
+           file_group, 
+           label_type, 
+           directory, 
+           filename, 
+           source_directory, 
+           source_filename, 
+           archive_filename, 
+           num_bytes, 
+           num_lines, 
+           file_dt, 
+           store_original_files, 
+           compress_method, 
+           encrypt_method, 
+           passphrase, 
+           processed_ts, 
+           session_id
+           FROM file_detail
+          ORDER BY session_id,
+                processed_ts |';
 
          -- FILE_OBJECT_DETAIL table
          EXECUTE IMMEDIATE q'|CREATE TABLE file_object_detail
 	 ( 
 	   file_object_detail_id    NUMBER NOT NULL,
-	   file_label 	         VARCHAR2(30) NOT NULL,
-	   file_group 	      	 VARCHAR2(50) NOT NULL,
-	   label_type 	      	 VARCHAR2(7) NOT NULL,
-	   object_owner  	 VARCHAR2(30) NOT NULL,
-	   object_name  	 VARCHAR2(30) NOT NULL,
-	   processed_ts 	 TIMESTAMP DEFAULT systimestamp NOT NULL,
-	   num_rows 	      	 NUMBER,
-	   num_lines 	      	 NUMBER,
-	   percent_diff 	 NUMBER,
-	   session_id 	      	 NUMBER DEFAULT sys_context('USERENV','SESSIONID') NOT NULL
+	   file_label 	            VARCHAR2(30) NOT NULL,
+	   file_group 	      	    VARCHAR2(50) NOT NULL,
+	   label_type 	      	    VARCHAR2(7) NOT NULL,
+	   object_owner  	    VARCHAR2(30) NOT NULL,
+	   object_name  	    VARCHAR2(30) NOT NULL,
+	   processed_ts 	    TIMESTAMP DEFAULT systimestamp NOT NULL,
+	   num_rows 	      	    NUMBER,
+	   num_lines 	      	    NUMBER,
+	   percent_diff 	    NUMBER,
+	   session_id 	      	    NUMBER DEFAULT sys_context('USERENV','SESSIONID') NOT NULL
 	 )|';
 
          EXECUTE IMMEDIATE q'|ALTER TABLE file_object_detail ADD 
@@ -2516,6 +2573,15 @@ IS
          THEN
             NULL;
       END;
+      
+      BEGIN
+         EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.FILE_DETAIL_V for ' || p_schema
+                           || '.FILE_DETAIL_V';
+      EXCEPTION
+         WHEN e_same_name
+         THEN
+            NULL;
+      END;
 
       BEGIN
          EXECUTE IMMEDIATE    'create or replace synonym '
@@ -2592,6 +2658,15 @@ IS
       BEGIN
          EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.MAPPING_CONF for ' || p_schema
                            || '.MAPPING_CONF';
+      EXCEPTION
+         WHEN e_same_name
+         THEN
+            NULL;
+      END;
+      
+      BEGIN
+         EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.MAPPING_CONTROL for ' || p_schema
+                           || '.MAPPING_CONTROL';
       EXCEPTION
          WHEN e_same_name
          THEN

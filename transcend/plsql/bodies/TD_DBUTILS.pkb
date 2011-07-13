@@ -3660,7 +3660,7 @@ AS
                                          THEN NULL
                                       ELSE 's'
                                    END
-                                || ' affected on table '
+                                || ' marked unusuable on table '
                                 || l_tab_name
                               );
          END IF;
