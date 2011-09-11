@@ -374,7 +374,7 @@ AS
                 ON mc.table_owner = atc.owner AND mc.table_name = atc.table_name AND cc.column_name = atc.column_name
           WHERE mapping_name = SELF.mapping_name
             AND column_type = 'scd type 2'
-            AND data_type = 'NUMBER';
+            AND data_type in ('NUMBER','FLOAT');
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
@@ -384,8 +384,7 @@ AS
 
       evolve.log_msg( 'The SCD2 number list: ' || l_scd2_nums, 5 );
 
-      -- get a comma separated list of scd2 date columns
-      -- use the STRAGG function for this
+      -- get a comma separated list of attributes that are not Date or Number
       BEGIN
          SELECT stragg( cc.column_name )
            INTO l_scd2_chars
@@ -396,7 +395,7 @@ AS
                 ON mc.table_owner = atc.owner AND mc.table_name = atc.table_name AND cc.column_name = atc.column_name
           WHERE mapping_name = SELF.mapping_name
             AND column_type = 'scd type 2'
-            AND data_type NOT IN( 'DATE', 'NUMBER' );
+            AND data_type NOT IN( 'DATE', 'NUMBER','FLOAT' );
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
