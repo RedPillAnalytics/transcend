@@ -2808,73 +2808,74 @@ IS
       p_repository   VARCHAR2 DEFAULT DEFAULT_REPOSITORY
    )
    IS
+      l_schema  dba_users.username%type := upper(p_schema);
    BEGIN
       -- grant required permissions for code compilation
       BEGIN
-	 EXECUTE IMMEDIATE 'GRANT RESOURCE TO ' || p_schema;
+	 EXECUTE IMMEDIATE 'GRANT RESOURCE TO ' || l_schema;
       EXCEPTION
 	 WHEN e_ins_privs
 	 THEN
-	    dbms_output.put_line( 'The installing user cannot grant the RESOURCE role. RESOURCE needs to be granted to user '||p_schema||'.' );
+	    dbms_output.put_line( 'The installing user cannot grant the RESOURCE role. RESOURCE needs to be granted to user '||l_schema||'.' );
       END;
       
       BEGIN
-         EXECUTE IMMEDIATE 'GRANT ALTER SESSION TO ' || p_schema;
+         EXECUTE IMMEDIATE 'GRANT ALTER SESSION TO ' || l_schema;
       EXCEPTION
 	 WHEN e_ins_privs
 	 THEN
-	    dbms_output.put_line( 'The installing user cannot grant the ALTER SESSION system privilege. ALTER SESSION needs to be granted to user '||p_schema||'.' );
+	    dbms_output.put_line( 'The installing user cannot grant the ALTER SESSION system privilege. ALTER SESSION needs to be granted to user '||l_schema||'.' );
       END;
       
       BEGIN
-         EXECUTE IMMEDIATE 'GRANT SELECT ANY DICTIONARY TO ' || p_schema;
+         EXECUTE IMMEDIATE 'GRANT SELECT ANY DICTIONARY TO ' || l_schema;
       EXCEPTION
 	 WHEN e_ins_privs
 	 THEN
-	    dbms_output.put_line( 'The installing user cannot grant the SELECT ANY DICTIONARY system privilege. RESOURCE needs to be granted to user '||p_schema||'.' );
+	    dbms_output.put_line( 'The installing user cannot grant the SELECT ANY DICTIONARY system privilege. RESOURCE needs to be granted to user '||l_schema||'.' );
       END;
 
       BEGIN
-         EXECUTE IMMEDIATE 'GRANT EXECUTE ON sys.utl_mail TO ' || p_schema;
+         EXECUTE IMMEDIATE 'GRANT EXECUTE ON sys.utl_mail TO ' || l_schema;
       EXCEPTION
          WHEN e_no_obj OR e_no_tab
          THEN
-	    dbms_output.put_line( 'The installing user cannot see package UTL_MAIL. The package needs to be created, and EXECUTE needs to be granted to user '||p_schema||'.' );
+	    dbms_output.put_line( 'The installing user cannot see package UTL_MAIL. The package needs to be created, and EXECUTE needs to be granted to user '||l_schema||'.' );
 	 WHEN e_ins_privs
 	 THEN
-	    dbms_output.put_line( 'The installing user cannot grant execute on UTL_MAIL. EXECUTE needs to be granted to user '||p_schema||'.' );
+	    dbms_output.put_line( 'The installing user cannot grant execute on UTL_MAIL. EXECUTE needs to be granted to user '||l_schema||'.' );
       END;
 
       -- grant permissions on DBMS_LOCK
       -- if the package doesn't exist, or the user doesn't have access to see it, then fail
       BEGIN
-         EXECUTE IMMEDIATE 'GRANT EXECUTE ON sys.dbms_lock TO ' || p_schema;
+         EXECUTE IMMEDIATE 'GRANT EXECUTE ON sys.dbms_lock TO ' || l_schema;
       EXCEPTION
          WHEN e_no_obj OR e_no_tab
          THEN
-	    dbms_output.put_line( 'The installing user cannot see package DBMS_LOCK. The package needs to be created, and EXECUTE needs to be granted to user '||p_schema||'.' );
+	    dbms_output.put_line( 'The installing user cannot see package DBMS_LOCK. The package needs to be created, and EXECUTE needs to be granted to user '||l_schema||'.' );
 	 WHEN e_ins_privs
 	 THEN
-	    dbms_output.put_line( 'The installing user cannot grant execute on DBMS_LOCK. EXECUTE needs to be granted to user '||p_schema||'.' );
+	    dbms_output.put_line( 'The installing user cannot grant execute on DBMS_LOCK. EXECUTE needs to be granted to user '||l_schema||'.' );
       END;
 
       -- grant permissions on DBMS_FLASHBACK
       -- if the package doesn't exist, or the user doesn't have access to see it, then fail
       BEGIN
-         EXECUTE IMMEDIATE 'GRANT EXECUTE ON sys.dbms_flashback TO ' || p_schema;
+         EXECUTE IMMEDIATE 'GRANT EXECUTE ON sys.dbms_flashback TO ' || l_schema;
       EXCEPTION
          WHEN e_no_obj OR e_no_tab
          THEN
-	    dbms_output.put_line( 'The installing user cannot see package DBMS_FLASHBACK. The package needs to be created, and EXECUTE needs to be granted to user '||p_schema||'.' );
+	    dbms_output.put_line( 'The installing user cannot see package DBMS_FLASHBACK. The package needs to be created, and EXECUTE needs to be granted to user '||l_schema||'.' );
 	 WHEN e_ins_privs
 	 THEN
-	    dbms_output.put_line( 'The installing user cannot grant execute on DBMS_FLASHBACK. EXECUTE needs to be granted to user '||p_schema||'.' );
+	    dbms_output.put_line( 'The installing user cannot grant execute on DBMS_FLASHBACK. EXECUTE needs to be granted to user '||l_schema||'.' );
       END;
             
       -- grant needed permissions, but not needed for code compilation
       -- Java permissions do not affect PL/SQL code compilation
-      dbms_java.grant_permission( upper(p_schema), 'SYS:java.lang.RuntimePermission', 'writeFileDescriptor', NULL );
-      dbms_java.grant_permission( upper(p_schema), 'SYS:java.lang.RuntimePermission', 'readFileDescriptor', NULL );
+      dbms_java.grant_permission( upper(l_schema), 'SYS:java.lang.RuntimePermission', 'writeFileDescriptor', NULL );
+      dbms_java.grant_permission( upper(l_schema), 'SYS:java.lang.RuntimePermission', 'readFileDescriptor', NULL );
       
       -- set CURRENT_SCHEMA to the owner of the repository
       set_current_schema( p_schema => p_repository );
@@ -3014,7 +3015,7 @@ IS
       END IF;
 
       DBMS_OUTPUT.put_line(    ' The CURRENT_SCHEMA is set to '
-                            || SYS_CONTEXT( 'USERENV', 'CURRENT_SCHEMA' )
+                            || UPPER(SYS_CONTEXT( 'USERENV', 'CURRENT_SCHEMA' ))
                             || ' in preparation for installing application'
                           );
       
@@ -3028,6 +3029,7 @@ IS
    )
    IS
       l_adm_role VARCHAR2(30) := p_repository || '_adm';
+      l_user  dba_users.username%type := upper(p_user);
    BEGIN
       -- create the synonyms to the repository
       build_evolve_rep_syns( p_user => p_user, p_schema => p_repository );
@@ -3045,7 +3047,7 @@ IS
       EXCEPTION
 	 WHEN e_ins_privs
 	 THEN
-	    dbms_output.put_line( 'The executing user cannot grant the CREATE JOB system privilege. CREATE JOB needs to be granted to user '||p_user||'.' );
+	    dbms_output.put_line( 'The executing user cannot grant the CREATE JOB system privilege. CREATE JOB needs to be granted to user '||l_user||'.' );
       END;
       
       BEGIN
@@ -3053,7 +3055,7 @@ IS
       EXCEPTION
 	 WHEN e_ins_privs
 	 THEN
-	 dbms_output.put_line( 'The executing user cannot grant the role ' || l_adm_role || '. '||l_adm_role||' needs to be granted to user '||p_user||'.' );
+	 dbms_output.put_line( 'The executing user cannot grant the role ' || l_adm_role || '. '||l_adm_role||' needs to be granted to user '||l_user||'.' );
       END;
 
       -- write audit record for creating or modifying a user record
