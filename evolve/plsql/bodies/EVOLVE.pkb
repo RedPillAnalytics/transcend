@@ -28,11 +28,18 @@ AS
    AS
       l_scn     v$database.current_scn%type;
    BEGIN
+
       SELECT current_scn
         INTO l_scn
         FROM v$database;
       
       RETURN l_scn;
+      
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         log_err;
+         RAISE;
 
    END get_scn;
 
