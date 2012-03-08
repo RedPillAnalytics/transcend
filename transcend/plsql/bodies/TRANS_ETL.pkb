@@ -710,7 +710,6 @@ AS
       RETURN BOOLEAN
    AS
       l_status       mapping_control.status%type;
-      o_map          mapping_ot := trans_factory.get_mapping_ot( p_mapping  => p_mapping );
 
    BEGIN
 
@@ -720,7 +719,7 @@ AS
          SELECT status
            INTO l_status
            FROM mapping_control
-          WHERE mapping_name = lower( p_mapping )
+          WHERE lower(mapping_name) = lower( p_mapping )
             AND status = 'complete';
       EXCEPTION
          
