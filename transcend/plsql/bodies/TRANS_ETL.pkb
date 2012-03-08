@@ -799,7 +799,7 @@ AS
 
    END get_scn;
    
-END trans_et
+END trans_etl;
 /
 
 SHOW errors
