@@ -789,8 +789,17 @@ AS
          o_ev.clear_app_info;
          RAISE;
    END reset_map_control;
+
+   FUNCTION get_scn
+      RETURN NUMBER 
+   AS
+   BEGIN
+      
+      RETURN evolve.get_scn;
+
+   END get_scn;
    
-END trans_etl;
+END trans_et
 /
 
 SHOW errors

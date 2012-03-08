@@ -248,6 +248,9 @@ IS
       RETURN VARCHAR2;
       
    PROCEDURE reset_map_control;
+         
+   FUNCTION get_scn
+      RETURN NUMBER;
 
 END trans_etl;
 /

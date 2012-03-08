@@ -8,7 +8,7 @@ AS
    BEGIN
       RETURN td_inst.action;
    END get_action;
-
+   
    -- get the currently configured module
    FUNCTION get_module
       RETURN VARCHAR2
@@ -17,6 +17,24 @@ AS
    BEGIN
       RETURN td_inst.module;
    END get_module;
+   
+   -- get the system change number (SCN)
+   -- there is a system procedure for this: DBMS_FLASHBACK.get_system_change_number
+   -- but granting execute on this package also grants A LOT of other functionality
+   -- the safer route seems to be to select the SCN from v$database
+   -- this can be granted with a simple SELECT permission
+   FUNCTION get_scn
+      RETURN v$database.current_scn%type
+   AS
+      l_scn     v$database.current_scn%type;
+   BEGIN
+      SELECT current_scn
+        INTO l_scn
+        FROM v$database;
+      
+      RETURN l_scn;
+
+   END get_scn;
 
    -- used to pull the calling block from the dictionary
    -- used to populate CALL_STACK column in the LOG_TABLE
@@ -55,7 +73,7 @@ AS
       PRAGMA AUTONOMOUS_TRANSACTION;
       l_whence   VARCHAR2( 1024 );
       l_msg      log_table.msg%TYPE;
-      l_scn      NUMBER               := DBMS_FLASHBACK.get_system_change_number;
+      l_scn      NUMBER               := get_scn;
       l_schema   VARCHAR2( 30 );
       l_entry_ts TIMESTAMP;
       e_no_tab   EXCEPTION;

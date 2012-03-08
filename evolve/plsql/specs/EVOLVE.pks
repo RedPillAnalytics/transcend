@@ -6,6 +6,9 @@ AS
 
    FUNCTION get_module
       RETURN VARCHAR2;
+      
+   FUNCTION get_scn
+      RETURN v$database.current_scn%type;
 
    PROCEDURE log_msg( p_msg VARCHAR2, p_level NUMBER DEFAULT 1 );
 
