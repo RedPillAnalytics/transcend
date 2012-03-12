@@ -341,8 +341,13 @@ AS
                   
       -- this is not a segment-switching situation
       -- there is a table name specified
-      -- 'gather' is specified for statistics
-      IF self.replace_method NOT IN ('exchange','rename')
+      -- 'gather' is specified for STATISTICS
+      evolve.log_variable('self.replace_method', self.replace_method);
+      evolve.log_variable('self.table_name', self.table_name);
+      evolve.log_variable('self.statistics', self.statistics);
+
+
+      IF NVL(self.replace_method, 'ignore') NOT IN ('exchange','rename') 
          AND self.table_name IS NOT NULL 
          AND REGEXP_LIKE( 'gather', self.statistics, 'i' )
       THEN
