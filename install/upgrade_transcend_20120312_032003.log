@@ -1,0 +1,63 @@
+Application schema to upgrade [tdrep]: 
+
+PL/SQL procedure successfully completed.
+
+
+PL/SQL procedure successfully completed.
+
+
+Package created.
+
+
+Package body created.
+
+No errors.
+
+PL/SQL procedure successfully completed.
+
+
+Package created.
+
+
+Package body created.
+
+No errors.
+
+Package created.
+
+
+Type body created.
+
+No errors.
+
+Type body created.
+
+No errors.
+
+Package body created.
+
+No errors.
+
+Package created.
+
+
+Package body created.
+
+No errors.
+
+1 row updated.
+
+
+1 row updated.
+
+
+PL/SQL procedure successfully completed.
+
+
+Commit complete.
+
+SQL> commit;
+
+Commit complete.
+
+SQL> exit
