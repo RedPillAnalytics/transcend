@@ -349,4 +349,6 @@ EXEC evolve_adm.set_default_configs;
 -- set Evolve configurations specific to Transcend
 EXEC trans_adm.set_default_configs;
 
+COMMIT;
+
 SPOOL off

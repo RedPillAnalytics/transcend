@@ -1,3 +1,7 @@
+SET echo off
+SET verify off
+SET serveroutput on size unlimited
+SET timing off
 
 prompt This script is only for upgrading from 2.6.x versions.
 PROMPT If you are upgrading from a version prior to 2.6,
@@ -5,16 +9,11 @@ PROMPT then the only current supported upgrade path is a reinstall
 PROMPT using the "install_transcend.sql" script
 prompt ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-SET echo off
-SET verify off
-SET serveroutput on size unlimited
-SET timing off
-
 DEFINE product = 'transcend'
 
 ALTER SESSION SET nls_date_format = 'yyyymmdd_hhmiss';
 DEFINE suffix = _&_DATE..log
-SPOOL _&product&suffix
+SPOOL upgrade_&product&suffix
 
 -- get the schema for the Evolve application (PL/SQL and Java code)
 ACCEPT app_schema char default 'TDREP' prompt 'Application schema to upgrade [tdrep]: '
@@ -43,6 +42,7 @@ END;
 /
 
 -- recompile the TD_ADM package
+@../plsql/specs/TD_ADM.pks
 @../plsql/wrapped_bodies/TD_ADM.plb
 
 -- now, recompile objects for the specific Transcend application
@@ -53,17 +53,36 @@ BEGIN
 END;
 /
 
---CREATE targeted _ots, packages and object views
-@../transcend/plsql/wrapped_bodies/TD_DBUTILS.plb
-@../transcend/plsql/wrapped_bodies/FILE_LABEL_OT.plb
-@../transcend/plsql/wrapped_bodies/FILE_DETAIL_OT.plb
-@../transcend/plsql/wrapped_bodies/EXTRACT_OT.plb
-@../transcend/plsql/wrapped_bodies/FEED_OT.plb
+-- evolve specs
+@../evolve/plsql/specs/EVOLVE.pks
+
+-- evolve bodies
+@../evolve/plsql/wrapped_bodies/EVOLVE.plb
+
+-- transcend specs
+@../transcend/plsql/specs/TRANS_ETL.pks
+
+-- transcend bodes
 @../transcend/plsql/wrapped_bodies/MAPPING_OT.plb
 @../transcend/plsql/wrapped_bodies/DIMENSION_OT.plb
+@../transcend/plsql/wrapped_bodies/TRANS_ETL.plb
+@../transcend/plsql/specs/TRANS_FILES.pks
+@../transcend/plsql/wrapped_bodies/TRANS_FILES.plb
+
+
+
+UPDATE applications
+   SET version = 2.6
+ WHERE application_name = upper('&app_schema');
+
+UPDATE repositories
+   SET version = 2.6
+ WHERE repository_name = upper('&app_schema');
 
 -- set the current schema back 
 BEGIN
    EXECUTE IMMEDIATE 'ALTER SESSION SET current_schema='||:b_current_schema;
 END;
 /
+
+COMMIT;
