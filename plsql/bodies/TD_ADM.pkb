@@ -2030,7 +2030,7 @@ IS
 	   ( column_type )
 	   USING INDEX
 	 )|';
-
+         
          EXECUTE IMMEDIATE q'|INSERT INTO column_type_list (column_type) VALUES ('surrogate key')|';
 
          EXECUTE IMMEDIATE q'|INSERT INTO column_type_list (column_type) VALUES ('natural key')|';
@@ -2045,6 +2045,8 @@ IS
 
          EXECUTE IMMEDIATE q'|INSERT INTO column_type_list (column_type) VALUES ('current indicator')|';
 
+         EXECUTE IMMEDIATE q'|INSERT INTO column_type_list (column_type) VALUES ('audit')|';
+         
          -- MAPPING_CONF table
          EXECUTE IMMEDIATE q'|CREATE TABLE mapping_conf
 	 ( 

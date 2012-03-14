@@ -735,7 +735,9 @@ AS
       END CASE;
       
       -- register variables
-      evolve.log_variable( 'p_concurrent',p_concurrent );
+      evolve.log_variable( 'p_table', p_table );
+      evolve.log_variable( 'p_source_table', p_source_table );
+      evolve.log_variable( 'p_concurrent', p_concurrent );
       evolve.log_variable( 'p_partname',p_partname );
       evolve.log_variable( 'p_queue_module',p_queue_module );
       evolve.log_variable( 'p_queue_action',p_queue_action );
@@ -746,6 +748,8 @@ AS
       l_targ_part      := td_utils.is_part_table( p_owner, p_table );
       l_targ_part_flg  := CASE WHEN l_targ_part THEN 'yes' ELSE 'no' END;
 
+      evolve.log_variable( 'l_targ_part_flg', l_targ_part_flg );
+      evolve.log_variable( 'l_src_part_flg', l_src_part_flg );
 
       o_ev.change_action( 'check objects' );
       -- confirm that the target table exists
@@ -896,7 +900,7 @@ AS
                                                         -- strip out partitioned info and local keyword and tablespace clause
                                                   THEN '\s*(\(\s*partition.+\))|local|(tablespace)\s*\S+\s*'
                                                      -- target is partitioned and p_TABLESPACE or p_PARTNAME is provided
-                                                  WHEN l_targ_part_flg = 'ys'
+                                                  WHEN l_targ_part_flg = 'yes'
                                                   AND ( p_tablespace IS NOT NULL OR p_partname IS NOT NULL )
                                                         -- strip out partitioned info keeping local keyword and remove tablespace clause
                                                   THEN '\s*(\(\s*partition.+\))|(tablespace)\s*\S+\s*'
@@ -2681,7 +2685,6 @@ AS
       -- Booleans to handle the EXIT LOOP for issuing the EXCHANGE command
       l_build_cons     BOOLEAN                          := FALSE;
       l_compress       BOOLEAN                          := FALSE;
-      l_excluding      BOOLEAN                          := FALSE;
       l_constraints    BOOLEAN                          := FALSE;
       l_retry_ddl      BOOLEAN                          := FALSE;
       l_src_part       BOOLEAN;
@@ -2920,12 +2923,7 @@ AS
                     || l_partname
                     || ' with table '
                     || l_nonpart_full
-                    || ' '
-                    || CASE
-                       WHEN l_src_part THEN 'excluding'
-                       ELSE 'including'
-                       END 
-                    || ' indexes without validation update global indexes';
+                    || ' including indexes without validation update global indexes';
 
       -- have several exceptions that we want to handle when an exchange fails
       -- so we are using an EXIT WHEN loop
@@ -2985,26 +2983,7 @@ AS
                l_retry_ddl    := TRUE;
                evolve.exec_sql( p_sql => 'alter table ' || l_src_full || ' move compress', p_auto => 'yes' );
                evolve.log_msg( l_src_full || ' compressed to facilitate exchange', 3 );
-               
-            WHEN e_hakan
-            THEN
-
-               evolve.log_msg( 'ORA-14642 raised involving bitmap mismatch', 4 );
-               -- need to do EXLUDING INDEXES
-               o_ev.change_action( 'exchange EXCLUDING INDEXES' );
-               
-               -- only set l_excluding if the target table is the partitioned one
-               -- l_excluding say we want to rebuild global indexes on the partitioned table
-               -- but we don't want to do this if the partitioned table is the source
-               -- in those cases... it's a staging table
-               IF l_trg_part
-               THEN
-                  l_excluding    := TRUE;
-               END IF;
-
-               l_retry_ddl    := TRUE;
-               l_ex_stmt      := REPLACE(l_ex_stmt,'including','excluding');
-               
+                              
             WHEN e_fk_mismatch
             THEN
 
@@ -3116,17 +3095,6 @@ AS
                                   END, 2
 				);
 
-      END IF;
-
-      -- had to do EXCLUDING INDEXES
-      IF l_excluding 
-      THEN
-	 o_ev.change_action( 'rebuild global indexes' );
-         
-         usable_indexes( p_owner      => l_part_owner,
-                         p_table      => l_part_table,
-                         p_part_type  => 'global'
-                       );
       END IF;
       
       -- only drop dependent objects if desired

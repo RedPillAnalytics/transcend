@@ -1277,7 +1277,7 @@ IS
                        p_constraint_regexp   => p_constraint_regexp,
                        p_constraint_type     => p_constraint_type,
                        p_con_concurrency     => p_con_concurrency,
-                       p_drop_dep            => 'no'
+                       p_drop_dep            => 'yes'
                      );
       o_dim := trans_factory.get_mapping_ot (p_mapping);
       
@@ -1458,6 +1458,7 @@ IS
       p_expiration_dt   VARCHAR2,
       p_current_ind     VARCHAR2,
       p_nat_key         VARCHAR2,
+      p_audit           VARCHAR2 DEFAULT NULL,
       p_scd1            VARCHAR2 DEFAULT NULL,
       p_scd2            VARCHAR2 DEFAULT NULL
    )
@@ -1478,6 +1479,8 @@ IS
          UPPER (td_core.format_list (   p_surrogate
                                      || ','
                                      || p_nat_key
+                                     || ','
+                                     || p_audit
                                      || ','
                                      || p_scd1
                                      || ','
@@ -1635,6 +1638,37 @@ IS
 	    -- record the number of rows affected by the last statment
 	    
 	 END LOOP;
+
+      END IF;
+      
+      -- write the audit columns
+      
+      -- only do the loop process if p_audit is not null
+      IF p_audit IS NOT NULL
+      THEN
+
+	 o_ev.change_action( 'configure audit' );
+	 FOR c_cols IN (SELECT COLUMN_VALUE column_name
+			  FROM TABLE (CAST (td_core.SPLIT (p_audit, ',') AS split_ot
+                                           )
+                                     ))
+	 LOOP
+	    evolve.log_msg( 'The audit column being configured is: '||c_cols.column_name, 5 );
+            td_utils.check_column( 
+                                   p_owner      => o_dim.table_owner,
+			           p_table	=> o_dim.table_name,
+			           p_column	=> c_cols.column_name
+                                 );
+
+	    INSERT INTO column_conf
+		   ( mapping_name, column_name, column_type )
+		   VALUES 
+		   ( lower( p_mapping ), upper( c_cols.column_name ), 'audit' );
+
+	    -- record the number of rows affected by the last statment
+	    
+	 END LOOP;
+
       END IF;
       
       -- EXECUTE the merge statement to write any columns that have been left off
@@ -1657,8 +1691,6 @@ IS
             WHEN NOT MATCHED THEN
             INSERT( t.mapping_name, t.column_name, t.column_type )
             VALUES( s.mapping_name, s.column_name, s.column_type );
-      
-
 
       -- confirm the dimension columns
       o_dim.confirm_dim_cols;

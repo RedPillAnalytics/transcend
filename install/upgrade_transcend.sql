@@ -45,6 +45,14 @@ END;
 @../plsql/specs/TD_ADM.pks
 @../plsql/wrapped_bodies/TD_ADM.plb
 
+UPDATE applications
+   SET version = 2.6
+ WHERE application_name = upper('&app_schema');
+
+UPDATE repositories
+   SET version = 2.6
+ WHERE repository_name = upper('&app_schema');
+
 -- now, recompile objects for the specific Transcend application
 
 -- set the current schema to the application schema
@@ -52,6 +60,8 @@ BEGIN
    EXECUTE IMMEDIATE 'ALTER SESSION SET current_schema=&app_schema';
 END;
 /
+
+INSERT INTO column_type_list (column_type) VALUES ('audit');
 
 -- evolve specs
 @../evolve/plsql/specs/EVOLVE.pks
@@ -61,15 +71,14 @@ END;
 
 -- transcend specs
 @../transcend/plsql/specs/TRANS_ETL.pks
+@../transcend/plsql/specs/TRANS_ADM.pks
 
 -- transcend bodes
 @../transcend/plsql/wrapped_bodies/MAPPING_OT.plb
 @../transcend/plsql/wrapped_bodies/DIMENSION_OT.plb
 @../transcend/plsql/wrapped_bodies/TRANS_ETL.plb
-@../transcend/plsql/specs/TRANS_FILES.pks
-@../transcend/plsql/wrapped_bodies/TRANS_FILES.plb
-
-
+@../transcend/plsql/wrapped_bodies/TRANS_ADM.plb
+@../transcend/plsql/wrapped_bodies/TD_DBUTILS.plb
 
 UPDATE applications
    SET version = 2.6

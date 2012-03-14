@@ -31,21 +31,21 @@ VAR default_tablespace VARCHAR2(30)
 
 EXEC :p_tablespace := null;
 EXEC :p_constraint_regexp := NULL;
-EXEC :p_owner := 'stewart';
-EXEC :p_table := 'events_stg';
-EXEC :p_source_owner := 'stewart';
-EXEC :p_source_table := 'events_fact';
+EXEC :p_owner := 'td_demo';
+EXEC :p_table := 'stg$product_dim';
+EXEC :p_source_owner := 'td_demo';
+EXEC :p_source_table := 'product_dim';
 EXEC :p_part_type := NULL;
 EXEC :p_index_type := NULL;
 EXEC :p_index_regexp := NULL;
 EXEC :p_concurrent := 'no'
-EXEC :l_targ_part_flg := 'no'
-EXEC :l_src_part_flg := 'yes'
+EXEC :l_targ_part_flg := 'yes'
+EXEC :l_src_part_flg := 'no'
 EXEC :default_tablespace := '#*default_tablespace*#';
 
 SET termout on
 
-SELECT UPPER( p_owner ) index_owner, new_index_name index_name, owner source_owner, index_name source_index,
+SELECT UPPER( :p_owner ) index_owner, new_index_name index_name, owner source_owner, index_name source_index,
                   partitioned, uniqueness, index_type,
                   REGEXP_REPLACE( index_ddl,
                                   '(\.)("?)(\w+)("?)(\s+)(on)',
@@ -86,7 +86,7 @@ SELECT UPPER( p_owner ) index_owner, new_index_name index_name, owner source_own
                           owner, index_name, partitioned, uniqueness, index_type, index_ddl
                     FROM ( SELECT
                                   -- if idx_rename already exists (constructed below), then we will try to rename the index to something generic
-                                  UPPER(    SUBSTR( p_table, 1, 24 )
+                                  UPPER(    SUBSTR( :p_table, 1, 24 )
                                          || '_'
                                          || idx_ext
                                          -- rank function gives us the index number by specific index extension (formulated below)
@@ -106,14 +106,14 @@ SELECT UPPER( p_owner ) index_owner, new_index_name index_name, owner source_own
                                                                                   0,
                                                                                   'i'
                                                                                 ),
-                                                                  '(\.)("?)(' || p_source_table || ')("?)(\s+)(\()',
-                                                                  '\1' || UPPER( p_table ) || '\5\6',
+                                                                  '(\.)("?)(' || :p_source_table || ')("?)(\s+)(\()',
+                                                                  '\1' || UPPER( :p_table ) || '\5\6',
                                                                   1,
                                                                   0,
                                                                   'i'
                                                                 ),
                                                   '(")?(' || ind.owner || ')("?\.)',
-                                                  UPPER( p_owner ) || '.',
+                                                  UPPER( :p_owner ) || '.',
                                                   1,
                                                   0,
                                                   'i'
@@ -135,29 +135,29 @@ SELECT UPPER( p_owner ) index_owner, new_index_name index_name, owner source_own
                                                 -- dbms_metadata pulls the metadata for the source object out of the dictionary
                                              (    DBMS_METADATA.get_ddl( 'INDEX', index_name, owner ),
                                                   -- this CASE expression determines whether to strip partitioning information and tablespace information
-                                                  -- tablespace desisions are based on the p_TABLESPACE parameter
+                                                  -- tablespace desisions are based on the :p_TABLESPACE parameter
                                                   -- partitioning decisions are based on the structure of the target table
                                                   CASE
-                                                     -- target is not partitioned and neither p_TABLESPACE or p_PARTNAME are provided
-                                                  WHEN l_targ_part_flg = 'no' AND p_tablespace IS NULL
-                                                       AND p_partname IS NULL
+                                                     -- target is not partitioned and neither :p_TABLESPACE or :p_PARTNAME are provided
+                                                  WHEN :l_targ_part_flg = 'no' AND :p_tablespace IS NULL
+                                                       AND :p_partname IS NULL
                                                         -- remove all partitioning and the local keyword
                                                   THEN '\s*(\(\s*partition.+\))|local\s*'
-                                                     -- target is not partitioned but p_TABLESPACE or p_PARTNAME is provided
-                                                  WHEN l_targ_part_flg = 'no'
-                                                  AND ( p_tablespace IS NOT NULL OR p_partname IS NOT NULL )
+                                                     -- target is not partitioned but :p_TABLESPACE or :p_PARTNAME is provided
+                                                  WHEN :l_targ_part_flg = 'no'
+                                                  AND ( :p_tablespace IS NOT NULL OR :p_partname IS NOT NULL )
                                                         -- strip out partitioned info and local keyword and tablespace clause
                                                   THEN '\s*(\(\s*partition.+\))|local|(tablespace)\s*\S+\s*'
-                                                     -- target is partitioned and p_TABLESPACE or p_PARTNAME is provided
-                                                  WHEN l_targ_part_flg = 'ys'
-                                                  AND ( p_tablespace IS NOT NULL OR p_partname IS NOT NULL )
+                                                     -- target is partitioned and :p_TABLESPACE or :p_PARTNAME is provided
+                                                  WHEN :l_targ_part_flg = 'yes'
+                                                  AND ( :p_tablespace IS NOT NULL OR :p_partname IS NOT NULL )
                                                         -- strip out partitioned info keeping local keyword and remove tablespace clause
                                                   THEN '\s*(\(\s*partition.+\))|(tablespace)\s*\S+\s*'
                                                      -- target is partitioned
-                                                     -- p_TABLESPACE is null
-                                                     -- p_PARTNAME is null
-                                                  WHEN l_targ_part_flg = 'yes' AND p_tablespace IS NULL
-                                                       AND p_partname IS NULL
+                                                     -- :p_TABLESPACE is null
+                                                     -- :p_PARTNAME is null
+                                                  WHEN :l_targ_part_flg = 'yes' AND :p_tablespace IS NULL
+                                                       AND :p_partname IS NULL
                                                         -- leave partitioning and tablespace information as it is
                                                         -- this implies a one-to-one mapping of partitioned names from source to target
                                                   THEN NULL
@@ -169,15 +169,15 @@ SELECT UPPER( p_owner ) index_owner, new_index_name index_name, owner source_own
                                                 )
                                           || CASE
                                                 -- if constant default_tablespace is passed, then use the users default tablespace
-                                                -- a non-null value for p_tablespace already stripped all tablespace information above
+                                                -- a non-null value for :p_tablespace already stripped all tablespace information above
                                                 -- now just need to not put in the 'TABLESPACE' information here
-                                             WHEN LOWER( p_tablespace ) = :default_tablespace
+                                             WHEN LOWER( :p_tablespace ) = :default_tablespace
                                                    THEN NULL
-                                                -- if p_TABLESPACE is provided, then previous tablespace information was stripped (above)
+                                                -- if :p_TABLESPACE is provided, then previous tablespace information was stripped (above)
                                                 -- now we can just tack the new tablespace information on the end
-                                             WHEN p_tablespace IS NOT NULL
-                                                   THEN ' TABLESPACE ' || UPPER( p_tablespace )
-                                                WHEN p_partname IS NOT NULL
+                                             WHEN :p_tablespace IS NOT NULL
+                                                   THEN ' TABLESPACE ' || UPPER( :p_tablespace )
+                                                WHEN :p_partname IS NOT NULL
                                                    THEN    ' TABLESPACE '
                                                         || NVL( ai.tablespace_name,
                                                                 ( SELECT tablespace_name
@@ -192,19 +192,19 @@ SELECT UPPER( p_owner ) index_owner, new_index_name index_name, owner source_own
                                                                                   USING (index_owner, index_name, partition_name ))
                                                                    WHERE index_name = ai.index_name
                                                                      AND index_owner = ai.owner
-                                                                     AND partition_position = l_part_position )
+                                                                     AND partition_position = :l_part_position )
                                                               )
                                                 ELSE NULL
                                              END 
-                                          || CASE WHEN td_core.get_yn_ind( l_targ_part_flg ) = 'yes' AND td_core.get_yn_ind( l_src_part_flg ) = 'no' THEN ' LOCAL' ELSE NULL END
-                                          index_ddl,
+--                                          || CASE WHEN td_core.get_yn_ind( :l_targ_part_flg ) = 'yes' AND td_core.get_yn_ind( :l_src_part_flg ) = 'no' THEN ' LOCAL' ELSE NULL END
+                                          || ' LOCAL' index_ddl,
                                           table_owner, table_name, owner, index_name,
                                           
                                           -- this is the index name that will be used in the first attempt
                                           -- basically, all cases of the previous table name are replaced with the new table name
                                           UPPER( REGEXP_REPLACE( index_name,
-                                                                 '(")?' || p_source_table || '(")?',
-                                                                 p_table,
+                                                                 '(")?' || :p_source_table || '(")?',
+                                                                 :p_table,
                                                                  1,
                                                                  0,
                                                                  'i'
@@ -231,36 +231,36 @@ SELECT UPPER( p_owner ) index_owner, new_index_name index_name, owner source_own
                                    -- when nothing is passed, it's a wildcard, so do all
                                   WHERE  REGEXP_LIKE( partitioned,
                                                       CASE
-                                                         WHEN REGEXP_LIKE( 'global', p_part_type, 'i' )
+                                                         WHEN REGEXP_LIKE( 'global', :p_part_type, 'i' )
                                                             THEN 'NO'
-                                                         WHEN REGEXP_LIKE( 'local', p_part_type, 'i' )
+                                                         WHEN REGEXP_LIKE( 'local', :p_part_type, 'i' )
                                                             THEN 'YES'
                                                          ELSE '.'
                                                       END,
                                                       'i'
                                                     )
-                                     AND table_name = UPPER( p_source_table )
-                                     AND table_owner = UPPER( p_source_owner )
+                                     AND table_name = UPPER( :p_source_table )
+                                     AND table_owner = UPPER( :p_source_owner )
                                      -- iot indexes provide a problem when in CONCURRENT mode
                                      -- the code just handles the errors with exceptions
                                      -- but CONCURRENT processes are subject to exceptions in the flow of the program
                                      -- so we just don't support certain paradigms in concurrent mode
                                      -- one of them is building having a mismatch between table types when considering IOT's
                                      AND index_type <>
-                                                  CASE td_core.get_yn_ind( p_concurrent )
+                                                  CASE td_core.get_yn_ind( :p_concurrent )
                                                      WHEN 'yes'
                                                         THEN 'IOT - TOP'
                                                      ELSE '~'
                                                   END
                                      -- USE an NVL'd regular expression to determine the specific indexes to work on
-                                     -- when nothing is passed for p_INDEX_TYPE, then that is the same as passing a wildcard
-                                     AND REGEXP_LIKE( index_name, NVL( p_index_regexp, '.' ), 'i' )
+                                     -- when nothing is passed for :p_INDEX_TYPE, then that is the same as passing a wildcard
+                                     AND REGEXP_LIKE( index_name, NVL( :p_index_regexp, '.' ), 'i' )
                                      -- USE an NVL'd regular expression to determine the index types to worked on
-                                     -- when nothing is passed for p_INDEX_TYPE, then that is the same as passing a wildcard
-                                     AND REGEXP_LIKE( index_type, '^' || NVL( p_index_type, '.' ), 'i' )) ind
+                                     -- when nothing is passed for :p_INDEX_TYPE, then that is the same as passing a wildcard
+                                     AND REGEXP_LIKE( index_type, '^' || NVL( :p_index_type, '.' ), 'i' )) ind
                                  LEFT JOIN
                                  ( SELECT index_name index_name_confirm, owner index_owner_confirm
                                     FROM all_indexes ) aii
                                  ON aii.index_name_confirm = ind.idx_rename
-                               AND aii.index_owner_confirm = UPPER( p_owner )
+                               AND aii.index_owner_confirm = UPPER( :p_owner )
                                  ))

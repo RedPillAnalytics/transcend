@@ -248,6 +248,7 @@ IS
       p_expiration_dt   VARCHAR2,
       p_current_ind     VARCHAR2,
       p_nat_key         VARCHAR2,
+      p_audit           VARCHAR2 DEFAULT NULL,
       p_scd1            VARCHAR2 DEFAULT NULL,
       p_scd2            VARCHAR2 DEFAULT NULL
    );

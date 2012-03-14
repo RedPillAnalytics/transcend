@@ -218,7 +218,7 @@ AS
          WHEN SELF.replace_method = 'exchange'
          THEN
             -- partition exchange the staging table into the max partition of the target table
-            -- this requires that the dimension table is a single partition table
+            -- this requires that either the dimension table or the staging table are a single-partitioned table
             
             evolve.log_variable( 'SELF.drop_dependent_objects', SELF.drop_dependent_objects );
 

@@ -301,6 +301,7 @@ AS
       l_date_nvl         dimension_conf.date_nvl_default%TYPE;
       l_stage_key        dimension_conf.stage_key_default%TYPE;
       l_sql              LONG;
+      l_audit            LONG;
       l_scd2_dates       LONG;
       l_scd2_nums        LONG;
       l_scd2_chars       LONG;
@@ -339,6 +340,28 @@ AS
          THEN
             NULL;
       END;
+      
+      -- get a comma separated list of audit columns
+      -- these are non-business columns, and should be loaded as is
+      -- these should not affect SCD1 or SCD2 attributes in any way
+      -- loading an "audit_key" is a good example
+      BEGIN
+         SELECT stragg( cc.column_name )
+           INTO l_audit
+           FROM column_conf cc 
+           JOIN mapping_conf mc
+                USING (mapping_name)
+           JOIN all_tab_columns atc
+                ON mc.table_owner = atc.owner AND mc.table_name = atc.table_name AND cc.column_name = atc.column_name
+          WHERE mapping_name = SELF.mapping_name
+            AND column_type = 'audit';
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            -- if there are no audit attributes, that is fine
+            NULL;
+      END;
+      
 
       -- get a comma separated list of scd2 columns that are dates
       -- use the STRAGG function for this
@@ -514,7 +537,8 @@ AS
 
       -- construct a list of all the columns in the table
       l_all_col_list      :=
-                             td_core.format_list( SELF.natural_key_list || ',' || l_scd_list || ',' || SELF.effect_dt_col );
+      td_core.format_list( SELF.natural_key_list || ',' || l_audit || ',' || l_scd_list || ',' || SELF.effect_dt_col );
+      evolve.log_variable( 'l_all_col_list', l_all_col_list );
 
       -- construct the SCD to DIM IN clause
       -- this includes a join between the DIM and the SCD table
@@ -591,7 +615,7 @@ AS
          || SELF.natural_key_list
          -- make sure there are no ',,' in the list
          || ','
-         || td_core.format_list( l_scd_list || ',' || effect_dt_col )
+         || td_core.format_list( l_audit || ',' || l_scd_list || ',' || effect_dt_col )
          || ','
          || 'nvl( lead('
          || SELF.effect_dt_col
@@ -616,6 +640,8 @@ AS
          || td_core.format_list(    SELF.surrogate_key_col
                                  || ','
                                  || SELF.natural_key_list
+                                 || ','
+                                 || l_audit
                                  || ','
                                  || l_scd1_analytics
                                  || ','
@@ -689,6 +715,7 @@ AS
                                  p_table             => SELF.staging_table,
                                  p_partitioning      => l_bt_part
                                );
+
       ELSE
 
          -- since the table already exists, we need to "clean" it
