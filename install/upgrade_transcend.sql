@@ -61,7 +61,13 @@ BEGIN
 END;
 /
 
-INSERT INTO column_type_list (column_type) VALUES ('audit');
+BEGIN
+   INSERT INTO column_type_list (column_type) VALUES ('audit');
+EXCEPTION
+   WHEN dup_val_on_index
+    THEN NULL;
+END;
+/
 
 -- evolve specs
 @../evolve/plsql/specs/EVOLVE.pks

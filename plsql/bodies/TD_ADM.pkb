@@ -177,7 +177,7 @@ IS
       DBMS_SCHEDULER.create_job_class
          ( job_class_name      => 'EVOLVE_DEFAULT_CLASS',
            logging_level       => DBMS_SCHEDULER.logging_full,
-           comments            =>    'Job class for the Evolve product by Transcendent Data, Inc.'
+           comments            =>    'Job class for the Evolve product by Rittman Mead'
                                   || ' This is the job class Evolve calls by default when the Oracle scheduler is used for concurrent processing'
          );
    END create_scheduler_metadata;
@@ -505,6 +505,8 @@ IS
       EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.EVOLVE to ' || p_user;
 
       EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.EVOLVE_ADM to ' || p_user;
+      
+      EXECUTE IMMEDIATE 'grant execute on sys.EVOLVE_DEFAULT_CLASS to ' || p_user;
 
    EXCEPTION
       WHEN e_no_obj
