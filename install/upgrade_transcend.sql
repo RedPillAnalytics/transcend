@@ -87,11 +87,11 @@ END;
 @../transcend/plsql/wrapped_bodies/TD_DBUTILS.plb
 
 UPDATE applications
-   SET version = 2.6.4
+   SET version = 2.64
  WHERE application_name = upper('&app_schema');
 
 UPDATE repositories
-   SET version = 2.6.4
+   SET version = 2.64
  WHERE repository_name = upper('&app_schema');
 
 -- set the current schema back 
