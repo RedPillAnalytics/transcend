@@ -70,9 +70,11 @@ END;
 /
 
 -- evolve specs
+@../evolve/plsql/specs/TD_UTILS.pks
 @../evolve/plsql/specs/EVOLVE.pks
 
 -- evolve bodies
+@../evolve/plsql/wrapped_bodies/TD_UTILS.plb
 @../evolve/plsql/wrapped_bodies/EVOLVE.plb
 
 -- transcend specs
