@@ -671,6 +671,11 @@ AS
          || SELF.effect_dt_col
          || ' )'
          || ' where include=''Y''';
+            
+      -- check the hakan factor of the target table
+      evolve.log_hakan_factor( self.table_owner, self.table_name );
+      -- check the hakan factor of the staging table
+      evolve.log_hakan_factor( self.staging_owner, self.staging_table );            
 
       evolve.log_variable( 'SELF.statement',SELF.statement );
 
@@ -685,8 +690,18 @@ AS
                                  || SELF.full_stage
                                  || ' select * '
                                  || l_dim_notin_clause;
+
+      -- check the hakan factor of the target table
+      evolve.log_hakan_factor( self.table_owner, self.table_name );
+      -- check the hakan factor of the staging table
+      evolve.log_hakan_factor( self.staging_owner, self.staging_table );
+
+      evolve.log_variable( 'SELF.nonscd_statement', SELF.nonscd_statement );                                    
                                     
-      evolve.log_variable( 'SELF.nonscd_statement', SELF.nonscd_statement );
+      -- check the hakan factor of the target table
+      evolve.log_hakan_factor( self.table_owner, self.table_name );
+      -- check the hakan factor of the staging table
+      evolve.log_hakan_factor( self.staging_owner, self.staging_table );
 
       -- create the staging table
       -- this is a staging table that holds the results of the dimensional analysis
@@ -727,7 +742,10 @@ AS
          o_ev.change_action( 'drop constraints on staging' );
 
          BEGIN
-            td_dbutils.drop_constraints( p_owner => SELF.staging_owner, p_table => SELF.staging_table );
+            td_dbutils.drop_constraints( p_owner           => SELF.staging_owner, 
+                                         p_table           => SELF.staging_table,
+                                         p_constraint_type => 'p|r|u' 
+                                       );
          EXCEPTION
             WHEN td_dbutils.drop_iot_key
             THEN
@@ -743,11 +761,12 @@ AS
          td_dbutils.truncate_table( p_owner => SELF.staging_owner, p_table => SELF.staging_table );
             
       END IF;
-            
+      
+      -- check the hakan factor of the target table
+      evolve.log_hakan_factor( self.table_owner, self.table_name );
+      -- check the hakan factor of the staging table
+      evolve.log_hakan_factor( self.staging_owner, self.staging_table );
 
-      -- if later arriving dimensions are disabled, and the replace_method is NOT 'merge'
-      -- then I need to get all the records from the dimension table that have a current_ind='N'
-      -- this is because with 'rename' and 'exchange', I have to pull all records over into the staging table
       
       -- we are doing full segment-switching
       -- that means that all rows have to make it to the staging table
@@ -870,6 +889,11 @@ AS
    IS
       o_ev   evolve_ot := evolve_ot( p_module => 'dimension_ot.pre_map' );
    BEGIN
+
+      -- check the hakan factor of the target table
+      evolve.log_hakan_factor( self.table_owner, self.table_name );
+      -- check the hakan factor of the staging table
+      evolve.log_hakan_factor( self.staging_owner, self.staging_table );
       
       -- this method is overriden to do nothing
       -- for a DIMENSION, all processing occurs in POST_MAP
@@ -887,7 +911,7 @@ AS
       -- first process all the SCD rows into the intermediate table
       -- do this first, because if there's an error, we wouldn't have disturbed anything else
       load_staging;
-      
+            
       -- now, do the steps usually done in PRE_MAP in other MAPPING_OT objects
       SELF.disable_constraints;
       SELF.unusable_indexes;

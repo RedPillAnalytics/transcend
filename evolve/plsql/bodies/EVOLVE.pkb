@@ -259,6 +259,18 @@ AS
 
       RETURN l_code;
    END get_err_cd;
+   
+   PROCEDURE log_hakan_factor( 
+      p_owner      VARCHAR2,
+      p_table      VARCHAR2
+   )
+   AS
+   BEGIN
+      log_msg( 'The hakan factor for table '
+               ||upper(p_owner)||'.'||upper(p_table)
+               ||' is: '||td_utils.get_hakan_factor( p_owner, p_table), 5
+             );
+   END log_hakan_factor;
 
    -- used to return a distinct error message text string by label
    FUNCTION get_err_msg( p_name VARCHAR2 )

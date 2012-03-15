@@ -599,6 +599,16 @@ AS
       evolve.exec_sql( p_sql => l_table_ddl, p_auto => 'yes' );
       evolve.log_msg( 'Table ' || l_tab_name || ' created' );
 
+      -- always get check constraints, regardless of constraint parameters
+      o_ev.change_action( 'build indexes' );
+      build_constraints( p_source_owner       => p_source_owner,
+                      	 p_source_table       => p_source_table,
+                       	 p_owner              => p_owner,
+                       	 p_table              => p_table,
+                         p_constraint_type    => 'c'
+		       );
+      
+
       -- if you want the records as well
       IF td_core.is_true( p_rows )
       THEN
