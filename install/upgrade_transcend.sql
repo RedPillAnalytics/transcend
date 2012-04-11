@@ -45,13 +45,6 @@ END;
 @../plsql/specs/TD_ADM.pks
 @../plsql/wrapped_bodies/TD_ADM.plb
 
-UPDATE applications
-   SET version = 2.6
- WHERE application_name = upper('&app_schema');
-
-UPDATE repositories
-   SET version = 2.6
- WHERE repository_name = upper('&app_schema');
 
 -- now, recompile objects for the specific Transcend application
 
@@ -95,6 +88,7 @@ UPDATE applications
 UPDATE repositories
    SET version = 2.641
  WHERE repository_name = upper('&app_schema');
+
 
 -- set the current schema back 
 BEGIN
