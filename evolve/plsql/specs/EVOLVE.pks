@@ -47,11 +47,6 @@ AS
       p_name       VARCHAR2
    );
       
-   PROCEDURE log_hakan_factor( 
-      p_owner      VARCHAR2,
-      p_table      VARCHAR2
-   );
-
    PROCEDURE raise_err( p_name VARCHAR2, p_add_msg VARCHAR2 DEFAULT NULL );
 
    PROCEDURE print_query( p_query IN VARCHAR2 );

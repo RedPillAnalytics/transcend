@@ -672,11 +672,6 @@ AS
          || ' )'
          || ' where include=''Y''';
             
-      -- check the hakan factor of the target table
-      evolve.log_hakan_factor( self.table_owner, self.table_name );
-      -- check the hakan factor of the staging table
-      evolve.log_hakan_factor( self.staging_owner, self.staging_table );            
-
       evolve.log_variable( 'SELF.statement',SELF.statement );
 
       -- this statement is needed for a particular "non-merge" situation described below
@@ -691,17 +686,7 @@ AS
                                  || ' select * '
                                  || l_dim_notin_clause;
 
-      -- check the hakan factor of the target table
-      evolve.log_hakan_factor( self.table_owner, self.table_name );
-      -- check the hakan factor of the staging table
-      evolve.log_hakan_factor( self.staging_owner, self.staging_table );
-
       evolve.log_variable( 'SELF.nonscd_statement', SELF.nonscd_statement );                                    
-                                    
-      -- check the hakan factor of the target table
-      evolve.log_hakan_factor( self.table_owner, self.table_name );
-      -- check the hakan factor of the staging table
-      evolve.log_hakan_factor( self.staging_owner, self.staging_table );
 
       -- create the staging table
       -- this is a staging table that holds the results of the dimensional analysis
@@ -761,13 +746,7 @@ AS
          td_dbutils.truncate_table( p_owner => SELF.staging_owner, p_table => SELF.staging_table );
             
       END IF;
-      
-      -- check the hakan factor of the target table
-      evolve.log_hakan_factor( self.table_owner, self.table_name );
-      -- check the hakan factor of the staging table
-      evolve.log_hakan_factor( self.staging_owner, self.staging_table );
-
-      
+            
       -- we are doing full segment-switching
       -- that means that all rows have to make it to the staging table
       IF SELF.replace_method <> 'merge'
@@ -890,11 +869,6 @@ AS
       o_ev   evolve_ot := evolve_ot( p_module => 'dimension_ot.pre_map' );
    BEGIN
 
-      -- check the hakan factor of the target table
-      evolve.log_hakan_factor( self.table_owner, self.table_name );
-      -- check the hakan factor of the staging table
-      evolve.log_hakan_factor( self.staging_owner, self.staging_table );
-      
       -- this method is overriden to do nothing
       -- for a DIMENSION, all processing occurs in POST_MAP
       evolve.log_msg( 'This method is empty', 4 );

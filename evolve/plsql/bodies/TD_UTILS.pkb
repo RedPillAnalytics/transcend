@@ -995,31 +995,6 @@ AS
 
    END get_tab_part_type;
 
-   -- returns 'part' or 'subpart' depending on the partition type
-   FUNCTION get_hakan_factor( p_owner VARCHAR2, p_table VARCHAR2 )
-      RETURN NUMBER 
-   AS
-      l_hakan     NUMBER;
-   BEGIN
-               
-      BEGIN
-         SELECT spare1
-           INTO l_hakan
-           FROM sys.tab$ join dba_objects do
-                ON do.object_id = tab$.obj#
-          WHERE do.object_name = upper( p_table )
-            AND owner= upper( p_owner );
-         
-         RETURN l_hakan;
-         
-       EXCEPTION
-          WHEN NO_DATA_FOUND
-          THEN
-             RETURN NULL;
-       END;
-
-   END get_hakan_factor;
-   
    -- returns the partition name for a given subpartition name
    FUNCTION get_part_for_subpart( p_owner VARCHAR2, p_segment VARCHAR2, p_subpart VARCHAR2, p_segment_type VARCHAR2 )
       RETURN VARCHAR2

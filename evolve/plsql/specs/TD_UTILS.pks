@@ -141,9 +141,6 @@ AS
    FUNCTION get_tab_part_type( p_owner VARCHAR2, p_table VARCHAR2, p_partname VARCHAR2 DEFAULT NULL )
       RETURN VARCHAR2;
       
-   FUNCTION get_hakan_factor( p_owner VARCHAR2, p_table VARCHAR2 )
-      RETURN NUMBER;
-
    FUNCTION get_part_for_subpart( p_owner VARCHAR2, p_segment VARCHAR2, p_subpart VARCHAR2, p_segment_type VARCHAR2 )
       RETURN VARCHAR2;
 
