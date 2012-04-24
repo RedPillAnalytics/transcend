@@ -179,14 +179,15 @@ AS
       evolve.log_msg( 'The effective date: ' || SELF.effect_dt_col, 5 );
 
       -- get a comma separated list of natural keys
-      -- use the STRAGG function for this
-      SELECT stragg( column_name )
+      -- use the LISTAGG function for this
+      SELECT listagg( column_name,',' )
+             within GROUP (ORDER BY 1)
         INTO SELF.natural_key_list
         FROM column_conf
        WHERE mapping_name = SELF.mapping_name
          AND column_type = 'natural key';
 
-      -- NO_DATA_FOUND exception does not work with STRAGG, as returning a null it fine
+      -- NO_DATA_FOUND exception does not work with LISTAGG, as returning a null it fine
       -- have to do the logic programiatically
       IF SELF.natural_key_list IS NULL
       THEN
@@ -346,7 +347,8 @@ AS
       -- these should not affect SCD1 or SCD2 attributes in any way
       -- loading an "audit_key" is a good example
       BEGIN
-         SELECT stragg( cc.column_name )
+         SELECT listagg( cc.column_name,',' )
+                within GROUP (ORDER BY 1)
            INTO l_audit
            FROM column_conf cc 
            JOIN mapping_conf mc
@@ -364,9 +366,10 @@ AS
       
 
       -- get a comma separated list of scd2 columns that are dates
-      -- use the STRAGG function for this
+      -- use the LISTAGG function for this
       BEGIN
-         SELECT stragg( cc.column_name )
+         SELECT listagg( cc.column_name,',' )
+                within GROUP (ORDER BY 1)
            INTO l_scd2_dates
            FROM column_conf cc 
            JOIN mapping_conf mc
@@ -386,9 +389,10 @@ AS
       evolve.log_msg( 'The SCD2 date list: ' || l_scd2_dates, 5 );
 
       -- get a comma separated list of scd2 attributes that are numbers
-      -- use the STRAGG function for this
+      -- use the LISTAGG function for this
       BEGIN
-         SELECT stragg( cc.column_name )
+         SELECT listagg( cc.column_name,',' )
+                within GROUP (ORDER BY 1)
            INTO l_scd2_nums
            FROM column_conf cc 
            JOIN mapping_conf mc
@@ -409,7 +413,8 @@ AS
 
       -- get a comma separated list of attributes that are not Date or Number
       BEGIN
-         SELECT stragg( cc.column_name )
+         SELECT listagg( cc.column_name,',' )
+                within GROUP (ORDER BY 1)
            INTO l_scd2_chars
            FROM column_conf cc 
            JOIN mapping_conf mc
@@ -429,9 +434,10 @@ AS
       evolve.log_msg( 'The SCD2 char list: ' || l_scd2_chars, 5 );
 
       -- get a comma separated list of scd1 columns
-      -- use the STRAGG function for this
+      -- use the LISTAGG function for this
       BEGIN
-         SELECT stragg( column_name )
+         SELECT listagg( column_name,',' )
+                within GROUP (ORDER BY 1)
            INTO SELF.scd1_list
            FROM column_conf ic
            JOIN mapping_conf mc
