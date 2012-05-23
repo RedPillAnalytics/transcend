@@ -2341,10 +2341,10 @@ AS
       p_reject_limit    VARCHAR2 DEFAULT 'unlimited'
    )
    IS
-      l_onclause        VARCHAR2( 32000 );
-      l_update          VARCHAR2( 32000 );
-      l_insert          VARCHAR2( 32000 );
-      l_values          VARCHAR2( 32000 );
+      l_onclause        long;
+      l_update          long;
+      l_insert          long;
+      l_values          long;
       l_src_name        VARCHAR2( 61 )    := p_source_owner || '.' || p_source_object;
       l_trg_name        VARCHAR2( 61 )    := p_owner || '.' || p_table;
       l_results         NUMBER;
