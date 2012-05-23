@@ -2386,10 +2386,7 @@ AS
                      FROM ( SELECT ',' || UPPER( p_columns ) || ',' COLUMNS
                              FROM DUAL )
                CONNECT BY LEVEL <= LENGTH( UPPER( p_columns )) - LENGTH( REPLACE( UPPER( p_columns ), ',', '' )) + 1 )
-         SELECT REGEXP_REPLACE( '(' || stragg( 'target.' || column_name || ' = source.' || column_name ) || ')',
-                                ',',
-                                ' AND' || CHR( 10 )
-                              ) LIST
+         SELECT '(' || listagg( 'target.' || column_name || ' = source.' || column_name, ' AND' || chr( 10 ) ) within GROUP (ORDER BY column_name) || ')' LIST
            INTO l_onclause
            FROM all_tab_columns
           WHERE table_name = UPPER( p_table ) AND owner = UPPER( p_owner )
@@ -2402,11 +2399,9 @@ AS
          -- otherwise get a UK at random
          SELECT LIST
            INTO l_onclause
-           FROM ( SELECT REGEXP_REPLACE( '(' || stragg( 'target.' || column_name || ' = source.' || column_name ) || ')',
-                                         ',',
-                                         ' AND' || CHR( 10 )
-                                       ) LIST,
-                         
+           FROM ( SELECT '(' || listagg( 'target.' || column_name || ' = source.' || column_name, ' AND' || chr( 10 ) ) within GROUP (ORDER BY column_name) || ')'
+                         LIST,
+
                          -- the MIN function will ensure that primary keys are selected first
                          -- otherwise, it will randonmly choose a remaining constraint to use
                          MIN( dc.constraint_type ) con_type
@@ -2420,8 +2415,8 @@ AS
 
       IF p_columns IS NOT NULL
       THEN
-         SELECT REGEXP_REPLACE( stragg( 'target.' || column_name || ' = source.' || column_name ), ',',
-                                ',' || CHR( 10 ))
+         SELECT listagg( 'target.' || column_name || ' = source.' || column_name, ',' || chr( 10 ) ) within GROUP (ORDER BY column_name)
+
            INTO l_update
            -- if P_COLUMNS is provided, we use the same logic from the ON clause
            -- to make sure those same columns are not inlcuded in the update clause
@@ -2449,8 +2444,8 @@ AS
       ELSE
          -- otherwise, we once again MIN a constraint type to ensure it's the same constraint
          -- then, we just minus the column names so they aren't included
-         SELECT REGEXP_REPLACE( stragg( 'target.' || column_name || ' = source.' || column_name ), ',',
-                                ',' || CHR( 10 ))
+         SELECT listagg( 'target.' || column_name || ' = source.' || column_name, ',' || chr( 10 ) ) within GROUP (ORDER BY column_name)
+
            INTO l_update
            FROM ( SELECT column_name
                    FROM all_tab_columns
@@ -2467,7 +2462,7 @@ AS
 
       o_ev.change_action( 'construnct merge insert clause' );
 
-      SELECT   REGEXP_REPLACE( '(' || stragg( 'target.' || column_name ) || ') ', ',', ',' || CHR( 10 )) LIST
+      SELECT '(' || listagg( 'target.' || column_name, ',' || chr( 10 ) ) within GROUP (ORDER BY column_name) || ') ' LIST
           INTO l_insert
           FROM all_tab_columns
          WHERE table_name = UPPER( p_table ) AND owner = UPPER( p_owner )

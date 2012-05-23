@@ -25,7 +25,7 @@ AS
                          source_table, source_owner || '.' || source_table full_source, NVL( sequence_owner, table_owner ) sequence_owner, sequence_name,
                          sequence_owner || '.' || sequence_name full_sequence,
                          NVL( staging_owner, table_owner ) staging_owner,
-                         NVL( staging_table, substr('STG$' || table_name, 1, 30) ) staging_table,
+                         NVL( staging_table, substr('T$' || table_name, 1, 30) ) staging_table,
                          CASE
                             WHEN staging_table IS NULL
                                THEN 'no'
