@@ -223,23 +223,6 @@ IS
          NULL;
       END;
 
-      -- STRAGG function
-      BEGIN
-         EXECUTE IMMEDIATE 'DROP package '||p_schema||'.string_agg_ot';
-      EXCEPTION
-         when e_no_obj
-         THEN
-         NULL;
-      END;
-
-      BEGIN
-         EXECUTE IMMEDIATE 'DROP function '||p_schema||'.stragg';
-      EXCEPTION
-         when e_no_obj
-         THEN
-         NULL;
-      END;
-      
       -- java stored procedures
       BEGIN
          EXECUTE IMMEDIATE 'DROP java source '||p_schema||'.TdUtils';
@@ -494,8 +477,6 @@ IS
       EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.EVOLVE_OT to ' || p_user;
 
       EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.SPLIT_OT to ' || p_user;
-
-      EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.STRAGG to ' || p_user;
 
       -- packages
       EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.TD_INST to ' || p_user;
@@ -2515,14 +2496,6 @@ IS
       END;
 
       -- packages and functions
-      BEGIN
-         EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.STRAGG for ' || p_schema || '.STRAGG';
-      EXCEPTION
-         WHEN e_same_name
-         THEN
-            NULL;
-      END;
-
       BEGIN
          EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.TD_INST for ' || p_schema || '.TD_INST';
       EXCEPTION
