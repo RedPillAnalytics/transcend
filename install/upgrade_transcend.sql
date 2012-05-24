@@ -80,13 +80,14 @@ END;
 @../transcend/plsql/wrapped_bodies/TRANS_ETL.plb
 @../transcend/plsql/wrapped_bodies/TRANS_ADM.plb
 @../transcend/plsql/wrapped_bodies/TD_DBUTILS.plb
+@../transcend/plsql/wrapped_bodies/FEED_OT.plb
 
 UPDATE applications
-   SET version = 2.641
+   SET version = 2.642
  WHERE application_name = upper('&app_schema');
 
 UPDATE repositories
-   SET version = 2.641
+   SET version = 2.642
  WHERE repository_name = upper('&app_schema');
 
 

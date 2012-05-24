@@ -284,8 +284,8 @@ GRANT EXECUTE ON tdsys.td_adm TO &app_schema;
 @../evolve/plsql/specs/TD_CORE.pks
 
 -- non-packaged functions because STRAGG cannot be packaged
-@../evolve/plsql/specs/STRING_AGG_OT.tps
-@../evolve/plsql/wrapped_bodies/STRAGG.plb
+--@../evolve/plsql/specs/STRING_AGG_OT.tps
+--@../evolve/plsql/wrapped_bodies/STRAGG.plb
 
 -- create java stored procedures
 -- this contains OS and file level utilites that aren't available in other API's
@@ -304,7 +304,7 @@ GRANT EXECUTE ON tdsys.td_adm TO &app_schema;
 @../evolve/plsql/specs/EVOLVE_ADM.pks
 
 -- now compile all the package bodies
-@../evolve/plsql/wrapped_bodies/STRING_AGG_OT.plb
+--@../evolve/plsql/wrapped_bodies/STRING_AGG_OT.plb
 @../evolve/plsql/wrapped_bodies/TD_CORE.plb
 @../evolve/plsql/wrapped_bodies/TD_INST.plb
 @../evolve/plsql/wrapped_bodies/EVOLVE.plb

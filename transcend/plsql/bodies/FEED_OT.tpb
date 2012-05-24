@@ -217,16 +217,14 @@ AS
                  file_dt, file_size, targ_file_ind, targ_file_cnt,
                             
                    -- construct a file_url if BASEURL attribute is configured
-                   -- this constructs a STRAGGED list of URL's if multiple files exist
+                   -- this constructs a LISTAGGED list of URL's if multiple files exist
                    -- otherwise it's null
-                   REGEXP_REPLACE
-                      (stragg (   SELF.baseurl
+                 listagg (   SELF.baseurl
                             || '/'
-                            || filename
-                           ) OVER (PARTITION BY targ_file_ind),
-                       ',',
-                       CHR (10)
-                      ) files_url
+                           || filename,
+                           chr (10)
+                         ) within GROUP (ORDER BY filename)
+                 OVER (PARTITION BY targ_file_ind) files_url
 	    FROM (SELECT ROWID,
                          object_name, object_owner, source_filename, file_dt, file_size, targ_file_ind, targ_file_cnt,
                          decrypt_filename, pre_final_filename,

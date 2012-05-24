@@ -1133,14 +1133,14 @@ AS
       -- check that the source object exists and is something we can select from
       td_utils.check_object( p_owner => p_owner, p_object => p_object, p_object_type => 'table$|view' );
       l_head_sql :=
-            'select regexp_replace(stragg(column_name),'','','''
+            'select listagg(column_name,'''
          || p_delimiter
-         || ''') from '
+         || ''') within group (order by column_id) from '
          || '(select '''
          || p_quotechar
          || '''||column_name||'''
          || p_quotechar
-         || ''' as column_name'
+         || ''' as column_name, column_id'
          || ' from all_tab_cols '
          || 'where table_name='''
          || UPPER( p_object )
