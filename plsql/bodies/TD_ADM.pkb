@@ -213,7 +213,6 @@ IS
          NULL;
       END;
 
-
       -- td_core package
       BEGIN
          EXECUTE IMMEDIATE 'DROP package '||p_schema||'.td_core';
@@ -222,6 +221,25 @@ IS
          THEN
          NULL;
       END;
+            
+      -- STRAGG function
+      BEGIN
+         EXECUTE IMMEDIATE 'DROP package '||p_schema||'.string_agg_ot';
+      EXCEPTION
+         when e_no_obj
+         THEN
+         NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE 'DROP function '||p_schema||'.stragg';
+      EXCEPTION
+         when e_no_obj
+         THEN
+         NULL;
+      END;
+      
+
 
       -- java stored procedures
       BEGIN
