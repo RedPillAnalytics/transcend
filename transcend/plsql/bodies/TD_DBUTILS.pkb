@@ -316,6 +316,42 @@ AS
          o_ev.clear_app_info;
          RAISE;
    END truncate_table;
+   
+   PROCEDURE truncate_schema( p_schema VARCHAR2, p_reuse VARCHAR2 DEFAULT 'no' )
+   IS
+      l_tab_name   VARCHAR2( 61 ) := UPPER( p_owner || '.' || p_table );
+      o_ev         evolve_ot      := evolve_ot( p_module => 'truncate_schema' );
+   BEGIN
+
+      -- dynamic cursor contains source and target objects
+      FOR c_tables IN ( SELECT owner,
+                               table_name
+                          FROM all_tables
+                         WHERE owner = upper ( p_schema )
+                      )
+      LOOP
+         l_rows    := TRUE;
+
+         -- use the truncate_table procedure to do this
+         
+         truncate_table( p_owner => c_objects.owner, p_table => c_objects.table_name, p_reuse => p_reuse );         
+
+      END LOOP;
+
+      IF NOT l_rows
+      THEN
+         o_ev.clear_app_info;
+         evolve.raise_err( 'incorrect_parameters' );
+      END IF;
+
+      o_ev.clear_app_info;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         evolve.log_err;
+         o_ev.clear_app_info;
+         RAISE;
+   END truncate_schema;
 
    -- drop a table
    PROCEDURE drop_table( p_owner VARCHAR2, p_table VARCHAR2, p_purge VARCHAR2 DEFAULT 'yes' )

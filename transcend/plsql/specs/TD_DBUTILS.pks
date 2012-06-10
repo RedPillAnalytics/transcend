@@ -17,6 +17,8 @@ IS
    );
 
    PROCEDURE truncate_table( p_owner VARCHAR2, p_table VARCHAR2, p_reuse VARCHAR2 DEFAULT 'no' );
+      
+   PROCEDURE truncate_schema( p_schema VARCHAR2, p_reuse VARCHAR2 DEFAULT 'no' );
 
    PROCEDURE drop_table( p_owner VARCHAR2, p_table VARCHAR2, p_purge VARCHAR2 DEFAULT 'yes' );
 
