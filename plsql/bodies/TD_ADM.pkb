@@ -160,10 +160,8 @@ IS
    END create_user;
 
    -- this creates the job metadata (called a program) for submitting concurrent processes
-   PROCEDURE create_scheduler_metadata ( p_application VARCHAR2 )
+   PROCEDURE create_scheduler_metadata
    IS
-      l_prog_name      VARCHAR2(62)     := p_application||'.CONSUME_SQL';
-      l_prog_action    VARCHAR2(62)     := p_application||'.EVOLVE.CONSUME_SQL';
       e_no_sched_obj   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_sched_obj, -27476 );
    BEGIN
@@ -175,63 +173,13 @@ IS
          THEN
             NULL;
       END;
-            
-      BEGIN
-         dbms_scheduler.drop_program( l_prog_name );
-      EXCEPTION
-         WHEN e_no_sched_obj
-         THEN
-            NULL;
-      END;
-     
-      -- now create the job class and program 
 
       DBMS_SCHEDULER.create_job_class
-      ( job_class_name      => 'EVOLVE_DEFAULT_CLASS',
-        logging_level       => DBMS_SCHEDULER.logging_full,
-        comments            =>    'Job class for the Evolve and Transcend products by Rittman Mead'
-                               || ' This is the job class Evolve calls by default when the Oracle scheduler is used for concurrent processing'
+         ( job_class_name      => 'EVOLVE_DEFAULT_CLASS',
+           logging_level       => DBMS_SCHEDULER.logging_full,
+           comments            =>    'Job class for the Evolve product by Rittman Mead'
+                                  || ' This is the job class Evolve calls by default when the Oracle scheduler is used for concurrent processing'
          );
-
-      DBMS_SCHEDULER.create_program
-      ( program_name        => l_prog_name,
-        program_type        => 'STORED_PROCEDURE',
-        program_action      => l_prog_action,
-        number_of_arguments => 4,
-        comments            =>    'Job program for the Evolve and Transcend products by Rittman Mead'
-                               || ' This is the job program Evolve calls by default when the Oracle scheduler is used for concurrent processing'
-         );
-      
-      DBMS_SCHEDULER.define_program_argument
-      ( program_name            => l_prog_name,
-        argument_position       => 1,
-        argument_name           => 'p_session_id',
-        argument_type           => 'NUMBER'
-      );
-      
-      DBMS_SCHEDULER.define_program_argument
-      ( program_name            => l_prog_name,
-        argument_position       => 2,
-        argument_name           => 'p_module',
-        argument_type           => 'VARCHAR2'
-      );
-
-      DBMS_SCHEDULER.define_program_argument
-      ( program_name            => l_prog_name,
-        argument_position       => 3,
-        argument_name           => 'p_action',
-        argument_type           => 'VARCHAR2'
-      );
-      
-      DBMS_SCHEDULER.define_program_argument
-      ( program_name            => l_prog_name,
-        argument_position       => 4,
-        argument_name           => 'p_sql',
-        argument_type           => 'VARCHAR2'
-      );
-      
-      dbms_scheduler.ENABLE( l_prog_name );
-
    END create_scheduler_metadata;
 
    PROCEDURE drop_evolve_app ( p_schema VARCHAR2 )
@@ -2941,7 +2889,7 @@ IS
       -- create the synonyms to the repository
       build_evolve_rep_syns( p_user => p_schema, p_schema => p_repository );
       -- create the dbms_scheduler program
-      create_scheduler_metadata( p_application  => p_schema );
+      create_scheduler_metadata;
 
    END build_evolve_app;
 

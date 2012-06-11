@@ -548,43 +548,25 @@ AS
       -- use the unique concurrent id
       log_msg( 'The child concurrent_id is: ' || p_concurrent_id, 5 );
       DBMS_SESSION.set_identifier( p_concurrent_id );
-      
-      -- create the job
-      DBMS_SCHEDULER.create_job( job_name       => l_job_name,
-                                 program_name   => 'CONSUME_SQL',
-                                 job_class      => p_job_class,
-                                 job_style     => 'LIGHTWEIGHT',
-                                 enabled       => false
+      -- generate the job action
+      l_job_action :=
+            'begin evolve.consume_sql('
+         || l_session_id
+         || ','''
+         || l_module
+         || ''','''
+         || l_action
+         || ''','''
+         || p_sql
+         || '''); end;';
+      log_msg( 'The scheduler job action is: ' || l_job_action, 4 );
+      -- schedule the job
+      DBMS_SCHEDULER.create_job( l_job_name,
+                                 job_class       => p_job_class,
+                                 job_type        => 'plsql_block',
+                                 job_action      => l_job_action
                                );
-
-      
       log_msg( 'Oracle Scheduler job ' || l_job_name || ' created', 4 );
-
-      -- set the argmuments for the program
-      DBMS_SCHEDULER.SET_JOB_ARGUMENT_VALUE 
-      ( job_name                => l_job_name,
-        argument_position       => 1,
-        argument_value          => l_session_id
-      );
-
-      DBMS_SCHEDULER.SET_JOB_ARGUMENT_VALUE 
-      ( job_name                => l_job_name,
-        argument_position       => 2,
-        argument_value          => l_module
-      );
-
-      DBMS_SCHEDULER.SET_JOB_ARGUMENT_VALUE 
-      ( job_name                => l_job_name,
-        argument_position       => 3,
-        argument_value          => l_action
-      );
-
-      DBMS_SCHEDULER.SET_JOB_ARGUMENT_VALUE 
-      ( job_name                => l_job_name,
-        argument_position       => 4,
-        argument_value          => p_sql
-      );
-
       DBMS_SCHEDULER.ENABLE( l_job_name );
       log_msg( 'Oracle Scheduler job ' || l_job_name || ' enabled', 4 );
    END submit_sql;
