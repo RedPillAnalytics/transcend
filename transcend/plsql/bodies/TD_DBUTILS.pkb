@@ -319,7 +319,7 @@ AS
    
    PROCEDURE truncate_schema( p_schema VARCHAR2, p_reuse VARCHAR2 DEFAULT 'no' )
    IS
-      l_tab_name   VARCHAR2( 61 ) := UPPER( p_owner || '.' || p_table );
+      l_rows            BOOLEAN   := FALSE;
       o_ev         evolve_ot      := evolve_ot( p_module => 'truncate_schema' );
    BEGIN
 
@@ -334,7 +334,7 @@ AS
 
          -- use the truncate_table procedure to do this
          
-         truncate_table( p_owner => c_objects.owner, p_table => c_objects.table_name, p_reuse => p_reuse );         
+         truncate_table( p_owner => c_tables.owner, p_table => c_tables.table_name, p_reuse => p_reuse );         
 
       END LOOP;
 
