@@ -110,17 +110,20 @@ IS
       p_grant_regexp    VARCHAR2 DEFAULT NULL
    );
 
-   PROCEDURE insert_table(
-      p_owner           VARCHAR2,
-      p_table           VARCHAR2,
-      p_source_owner    VARCHAR2,
-      p_source_object   VARCHAR2,
-      p_trunc           VARCHAR2 DEFAULT 'no',
-      p_direct          VARCHAR2 DEFAULT 'yes',
-      p_degree          NUMBER DEFAULT NULL,
-      p_log_table       VARCHAR2 DEFAULT NULL,
-      p_reject_limit    VARCHAR2 DEFAULT 'unlimited'
-   );
+   PROCEDURE insert_table
+      (
+        p_owner           VARCHAR2,
+        p_table           VARCHAR2,
+        p_source_owner    VARCHAR2,
+        p_source_object   VARCHAR2,
+        p_dblink          VARCHAR2      DEFAULT NULL,
+        p_scn             NUMBER        DEFAULT NULL,
+        p_trunc           VARCHAR2      DEFAULT 'no',
+        p_direct          VARCHAR2      DEFAULT 'yes',
+        p_degree          NUMBER        DEFAULT NULL,
+        p_log_table       VARCHAR2      DEFAULT NULL,
+        p_reject_limit    VARCHAR2      DEFAULT 'unlimited'
+      );
 
    PROCEDURE merge_table(
       p_owner           VARCHAR2,
@@ -134,17 +137,22 @@ IS
       p_reject_limit    VARCHAR2 DEFAULT 'unlimited'
    );
 
-   PROCEDURE load_tables(
-      p_owner           VARCHAR2,
-      p_source_owner    VARCHAR2,
-      p_source_regexp   VARCHAR2,
-      p_suffix          VARCHAR2 DEFAULT NULL,
-      p_merge           VARCHAR2 DEFAULT 'no',
-      p_trunc           VARCHAR2 DEFAULT 'no',
-      p_direct          VARCHAR2 DEFAULT 'yes',
-      p_degree          NUMBER DEFAULT NULL,
-      p_commit          VARCHAR2 DEFAULT 'yes'
-   );
+   PROCEDURE load_tables
+      (
+        p_owner           VARCHAR2,
+        p_source_owner    VARCHAR2,
+        p_source_regexp   VARCHAR2 DEFAULT NULL,
+        p_source_type     VARCHAR2 DEFAULT 'table',
+        p_suffix          VARCHAR2 DEFAULT NULL,
+        p_dblink          VARCHAR2 DEFAULT NULL,
+        p_scn             VARCHAR2 DEFAULT NULL,
+        p_merge           VARCHAR2 DEFAULT 'no',
+        p_trunc           VARCHAR2 DEFAULT 'no',
+        p_direct          VARCHAR2 DEFAULT 'yes',
+        p_degree          NUMBER   DEFAULT NULL,
+        p_commit          VARCHAR2 DEFAULT 'yes',
+        p_raise_err       VARCHAR2 DEFAULT 'yes'
+      );
 
    PROCEDURE exchange_partition(
       p_owner              VARCHAR2,

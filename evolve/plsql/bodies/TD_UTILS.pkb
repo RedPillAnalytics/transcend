@@ -705,18 +705,22 @@ AS
 
    -- checks things about an object depending on the parameters passed
    -- raises an exception if the specified things are not true
-   PROCEDURE check_object( p_owner VARCHAR2, p_object VARCHAR2, p_object_type VARCHAR2 DEFAULT NULL )
+   PROCEDURE check_object
+      ( p_owner        VARCHAR2, 
+        p_object       VARCHAR2,
+        p_object_type  VARCHAR2 DEFAULT NULL 
+      )
    AS
       l_obj_name      VARCHAR2( 61 )                 := UPPER( p_owner ) || '.' || UPPER( p_object );
       l_object_name   all_objects.object_name%TYPE;
    BEGIN
       BEGIN
          SELECT DISTINCT object_name
-                    INTO l_object_name
-                    FROM all_objects
-                   WHERE owner = UPPER( p_owner )
-                     AND object_name = UPPER( p_object )
-                     AND REGEXP_LIKE( object_type, NVL( p_object_type, '.' ), 'i' );
+           INTO l_object_name
+           FROM all_objects                
+          WHERE owner = UPPER( p_owner )
+            AND object_name = UPPER( p_object )
+            AND REGEXP_LIKE( object_type, NVL( p_object_type, '.' ), 'i' );
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
@@ -1030,6 +1034,69 @@ AS
       THEN
          RETURN NULL;
    END get_part_for_subpart;
+
+   -- returns the partition name for a given subpartition name
+   FUNCTION get_column_list
+      ( p_owner         VARCHAR2, 
+        p_table         VARCHAR2, 
+        p_source_owner  VARCHAR2 DEFAULT NULL, 
+        p_source_table  VARCHAR2 DEFAULT NULL,
+        p_dblink        VARCHAR2 DEFAULT NULL 
+      )
+      RETURN VARCHAR2
+   AS
+      l_sql         VARCHAR2(4000);
+      l_collist     VARCHAR2(4000);
+   BEGIN
+      
+      -- find the least-restrictive set of columns in common
+      -- supports a single table or two tables
+      -- also supports the inclusive of a db_link
+      l_sql :=    q'{SELECT listagg( column_name, ',') }'
+               || q'{within GROUP ( ORDER BY column_name ) }'
+               || chr(10)
+               || 'FROM ('
+               || chr(10)
+               || 'SELECT column_name'
+               || chr(10)
+               || 'FROM all_tab_columns'
+               || chr(10)
+               || 'WHERE table_name = '''
+               || upper( p_table ) 
+               || ''''
+               || chr(10)
+               || 'AND owner = '''
+               || upper( p_owner ) 
+               || ''''
+               || chr(10)
+               || CASE WHEN p_source_owner IS NULL THEN NULL ELSE
+                  'INTERSECT'
+               || chr(10)
+               || 'SELECT column_name'
+               || chr(10)
+               || 'FROM all_tab_columns'
+               || CASE WHEN p_dblink IS NOT NULL THEN '@'||p_dblink ELSE NULL END
+               || chr(10)
+               || 'WHERE table_name = '''
+               || upper( p_source_table ) 
+               || ''''
+               || chr(10)
+               || 'AND owner = '''
+               || upper( p_source_owner ) 
+               || '''' END
+               || ' )';
+               
+     evolve.log_variable( 'l_sql', l_sql );         
+         
+     EXECUTE IMMEDIATE l_sql
+             INTO l_collist;
+
+      RETURN l_collist;
+   EXCEPTION
+      WHEN NO_DATA_FOUND
+      THEN
+         RETURN NULL;
+   END get_column_list;
    
    -- modified FROM tom kyte's "dump_csv":
    -- 1. allow a quote CHARACTER

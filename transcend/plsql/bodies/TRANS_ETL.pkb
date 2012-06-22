@@ -371,17 +371,20 @@ AS
    END object_grants;
 
    -- structures an insert or insert append statement from the source to the target provided
-   PROCEDURE insert_table(
-      p_owner           VARCHAR2,
-      p_table           VARCHAR2,
-      p_source_owner    VARCHAR2,
-      p_source_object   VARCHAR2,
-      p_trunc           VARCHAR2 DEFAULT 'no',
-      p_direct          VARCHAR2 DEFAULT 'yes',
-      p_degree          NUMBER DEFAULT NULL,
-      p_log_table       VARCHAR2 DEFAULT NULL,
-      p_reject_limit    VARCHAR2 DEFAULT 'unlimited'
-   )
+   PROCEDURE insert_table
+      (
+        p_owner           VARCHAR2,
+        p_table           VARCHAR2,
+        p_source_owner    VARCHAR2,
+        p_source_object   VARCHAR2,
+        p_dblink          VARCHAR2      DEFAULT NULL,
+        p_scn             NUMBER        DEFAULT NULL,
+        p_trunc           VARCHAR2      DEFAULT 'no',
+        p_direct          VARCHAR2      DEFAULT 'yes',
+        p_degree          NUMBER        DEFAULT NULL,
+        p_log_table       VARCHAR2      DEFAULT NULL,
+        p_reject_limit    VARCHAR2      DEFAULT 'unlimited'
+      )
    IS
    BEGIN
       td_dbutils.insert_table( p_owner              => p_owner,
@@ -392,7 +395,9 @@ AS
                                p_direct             => p_direct,
                                p_degree             => p_degree,
                                p_log_table          => p_log_table,
-                               p_reject_limit       => p_reject_limit
+                               p_reject_limit       => p_reject_limit,
+                               p_scn                => p_scn,
+                               p_dblink             => p_dblink
                              );
    EXCEPTION
       WHEN OTHERS
@@ -433,17 +438,22 @@ AS
    END merge_table;
 
    -- queries the dictionary based on regular expressions and loads tables using either the load_tab method or the merge_tab method
-   PROCEDURE load_tables(
-      p_owner           VARCHAR2,
-      p_source_owner    VARCHAR2,
-      p_source_regexp   VARCHAR2,
-      p_suffix          VARCHAR2 DEFAULT NULL,
-      p_merge           VARCHAR2 DEFAULT 'no',
-      p_trunc           VARCHAR2 DEFAULT 'no',
-      p_direct          VARCHAR2 DEFAULT 'yes',
-      p_degree          NUMBER DEFAULT NULL,
-      p_commit          VARCHAR2 DEFAULT 'yes'
-   )
+   PROCEDURE load_tables
+      (
+        p_owner           VARCHAR2,
+        p_source_owner    VARCHAR2,
+        p_source_regexp   VARCHAR2 DEFAULT NULL,
+        p_source_type     VARCHAR2 DEFAULT 'table',
+        p_suffix          VARCHAR2 DEFAULT NULL,
+        p_dblink          VARCHAR2 DEFAULT NULL,
+        p_scn             VARCHAR2 DEFAULT NULL,
+        p_merge           VARCHAR2 DEFAULT 'no',
+        p_trunc           VARCHAR2 DEFAULT 'no',
+        p_direct          VARCHAR2 DEFAULT 'yes',
+        p_degree          NUMBER   DEFAULT NULL,
+        p_commit          VARCHAR2 DEFAULT 'yes',
+        p_raise_err       VARCHAR2 DEFAULT 'yes'
+      )
    IS
       l_rows   BOOLEAN := FALSE;
    BEGIN
@@ -455,7 +465,10 @@ AS
                               p_trunc              => p_trunc,
                               p_direct             => p_direct,
                               p_degree             => p_degree,
-                              p_commit             => p_commit
+                              p_commit             => p_commit,
+                              p_scn                => p_scn,
+                              p_dblink             => p_dblink,
+                              p_raise_err          => p_raise_err
                             );
    EXCEPTION
       WHEN OTHERS

@@ -2254,28 +2254,51 @@ AS
    END object_grants;
 
    -- structures an insert or insert append statement from the source to the target provided
-   PROCEDURE insert_table(
-      p_owner           VARCHAR2,
-      p_table           VARCHAR2,
-      p_source_owner    VARCHAR2,
-      p_source_object   VARCHAR2,
-      p_trunc           VARCHAR2 DEFAULT 'no',
-      p_direct          VARCHAR2 DEFAULT 'yes',
-      p_degree          NUMBER DEFAULT NULL,
-      p_log_table       VARCHAR2 DEFAULT NULL,
-      p_reject_limit    VARCHAR2 DEFAULT 'unlimited'
-   )
+   PROCEDURE insert_table
+      (
+        p_owner           VARCHAR2,
+        p_table           VARCHAR2,
+        p_source_owner    VARCHAR2,
+        p_source_object   VARCHAR2,
+        p_dblink          VARCHAR2      DEFAULT NULL,
+        p_scn             NUMBER        DEFAULT NULL,
+        p_trunc           VARCHAR2      DEFAULT 'no',
+        p_direct          VARCHAR2      DEFAULT 'yes',
+        p_degree          NUMBER        DEFAULT NULL,
+        p_log_table       VARCHAR2      DEFAULT NULL,
+        p_reject_limit    VARCHAR2      DEFAULT 'unlimited',
+        p_check_table     VARCHAR2      DEFAULT 'yes'
+      )
    IS
       l_src_name   VARCHAR2( 61 ) := UPPER( p_source_owner || '.' || p_source_object );
       l_trg_name   VARCHAR2( 61 ) := UPPER( p_owner || '.' || p_table );
       l_results    NUMBER;
+      l_sql        LONG;
+      l_collist    VARCHAR2(4000);
       o_ev         evolve_ot      := evolve_ot( p_module => 'insert_table', p_action => 'Check existence of objects' );
    BEGIN
       -- check information about the table
-      td_utils.check_table( p_owner => p_owner, p_table => p_table );
-      -- check that the source object exists.
-      td_utils.check_object( p_owner => p_source_owner, p_object => p_source_object, p_object_type => 'table|view|synonym' );
-      
+      IF td_core.is_true( p_check_table )
+      THEN
+         td_utils.check_table( p_owner => p_owner, p_table => p_table );
+      END IF;
+
+      -- check that the source object exists
+      -- only do this if it's local... if it's remote, don't bother
+      -- check_object doesn't yet support remote objects
+      IF p_dblink IS NULL
+         AND td_core.is_true( p_check_table )
+      THEN
+         td_utils.check_object( p_owner => p_source_owner, p_object => p_source_object, p_object_type => 'table|view|synonym' );
+      END IF;
+
+      -- get the set of columns that are in common
+      l_collist := td_utils.get_column_list( p_owner, p_table, p_source_owner, p_source_object, p_dblink );
+      IF l_collist IS NULL
+      THEN
+         evolve.raise_err( 'no_matching columns' );
+      END IF;
+
       -- warning concerning using LOG ERRORS clause and the APPEND hint
       IF td_core.is_true( p_direct ) AND p_log_table IS NOT NULL
       THEN
@@ -2316,7 +2339,7 @@ AS
                      );
 
       o_ev.change_action( 'execute insert' );
-      evolve.exec_sql( p_sql      =>    'insert '
+      evolve.exec_sql( p_sql      =>    'INSERT '
                                          || CASE
                                                WHEN td_core.is_true( p_direct )
                                                   THEN '/*+ APPEND */ '
@@ -2324,15 +2347,28 @@ AS
                                             END
                                          || 'into '
                                          || l_trg_name
-                                         || ' select '
+                                         || chr(10)
+                                         || '( '
+                                         || l_collist
+                                         || ' )'
+                                         || chr(10)
+                                         || 'SELECT '
                                          || CASE
                                                -- just use a regular expression to remove the APPEND hint if P_DIRECT is disabled
                                             WHEN p_degree IS NOT NULL
-                                                  THEN '/*+ PARALLEL (source ' || p_degree || ') */ '
+                                                  THEN '/*+ PARALLEL (source ' || p_degree || ') */'
                                                ELSE NULL
                                             END
-                                         || '* from '
+                                         || chr(10)
+                                         || l_collist
+                                         || chr(10)
+                                         || 'from '
                                          || l_src_name
+                                         -- remote db_link functionality
+                                         || CASE WHEN p_dblink IS NOT NULL THEN '@'||p_dblink ELSE NULL END
+                                         || ' '
+                                         -- flashback query functionality
+                                         || CASE WHEN p_scn IS NOT NULL THEN 'as of SCN '|| p_scn ELSE NULL END
                                          || ' source'
                                          -- if a logging table is specified, then just append it on the end
                                          || CASE
@@ -2365,16 +2401,18 @@ AS
    END insert_table;
 
    -- structures a merge statement between two tables that have the same table
-   PROCEDURE merge_table(
-      p_owner           VARCHAR2,
-      p_table           VARCHAR2,
-      p_source_owner    VARCHAR2,
-      p_source_object   VARCHAR2,
-      p_columns         VARCHAR2 DEFAULT NULL,
-      p_direct          VARCHAR2 DEFAULT 'yes',
-      p_degree          NUMBER DEFAULT NULL,
-      p_log_table       VARCHAR2 DEFAULT NULL,
-      p_reject_limit    VARCHAR2 DEFAULT 'unlimited'
+   PROCEDURE merge_table
+      (
+        p_owner           VARCHAR2,
+        p_table           VARCHAR2,
+        p_source_owner    VARCHAR2,
+        p_source_object   VARCHAR2,
+        p_columns         VARCHAR2 DEFAULT NULL,
+        p_direct          VARCHAR2 DEFAULT 'yes',
+        p_degree          NUMBER   DEFAULT NULL,
+        p_log_table       VARCHAR2 DEFAULT NULL,
+        p_reject_limit    VARCHAR2 DEFAULT 'unlimited',
+        p_check_table     VARCHAR2 DEFAULT 'yes'
    )
    IS
       l_onclause        long;
@@ -2389,10 +2427,18 @@ AS
       o_ev              evolve_ot   := evolve_ot( p_module      => 'merge_table',
                                                   p_action      => 'Check existence of objects' );
    BEGIN
-      -- check information about the table
-      td_utils.check_table( p_owner => p_owner, p_table => p_table );
-      -- check that the source object exists.
-      td_utils.check_object( p_owner => p_source_owner, p_object => p_source_object, p_object_type => 'table$|view' );
+      IF td_core.is_true( p_check_table )
+      THEN
+
+         -- check information about the table
+         td_utils.check_table( p_owner => p_owner, p_table => p_table );
+         
+         -- check that the source object exists.
+         -- only do this is if the object is local
+         td_utils.check_object( p_owner => p_source_owner, p_object => p_source_object, p_object_type => 'table$|view' );
+
+      END IF;
+
       o_ev.change_action( 'issue log_errors warning' );
 
       -- warning concerning using LOG ERRORS clause and the APPEND hint
@@ -2426,7 +2472,7 @@ AS
            INTO l_onclause
            FROM all_tab_columns
           WHERE table_name = UPPER( p_table ) AND owner = UPPER( p_owner )
-                                                                          -- select from the variable IN LIST
+                -- select from the variable IN LIST
                 AND column_name IN( SELECT *
                                      FROM DATA );
       ELSE
@@ -2452,7 +2498,6 @@ AS
       IF p_columns IS NOT NULL
       THEN
          SELECT listagg( 'target.' || column_name || ' = source.' || column_name, ',' || chr( 10 ) ) within GROUP (ORDER BY column_name)
-
            INTO l_update
            -- if P_COLUMNS is provided, we use the same logic from the ON clause
            -- to make sure those same columns are not inlcuded in the update clause
@@ -2481,7 +2526,6 @@ AS
          -- otherwise, we once again MIN a constraint type to ensure it's the same constraint
          -- then, we just minus the column names so they aren't included
          SELECT listagg( 'target.' || column_name || ' = source.' || column_name, ',' || chr( 10 ) ) within GROUP (ORDER BY column_name)
-
            INTO l_update
            FROM ( SELECT column_name
                    FROM all_tab_columns
@@ -2603,64 +2647,86 @@ AS
    END merge_table;
 
    -- queries the dictionary based on regular expressions and loads tables using either the load_tab method or the merge_tab method
-   PROCEDURE load_tables(
-      p_owner           VARCHAR2,
-      p_source_owner    VARCHAR2,
-      p_source_regexp   VARCHAR2,
-      p_suffix          VARCHAR2 DEFAULT NULL,
-      p_merge           VARCHAR2 DEFAULT 'no',
-      p_trunc           VARCHAR2 DEFAULT 'no',
-      p_direct          VARCHAR2 DEFAULT 'yes',
-      p_degree          NUMBER DEFAULT NULL,
-      p_commit          VARCHAR2 DEFAULT 'yes'
+   PROCEDURE load_tables
+      (
+        p_owner           VARCHAR2,
+        p_source_owner    VARCHAR2,
+        p_source_regexp   VARCHAR2 DEFAULT NULL,
+        p_source_type     VARCHAR2 DEFAULT 'table',
+        p_suffix          VARCHAR2 DEFAULT NULL,
+        p_dblink          VARCHAR2 DEFAULT NULL,
+        p_scn             VARCHAR2 DEFAULT NULL,
+        p_merge           VARCHAR2 DEFAULT 'no',
+        p_trunc           VARCHAR2 DEFAULT 'no',
+        p_direct          VARCHAR2 DEFAULT 'yes',
+        p_degree          NUMBER   DEFAULT NULL,
+        p_commit          VARCHAR2 DEFAULT 'yes',
+        p_raise_err       VARCHAR2 DEFAULT 'yes'
    )
    IS
       l_rows   BOOLEAN   := FALSE;
       o_ev     evolve_ot := evolve_ot( p_module => 'load_tables' );
    BEGIN
+
+      -- currently, the P_MERGE does not support SCN or DBLINK functionality
+      -- there's no inherent reason for this
+      -- just haven't been able to develop it yet      
+      IF  ( p_scn IS NOT NULL OR p_dblink IS NOT NULL )
+         AND td_core.is_true( p_merge )
+      THEN
+         evolve.raise_err( 'merge_compability' );
+      END IF;
+  
       -- dynamic cursor contains source and target objects
-      FOR c_objects IN ( SELECT *
-			   FROM (SELECT owner source_owner,
-					object_name source_object,
-					object_type source_object_type,
-					upper( regexp_replace( object_name, '(.+)(_)(.+)$', '\1'|| CASE WHEN p_suffix IS NULL THEN NULL ELSE '_'|| p_suffix END )) target_name
-				   FROM all_objects 
-				  WHERE object_type IN ( 'TABLE', 'VIEW', 'SYNONYM' )) s
-			   JOIN ( SELECT owner target_owner,
-  					 object_name target_name,
-					 object_type target_oject_type
-  				    FROM all_objects
-				   WHERE object_type IN ( 'TABLE' ) ) t 
-				USING (target_name)
-			  WHERE REGEXP_LIKE( source_object, p_source_regexp, 'i' )
-			    AND source_owner = upper( p_source_owner )
-			    AND target_owner = upper( p_owner )
+      FOR c_objects IN ( SELECT object_name source_object,
+				object_type source_object_type,
+                                CASE WHEN p_suffix IS NULL THEN object_name ELSE regexp_replace( object_name, '(.+)(_)(.+)$', '\1', NULL ) END target_name
+			   FROM all_objects
+                          WHERE owner = upper( p_owner )
+                            AND REGEXP_LIKE( object_type, NVL( p_source_type, '.' ), 'i' )
 		       )
       LOOP
          l_rows    := TRUE;
 
          -- use the load_tab or merge_tab procedure depending on P_MERGE
-         CASE
-            WHEN td_core.is_true( p_merge )
-            THEN
-               merge_table( p_source_owner       => c_objects.source_owner,
-                            p_source_object      => c_objects.source_object,
-                            p_owner              => c_objects.target_owner,
-                            p_table              => c_objects.target_name,
-                            p_direct             => p_direct,
-                            p_degree             => p_degree
-                          );
-            WHEN NOT td_core.is_true( p_merge )
-            THEN
-               insert_table( p_source_owner       => c_objects.source_owner,
-                             p_source_object      => c_objects.source_object,
-                             p_owner              => c_objects.target_owner,
-                             p_table              => c_objects.target_name,
-                             p_direct             => p_direct,
-                             p_degree             => p_degree,
-                             p_trunc              => p_trunc
-                           );
-         END CASE;
+         BEGIN
+
+            CASE
+               WHEN td_core.is_true( p_merge )
+               THEN
+                  merge_table( p_source_owner       => p_source_owner,
+                               p_source_object      => c_objects.source_object,
+                               p_owner              => p_owner,
+                               p_table              => c_objects.target_name,
+                               p_direct             => p_direct,
+                               p_degree             => p_degree
+                             );
+               WHEN NOT td_core.is_true( p_merge )
+               THEN
+                  insert_table( p_source_owner       => p_source_owner,
+                                p_source_object      => c_objects.source_object,
+                                p_owner              => p_owner,
+                                p_table              => c_objects.target_name,
+                                p_direct             => p_direct,
+                                p_degree             => p_degree,
+                                p_trunc              => p_trunc,
+                                p_dblink             => p_dblink,
+                                p_scn                => p_scn,
+                                p_check_table        => p_raise_err
+                              );
+
+            END CASE;
+            
+         EXCEPTION
+            WHEN others
+            THEN 
+               evolve.log_msg( 'Table '|| c_objects.target_name || ' could not be loaded', 3 );
+               
+               IF td_core.is_true( p_raise_err )
+               THEN
+                  RAISE;
+               END IF;
+         END;
 
          -- whether or not to commit after each table
          IF REGEXP_LIKE( 'yes', p_commit, 'i' )

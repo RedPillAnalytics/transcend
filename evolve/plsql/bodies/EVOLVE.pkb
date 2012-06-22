@@ -475,7 +475,7 @@ AS
                              WHEN p_msg IS NULL
                                 THEN 'SQL: ' || p_sql
                              ELSE p_msg || ': ' || p_sql
-                          END, 4 );
+                          END, 3 );
 
       IF NOT is_debugmode
       THEN

@@ -143,6 +143,15 @@ AS
       
    FUNCTION get_part_for_subpart( p_owner VARCHAR2, p_segment VARCHAR2, p_subpart VARCHAR2, p_segment_type VARCHAR2 )
       RETURN VARCHAR2;
+      
+   FUNCTION get_column_list
+      ( p_owner         VARCHAR2, 
+        p_table         VARCHAR2, 
+        p_source_owner  VARCHAR2 DEFAULT NULL, 
+        p_source_table  VARCHAR2 DEFAULT NULL,
+        p_dblink        VARCHAR2 DEFAULT NULL 
+      )
+      RETURN VARCHAR2;
 
 END td_utils;
 /

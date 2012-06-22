@@ -73,6 +73,7 @@ END;
 -- transcend specs
 @../transcend/plsql/specs/TRANS_ETL.pks
 @../transcend/plsql/specs/TRANS_ADM.pks
+@../transcend/plsql/specs/TD_DBUTILS.pks
 
 -- transcend bodes
 @../transcend/plsql/wrapped_bodies/MAPPING_OT.plb
@@ -90,6 +91,7 @@ UPDATE repositories
    SET version = 2.642
  WHERE repository_name = upper('&app_schema');
 
+EXEC trans_adm.set_default_configs;
 
 -- set the current schema back 
 BEGIN
