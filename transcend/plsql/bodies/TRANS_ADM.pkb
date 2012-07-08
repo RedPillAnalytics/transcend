@@ -203,7 +203,7 @@ IS
                                  p_message => 'The statistics transfer cannot be used on different partition types' );
       
       evolve_adm.set_error_conf( p_name => 'merge_compability', 
-                                 p_message => 'The P_SCN and P_DBLINK parameters are not currently supported with the P_MERGE parameter' );
+                                 p_message => 'The P_SCN parameter is not currently supported with the P_MERGE parameter' );
       
       evolve_adm.set_error_conf( p_name => 'no_matching columns', 
                                  p_message => 'No matching columns exist between source and target tables' );

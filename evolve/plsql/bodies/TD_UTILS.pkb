@@ -1040,56 +1040,26 @@ AS
       ( p_owner         VARCHAR2, 
         p_table         VARCHAR2, 
         p_source_owner  VARCHAR2 DEFAULT NULL, 
-        p_source_table  VARCHAR2 DEFAULT NULL,
-        p_dblink        VARCHAR2 DEFAULT NULL 
+        p_source_table  VARCHAR2 DEFAULT NULL 
       )
       RETURN VARCHAR2
    AS
-      l_sql         VARCHAR2(4000);
       l_collist     VARCHAR2(4000);
    BEGIN
       
-      -- find the least-restrictive set of columns in common
-      -- supports a single table or two tables
-      -- also supports the inclusive of a db_link
-      l_sql :=    q'{SELECT listagg( column_name, ',') }'
-               || q'{within GROUP ( ORDER BY column_name ) }'
-               || chr(10)
-               || 'FROM ('
-               || chr(10)
-               || 'SELECT column_name'
-               || chr(10)
-               || 'FROM all_tab_columns'
-               || chr(10)
-               || 'WHERE table_name = '''
-               || upper( p_table ) 
-               || ''''
-               || chr(10)
-               || 'AND owner = '''
-               || upper( p_owner ) 
-               || ''''
-               || chr(10)
-               || CASE WHEN p_source_owner IS NULL THEN NULL ELSE
-                  'INTERSECT'
-               || chr(10)
-               || 'SELECT column_name'
-               || chr(10)
-               || 'FROM all_tab_columns'
-               || CASE WHEN p_dblink IS NOT NULL THEN '@'||p_dblink ELSE NULL END
-               || chr(10)
-               || 'WHERE table_name = '''
-               || upper( p_source_table ) 
-               || ''''
-               || chr(10)
-               || 'AND owner = '''
-               || upper( p_source_owner ) 
-               || '''' END
-               || ' )';
-               
-     evolve.log_variable( 'l_sql', l_sql );         
-         
-     EXECUTE IMMEDIATE l_sql
-             INTO l_collist;
+      SELECT listagg( column_name, ',') within GROUP ( ORDER BY column_name )
+        INTO l_collist
+        FROM (
+               SELECT column_name
+                 FROM all_tab_columns
+                WHERE table_name = upper( p_table )
+                  AND owner = upper( p_owner )
+                      INTERSECT
+               SELECT column_name
+                 FROM all_tab_columns
+                WHERE table_name = upper( p_source_table )
+                  AND owner = upper( p_source_owner ) 
+             );
 
       RETURN l_collist;
    EXCEPTION

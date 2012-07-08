@@ -2260,14 +2260,12 @@ AS
         p_table           VARCHAR2,
         p_source_owner    VARCHAR2,
         p_source_object   VARCHAR2,
-        p_dblink          VARCHAR2      DEFAULT NULL,
         p_scn             NUMBER        DEFAULT NULL,
         p_trunc           VARCHAR2      DEFAULT 'no',
         p_direct          VARCHAR2      DEFAULT 'yes',
         p_degree          NUMBER        DEFAULT NULL,
         p_log_table       VARCHAR2      DEFAULT NULL,
-        p_reject_limit    VARCHAR2      DEFAULT 'unlimited',
-        p_check_table     VARCHAR2      DEFAULT 'yes'
+        p_reject_limit    VARCHAR2      DEFAULT 'unlimited'
       )
    IS
       l_src_name   VARCHAR2( 61 ) := UPPER( p_source_owner || '.' || p_source_object );
@@ -2278,22 +2276,13 @@ AS
       o_ev         evolve_ot      := evolve_ot( p_module => 'insert_table', p_action => 'Check existence of objects' );
    BEGIN
       -- check information about the table
-      IF td_core.is_true( p_check_table )
-      THEN
-         td_utils.check_table( p_owner => p_owner, p_table => p_table );
-      END IF;
+      td_utils.check_table( p_owner => p_owner, p_table => p_table );
 
       -- check that the source object exists
-      -- only do this if it's local... if it's remote, don't bother
-      -- check_object doesn't yet support remote objects
-      IF p_dblink IS NULL
-         AND td_core.is_true( p_check_table )
-      THEN
-         td_utils.check_object( p_owner => p_source_owner, p_object => p_source_object, p_object_type => 'table|view|synonym' );
-      END IF;
+      td_utils.check_object( p_owner => p_source_owner, p_object => p_source_object, p_object_type => 'table|view|synonym' );
 
       -- get the set of columns that are in common
-      l_collist := td_utils.get_column_list( p_owner, p_table, p_source_owner, p_source_object, p_dblink );
+      l_collist := td_utils.get_column_list( p_owner, p_table, p_source_owner, p_source_object );
       IF l_collist IS NULL
       THEN
          evolve.raise_err( 'no_matching columns' );
@@ -2364,8 +2353,6 @@ AS
                                          || chr(10)
                                          || 'from '
                                          || l_src_name
-                                         -- remote db_link functionality
-                                         || CASE WHEN p_dblink IS NOT NULL THEN '@'||p_dblink ELSE NULL END
                                          || ' '
                                          -- flashback query functionality
                                          || CASE WHEN p_scn IS NOT NULL THEN 'as of SCN '|| p_scn ELSE NULL END
@@ -2651,10 +2638,9 @@ AS
       (
         p_owner           VARCHAR2,
         p_source_owner    VARCHAR2,
-        p_source_regexp   VARCHAR2 DEFAULT NULL,
+        p_source_regexp   VARCHAR2 DEFAULT '.',
         p_source_type     VARCHAR2 DEFAULT 'table',
         p_suffix          VARCHAR2 DEFAULT NULL,
-        p_dblink          VARCHAR2 DEFAULT NULL,
         p_scn             VARCHAR2 DEFAULT NULL,
         p_merge           VARCHAR2 DEFAULT 'no',
         p_trunc           VARCHAR2 DEFAULT 'no',
@@ -2668,22 +2654,36 @@ AS
       o_ev     evolve_ot := evolve_ot( p_module => 'load_tables' );
    BEGIN
 
-      -- currently, the P_MERGE does not support SCN or DBLINK functionality
+      -- currently, the P_MERGE does not support SCN
       -- there's no inherent reason for this
       -- just haven't been able to develop it yet      
-      IF  ( p_scn IS NOT NULL OR p_dblink IS NOT NULL )
+      IF  ( p_scn IS NOT NULL )
          AND td_core.is_true( p_merge )
       THEN
          evolve.raise_err( 'merge_compability' );
       END IF;
   
       -- dynamic cursor contains source and target objects
-      FOR c_objects IN ( SELECT object_name source_object,
-				object_type source_object_type,
-                                CASE WHEN p_suffix IS NULL THEN object_name ELSE regexp_replace( object_name, '(.+)(_)(.+)$', '\1', NULL ) END target_name
-			   FROM all_objects
-                          WHERE owner = upper( p_owner )
-                            AND REGEXP_LIKE( object_type, NVL( p_source_type, '.' ), 'i' )
+      FOR c_objects IN ( 
+                         SELECT *
+                           FROM ( SELECT owner source_owner,
+	                                 object_name source_object,
+	                                 object_type source_object_type,
+                                         upper( CASE WHEN p_suffix IS NULL THEN object_name ELSE regexp_replace( object_name, '(_[^_]+)$', NULL ) END ) target_name
+	                            FROM all_objects
+                                   WHERE REGEXP_LIKE( object_type, p_source_type, 'i' )
+                                     AND REGEXP_LIKE( object_name, p_source_regexp, 'i' )
+                                     AND REGEXP_LIKE( object_name, CASE WHEN p_suffix IS NULL THEN '.' ELSE '_'|| p_suffix ||'$' END, 'i' )
+                                     AND owner = upper ( p_source_owner )
+                                ) s
+                           JOIN ( SELECT owner target_owner,
+  		                         object_name target_name,
+		                         object_type target_oject_type
+  	                            FROM all_objects
+	                           WHERE object_type IN ( 'TABLE' )
+                                     AND owner = upper( p_owner ) 
+                                ) t 
+                                USING (target_name)
 		       )
       LOOP
          l_rows    := TRUE;
@@ -2710,9 +2710,7 @@ AS
                                 p_direct             => p_direct,
                                 p_degree             => p_degree,
                                 p_trunc              => p_trunc,
-                                p_dblink             => p_dblink,
-                                p_scn                => p_scn,
-                                p_check_table        => p_raise_err
+                                p_scn                => p_scn
                               );
 
             END CASE;

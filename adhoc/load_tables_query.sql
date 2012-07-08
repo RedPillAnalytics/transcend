@@ -26,7 +26,7 @@ SELECT *
 	   FROM all_objects
           WHERE REGEXP_LIKE( object_type, :p_source_type, 'i' )
             AND REGEXP_LIKE( object_name, :p_source_regexp, 'i' )
-            AND REGEXP_LIKE( object_name, CASE WHEN :p_suffix IS NULL THEN '.' ELSE '_'||:p_suffix||'$' END, 'i' )
+            AND REGEXP_LIKE( object_name, CASE WHEN :p_suffix IS NULL THEN '.' ELSE '_' || :p_suffix || '$' END, 'i' )
             AND owner = upper ( :p_source_owner )
        ) s
   JOIN ( SELECT owner target_owner,

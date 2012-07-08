@@ -109,14 +109,12 @@ IS
         p_table           VARCHAR2,
         p_source_owner    VARCHAR2,
         p_source_object   VARCHAR2,
-        p_dblink          VARCHAR2      DEFAULT NULL,
         p_scn             NUMBER        DEFAULT NULL,
         p_trunc           VARCHAR2      DEFAULT 'no',
         p_direct          VARCHAR2      DEFAULT 'yes',
         p_degree          NUMBER        DEFAULT NULL,
         p_log_table       VARCHAR2      DEFAULT NULL,
-        p_reject_limit    VARCHAR2      DEFAULT 'unlimited',
-        p_check_table     VARCHAR2      DEFAULT 'yes'
+        p_reject_limit    VARCHAR2      DEFAULT 'unlimited'
       );
 
    PROCEDURE merge_table
@@ -137,10 +135,9 @@ IS
       (
         p_owner           VARCHAR2,
         p_source_owner    VARCHAR2,
-        p_source_regexp   VARCHAR2 DEFAULT NULL,
+        p_source_regexp   VARCHAR2 DEFAULT '.',
         p_source_type     VARCHAR2 DEFAULT 'table',
         p_suffix          VARCHAR2 DEFAULT NULL,
-        p_dblink          VARCHAR2 DEFAULT NULL,
         p_scn             VARCHAR2 DEFAULT NULL,
         p_merge           VARCHAR2 DEFAULT 'no',
         p_trunc           VARCHAR2 DEFAULT 'no',

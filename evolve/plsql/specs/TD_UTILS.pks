@@ -148,8 +148,7 @@ AS
       ( p_owner         VARCHAR2, 
         p_table         VARCHAR2, 
         p_source_owner  VARCHAR2 DEFAULT NULL, 
-        p_source_table  VARCHAR2 DEFAULT NULL,
-        p_dblink        VARCHAR2 DEFAULT NULL 
+        p_source_table  VARCHAR2 DEFAULT NULL 
       )
       RETURN VARCHAR2;
 
