@@ -84,11 +84,11 @@ END;
 @../transcend/plsql/wrapped_bodies/FEED_OT.plb
 
 UPDATE applications
-   SET version = 2.642
+   SET version = 2.643
  WHERE application_name = upper('&app_schema');
 
 UPDATE repositories
-   SET version = 2.642
+   SET version = 2.643
  WHERE repository_name = upper('&app_schema');
 
 EXEC trans_adm.set_default_configs;
