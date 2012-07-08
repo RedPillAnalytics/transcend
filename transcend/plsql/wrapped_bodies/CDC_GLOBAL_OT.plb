@@ -1,0 +1,32 @@
+CREATE OR REPLACE TYPE BODY cdc_global_ot wrapped 
+a000000
+1
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+e
+46d 27c
+tNpWjKYlkhEq/9uv2FojPZcK30swgwJesyeGfC80F6qVvHbcDs4dq8AOWh4ryvbwVq3Xt4Vj
+3pYvqxbtFXNzoWFe2d7K4ZkMgpja7zuK6GBU97TduULBD9CwmgWMJBCR2PplpuMsSVVUhlNs
+HWPraPIl3UT+KBgrWULCpHk816YNsdgVRmnbga79menUNLA3NR5fQDlcvdi92dQ+/S1pe0fV
+z8gjDui11k0/RnBdYQqUTprwhXxmrK5v8Mvm/cBAmmbpLT6EJwyQhWYlZpIArx/PTKJbmsN/
+AUyXFrJc+lgbUJLzsqxRKuyIbioVdqfB7e7mi22o509XPAjTAyEHOS6HfNnPodxt8wP7E+OQ
+VktsPeA4dX5QjH982ZrcP4pj5NF3lmPmllBlJjSOjC9ib5PfoYNR90OLwMQgjdFW21kSZMEr
+VDtQZ3njjLjuepKi8/HXyAJ6YYxdtGGm/tmRrQoQ6RU+RkOWhUm7a85onSyH+UPtM7wssKsN
+Xid/VfL8b3GogkE9DZxFGpbVJpoKIuCEEe6xCZmj0GTvLcdCH+0t9RobC9oUG7W8eZq/qstP
+ErXAV7lzTvkLEleLyIM0BptALQOtsFju0MKVL/O7ksaq9PTk9A==
+
+/
+SHOW errors

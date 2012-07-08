@@ -551,6 +551,8 @@ IS
          EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON COLUMN_CONF TO ' || p_grantee;
 
          EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON COLUMN_TYPE_LIST TO ' || p_grantee;
+
+         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON CDC_GLOBAL TO ' || p_grantee;
 	 
 	 -- sequence
          EXECUTE IMMEDIATE 'GRANT SELECT ON file_detail_seq TO ' || p_grantee;
@@ -1657,6 +1659,14 @@ IS
 
       -- this will drop all the tables before beginning
       BEGIN
+         EXECUTE IMMEDIATE q'|DROP TABLE cdc_global|';
+      EXCEPTION
+         WHEN e_no_tab
+         THEN
+         NULL;
+      END;
+
+      BEGIN
          EXECUTE IMMEDIATE q'|DROP TABLE column_conf|';
       EXCEPTION
          WHEN e_no_tab
@@ -2203,6 +2213,31 @@ IS
 	   ( mapping_name )
 	 )|';
 
+         -- CDC_GLOBAL table
+         EXECUTE IMMEDIATE q'|CREATE TABLE cdc_global
+	 ( 
+	   cdc_name             VARCHAR2(30)  NOT NULL,
+           cdc_type             VARCHAR2(10)  NOT NULL,
+           cdc_external_source  VARCHAR2(100) NOT NULL,
+           cdc_external_name    VARCHAR2(10),
+	   created_user	        VARCHAR2(30) DEFAULT sys_context('USERENV','SESSION_USER') NOT NULL,
+	   created_dt	        DATE DEFAULT SYSDATE NOT NULL,
+	   modified_user  	VARCHAR2(30),
+	   modified_dt    	DATE
+	 )|';
+
+         EXECUTE IMMEDIATE q'|ALTER TABLE cdc_global ADD 
+	 (
+	   CONSTRAINT cdc_global_pk
+	   PRIMARY KEY
+	   ( cdc_name )
+	   USING INDEX
+	 )|';
+         
+         EXECUTE IMMEDIATE q'|ALTER TABLE cdc_global ADD CONSTRAINT cdc_global_ck1 CHECK ( cdc_type in ( 'goldengate','flashback' ) )|';
+
+         EXECUTE IMMEDIATE q'|ALTER TABLE cdc_global ADD CONSTRAINT cdc_global_ck2 CHECK ( 1 = CASE when cdc_type = 'goldengate' and cdc_external_name is NULL then 2 else 1 end )|';
+         
 	 -- grant select privileges to the select role
 	 grant_transcend_rep_privs( p_grantee=> p_schema||'_sel', p_mode => 'select');
 
@@ -2632,6 +2667,14 @@ IS
 
       BEGIN
          EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.COLUMN_CONF for ' || p_schema || '.COLUMN_CONF';
+      EXCEPTION
+         WHEN e_same_name
+         THEN
+            NULL;
+      END;
+      
+      BEGIN
+         EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.CDC_GLOBAL for ' || p_schema || '.CDC_GLOBAL';
       EXCEPTION
          WHEN e_same_name
          THEN

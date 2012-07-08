@@ -207,6 +207,11 @@ IS
       
       evolve_adm.set_error_conf( p_name => 'no_matching columns', 
                                  p_message => 'No matching columns exist between source and target tables' );
+      
+      evolve_adm.set_error_conf
+      ( p_name         => 'no_cdc_global',
+        p_message      => 'The specified Global CDC_NAME does not exist'
+      );
 
    END set_default_configs;
 
