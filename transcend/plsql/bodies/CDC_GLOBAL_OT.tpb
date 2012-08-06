@@ -4,7 +4,7 @@ AS
    -- constructor function for the CDC_GLOBAL_OT object type
    CONSTRUCTOR FUNCTION cdc_global_ot 
    ( 
-     p_name cdc_global.name%type 
+     p_name VARCHAR2
    )
       RETURN SELF AS RESULT
    AS
@@ -14,8 +14,7 @@ AS
          SELECT cdc_type,
                 cdc_external_source,
                 cdc_external_name
-           INTO self.cdc_name,
-                self.cdc_type,
+           INTO self.cdc_type,
                 self.external_source,
                 self.external_name
            FROM cdc_global
@@ -24,7 +23,7 @@ AS
          WHEN NO_DATA_FOUND
          THEN
             -- if there is no record found for this file_lable, raise an exception
-            evolve.raise_err ('no_cdc_global', p_file_detail_id);
+            evolve.raise_err ('no_cdc_global', p_name );
       END;
 
       -- run the business logic to make sure everything works out fine
@@ -49,14 +48,14 @@ AS
    -- extend the CDC window
    MEMBER PROCEDURE extend_window
    AS
-      o_ev              evolve_ot               := evolve_ot( p_module => 'unarchive_file_detail' );
+      o_ev              evolve_ot               := evolve_ot( p_module => 'extend_window' );
    BEGIN
       
       NULL;
 
       o_ev.clear_app_info;
    
-   END unarchive;
+   END extend_window;
 
 END;
 /

@@ -849,14 +849,6 @@ IS
            duration       NUMBER
 	 )|';
 
-         EXECUTE IMMEDIATE q'|ALTER TABLE results_table ADD 
-	 (
-	   CONSTRAINT results_table_pk
-	   PRIMARY KEY
-	   (session_id,entry_ts)
-	   USING INDEX
-	 )|';
-
          -- ERROR_CONF table
          EXECUTE IMMEDIATE q'|CREATE TABLE error_conf
 	 ( 
@@ -2897,19 +2889,6 @@ IS
 	    dbms_output.put_line( 'The installing user cannot grant execute on DBMS_LOCK. EXECUTE needs to be granted to user '||l_schema||'.' );
       END;
 
-      -- grant permissions on DBMS_FLASHBACK
-      -- if the package doesn't exist, or the user doesn't have access to see it, then fail
-      BEGIN
-         EXECUTE IMMEDIATE 'GRANT EXECUTE ON sys.dbms_flashback TO ' || l_schema;
-      EXCEPTION
-         WHEN e_no_obj OR e_no_tab
-         THEN
-	    dbms_output.put_line( 'The installing user cannot see package DBMS_FLASHBACK. The package needs to be created, and EXECUTE needs to be granted to user '||l_schema||'.' );
-	 WHEN e_ins_privs
-	 THEN
-	    dbms_output.put_line( 'The installing user cannot grant execute on DBMS_FLASHBACK. EXECUTE needs to be granted to user '||l_schema||'.' );
-      END;
-            
       -- grant needed permissions, but not needed for code compilation
       -- Java permissions do not affect PL/SQL code compilation
       dbms_java.grant_permission( upper(l_schema), 'SYS:java.lang.RuntimePermission', 'writeFileDescriptor', NULL );
