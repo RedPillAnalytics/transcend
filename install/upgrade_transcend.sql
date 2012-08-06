@@ -15,8 +15,10 @@ ALTER SESSION SET nls_date_format = 'yyyymmdd_hhmiss';
 DEFINE suffix = _&_DATE..log
 SPOOL upgrade_&product&suffix
 
--- get the schema for the Evolve application (PL/SQL and Java code)
-ACCEPT app_schema char default 'TDREP' prompt 'Application schema to upgrade [tdrep]: '
+-- get the schema for the Transcend application (PL/SQL and Java code)
+ACCEPT app_schema char default 'TDREP' prompt 'Schema name for the application [tdrep]: '
+-- get the schema for the Transcend repository (tables)
+ACCEPT rep_schema char default 'TDREP' prompt 'Schema name for the default repository for this application [tdrep]: '
 
 WHENEVER sqlerror exit sql.sqlcode
 
@@ -34,8 +36,38 @@ BEGIN
 END;
 /
 
--- recreate the TD_ADM package
+-- Work on the repository changes (where applicable)
+
 -- set the current schema to the application schema
+BEGIN
+   EXECUTE IMMEDIATE 'ALTER SESSION SET current_schema=&rep_schema';
+END;
+/
+
+UPDATE applications
+   SET version = 2.7
+ WHERE application_name = upper('&app_schema');
+
+UPDATE repositories
+   SET version = 2.7
+ WHERE repository_name = upper('&app_schema');
+
+DECLARE
+   e_no_pk   EXCEPTION;
+   PRAGMA    EXCEPTION_INIT( e_no_pk, -2441 );
+BEGIN
+   EXECUTE IMMEDIATE 'ALTER TABLE results_table DROP PRIMARY KEY';
+EXCEPTION
+    WHEN e_no_pk 
+    THEN 
+       NULL;
+END;
+/
+
+
+-- system application account changes
+-- recreate the TD_ADM package
+-- set the current schema to the system application schema
 BEGIN
    EXECUTE IMMEDIATE 'ALTER SESSION SET current_schema=tdsys';
 END;
@@ -44,7 +76,6 @@ END;
 -- recompile the TD_ADM package
 @../plsql/specs/TD_ADM.pks
 @../plsql/wrapped_bodies/TD_ADM.plb
-
 
 -- now, recompile objects for the specific Transcend application
 
@@ -82,14 +113,6 @@ END;
 @../transcend/plsql/wrapped_bodies/TRANS_ADM.plb
 @../transcend/plsql/wrapped_bodies/TD_DBUTILS.plb
 @../transcend/plsql/wrapped_bodies/FEED_OT.plb
-
-UPDATE applications
-   SET version = 2.643
- WHERE application_name = upper('&app_schema');
-
-UPDATE repositories
-   SET version = 2.643
- WHERE repository_name = upper('&app_schema');
 
 EXEC trans_adm.set_default_configs;
 

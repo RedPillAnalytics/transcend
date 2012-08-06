@@ -9,9 +9,9 @@ ALTER SESSION SET nls_date_format = 'yyyymmdd_hhmiss';
 DEFINE suffix = _&_DATE..log
 SPOOL install_&product&suffix
 
--- get the schema for the Evolve application (PL/SQL and Java code)
+-- get the schema for the Transcend application (PL/SQL and Java code)
 ACCEPT app_schema char default 'TDREP' prompt 'Schema name for the application [tdrep]: '
--- get the schema for the Evolve repository (tables)
+-- get the schema for the Transcend repository (tables)
 ACCEPT rep_schema char default 'TDREP' prompt 'Schema name for the default repository for this application [tdrep]: '
 -- get the tablespace for the repository
 ACCEPT tablespace char default 'TDREP' prompt 'Tablespace in which to install default repository: [tdrep]: '
@@ -282,10 +282,6 @@ GRANT EXECUTE ON tdsys.td_adm TO &app_schema;
 -- these don't perform any real SQL at all
 -- simply a series of reusable functions that don't have any external dependencies
 @../evolve/plsql/specs/TD_CORE.pks
-
--- non-packaged functions because STRAGG cannot be packaged
---@../evolve/plsql/specs/STRING_AGG_OT.tps
---@../evolve/plsql/wrapped_bodies/STRAGG.plb
 
 -- create java stored procedures
 -- this contains OS and file level utilites that aren't available in other API's
