@@ -284,5 +284,11 @@
 <colUsage columnID="8CDFBCE6-92EE-E3C0-960B-D09E7CEE897A"/>
 </indexColumnUsage>
 </ind_PK_UK>
+<ind_PK_UK id="FF27F7E6-B5DC-BF26-D9D9-98FB19C9D8C9" name="DIMENSION_CONF_MAPPING_CONF_FK">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 16:10:40 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<indexState>Foreign Key</indexState>
+</ind_PK_UK>
 </indexes>
 </Table>
