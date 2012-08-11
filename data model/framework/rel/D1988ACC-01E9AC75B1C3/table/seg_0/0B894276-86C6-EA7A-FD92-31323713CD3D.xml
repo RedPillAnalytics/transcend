@@ -1,0 +1,213 @@
+<?xml version = '1.0' encoding = 'UTF-8'?>
+<Table class="oracle.dbtools.crest.model.design.relational.Table" id="0B894276-86C6-EA7A-FD92-31323713CD3D" directorySegmentName="seg_0" name="CDC_SUB_ENTITY">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>TDREP</sourceObjSchema>
+<sourceObjName>CDC_SUB_ENTITY</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<schemaObject>981BC2CF-20FF-BAE7-2EAE-31EEE45FB7B8</schemaObject>
+<pkName>CDC_SUB_ENTITY_PK</pkName>
+<fonts itemClass="oracle.dbtools.crest.model.design.FontObjectWr">
+<FontObject>
+<foType>Title</foType>
+<fontStyle>1</fontStyle>
+<colorRGB>-16776961</colorRGB>
+</FontObject>
+<FontObject>
+<foType>Column</foType>
+<colorRGB>-16777216</colorRGB>
+</FontObject>
+<FontObject>
+<foType>Datatype</foType>
+<colorRGB>-16744448</colorRGB>
+</FontObject>
+<FontObject>
+<foType>PK Element</foType>
+<colorRGB>-16776961</colorRGB>
+</FontObject>
+<FontObject>
+<foType>FK Element</foType>
+<colorRGB>-16777216</colorRGB>
+</FontObject>
+<FontObject>
+<foType>UK Element</foType>
+<colorRGB>-16776961</colorRGB>
+</FontObject>
+<FontObject>
+<foType>Not Null</foType>
+<colorRGB>-65536</colorRGB>
+</FontObject>
+<FontObject>
+<foType>Key</foType>
+<colorRGB>-16777216</colorRGB>
+</FontObject>
+</fonts>
+<columns itemClass="oracle.dbtools.crest.model.design.relational.Column">
+<Column name="TABLE_NAME" id="C4F4796F-A7F5-4CF4-EAF6-8F1EF946589A">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>CDC_SUB_ENTITY</sourceObjSchema>
+<sourceObjName>TABLE_NAME</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>30 BYTE</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="SCHEMA_NAME" id="16051016-A766-B885-611F-4B52EB5BAB8B">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>CDC_SUB_ENTITY</sourceObjSchema>
+<sourceObjName>SCHEMA_NAME</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>10 BYTE</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="SUB_NAME" id="7A84B5E0-600D-C2C1-9A80-4E48C0668289">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>CDC_SUB_ENTITY</sourceObjSchema>
+<sourceObjName>SUB_NAME</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>30 BYTE</dataTypeSize>
+<delegate>8E7C20C4-553D-788A-9B46-DED34EF268B9</delegate>
+<autoIncrementCycle>false</autoIncrementCycle>
+<associations>
+<colAssociation fkAssociation="33C60047-5628-667C-6759-07C0BA6D68DF" referredColumn="8E7C20C4-553D-788A-9B46-DED34EF268B9"/>
+</associations>
+</Column>
+<Column name="NATURAL_KEY" id="0CCE7598-FF1F-F63C-7805-CBE26DCCD074">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>CDC_SUB_ENTITY</sourceObjSchema>
+<sourceObjName>NATURAL_KEY</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>4000 BYTE</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="SCN_COLUMN" id="53582C77-BB61-2BDE-82D4-BCEC8972E9C4">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>CDC_SUB_ENTITY</sourceObjSchema>
+<sourceObjName>SCN_COLUMN</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>30 BYTE</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="ROW_COLUMN" id="76B6578E-5102-AE64-A5F4-8873EC70466C">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>CDC_SUB_ENTITY</sourceObjSchema>
+<sourceObjName>ROW_COLUMN</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>30 BYTE</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="CREATED_USER" id="574EBB77-3261-D2E9-819D-9DD646DE32E4">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>CDC_SUB_ENTITY</sourceObjSchema>
+<sourceObjName>CREATED_USER</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<defaultValue>sys_context(&apos;USERENV&apos;,&apos;SESSION_USER&apos;)</defaultValue>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>30 BYTE</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="CREATED_DT" id="D4AF1259-36D2-608C-56A5-08968B26024E">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>CDC_SUB_ENTITY</sourceObjSchema>
+<sourceObjName>CREATED_DT</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<defaultValue>SYSDATE</defaultValue>
+<use>1</use>
+<logicalDatatype>LOGDT007</logicalDatatype>
+<dataTypeSize>7</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="MODIFIED_USER" id="CF62B700-263D-B95D-E29B-2A41DA43FFD9">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>CDC_SUB_ENTITY</sourceObjSchema>
+<sourceObjName>MODIFIED_USER</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>30 BYTE</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="MODIFIED_DT" id="01106811-B1E0-A264-FBC7-7ECE63E7BE71">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>CDC_SUB_ENTITY</sourceObjSchema>
+<sourceObjName>MODIFIED_DT</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT007</logicalDatatype>
+<dataTypeSize>7</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+</columns>
+<indexes itemClass="oracle.dbtools.crest.model.design.relational.Index">
+<ind_PK_UK id="84BA8584-D082-926B-E1B8-7BA2E29C1618" name="CDC_SUB_ENTITY_PK">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>TDREP</sourceObjSchema>
+<sourceObjName>CDC_SUB_ENTITY_PK</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<schemaObject>981BC2CF-20FF-BAE7-2EAE-31EEE45FB7B8</schemaObject>
+<pk>true</pk>
+<indexState>Primary Constraint</indexState>
+<indexColumnUsage>
+<colUsage columnID="C4F4796F-A7F5-4CF4-EAF6-8F1EF946589A"/>
+<colUsage columnID="16051016-A766-B885-611F-4B52EB5BAB8B"/>
+<colUsage columnID="7A84B5E0-600D-C2C1-9A80-4E48C0668289"/>
+</indexColumnUsage>
+</ind_PK_UK>
+<ind_PK_UK id="5361E2B3-0C8D-5DEA-F7A3-D2D3B1158E36" name="CDC_SUB_ENTITY_FK1">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<indexState>Foreign Key</indexState>
+<indexColumnUsage>
+<colUsage columnID="7A84B5E0-600D-C2C1-9A80-4E48C0668289"/>
+</indexColumnUsage>
+</ind_PK_UK>
+</indexes>
+</Table>

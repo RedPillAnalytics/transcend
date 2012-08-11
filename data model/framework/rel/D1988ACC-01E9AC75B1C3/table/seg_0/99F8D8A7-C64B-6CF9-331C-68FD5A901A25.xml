@@ -1,0 +1,251 @@
+<?xml version = '1.0' encoding = 'UTF-8'?>
+<Table class="oracle.dbtools.crest.model.design.relational.Table" id="99F8D8A7-C64B-6CF9-331C-68FD5A901A25" directorySegmentName="seg_0" name="NOTIFICATION_CONF">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>TDREP</sourceObjSchema>
+<sourceObjName>NOTIFICATION_CONF</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<schemaObject>981BC2CF-20FF-BAE7-2EAE-31EEE45FB7B8</schemaObject>
+<pkName>NOTIFICATION_CONF_PK</pkName>
+<fonts itemClass="oracle.dbtools.crest.model.design.FontObjectWr">
+<FontObject>
+<foType>Title</foType>
+<fontStyle>1</fontStyle>
+<colorRGB>-16776961</colorRGB>
+</FontObject>
+<FontObject>
+<foType>Column</foType>
+<colorRGB>-16777216</colorRGB>
+</FontObject>
+<FontObject>
+<foType>Datatype</foType>
+<colorRGB>-16744448</colorRGB>
+</FontObject>
+<FontObject>
+<foType>PK Element</foType>
+<colorRGB>-16776961</colorRGB>
+</FontObject>
+<FontObject>
+<foType>FK Element</foType>
+<colorRGB>-16777216</colorRGB>
+</FontObject>
+<FontObject>
+<foType>UK Element</foType>
+<colorRGB>-16776961</colorRGB>
+</FontObject>
+<FontObject>
+<foType>Not Null</foType>
+<colorRGB>-65536</colorRGB>
+</FontObject>
+<FontObject>
+<foType>Key</foType>
+<colorRGB>-16777216</colorRGB>
+</FontObject>
+</fonts>
+<columns itemClass="oracle.dbtools.crest.model.design.relational.Column">
+<Column name="LABEL" id="D640DC2F-5535-4D8D-180B-81BA83320714">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>NOTIFICATION_CONF</sourceObjSchema>
+<sourceObjName>LABEL</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>40 BYTE</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="EVENT_NAME" id="F72E5377-5610-67C3-6FC4-0CC9BB2D653D">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>NOTIFICATION_CONF</sourceObjSchema>
+<sourceObjName>EVENT_NAME</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<constraintName>NOTIFICATION_CONF_CK1</constraintName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>30 BYTE</dataTypeSize>
+<checkConstraint>
+<implementationDef dbType="Oracle Database 11g" definition="event_name=lower(event_name)"/>
+</checkConstraint>
+<delegate>BD73A8AD-9745-8B00-E91B-A45B06D811DA</delegate>
+<autoIncrementCycle>false</autoIncrementCycle>
+<associations>
+<colAssociation fkAssociation="A64A22E1-54C2-868D-BBB1-2671AAC96FB4" referredColumn="BD73A8AD-9745-8B00-E91B-A45B06D811DA"/>
+</associations>
+</Column>
+<Column name="METHOD" id="9D23EF22-EDE8-C096-5526-7DAFE0EF6AFD">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>NOTIFICATION_CONF</sourceObjSchema>
+<sourceObjName>METHOD</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<constraintName>NOTIFICATION_CONF_CK2</constraintName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>20 BYTE</dataTypeSize>
+<checkConstraint>
+<implementationDef dbType="Oracle Database 11g" definition="method=lower(method)"/>
+</checkConstraint>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="ENABLED" id="E67EBE71-D283-951A-6D51-C7AC7B3B652E">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>NOTIFICATION_CONF</sourceObjSchema>
+<sourceObjName>ENABLED</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<constraintName>NOTIFICATION_CONF_CK3</constraintName>
+<useDomainConstraints>false</useDomainConstraints>
+<defaultValue>&apos;yes&apos;</defaultValue>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>3 BYTE</dataTypeSize>
+<checkConstraint>
+<implementationDef dbType="Oracle Database 11g" definition="enabled=lower(enabled)"/>
+</checkConstraint>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="REQUIRED" id="D27579EA-DFF3-DD45-B3AD-B94FEED4A0F5">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>NOTIFICATION_CONF</sourceObjSchema>
+<sourceObjName>REQUIRED</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<constraintName>NOTIFICATION_CONF_CK4</constraintName>
+<useDomainConstraints>false</useDomainConstraints>
+<defaultValue>&apos;no&apos;</defaultValue>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>3 BYTE</dataTypeSize>
+<checkConstraint>
+<implementationDef dbType="Oracle Database 11g" definition="required=lower(required)"/>
+</checkConstraint>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="SENDER" id="5BE2E68B-969F-BBDF-385F-F7F6255BB7F9">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>NOTIFICATION_CONF</sourceObjSchema>
+<sourceObjName>SENDER</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<constraintName>NOTIFICATION_CONF_CK5</constraintName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>1024 BYTE</dataTypeSize>
+<checkConstraint>
+<implementationDef dbType="Oracle Database 11g" definition="sender=lower(sender)"/>
+</checkConstraint>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="RECIPIENTS" id="F0760C4B-EC84-03FF-9990-499101CBF636">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>NOTIFICATION_CONF</sourceObjSchema>
+<sourceObjName>RECIPIENTS</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<constraintName>NOTIFICATION_CONF_CK6</constraintName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>2000 BYTE</dataTypeSize>
+<checkConstraint>
+<implementationDef dbType="Oracle Database 11g" definition="recipients=lower(recipients)"/>
+</checkConstraint>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="CREATED_USER" id="C9DC941F-EAD9-1484-0736-30F21E7FE022">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>NOTIFICATION_CONF</sourceObjSchema>
+<sourceObjName>CREATED_USER</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<defaultValue>SYS_CONTEXT(&apos;USERENV&apos;,&apos;SESSION_USER&apos;)</defaultValue>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>30 BYTE</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="CREATED_DT" id="2F8BFFF5-4D64-ACA5-CE06-4526EF259CCD">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>NOTIFICATION_CONF</sourceObjSchema>
+<sourceObjName>CREATED_DT</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<defaultValue>SYSDATE</defaultValue>
+<use>1</use>
+<logicalDatatype>LOGDT007</logicalDatatype>
+<dataTypeSize>7</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="MODIFIED_USER" id="BDC2D600-C230-20D0-352D-27C9AD4FD653">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>NOTIFICATION_CONF</sourceObjSchema>
+<sourceObjName>MODIFIED_USER</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>30 BYTE</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="MODIFIED_DT" id="19725BF8-6F21-C727-78D0-06994C137226">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>NOTIFICATION_CONF</sourceObjSchema>
+<sourceObjName>MODIFIED_DT</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT007</logicalDatatype>
+<dataTypeSize>7</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+</columns>
+<indexes itemClass="oracle.dbtools.crest.model.design.relational.Index">
+<ind_PK_UK id="E2437738-472D-7F1F-9D19-DD1C0D569EF3" name="NOTIFICATION_CONF_PK">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>TDREP</sourceObjSchema>
+<sourceObjName>NOTIFICATION_CONF_PK</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<schemaObject>981BC2CF-20FF-BAE7-2EAE-31EEE45FB7B8</schemaObject>
+<pk>true</pk>
+<indexState>Primary Constraint</indexState>
+<indexColumnUsage>
+<colUsage columnID="D640DC2F-5535-4D8D-180B-81BA83320714"/>
+<colUsage columnID="F72E5377-5610-67C3-6FC4-0CC9BB2D653D"/>
+</indexColumnUsage>
+</ind_PK_UK>
+<ind_PK_UK id="6F4E62E0-98DD-4FB0-0C92-0F2587878563" name="NOTIFICATION_CONF_FK1">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<indexState>Foreign Key</indexState>
+<indexColumnUsage>
+<colUsage columnID="F72E5377-5610-67C3-6FC4-0CC9BB2D653D"/>
+</indexColumnUsage>
+</ind_PK_UK>
+</indexes>
+</Table>

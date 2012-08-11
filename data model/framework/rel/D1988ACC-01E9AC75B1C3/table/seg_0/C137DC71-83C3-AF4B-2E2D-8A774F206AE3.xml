@@ -1,0 +1,192 @@
+<?xml version = '1.0' encoding = 'UTF-8'?>
+<Table class="oracle.dbtools.crest.model.design.relational.Table" id="C137DC71-83C3-AF4B-2E2D-8A774F206AE3" directorySegmentName="seg_0" name="MAPPING_CONTROL">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>TDREP</sourceObjSchema>
+<sourceObjName>MAPPING_CONTROL</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<schemaObject>981BC2CF-20FF-BAE7-2EAE-31EEE45FB7B8</schemaObject>
+<pkName>MAPPING_CONTROL_PK</pkName>
+<fonts itemClass="oracle.dbtools.crest.model.design.FontObjectWr">
+<FontObject>
+<foType>Title</foType>
+<fontStyle>1</fontStyle>
+<colorRGB>-16776961</colorRGB>
+</FontObject>
+<FontObject>
+<foType>Column</foType>
+<colorRGB>-16777216</colorRGB>
+</FontObject>
+<FontObject>
+<foType>Datatype</foType>
+<colorRGB>-16744448</colorRGB>
+</FontObject>
+<FontObject>
+<foType>PK Element</foType>
+<colorRGB>-16776961</colorRGB>
+</FontObject>
+<FontObject>
+<foType>FK Element</foType>
+<colorRGB>-16777216</colorRGB>
+</FontObject>
+<FontObject>
+<foType>UK Element</foType>
+<colorRGB>-16776961</colorRGB>
+</FontObject>
+<FontObject>
+<foType>Not Null</foType>
+<colorRGB>-65536</colorRGB>
+</FontObject>
+<FontObject>
+<foType>Key</foType>
+<colorRGB>-16777216</colorRGB>
+</FontObject>
+</fonts>
+<columns itemClass="oracle.dbtools.crest.model.design.relational.Column">
+<Column name="MAPPING_NAME" id="AD48FC1A-18F7-B9D4-BC52-5EFEE6C2BC62">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>MAPPING_CONTROL</sourceObjSchema>
+<sourceObjName>MAPPING_NAME</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<constraintName>MAPPING_CONTROL_CK1</constraintName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>40 BYTE</dataTypeSize>
+<checkConstraint>
+<implementationDef dbType="Oracle Database 11g" definition="mapping_name=lower(mapping_name)"/>
+</checkConstraint>
+<delegate>10657BB0-92DC-DFB1-B9A5-76DB951AF005</delegate>
+<autoIncrementCycle>false</autoIncrementCycle>
+<associations>
+<colAssociation fkAssociation="C96309FB-3DCF-D122-2AD5-783153F3F230" referredColumn="10657BB0-92DC-DFB1-B9A5-76DB951AF005"/>
+</associations>
+</Column>
+<Column name="CONTROL_MODE" id="2D05C363-78E8-5BA3-C6AA-CB658BA51ACC">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>MAPPING_CONTROL</sourceObjSchema>
+<sourceObjName>CONTROL_MODE</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>20 BYTE</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="STATUS" id="2F501BF3-0C2A-5CCC-8D6A-192BDBC6D774">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>MAPPING_CONTROL</sourceObjSchema>
+<sourceObjName>STATUS</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>10 BYTE</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="SESSION_ID" id="911504B8-D3A8-0566-15CC-13D9CE70375E">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>MAPPING_CONTROL</sourceObjSchema>
+<sourceObjName>SESSION_ID</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT019</logicalDatatype>
+<dataTypeSize>22</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="BATCH_ID" id="05D7B27E-7EF7-FDAC-D065-E69E86D0CEA4">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>MAPPING_CONTROL</sourceObjSchema>
+<sourceObjName>BATCH_ID</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT019</logicalDatatype>
+<dataTypeSize>22</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="CONTROL_USER" id="1477DDE9-A916-1F6C-1B9A-8CFBBA4121ED">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>MAPPING_CONTROL</sourceObjSchema>
+<sourceObjName>CONTROL_USER</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<defaultValue>sys_context(&apos;USERENV&apos;,&apos;SESSION_USER&apos;)</defaultValue>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>30 BYTE</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="CONTROL_DT" id="F5446141-CA8F-76DC-406F-F46698C84C16">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>MAPPING_CONTROL</sourceObjSchema>
+<sourceObjName>CONTROL_DT</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<defaultValue>SYSDATE</defaultValue>
+<use>1</use>
+<logicalDatatype>LOGDT007</logicalDatatype>
+<dataTypeSize>7</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="DESCRIPTION" id="97941475-DA89-D6DB-E0D8-645C153DD2F6">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>MAPPING_CONTROL</sourceObjSchema>
+<sourceObjName>DESCRIPTION</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>2000 BYTE</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+</columns>
+<indexes itemClass="oracle.dbtools.crest.model.design.relational.Index">
+<ind_PK_UK id="E0B4465B-E6EB-D02A-CBDA-8FC82439EFF4" name="MAPPING_CONTROL_PK">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>TDREP</sourceObjSchema>
+<sourceObjName>MAPPING_CONTROL_PK</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<schemaObject>981BC2CF-20FF-BAE7-2EAE-31EEE45FB7B8</schemaObject>
+<pk>true</pk>
+<indexState>Primary Constraint</indexState>
+<indexColumnUsage>
+<colUsage columnID="AD48FC1A-18F7-B9D4-BC52-5EFEE6C2BC62"/>
+</indexColumnUsage>
+</ind_PK_UK>
+<ind_PK_UK id="58CE4DEF-183C-6BBF-0E4C-4AF03BC5D791" name="MAPPING_CONTROL_FK1">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<indexState>Foreign Key</indexState>
+<indexColumnUsage>
+<colUsage columnID="AD48FC1A-18F7-B9D4-BC52-5EFEE6C2BC62"/>
+</indexColumnUsage>
+</ind_PK_UK>
+</indexes>
+</Table>
