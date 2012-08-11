@@ -1,5 +1,5 @@
 <?xml version = '1.0' encoding = 'UTF-8'?>
-<relationalModel class="oracle.dbtools.crest.model.design.relational.RelationalDesign" name="framework" id="D1988ACC-E0B7-7147-8E59-01E9AC75B1C3" mainViewID="D53A4BEC-9B42-C9E3-D1E9-0D3BD264F7F1">
+<relationalModel class="oracle.dbtools.crest.model.design.relational.RelationalDesign" name="Framework" id="D1988ACC-E0B7-7147-8E59-01E9AC75B1C3" mainViewID="D53A4BEC-9B42-C9E3-D1E9-0D3BD264F7F1">
 <createdBy>stewart</createdBy>
 <createdTime>2012-08-11 15:47:46 UTC</createdTime>
 <ownerDesignName>framework</ownerDesignName>
