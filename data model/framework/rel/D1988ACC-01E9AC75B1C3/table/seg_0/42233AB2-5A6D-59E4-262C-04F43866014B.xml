@@ -41,14 +41,24 @@
 </FontObject>
 </fonts>
 <columns itemClass="oracle.dbtools.crest.model.design.relational.Column">
-<Column name="SOURCE_NAME" id="AF4C72C0-E3AC-0A47-172F-C0C1BAEF053F">
+<Column name="SOURCE_ID" id="AF4C72C0-E3AC-0A47-172F-C0C1BAEF053F">
 <createdBy>stewart</createdBy>
 <createdTime>2012-08-12 03:03:14 UTC</createdTime>
 <ownerDesignName>framework</ownerDesignName>
 <useDomainConstraints>false</useDomainConstraints>
 <use>1</use>
+<logicalDatatype>LOGDT019</logicalDatatype>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="SUB_TYPE" id="5C05A8A4-6EC9-778B-6A2C-9C18D8B99E83">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-12 02:58:47 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
 <logicalDatatype>LOGDT024</logicalDatatype>
-<dataTypeSize>30</dataTypeSize>
+<dataTypeSize>10</dataTypeSize>
 <autoIncrementCycle>false</autoIncrementCycle>
 </Column>
 <Column name="SERVICE_NAME" id="2308D5B4-4B45-F614-9B4D-89BF14A61785">
@@ -102,15 +112,44 @@
 <dataTypeSize>61</dataTypeSize>
 <autoIncrementCycle>false</autoIncrementCycle>
 </Column>
-<Column name="SUB_TYPE" id="5C05A8A4-6EC9-778B-6A2C-9C18D8B99E83">
+<Column name="CREATED_USER" id="D6C1C767-722A-FFD1-994B-9FA144F565AC">
 <createdBy>stewart</createdBy>
-<createdTime>2012-08-12 02:58:47 UTC</createdTime>
+<createdTime>2012-08-12 03:16:53 UTC</createdTime>
 <ownerDesignName>framework</ownerDesignName>
 <nullsAllowed>true</nullsAllowed>
-<useDomainConstraints>false</useDomainConstraints>
-<use>1</use>
+<use>0</use>
 <logicalDatatype>LOGDT024</logicalDatatype>
-<dataTypeSize>10</dataTypeSize>
+<domain>7AAA2029-7D8F-C9CE-C56C-86F6629C22E3</domain>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="CREATED_DT" id="5A1059D9-2EE9-01B8-A407-154253C5EEEB">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-12 03:17:03 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<use>0</use>
+<logicalDatatype>LOGDT007</logicalDatatype>
+<domain>B58B54F8-E97A-5597-6DF1-674407DBB5A9</domain>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="MODIFIED_USER" id="BB8A40F7-BA6B-439E-F6C0-A0C29B0867B6">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-12 03:16:17 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<use>0</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<domain>7AAA2029-7D8F-C9CE-C56C-86F6629C22E3</domain>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="MODIFIED_DT" id="41C5EDDC-E194-B5F1-3F97-AD7353670F7B">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-12 03:16:40 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<use>0</use>
+<logicalDatatype>LOGDT007</logicalDatatype>
+<domain>B58B54F8-E97A-5597-6DF1-674407DBB5A9</domain>
 <autoIncrementCycle>false</autoIncrementCycle>
 </Column>
 </columns>

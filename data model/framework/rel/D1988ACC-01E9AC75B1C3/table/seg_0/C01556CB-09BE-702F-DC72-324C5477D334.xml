@@ -44,6 +44,15 @@
 </FontObject>
 </fonts>
 <columns itemClass="oracle.dbtools.crest.model.design.relational.Column">
+<Column name="SUB_ID" id="FF172A9F-36FF-734D-64AE-D0C81F6BC654">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-12 03:20:18 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT019</logicalDatatype>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
 <Column name="SUB_NAME" id="8E7C20C4-553D-788A-9B46-DED34EF268B9">
 <sourceConnName>db11g</sourceConnName>
 <sourceObjSchema>CDC_SUB_CONF</sourceObjSchema>
@@ -57,14 +66,13 @@
 <dataTypeSize>30 BYTE</dataTypeSize>
 <autoIncrementCycle>false</autoIncrementCycle>
 </Column>
-<Column name="SOURCE_NAME" id="ADE9769E-772B-F8DC-39F6-01F7DE706D76">
+<Column name="SOURCE_ID" id="ADE9769E-772B-F8DC-39F6-01F7DE706D76">
 <createdBy>stewart</createdBy>
 <createdTime>2012-08-12 03:05:17 UTC</createdTime>
 <ownerDesignName>framework</ownerDesignName>
 <useDomainConstraints>false</useDomainConstraints>
 <use>1</use>
-<logicalDatatype>LOGDT024</logicalDatatype>
-<dataTypeSize>30</dataTypeSize>
+<logicalDatatype>LOGDT019</logicalDatatype>
 <delegate>AF4C72C0-E3AC-0A47-172F-C0C1BAEF053F</delegate>
 <autoIncrementCycle>false</autoIncrementCycle>
 <associations>
@@ -160,7 +168,7 @@
 <pk>true</pk>
 <indexState>Primary Constraint</indexState>
 <indexColumnUsage>
-<colUsage columnID="8E7C20C4-553D-788A-9B46-DED34EF268B9"/>
+<colUsage columnID="FF172A9F-36FF-734D-64AE-D0C81F6BC654"/>
 </indexColumnUsage>
 </ind_PK_UK>
 <ind_PK_UK id="38268EE1-BEEC-05EE-ED78-D5B39D2DAE9A" name="CDC_SUB_CONF_FK1">

@@ -70,21 +70,18 @@
 <dataTypeSize>10 BYTE</dataTypeSize>
 <autoIncrementCycle>false</autoIncrementCycle>
 </Column>
-<Column name="SUB_NAME" id="7A84B5E0-600D-C2C1-9A80-4E48C0668289">
-<sourceConnName>db11g</sourceConnName>
-<sourceObjSchema>CDC_SUB_ENTITY</sourceObjSchema>
-<sourceObjName>SUB_NAME</sourceObjName>
+<Column name="SUB_ID" id="1AF6D76C-F653-2773-D40F-49746E689620">
 <createdBy>stewart</createdBy>
-<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<createdTime>2012-08-12 03:20:31 UTC</createdTime>
 <ownerDesignName>framework</ownerDesignName>
 <useDomainConstraints>false</useDomainConstraints>
 <use>1</use>
-<logicalDatatype>LOGDT024</logicalDatatype>
-<dataTypeSize>30 BYTE</dataTypeSize>
-<delegate>8E7C20C4-553D-788A-9B46-DED34EF268B9</delegate>
+<logicalDatatype>LOGDT019</logicalDatatype>
+<delegate>FF172A9F-36FF-734D-64AE-D0C81F6BC654</delegate>
+<previousColumn>false</previousColumn>
 <autoIncrementCycle>false</autoIncrementCycle>
 <associations>
-<colAssociation fkAssociation="33C60047-5628-667C-6759-07C0BA6D68DF" referredColumn="8E7C20C4-553D-788A-9B46-DED34EF268B9"/>
+<colAssociation fkAssociation="33C60047-5628-667C-6759-07C0BA6D68DF" referredColumn="FF172A9F-36FF-734D-64AE-D0C81F6BC654"/>
 </associations>
 </Column>
 <Column name="NATURAL_KEY" id="0CCE7598-FF1F-F63C-7805-CBE26DCCD074">
@@ -197,7 +194,7 @@
 <indexColumnUsage>
 <colUsage columnID="C4F4796F-A7F5-4CF4-EAF6-8F1EF946589A"/>
 <colUsage columnID="16051016-A766-B885-611F-4B52EB5BAB8B"/>
-<colUsage columnID="7A84B5E0-600D-C2C1-9A80-4E48C0668289"/>
+<colUsage columnID="1AF6D76C-F653-2773-D40F-49746E689620"/>
 </indexColumnUsage>
 </ind_PK_UK>
 <ind_PK_UK id="5361E2B3-0C8D-5DEA-F7A3-D2D3B1158E36" name="CDC_SUB_ENTITY_FK1">
@@ -206,7 +203,7 @@
 <ownerDesignName>framework</ownerDesignName>
 <indexState>Foreign Key</indexState>
 <indexColumnUsage>
-<colUsage columnID="7A84B5E0-600D-C2C1-9A80-4E48C0668289"/>
+<colUsage columnID="1AF6D76C-F653-2773-D40F-49746E689620"/>
 </indexColumnUsage>
 </ind_PK_UK>
 </indexes>
