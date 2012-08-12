@@ -552,7 +552,7 @@ IS
 
          EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON COLUMN_TYPE_LIST TO ' || p_grantee;
 
-         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON CDC_SUB_CONF TO ' || p_grantee;
+         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON CDC_SUBSCRIPTION TO ' || p_grantee;
 	 
 	 -- sequence
          EXECUTE IMMEDIATE 'GRANT SELECT ON file_detail_seq TO ' || p_grantee;
@@ -1651,7 +1651,7 @@ IS
 
       -- this will drop all the tables before beginning
       BEGIN
-         EXECUTE IMMEDIATE q'|DROP TABLE cdc_sub_entity|';
+         EXECUTE IMMEDIATE q'|DROP TABLE cdc_entity|';
       EXCEPTION
          WHEN e_no_tab
          THEN
@@ -1659,7 +1659,15 @@ IS
       END;
 
       BEGIN
-         EXECUTE IMMEDIATE q'|DROP TABLE cdc_sub_conf|';
+         EXECUTE IMMEDIATE q'|DROP TABLE cdc_subscription|';
+      EXCEPTION
+         WHEN e_no_tab
+         THEN
+         NULL;
+      END;
+      
+      BEGIN
+         EXECUTE IMMEDIATE q'|DROP TABLE cdc_source|';
       EXCEPTION
          WHEN e_no_tab
          THEN
@@ -2212,65 +2220,108 @@ IS
 	   REFERENCES dimension_conf  
 	   ( mapping_name )
 	 )|';
-
-         -- CDC_SUB_CONF table
-         EXECUTE IMMEDIATE q'|CREATE TABLE cdc_sub_conf
+         
+         -- Transcend CDC schema
+         -- CDC_SOURCE
+         EXECUTE IMMEDIATE q'|CREATE TABLE cdc_source
 	 ( 
-	   sub_name             VARCHAR2(30)  NOT NULL,
-           sub_type             VARCHAR2(10)  NOT NULL,
-           sub_external_source  VARCHAR2(100) NOT NULL,
-           sub_external_name    VARCHAR2(10),
-	   created_user	        VARCHAR2(30) DEFAULT sys_context('USERENV','SESSION_USER') NOT NULL,
-	   created_dt	        DATE DEFAULT SYSDATE NOT NULL,
+           source_id            NUMBER          NOT NULL, 
+           sub_type             VARCHAR2 (10), 
+           service_name         VARCHAR2 (4000)  NOT NULL, 
+           hostname             VARCHAR2 (4000)  NOT NULL, 
+           port                 NUMBER           NOT NULL, 
+           dblink_name          VARCHAR2 (30), 
+           checkpoint_table     VARCHAR2 (61), 
+	   created_user	        VARCHAR2(30)     DEFAULT sys_context('USERENV','SESSION_USER') NOT NULL,
+	   created_dt	        DATE             DEFAULT SYSDATE NOT NULL,
 	   modified_user  	VARCHAR2(30),
 	   modified_dt    	DATE
 	 )|';
-
-         EXECUTE IMMEDIATE q'|ALTER TABLE cdc_sub_conf ADD 
+         
+         EXECUTE IMMEDIATE q'|ALTER TABLE cdc_source ADD 
 	 (
-	   CONSTRAINT cdc_sub_conf_pk
+	   CONSTRAINT cdc_source_pk
 	   PRIMARY KEY
-	   ( sub_name )
+	   ( source_id )
 	   USING INDEX
 	 )|';
          
-         EXECUTE IMMEDIATE q'|ALTER TABLE cdc_sub_conf ADD CONSTRAINT cdc_sub_conf_ck1 CHECK ( sub_type in ( 'goldengate','flashback' ) )|';
+         EXECUTE IMMEDIATE q'|ALTER TABLE cdc_source ADD CONSTRAINT cdc_source_ck1 CHECK ( sub_type in ( 'goldengate','flashback' ) )|';
 
-         EXECUTE IMMEDIATE q'|ALTER TABLE cdc_sub_conf ADD CONSTRAINT cdc_sub_conf_ck2 CHECK ( 1 = CASE when sub_type = 'goldengate' and sub_external_name is NULL then 2 else 1 end )|';
-
-         -- CDC_SUB_ENTITY table
-         EXECUTE IMMEDIATE q'|CREATE TABLE cdc_sub_entity
-	 ( 
-	   table_name           VARCHAR2(30)   NOT NULL,
-           schema_name          VARCHAR2(10)   NOT NULL,
-           sub_name             VARCHAR2(30)   NOT NULL,
-           natural_key          VARCHAR2(4000) NOT NULL,
-           scn_column           VARCHAR2(30)   NOT NULL,
-           row_column           VARCHAR2(30)   NOT NULL,
-	   created_user	        VARCHAR2(30) DEFAULT sys_context('USERENV','SESSION_USER') NOT NULL,
-	   created_dt	        DATE DEFAULT SYSDATE NOT NULL,
-	   modified_user  	VARCHAR2(30),
-	   modified_dt    	DATE
-	 )|';
-
-         EXECUTE IMMEDIATE q'|ALTER TABLE cdc_sub_entity ADD 
+         -- CDC_SUBSCRIPTION table
+         EXECUTE IMMEDIATE q'|CREATE TABLE cdc_subscription
 	 (
-	   CONSTRAINT cdc_sub_entity_pk
+           sub_id           NUMBER              NOT NULL , 
+           sub_name         VARCHAR2 (30)       NOT NULL , 
+           source_id        NUMBER              NOT NULL , 
+           effective_scn    NUMBER , 
+           expiration_scn   NUMBER , 
+           created_user     VARCHAR2 (30)       DEFAULT sys_context('USERENV','SESSION_USER') , 
+           created_dt       DATE                DEFAULT SYSDATE , 
+           modified_user    VARCHAR2 (30) , 
+           modified_dt      DATE 	
+         )|';
+
+         EXECUTE IMMEDIATE q'|ALTER TABLE cdc_subscription ADD 
+	 (
+	   CONSTRAINT cdc_subscription_pk
 	   PRIMARY KEY
-	   ( 
-             table_name,
-             schema_name,
-             sub_name  
-           )
+	   ( sub_id )
 	   USING INDEX
 	 )|';
 
-         EXECUTE IMMEDIATE q'|ALTER TABLE cdc_sub_entity ADD 
+         EXECUTE IMMEDIATE q'|ALTER TABLE cdc_subscription ADD 
 	 (
-	   CONSTRAINT cdc_sub_entity_fk1
-	   FOREIGN KEY ( sub_name )
-	   REFERENCES cdc_sub_conf
-	   ( sub_name )
+	   CONSTRAINT cdc_subscription_fk1
+	   FOREIGN KEY ( source_id )
+	   REFERENCES cdc_source
+	   ( source_id )
+	 )|';
+         
+         -- CDC_SENTITY table
+         EXECUTE IMMEDIATE q'|CREATE TABLE cdc_entity
+	 ( 
+           entity_id        NUMBER              NOT NULL , 
+           table_name       VARCHAR2 (30)       NOT NULL , 
+           schema_name      VARCHAR2 (10)       NOT NULL , 
+           sub_id           NUMBER              NOT NULL , 
+           natural_key      VARCHAR2 (4000)     NOT NULL , 
+           scn_column       VARCHAR2 (30)       NOT NULL , 
+           row_column       VARCHAR2 (30)       NOT NULL , 
+           created_user     VARCHAR2 (30)       DEFAULT sys_context('USERENV','SESSION_USER') , 
+           created_dt       DATE                DEFAULT SYSDATE , 
+           modified_user    VARCHAR2 (30) , 
+           modified_dt      DATE
+         )|';
+
+         EXECUTE IMMEDIATE q'|ALTER TABLE cdc_entity ADD 
+	 (
+	   CONSTRAINT cdc_entity_pk
+	   PRIMARY KEY
+	   ( 
+             entity_id 
+           )
+	   USING INDEX
+	 )|';
+         
+         EXECUTE IMMEDIATE q'|ALTER TABLE cdc_entity ADD 
+	 (
+	   CONSTRAINT cdc_entity_uk1
+	   unique
+           ( 
+             table_name,
+             schema_name, 
+             sub_id 
+           ) 
+           USING INDEX
+	 )|';
+
+         EXECUTE IMMEDIATE q'|ALTER TABLE cdc_entity ADD 
+	 (
+	   CONSTRAINT cdc_entity_fk1
+	   FOREIGN KEY ( sub_id )
+	   REFERENCES cdc_subscription
+	   ( sub_id )
 	 )|';
          
 	 -- grant select privileges to the select role
@@ -2709,7 +2760,7 @@ IS
       END;
       
       BEGIN
-         EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.CDC_SUB_CONF for ' || p_schema || '.CDC_SUB_CONF';
+         EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.CDC_SUBSCRIPTION for ' || p_schema || '.CDC_SUBSCRIPTION';
       EXCEPTION
          WHEN e_same_name
          THEN
@@ -2717,7 +2768,7 @@ IS
       END;
       
       BEGIN
-         EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.CDC_SUB_ENTITY for ' || p_schema || '.CDC_SUB_ENTITY';
+         EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.CDC_ENTITY for ' || p_schema || '.CDC_ENTITY';
       EXCEPTION
          WHEN e_same_name
          THEN

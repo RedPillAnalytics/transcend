@@ -1,13 +1,14 @@
 
-CREATE OR REPLACE TYPE cdc_global_ot 
+CREATE OR REPLACE TYPE cdc_sub_ot 
 AUTHID CURRENT_USER AS object
 (
-  cdc_name               VARCHAR2(30),
-  cdc_type               VARCHAR2(10),
-  external_source        VARCHAR2(100),
-  external_name          VARCHAR2(30),
+  sub_name               VARCHAR2(30),
+  sub_type               VARCHAR2(10),
+  sub_source             VARCHAR2(61),
+  effective_scn          NUMBER,
+  expiration_scn         NUMBER,
   
-  CONSTRUCTOR FUNCTION cdc_global_ot 
+  CONSTRUCTOR FUNCTION cdc_sub_ot 
   ( 
     p_name             VARCHAR2
   )

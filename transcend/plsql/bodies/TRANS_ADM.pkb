@@ -209,8 +209,8 @@ IS
                                  p_message => 'No matching columns exist between source and target tables' );
       
       evolve_adm.set_error_conf
-      ( p_name         => 'no_cdc_global',
-        p_message      => 'The specified Global CDC_NAME does not exist'
+      ( p_name         => 'no_cdc_subscription',
+        p_message      => 'The specified subscription does not exist'
       );
 
    END set_default_configs;

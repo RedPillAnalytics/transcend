@@ -329,8 +329,8 @@ EXEC evolve_adm.set_default_configs;
 @../transcend/plsql/wrapped_bodies/MAPPING_OT.plb
 @../transcend/plsql/specs/DIMENSION_OT.tps
 @../transcend/plsql/wrapped_bodies/DIMENSION_OT.plb
-@../transcend/plsql/specs/CDC_GLOBAL_OT.tps
-@../transcend/plsql/wrapped_bodies/CDC_GLOBAL_OT.plb
+@../transcend/plsql/specs/CDC_SUB_OT.tps
+@../transcend/plsql/wrapped_bodies/CDC_SUB_OT.plb
 
 -- CREATE factory package
 @../transcend/plsql/specs/TRANS_FACTORY.pks
