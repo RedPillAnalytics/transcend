@@ -45,6 +45,9 @@
 </fonts>
 <columns itemClass="oracle.dbtools.crest.model.design.relational.Column">
 <Column name="SUB_ID" id="FF172A9F-36FF-734D-64AE-D0C81F6BC654">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>CDC_SUBSCRIPTION</sourceObjSchema>
+<sourceObjName>SUB_ID</sourceObjName>
 <createdBy>stewart</createdBy>
 <createdTime>2012-08-12 03:20:18 UTC</createdTime>
 <ownerDesignName>framework</ownerDesignName>
@@ -67,6 +70,9 @@
 <autoIncrementCycle>false</autoIncrementCycle>
 </Column>
 <Column name="SOURCE_ID" id="ADE9769E-772B-F8DC-39F6-01F7DE706D76">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>CDC_SUBSCRIPTION</sourceObjSchema>
+<sourceObjName>SOURCE_ID</sourceObjName>
 <createdBy>stewart</createdBy>
 <createdTime>2012-08-12 03:05:17 UTC</createdTime>
 <ownerDesignName>framework</ownerDesignName>
@@ -80,6 +86,9 @@
 </associations>
 </Column>
 <Column name="EFFECTIVE_SCN" id="F67B3BB4-CCB6-6476-2F77-E5E52AA48E90">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>CDC_SUBSCRIPTION</sourceObjSchema>
+<sourceObjName>EFFECTIVE_SCN</sourceObjName>
 <createdBy>stewart</createdBy>
 <createdTime>2012-08-12 02:59:43 UTC</createdTime>
 <ownerDesignName>framework</ownerDesignName>
@@ -90,6 +99,9 @@
 <autoIncrementCycle>false</autoIncrementCycle>
 </Column>
 <Column name="EXPIRATION_SCN" id="3065F59D-51CE-FCF1-BBC3-07A4B6F88E9E">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>CDC_SUBSCRIPTION</sourceObjSchema>
+<sourceObjName>EXPIRATION_SCN</sourceObjName>
 <createdBy>stewart</createdBy>
 <createdTime>2012-08-12 03:00:10 UTC</createdTime>
 <ownerDesignName>framework</ownerDesignName>
@@ -109,9 +121,10 @@
 <nullsAllowed>true</nullsAllowed>
 <useDomainConstraints>false</useDomainConstraints>
 <defaultValue>sys_context(&apos;USERENV&apos;,&apos;SESSION_USER&apos;)</defaultValue>
-<use>1</use>
+<use>0</use>
 <logicalDatatype>LOGDT024</logicalDatatype>
 <dataTypeSize>30</dataTypeSize>
+<domain>945B8359-2A88-D19F-8741-29F48D4E8C31</domain>
 <autoIncrementCycle>false</autoIncrementCycle>
 </Column>
 <Column name="CREATED_DT" id="F9B9CDAB-BD6B-843A-3473-6651383FA8F7">
@@ -124,8 +137,9 @@
 <nullsAllowed>true</nullsAllowed>
 <useDomainConstraints>false</useDomainConstraints>
 <defaultValue>SYSDATE</defaultValue>
-<use>1</use>
+<use>0</use>
 <logicalDatatype>LOGDT007</logicalDatatype>
+<domain>778376EB-B71F-2294-FAE8-7E059D5212DB</domain>
 <autoIncrementCycle>false</autoIncrementCycle>
 </Column>
 <Column name="MODIFIED_USER" id="7565E1C0-9049-EFC3-DBC5-EA6B92AA339D">

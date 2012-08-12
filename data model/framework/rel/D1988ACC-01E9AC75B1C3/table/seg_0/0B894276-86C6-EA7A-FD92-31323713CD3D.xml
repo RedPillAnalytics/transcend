@@ -45,6 +45,9 @@
 </fonts>
 <columns itemClass="oracle.dbtools.crest.model.design.relational.Column">
 <Column name="ENTITY_ID" id="D32E29B7-C144-61D5-7FFD-EA38836DAA69">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>CDC_ENTITY</sourceObjSchema>
+<sourceObjName>ENTITY_ID</sourceObjName>
 <createdBy>stewart</createdBy>
 <createdTime>2012-08-12 15:00:21 UTC</createdTime>
 <ownerDesignName>framework</ownerDesignName>
@@ -80,6 +83,9 @@
 <autoIncrementCycle>false</autoIncrementCycle>
 </Column>
 <Column name="SUB_ID" id="1AF6D76C-F653-2773-D40F-49746E689620">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>CDC_ENTITY</sourceObjSchema>
+<sourceObjName>SUB_ID</sourceObjName>
 <createdBy>stewart</createdBy>
 <createdTime>2012-08-12 03:20:31 UTC</createdTime>
 <ownerDesignName>framework</ownerDesignName>
@@ -142,9 +148,10 @@
 <nullsAllowed>true</nullsAllowed>
 <useDomainConstraints>false</useDomainConstraints>
 <defaultValue>sys_context(&apos;USERENV&apos;,&apos;SESSION_USER&apos;)</defaultValue>
-<use>1</use>
+<use>0</use>
 <logicalDatatype>LOGDT024</logicalDatatype>
 <dataTypeSize>30</dataTypeSize>
+<domain>945B8359-2A88-D19F-8741-29F48D4E8C31</domain>
 <autoIncrementCycle>false</autoIncrementCycle>
 </Column>
 <Column name="CREATED_DT" id="D4AF1259-36D2-608C-56A5-08968B26024E">
@@ -157,8 +164,9 @@
 <nullsAllowed>true</nullsAllowed>
 <useDomainConstraints>false</useDomainConstraints>
 <defaultValue>SYSDATE</defaultValue>
-<use>1</use>
+<use>0</use>
 <logicalDatatype>LOGDT007</logicalDatatype>
+<domain>778376EB-B71F-2294-FAE8-7E059D5212DB</domain>
 <autoIncrementCycle>false</autoIncrementCycle>
 </Column>
 <Column name="MODIFIED_USER" id="CF62B700-263D-B95D-E29B-2A41DA43FFD9">
@@ -207,6 +215,9 @@
 </indexColumnUsage>
 </ind_PK_UK>
 <ind_PK_UK id="4D3E0B37-D057-4F53-A4BF-2AED2F083809" name="CDC_ENTITY_UK1">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>TDREP</sourceObjSchema>
+<sourceObjName>CDC_ENTITY_UK1</sourceObjName>
 <createdBy>stewart</createdBy>
 <createdTime>2012-08-12 15:01:08 UTC</createdTime>
 <ownerDesignName>framework</ownerDesignName>

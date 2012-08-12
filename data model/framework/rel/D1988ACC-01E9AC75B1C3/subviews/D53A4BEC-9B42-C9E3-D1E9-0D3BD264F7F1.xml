@@ -12,7 +12,7 @@
 <notation>1</notation>
 <objectViews>
 <OView class="oracle.dbtools.crest.swingui.relational.TVTable" oid="0B894276-86C6-EA7A-FD92-31323713CD3D" otype="Table" vid="843B5C97-1D7C-C457-90F9-8765936EFEED">
-<bounds x="992" y="425" width="339" height="176"/>
+<bounds x="992" y="425" width="339" height="206"/>
 </OView>
 <OView class="oracle.dbtools.crest.swingui.relational.TVTable" oid="10C05041-4288-8B7F-B1B0-B9F3D70A9381" otype="Table" vid="CBDD4024-3D01-33E6-EE0F-3F492E2563CF">
 <bounds x="20" y="3274" width="296" height="85"/>
