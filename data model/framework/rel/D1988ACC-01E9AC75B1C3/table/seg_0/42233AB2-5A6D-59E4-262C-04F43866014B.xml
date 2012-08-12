@@ -54,7 +54,6 @@
 <createdBy>stewart</createdBy>
 <createdTime>2012-08-12 02:58:47 UTC</createdTime>
 <ownerDesignName>framework</ownerDesignName>
-<nullsAllowed>true</nullsAllowed>
 <useDomainConstraints>false</useDomainConstraints>
 <use>1</use>
 <logicalDatatype>LOGDT024</logicalDatatype>

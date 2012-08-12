@@ -1,5 +1,5 @@
 <?xml version = '1.0' encoding = 'UTF-8'?>
-<Table class="oracle.dbtools.crest.model.design.relational.Table" id="C01556CB-09BE-702F-DC72-324C5477D334" directorySegmentName="seg_0" name="CDC_SUB_CONF">
+<Table class="oracle.dbtools.crest.model.design.relational.Table" id="C01556CB-09BE-702F-DC72-324C5477D334" directorySegmentName="seg_0" name="CDC_SUBSCRIPTION">
 <sourceConnName>db11g</sourceConnName>
 <sourceObjSchema>TDREP</sourceObjSchema>
 <sourceObjName>CDC_SUB_CONF</sourceObjName>
@@ -63,7 +63,7 @@
 <useDomainConstraints>false</useDomainConstraints>
 <use>1</use>
 <logicalDatatype>LOGDT024</logicalDatatype>
-<dataTypeSize>30 BYTE</dataTypeSize>
+<dataTypeSize>30</dataTypeSize>
 <autoIncrementCycle>false</autoIncrementCycle>
 </Column>
 <Column name="SOURCE_ID" id="ADE9769E-772B-F8DC-39F6-01F7DE706D76">
@@ -106,11 +106,12 @@
 <createdBy>stewart</createdBy>
 <createdTime>2012-08-11 15:47:46 UTC</createdTime>
 <ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
 <useDomainConstraints>false</useDomainConstraints>
 <defaultValue>sys_context(&apos;USERENV&apos;,&apos;SESSION_USER&apos;)</defaultValue>
 <use>1</use>
 <logicalDatatype>LOGDT024</logicalDatatype>
-<dataTypeSize>30 BYTE</dataTypeSize>
+<dataTypeSize>30</dataTypeSize>
 <autoIncrementCycle>false</autoIncrementCycle>
 </Column>
 <Column name="CREATED_DT" id="F9B9CDAB-BD6B-843A-3473-6651383FA8F7">
@@ -120,11 +121,11 @@
 <createdBy>stewart</createdBy>
 <createdTime>2012-08-11 15:47:46 UTC</createdTime>
 <ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
 <useDomainConstraints>false</useDomainConstraints>
 <defaultValue>SYSDATE</defaultValue>
 <use>1</use>
 <logicalDatatype>LOGDT007</logicalDatatype>
-<dataTypeSize>7</dataTypeSize>
 <autoIncrementCycle>false</autoIncrementCycle>
 </Column>
 <Column name="MODIFIED_USER" id="7565E1C0-9049-EFC3-DBC5-EA6B92AA339D">
@@ -138,7 +139,7 @@
 <useDomainConstraints>false</useDomainConstraints>
 <use>1</use>
 <logicalDatatype>LOGDT024</logicalDatatype>
-<dataTypeSize>30 BYTE</dataTypeSize>
+<dataTypeSize>30</dataTypeSize>
 <autoIncrementCycle>false</autoIncrementCycle>
 </Column>
 <Column name="MODIFIED_DT" id="CC106B4D-0184-6551-2FA4-C04AD7F03990">
@@ -152,7 +153,6 @@
 <useDomainConstraints>false</useDomainConstraints>
 <use>1</use>
 <logicalDatatype>LOGDT007</logicalDatatype>
-<dataTypeSize>7</dataTypeSize>
 <autoIncrementCycle>false</autoIncrementCycle>
 </Column>
 </columns>

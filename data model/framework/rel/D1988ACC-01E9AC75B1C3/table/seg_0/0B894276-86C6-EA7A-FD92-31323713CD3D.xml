@@ -1,5 +1,5 @@
 <?xml version = '1.0' encoding = 'UTF-8'?>
-<Table class="oracle.dbtools.crest.model.design.relational.Table" id="0B894276-86C6-EA7A-FD92-31323713CD3D" directorySegmentName="seg_0" name="CDC_SUB_ENTITY">
+<Table class="oracle.dbtools.crest.model.design.relational.Table" id="0B894276-86C6-EA7A-FD92-31323713CD3D" directorySegmentName="seg_0" name="CDC_ENTITY">
 <sourceConnName>db11g</sourceConnName>
 <sourceObjSchema>TDREP</sourceObjSchema>
 <sourceObjName>CDC_SUB_ENTITY</sourceObjName>
@@ -44,6 +44,15 @@
 </FontObject>
 </fonts>
 <columns itemClass="oracle.dbtools.crest.model.design.relational.Column">
+<Column name="ENTITY_ID" id="D32E29B7-C144-61D5-7FFD-EA38836DAA69">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-12 15:00:21 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT019</logicalDatatype>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
 <Column name="TABLE_NAME" id="C4F4796F-A7F5-4CF4-EAF6-8F1EF946589A">
 <sourceConnName>db11g</sourceConnName>
 <sourceObjSchema>CDC_SUB_ENTITY</sourceObjSchema>
@@ -54,7 +63,7 @@
 <useDomainConstraints>false</useDomainConstraints>
 <use>1</use>
 <logicalDatatype>LOGDT024</logicalDatatype>
-<dataTypeSize>30 BYTE</dataTypeSize>
+<dataTypeSize>30</dataTypeSize>
 <autoIncrementCycle>false</autoIncrementCycle>
 </Column>
 <Column name="SCHEMA_NAME" id="16051016-A766-B885-611F-4B52EB5BAB8B">
@@ -67,7 +76,7 @@
 <useDomainConstraints>false</useDomainConstraints>
 <use>1</use>
 <logicalDatatype>LOGDT024</logicalDatatype>
-<dataTypeSize>10 BYTE</dataTypeSize>
+<dataTypeSize>10</dataTypeSize>
 <autoIncrementCycle>false</autoIncrementCycle>
 </Column>
 <Column name="SUB_ID" id="1AF6D76C-F653-2773-D40F-49746E689620">
@@ -94,7 +103,7 @@
 <useDomainConstraints>false</useDomainConstraints>
 <use>1</use>
 <logicalDatatype>LOGDT024</logicalDatatype>
-<dataTypeSize>4000 BYTE</dataTypeSize>
+<dataTypeSize>4000</dataTypeSize>
 <autoIncrementCycle>false</autoIncrementCycle>
 </Column>
 <Column name="SCN_COLUMN" id="53582C77-BB61-2BDE-82D4-BCEC8972E9C4">
@@ -107,7 +116,7 @@
 <useDomainConstraints>false</useDomainConstraints>
 <use>1</use>
 <logicalDatatype>LOGDT024</logicalDatatype>
-<dataTypeSize>30 BYTE</dataTypeSize>
+<dataTypeSize>30</dataTypeSize>
 <autoIncrementCycle>false</autoIncrementCycle>
 </Column>
 <Column name="ROW_COLUMN" id="76B6578E-5102-AE64-A5F4-8873EC70466C">
@@ -120,7 +129,7 @@
 <useDomainConstraints>false</useDomainConstraints>
 <use>1</use>
 <logicalDatatype>LOGDT024</logicalDatatype>
-<dataTypeSize>30 BYTE</dataTypeSize>
+<dataTypeSize>30</dataTypeSize>
 <autoIncrementCycle>false</autoIncrementCycle>
 </Column>
 <Column name="CREATED_USER" id="574EBB77-3261-D2E9-819D-9DD646DE32E4">
@@ -130,11 +139,12 @@
 <createdBy>stewart</createdBy>
 <createdTime>2012-08-11 15:47:46 UTC</createdTime>
 <ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
 <useDomainConstraints>false</useDomainConstraints>
 <defaultValue>sys_context(&apos;USERENV&apos;,&apos;SESSION_USER&apos;)</defaultValue>
 <use>1</use>
 <logicalDatatype>LOGDT024</logicalDatatype>
-<dataTypeSize>30 BYTE</dataTypeSize>
+<dataTypeSize>30</dataTypeSize>
 <autoIncrementCycle>false</autoIncrementCycle>
 </Column>
 <Column name="CREATED_DT" id="D4AF1259-36D2-608C-56A5-08968B26024E">
@@ -144,11 +154,11 @@
 <createdBy>stewart</createdBy>
 <createdTime>2012-08-11 15:47:46 UTC</createdTime>
 <ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
 <useDomainConstraints>false</useDomainConstraints>
 <defaultValue>SYSDATE</defaultValue>
 <use>1</use>
 <logicalDatatype>LOGDT007</logicalDatatype>
-<dataTypeSize>7</dataTypeSize>
 <autoIncrementCycle>false</autoIncrementCycle>
 </Column>
 <Column name="MODIFIED_USER" id="CF62B700-263D-B95D-E29B-2A41DA43FFD9">
@@ -162,7 +172,7 @@
 <useDomainConstraints>false</useDomainConstraints>
 <use>1</use>
 <logicalDatatype>LOGDT024</logicalDatatype>
-<dataTypeSize>30 BYTE</dataTypeSize>
+<dataTypeSize>30</dataTypeSize>
 <autoIncrementCycle>false</autoIncrementCycle>
 </Column>
 <Column name="MODIFIED_DT" id="01106811-B1E0-A264-FBC7-7ECE63E7BE71">
@@ -174,9 +184,10 @@
 <ownerDesignName>framework</ownerDesignName>
 <nullsAllowed>true</nullsAllowed>
 <useDomainConstraints>false</useDomainConstraints>
-<use>1</use>
+<use>0</use>
 <logicalDatatype>LOGDT007</logicalDatatype>
 <dataTypeSize>7</dataTypeSize>
+<domain>B58B54F8-E97A-5597-6DF1-674407DBB5A9</domain>
 <autoIncrementCycle>false</autoIncrementCycle>
 </Column>
 </columns>
@@ -191,6 +202,15 @@
 <schemaObject>981BC2CF-20FF-BAE7-2EAE-31EEE45FB7B8</schemaObject>
 <pk>true</pk>
 <indexState>Primary Constraint</indexState>
+<indexColumnUsage>
+<colUsage columnID="D32E29B7-C144-61D5-7FFD-EA38836DAA69"/>
+</indexColumnUsage>
+</ind_PK_UK>
+<ind_PK_UK id="4D3E0B37-D057-4F53-A4BF-2AED2F083809" name="CDC_ENTITY_UK1">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-12 15:01:08 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<indexState>Unique Constraint</indexState>
 <indexColumnUsage>
 <colUsage columnID="C4F4796F-A7F5-4CF4-EAF6-8F1EF946589A"/>
 <colUsage columnID="16051016-A766-B885-611F-4B52EB5BAB8B"/>
