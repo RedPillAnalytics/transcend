@@ -96,6 +96,28 @@
 <colAssociation fkAssociation="84286430-4327-AE77-F64B-BF8E1FDEA547" referredColumn="AF4C72C0-E3AC-0A47-172F-C0C1BAEF053F"/>
 </associations>
 </Column>
+<Column name="FND_SCHEMA" id="D65326AB-8D52-EB5B-A1B3-36EB8B5DFDFD">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-13 01:24:43 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>30</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="STG_SCHEMA" id="CCBFDACA-E74E-C886-27AB-7566D3185208">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-13 01:24:57 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>30</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
 <Column name="CREATED_USER" id="DCFAD354-B509-2C7F-64F4-4A837E427E66">
 <sourceConnName>db11g</sourceConnName>
 <sourceObjSchema>CDC_SUB_CONF</sourceObjSchema>
@@ -168,6 +190,15 @@
 <indexState>Primary Constraint</indexState>
 <indexColumnUsage>
 <colUsage columnID="FF172A9F-36FF-734D-64AE-D0C81F6BC654"/>
+</indexColumnUsage>
+</ind_PK_UK>
+<ind_PK_UK id="691F61DC-14FA-690C-3266-52947440A94C" name="CDC_GROUP_UK1">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-13 01:49:32 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<indexState>Unique Constraint</indexState>
+<indexColumnUsage>
+<colUsage columnID="8E7C20C4-553D-788A-9B46-DED34EF268B9"/>
 </indexColumnUsage>
 </ind_PK_UK>
 <ind_PK_UK id="38268EE1-BEEC-05EE-ED78-D5B39D2DAE9A" name="CDC_SUB_CONF_FK1">

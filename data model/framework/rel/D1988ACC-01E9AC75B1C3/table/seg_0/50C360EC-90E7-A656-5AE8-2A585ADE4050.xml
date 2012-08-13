@@ -95,6 +95,48 @@
 <logicalDatatype>LOGDT019</logicalDatatype>
 <autoIncrementCycle>false</autoIncrementCycle>
 </Column>
+<Column name="CREATED_USER" id="BD5F2851-AA3C-00E9-10AC-E0603E6BC2BD">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-13 01:30:30 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<defaultValue>sys_context(&apos;USERENV&apos;,&apos;SESSION_USER&apos;)</defaultValue>
+<use>0</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<domain>945B8359-2A88-D19F-8741-29F48D4E8C31</domain>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="CREATED_DT" id="0D711A6F-D465-12DB-57CF-9A5C06D00A42">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-13 01:30:40 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<defaultValue>SYSDATE</defaultValue>
+<use>0</use>
+<logicalDatatype>LOGDT007</logicalDatatype>
+<domain>778376EB-B71F-2294-FAE8-7E059D5212DB</domain>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="MODIFIED_USER" id="FAF0BB3C-1AF0-9BC6-451E-03274820C1B6">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-13 01:30:52 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<use>0</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<domain>7AAA2029-7D8F-C9CE-C56C-86F6629C22E3</domain>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="MODIFIED_DT" id="0E68BCF8-631F-F162-1BE7-B08AFFB3D146">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-13 01:31:03 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<use>0</use>
+<logicalDatatype>LOGDT007</logicalDatatype>
+<domain>B58B54F8-E97A-5597-6DF1-674407DBB5A9</domain>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
 </columns>
 <indexes itemClass="oracle.dbtools.crest.model.design.relational.Index">
 <ind_PK_UK id="D7BF52C9-5D8C-277E-1268-8B3A2723DCEA" name="CDC_SUBSCRIPTION_PK">
