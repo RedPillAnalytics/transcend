@@ -1,5 +1,5 @@
 <?xml version = '1.0' encoding = 'UTF-8'?>
-<Table class="oracle.dbtools.crest.model.design.relational.Table" id="C01556CB-09BE-702F-DC72-324C5477D334" directorySegmentName="seg_0" name="CDC_SUBSCRIPTION">
+<Table class="oracle.dbtools.crest.model.design.relational.Table" id="C01556CB-09BE-702F-DC72-324C5477D334" directorySegmentName="seg_0" name="CDC_GROUP">
 <sourceConnName>db11g</sourceConnName>
 <sourceObjSchema>TDREP</sourceObjSchema>
 <sourceObjName>CDC_SUB_CONF</sourceObjName>
@@ -44,7 +44,7 @@
 </FontObject>
 </fonts>
 <columns itemClass="oracle.dbtools.crest.model.design.relational.Column">
-<Column name="SUB_ID" id="FF172A9F-36FF-734D-64AE-D0C81F6BC654">
+<Column name="GROUP_ID" id="FF172A9F-36FF-734D-64AE-D0C81F6BC654">
 <sourceConnName>db11g</sourceConnName>
 <sourceObjSchema>CDC_SUBSCRIPTION</sourceObjSchema>
 <sourceObjName>SUB_ID</sourceObjName>
@@ -56,7 +56,7 @@
 <logicalDatatype>LOGDT019</logicalDatatype>
 <autoIncrementCycle>false</autoIncrementCycle>
 </Column>
-<Column name="SUB_NAME" id="8E7C20C4-553D-788A-9B46-DED34EF268B9">
+<Column name="GROUP_NAME" id="8E7C20C4-553D-788A-9B46-DED34EF268B9">
 <sourceConnName>db11g</sourceConnName>
 <sourceObjSchema>CDC_SUB_CONF</sourceObjSchema>
 <sourceObjName>SUB_NAME</sourceObjName>
@@ -67,6 +67,17 @@
 <use>1</use>
 <logicalDatatype>LOGDT024</logicalDatatype>
 <dataTypeSize>30</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="OGG_GROUP_NAME" id="A471F1B8-E440-1048-4391-211F3A9CBFDC">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-13 01:18:47 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>8</dataTypeSize>
 <autoIncrementCycle>false</autoIncrementCycle>
 </Column>
 <Column name="SOURCE_ID" id="ADE9769E-772B-F8DC-39F6-01F7DE706D76">
@@ -84,32 +95,6 @@
 <associations>
 <colAssociation fkAssociation="84286430-4327-AE77-F64B-BF8E1FDEA547" referredColumn="AF4C72C0-E3AC-0A47-172F-C0C1BAEF053F"/>
 </associations>
-</Column>
-<Column name="EFFECTIVE_SCN" id="F67B3BB4-CCB6-6476-2F77-E5E52AA48E90">
-<sourceConnName>db11g</sourceConnName>
-<sourceObjSchema>CDC_SUBSCRIPTION</sourceObjSchema>
-<sourceObjName>EFFECTIVE_SCN</sourceObjName>
-<createdBy>stewart</createdBy>
-<createdTime>2012-08-12 02:59:43 UTC</createdTime>
-<ownerDesignName>framework</ownerDesignName>
-<nullsAllowed>true</nullsAllowed>
-<useDomainConstraints>false</useDomainConstraints>
-<use>1</use>
-<logicalDatatype>LOGDT019</logicalDatatype>
-<autoIncrementCycle>false</autoIncrementCycle>
-</Column>
-<Column name="EXPIRATION_SCN" id="3065F59D-51CE-FCF1-BBC3-07A4B6F88E9E">
-<sourceConnName>db11g</sourceConnName>
-<sourceObjSchema>CDC_SUBSCRIPTION</sourceObjSchema>
-<sourceObjName>EXPIRATION_SCN</sourceObjName>
-<createdBy>stewart</createdBy>
-<createdTime>2012-08-12 03:00:10 UTC</createdTime>
-<ownerDesignName>framework</ownerDesignName>
-<nullsAllowed>true</nullsAllowed>
-<useDomainConstraints>false</useDomainConstraints>
-<use>1</use>
-<logicalDatatype>LOGDT019</logicalDatatype>
-<autoIncrementCycle>false</autoIncrementCycle>
 </Column>
 <Column name="CREATED_USER" id="DCFAD354-B509-2C7F-64F4-4A837E427E66">
 <sourceConnName>db11g</sourceConnName>
@@ -171,7 +156,7 @@
 </Column>
 </columns>
 <indexes itemClass="oracle.dbtools.crest.model.design.relational.Index">
-<ind_PK_UK id="B64BFC2C-DC96-420E-704D-E44274F00379" name="CDC_SUB_CONF_PK">
+<ind_PK_UK id="B64BFC2C-DC96-420E-704D-E44274F00379" name="CDC_GROUP_PK">
 <sourceConnName>db11g</sourceConnName>
 <sourceObjSchema>TDREP</sourceObjSchema>
 <sourceObjName>CDC_SUB_CONF_PK</sourceObjName>

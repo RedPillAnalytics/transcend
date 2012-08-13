@@ -1,0 +1,120 @@
+<?xml version = '1.0' encoding = 'UTF-8'?>
+<Table class="oracle.dbtools.crest.model.design.relational.Table" id="50C360EC-90E7-A656-5AE8-2A585ADE4050" directorySegmentName="seg_0" name="CDC_SUBSCRIPTION">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-13 01:12:02 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<pkName>CDC_SUBSCRIPTION_PK</pkName>
+<fonts itemClass="oracle.dbtools.crest.model.design.FontObjectWr">
+<FontObject>
+<foType>Title</foType>
+<fontStyle>1</fontStyle>
+<colorRGB>-16776961</colorRGB>
+</FontObject>
+<FontObject>
+<foType>Column</foType>
+<colorRGB>-16777216</colorRGB>
+</FontObject>
+<FontObject>
+<foType>Datatype</foType>
+<colorRGB>-16744448</colorRGB>
+</FontObject>
+<FontObject>
+<foType>PK Element</foType>
+<colorRGB>-16776961</colorRGB>
+</FontObject>
+<FontObject>
+<foType>FK Element</foType>
+<colorRGB>-16777216</colorRGB>
+</FontObject>
+<FontObject>
+<foType>UK Element</foType>
+<colorRGB>-16776961</colorRGB>
+</FontObject>
+<FontObject>
+<foType>Not Null</foType>
+<colorRGB>-65536</colorRGB>
+</FontObject>
+<FontObject>
+<foType>Key</foType>
+<colorRGB>-16777216</colorRGB>
+</FontObject>
+</fonts>
+<columns itemClass="oracle.dbtools.crest.model.design.relational.Column">
+<Column name="SUB_ID" id="BB0336F9-337C-B900-E478-E37D8D5082CC">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-13 01:12:49 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT019</logicalDatatype>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="SUB_NAME" id="F1D0AFF1-D42A-7DEE-9F92-8BA706EBD533">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-13 01:15:33 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>30</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="GROUP_ID" id="A28E7978-C983-F205-A34E-887FD17E547E">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>CDC_SUBSCRIPTION</sourceObjSchema>
+<sourceObjName>SUB_ID</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-13 01:13:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT019</logicalDatatype>
+<delegate>FF172A9F-36FF-734D-64AE-D0C81F6BC654</delegate>
+<autoIncrementCycle>false</autoIncrementCycle>
+<associations>
+<colAssociation fkAssociation="6568D112-E4FA-9FC4-0FD5-272B2624CAE1" referredColumn="FF172A9F-36FF-734D-64AE-D0C81F6BC654"/>
+</associations>
+</Column>
+<Column name="EFFECTIVE_SCN" id="530FD213-9A0C-E363-7A20-02AF900B5540">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-13 01:14:43 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT019</logicalDatatype>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="EXPIRATION_SCN" id="B608A8BB-E524-0FA9-8A97-A9E5C54A1903">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-13 01:14:57 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT019</logicalDatatype>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+</columns>
+<indexes itemClass="oracle.dbtools.crest.model.design.relational.Index">
+<ind_PK_UK id="D7BF52C9-5D8C-277E-1268-8B3A2723DCEA" name="CDC_SUBSCRIPTION_PK">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-13 01:15:55 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<pk>true</pk>
+<indexState>Primary Constraint</indexState>
+<indexColumnUsage>
+<colUsage columnID="BB0336F9-337C-B900-E478-E37D8D5082CC"/>
+</indexColumnUsage>
+</ind_PK_UK>
+<ind_PK_UK id="8A34D44D-8918-18DE-5BF2-F370EA19C275" name="CDC_SUBSCRIPTION_CDC_GROUP_FK">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-13 01:14:04 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<indexState>Foreign Key</indexState>
+<indexColumnUsage>
+<colUsage columnID="A28E7978-C983-F205-A34E-887FD17E547E"/>
+</indexColumnUsage>
+</ind_PK_UK>
+</indexes>
+</Table>

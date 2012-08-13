@@ -82,7 +82,7 @@
 <dataTypeSize>10</dataTypeSize>
 <autoIncrementCycle>false</autoIncrementCycle>
 </Column>
-<Column name="SUB_ID" id="1AF6D76C-F653-2773-D40F-49746E689620">
+<Column name="GROUP_ID" id="1AF6D76C-F653-2773-D40F-49746E689620">
 <sourceConnName>db11g</sourceConnName>
 <sourceObjSchema>CDC_ENTITY</sourceObjSchema>
 <sourceObjName>SUB_ID</sourceObjName>
