@@ -15,11 +15,22 @@ AS
                 CASE sub_type
                 WHEN 'goldengate' THEN checkpoint_table
                 WHEN 'flashback' THEN dblink_name
-                END sub_source
+                END,
+                group_id,
+                ogg_group_name,
+                effective_scn,
+                expiration_scn
            INTO self.sub_type,
-                self.sub_source
-           FROM cdc_source JOIN cdc_subscription
+                self.source_reference,
+                self.group_id,
+                self.source_group_name,
+                self.effective_scn,
+                self.expiration_scn
+           FROM cdc_source 
+           JOIN cdc_group
                 USING (source_id)
+           JOIN cdc_subscription
+                USING (group_id)
           WHERE lower( sub_name ) = lower( p_name );
       EXCEPTION
          WHEN NO_DATA_FOUND
@@ -58,6 +69,18 @@ AS
       o_ev.clear_app_info;
    
    END extend_window;
+   
+   -- extend the CDC window
+   MEMBER PROCEDURE build_views
+   AS
+      o_ev              evolve_ot               := evolve_ot( p_module => 'extend_window' );
+   BEGIN
+      
+      NULL;
+
+      o_ev.clear_app_info;
+   
+   END build_views;
 
 END;
 /
