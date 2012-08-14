@@ -12,20 +12,17 @@ AS
       BEGIN
          -- load all the feed attributes
          SELECT sub_type,
-                CASE sub_type
-                WHEN 'goldengate' THEN checkpoint_table
-                WHEN 'flashback' THEN dblink_name
-                END,
                 group_id,
-                ogg_group_name,
+                group_name,
+                checkpoint_table,
                 fnd_schema,
                 stg_schema,
                 effective_scn,
                 expiration_scn
            INTO self.sub_type,
-                self.source_reference,
                 self.group_id,
-                self.ogg_group_name,
+                self.group_name,
+                self.checkpoint_table,
                 self.fnd_schema,
                 self.stg_schema,
                 self.effective_scn,
@@ -35,7 +32,8 @@ AS
                 USING (source_id)
            JOIN cdc_subscription
                 USING (group_id)
-          WHERE lower( sub_name ) = lower( p_name );
+          WHERE lower( sub_name ) = lower( p_name )
+            AND sub_type = 'goldengate';
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
@@ -74,18 +72,6 @@ AS
    
    END extend_window;
    
-   -- extend the CDC window
-   MEMBER PROCEDURE build_views
-   AS
-      o_ev              evolve_ot               := evolve_ot( p_module => 'extend_window' );
-   BEGIN
-      
-      NULL;
-
-      o_ev.clear_app_info;
-   
-   END build_views;
-
 END;
 /
 

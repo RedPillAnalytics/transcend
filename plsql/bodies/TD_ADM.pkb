@@ -2264,6 +2264,8 @@ IS
            group_name       VARCHAR2 (30)       NOT NULL ,
            ogg_group_name   VARCHAR2 (8),           
            source_id        NUMBER              NOT NULL ,
+           fnd_schema       VARCHAR2(30),
+           stg_schema       VARCHAR2(30),
            created_user     VARCHAR2 (30)       DEFAULT sys_context('USERENV','SESSION_USER') , 
            created_dt       DATE                DEFAULT SYSDATE , 
            modified_user    VARCHAR2 (30) , 

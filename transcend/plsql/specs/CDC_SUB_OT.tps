@@ -5,6 +5,7 @@ AUTHID CURRENT_USER AS object
   sub_name               VARCHAR2(30),
   sub_type               VARCHAR2(10),
   group_id               NUMBER,
+  group_name             VARCHAR2(30),
   fnd_schema             VARCHAR2(30),
   stg_schema             VARCHAR2(30),
   effective_scn          NUMBER,
@@ -16,5 +17,5 @@ AUTHID CURRENT_USER AS object
 
   MEMBER PROCEDURE extend_window
 )
-NOT FINAL;
+NOT FINAL NOT INSTANTIABLE
 /
