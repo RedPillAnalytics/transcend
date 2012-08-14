@@ -77,6 +77,7 @@ END;
 @../plsql/specs/TD_ADM.pks
 @../plsql/wrapped_bodies/TD_ADM.plb
 
+
 -- now, recompile objects for the specific Transcend application
 
 -- set the current schema to the application schema

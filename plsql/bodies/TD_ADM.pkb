@@ -551,8 +551,6 @@ IS
          EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON COLUMN_CONF TO ' || p_grantee;
 
          EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON COLUMN_TYPE_LIST TO ' || p_grantee;
-
-         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON CDC_GROUP TO ' || p_grantee;
 	 
 	 -- sequence
          EXECUTE IMMEDIATE 'GRANT SELECT ON file_detail_seq TO ' || p_grantee;
@@ -1651,38 +1649,6 @@ IS
 
       -- this will drop all the tables before beginning
       BEGIN
-         EXECUTE IMMEDIATE q'|DROP TABLE cdc_subscription|';
-      EXCEPTION
-         WHEN e_no_tab
-         THEN
-         NULL;
-      END;
-      
-      BEGIN
-         EXECUTE IMMEDIATE q'|DROP TABLE cdc_entity|';
-      EXCEPTION
-         WHEN e_no_tab
-         THEN
-         NULL;
-      END;
-
-      BEGIN
-         EXECUTE IMMEDIATE q'|DROP TABLE cdc_group|';
-      EXCEPTION
-         WHEN e_no_tab
-         THEN
-         NULL;
-      END;
-      
-      BEGIN
-         EXECUTE IMMEDIATE q'|DROP TABLE cdc_source|';
-      EXCEPTION
-         WHEN e_no_tab
-         THEN
-         NULL;
-      END;
-      
-      BEGIN
          EXECUTE IMMEDIATE q'|DROP TABLE column_conf|';
       EXCEPTION
          WHEN e_no_tab
@@ -2228,158 +2194,7 @@ IS
 	   REFERENCES dimension_conf  
 	   ( mapping_name )
 	 )|';
-         
-         -- Transcend CDC schema
-         -- CDC_SOURCE
-         EXECUTE IMMEDIATE q'|CREATE TABLE cdc_source
-	 ( 
-           source_id            NUMBER          NOT NULL, 
-           sub_type             VARCHAR2 (10), 
-           service_name         VARCHAR2 (4000)  NOT NULL, 
-           hostname             VARCHAR2 (4000)  NOT NULL, 
-           port                 NUMBER           NOT NULL, 
-           dblink_name          VARCHAR2 (30),
-           group_name           VARCHAR2 (8),
-           checkpoint_table     VARCHAR2 (61), 
-	   created_user	        VARCHAR2(30)     DEFAULT sys_context('USERENV','SESSION_USER') NOT NULL,
-	   created_dt	        DATE             DEFAULT SYSDATE NOT NULL,
-	   modified_user  	VARCHAR2(30),
-	   modified_dt    	DATE
-	 )|';
-         
-         EXECUTE IMMEDIATE q'|ALTER TABLE cdc_source ADD 
-	 (
-	   CONSTRAINT cdc_source_pk
-	   PRIMARY KEY
-	   ( source_id )
-	   USING INDEX
-	 )|';
-         
-         EXECUTE IMMEDIATE q'|ALTER TABLE cdc_source ADD CONSTRAINT cdc_source_ck1 CHECK ( sub_type in ( 'goldengate','flashback' ) )|';
 
-         -- CDC_GROUP table
-         EXECUTE IMMEDIATE q'|CREATE TABLE cdc_group
-	 (
-           group_id         NUMBER              NOT NULL , 
-           group_name       VARCHAR2 (30)       NOT NULL ,
-           ogg_group_name   VARCHAR2 (8),           
-           source_id        NUMBER              NOT NULL ,
-           fnd_schema       VARCHAR2(30),
-           stg_schema       VARCHAR2(30),
-           created_user     VARCHAR2 (30)       DEFAULT sys_context('USERENV','SESSION_USER') , 
-           created_dt       DATE                DEFAULT SYSDATE , 
-           modified_user    VARCHAR2 (30) , 
-           modified_dt      DATE 	
-         )|';
-
-         EXECUTE IMMEDIATE q'|ALTER TABLE cdc_group ADD 
-	 (
-	   CONSTRAINT cdc_group_pk
-	   PRIMARY KEY
-	   ( group_id )
-	   USING INDEX
-	 )|';
-         
-         EXECUTE IMMEDIATE q'|ALTER TABLE cdc_group ADD 
-	 (
-	   CONSTRAINT cdc_group_uk1
-	   unique
-	   ( group_name )
-	   USING INDEX
-	 )|';
-
-         EXECUTE IMMEDIATE q'|ALTER TABLE cdc_group ADD 
-	 (
-	   CONSTRAINT cdc_group_fk1
-	   FOREIGN KEY ( source_id )
-	   REFERENCES cdc_source
-	   ( source_id )
-	 )|';
-         
-         -- CDC_ENTITY table
-         EXECUTE IMMEDIATE q'|CREATE TABLE cdc_entity
-	 ( 
-           entity_id        NUMBER              NOT NULL , 
-           table_name       VARCHAR2 (30)       NOT NULL , 
-           schema_name      VARCHAR2 (10)       NOT NULL , 
-           group_id         NUMBER              NOT NULL , 
-           natural_key      VARCHAR2 (4000)     NOT NULL , 
-           scn_column       VARCHAR2 (30)       NOT NULL , 
-           row_column       VARCHAR2 (30)       NOT NULL , 
-           created_user     VARCHAR2 (30)       DEFAULT sys_context('USERENV','SESSION_USER') , 
-           created_dt       DATE                DEFAULT SYSDATE , 
-           modified_user    VARCHAR2 (30) , 
-           modified_dt      DATE
-         )|';
-
-         EXECUTE IMMEDIATE q'|ALTER TABLE cdc_entity ADD 
-	 (
-	   CONSTRAINT cdc_entity_pk
-	   PRIMARY KEY
-	   ( 
-             entity_id 
-           )
-	   USING INDEX
-	 )|';
-         
-         EXECUTE IMMEDIATE q'|ALTER TABLE cdc_entity ADD 
-	 (
-	   CONSTRAINT cdc_entity_uk1
-	   unique
-           ( 
-             table_name,
-             schema_name, 
-             group_id 
-           ) 
-           USING INDEX
-	 )|';
-
-         EXECUTE IMMEDIATE q'|ALTER TABLE cdc_entity ADD 
-	 (
-	   CONSTRAINT cdc_entity_fk1
-	   FOREIGN KEY ( group_id )
-	   REFERENCES cdc_group
-	   ( group_id )
-	 )|';
-
-         -- CDC_SUBSCRIPTION table
-         EXECUTE IMMEDIATE q'|CREATE TABLE cdc_subscription
-	 (
-           sub_id           NUMBER              NOT NULL , 
-           sub_name         VARCHAR2 (30)       NOT NULL ,
-           group_id         NUMBER              NOT NULL , 
-           effective_scn    NUMBER , 
-           expiration_scn   NUMBER , 
-           created_user     VARCHAR2 (30)       DEFAULT sys_context('USERENV','SESSION_USER') , 
-           created_dt       DATE                DEFAULT SYSDATE , 
-           modified_user    VARCHAR2 (30) , 
-           modified_dt      DATE 	
-         )|';
-
-         EXECUTE IMMEDIATE q'|ALTER TABLE cdc_subscription ADD 
-	 (
-	   CONSTRAINT cdc_subscription_pk
-	   PRIMARY KEY
-	   ( sub_id )
-	   USING INDEX
-	 )|';
-
-         EXECUTE IMMEDIATE q'|ALTER TABLE cdc_subscription ADD 
-	 (
-	   CONSTRAINT cdc_subscription_fk1
-	   FOREIGN KEY ( group_id )
-	   REFERENCES cdc_group
-	   ( group_id )
-	 )|';
-
-         EXECUTE IMMEDIATE q'|ALTER TABLE cdc_subscription ADD 
-	 (
-	   CONSTRAINT cdc_subscription_uk1
-	   UNIQUE
-	   ( sub_name )
-	   USING INDEX
-	 )|';
-         
 	 -- grant select privileges to the select role
 	 grant_transcend_rep_privs( p_grantee=> p_schema||'_sel', p_mode => 'select');
 
@@ -2809,22 +2624,6 @@ IS
 
       BEGIN
          EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.COLUMN_CONF for ' || p_schema || '.COLUMN_CONF';
-      EXCEPTION
-         WHEN e_same_name
-         THEN
-            NULL;
-      END;
-      
-      BEGIN
-         EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.CDC_GROUP for ' || p_schema || '.CDC_GROUP';
-      EXCEPTION
-         WHEN e_same_name
-         THEN
-            NULL;
-      END;
-      
-      BEGIN
-         EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.CDC_ENTITY for ' || p_schema || '.CDC_ENTITY';
       EXCEPTION
          WHEN e_same_name
          THEN

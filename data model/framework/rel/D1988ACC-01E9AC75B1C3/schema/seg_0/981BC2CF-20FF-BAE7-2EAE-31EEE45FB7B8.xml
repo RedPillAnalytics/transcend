@@ -1,6 +1,0 @@
-<?xml version = '1.0' encoding = 'UTF-8'?>
-<SchemaObject class="oracle.dbtools.crest.model.design.relational.SchemaObject" name="TDREP" id="981BC2CF-20FF-BAE7-2EAE-31EEE45FB7B8" directorySegmentName="seg_0">
-<createdBy>stewart</createdBy>
-<createdTime>2012-08-11 15:47:46 UTC</createdTime>
-<ownerDesignName>framework</ownerDesignName>
-</SchemaObject>

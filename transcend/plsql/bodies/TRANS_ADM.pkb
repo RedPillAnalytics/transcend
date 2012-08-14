@@ -207,11 +207,6 @@ IS
       
       evolve_adm.set_error_conf( p_name => 'no_matching columns', 
                                  p_message => 'No matching columns exist between source and target tables' );
-      
-      evolve_adm.set_error_conf
-      ( p_name         => 'no_cdc_subscription',
-        p_message      => 'The specified subscription does not exist'
-      );
 
    END set_default_configs;
 

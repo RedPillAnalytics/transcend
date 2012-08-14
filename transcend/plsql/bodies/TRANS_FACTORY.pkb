@@ -142,50 +142,6 @@ IS
          o_ev.clear_app_info;
          RAISE;
    END get_file_detail_ot;
-   
-   FUNCTION get_cdc_sub_ot
-      (
-        p_name      cdc_subscription.sub_name%type
-      )
-      RETURN cdc_sub_ot
-   IS
-      l_sub_type    cdc_source.sub_type%type;
-      -- base object class for inheritance
-      o_sub         cdc_sub_ot;
-      -- inherited types
-      o_ogg         cdc_ogg_sub_ot;
-      -- and then the basic Evolve instrumentation object
-      o_ev          evolve_ot := evolve_ot( p_module => 'get_cdc_sub_ot' );
-   BEGIN
-      
-      SELECT sub_type
-        INTO l_sub_type
-        FROM cdc_source
-        JOIN cdc_group
-             USING (source_id)
-        JOIN cdc_subscription
-             USING (group_id)
-       WHERE lower( sub_name ) = lower( p_name );
-      
-      -- instantiate an object based on sub_type
-      -- polymorph the cdc_sub_ot based on the sub_type
-      CASE l_sub_type
-      WHEN 'goldengate'
-      THEN
-         o_ogg := cdc_ogg_sub_ot( p_name => p_name );
-         o_sub := o_ogg;
-      END CASE;
-
-      -- now simply return the type
-      o_ev.clear_app_info;
-      RETURN o_sub;
-   EXCEPTION
-      WHEN OTHERS
-      THEN
-         evolve.log_err;
-         o_ev.clear_app_info;
-         RAISE;
-   END get_cdc_sub_ot;
 
 END trans_factory;
 /
