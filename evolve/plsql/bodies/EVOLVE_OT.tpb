@@ -99,12 +99,14 @@ AS
             FROM parameter_conf
             WHERE LOWER( module ) = td_inst.module OR module = evolve_adm.all_modules )
       LOOP
-         IF evolve.is_debugmode
+
+         evolve.log_msg( 'Session SQL: ' || c_params.DDL, 3 );
+         
+         IF NOT evolve.is_debugmode
          THEN
-            evolve.log_msg( 'Session SQL: ' || c_params.DDL );
-         ELSE
             EXECUTE IMMEDIATE ( c_params.DDL );
          END IF;
+            
       END LOOP;
 
       -- now, set the starttime
