@@ -45,12 +45,16 @@ END;
 /
 
 UPDATE applications
-   SET version = 2.7
+   SET version = 2.71
  WHERE application_name = upper('&app_schema');
 
 UPDATE repositories
-   SET version = 2.7
- WHERE repository_name = upper('&app_schema');
+   SET version = 2.71
+ WHERE repository_name = upper('&rep_schema');
+
+UPDATE users
+   SET version = 2.71
+ WHERE repository_name = upper('&rep_schema');
 
 DECLARE
    e_no_pk   EXCEPTION;
@@ -101,6 +105,7 @@ END;
 -- evolve bodies
 @../evolve/plsql/wrapped_bodies/TD_UTILS.plb
 @../evolve/plsql/wrapped_bodies/EVOLVE.plb
+@../evolve/plsql/wrapped_bodies/EVOLVE_OT.plb
 
 -- transcend specs
 @../transcend/plsql/specs/TRANS_ETL.pks

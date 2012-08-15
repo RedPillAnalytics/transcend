@@ -374,7 +374,7 @@ AS
    
    MEMBER PROCEDURE start_map
    AS
-      o_ev   evolve_ot := evolve_ot( p_module => 'mapping '||SELF.mapping_name, p_action => 'start mapping' );
+      o_ev   evolve_ot := evolve_ot( p_module => SELF.mapping_name, p_action => 'start mapping' );
    BEGIN
       
       evolve.log_msg( 'Pre-mapping processes beginning' );
@@ -388,7 +388,7 @@ AS
 
    MEMBER PROCEDURE end_map
    AS
-   o_ev   evolve_ot := evolve_ot( p_module => 'mapping '||SELF.mapping_name, p_action=>'end mapping' );
+   o_ev   evolve_ot := evolve_ot( p_module => SELF.mapping_name, p_action=>'end mapping' );
    BEGIN
       evolve.log_msg( 'Post-mapping processes beginning' );
 
