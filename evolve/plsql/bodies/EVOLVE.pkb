@@ -27,11 +27,19 @@ AS
       RETURN v$database.current_scn%type
    AS
       l_scn     v$database.current_scn%type;
+      l_sql     VARCHAR2(4000);
    BEGIN
+      
+      l_sql     := 'select current_scn from v$database';
+      
+      BEGIN
 
-      SELECT current_scn
-        INTO l_scn
-        FROM v$database;
+         EXECUTE IMMEDIATE l_sql
+         INTO l_scn;
+
+      EXCEPTION
+         WHEN others THEN NULL;
+      END;      
       
       RETURN l_scn;
       
@@ -154,26 +162,12 @@ AS
       l_whence   VARCHAR2( 1024 );
       l_code     NUMBER               := SQLCODE;
       l_msg      log_table.msg%TYPE   := SQLERRM;
-      l_scn      NUMBER;
+      l_scn      NUMBER               := get_scn;
       e_no_tab   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_tab, -942 );
    BEGIN
       -- find out what called me
       l_whence := whence;
-
-      -- using invokers rights model
-      -- some users won't have access to see the SCN
-      -- need to except this just in case
-      -- if cannot see the scn, then use a 0
-      BEGIN
-         SELECT current_scn
-           INTO l_scn
-           FROM v$database;
-      EXCEPTION
-         WHEN others
-         THEN
-            l_scn := 0;
-      END;
 
       -- check to see the logging level to see if the message should be written
       IF td_inst.logging_level >= 1

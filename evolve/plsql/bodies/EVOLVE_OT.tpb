@@ -12,6 +12,9 @@ AS
       l_logging_level   NUMBER;
       l_registration    VARCHAR2( 30 );
       l_debug_level     NUMBER;
+      l_parm_value      v$parameter.value%type;
+      l_scn             v$database.current_scn%type;
+      l_sql             VARCHAR2(4000);
    BEGIN
       -- read in all the previous values
       SELF.read_prev_info;
@@ -89,22 +92,51 @@ AS
       -- examples: parallel dml, resumable
       -- do this by setting the value for that parameter as either "enabled" or "disabled"
       FOR c_params IN
-         ( SELECT CASE
-                     WHEN REGEXP_LIKE( name, 'enable', 'i' )
-                        THEN 'alter session enable '||name
-                     WHEN REGEXP_LIKE( name, 'disable', 'i' )
-                        THEN 'alter session disable '||name
-                     ELSE 'alter session set ' || name || '=' || value
-                  END DDL
-            FROM parameter_conf
-            WHERE LOWER( module ) = td_inst.module OR module = evolve_adm.all_modules )
+         ( SELECT CASE parameter_type
+                  WHEN 'implicit' THEN 'alter session '||value||' '||name
+                  WHEN 'explicit' THEN 'alter session set '||name||' = '||value
+                  END ddl,
+                  parameter_type,
+                  name,
+                  value 
+             FROM 
+                  ( SELECT CASE 
+                           WHEN lower(value) IN ('enable','disable') THEN 'implicit'
+                           ELSE 'explicit'
+                           END parameter_type,
+                           value,
+                           name
+                      FROM parameter_conf
+                     WHERE lower( module ) IN (td_inst.module,evolve_adm.all_modules)
+                  )
+         )
       LOOP
 
-         evolve.log_msg( 'Session SQL: ' || c_params.DDL, 3 );
+         evolve.log_msg( 'Session SQL: ' || c_params.DDL, 4 );
          
          IF NOT evolve.is_debugmode
          THEN
             EXECUTE IMMEDIATE ( c_params.DDL );
+         END IF;
+         
+         IF c_params.parameter_type = 'explicit'
+         THEN
+
+            l_sql := 'select value from v$parameter where lower(name) = lower('''||c_params.name||''')';
+      
+            BEGIN
+               
+               evolve.log_msg( 'SQL for pulling session parameter: '||l_sql, 5 );
+               
+               EXECUTE IMMEDIATE l_sql
+               INTO l_parm_value;
+               
+            EXCEPTION
+               WHEN others THEN NULL;
+
+            END;
+            
+            evolve.log_msg( 'Value for session parameter '||c_params.name||' (only visible with SELECT on v$parameter): '||l_parm_value, 4 );
          END IF;
             
       END LOOP;
