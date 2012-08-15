@@ -50,7 +50,11 @@ UPDATE applications
 
 UPDATE repositories
    SET version = 2.71
- WHERE repository_name = upper('&app_schema');
+ WHERE repository_name = upper('&rep_schema');
+
+UPDATE users
+   SET version = 2.71
+ WHERE repository_name = upper('&rep_schema');
 
 DECLARE
    e_no_pk   EXCEPTION;
