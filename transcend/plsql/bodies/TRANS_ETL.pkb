@@ -1,7 +1,7 @@
 CREATE OR REPLACE PACKAGE BODY trans_etl
 AS
    PROCEDURE start_mapping(
-      p_mapping    VARCHAR2 DEFAULT SYS_CONTEXT( 'USERENV', 'ACTION' ),
+      p_mapping    VARCHAR2 DEFAULT SYS_CONTEXT( 'USERENV', 'MODULE' ),
       p_batch_id   NUMBER DEFAULT NULL
    )
    AS
@@ -22,7 +22,7 @@ AS
    END start_mapping;
 
    PROCEDURE end_mapping(
-      p_mapping    VARCHAR2 DEFAULT SYS_CONTEXT( 'USERENV', 'ACTION' ),
+      p_mapping    VARCHAR2 DEFAULT SYS_CONTEXT( 'USERENV', 'MODULE' ),
       p_batch_id   NUMBER DEFAULT NULL,
       p_results    NUMBER DEFAULT NULL
    )
