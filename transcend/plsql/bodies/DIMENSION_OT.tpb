@@ -378,7 +378,7 @@ AS
                 ON mc.table_owner = atc.owner AND mc.table_name = atc.table_name AND cc.column_name = atc.column_name
           WHERE mapping_name = SELF.mapping_name
             AND column_type = 'scd type 2'
-            AND data_type = 'DATE';
+            AND data_type IN ( 'DATE', 'TIMESTAMP' );
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
@@ -423,7 +423,7 @@ AS
                 ON mc.table_owner = atc.owner AND mc.table_name = atc.table_name AND cc.column_name = atc.column_name
           WHERE mapping_name = SELF.mapping_name
             AND column_type = 'scd type 2'
-            AND data_type NOT IN( 'DATE', 'NUMBER','FLOAT' );
+            AND data_type NOT IN( 'DATE', 'TIMESTAMP', 'NUMBER','FLOAT' );
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
