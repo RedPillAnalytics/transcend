@@ -378,7 +378,8 @@ AS
                 ON mc.table_owner = atc.owner AND mc.table_name = atc.table_name AND cc.column_name = atc.column_name
           WHERE mapping_name = SELF.mapping_name
             AND column_type = 'scd type 2'
-            AND data_type IN ( 'DATE', 'TIMESTAMP' );
+            AND ( data_type = 'DATE'
+                  OR data_type LIKE 'TIMESTAMP%') ;
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
@@ -423,7 +424,9 @@ AS
                 ON mc.table_owner = atc.owner AND mc.table_name = atc.table_name AND cc.column_name = atc.column_name
           WHERE mapping_name = SELF.mapping_name
             AND column_type = 'scd type 2'
-            AND data_type NOT IN( 'DATE', 'TIMESTAMP', 'NUMBER','FLOAT' );
+            AND ( data_type NOT IN( 'DATE', 'NUMBER','FLOAT' )
+                  and data_type NOT LIKE 'TIMESTAMP%' );
+
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
@@ -516,13 +519,13 @@ AS
          || REGEXP_REPLACE( l_scd2_dates,
                             '(\w+)(,|$)',
                                'when nvl(\1,'''
-                            || l_date_nvl
+                            || to_char( l_date_nvl, 'mm/dd/yyyy' )
                             || ''') <> nvl(lag(\1) over (partition by '
                             || SELF.natural_key_list
                             || ' order by '
                             || SELF.effect_dt_col
                             || '),'''
-                            || l_date_nvl
+                            || to_char( l_date_nvl, 'mm/dd/yyyy' )
                             || ''') then ''Y'' '
                           )
          || ' else ''N'' end include';
