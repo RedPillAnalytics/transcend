@@ -518,14 +518,14 @@ AS
                           )
          || REGEXP_REPLACE( l_scd2_dates,
                             '(\w+)(,|$)',
-                               'when nvl(\1,'''
-                            || to_char( l_date_nvl, 'mm/dd/yyyy' )
-                            || ''') <> nvl(lag(\1) over (partition by '
+                            'when nvl(cast(\1 as date),'''
+                            || l_date_nvl
+                            || ''') <> nvl(lag(cast(\1 as date)) over (partition by '
                             || SELF.natural_key_list
                             || ' order by '
                             || SELF.effect_dt_col
                             || '),'''
-                            || to_char( l_date_nvl, 'mm/dd/yyyy' )
+                            || l_date_nvl
                             || ''') then ''Y'' '
                           )
          || ' else ''N'' end include';

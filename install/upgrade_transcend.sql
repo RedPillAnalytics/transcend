@@ -45,15 +45,15 @@ END;
 /
 
 UPDATE applications
-   SET version = 2.73
+   SET version = 2.74
  WHERE application_name = upper('&app_schema');
 
 UPDATE repositories
-   SET version = 2.73
+   SET version = 2.74
  WHERE repository_name = upper('&rep_schema');
 
 UPDATE users
-   SET version = 2.73
+   SET version = 2.74
  WHERE repository_name = upper('&rep_schema');
 
 DECLARE
