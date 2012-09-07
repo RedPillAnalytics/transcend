@@ -399,9 +399,11 @@ AS
 
    -- checks things about a table depending on the parameters passed
    -- raises an exception if the specified things are not true
-   PROCEDURE check_table(
+   PROCEDURE check_table
+   (
       p_owner         VARCHAR2,
       p_table         VARCHAR2,
+      p_dblink        VARCHAR2 DEFAULT NULL,
       p_partname      VARCHAR2 DEFAULT NULL,
       p_partitioned   VARCHAR2 DEFAULT NULL,
       p_iot           VARCHAR2 DEFAULT NULL,
@@ -416,6 +418,7 @@ AS
       l_iot              VARCHAR2( 3 );
       l_compressed       VARCHAR2( 3 );
       l_partition_name   all_tab_partitions.partition_name%TYPE;
+      l_sql              VARCHAR2(4000);
    BEGIN
 
       -- if this is a partitioned table
@@ -423,37 +426,42 @@ AS
          -- find out if it's partitioned or subpartitioned
       THEN
          
-         l_part_type := get_tab_part_type( p_owner, p_table, p_partname );
+         l_part_type := get_tab_part_type( p_owner, p_table, p_partname, p_dblink );
+         
+         evolve.log_variable( 'l_part_type', l_part_type );
          
       END IF;
          
       -- now get compression, partitioning and iot information
+      l_sql := 
+         q'{SELECT CASE WHEN compression = 'DISABLED' THEN 'no' WHEN compression = 'N/A' THEN 'no' WHEN compression IS NULL THEN 'no' ELSE 'yes' END, }' 
+      || q'{LOWER( partitioned ) partitioned, CASE iot_type WHEN 'IOT' THEN 'yes' ELSE 'no' END iot }'
+      || q'{FROM all_tables}'
+      || CASE WHEN p_dblink IS NOT NULL THEN '@'||p_dblink ELSE NULL END 
+      || q'{ WHERE owner = UPPER( '}'
+      || p_owner
+      || q'{' ) }' 
+      || q'{AND table_name = UPPER( '}'
+      || p_table
+      || q'{' )}';
+         
+      evolve.log_variable( 'l_sql',l_sql);
+
       BEGIN
-         SELECT CASE
-                   WHEN compression = 'DISABLED'
-                      THEN 'no'
-                   WHEN compression = 'N/A'
-                      THEN 'no'
-                   WHEN compression IS NULL
-                      THEN 'no'
-                   ELSE 'yes'
-                END,
-                LOWER( partitioned ) partitioned, CASE iot_type
-                   WHEN 'IOT'
-                      THEN 'yes'
-                   ELSE 'no'
-                END iot
-           INTO l_compressed,
-                l_partitioned, l_iot
-           FROM all_tables
-          WHERE owner = UPPER( p_owner ) AND table_name = UPPER( p_table );
-      EXCEPTION
-         WHEN NO_DATA_FOUND
-         THEN
+         EXECUTE IMMEDIATE l_sql
+         INTO l_compressed,
+              l_partitioned,
+              l_iot;
+      EXCEPTION 
+         WHEN no_data_found
+            THEN
             evolve.raise_err( 'no_tab', l_tab_name );
       END;
 
-      -- now just work through the gathered information and raise the appropriate exceptions.
+      evolve.log_variable( 'l_compressed',l_compressed);
+      evolve.log_variable( 'l_partitioned',l_partitioned);
+      evolve.log_variable( 'l_iot',l_iot);
+      
       IF l_partitioned = 'yes' AND p_partname IS NULL AND p_compressed IS NOT NULL
       THEN
          evolve.raise_err( 'parms_not_compatible',
@@ -469,47 +477,55 @@ AS
          
          IF l_part_type = 'part'
          THEN
+            
+            l_sql := 
+               q'{SELECT CASE WHEN compression = 'DISABLED' THEN 'no' WHEN compression = 'N/A' THEN 'no' WHEN compression IS NULL THEN 'no' ELSE 'yes' END }'
+            || q'{ FROM all_tab_partitions}'
+            || CASE WHEN p_dblink IS NOT NULL THEN '@'||p_dblink ELSE NULL END
+            || q'{ WHERE table_owner = UPPER( '}'
+            || p_owner 
+            || q'{' ) AND table_name = UPPER( '}'
+            || p_table 
+            || q'{' ) AND partition_name = UPPER( '}'
+            || p_partname 
+            || q'{' )}';
+
+            evolve.log_variable( 'l_sql', l_sql );
 
             BEGIN
-               SELECT CASE
-                      WHEN compression = 'DISABLED'
-                      THEN 'no'
-                      WHEN compression = 'N/A'
-                      THEN 'no'
-                      WHEN compression IS NULL
-                      THEN 'no'
-                      ELSE 'yes'
-                      END
-                 INTO l_compressed
-                 FROM all_tab_partitions
-                WHERE table_owner = UPPER( p_owner )
-                  AND table_name = UPPER( p_table )
-                  AND partition_name = UPPER( p_partname );
+
+               EXECUTE IMMEDIATE l_sql
+               INTO l_compressed;
             EXCEPTION
                WHEN NO_DATA_FOUND
                   THEN
                   evolve.raise_err( 'no_part', l_part_name );
             END;
-               
+          
+            evolve.log_variable( 'l_compressed', l_compressed );
+            
          ELSIF l_part_type = 'subpart'
          THEN
+            
+            l_sql :=
+               q'{SELECT CASE WHEN compression = 'DISABLED' THEN 'no' WHEN compression = 'N/A' THEN 'no' WHEN compression IS NULL THEN 'no' ELSE 'yes' END }'
+            || q'{ FROM all_tab_subpartitions}'
+            || CASE WHEN p_dblink IS NOT NULL THEN '@'||p_dblink ELSE NULL END
+            || q'{ WHERE table_owner = UPPER( '}'
+            || p_owner 
+            || q'{' ) AND table_name = UPPER( '}'
+            || p_table 
+            || q'{' ) AND subpartition_name = UPPER( '}'
+            || p_partname 
+            || q'{' )}';
+            
+            evolve.log_variable( 'l_sql', l_sql );
 
            BEGIN
+         
+               EXECUTE IMMEDIATE l_sql
+               INTO l_compressed;
      
-               SELECT CASE
-                      WHEN compression = 'DISABLED'
-                      THEN 'no'
-                      WHEN compression = 'N/A'
-                      THEN 'no'
-                      WHEN compression IS NULL
-                      THEN 'no'
-                      ELSE 'yes'
-                      END
-                 INTO l_compressed
-                 FROM all_tab_subpartitions
-                WHERE table_owner = UPPER( p_owner )
-                  AND table_name = UPPER( p_table )
-                  AND subpartition_name = UPPER( p_partname );
             EXCEPTION
                WHEN NO_DATA_FOUND
                   THEN
@@ -706,14 +722,31 @@ AS
    -- checks things about an object depending on the parameters passed
    -- raises an exception if the specified things are not true
    PROCEDURE check_object
-      ( p_owner        VARCHAR2, 
+      ( 
+        p_owner        VARCHAR2, 
         p_object       VARCHAR2,
-        p_object_type  VARCHAR2 DEFAULT NULL 
+        p_object_type  VARCHAR2 DEFAULT NULL,
+        p_dblink       VARCHAR2 DEFAULT NULL  
       )
    AS
       l_obj_name      VARCHAR2( 61 )                 := UPPER( p_owner ) || '.' || UPPER( p_object );
       l_object_name   all_objects.object_name%TYPE;
+      l_sql           VARCHAR2(4000);
    BEGIN
+      
+      l_sql :=
+         q'{SELECT DISTINCT object_name FROM all_objects}'
+      || CASE WHEN p_dblink IS NOT NULL THEN '@'||p_dblink ELSE NULL END
+      || q'{ WHERE owner = UPPER( '}'
+      || p_owner
+      || q'{' ) AND object_name = UPPER( '}'
+      || p_object
+      || q'{' ) AND REGEXP_LIKE( object_type, NVL( '}'
+      || p_object_type
+      || q'{', '.' ), 'i' )}';
+
+      evolve.log_variable( 'l_sql', l_sql );
+            
       BEGIN
          SELECT DISTINCT object_name
            INTO l_object_name
@@ -942,31 +975,58 @@ AS
    END object_exists;
 
    -- returns 'part' or 'subpart' depending on the partition type
-   FUNCTION get_tab_part_type( p_owner VARCHAR2, p_table VARCHAR2, p_partname VARCHAR2 DEFAULT NULL )
+   FUNCTION get_tab_part_type
+      ( 
+        p_owner     VARCHAR2, 
+        p_table     VARCHAR2,
+        p_partname  VARCHAR2 DEFAULT NULL, 
+        p_dblink    VARCHAR2 DEFAULT NULL
+      )
       RETURN VARCHAR2
    AS
-      l_num     NUMBER;
+      l_num        NUMBER;
+      l_sql        VARCHAR2(4000);
       l_obj_type   all_objects.object_type%TYPE;
    BEGIN
       
       IF p_partname IS NULL
       THEN
-
-         SELECT count(*)
-           INTO l_num
-           FROM all_tab_subpartitions
-          WHERE table_owner = UPPER( p_owner ) AND table_name = UPPER( p_table );
          
+         l_sql :=
+            q'{SELECT count(*) FROM all_tab_subpartitions}'
+         || CASE WHEN p_dblink IS NOT NULL THEN '@'||p_dblink ELSE NULL END
+         || q'{ WHERE table_owner = UPPER( '}'
+         || p_owner
+         || q'{' ) AND table_name = UPPER( '}'
+         || p_table
+         || q'{' )}';
+
+         evolve.log_variable( 'l_sql', l_sql );
+
+         EXECUTE IMMEDIATE l_sql
+         INTO l_num;
+
+         evolve.log_variable( 'l_num', l_num );
+
          IF l_num > 0
          THEN
             RETURN 'subpart';
          END IF;
-         
-         SELECT count(*)
-           INTO l_num
-           FROM all_tab_partitions
-          WHERE table_owner = UPPER( p_owner ) AND table_name = UPPER( p_table );
-         
+
+         l_sql :=
+            q'{SELECT count(*) FROM all_tab_partitions}'
+         || CASE WHEN p_dblink IS NOT NULL THEN '@'||p_dblink ELSE NULL END
+         || q'{ WHERE table_owner = UPPER( '}'
+         || p_owner
+         || q'{' ) AND table_name = UPPER( '}'
+         || p_table
+         || q'{' )}';
+
+         evolve.log_variable( 'l_sql', l_sql );
+
+         EXECUTE IMMEDIATE l_sql
+         INTO l_num;
+                  
          IF l_num > 0
          THEN
             RETURN 'part';
@@ -975,32 +1035,45 @@ AS
          END IF;
          
       ELSE
-         
-         BEGIN
-            SELECT CASE 
-                   WHEN object_type LIKE '% SUBPARTITION'
-                   THEN 'subpart'
-                   WHEN object_type LIKE '% PARTITION'
-                   THEN 'part'
-                   ELSE 'normal' END object_type
-              INTO l_obj_type
-              FROM all_objects
-             WHERE owner = UPPER( p_owner ) AND object_name = UPPER( p_table )
-               AND subobject_name = UPPER( p_partname );
 
-             RETURN l_obj_type;
-          EXCEPTION
-                   WHEN NO_DATA_FOUND
-                      THEN
-                      RETURN NULL;
-          END;
+         l_sql :=
+               q'{SELECT CASE WHEN object_type LIKE '% SUBPARTITION' THEN 'subpart' WHEN object_type LIKE '% PARTITION' THEN 'part' ELSE 'normal' END object_type }'
+            || q'{ FROM all_objects}'
+            || CASE WHEN p_dblink IS NOT NULL THEN '@'||p_dblink ELSE NULL END
+            || q'{ WHERE owner = UPPER( '}'
+            || p_owner
+            || q'{' ) AND object_name = UPPER( '}'
+            || p_table
+            || q'{' ) AND subobject_name = UPPER( '}'
+            || p_partname
+            || q'{' )}';
+
+        evolve.log_variable( 'l_sql', l_sql );
+               
+         BEGIN
+
+            EXECUTE IMMEDIATE l_sql
+            INTO l_obj_type;
+
+            RETURN l_obj_type;
+         
+         EXCEPTION
+            WHEN NO_DATA_FOUND
+            THEN
+               RETURN NULL;
+         END;
 
        END IF;
 
    END get_tab_part_type;
 
    -- returns the partition name for a given subpartition name
-   FUNCTION get_part_for_subpart( p_owner VARCHAR2, p_segment VARCHAR2, p_subpart VARCHAR2, p_segment_type VARCHAR2 )
+   FUNCTION get_part_for_subpart
+      ( p_owner VARCHAR2, 
+        p_segment VARCHAR2, 
+        p_subpart VARCHAR2, 
+        p_segment_type VARCHAR2 
+      )
       RETURN VARCHAR2
    AS
       l_part   all_ind_subpartitions.partition_name%TYPE;
@@ -1034,32 +1107,68 @@ AS
       THEN
          RETURN NULL;
    END get_part_for_subpart;
-
-   -- returns the partition name for a given subpartition name
+   
+   -- returns an INTERSECT between the columns in two different tables
+   -- used to ensure all columns from both tables are in a list
    FUNCTION get_column_list
-      ( p_owner         VARCHAR2, 
+      ( 
+        p_owner         VARCHAR2, 
         p_table         VARCHAR2, 
         p_source_owner  VARCHAR2 DEFAULT NULL, 
-        p_source_table  VARCHAR2 DEFAULT NULL 
+        p_source_table  VARCHAR2 DEFAULT NULL,
+        p_set_oper      VARCHAR2 DEFAULT 'intersect',
+        p_dblink        VARCHAR2 DEFAULT NULL 
       )
       RETURN VARCHAR2
    AS
+      l_sql         VARCHAR2(4000);
       l_collist     VARCHAR2(4000);
    BEGIN
       
-      SELECT listagg( column_name, ',') within GROUP ( ORDER BY column_name )
-        INTO l_collist
-        FROM (
-               SELECT column_name
-                 FROM all_tab_columns
-                WHERE table_name = upper( p_table )
-                  AND owner = upper( p_owner )
-                      INTERSECT
-               SELECT column_name
-                 FROM all_tab_columns
-                WHERE table_name = upper( p_source_table )
-                  AND owner = upper( p_source_owner ) 
-             );
+      -- find the least-restrictive set of columns in common
+      -- supports a single table or two tables
+      -- also supports the inclusive of a db_link
+      l_sql :=    q'{SELECT listagg( column_name, ', ') }'
+               || q'{within GROUP ( ORDER BY column_id ) }'
+               || chr(10)
+               || 'FROM ('
+               || chr(10)
+               || 'SELECT column_name, column_id '
+               || chr(10)
+               || 'FROM all_tab_columns'
+               || CASE WHEN p_dblink IS NOT NULL AND p_source_owner IS null THEN '@'||p_dblink ELSE NULL END
+               || chr(10)
+               || 'WHERE table_name = '''
+               || upper( p_table ) 
+               || ''''
+               || chr(10)
+               || 'AND owner = '''
+               || upper( p_owner ) 
+               || ''''
+               || chr(10)
+               || CASE WHEN p_source_owner IS NULL THEN NULL ELSE
+                  p_set_oper
+               || chr(10)
+               || 'SELECT column_name, column_id '
+               || chr(10)
+               || 'FROM all_tab_columns'
+               || CASE WHEN p_dblink IS NOT NULL THEN '@'||p_dblink ELSE NULL END
+               || chr(10)
+               || 'WHERE table_name = '''
+               || upper( p_source_table ) 
+               || ''''
+               || chr(10)
+               || 'AND owner = '''
+               || upper( p_source_owner ) 
+               || '''' END
+               || ' )';
+               
+     evolve.log_variable( 'l_sql', l_sql );         
+         
+     EXECUTE IMMEDIATE l_sql
+               INTO l_collist;
+               
+     l_collist := lower( l_collist );
 
       RETURN l_collist;
    EXCEPTION
@@ -1168,7 +1277,7 @@ AS
       o_ev            evolve_ot        := evolve_ot( p_module => 'td_utils.extract_object' );
    BEGIN
       -- check that the source object exists and is something we can select from
-      td_utils.check_object( p_owner => p_owner, p_object => p_object, p_object_type => 'table$|view' );
+      check_object( p_owner => p_owner, p_object => p_object, p_object_type => 'table$|view' );
       l_head_sql :=
             'select listagg(column_name,'''
          || p_delimiter

@@ -87,9 +87,11 @@ AS
    )
       RETURN NUMBER;
 
-   PROCEDURE check_table(
+   PROCEDURE check_table
+   (
       p_owner         VARCHAR2,
       p_table         VARCHAR2,
+      p_dblink        VARCHAR2 DEFAULT NULL,
       p_partname      VARCHAR2 DEFAULT NULL,
       p_partitioned   VARCHAR2 DEFAULT NULL,
       p_iot           VARCHAR2 DEFAULT NULL,
@@ -109,7 +111,13 @@ AS
 
    PROCEDURE check_column( p_owner VARCHAR2, p_table VARCHAR2, p_column VARCHAR2, p_data_type VARCHAR2 DEFAULT NULL );
 
-   PROCEDURE check_object( p_owner VARCHAR2, p_object VARCHAR2, p_object_type VARCHAR2 DEFAULT NULL );
+   PROCEDURE check_object
+   ( 
+     p_owner        VARCHAR2, 
+     p_object       VARCHAR2,
+     p_object_type  VARCHAR2 DEFAULT NULL,
+     p_dblink       VARCHAR2 DEFAULT NULL  
+   );
 
    FUNCTION get_dir_path( p_directory VARCHAR2 )
       RETURN VARCHAR2;
@@ -138,17 +146,26 @@ AS
    FUNCTION object_exists( p_owner VARCHAR2, p_object VARCHAR2 )
       RETURN BOOLEAN;
 
-   FUNCTION get_tab_part_type( p_owner VARCHAR2, p_table VARCHAR2, p_partname VARCHAR2 DEFAULT NULL )
+   FUNCTION get_tab_part_type
+   (
+        p_owner     VARCHAR2, 
+        p_table     VARCHAR2,
+        p_partname  VARCHAR2 DEFAULT NULL, 
+        p_dblink    VARCHAR2 DEFAULT NULL
+   )
       RETURN VARCHAR2;
       
    FUNCTION get_part_for_subpart( p_owner VARCHAR2, p_segment VARCHAR2, p_subpart VARCHAR2, p_segment_type VARCHAR2 )
       RETURN VARCHAR2;
       
    FUNCTION get_column_list
-      ( p_owner         VARCHAR2, 
+      ( 
+        p_owner         VARCHAR2, 
         p_table         VARCHAR2, 
         p_source_owner  VARCHAR2 DEFAULT NULL, 
-        p_source_table  VARCHAR2 DEFAULT NULL 
+        p_source_table  VARCHAR2 DEFAULT NULL,
+        p_set_oper      VARCHAR2 DEFAULT 'intersect',
+        p_dblink        VARCHAR2 DEFAULT NULL 
       )
       RETURN VARCHAR2;
 

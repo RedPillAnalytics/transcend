@@ -1,0 +1,15 @@
+<?xml version = '1.0' encoding = 'UTF-8'?>
+<FKIndexAssociation class="oracle.dbtools.crest.model.design.relational.FKIndexAssociation" id="84286430-4327-AE77-F64B-BF8E1FDEA547" directorySegmentName="seg_0" name="CDC_SUB_CONF_FK1">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>TDREP</sourceObjSchema>
+<sourceObjName>CDC_SUB_CONF_FK1</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-12 03:06:00 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<containerWithKeyObject>C01556CB-09BE-702F-DC72-324C5477D334</containerWithKeyObject>
+<deleteRule>CASCADE</deleteRule>
+<localFKIndex>38268EE1-BEEC-05EE-ED78-D5B39D2DAE9A</localFKIndex>
+<keyObject>5A5B07B6-944A-19E0-2493-FE0C2B9F90A1</keyObject>
+<mandatory>true</mandatory>
+<transferable>true</transferable>
+</FKIndexAssociation>

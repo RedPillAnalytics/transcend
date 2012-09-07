@@ -1,0 +1,144 @@
+<?xml version = '1.0' encoding = 'UTF-8'?>
+<Table class="oracle.dbtools.crest.model.design.relational.Table" id="1DDE2F1F-F225-5AE9-5866-CE935CC6842F" directorySegmentName="seg_0" name="CDC_AUDIT_DATATYPE">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-30 04:02:13 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<fonts>
+<FontObject class="oracle.dbtools.crest.model.design.FontObjectWr">
+<foType>Title</foType>
+<fontStyle>1</fontStyle>
+<colorRGB>-16776961</colorRGB>
+</FontObject>
+<FontObject class="oracle.dbtools.crest.model.design.FontObjectWr">
+<foType>Column</foType>
+<colorRGB>-16777216</colorRGB>
+</FontObject>
+<FontObject class="oracle.dbtools.crest.model.design.FontObjectWr">
+<foType>Datatype</foType>
+<colorRGB>-16744448</colorRGB>
+</FontObject>
+<FontObject class="oracle.dbtools.crest.model.design.FontObjectWr">
+<foType>PK Element</foType>
+<colorRGB>-16776961</colorRGB>
+</FontObject>
+<FontObject class="oracle.dbtools.crest.model.design.FontObjectWr">
+<foType>FK Element</foType>
+<colorRGB>-16777216</colorRGB>
+</FontObject>
+<FontObject class="oracle.dbtools.crest.model.design.FontObjectWr">
+<foType>UK Element</foType>
+<colorRGB>-16776961</colorRGB>
+</FontObject>
+<FontObject class="oracle.dbtools.crest.model.design.FontObjectWr">
+<foType>Not Null</foType>
+<colorRGB>-65536</colorRGB>
+</FontObject>
+<FontObject class="oracle.dbtools.crest.model.design.FontObjectWr">
+<foType>Key</foType>
+<colorRGB>-16777216</colorRGB>
+</FontObject>
+</fonts>
+<columns>
+<Column class="oracle.dbtools.crest.model.design.relational.Column" name="GROUP_ID" id="FCF5810B-D62A-F89B-EAA6-8E8495AA83B8">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>CDC_SUBSCRIPTION</sourceObjSchema>
+<sourceObjName>SUB_ID</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-30 19:23:25 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT019</logicalDatatype>
+<delegate>FF172A9F-36FF-734D-64AE-D0C81F6BC654</delegate>
+<previousColumn>false</previousColumn>
+<autoIncrementCycle>false</autoIncrementCycle>
+<associations>
+<colAssociation fkAssociation="AA2CB5B5-D046-AFB9-118C-99A32C08F050" referredColumn="FF172A9F-36FF-734D-64AE-D0C81F6BC654"/>
+</associations>
+</Column>
+<Column class="oracle.dbtools.crest.model.design.relational.Column" name="COLUMN_NAME" id="3D0728E6-38E2-B133-359B-3D105FA42F20">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-30 19:31:03 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>50</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column class="oracle.dbtools.crest.model.design.relational.Column" name="COLUMN_TYPE" id="EA031B36-43D1-1E94-291C-FB21B0651989">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-30 19:31:22 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>20</dataTypeSize>
+<listOfValues>
+<valueDef value="cdc_rank" description=""/>
+<valueDef value="commit_date" description=""/>
+<valueDef value="dml_type" description=""/>
+<valueDef value="entity_rank" description=""/>
+<valueDef value="row_rank" description=""/>
+<valueDef value="source_maxscn" description=""/>
+<valueDef value="source_minscn" description=""/>
+<valueDef value="source_scn" description=""/>
+</listOfValues>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column class="oracle.dbtools.crest.model.design.relational.Column" name="DATATYPE" id="A5E557D8-934F-E4B6-ACEB-9A1CE87A792B">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-30 19:32:04 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>100</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column class="oracle.dbtools.crest.model.design.relational.Column" name="CREATED_USER" id="A6452888-FFDA-011D-5CDE-19CE5B1630B8">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>CDC_SUB_CONF</sourceObjSchema>
+<sourceObjName>CREATED_USER</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-09-07 05:11:30 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<defaultValue>sys_context(&apos;USERENV&apos;,&apos;SESSION_USER&apos;)</defaultValue>
+<use>0</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<domain>03BD9699-A5E6-C914-74C8-E562B38283B8</domain>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column class="oracle.dbtools.crest.model.design.relational.Column" name="CREATED_DT" id="0AF8812E-66AB-5455-1E92-33AEA3CF24F9">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>CDC_SUB_CONF</sourceObjSchema>
+<sourceObjName>CREATED_DT</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-09-07 05:11:30 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<defaultValue>SYSDATE</defaultValue>
+<use>0</use>
+<logicalDatatype>LOGDT007</logicalDatatype>
+<domain>A028A944-9405-DB8A-0547-763AF52658A6</domain>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+</columns>
+<indexes>
+<ind_PK_UK class="oracle.dbtools.crest.model.design.relational.Index" id="058021B5-404C-E479-1F8D-C8171C610CC9" name="CDC_AUDIT_DATATYPES_FK1">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-30 19:23:25 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<indexState>Foreign Key</indexState>
+<indexColumnUsage>
+<colUsage columnID="FCF5810B-D62A-F89B-EAA6-8E8495AA83B8"/>
+</indexColumnUsage>
+</ind_PK_UK>
+</indexes>
+</Table>

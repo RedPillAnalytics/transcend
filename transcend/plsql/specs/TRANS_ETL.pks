@@ -17,6 +17,13 @@ IS
    PROCEDURE truncate_table( p_owner VARCHAR2, p_table VARCHAR2, p_reuse VARCHAR2 DEFAULT 'no' );
       
    PROCEDURE truncate_partition( p_owner VARCHAR2, p_table VARCHAR2, p_partname VARCHAR2 );
+         
+   PROCEDURE truncate_schema
+      ( 
+        p_schema VARCHAR2,
+        p_reuse  VARCHAR2 DEFAULT 'no' 
+      );
+
 
    PROCEDURE drop_table( p_owner VARCHAR2, p_table VARCHAR2, p_purge VARCHAR2 DEFAULT 'yes' );
       
@@ -121,7 +128,8 @@ IS
         p_direct          VARCHAR2      DEFAULT 'yes',
         p_degree          NUMBER        DEFAULT NULL,
         p_log_table       VARCHAR2      DEFAULT NULL,
-        p_reject_limit    VARCHAR2      DEFAULT 'unlimited'
+        p_reject_limit    VARCHAR2      DEFAULT 'unlimited',
+        p_dblink          VARCHAR2      DEFAULT NULL 
       );
 
    PROCEDURE merge_table(

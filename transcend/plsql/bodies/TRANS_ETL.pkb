@@ -91,6 +91,27 @@ AS
          evolve.log_err;
          RAISE;
    END truncate_partition;
+   
+   PROCEDURE truncate_schema
+      ( 
+        p_schema VARCHAR2,
+        p_reuse  VARCHAR2 DEFAULT 'no' 
+      )
+   IS
+   BEGIN
+
+      td_dbutils.truncate_schema
+      ( 
+        p_schema        => p_schema, 
+        p_reuse         => p_reuse
+      );
+      
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         evolve.log_err;
+         RAISE;
+   END truncate_schema;
 
    PROCEDURE drop_table( p_owner VARCHAR2, p_table VARCHAR2, p_purge VARCHAR2 DEFAULT 'yes' )
    IS
@@ -382,11 +403,13 @@ AS
         p_direct          VARCHAR2      DEFAULT 'yes',
         p_degree          NUMBER        DEFAULT NULL,
         p_log_table       VARCHAR2      DEFAULT NULL,
-        p_reject_limit    VARCHAR2      DEFAULT 'unlimited'
+        p_reject_limit    VARCHAR2      DEFAULT 'unlimited',
+        p_dblink          VARCHAR2      DEFAULT NULL 
       )
    IS
    BEGIN
-      td_dbutils.insert_table( p_owner              => p_owner,
+      td_dbutils.insert_table( 
+                               p_owner              => p_owner,
                                p_table              => p_table,
                                p_source_owner       => p_source_owner,
                                p_source_object      => p_source_object,
@@ -395,7 +418,8 @@ AS
                                p_degree             => p_degree,
                                p_log_table          => p_log_table,
                                p_reject_limit       => p_reject_limit,
-                               p_scn                => p_scn
+                               p_scn                => p_scn,
+                               p_dblink             => p_dblink
                              );
    EXCEPTION
       WHEN OTHERS

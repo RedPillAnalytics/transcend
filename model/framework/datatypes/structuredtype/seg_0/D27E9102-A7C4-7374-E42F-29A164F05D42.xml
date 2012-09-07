@@ -1,0 +1,135 @@
+<?xml version = '1.0' encoding = 'UTF-8'?>
+<StructuredType class="oracle.dbtools.crest.model.design.datatypes.StructuredType" name="OGG_SUB_OT" id="D27E9102-A7C4-7374-E42F-29A164F05D42" directorySegmentName="seg_0">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>TDREP</sourceObjSchema>
+<sourceObjName>OGG_SUB_OT</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:28:02 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<importedID>1D2B962D-2CCC-9602-1E53-1E95516AC963</importedID>
+<predefined>false</predefined>
+<final>false</final>
+<inheritanceRelation>79963255-CAED-BDB7-286B-18CA4B5AD653</inheritanceRelation>
+<instantiable>true</instantiable>
+<parentTypeID>78ECFB82-223A-B5D2-6A66-02B8FFE2F1FF</parentTypeID>
+<fonts>
+<FontObject class="oracle.dbtools.crest.model.design.FontObjectWr">
+<foType>Title</foType>
+<fontStyle>1</fontStyle>
+<colorRGB>-16776961</colorRGB>
+</FontObject>
+<FontObject class="oracle.dbtools.crest.model.design.FontObjectWr">
+<foType>Attribute</foType>
+<colorRGB>-16777216</colorRGB>
+</FontObject>
+<FontObject class="oracle.dbtools.crest.model.design.FontObjectWr">
+<foType>Datatype</foType>
+<colorRGB>-16777056</colorRGB>
+</FontObject>
+<FontObject class="oracle.dbtools.crest.model.design.FontObjectWr">
+<foType>Method</foType>
+<colorRGB>-16777216</colorRGB>
+</FontObject>
+<FontObject class="oracle.dbtools.crest.model.design.FontObjectWr">
+<foType>Not Instantiable</foType>
+<colorRGB>-65536</colorRGB>
+</FontObject>
+<FontObject class="oracle.dbtools.crest.model.design.FontObjectWr">
+<foType>Mandatory</foType>
+<colorRGB>-65536</colorRGB>
+</FontObject>
+</fonts>
+<attributes>
+<Attribute class="oracle.dbtools.crest.model.design.datatypes.TypeElement" name="OGG_GROUP_NAME" id="FDD8D2AF-2CFC-0123-728F-AC2A698F4B6B">
+<createdBy>stewart</createdBy>
+<createdTime>2012-09-04 22:58:21 UTC</createdTime>
+<generatorID>869581AB-C3C9-7127-19F4-E332F823697B</generatorID>
+<ownerDesignName>framework</ownerDesignName>
+<importedID>869581AB-C3C9-7127-19F4-E332F823697B</importedID>
+<mandatory>false</mandatory>
+<precision>0</precision>
+<reference>false</reference>
+<scale>0</scale>
+<size>8</size>
+<type>LOGDT024</type>
+</Attribute>
+<Attribute class="oracle.dbtools.crest.model.design.datatypes.TypeElement" name="OGG_GROUP_KEY" id="201FBA19-A8F8-F391-D7AF-22D8BFEF8B3D">
+<createdBy>stewart</createdBy>
+<createdTime>2012-09-04 22:58:21 UTC</createdTime>
+<generatorID>40608648-CF1D-5538-B064-9F0B755CF50D</generatorID>
+<ownerDesignName>framework</ownerDesignName>
+<importedID>40608648-CF1D-5538-B064-9F0B755CF50D</importedID>
+<mandatory>false</mandatory>
+<precision>0</precision>
+<reference>false</reference>
+<scale>0</scale>
+<type>LOGDT019</type>
+</Attribute>
+<Attribute class="oracle.dbtools.crest.model.design.datatypes.TypeElement" name="OGG_CHECK_TABLE" id="1A8F3EFC-3FC5-FB46-7752-9BCC84E77A9D">
+<createdBy>stewart</createdBy>
+<createdTime>2012-09-04 22:58:21 UTC</createdTime>
+<generatorID>68EAB177-3422-21D8-05FC-97B4F171D969</generatorID>
+<ownerDesignName>framework</ownerDesignName>
+<importedID>68EAB177-3422-21D8-05FC-97B4F171D969</importedID>
+<mandatory>false</mandatory>
+<precision>0</precision>
+<reference>false</reference>
+<scale>0</scale>
+<size>61</size>
+<type>LOGDT024</type>
+</Attribute>
+<Attribute class="oracle.dbtools.crest.model.design.datatypes.TypeElement" name="OGG_CHECK_COLUMN" id="4A732EF3-1E99-00F1-42A0-33B1C722BD79">
+<createdBy>stewart</createdBy>
+<createdTime>2012-09-04 22:58:21 UTC</createdTime>
+<generatorID>6B1805C0-189E-67E0-2A97-4849992F967A</generatorID>
+<ownerDesignName>framework</ownerDesignName>
+<importedID>6B1805C0-189E-67E0-2A97-4849992F967A</importedID>
+<mandatory>false</mandatory>
+<precision>0</precision>
+<reference>false</reference>
+<scale>0</scale>
+<size>30</size>
+<type>LOGDT024</type>
+</Attribute>
+</attributes>
+<methods>
+<Method class="oracle.dbtools.crest.model.design.datatypes.Method" name="OGG_SUB_OT" id="05D46F83-2A77-5870-92F8-2D13CFF83532">
+<createdBy>stewart</createdBy>
+<createdTime>2012-09-04 22:58:21 UTC</createdTime>
+<generatorID>9E130FAC-77B4-E5AD-AEED-49F9D25108FD</generatorID>
+<ownerDesignName>framework</ownerDesignName>
+<importedID>9E130FAC-77B4-E5AD-AEED-49F9D25108FD</importedID>
+<constructor>true</constructor>
+<number>0</number>
+<returnValue class="oracle.dbtools.crest.model.design.datatypes.MethodParam" name="NULL SET GENERATED_868" id="1E215713-0B17-FAE8-C66A-63A149F2442C">
+<precision>0</precision>
+<reference>false</reference>
+<scale>0</scale>
+<typeID>BCFE976B-912A-CA02-ADA8-9B055F5E77EF</typeID>
+</returnValue>
+<parameters>
+<Parameter class="oracle.dbtools.crest.model.design.datatypes.MethodParam" name="P_SUB_NAME" id="EF10ED93-82F4-55AB-EF62-8B3B0382FCD8">
+<precision>0</precision>
+<reference>false</reference>
+<scale>0</scale>
+<typeID>LOGDT024</typeID>
+</Parameter>
+</parameters>
+</Method>
+<Method class="oracle.dbtools.crest.model.design.datatypes.Method" name="GET_SOURCE_SCN" id="C74D1E56-756C-C49B-F7C1-8C8CB84860A6">
+<createdBy>stewart</createdBy>
+<createdTime>2012-09-04 22:58:21 UTC</createdTime>
+<generatorID>5311AB26-6813-592F-9909-DA136728224F</generatorID>
+<ownerDesignName>framework</ownerDesignName>
+<importedID>5311AB26-6813-592F-9909-DA136728224F</importedID>
+<number>0</number>
+<overriding>true</overriding>
+<returnValue class="oracle.dbtools.crest.model.design.datatypes.MethodParam" name="NULL SET GENERATED_869" id="0081BD66-90AF-8E0B-D85C-A32EBF321CFB">
+<precision>0</precision>
+<reference>false</reference>
+<scale>0</scale>
+<typeID>LOGDT019</typeID>
+</returnValue>
+</Method>
+</methods>
+</StructuredType>

@@ -1,0 +1,190 @@
+<?xml version = '1.0' encoding = 'UTF-8'?>
+<Table class="oracle.dbtools.crest.model.design.relational.Table" id="D5958760-FE22-54B1-0DC3-D49331EE7022" directorySegmentName="seg_0" name="CDC_SOURCE_EXTERNAL">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-26 01:55:05 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<pkName>CDC_SOURCE_EXTERNAL_PK</pkName>
+<fonts>
+<FontObject class="oracle.dbtools.crest.model.design.FontObjectWr">
+<foType>Title</foType>
+<fontStyle>1</fontStyle>
+<colorRGB>-16776961</colorRGB>
+</FontObject>
+<FontObject class="oracle.dbtools.crest.model.design.FontObjectWr">
+<foType>Column</foType>
+<colorRGB>-16777216</colorRGB>
+</FontObject>
+<FontObject class="oracle.dbtools.crest.model.design.FontObjectWr">
+<foType>Datatype</foType>
+<colorRGB>-16744448</colorRGB>
+</FontObject>
+<FontObject class="oracle.dbtools.crest.model.design.FontObjectWr">
+<foType>PK Element</foType>
+<colorRGB>-16776961</colorRGB>
+</FontObject>
+<FontObject class="oracle.dbtools.crest.model.design.FontObjectWr">
+<foType>FK Element</foType>
+<colorRGB>-16777216</colorRGB>
+</FontObject>
+<FontObject class="oracle.dbtools.crest.model.design.FontObjectWr">
+<foType>UK Element</foType>
+<colorRGB>-16776961</colorRGB>
+</FontObject>
+<FontObject class="oracle.dbtools.crest.model.design.FontObjectWr">
+<foType>Not Null</foType>
+<colorRGB>-65536</colorRGB>
+</FontObject>
+<FontObject class="oracle.dbtools.crest.model.design.FontObjectWr">
+<foType>Key</foType>
+<colorRGB>-16777216</colorRGB>
+</FontObject>
+</fonts>
+<columns>
+<Column class="oracle.dbtools.crest.model.design.relational.Column" name="SOURCE_ID" id="7D829CC1-A8C1-579D-4F9F-8CF126F86593">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>CDC_SOURCE</sourceObjSchema>
+<sourceObjName>SOURCE_ID</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-26 01:58:01 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT019</logicalDatatype>
+<delegate>AF4C72C0-E3AC-0A47-172F-C0C1BAEF053F</delegate>
+<previousColumn>false</previousColumn>
+<autoIncrementCycle>false</autoIncrementCycle>
+<associations>
+<colAssociation fkAssociation="7CB2A2D1-D4F9-7F0D-26EB-C1EA5CD54D9E" referredColumn="AF4C72C0-E3AC-0A47-172F-C0C1BAEF053F"/>
+</associations>
+</Column>
+<Column class="oracle.dbtools.crest.model.design.relational.Column" name="OGG_GROUP_KEY" id="66B1A3C0-4E82-F248-EB51-4789794354D5">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-26 01:57:33 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>8</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column class="oracle.dbtools.crest.model.design.relational.Column" name="OGG_GROUP_NAME" id="1F8B4030-D56A-7AAA-62F8-B2EC9E84D826">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-26 01:57:33 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>8</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column class="oracle.dbtools.crest.model.design.relational.Column" name="OGG_CHECK_TABLE" id="063B256D-1A8B-AE53-6346-1986D81EDD88">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>CDC_SOURCE</sourceObjSchema>
+<sourceObjName>CHECKPOINT_TABLE</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-26 01:57:33 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>61</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column class="oracle.dbtools.crest.model.design.relational.Column" name="OGG_CHECK_COLUMN" id="A1EA9601-3F87-E02D-AA5C-4FBBB4F11BF1">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>CDC_SOURCE</sourceObjSchema>
+<sourceObjName>CHECKPOINT_TABLE</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-26 01:57:33 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>30</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column class="oracle.dbtools.crest.model.design.relational.Column" name="CREATED_USER" id="D7B34989-1040-6952-3A5D-EBF190F9D130">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>CDC_SOURCE</sourceObjSchema>
+<sourceObjName>CREATED_USER</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-26 04:50:01 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<defaultValue>sys_context(&apos;USERENV&apos;,&apos;SESSION_USER&apos;)</defaultValue>
+<use>0</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<domain>03BD9699-A5E6-C914-74C8-E562B38283B8</domain>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column class="oracle.dbtools.crest.model.design.relational.Column" name="CREATED_DT" id="FB4D3490-81F3-990E-BE66-D95B07B6353F">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>CDC_SOURCE</sourceObjSchema>
+<sourceObjName>CREATED_DT</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-26 04:50:01 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<defaultValue>SYSDATE</defaultValue>
+<use>0</use>
+<logicalDatatype>LOGDT007</logicalDatatype>
+<domain>A028A944-9405-DB8A-0547-763AF52658A6</domain>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column class="oracle.dbtools.crest.model.design.relational.Column" name="MODIFIED_USER" id="3B1B32ED-03D8-83A3-4956-65D77E422219">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>CDC_SOURCE</sourceObjSchema>
+<sourceObjName>MODIFIED_USER</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-26 04:50:01 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>0</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<domain>75B092C9-0976-7C05-12F0-2A81B5DCB795</domain>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column class="oracle.dbtools.crest.model.design.relational.Column" name="MODIFIED_DT" id="DBF03796-66A7-079C-5D57-EE96FDC50843">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>CDC_SOURCE</sourceObjSchema>
+<sourceObjName>MODIFIED_DT</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-26 04:50:01 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>0</use>
+<logicalDatatype>LOGDT007</logicalDatatype>
+<domain>96DBAFA1-0DC1-6352-B2AC-76DC4B86B6AE</domain>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+</columns>
+<indexes>
+<ind_PK_UK class="oracle.dbtools.crest.model.design.relational.Index" id="1235A443-4D07-7AE1-4CDA-8AD0661A3AFA" name="CDC_SOURCE_EXTERNAL_PK">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-26 01:58:58 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<pk>true</pk>
+<indexState>Primary Constraint</indexState>
+<indexColumnUsage>
+<colUsage columnID="7D829CC1-A8C1-579D-4F9F-8CF126F86593"/>
+</indexColumnUsage>
+</ind_PK_UK>
+<ind_PK_UK class="oracle.dbtools.crest.model.design.relational.Index" id="43FABB9B-4C27-27CE-9AA6-221EFF28940F" name="CDC_SOURCE_EXTERNAL_FK1">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-26 01:58:01 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<indexState>Foreign Key</indexState>
+<indexColumnUsage>
+<colUsage columnID="7D829CC1-A8C1-579D-4F9F-8CF126F86593"/>
+</indexColumnUsage>
+</ind_PK_UK>
+</indexes>
+</Table>

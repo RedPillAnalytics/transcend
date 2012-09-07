@@ -1,0 +1,42 @@
+<?xml version = '1.0' encoding = 'UTF-8'?>
+<TableProxyOraclev11g class="oracle.dbtools.crest.model.design.storage.oracle.v11g.TableProxyOraclev11g" name="DDL_QUEUE" id="CE6F3AFE-0D83-BB21-BFA1-F293A2412BCA" directorySegmentName="seg_0">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<logging>NO</logging>
+<partitionedRowMovement>DISABLE</partitionedRowMovement>
+<segment>F17ABCE8-3D71-658C-E16F-3FE191F108B9</segment>
+<temporary>YES</temporary>
+<columnProxies>
+<ColumnProxy class="oracle.dbtools.crest.model.design.storage.oracle.v11g.ColumnProxyOraclev11g" name="STMT_MSG" id="56B4469C-DEAD-A8AE-4B9C-6E2A0D96EE41">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+</ColumnProxy>
+<ColumnProxy class="oracle.dbtools.crest.model.design.storage.oracle.v11g.ColumnProxyOraclev11g" name="STMT_ORDER" id="58FBF9A4-9983-AD8B-B5D2-4C997DE8A31E">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+</ColumnProxy>
+<ColumnProxy class="oracle.dbtools.crest.model.design.storage.oracle.v11g.ColumnProxyOraclev11g" name="CLIENT_INFO" id="65F34DFB-11E1-A82D-AA2D-1F269AB16638">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+</ColumnProxy>
+<ColumnProxy class="oracle.dbtools.crest.model.design.storage.oracle.v11g.ColumnProxyOraclev11g" name="ACTION" id="7665E5FD-B4D7-0A78-CB3B-370CCD480259">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+</ColumnProxy>
+<ColumnProxy class="oracle.dbtools.crest.model.design.storage.oracle.v11g.ColumnProxyOraclev11g" name="MODULE" id="B16718AE-224F-E511-B099-C2A8329DC881">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+</ColumnProxy>
+<ColumnProxy class="oracle.dbtools.crest.model.design.storage.oracle.v11g.ColumnProxyOraclev11g" name="STMT_DDL" id="BAEA5AD4-188D-8FD6-8C33-3BBD0092E68A">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+</ColumnProxy>
+</columnProxies>
+</TableProxyOraclev11g>

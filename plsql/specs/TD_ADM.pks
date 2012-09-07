@@ -6,12 +6,13 @@ IS
    unknown_user         EXCEPTION;
 
    -- package constants
-   product_version      CONSTANT        NUMBER          := 2.74;
+   product_version      CONSTANT        NUMBER          := 3.0;
    transcend_product    CONSTANT        VARCHAR2(9)     := 'transcend';
    evolve_product       CONSTANT        VARCHAR2(9)     := 'evolve';
    evolve_sys_role      CONSTANT        VARCHAR2(30)    := 'EVOLVE';
    trans_etl_role       CONSTANT        VARCHAR2(30)    := 'TRANS_ETL';
    trans_files_role     CONSTANT        VARCHAR2(30)    := 'TRANS_FILES';
+   trans_cdc_role       CONSTANT        VARCHAR2(30)    := 'TRANS_CDC';
    default_repository   CONSTANT        VARCHAR2(6)     := 'TDREP';
 
    PROCEDURE drop_evolve_repo(

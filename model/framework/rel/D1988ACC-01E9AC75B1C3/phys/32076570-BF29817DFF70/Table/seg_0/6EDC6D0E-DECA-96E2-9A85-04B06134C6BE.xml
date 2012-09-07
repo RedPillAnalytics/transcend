@@ -1,0 +1,50 @@
+<?xml version = '1.0' encoding = 'UTF-8'?>
+<TableProxyOraclev11g class="oracle.dbtools.crest.model.design.storage.oracle.v11g.TableProxyOraclev11g" name="COLUMN_TYPE_LIST" id="6EDC6D0E-DECA-96E2-9A85-04B06134C6BE" directorySegmentName="seg_0">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<logging>YES</logging>
+<partitionedRowMovement>DISABLE</partitionedRowMovement>
+<segment>6D50291D-3F5C-257C-BED6-0FB8FDEBF321</segment>
+<tableSpace>3810EF67-8EFC-FA69-9DE1-7532093D7BC0</tableSpace>
+<columnProxies>
+<ColumnProxy class="oracle.dbtools.crest.model.design.storage.oracle.v11g.ColumnProxyOraclev11g" name="MODIFIED_USER" id="5FB9C5ED-B280-5EAB-605F-F3ACDB88E125">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+</ColumnProxy>
+<ColumnProxy class="oracle.dbtools.crest.model.design.storage.oracle.v11g.ColumnProxyOraclev11g" name="COLUMN_TYPE" id="804723A3-E06E-0B60-00D7-72C8BFE0F098">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+</ColumnProxy>
+<ColumnProxy class="oracle.dbtools.crest.model.design.storage.oracle.v11g.ColumnProxyOraclev11g" name="MODIFIED_DT" id="8D686786-5D8C-3C47-6573-C66D7658313D">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+</ColumnProxy>
+<ColumnProxy class="oracle.dbtools.crest.model.design.storage.oracle.v11g.ColumnProxyOraclev11g" name="CREATED_DT" id="D8D474D4-20A4-EFE4-355B-E8BAD223A3BE">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<defaultValue>SYSDATE</defaultValue>
+</ColumnProxy>
+<ColumnProxy class="oracle.dbtools.crest.model.design.storage.oracle.v11g.ColumnProxyOraclev11g" name="CREATED_USER" id="E8D9744E-A9CD-7D16-0EA9-130652372147">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<defaultValue>sys_context(&apos;USERENV&apos;,&apos;SESSION_USER&apos;)</defaultValue>
+</ColumnProxy>
+</columnProxies>
+<primaryKeys>
+<PrimaryKey class="oracle.dbtools.crest.model.design.storage.oracle.v10g.PKProxyOraclev10g" name="COLUMN_TYPE_LIST_PK" id="B2D4B841-B2A3-42B1-E2F5-D36E87A37658">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<sortedRows>SORTED</sortedRows>
+<tableSpace>3810EF67-8EFC-FA69-9DE1-7532093D7BC0</tableSpace>
+<indexSegment>876E1C42-B54F-D522-B5A5-6B3F8A51BDCD</indexSegment>
+<indexSort>SORTED</indexSort>
+</PrimaryKey>
+</primaryKeys>
+</TableProxyOraclev11g>

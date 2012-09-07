@@ -20,7 +20,7 @@ IS
    gpg_method           CONSTANT   VARCHAR2(15)   := td_utils.gpg_method;
 
    PROCEDURE set_default_configs;
-
+      
    PROCEDURE create_feed (
       p_file_label         VARCHAR2,
       p_file_group         VARCHAR2,
@@ -262,6 +262,119 @@ IS
    PROCEDURE delete_dim_attribs (
       p_mapping      VARCHAR2
    );
+
+   PROCEDURE create_cdc_source 
+      (
+        p_source_type        cdc_source.source_type%TYPE,
+        p_service_name       cdc_source.service_name%TYPE,
+        p_hostname           cdc_source.hostname%TYPE,
+        p_port               cdc_source.port%TYPE,
+        p_dblink             cdc_source.dblink_name%TYPE,
+        p_ogg_group_key      cdc_source_external.ogg_group_key%TYPE     DEFAULT NULL,
+        p_ogg_group_name     cdc_source_external.ogg_group_name%TYPE    DEFAULT NULL,
+        p_ogg_check_table    cdc_source_external.ogg_check_table%TYPE   DEFAULT NULL,
+        p_ogg_check_column   cdc_source_external.ogg_check_column%TYPE  DEFAULT NULL
+      );      
+      
+   PROCEDURE modify_cdc_source 
+      (
+        p_source_id          cdc_source.source_id%TYPE,
+        p_source_type        cdc_source.source_type%TYPE                DEFAULT NULL,
+        p_service_name       cdc_source.service_name%TYPE               DEFAULT NULL,
+        p_hostname           cdc_source.hostname%TYPE                   DEFAULT NULL,
+        p_port               cdc_source.port%TYPE                       DEFAULT NULL,
+        p_dblink             cdc_source.dblink_name%TYPE                DEFAULT NULL,
+        p_ogg_group_key      cdc_source_external.ogg_group_key%TYPE     DEFAULT NULL,
+        p_ogg_group_name     cdc_source_external.ogg_group_name%TYPE    DEFAULT NULL,
+        p_ogg_check_table    cdc_source_external.ogg_check_table%TYPE   DEFAULT NULL,
+        p_ogg_check_column   cdc_source_external.ogg_check_column%TYPE  DEFAULT NULL
+      );
+      
+   PROCEDURE delete_cdc_source 
+      (
+        p_source_id          cdc_source.source_id%TYPE
+      );
+      
+   PROCEDURE create_cdc_group 
+      (
+        p_group_name         cdc_group.group_name%TYPE,
+        p_source_id          cdc_group.source_id%TYPE,
+        p_filter_policy      cdc_group.filter_policy%TYPE,
+        p_foundation         cdc_group.foundation%TYPE,
+        p_subscription       cdc_group.subscription%TYPE               DEFAULT NULL,
+        p_sub_prefix         cdc_group.sub_prefix%TYPE                 DEFAULT NULL
+      );      
+      
+   PROCEDURE modify_cdc_group 
+      (
+        p_group_name         cdc_group.group_name%TYPE,
+        p_source_id          cdc_group.source_id%TYPE                  DEFAULT NULL,
+        p_filter_policy      cdc_group.filter_policy%TYPE              DEFAULT NULL,
+        p_foundation         cdc_group.foundation%TYPE                 DEFAULT NULL,
+        p_subscription       cdc_group.subscription%TYPE               DEFAULT NULL,
+        p_sub_prefix         cdc_group.sub_prefix%TYPE                 DEFAULT NULL
+      );
+      
+   PROCEDURE delete_cdc_group 
+      (
+        p_group_name         cdc_group.group_name%TYPE
+      );
+      
+   PROCEDURE create_cdc_entity
+      (
+        p_source_owner  cdc_entity.source_owner%TYPE, 
+        p_source_table  cdc_entity.source_table%TYPE, 
+        p_group_id      cdc_entity.group_id%TYPE, 
+        p_natkey_list   cdc_entity.natkey_list%TYPE, 
+        p_table_name    cdc_entity.table_name%TYPE      DEFAULT NULL
+      );
+      
+   PROCEDURE modify_cdc_entity
+      (
+        p_entity_id     cdc_entity.entity_id%TYPE,
+        p_source_owner  cdc_entity.source_owner%TYPE    DEFAULT NULL, 
+        p_source_table  cdc_entity.source_table%TYPE    DEFAULT NULL,
+        p_group_id      cdc_entity.group_id%TYPE        DEFAULT NULL,
+        p_natkey_list   cdc_entity.natkey_list%TYPE     DEFAULT NULL,
+        p_table_name    cdc_entity.table_name%TYPE      DEFAULT NULL
+      );
+      
+   PROCEDURE delete_cdc_entity 
+      (
+        p_entity_id     cdc_entity.entity_id%TYPE
+      );
+      
+   PROCEDURE create_cdc_subscription
+      (
+        p_sub_name      cdc_subscription.sub_name%TYPE, 
+        p_group_name    cdc_group.group_name%TYPE
+      );
+      
+   PROCEDURE modify_cdc_subscription
+      (
+        p_sub_name        cdc_subscription.sub_name%TYPE,
+        p_effect_scn      cdc_subscription.effective_scn%TYPE,
+        p_expire_scn      cdc_subscription.expiration_scn%TYPE
+      );
+      
+   PROCEDURE delete_cdc_subscription 
+      (
+        p_sub_name     cdc_subscription.sub_name%TYPE
+      );
+      
+   PROCEDURE create_cdc_audit_datatype
+      (
+        p_group_name       cdc_group.group_name%TYPE, 
+        p_column_name      cdc_audit_datatype.column_name%TYPE, 
+        p_column_type      cdc_audit_datatype.column_type%TYPE,
+        p_datatype         cdc_audit_datatype.datatype%TYPE
+      );
+      
+   PROCEDURE delete_cdc_audit_datatype 
+      (
+        p_column_name     cdc_audit_datatype.column_name%TYPE,
+        p_group_name      cdc_group.group_name%TYPE
+      );
 
    PROCEDURE set_module_conf(
       p_module          VARCHAR2 DEFAULT all_modules,

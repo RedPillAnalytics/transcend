@@ -1,4 +1,6 @@
-CREATE OR REPLACE TYPE dimension_ot UNDER mapping_ot(
+CREATE OR REPLACE TYPE dimension_ot FORCE 
+UNDER mapping_ot
+(
    full_table          VARCHAR2( 61 ),
    full_source         VARCHAR2( 61 ),
    sequence_owner      VARCHAR2( 30 ),
@@ -17,14 +19,33 @@ CREATE OR REPLACE TYPE dimension_ot UNDER mapping_ot(
    scd1_list           VARCHAR2( 4000 ),
    statement           VARCHAR2(32000),
    nonscd_statement    VARCHAR2(32000),
+
    CONSTRUCTOR FUNCTION dimension_ot( p_mapping VARCHAR2, p_batch_id NUMBER DEFAULT NULL )
       RETURN SELF AS RESULT,
+                                                   
    OVERRIDING MEMBER PROCEDURE verify,
+                                                   
    MEMBER PROCEDURE initialize_cols,
-   OVERRIDING MEMBER PROCEDURE confirm_dim_cols,
+                                                   
+   MEMBER PROCEDURE confirm_dim_cols,
+                                                   
+   MEMBER PROCEDURE create_staging_table,
+                                                   
+   MEMBER PROCEDURE drop_staging_table,
+                                                   
    MEMBER PROCEDURE load_staging,
+                                                   
    OVERRIDING MEMBER PROCEDURE replace_table,
+                                                   
    OVERRIDING MEMBER PROCEDURE pre_map,
-   OVERRIDING MEMBER PROCEDURE post_map
+                                                   
+   OVERRIDING MEMBER PROCEDURE post_map,
+
+   OVERRIDING MEMBER PROCEDURE post_verify,
+  
+   OVERRIDING MEMBER PROCEDURE post_create,
+
+   OVERRIDING MEMBER PROCEDURE post_delete
+
 );
 /

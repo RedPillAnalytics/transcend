@@ -1,0 +1,34 @@
+<?xml version = '1.0' encoding = 'UTF-8'?>
+<TableProxyOraclev11g class="oracle.dbtools.crest.model.design.storage.oracle.v11g.TableProxyOraclev11g" name="DIR_LIST" id="273AE059-9B3C-B847-FF08-C30170173BA1" directorySegmentName="seg_0">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<logging>NO</logging>
+<partitionedRowMovement>DISABLE</partitionedRowMovement>
+<segment>F17ABCE8-3D71-658C-E16F-3FE191F108B9</segment>
+<tempPreserveRows>NO</tempPreserveRows>
+<temporary>YES</temporary>
+<columnProxies>
+<ColumnProxy class="oracle.dbtools.crest.model.design.storage.oracle.v11g.ColumnProxyOraclev11g" name="CREATE_TS" id="70E17BDB-EC30-7164-8D2C-34E9375779D2">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<defaultValue>systimestamp</defaultValue>
+</ColumnProxy>
+<ColumnProxy class="oracle.dbtools.crest.model.design.storage.oracle.v11g.ColumnProxyOraclev11g" name="FILENAME" id="7CBDF04B-5EFE-7CCC-4B1F-D031963964E3">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+</ColumnProxy>
+<ColumnProxy class="oracle.dbtools.crest.model.design.storage.oracle.v11g.ColumnProxyOraclev11g" name="FILE_DT" id="90DB2145-3646-2AC4-79B5-7F5F33BF69A0">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+</ColumnProxy>
+<ColumnProxy class="oracle.dbtools.crest.model.design.storage.oracle.v11g.ColumnProxyOraclev11g" name="FILE_SIZE" id="978E79ED-EC9E-D003-ABAB-32CDDCFE58A3">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+</ColumnProxy>
+</columnProxies>
+</TableProxyOraclev11g>

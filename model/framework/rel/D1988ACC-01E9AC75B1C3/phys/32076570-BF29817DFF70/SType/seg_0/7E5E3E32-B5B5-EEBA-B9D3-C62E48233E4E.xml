@@ -1,0 +1,259 @@
+<?xml version = '1.0' encoding = 'UTF-8'?>
+<StructuredTypeProxyOraclev10g class="oracle.dbtools.crest.model.design.storage.oracle.v10g.StructuredTypeProxyOraclev10g" name="FILE_LABEL_OT" id="7E5E3E32-B5B5-EEBA-B9D3-C62E48233E4E" directorySegmentName="seg_0">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>TDREP</sourceObjSchema>
+<sourceObjName>FILE_LABEL_OT</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<owner>0C2151DF-62EE-C23D-290F-0E2BB70855CD</owner>
+<attributes>
+<Attribute class="oracle.dbtools.crest.model.design.storage.oracle.v10g.TypeElementProxyOraclev10g" name="MIN_BYTES" id="05FE1179-20C0-1F17-21CD-DFA65F346BC0">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+</Attribute>
+<Attribute class="oracle.dbtools.crest.model.design.storage.oracle.v10g.TypeElementProxyOraclev10g" name="BASEURL" id="12EE8C99-0459-F4E2-ACD1-0C901657BACB">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+</Attribute>
+<Attribute class="oracle.dbtools.crest.model.design.storage.oracle.v10g.TypeElementProxyOraclev10g" name="STORE_ORIGINAL_FILES" id="3D10D8D7-8342-5632-AE23-7CA681AD5B54">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+</Attribute>
+<Attribute class="oracle.dbtools.crest.model.design.storage.oracle.v10g.TypeElementProxyOraclev10g" name="OBJECT_NAME" id="3DD7C898-F4DE-5A16-2DB1-524E6C445D9E">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+</Attribute>
+<Attribute class="oracle.dbtools.crest.model.design.storage.oracle.v10g.TypeElementProxyOraclev10g" name="FILE_GROUP" id="5D922093-C515-DC3C-EE0E-1F9556F5EA7B">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+</Attribute>
+<Attribute class="oracle.dbtools.crest.model.design.storage.oracle.v10g.TypeElementProxyOraclev10g" name="REJECT_LIMIT" id="83C7D73F-7E95-CD40-E5C2-7D7BB551BD09">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+</Attribute>
+<Attribute class="oracle.dbtools.crest.model.design.storage.oracle.v10g.TypeElementProxyOraclev10g" name="ENCRYPT_METHOD" id="8D2A381D-EB5F-6A18-F0AB-6D8DF03B63F6">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+</Attribute>
+<Attribute class="oracle.dbtools.crest.model.design.storage.oracle.v10g.TypeElementProxyOraclev10g" name="PASSPHRASE" id="8FC4DAF5-24BC-32F2-B54C-A60FF1EE1E32">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+</Attribute>
+<Attribute class="oracle.dbtools.crest.model.design.storage.oracle.v10g.TypeElementProxyOraclev10g" name="LABEL_TYPE" id="939442D1-DFF4-5655-7F29-A5085921BF39">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+</Attribute>
+<Attribute class="oracle.dbtools.crest.model.design.storage.oracle.v10g.TypeElementProxyOraclev10g" name="DIRECTORY" id="A02F2189-E8DB-FAE8-E8C1-B94F7DE3C97E">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+</Attribute>
+<Attribute class="oracle.dbtools.crest.model.design.storage.oracle.v10g.TypeElementProxyOraclev10g" name="COMPRESS_METHOD" id="ABA29F5F-6439-E276-EEE1-9C1E8256C564">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+</Attribute>
+<Attribute class="oracle.dbtools.crest.model.design.storage.oracle.v10g.TypeElementProxyOraclev10g" name="OBJECT_OWNER" id="B2553378-AC26-0A91-C958-A454C4C66875">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+</Attribute>
+<Attribute class="oracle.dbtools.crest.model.design.storage.oracle.v10g.TypeElementProxyOraclev10g" name="MAX_BYTES" id="C17126AF-37CB-D66A-9FF9-CE1E1121FC3B">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+</Attribute>
+<Attribute class="oracle.dbtools.crest.model.design.storage.oracle.v10g.TypeElementProxyOraclev10g" name="FILE_LABEL" id="C3F9FE0F-5285-09C3-7C75-32B51500CE85">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+</Attribute>
+<Attribute class="oracle.dbtools.crest.model.design.storage.oracle.v10g.TypeElementProxyOraclev10g" name="WORK_DIRECTORY" id="D436A756-7396-C14B-2AC6-B79C923D5508">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+</Attribute>
+<Attribute class="oracle.dbtools.crest.model.design.storage.oracle.v10g.TypeElementProxyOraclev10g" name="FILENAME" id="E52CFC0D-F4FA-CD71-8D52-B172BA46FC60">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+</Attribute>
+<Attribute class="oracle.dbtools.crest.model.design.storage.oracle.v10g.TypeElementProxyOraclev10g" name="SOURCE_DIRECTORY" id="F64162C1-E661-805C-E7B5-24D2347639E9">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+</Attribute>
+</attributes>
+<methods>
+<Method class="oracle.dbtools.crest.model.design.storage.oracle.v10g.MethodProxyOraclev10g" name="PROCESS" id="2054084E-20AF-3740-2E0C-3EF912403C62">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<bodyChanged>false</bodyChanged>
+<instantiable>NO</instantiable>
+</Method>
+<Method class="oracle.dbtools.crest.model.design.storage.oracle.v10g.MethodProxyOraclev10g" name="AUDIT_OBJECT" id="6A562B1A-4849-7B8D-7A8D-7838DABB8B87">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<bodyChanged>false</bodyChanged>
+<parameters>
+<Parameter class="oracle.dbtools.crest.model.design.storage.oracle.v10g.MethodParamProxyOraclev10g" name="P_NUM_LINES" id="406FC9C5-5E49-D6FC-EFA7-CDA77014E03E">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<directionType>IN</directionType>
+</Parameter>
+</parameters>
+</Method>
+<Method class="oracle.dbtools.crest.model.design.storage.oracle.v10g.MethodProxyOraclev10g" name="VERIFY" id="89B87220-68ED-4926-0E53-AE12531E2759">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<bodyChanged>false</bodyChanged>
+<instantiable>NO</instantiable>
+</Method>
+<Method class="oracle.dbtools.crest.model.design.storage.oracle.v10g.MethodProxyOraclev10g" name="MODIFY_ARCHIVE" id="CD5CC32A-31D5-19DE-E5D7-2D40F674B732">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<bodyChanged>false</bodyChanged>
+<parameters>
+<Parameter class="oracle.dbtools.crest.model.design.storage.oracle.v10g.MethodParamProxyOraclev10g" name="P_FILENAME" id="4FE6C5BA-9AE4-C5B4-44FB-E7C05FC83618">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<directionType>IN</directionType>
+</Parameter>
+<Parameter class="oracle.dbtools.crest.model.design.storage.oracle.v10g.MethodParamProxyOraclev10g" name="P_FILE_DT" id="55A4643C-5968-375B-0C37-CE56A7963E00">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<directionType>IN</directionType>
+</Parameter>
+<Parameter class="oracle.dbtools.crest.model.design.storage.oracle.v10g.MethodParamProxyOraclev10g" name="P_SOURCE_FILENAME" id="6CA9C480-E6E2-B823-7139-9840263D9FA2">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<directionType>IN</directionType>
+</Parameter>
+<Parameter class="oracle.dbtools.crest.model.design.storage.oracle.v10g.MethodParamProxyOraclev10g" name="P_DIRECTORY" id="8A7B1EBB-67C0-43F8-8639-C4F02C3CD6CC">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<directionType>IN</directionType>
+</Parameter>
+<Parameter class="oracle.dbtools.crest.model.design.storage.oracle.v10g.MethodParamProxyOraclev10g" name="P_FILE_DETAIL_ID" id="8B2F466C-4E44-8251-4A89-A73C50DDB04E">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<directionType>IN</directionType>
+</Parameter>
+<Parameter class="oracle.dbtools.crest.model.design.storage.oracle.v10g.MethodParamProxyOraclev10g" name="P_SOURCE_DIRECTORY" id="94E35A69-C87C-3F05-4DC9-0E7B02513954">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<directionType>IN</directionType>
+</Parameter>
+<Parameter class="oracle.dbtools.crest.model.design.storage.oracle.v10g.MethodParamProxyOraclev10g" name="P_LOC_DIRECTORY" id="CC69C257-F7FE-B5DD-BA8A-FA245C2B507F">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<directionType>IN</directionType>
+</Parameter>
+<Parameter class="oracle.dbtools.crest.model.design.storage.oracle.v10g.MethodParamProxyOraclev10g" name="P_LOC_FILENAME" id="DBEB73E1-3077-E3D3-2DBA-D0D1221357AC">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<directionType>IN</directionType>
+</Parameter>
+</parameters>
+</Method>
+<Method class="oracle.dbtools.crest.model.design.storage.oracle.v10g.MethodProxyOraclev10g" name="ANNOUNCE" id="DF186D1B-8298-1E28-89B2-81286F1D9391">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<bodyChanged>false</bodyChanged>
+<parameters>
+<Parameter class="oracle.dbtools.crest.model.design.storage.oracle.v10g.MethodParamProxyOraclev10g" name="P_NUM_LINES" id="1EBAE395-74D3-238E-B4E8-9F7768C72288">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<directionType>IN</directionType>
+</Parameter>
+<Parameter class="oracle.dbtools.crest.model.design.storage.oracle.v10g.MethodParamProxyOraclev10g" name="P_FILES_URL" id="8DF43630-3412-0AAD-7CEA-2A5866879E72">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<directionType>IN</directionType>
+</Parameter>
+<Parameter class="oracle.dbtools.crest.model.design.storage.oracle.v10g.MethodParamProxyOraclev10g" name="P_NUM_FILES" id="A8EF339E-7A2B-4F42-4F0E-82940694356B">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<directionType>IN</directionType>
+</Parameter>
+</parameters>
+</Method>
+<Method class="oracle.dbtools.crest.model.design.storage.oracle.v10g.MethodProxyOraclev10g" name="ARCHIVE" id="F536C426-3721-37AD-0EAA-E5A7A350E93C">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<bodyChanged>false</bodyChanged>
+<parameters>
+<Parameter class="oracle.dbtools.crest.model.design.storage.oracle.v10g.MethodParamProxyOraclev10g" name="P_FILE_DT" id="17996878-4112-2BB4-7F84-E7360912FAC8">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<directionType>IN</directionType>
+</Parameter>
+<Parameter class="oracle.dbtools.crest.model.design.storage.oracle.v10g.MethodParamProxyOraclev10g" name="P_SOURCE_DIRECTORY" id="2055BF6D-48A8-2A2C-B927-C8FBF157765A">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<directionType>IN</directionType>
+</Parameter>
+<Parameter class="oracle.dbtools.crest.model.design.storage.oracle.v10g.MethodParamProxyOraclev10g" name="P_SOURCE_FILENAME" id="44856B2F-A78E-4473-35FE-6DD341C9E8A3">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<directionType>IN</directionType>
+</Parameter>
+<Parameter class="oracle.dbtools.crest.model.design.storage.oracle.v10g.MethodParamProxyOraclev10g" name="P_DIRECTORY" id="45A35834-9134-AF6E-41FF-787EA218B6AD">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<directionType>IN</directionType>
+</Parameter>
+<Parameter class="oracle.dbtools.crest.model.design.storage.oracle.v10g.MethodParamProxyOraclev10g" name="P_LOC_FILENAME" id="4E082AA0-42C1-C941-4CAB-82054BB5B6AD">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<directionType>IN</directionType>
+</Parameter>
+<Parameter class="oracle.dbtools.crest.model.design.storage.oracle.v10g.MethodParamProxyOraclev10g" name="P_FILENAME" id="C4E16A27-5D91-FC7F-2BC4-0041C95634D8">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<directionType>IN</directionType>
+</Parameter>
+<Parameter class="oracle.dbtools.crest.model.design.storage.oracle.v10g.MethodParamProxyOraclev10g" name="P_LOC_DIRECTORY" id="CE9FAAE9-F0EA-F4F8-ED5A-FE3A443D425E">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<directionType>IN</directionType>
+</Parameter>
+</parameters>
+</Method>
+</methods>
+</StructuredTypeProxyOraclev10g>

@@ -1,0 +1,464 @@
+<?xml version = '1.0' encoding = 'UTF-8'?>
+<StructuredType class="oracle.dbtools.crest.model.design.datatypes.StructuredType" name="MAPPING_OT" id="6106BF96-E4DF-6F5F-F452-AAB586B79E70" directorySegmentName="seg_0">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>TDREP</sourceObjSchema>
+<sourceObjName>MAPPING_OT</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<importedID>2FF290E9-F013-6A52-C8EC-72CA65CD1069</importedID>
+<predefined>false</predefined>
+<final>false</final>
+<instantiable>true</instantiable>
+<fonts>
+<FontObject class="oracle.dbtools.crest.model.design.FontObjectWr">
+<foType>Title</foType>
+<fontStyle>1</fontStyle>
+<colorRGB>-16776961</colorRGB>
+</FontObject>
+<FontObject class="oracle.dbtools.crest.model.design.FontObjectWr">
+<foType>Attribute</foType>
+<colorRGB>-16777216</colorRGB>
+</FontObject>
+<FontObject class="oracle.dbtools.crest.model.design.FontObjectWr">
+<foType>Datatype</foType>
+<colorRGB>-16777056</colorRGB>
+</FontObject>
+<FontObject class="oracle.dbtools.crest.model.design.FontObjectWr">
+<foType>Method</foType>
+<colorRGB>-16777216</colorRGB>
+</FontObject>
+<FontObject class="oracle.dbtools.crest.model.design.FontObjectWr">
+<foType>Not Instantiable</foType>
+<colorRGB>-65536</colorRGB>
+</FontObject>
+<FontObject class="oracle.dbtools.crest.model.design.FontObjectWr">
+<foType>Mandatory</foType>
+<colorRGB>-65536</colorRGB>
+</FontObject>
+</fonts>
+<attributes>
+<Attribute class="oracle.dbtools.crest.model.design.datatypes.TypeElement" name="MAPPING_NAME" id="8F380D74-D1FF-2D06-DE5F-0D7D6D2A6231">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<generatorID>5202FCD9-8FC3-8B84-2051-07EF6C96523C</generatorID>
+<ownerDesignName>framework</ownerDesignName>
+<importedID>5202FCD9-8FC3-8B84-2051-07EF6C96523C</importedID>
+<mandatory>false</mandatory>
+<precision>0</precision>
+<reference>false</reference>
+<scale>0</scale>
+<size>30</size>
+<type>LOGDT024</type>
+</Attribute>
+<Attribute class="oracle.dbtools.crest.model.design.datatypes.TypeElement" name="MAPPING_TYPE" id="01A374E4-4A4D-79E4-DCA1-03E9EE3F7E0A">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<generatorID>E935BE71-0C7D-266C-18A2-43053B2C3EF1</generatorID>
+<ownerDesignName>framework</ownerDesignName>
+<importedID>E935BE71-0C7D-266C-18A2-43053B2C3EF1</importedID>
+<mandatory>false</mandatory>
+<precision>0</precision>
+<reference>false</reference>
+<scale>0</scale>
+<size>10</size>
+<type>LOGDT024</type>
+</Attribute>
+<Attribute class="oracle.dbtools.crest.model.design.datatypes.TypeElement" name="RESTARTABLE" id="AC57E1CC-9B24-F630-3536-C66AAE69270E">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<generatorID>309D139B-3E30-0B0A-B60C-06DC44206C5F</generatorID>
+<ownerDesignName>framework</ownerDesignName>
+<importedID>309D139B-3E30-0B0A-B60C-06DC44206C5F</importedID>
+<mandatory>false</mandatory>
+<precision>0</precision>
+<reference>false</reference>
+<scale>0</scale>
+<size>3</size>
+<type>LOGDT024</type>
+</Attribute>
+<Attribute class="oracle.dbtools.crest.model.design.datatypes.TypeElement" name="TABLE_OWNER" id="35E62F33-6DE6-2F16-E6B3-B6464613B97D">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<generatorID>E9B2BB2E-1552-5B5C-18D7-6AA3C3D52202</generatorID>
+<ownerDesignName>framework</ownerDesignName>
+<importedID>E9B2BB2E-1552-5B5C-18D7-6AA3C3D52202</importedID>
+<mandatory>false</mandatory>
+<precision>0</precision>
+<reference>false</reference>
+<scale>0</scale>
+<size>61</size>
+<type>LOGDT024</type>
+</Attribute>
+<Attribute class="oracle.dbtools.crest.model.design.datatypes.TypeElement" name="TABLE_NAME" id="2CDA3852-E51F-3C7D-E8AE-85E7FE5E1EDE">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<generatorID>F659A01F-2F02-F012-2720-20D4F6CB918B</generatorID>
+<ownerDesignName>framework</ownerDesignName>
+<importedID>F659A01F-2F02-F012-2720-20D4F6CB918B</importedID>
+<mandatory>false</mandatory>
+<precision>0</precision>
+<reference>false</reference>
+<scale>0</scale>
+<size>30</size>
+<type>LOGDT024</type>
+</Attribute>
+<Attribute class="oracle.dbtools.crest.model.design.datatypes.TypeElement" name="PARTITION_NAME" id="3EA81CA6-ECC3-C24C-8043-E460CE8BF0D1">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<generatorID>DD041B83-34ED-A55F-E9AF-2F3F55AFF9DE</generatorID>
+<ownerDesignName>framework</ownerDesignName>
+<importedID>DD041B83-34ED-A55F-E9AF-2F3F55AFF9DE</importedID>
+<mandatory>false</mandatory>
+<precision>0</precision>
+<reference>false</reference>
+<scale>0</scale>
+<size>30</size>
+<type>LOGDT024</type>
+</Attribute>
+<Attribute class="oracle.dbtools.crest.model.design.datatypes.TypeElement" name="MANAGE_INDEXES" id="8378EB42-53CC-7C5D-051E-354A7AF433BA">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<generatorID>DCB3936B-EEBB-CBAC-F31C-73F536C0A9F3</generatorID>
+<ownerDesignName>framework</ownerDesignName>
+<importedID>DCB3936B-EEBB-CBAC-F31C-73F536C0A9F3</importedID>
+<mandatory>false</mandatory>
+<precision>0</precision>
+<reference>false</reference>
+<scale>0</scale>
+<size>7</size>
+<type>LOGDT024</type>
+</Attribute>
+<Attribute class="oracle.dbtools.crest.model.design.datatypes.TypeElement" name="INDEX_REGEXP" id="B541AF6B-1013-3924-DA0C-F5A2981FBE60">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<generatorID>783F9B77-E92A-F018-E1F0-B6B0C406F28D</generatorID>
+<ownerDesignName>framework</ownerDesignName>
+<importedID>783F9B77-E92A-F018-E1F0-B6B0C406F28D</importedID>
+<mandatory>false</mandatory>
+<precision>0</precision>
+<reference>false</reference>
+<scale>0</scale>
+<size>30</size>
+<type>LOGDT024</type>
+</Attribute>
+<Attribute class="oracle.dbtools.crest.model.design.datatypes.TypeElement" name="INDEX_TYPE" id="158D420C-8CE0-7936-91B5-695EBD7EF553">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<generatorID>EE1BDCFA-0811-B9CB-43B5-10AB3854B6AB</generatorID>
+<ownerDesignName>framework</ownerDesignName>
+<importedID>EE1BDCFA-0811-B9CB-43B5-10AB3854B6AB</importedID>
+<mandatory>false</mandatory>
+<precision>0</precision>
+<reference>false</reference>
+<scale>0</scale>
+<size>30</size>
+<type>LOGDT024</type>
+</Attribute>
+<Attribute class="oracle.dbtools.crest.model.design.datatypes.TypeElement" name="PARTITION_TYPE" id="E74C0284-E7E7-925D-ED06-BC798D39982B">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<generatorID>09B5A651-994A-43E1-6758-BE1A3848959A</generatorID>
+<ownerDesignName>framework</ownerDesignName>
+<importedID>09B5A651-994A-43E1-6758-BE1A3848959A</importedID>
+<mandatory>false</mandatory>
+<precision>0</precision>
+<reference>false</reference>
+<scale>0</scale>
+<size>30</size>
+<type>LOGDT024</type>
+</Attribute>
+<Attribute class="oracle.dbtools.crest.model.design.datatypes.TypeElement" name="INDEX_CONCURRENCY" id="CC18F42F-171D-4C3C-A8D5-3857ACE0A1F7">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<generatorID>A8BD6DF8-30FA-8340-436C-564F5CF3227B</generatorID>
+<ownerDesignName>framework</ownerDesignName>
+<importedID>A8BD6DF8-30FA-8340-436C-564F5CF3227B</importedID>
+<mandatory>false</mandatory>
+<precision>0</precision>
+<reference>false</reference>
+<scale>0</scale>
+<size>3</size>
+<type>LOGDT024</type>
+</Attribute>
+<Attribute class="oracle.dbtools.crest.model.design.datatypes.TypeElement" name="MANAGE_CONSTRAINTS" id="2D24FD3E-23A6-157B-6B19-A39875EB4324">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<generatorID>8D52FE59-5D33-28DE-DA39-4B011C34F147</generatorID>
+<ownerDesignName>framework</ownerDesignName>
+<importedID>8D52FE59-5D33-28DE-DA39-4B011C34F147</importedID>
+<mandatory>false</mandatory>
+<precision>0</precision>
+<reference>false</reference>
+<scale>0</scale>
+<size>7</size>
+<type>LOGDT024</type>
+</Attribute>
+<Attribute class="oracle.dbtools.crest.model.design.datatypes.TypeElement" name="CONSTRAINT_REGEXP" id="0593B833-B8E3-D8C8-6732-FA14FFA5100B">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<generatorID>17414895-19D8-C0FD-33D0-B984923CAD62</generatorID>
+<ownerDesignName>framework</ownerDesignName>
+<importedID>17414895-19D8-C0FD-33D0-B984923CAD62</importedID>
+<mandatory>false</mandatory>
+<precision>0</precision>
+<reference>false</reference>
+<scale>0</scale>
+<size>100</size>
+<type>LOGDT024</type>
+</Attribute>
+<Attribute class="oracle.dbtools.crest.model.design.datatypes.TypeElement" name="CONSTRAINT_TYPE" id="D4594672-1B8F-7130-2ADF-EDF370B3015A">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<generatorID>8C9404B6-40F7-ED91-2D0A-F8936AF769A0</generatorID>
+<ownerDesignName>framework</ownerDesignName>
+<importedID>8C9404B6-40F7-ED91-2D0A-F8936AF769A0</importedID>
+<mandatory>false</mandatory>
+<precision>0</precision>
+<reference>false</reference>
+<scale>0</scale>
+<size>100</size>
+<type>LOGDT024</type>
+</Attribute>
+<Attribute class="oracle.dbtools.crest.model.design.datatypes.TypeElement" name="CONSTRAINT_CONCURRENCY" id="1EF3A01F-AFED-0952-5C6A-DDF1F1AFD00C">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<generatorID>488C382B-B748-5C13-8FFB-CFD3D6FEC240</generatorID>
+<ownerDesignName>framework</ownerDesignName>
+<importedID>488C382B-B748-5C13-8FFB-CFD3D6FEC240</importedID>
+<mandatory>false</mandatory>
+<precision>0</precision>
+<reference>false</reference>
+<scale>0</scale>
+<size>3</size>
+<type>LOGDT024</type>
+</Attribute>
+<Attribute class="oracle.dbtools.crest.model.design.datatypes.TypeElement" name="DROP_DEPENDENT_OBJECTS" id="D09E9A39-8570-5AAB-4021-CDB9456827CB">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<generatorID>25CF7463-97B4-0FE4-0BA9-CF5A0246EEC0</generatorID>
+<ownerDesignName>framework</ownerDesignName>
+<importedID>25CF7463-97B4-0FE4-0BA9-CF5A0246EEC0</importedID>
+<mandatory>false</mandatory>
+<precision>0</precision>
+<reference>false</reference>
+<scale>0</scale>
+<size>3</size>
+<type>LOGDT024</type>
+</Attribute>
+<Attribute class="oracle.dbtools.crest.model.design.datatypes.TypeElement" name="STAGING_OWNER" id="4DB85B10-7CFF-9504-E512-2C37C26135D0">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<generatorID>FD896713-1F2B-D9DB-D2A8-A8628D53A201</generatorID>
+<ownerDesignName>framework</ownerDesignName>
+<importedID>FD896713-1F2B-D9DB-D2A8-A8628D53A201</importedID>
+<mandatory>false</mandatory>
+<precision>0</precision>
+<reference>false</reference>
+<scale>0</scale>
+<size>30</size>
+<type>LOGDT024</type>
+</Attribute>
+<Attribute class="oracle.dbtools.crest.model.design.datatypes.TypeElement" name="STAGING_TABLE" id="94680EF4-1C56-DDB8-2F5D-BFCE17A1A59B">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<generatorID>3F89432C-A805-BB84-3F65-56E91CD8AB05</generatorID>
+<ownerDesignName>framework</ownerDesignName>
+<importedID>3F89432C-A805-BB84-3F65-56E91CD8AB05</importedID>
+<mandatory>false</mandatory>
+<precision>0</precision>
+<reference>false</reference>
+<scale>0</scale>
+<size>30</size>
+<type>LOGDT024</type>
+</Attribute>
+<Attribute class="oracle.dbtools.crest.model.design.datatypes.TypeElement" name="STAGING_COLUMN" id="C45A5C9C-E37B-FA1F-D432-C9366F7BBDFD">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<generatorID>3BCBDCA6-BABE-A3AB-E63F-015D76FCD9C5</generatorID>
+<ownerDesignName>framework</ownerDesignName>
+<importedID>3BCBDCA6-BABE-A3AB-E63F-015D76FCD9C5</importedID>
+<mandatory>false</mandatory>
+<precision>0</precision>
+<reference>false</reference>
+<scale>0</scale>
+<size>30</size>
+<type>LOGDT024</type>
+</Attribute>
+<Attribute class="oracle.dbtools.crest.model.design.datatypes.TypeElement" name="REPLACE_METHOD" id="165DB129-029A-0649-24AA-FA4AD668E36D">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<generatorID>4C6FD236-7841-4F00-EAA8-5C6DF674DD2B</generatorID>
+<ownerDesignName>framework</ownerDesignName>
+<importedID>4C6FD236-7841-4F00-EAA8-5C6DF674DD2B</importedID>
+<mandatory>false</mandatory>
+<precision>0</precision>
+<reference>false</reference>
+<scale>0</scale>
+<size>10</size>
+<type>LOGDT024</type>
+</Attribute>
+<Attribute class="oracle.dbtools.crest.model.design.datatypes.TypeElement" name="STATISTICS" id="4DECEBD9-5BC9-AC63-8C05-CBF7B05A4A9D">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<generatorID>BA715532-A321-DD97-4DB7-6A9519A8955B</generatorID>
+<ownerDesignName>framework</ownerDesignName>
+<importedID>BA715532-A321-DD97-4DB7-6A9519A8955B</importedID>
+<mandatory>false</mandatory>
+<precision>0</precision>
+<reference>false</reference>
+<scale>0</scale>
+<size>10</size>
+<type>LOGDT024</type>
+</Attribute>
+</attributes>
+<methods>
+<Method class="oracle.dbtools.crest.model.design.datatypes.Method" name="MAPPING_OT" id="5DF46E17-B732-1A57-B7EC-A71272B317DE">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<generatorID>D2254FD4-D78B-BBCB-722F-22CCCF1C4E60</generatorID>
+<ownerDesignName>framework</ownerDesignName>
+<importedID>D2254FD4-D78B-BBCB-722F-22CCCF1C4E60</importedID>
+<constructor>true</constructor>
+<number>0</number>
+<returnValue class="oracle.dbtools.crest.model.design.datatypes.MethodParam" name="NULL SET GENERATED_568" id="90A02108-74C2-A395-A268-1274847E3C46">
+<precision>0</precision>
+<reference>false</reference>
+<scale>0</scale>
+<typeID>2FF290E9-F013-6A52-C8EC-72CA65CD1069</typeID>
+</returnValue>
+<parameters>
+<Parameter class="oracle.dbtools.crest.model.design.datatypes.MethodParam" name="P_MAPPING" id="2086D791-F4A5-9E06-8D6E-887EF4267581">
+<precision>0</precision>
+<reference>false</reference>
+<scale>0</scale>
+<typeID>LOGDT024</typeID>
+</Parameter>
+<Parameter class="oracle.dbtools.crest.model.design.datatypes.MethodParam" name="P_BATCH_ID" id="FA033210-BC54-C88C-0CBF-B8EEDE30B4B5">
+<precision>0</precision>
+<reference>false</reference>
+<scale>0</scale>
+<typeID>LOGDT019</typeID>
+</Parameter>
+</parameters>
+</Method>
+<Method class="oracle.dbtools.crest.model.design.datatypes.Method" name="REGISTER" id="B902D212-2503-BC51-B981-30CB4D4F4E3F">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<generatorID>8C4729FE-5DA2-6264-928A-655587E70405</generatorID>
+<ownerDesignName>framework</ownerDesignName>
+<importedID>8C4729FE-5DA2-6264-928A-655587E70405</importedID>
+<number>0</number>
+<parameters>
+<Parameter class="oracle.dbtools.crest.model.design.datatypes.MethodParam" name="P_MAPPING" id="46CD3985-45DB-E52B-0ED4-F41D3D85E624">
+<precision>0</precision>
+<reference>false</reference>
+<scale>0</scale>
+<typeID>LOGDT024</typeID>
+</Parameter>
+<Parameter class="oracle.dbtools.crest.model.design.datatypes.MethodParam" name="P_BATCH_ID" id="9A0A4C9A-0982-74F6-56B4-D5D9E47C321D">
+<precision>0</precision>
+<reference>false</reference>
+<scale>0</scale>
+<typeID>LOGDT019</typeID>
+</Parameter>
+</parameters>
+</Method>
+<Method class="oracle.dbtools.crest.model.design.datatypes.Method" name="VERIFY" id="8738645D-0922-AE95-186D-97431D1A28D8">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<generatorID>281047D2-5B39-F0D8-440E-4F7B62F13C8A</generatorID>
+<ownerDesignName>framework</ownerDesignName>
+<importedID>281047D2-5B39-F0D8-440E-4F7B62F13C8A</importedID>
+<number>0</number>
+</Method>
+<Method class="oracle.dbtools.crest.model.design.datatypes.Method" name="UNUSABLE_INDEXES" id="FCFC957A-379D-49FF-FD54-CFFA9811F017">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<generatorID>477DB741-E92D-EE5D-C07B-527743E87415</generatorID>
+<ownerDesignName>framework</ownerDesignName>
+<importedID>477DB741-E92D-EE5D-C07B-527743E87415</importedID>
+<number>0</number>
+</Method>
+<Method class="oracle.dbtools.crest.model.design.datatypes.Method" name="DISABLE_CONSTRAINTS" id="5E8EEBEA-E37D-FFD9-F0A8-EFDA449273E3">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<generatorID>D307E645-12A1-4EC2-F88B-447273701EDA</generatorID>
+<ownerDesignName>framework</ownerDesignName>
+<importedID>D307E645-12A1-4EC2-F88B-447273701EDA</importedID>
+<number>0</number>
+</Method>
+<Method class="oracle.dbtools.crest.model.design.datatypes.Method" name="PRE_MAP" id="367FD2BA-4C54-7AB9-99D3-BE9D1926EB9C">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<generatorID>C8D86603-0A1B-3F96-1A93-3195EC008AD1</generatorID>
+<ownerDesignName>framework</ownerDesignName>
+<importedID>C8D86603-0A1B-3F96-1A93-3195EC008AD1</importedID>
+<number>0</number>
+</Method>
+<Method class="oracle.dbtools.crest.model.design.datatypes.Method" name="REPLACE_TABLE" id="75CEB647-8585-72E1-7283-53E33EA864F6">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<generatorID>B07FF891-F5DA-AB8D-851E-77041E55F0E0</generatorID>
+<ownerDesignName>framework</ownerDesignName>
+<importedID>B07FF891-F5DA-AB8D-851E-77041E55F0E0</importedID>
+<number>0</number>
+</Method>
+<Method class="oracle.dbtools.crest.model.design.datatypes.Method" name="USABLE_INDEXES" id="0DA5A483-FF6D-7232-4A17-209C6BF15371">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<generatorID>9E768E4F-8268-FCB2-1AA5-842AEDBB4E4A</generatorID>
+<ownerDesignName>framework</ownerDesignName>
+<importedID>9E768E4F-8268-FCB2-1AA5-842AEDBB4E4A</importedID>
+<number>0</number>
+</Method>
+<Method class="oracle.dbtools.crest.model.design.datatypes.Method" name="ENABLE_CONSTRAINTS" id="A566C147-C7BF-F4FD-41FA-F3350A258731">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<generatorID>7183DFFC-0929-FE3E-4F96-B63848AC560C</generatorID>
+<ownerDesignName>framework</ownerDesignName>
+<importedID>7183DFFC-0929-FE3E-4F96-B63848AC560C</importedID>
+<number>0</number>
+</Method>
+<Method class="oracle.dbtools.crest.model.design.datatypes.Method" name="GATHER_STATS" id="8468325E-E1DB-C5B1-51DA-74910B4B9A50">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<generatorID>43A59AFE-1D22-A589-D8CC-581EA3064FC8</generatorID>
+<ownerDesignName>framework</ownerDesignName>
+<importedID>43A59AFE-1D22-A589-D8CC-581EA3064FC8</importedID>
+<number>0</number>
+</Method>
+<Method class="oracle.dbtools.crest.model.design.datatypes.Method" name="POST_MAP" id="3C040356-9F86-9293-FF03-1FEF1F46BF57">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<generatorID>07776716-3E93-75C5-847C-A5B421BFAC43</generatorID>
+<ownerDesignName>framework</ownerDesignName>
+<importedID>07776716-3E93-75C5-847C-A5B421BFAC43</importedID>
+<number>0</number>
+</Method>
+<Method class="oracle.dbtools.crest.model.design.datatypes.Method" name="START_MAP" id="6A993BF8-5E6D-35B3-2263-3645578A03FF">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<generatorID>BD13F6AB-7926-88D6-6509-909FF83D0487</generatorID>
+<ownerDesignName>framework</ownerDesignName>
+<importedID>BD13F6AB-7926-88D6-6509-909FF83D0487</importedID>
+<number>0</number>
+</Method>
+<Method class="oracle.dbtools.crest.model.design.datatypes.Method" name="END_MAP" id="261EA340-6A69-B531-C921-AC1C054B2247">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<generatorID>E46EC216-996B-F7B8-95CC-CC8A066238CA</generatorID>
+<ownerDesignName>framework</ownerDesignName>
+<importedID>E46EC216-996B-F7B8-95CC-CC8A066238CA</importedID>
+<number>0</number>
+</Method>
+<Method class="oracle.dbtools.crest.model.design.datatypes.Method" name="CONFIRM_DIM_COLS" id="15E36550-AAB8-1D09-E4AD-894987FF3609">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:31:36 UTC</createdTime>
+<generatorID>82FB491E-D00A-440B-068F-2D339878FC8D</generatorID>
+<ownerDesignName>framework</ownerDesignName>
+<importedID>82FB491E-D00A-440B-068F-2D339878FC8D</importedID>
+<number>0</number>
+</Method>
+</methods>
+</StructuredType>

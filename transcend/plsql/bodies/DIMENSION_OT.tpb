@@ -53,12 +53,14 @@ AS
       o_ev.clear_app_info;
       RETURN;
    END dimension_ot;
+
    OVERRIDING MEMBER PROCEDURE verify
    IS
       l_src_part       BOOLEAN;
       l_tab_part       BOOLEAN;
       o_ev   evolve_ot := evolve_ot( p_module => 'dimension_ot.verify' );
    BEGIN
+      
       -- now investigate the dimensional object
       -- check to make sure the dimension table exists
       td_utils.check_table( p_owner => SELF.table_owner, p_table => SELF.table_name );
@@ -119,6 +121,7 @@ AS
       -- reset the evolve_object
       o_ev.clear_app_info;
    END verify;
+
    MEMBER PROCEDURE initialize_cols
    IS
       o_ev   evolve_ot := evolve_ot( p_module => 'initialize_cols' );
@@ -217,7 +220,8 @@ AS
       -- reset the evolve_object
       o_ev.clear_app_info;
    END initialize_cols;
-   OVERRIDING MEMBER PROCEDURE confirm_dim_cols
+
+   MEMBER PROCEDURE confirm_dim_cols
    IS
       l_col_except    VARCHAR2( 1 );
       l_col_name      all_tab_columns.column_name%TYPE;
@@ -292,6 +296,93 @@ AS
       -- reset the evolve_object
       o_ev.clear_app_info;
    END confirm_dim_cols;
+
+   MEMBER PROCEDURE create_staging_table
+   IS
+      l_bt_part          VARCHAR2(10);
+      l_tab_part         BOOLEAN        := td_utils.is_part_table( self.table_owner, self.table_name);
+      o_ev               evolve_ot      := evolve_ot( p_module => 'dimension_ot.create_staging_table' );
+   BEGIN
+
+      -- create the staging table
+      -- this is a staging table that holds the results of the dimensional analysis
+      -- it is then either exchanged in, table-renamed, or the source for a merge
+      o_ev.change_action( 'create staging table' );
+
+
+      l_bt_part      := CASE
+                        WHEN SELF.replace_method = 'exchange' AND l_tab_part 
+                        THEN 'remove'
+                        WHEN SELF.replace_method = 'exchange' AND NOT l_tab_part
+                        THEN 'single'
+                        ELSE 'keep'
+                        END;
+                              
+      evolve.log_variable( 'L_BT_PART', l_bt_part );
+                           
+      -- only try to build the table if it already exists
+      IF NOT td_utils.table_exists( p_owner             => SELF.staging_owner,
+                                    p_table             => SELF.staging_table )
+      THEN
+
+         td_dbutils.build_table( p_source_owner      => SELF.table_owner,
+                                 p_source_table      => SELF.table_name,
+                                 p_owner             => SELF.staging_owner,
+                                 p_table             => SELF.staging_table,
+                                 p_partitioning      => l_bt_part
+                               );
+
+      ELSE
+
+         -- since the table already exists, we need to "clean" it
+         -- drop constraints
+            -- drop indexes
+            -- truncate
+
+         -- drop constraints on the segment in preparation for loading
+         o_ev.change_action( 'drop constraints on staging' );
+
+         BEGIN
+            td_dbutils.drop_constraints( p_owner           => SELF.staging_owner, 
+                                         p_table           => SELF.staging_table,
+                                         p_constraint_type => 'p|r|u' 
+                                       );
+         EXCEPTION
+            WHEN td_dbutils.drop_iot_key
+            THEN
+              NULL;
+         END;
+
+         -- drop indexes on the segment in preparation for loading
+         o_ev.change_action( 'drop indexes on staging' );
+         td_dbutils.drop_indexes( p_owner => SELF.staging_owner, p_table => SELF.staging_table );
+                  
+         -- truncate the staging table to get ready for a new run
+         o_ev.change_action( 'truncate staging table' );
+         td_dbutils.truncate_table( p_owner => SELF.staging_owner, p_table => SELF.staging_table );
+            
+      END IF;
+
+      -- reset the evolve_object
+      o_ev.clear_app_info;
+   END create_staging_table;
+
+   MEMBER PROCEDURE drop_staging_table
+   IS
+      o_ev               evolve_ot      := evolve_ot( p_module => 'dimension_ot.drop_staging_table' );
+   BEGIN
+
+      td_dbutils.drop_table
+      (
+        p_owner             => SELF.staging_owner,
+        p_table             => SELF.staging_table
+      );
+
+      -- reset the evolve_object
+      o_ev.clear_app_info;
+
+   END drop_staging_table;
+
    MEMBER PROCEDURE load_staging
    IS
       e_dup_tab_name     EXCEPTION;
@@ -315,7 +406,6 @@ AS
       l_dim_from_clause  LONG;
       l_dim_in_clause    LONG;
       l_dim_notin_clause LONG;
-      l_bt_part          VARCHAR2(10);
       l_tab_part         BOOLEAN;
       l_rows             BOOLEAN;
       o_ev               evolve_ot := evolve_ot( p_module => 'mapping '||SELF.mapping_name, p_action => 'start mapping' );
@@ -325,9 +415,6 @@ AS
       -- first, confirm that the column values are as they should be
       confirm_dim_cols;
       
-      -- let's find out if it's partitioned
-      l_tab_part      := td_utils.is_part_table( table_owner, table_name);
-
       -- need to get some of the default comparision values
       BEGIN
          SELECT char_nvl_default, number_nvl_default, date_nvl_default, stage_key_default
@@ -696,65 +783,9 @@ AS
                                  || l_dim_notin_clause;
 
       evolve.log_variable( 'SELF.nonscd_statement', SELF.nonscd_statement );                                    
-
-      -- create the staging table
-      -- this is a staging table that holds the results of the dimensional analysis
-      -- it is then either exchanged in, table-renamed, or the source for a merge
-      o_ev.change_action( 'create staging table' );
-
-
-      l_bt_part      := CASE
-                        WHEN SELF.replace_method = 'exchange' AND l_tab_part 
-                        THEN 'remove'
-                        WHEN SELF.replace_method = 'exchange' AND NOT l_tab_part
-                        THEN 'single'
-                        ELSE 'keep'
-                        END;
-                              
-      evolve.log_variable( 'L_BT_PART', l_bt_part );
-                           
-      -- only try to build the table if it already exists
-      IF NOT td_utils.table_exists( p_owner             => SELF.staging_owner,
-                                    p_table             => SELF.staging_table )
-      THEN
-
-         td_dbutils.build_table( p_source_owner      => SELF.table_owner,
-                                 p_source_table      => SELF.table_name,
-                                 p_owner             => SELF.staging_owner,
-                                 p_table             => SELF.staging_table,
-                                 p_partitioning      => l_bt_part
-                               );
-
-      ELSE
-
-         -- since the table already exists, we need to "clean" it
-         -- drop constraints
-            -- drop indexes
-            -- truncate
-
-         -- drop constraints on the segment in preparation for loading
-         o_ev.change_action( 'drop constraints on staging' );
-
-         BEGIN
-            td_dbutils.drop_constraints( p_owner           => SELF.staging_owner, 
-                                         p_table           => SELF.staging_table,
-                                         p_constraint_type => 'p|r|u' 
-                                       );
-         EXCEPTION
-            WHEN td_dbutils.drop_iot_key
-            THEN
-              NULL;
-         END;
-
-         -- drop indexes on the segment in preparation for loading
-         o_ev.change_action( 'drop indexes on staging' );
-         td_dbutils.drop_indexes( p_owner => SELF.staging_owner, p_table => SELF.staging_table );
-                  
-         -- truncate the staging table to get ready for a new run
-         o_ev.change_action( 'truncate staging table' );
-         td_dbutils.truncate_table( p_owner => SELF.staging_owner, p_table => SELF.staging_table );
-            
-      END IF;
+                                    
+      -- create the staging table                         
+      self.create_staging_table;
             
       -- we are doing full segment-switching
       -- that means that all rows have to make it to the staging table
@@ -907,6 +938,39 @@ AS
 
       o_ev.clear_app_info;
    END post_map;
+   
+   OVERRIDING MEMBER PROCEDURE post_verify
+   IS
+      o_ev   evolve_ot := evolve_ot( p_module => 'mapping_ot.post_verify' );
+   BEGIN
+      
+      -- confirm the column configurations
+      self.confirm_dim_cols;
+
+      o_ev.clear_app_info;
+   END post_verify;
+   
+   OVERRIDING MEMBER PROCEDURE post_create
+   IS
+      o_ev   evolve_ot := evolve_ot( p_module => 'mapping_ot.post_create' );
+   BEGIN
+
+      -- create the staging table
+      create_staging_table;
+
+      o_ev.clear_app_info;
+   END post_create;
+
+   OVERRIDING MEMBER PROCEDURE post_delete
+   IS
+      o_ev   evolve_ot := evolve_ot( p_module => 'mapping_ot.post_delete' );
+   BEGIN
+      
+      -- drop the staging table
+      drop_staging_table;
+
+      o_ev.clear_app_info;
+   END post_delete;   
 
 END;
 /

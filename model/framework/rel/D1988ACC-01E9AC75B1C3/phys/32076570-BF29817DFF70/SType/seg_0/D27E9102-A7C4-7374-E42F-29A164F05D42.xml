@@ -1,0 +1,10 @@
+<?xml version = '1.0' encoding = 'UTF-8'?>
+<StructuredTypeProxyOraclev10g class="oracle.dbtools.crest.model.design.storage.oracle.v10g.StructuredTypeProxyOraclev10g" name="OGG_SUB_OT" id="D27E9102-A7C4-7374-E42F-29A164F05D42" directorySegmentName="seg_0">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>TDREP</sourceObjSchema>
+<sourceObjName>OGG_SUB_OT</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-25 17:28:02 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<owner>0C2151DF-62EE-C23D-290F-0E2BB70855CD</owner>
+</StructuredTypeProxyOraclev10g>

@@ -1,6 +1,5 @@
-CREATE OR REPLACE TYPE mapping_ot
-   AUTHID CURRENT_USER
-AS OBJECT
+CREATE OR REPLACE TYPE mapping_ot force
+AUTHID CURRENT_USER AS OBJECT
 (
   mapping_name              VARCHAR2( 30 ),
   mapping_type		    VARCHAR2( 10 ),
@@ -23,21 +22,40 @@ AS OBJECT
   staging_column            VARCHAR2( 30 ),
   replace_method            VARCHAR2( 10 ),
   statistics                VARCHAR2( 10 ),
+
   CONSTRUCTOR FUNCTION mapping_ot( p_mapping VARCHAR2, p_batch_id NUMBER DEFAULT NULL )
      RETURN SELF AS RESULT,
+
   MEMBER PROCEDURE register ( p_mapping VARCHAR2, p_batch_id NUMBER DEFAULT NULL ),
+
   MEMBER PROCEDURE verify,
+
   MEMBER PROCEDURE unusable_indexes,
+
   MEMBER PROCEDURE disable_constraints,
+
   MEMBER PROCEDURE pre_map,
+
   MEMBER PROCEDURE replace_table,
+
   MEMBER PROCEDURE usable_indexes,
+
   MEMBER PROCEDURE enable_constraints,
+
   MEMBER PROCEDURE gather_stats,
+
   MEMBER PROCEDURE post_map,
+
   MEMBER PROCEDURE start_map,
+
   MEMBER PROCEDURE end_map,
-  MEMBER PROCEDURE confirm_dim_cols
+
+  MEMBER PROCEDURE post_verify,
+  
+  MEMBER PROCEDURE post_create,
+  
+  MEMBER PROCEDURE post_delete
+
 )
 NOT FINAL;
 /

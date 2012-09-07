@@ -1,0 +1,35 @@
+CREATE OR REPLACE TYPE BODY cdc_sub_ot wrapped 
+a000000
+1
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+e
+778 35f
+bzRJ2Ut3cgfqYVK4qSxV9IfgdH8wg/DDLiAFfHRVrZ2sxFNn92pKmQln933D1mKIwokamOfe
+t8sdwpFU67Uk+sIXOoyhKFLKIvz3jjpNT55GY5GupcKqLSC7cjPPWMjAZfumtYwJiaOI5WOs
+d+flvo5niA1jk6Mm1U8akuGOjczIdjgujhAU/ApbueGeng3M4fJHCcpj2qcb6xzH7mi/9NXR
+J7G5T51/hqz23GX5HUw0FiUGqCJV14CI5n1CXJSeb5Qvfq2LDMNpFqH3iAIv6fh+AsyUkLRS
+TDsqiQLDavKhXsNu/mI8U3ez1PP/QJ9ZXoCXsREMxWCPea+UCC7SMHTHawEwKQq9QgfVkyql
+VCf7GhWLcXGE+t85XmxO5Q9co3+bTJu1jFQJlZkPPKmxiXHYyr3pUp8frX4csw17t/3DvaDv
+Nm3U399UU2O0bV0wNufeiLPb6CXnPOCDOJBue1tx2X7wgukw9G+NrJEjewWj9Ov4CDY2E9B/
+PHFYcZN4E25Wgllwkp9XvP802K6YmlvGtN4O7zs+SMfk5BI/tes43sEaQyk8tLbiqlB98V65
+yEngpeZ5lqrKw2gnwRd4cXy+CBw08TgO+uTIW+Y45JVCC5yImWnGhw+3b7HN9s5iW6V586S3
+FYvxWNjlOPwFlIfBz1ikcpjtEADNzQH+z3pZhDU4RM/irp0zUpxX/dIWjkObvdAHg6clFqO9
+vMRz/LJON33VlXiuf4h9eVlcNX8y4G1X14eRQTxCItLvIawRgLSO3FcwTPps/Lknx7OYAVWD
+Moc97ZC/mOxaTD8E62vt+U7vgoyI0wGh7jNfWkM0WO7/40V/M+H5myi26k2V
+
+/
+SHOW errors

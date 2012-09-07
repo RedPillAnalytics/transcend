@@ -408,16 +408,35 @@ AS
       o_ev.clear_app_info;
    END end_map;
 
-   -- null procedure for polymorphism only
-   MEMBER PROCEDURE confirm_dim_cols
+   MEMBER PROCEDURE post_verify
    IS
-      o_ev   evolve_ot := evolve_ot( p_module => 'mapping_ot.confirm_dim_cols' );
+      o_ev   evolve_ot := evolve_ot( p_module => 'mapping_ot.post_verify' );
    BEGIN
-      -- simply raise an exception if this procedure ever gets called
-      -- it never should, as it is only here for inheritance
-      evolve.raise_err( 'wrong_map_type' );
+      
+      -- nothing configured here yet
+
       o_ev.clear_app_info;
-   END confirm_dim_cols;
+   END post_verify;
+   
+   MEMBER PROCEDURE post_create
+   IS
+      o_ev   evolve_ot := evolve_ot( p_module => 'mapping_ot.post_create' );
+   BEGIN
+
+      -- nothing configured here yet      
+
+      o_ev.clear_app_info;
+   END post_create;
+
+   MEMBER PROCEDURE post_delete
+   IS
+      o_ev   evolve_ot := evolve_ot( p_module => 'mapping_ot.post_delete' );
+   BEGIN
+      
+      -- nothing configured here yet
+
+      o_ev.clear_app_info;
+   END post_delete;   
 
 END;
 /

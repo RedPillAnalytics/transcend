@@ -72,6 +72,8 @@ BEGIN
       EXECUTE IMMEDIATE q'|CREATE ROLE evolve|';
       EXECUTE IMMEDIATE q'|CREATE ROLE trans_etl|';
       EXECUTE IMMEDIATE q'|CREATE ROLE trans_files|';
+      EXECUTE IMMEDIATE q'|CREATE ROLE trans_cdc|';
+
       dbms_output.put_line( 'Press RETURN to continue' );
 
    EXCEPTION
@@ -119,6 +121,13 @@ BEGIN
 	 NULL;
       END;
       BEGIN
+	 EXECUTE IMMEDIATE q'|DROP ROLE trans_cdc|';
+      EXCEPTION
+	 WHEN e_no_role
+	 THEN
+	 NULL;
+      END;
+      BEGIN
 	 EXECUTE IMMEDIATE q'|DROP table tdsys.users|';
       EXCEPTION
 	 WHEN e_no_tab
@@ -139,9 +148,6 @@ BEGIN
 	 THEN
 	 NULL;
       END;
-      EXECUTE IMMEDIATE q'|CREATE ROLE evolve|';
-      EXECUTE IMMEDIATE q'|CREATE ROLE trans_etl|';
-      EXECUTE IMMEDIATE q'|CREATE ROLE trans_files|';
 
    ELSIF :b_role_exists = 'Y' AND '&drop_repo' = 'N'
    THEN
@@ -300,7 +306,6 @@ GRANT EXECUTE ON tdsys.td_adm TO &app_schema;
 @../evolve/plsql/specs/EVOLVE_ADM.pks
 
 -- now compile all the package bodies
---@../evolve/plsql/wrapped_bodies/STRING_AGG_OT.plb
 @../evolve/plsql/wrapped_bodies/TD_CORE.plb
 @../evolve/plsql/wrapped_bodies/TD_INST.plb
 @../evolve/plsql/wrapped_bodies/EVOLVE.plb
@@ -329,6 +334,12 @@ EXEC evolve_adm.set_default_configs;
 @../transcend/plsql/wrapped_bodies/MAPPING_OT.plb
 @../transcend/plsql/specs/DIMENSION_OT.tps
 @../transcend/plsql/wrapped_bodies/DIMENSION_OT.plb
+@../transcend/plsql/specs/CDC_GROUP_OT.tps
+@../transcend/plsql/wrapped_bodies/CDC_GROUP_OT.plb
+@../transcend/plsql/specs/CDC_SUB_OT.tps
+@../transcend/plsql/wrapped_bodies/CDC_SUB_OT.plb
+@../transcend/plsql/specs/OGG_SUB_OT.tps
+@../transcend/plsql/wrapped_bodies/OGG_SUB_OT.plb
 
 -- CREATE factory package
 @../transcend/plsql/specs/TRANS_FACTORY.pks
@@ -341,6 +352,8 @@ EXEC evolve_adm.set_default_configs;
 @../transcend/plsql/wrapped_bodies/TRANS_ETL.plb
 @../transcend/plsql/specs/TRANS_FILES.pks
 @../transcend/plsql/wrapped_bodies/TRANS_FILES.plb
+@../transcend/plsql/specs/TRANS_CDC.pks
+@../transcend/plsql/wrapped_bodies/TRANS_CDC.plb
 
 -- set Evolve configurations specific to Transcend
 EXEC trans_adm.set_default_configs;

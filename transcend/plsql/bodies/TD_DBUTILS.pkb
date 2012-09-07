@@ -2265,7 +2265,8 @@ AS
         p_direct          VARCHAR2      DEFAULT 'yes',
         p_degree          NUMBER        DEFAULT NULL,
         p_log_table       VARCHAR2      DEFAULT NULL,
-        p_reject_limit    VARCHAR2      DEFAULT 'unlimited'
+        p_reject_limit    VARCHAR2      DEFAULT 'unlimited',
+        p_dblink          VARCHAR2      DEFAULT NULL
       )
    IS
       l_src_name   VARCHAR2( 61 ) := UPPER( p_source_owner || '.' || p_source_object );
@@ -2276,13 +2277,21 @@ AS
       o_ev         evolve_ot      := evolve_ot( p_module => 'insert_table', p_action => 'Check existence of objects' );
    BEGIN
       -- check information about the table
-      td_utils.check_table( p_owner => p_owner, p_table => p_table );
+      td_utils.check_table( p_owner => p_owner, p_table => p_table, p_dblink => p_dblink );
 
       -- check that the source object exists
-      td_utils.check_object( p_owner => p_source_owner, p_object => p_source_object, p_object_type => 'table|view|synonym' );
+      td_utils.check_object( p_owner => p_source_owner, p_object => p_source_object, p_object_type => 'table|view|synonym', p_dblink => p_dblink );
 
       -- get the set of columns that are in common
-      l_collist := td_utils.get_column_list( p_owner, p_table, p_source_owner, p_source_object );
+      l_collist := td_utils.get_column_list
+      ( 
+        p_owner         => p_owner, 
+        p_table         => p_table, 
+        p_source_owner  => p_source_owner, 
+        p_source_table  => p_source_object,
+        p_dblink        => p_dblink
+      );
+
       IF l_collist IS NULL
       THEN
          evolve.raise_err( 'no_matching columns' );
@@ -2353,6 +2362,7 @@ AS
                                          || chr(10)
                                          || 'from '
                                          || l_src_name
+                                         || CASE WHEN p_dblink IS NOT NULL THEN '@'||p_dblink ELSE NULL END 
                                          || ' '
                                          -- flashback query functionality
                                          || CASE WHEN p_scn IS NOT NULL THEN 'as of SCN '|| p_scn ELSE NULL END

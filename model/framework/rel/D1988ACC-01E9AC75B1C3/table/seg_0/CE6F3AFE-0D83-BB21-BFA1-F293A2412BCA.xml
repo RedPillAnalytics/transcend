@@ -1,0 +1,129 @@
+<?xml version = '1.0' encoding = 'UTF-8'?>
+<Table class="oracle.dbtools.crest.model.design.relational.Table" id="CE6F3AFE-0D83-BB21-BFA1-F293A2412BCA" directorySegmentName="seg_0" name="DDL_QUEUE">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>TDREP</sourceObjSchema>
+<sourceObjName>DDL_QUEUE</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<schemaObject>981BC2CF-20FF-BAE7-2EAE-31EEE45FB7B8</schemaObject>
+<fonts itemClass="oracle.dbtools.crest.model.design.FontObjectWr">
+<FontObject>
+<foType>Title</foType>
+<fontStyle>1</fontStyle>
+<colorRGB>-16776961</colorRGB>
+</FontObject>
+<FontObject>
+<foType>Column</foType>
+<colorRGB>-16777216</colorRGB>
+</FontObject>
+<FontObject>
+<foType>Datatype</foType>
+<colorRGB>-16744448</colorRGB>
+</FontObject>
+<FontObject>
+<foType>PK Element</foType>
+<colorRGB>-16776961</colorRGB>
+</FontObject>
+<FontObject>
+<foType>FK Element</foType>
+<colorRGB>-16777216</colorRGB>
+</FontObject>
+<FontObject>
+<foType>UK Element</foType>
+<colorRGB>-16776961</colorRGB>
+</FontObject>
+<FontObject>
+<foType>Not Null</foType>
+<colorRGB>-65536</colorRGB>
+</FontObject>
+<FontObject>
+<foType>Key</foType>
+<colorRGB>-16777216</colorRGB>
+</FontObject>
+</fonts>
+<columns itemClass="oracle.dbtools.crest.model.design.relational.Column">
+<Column name="STMT_DDL" id="BAEA5AD4-188D-8FD6-8C33-3BBD0092E68A">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>DDL_QUEUE</sourceObjSchema>
+<sourceObjName>STMT_DDL</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>4000 BYTE</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="STMT_MSG" id="56B4469C-DEAD-A8AE-4B9C-6E2A0D96EE41">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>DDL_QUEUE</sourceObjSchema>
+<sourceObjName>STMT_MSG</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>4000 BYTE</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="CLIENT_INFO" id="65F34DFB-11E1-A82D-AA2D-1F269AB16638">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>DDL_QUEUE</sourceObjSchema>
+<sourceObjName>CLIENT_INFO</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>64 BYTE</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="MODULE" id="B16718AE-224F-E511-B099-C2A8329DC881">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>DDL_QUEUE</sourceObjSchema>
+<sourceObjName>MODULE</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>48 BYTE</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="ACTION" id="7665E5FD-B4D7-0A78-CB3B-370CCD480259">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>DDL_QUEUE</sourceObjSchema>
+<sourceObjName>ACTION</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>24 BYTE</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="STMT_ORDER" id="58FBF9A4-9983-AD8B-B5D2-4C997DE8A31E">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>DDL_QUEUE</sourceObjSchema>
+<sourceObjName>STMT_ORDER</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT019</logicalDatatype>
+<dataTypeSize>22</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+</columns>
+</Table>

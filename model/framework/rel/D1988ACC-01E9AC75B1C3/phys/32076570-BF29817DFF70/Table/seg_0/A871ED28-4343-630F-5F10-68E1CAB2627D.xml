@@ -1,0 +1,91 @@
+<?xml version = '1.0' encoding = 'UTF-8'?>
+<TableProxyOraclev11g class="oracle.dbtools.crest.model.design.storage.oracle.v11g.TableProxyOraclev11g" name="CDC_ENTITY" id="A871ED28-4343-630F-5F10-68E1CAB2627D" directorySegmentName="seg_0">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-27 02:34:21 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<logging>YES</logging>
+<partitionedRowMovement>DISABLE</partitionedRowMovement>
+<segment>F17ABCE8-3D71-658C-E16F-3FE191F108B9</segment>
+<tableSpace>3810EF67-8EFC-FA69-9DE1-7532093D7BC0</tableSpace>
+<columnProxies>
+<ColumnProxy class="oracle.dbtools.crest.model.design.storage.oracle.v11g.ColumnProxyOraclev11g" name="MODIFIED_DT" id="0DDB457B-BD28-BDAB-7AB0-3EA0A33962A6">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-27 02:34:21 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+</ColumnProxy>
+<ColumnProxy class="oracle.dbtools.crest.model.design.storage.oracle.v11g.ColumnProxyOraclev11g" name="MODIFIED_USER" id="1ECD734D-3352-2725-A646-7D0CC55FF063">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-27 02:34:21 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+</ColumnProxy>
+<ColumnProxy class="oracle.dbtools.crest.model.design.storage.oracle.v11g.ColumnProxyOraclev11g" name="TABLE_NAME" id="23E59897-DA64-9CB7-7CA7-12209732B7A6">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-27 02:34:21 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+</ColumnProxy>
+<ColumnProxy class="oracle.dbtools.crest.model.design.storage.oracle.v11g.ColumnProxyOraclev11g" name="CREATED_DT" id="3364B143-E790-03E0-A33B-B53A01B8B89F">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-27 02:34:21 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<defaultValue>SYSDATE</defaultValue>
+</ColumnProxy>
+<ColumnProxy class="oracle.dbtools.crest.model.design.storage.oracle.v11g.ColumnProxyOraclev11g" name="GROUP_ID" id="412AD4D3-66EB-9300-5F95-2111F5920AD3">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-27 02:34:21 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+</ColumnProxy>
+<ColumnProxy class="oracle.dbtools.crest.model.design.storage.oracle.v11g.ColumnProxyOraclev11g" name="SOURCE_TABLE" id="483A4536-8AC4-A6AC-D7AD-98D83A7C7AA6">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-27 02:34:21 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+</ColumnProxy>
+<ColumnProxy class="oracle.dbtools.crest.model.design.storage.oracle.v11g.ColumnProxyOraclev11g" name="ENTITY_ID" id="93C62001-E073-102A-8D29-61C0068E649F">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-27 02:34:21 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+</ColumnProxy>
+<ColumnProxy class="oracle.dbtools.crest.model.design.storage.oracle.v11g.ColumnProxyOraclev11g" name="SOURCE_OWNER" id="9DC55DBB-6B2C-F06C-5E83-5BC48E4AFA6B">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-27 02:34:21 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+</ColumnProxy>
+<ColumnProxy class="oracle.dbtools.crest.model.design.storage.oracle.v11g.ColumnProxyOraclev11g" name="NATKEY_LIST" id="D6C3C08C-2CA2-FC89-5AE4-BF3AD2EB04D1">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-27 02:34:21 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+</ColumnProxy>
+<ColumnProxy class="oracle.dbtools.crest.model.design.storage.oracle.v11g.ColumnProxyOraclev11g" name="CREATED_USER" id="ED83BBCE-5627-1F19-3D19-0388A5999AC7">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-27 02:34:21 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<defaultValue>sys_context(&apos;USERENV&apos;,&apos;SESSION_USER&apos;)</defaultValue>
+</ColumnProxy>
+</columnProxies>
+<foreignKeys>
+<ForeignKey class="oracle.dbtools.crest.model.design.storage.oracle.v10g.FKProxyOraclev10g" name="CDC_ENTITY_FK1" id="C00F2FDE-C558-95B5-9004-B6828C4547BC">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-27 02:34:21 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+</ForeignKey>
+</foreignKeys>
+<primaryKeys>
+<PrimaryKey class="oracle.dbtools.crest.model.design.storage.oracle.v10g.PKProxyOraclev10g" name="CDC_SUB_ENTITY_PK" id="520FA501-4D14-1C20-6742-67B7CEAA01E2">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-27 02:34:21 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<tableSpace>3810EF67-8EFC-FA69-9DE1-7532093D7BC0</tableSpace>
+<indexSegment>EF04ED02-93CB-3266-2A3E-5A14E7ACF1A9</indexSegment>
+<indexSort>SORTED</indexSort>
+</PrimaryKey>
+</primaryKeys>
+<uniqueKeys>
+<UniqueKey class="oracle.dbtools.crest.model.design.storage.oracle.v10g.UniqueOraclev10g" name="CDC_ENTITY_UK1" id="4E3B741B-C301-8755-1E6E-CB0E7AF91455">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-27 02:34:21 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<tableSpace>3810EF67-8EFC-FA69-9DE1-7532093D7BC0</tableSpace>
+<indexSegment>EF04ED02-93CB-3266-2A3E-5A14E7ACF1A9</indexSegment>
+<indexSort>SORTED</indexSort>
+</UniqueKey>
+</uniqueKeys>
+</TableProxyOraclev11g>

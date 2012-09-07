@@ -206,7 +206,7 @@ IS
       
       -- this type is created first as it's needed for the TD_CORE
       BEGIN
-         EXECUTE IMMEDIATE 'DROP TYPE '||p_schema||'.split_ot';
+         EXECUTE IMMEDIATE 'DROP TYPE '||p_schema||'.split_ot force';
       EXCEPTION
          when e_no_obj
          THEN
@@ -221,26 +221,7 @@ IS
          THEN
          NULL;
       END;
-            
-      -- STRAGG function
-      BEGIN
-         EXECUTE IMMEDIATE 'DROP package '||p_schema||'.string_agg_ot';
-      EXCEPTION
-         when e_no_obj
-         THEN
-         NULL;
-      END;
-
-      BEGIN
-         EXECUTE IMMEDIATE 'DROP function '||p_schema||'.stragg';
-      EXCEPTION
-         when e_no_obj
-         THEN
-         NULL;
-      END;
       
-
-
       -- java stored procedures
       BEGIN
          EXECUTE IMMEDIATE 'DROP java source '||p_schema||'.TdUtils';
@@ -267,29 +248,10 @@ IS
          THEN
          NULL;
       END;
-      
-      -- drop some older evolve packages just in case
-      -- these no longer exist in current versions
-      -- evolve package
-      BEGIN
-         EXECUTE IMMEDIATE 'DROP package '||p_schema||'.evolve_app';
-      EXCEPTION
-         when e_no_obj
-         THEN
-         NULL;
-      END;
-      -- evolve package
-      BEGIN
-         EXECUTE IMMEDIATE 'DROP package '||p_schema||'.evolve_log';
-      EXCEPTION
-         when e_no_obj
-         THEN
-         NULL;
-      END;
-      
+            
       -- types need to be dropped in a specific order
       BEGIN
-         EXECUTE IMMEDIATE 'DROP TYPE '||p_schema||'.notification_ot';
+         EXECUTE IMMEDIATE 'DROP TYPE '||p_schema||'.notification_ot force';
       EXCEPTION
          when e_no_obj
          THEN
@@ -297,7 +259,7 @@ IS
       END;
 
       BEGIN
-         EXECUTE IMMEDIATE 'DROP TYPE '||p_schema||'.evolve_ot';
+         EXECUTE IMMEDIATE 'DROP TYPE '||p_schema||'.evolve_ot force';
       EXCEPTION
          when e_no_obj
          THEN
@@ -331,12 +293,13 @@ IS
       END;
 
    END drop_evolve_app;
-
+   
+   -- Transcend ETL
    PROCEDURE drop_transcend_app ( p_schema VARCHAR2 )
    IS
    BEGIN
       BEGIN
-         EXECUTE IMMEDIATE 'DROP TYPE '||p_schema||'.dimension_ot';
+         EXECUTE IMMEDIATE 'DROP TYPE '||p_schema||'.dimension_ot force';
       EXCEPTION
          WHEN e_no_obj
          THEN
@@ -344,7 +307,16 @@ IS
       END;
 
       BEGIN
-         EXECUTE IMMEDIATE 'DROP TYPE '||p_schema||'.mapping_ot';
+         EXECUTE IMMEDIATE 'DROP TYPE '||p_schema||'.mapping_ot force';
+      EXCEPTION
+         WHEN e_no_obj
+         THEN
+            NULL;
+      END;
+      
+      -- Transcend Files
+      BEGIN
+         EXECUTE IMMEDIATE 'DROP TYPE '||p_schema||'.feed_ot force';
       EXCEPTION
          WHEN e_no_obj
          THEN
@@ -352,7 +324,7 @@ IS
       END;
 
       BEGIN
-         EXECUTE IMMEDIATE 'DROP TYPE '||p_schema||'.feed_ot';
+         EXECUTE IMMEDIATE 'DROP TYPE '||p_schema||'.extract_ot force';
       EXCEPTION
          WHEN e_no_obj
          THEN
@@ -360,7 +332,17 @@ IS
       END;
 
       BEGIN
-         EXECUTE IMMEDIATE 'DROP TYPE '||p_schema||'.extract_ot';
+         EXECUTE IMMEDIATE 'DROP TYPE '||p_schema||'.file_label_ot force';
+      EXCEPTION
+         WHEN e_no_obj
+         THEN
+            NULL;
+      END;
+            
+      -- Transcend CDC
+      
+      BEGIN
+         EXECUTE IMMEDIATE 'DROP TYPE '||p_schema||'.ogg_sub_ot force';
       EXCEPTION
          WHEN e_no_obj
          THEN
@@ -368,12 +350,23 @@ IS
       END;
 
       BEGIN
-         EXECUTE IMMEDIATE 'DROP TYPE '||p_schema||'.file_ot';
+         EXECUTE IMMEDIATE 'DROP TYPE '||p_schema||'.cdc_sub_ot force';
       EXCEPTION
          WHEN e_no_obj
          THEN
             NULL;
       END;
+
+
+      BEGIN
+         EXECUTE IMMEDIATE 'DROP TYPE '||p_schema||'.cdc_group_ot force';
+      EXCEPTION
+         WHEN e_no_obj
+         THEN
+            NULL;
+      END;
+      
+      -- base utility packages
 
       BEGIN
          EXECUTE IMMEDIATE 'DROP package '||p_schema||'.td_dbutils';
@@ -401,6 +394,14 @@ IS
       
       BEGIN
          EXECUTE IMMEDIATE 'DROP package '||p_schema||'.trans_files';
+      EXCEPTION
+         WHEN e_no_obj
+         THEN
+            NULL;
+      END;
+      
+      BEGIN
+         EXECUTE IMMEDIATE 'DROP package '||p_schema||'.trans_cdc';
       EXCEPTION
          WHEN e_no_obj
          THEN
@@ -451,7 +452,7 @@ IS
 	 
          -- sequences
          EXECUTE IMMEDIATE 'grant select on CONCURRENT_ID_SEQ to ' || p_grantee;
-         
+
          -- views
          EXECUTE IMMEDIATE 'grant select on log to ' || p_grantee;
 
@@ -551,11 +552,31 @@ IS
          EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON COLUMN_CONF TO ' || p_grantee;
 
          EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON COLUMN_TYPE_LIST TO ' || p_grantee;
-	 
+
+         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON CDC_SOURCE TO ' || p_grantee;
+
+         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON CDC_SOURCE_EXTERNAL TO ' || p_grantee;
+
+         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON CDC_GROUP TO ' || p_grantee;
+
+         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON CDC_AUDIT_DATATYPE TO ' || p_grantee;
+
+         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON CDC_ENTITY TO ' || p_grantee;
+
+         EXECUTE IMMEDIATE 'GRANT '||l_grant||' ON CDC_SUBSCRIPTION TO ' || p_grantee;
+
 	 -- sequence
          EXECUTE IMMEDIATE 'GRANT SELECT ON file_detail_seq TO ' || p_grantee;
 
          EXECUTE IMMEDIATE 'GRANT SELECT ON file_object_detail_seq TO ' || p_grantee;
+
+         EXECUTE IMMEDIATE 'GRANT SELECT ON cdc_source_seq TO ' || p_grantee;
+         
+         EXECUTE IMMEDIATE 'GRANT SELECT ON cdc_group_seq TO ' || p_grantee;
+         
+         EXECUTE IMMEDIATE 'GRANT SELECT ON cdc_entity_seq TO ' || p_grantee;
+         
+         EXECUTE IMMEDIATE 'GRANT SELECT ON cdc_subscription_seq TO ' || p_grantee;
 
       EXCEPTION
          WHEN e_no_grantee
@@ -575,6 +596,8 @@ IS
       EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.TRANS_ETL to ' || p_user;
 
       EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.TRANS_FILES to ' || p_user;
+
+      EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.TRANS_CDC to ' || p_user;
    EXCEPTION
       WHEN e_no_obj
       THEN
@@ -1649,6 +1672,54 @@ IS
 
       -- this will drop all the tables before beginning
       BEGIN
+         EXECUTE IMMEDIATE q'|DROP TABLE cdc_subscription|';
+      EXCEPTION
+         WHEN e_no_tab
+         THEN
+         NULL;
+      END;
+      
+      BEGIN
+         EXECUTE IMMEDIATE q'|DROP TABLE cdc_entity|';
+      EXCEPTION
+         WHEN e_no_tab
+         THEN
+         NULL;
+      END;
+      
+      BEGIN
+         EXECUTE IMMEDIATE q'|DROP TABLE cdc_audit_datatype|';
+      EXCEPTION
+         WHEN e_no_tab
+         THEN
+         NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE q'|DROP TABLE cdc_group|';
+      EXCEPTION
+         WHEN e_no_tab
+         THEN
+         NULL;
+      END;
+      
+      BEGIN
+         EXECUTE IMMEDIATE q'|DROP TABLE cdc_source_external|';
+      EXCEPTION
+         WHEN e_no_tab
+         THEN
+         NULL;
+      END;
+      
+      BEGIN
+         EXECUTE IMMEDIATE q'|DROP TABLE cdc_source|';
+      EXCEPTION
+         WHEN e_no_tab
+         THEN
+         NULL;
+      END;
+      
+      BEGIN
          EXECUTE IMMEDIATE q'|DROP TABLE column_conf|';
       EXCEPTION
          WHEN e_no_tab
@@ -1754,6 +1825,38 @@ IS
 
       BEGIN
          EXECUTE IMMEDIATE q'|DROP sequence file_object_detail_seq|';
+      EXCEPTION
+         WHEN e_no_seq
+         THEN
+         NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE q'|DROP sequence cdc_source_seq|';
+      EXCEPTION
+         WHEN e_no_seq
+         THEN
+         NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE q'|DROP sequence cdc_group_seq|';
+      EXCEPTION
+         WHEN e_no_seq
+         THEN
+         NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE q'|DROP sequence cdc_entity_seq|';
+      EXCEPTION
+         WHEN e_no_seq
+         THEN
+         NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE q'|DROP sequence cdc_subscription_seq|';
       EXCEPTION
          WHEN e_no_seq
          THEN
@@ -2194,8 +2297,250 @@ IS
 	   REFERENCES dimension_conf  
 	   ( mapping_name )
 	 )|';
+         
+         -- Transcend CDC schema
+         -- CDC_SOURCE
+         EXECUTE IMMEDIATE 
+         q'{
+         CREATE TABLE cdc_source 
+                ( 
+                  source_id NUMBER  NOT NULL , 
+                  source_type VARCHAR2 (10)  NOT NULL CHECK ( source_type IN ('default', 'flashback', 'goldengate')) , 
+                  service_name VARCHAR2 (4000)  NOT NULL , 
+                  hostname VARCHAR2 (4000)  NOT NULL , 
+                  port NUMBER  NOT NULL , 
+                  dblink_name VARCHAR2 (30) , 
+                  created_user VARCHAR2 (30) DEFAULT sys_context('USERENV','SESSION_USER') , 
+                  created_dt DATE DEFAULT SYSDATE , 
+                  modified_user VARCHAR2 (30) , 
+                  modified_dt DATE 
+                ) 
+         }';
+                
+         EXECUTE IMMEDIATE 
+         q'{
+         ALTER TABLE CDC_SOURCE 
+               ADD CONSTRAINT CDC_SOURCE_PK PRIMARY KEY ( SOURCE_ID )
+           }';
+      
+         -- CDC_SOURCE_EXTERNAL
+         EXECUTE IMMEDIATE 
+         q'{
+            CREATE TABLE cdc_source_external 
+                   ( 
+                     source_id NUMBER  NOT NULL , 
+                     ogg_group_key VARCHAR2 (8) , 
+                     ogg_group_name VARCHAR2 (8) , 
+                     ogg_check_table VARCHAR2 (61) , 
+                     ogg_check_column VARCHAR2 (30) , 
+                     created_user VARCHAR2 (30) DEFAULT sys_context('USERENV','SESSION_USER') , 
+                     created_dt DATE DEFAULT SYSDATE , 
+                     modified_user VARCHAR2 (30) , 
+                     modified_dt DATE
+                    ) 
+           }';
 
-	 -- grant select privileges to the select role
+
+         EXECUTE IMMEDIATE 
+         q'{
+         ALTER TABLE CDC_SOURCE_EXTERNAL 
+         ADD CONSTRAINT CDC_SOURCE_EXTERNAL_PK PRIMARY KEY ( SOURCE_ID )
+         }';
+
+
+         EXECUTE IMMEDIATE 
+         q'{
+            ALTER TABLE CDC_SOURCE_EXTERNAL 
+                  ADD CONSTRAINT cdc_source_external_fk1 FOREIGN KEY 
+                  ( 
+                    source_id
+                  ) 
+                  REFERENCES cdc_source 
+                  ( 
+                    source_id
+                  ) 
+                  ON DELETE CASCADE 
+         }';
+                            
+         -- CDC_GROUP table
+         EXECUTE IMMEDIATE 
+         q'{
+            CREATE TABLE CDC_GROUP 
+                   ( 
+                     group_id NUMBER  NOT NULL , 
+                     group_name VARCHAR2 (30)  NOT NULL , 
+                     source_id NUMBER  NOT NULL , 
+                     foundation VARCHAR2 (30)  NOT NULL , 
+                     subscription VARCHAR2 (30) , 
+                     sub_prefix VARCHAR2 (4) DEFAULT 'C$' , 
+                     filter_policy VARCHAR2 (20)  NOT NULL CHECK ( filter_policy IN ('none', 'subscription')) , 
+                     initial_source_scn NUMBER , 
+                     created_user VARCHAR2 (30) DEFAULT sys_context('USERENV','SESSION_USER') , 
+                     created_dt DATE DEFAULT SYSDATE , 
+                     modified_user VARCHAR2 (30) , 
+                     modified_dt DATE
+                    )
+          }';
+
+         EXECUTE IMMEDIATE 
+         q'{
+            ALTER TABLE CDC_GROUP 
+            ADD CONSTRAINT CDC_GROUP_PK PRIMARY KEY ( GROUP_ID )           
+         }';
+         
+         EXECUTE IMMEDIATE 
+         q'{
+            ALTER TABLE CDC_GROUP 
+            ADD CONSTRAINT CDC_GROUP_UK1 UNIQUE ( GROUP_NAME )
+         }';
+
+         EXECUTE IMMEDIATE 
+         q'{
+            ALTER TABLE CDC_GROUP 
+            ADD CONSTRAINT CDC_GROUP_UK2 UNIQUE ( FOUNDATION )
+         }';
+                  
+         EXECUTE IMMEDIATE 
+         q'{
+            ALTER TABLE CDC_GROUP
+                  ADD CONSTRAINT cdc_sub_conf_fk1 FOREIGN KEY 
+                  ( 
+                    source_id
+                  ) 
+                  REFERENCES cdc_source 
+                  ( 
+                    source_id
+                  ) 
+                  ON DELETE CASCADE
+         }';
+                  
+         -- CDC_AUDIT_DATATYPE table
+         EXECUTE IMMEDIATE 
+         q'{
+            CREATE TABLE CDC_AUDIT_DATATYPE 
+                   (
+                     group_id NUMBER  NOT NULL , 
+                     column_name VARCHAR2 (50) , 
+                     column_type VARCHAR2 (20) CHECK ( column_type IN ('cdc_rank', 'commit_date', 'dml_type', 'entity_rank', 'row_rank', 'source_maxscn', 'source_minscn', 'source_scn')) , 
+                     datatype VARCHAR2 (100) , 
+                     created_user VARCHAR2 (30) DEFAULT sys_context('USERENV','SESSION_USER') , 
+                     created_dt DATE DEFAULT SYSDATE
+                    ) 
+          }';
+                  
+         EXECUTE IMMEDIATE 
+         q'{
+            ALTER TABLE cdc_audit_datatype 
+                  ADD CONSTRAINT cdc_audit_datatype_fk1 FOREIGN KEY 
+                  ( 
+                    group_id
+                  ) 
+                  REFERENCES cdc_group 
+                  ( 
+                    group_id
+                  ) 
+                  ON DELETE CASCADE 
+          }';
+
+         -- CDC_ENTITY table
+         EXECUTE IMMEDIATE 
+         q'{
+            CREATE TABLE cdc_entity
+                   ( 
+                     entity_id NUMBER  NOT NULL , 
+                     source_owner VARCHAR2 (30)  NOT NULL , 
+                     source_table VARCHAR2 (30)  NOT NULL , 
+                     group_id NUMBER  NOT NULL , 
+                     natkey_list VARCHAR2 (4000)  NOT NULL , 
+                     table_name VARCHAR2 (30) , 
+                     created_user VARCHAR2 (30) DEFAULT sys_context('USERENV','SESSION_USER') , 
+                     created_dt DATE DEFAULT SYSDATE , 
+                     modified_user VARCHAR2 (30) , 
+                     modified_dt DATE 
+                   ) 
+         }';
+
+         EXECUTE IMMEDIATE 
+         q'{
+            ALTER TABLE cdc_entity 
+            ADD CONSTRAINT cdc_sub_entity_pk PRIMARY KEY ( entity_id )
+         }';
+
+         EXECUTE IMMEDIATE 
+         q'{
+            ALTER TABLE CDC_ENTITY 
+            ADD CONSTRAINT CDC_ENTITY_UK1 UNIQUE ( SOURCE_TABLE , SOURCE_OWNER , GROUP_ID )
+         }';
+         
+         EXECUTE IMMEDIATE 
+         q'{
+            ALTER TABLE CDC_ENTITY
+                  ADD CONSTRAINT cdc_entity_fk1 FOREIGN KEY 
+                  ( 
+                    group_id
+                  ) 
+                  REFERENCES cdc_group 
+                  ( 
+                    group_id
+                  ) 
+                  ON DELETE CASCADE 
+          }';
+
+         -- CDC_SUBSCRIPTION table
+
+         EXECUTE IMMEDIATE 
+         q'{
+         CREATE TABLE CDC_SUBSCRIPTION 
+                ( 
+                  sub_id NUMBER  NOT NULL , 
+                  sub_name VARCHAR2 (30)  NOT NULL , 
+                  group_id NUMBER  NOT NULL , 
+                  effective_scn NUMBER , 
+                  expiration_scn NUMBER , 
+                  created_user VARCHAR2 (30) DEFAULT sys_context('USERENV','SESSION_USER') , 
+                  created_dt DATE DEFAULT SYSDATE , 
+                  modified_user VARCHAR2 (30) , 
+                  modified_dt DATE 
+                )
+           }';
+
+         EXECUTE IMMEDIATE 
+         q'{
+            ALTER TABLE CDC_SUBSCRIPTION 
+                  ADD CONSTRAINT cdc_subscription_pk PRIMARY KEY ( sub_id )
+           }';
+
+         EXECUTE IMMEDIATE 
+         q'{
+            ALTER TABLE CDC_SUBSCRIPTION 
+                  ADD CONSTRAINT cdc_subscription_uk1 UNIQUE ( sub_name )
+           }';
+
+         EXECUTE IMMEDIATE 
+         q'{
+            ALTER TABLE CDC_SUBSCRIPTION 
+                  ADD CONSTRAINT cdc_subscription_cdc_group_fk FOREIGN KEY 
+                  ( 
+                    group_id
+                  ) 
+                  REFERENCES cdc_group 
+                  ( 
+                    group_id
+                  ) 
+                  ON DELETE CASCADE 
+           }';
+         
+>>>>>>> .merge-right.r2721
+         EXECUTE IMMEDIATE q'{CREATE SEQUENCE cdc_source_seq}';
+
+         EXECUTE IMMEDIATE q'{CREATE SEQUENCE cdc_group_seq}';
+
+         EXECUTE IMMEDIATE q'{CREATE SEQUENCE cdc_entity_seq}';
+
+         EXECUTE IMMEDIATE q'{CREATE SEQUENCE cdc_subscription_seq}';
+         
+         
+         -- grant select privileges to the select role
 	 grant_transcend_rep_privs( p_grantee=> p_schema||'_sel', p_mode => 'select');
 
 	 -- grant all privileges to the admin role
@@ -2629,7 +2974,56 @@ IS
          THEN
             NULL;
       END;
+      
+      BEGIN
+         EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.CDC_GROUP for ' || p_schema || '.CDC_GROUP';
+      EXCEPTION
+         WHEN e_same_name
+         THEN
+            NULL;
+      END;
 
+      BEGIN
+         EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.CDC_AUDIT_DATATYPE for ' || p_schema || '.CDC_AUDIT_DATATYPE';
+      EXCEPTION
+         WHEN e_same_name
+         THEN
+            NULL;
+      END;
+      
+      BEGIN
+         EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.CDC_ENTITY for ' || p_schema || '.CDC_ENTITY';
+      EXCEPTION
+         WHEN e_same_name
+         THEN
+            NULL;
+      END;
+>>>>>>> .merge-right.r2721
+      
+      BEGIN
+         EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.CDC_SOURCE for ' || p_schema || '.CDC_SOURCE';
+      EXCEPTION
+         WHEN e_same_name
+         THEN
+            NULL;
+      END;
+
+      BEGIN
+         EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.CDC_SOURCE_EXTERNAL for ' || p_schema || '.CDC_SOURCE_EXTERNAL';
+      EXCEPTION
+         WHEN e_same_name
+         THEN
+            NULL;
+      END;
+      
+      BEGIN
+         EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.CDC_SUBSCRIPTION for ' || p_schema || '.CDC_SUBSCRIPTION';
+      EXCEPTION
+         WHEN e_same_name
+         THEN
+            NULL;
+      END;
+      
       BEGIN
          EXECUTE IMMEDIATE    'create or replace synonym '
                            || p_user
@@ -2709,6 +3103,8 @@ IS
    PROCEDURE build_transcend_app_syns( p_user VARCHAR2, p_schema VARCHAR2 )
    IS
    BEGIN
+      
+      -- Transcend ETL
       BEGIN
          EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.TRANS_ETL for ' || p_schema || '.TRANS_ETL';
       EXCEPTION
@@ -2716,7 +3112,8 @@ IS
          THEN
             NULL;
       END;
-
+      
+      -- Transcend Files
       BEGIN
          EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.TRANS_FILES for ' || p_schema || '.TRANS_FILES';
       EXCEPTION
@@ -2725,13 +3122,25 @@ IS
             NULL;
       END;
 
+      -- Transcend CDC
+      BEGIN
+         EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.TRANS_CDC for ' || p_schema || '.TRANS_CDC';
+      EXCEPTION
+         WHEN e_same_name
+         THEN
+            NULL;
+      END;
+      
+      -- Transcend administration
       BEGIN
          EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.TRANS_ADM for ' || p_schema || '.TRANS_ADM';
       EXCEPTION
          WHEN e_same_name
          THEN
             NULL;
-      END;
+            END;
+
+
    END build_transcend_app_syns;
 
    PROCEDURE grant_trans_files_sys_privs( p_grantee VARCHAR2 DEFAULT trans_files_role )
@@ -2789,6 +3198,27 @@ IS
             raise_application_error( -20004, 'Some repository objects do not exist.' );
       END;
    END grant_trans_etl_sys_privs;
+   
+   PROCEDURE grant_trans_cdc_sys_privs( p_grantee VARCHAR2 DEFAULT trans_cdc_role )
+   IS
+   BEGIN
+      BEGIN
+         -- for each system privilege, grant it to the application owner and the _SYS role
+
+         EXECUTE IMMEDIATE 'GRANT INSERT ANY TABLE TO ' || p_grantee;
+
+         EXECUTE IMMEDIATE 'GRANT SELECT ANY TABLE TO ' || p_grantee || ' with admin option';
+
+         EXECUTE IMMEDIATE 'GRANT UPDATE ANY TABLE TO ' || p_grantee;
+
+         EXECUTE IMMEDIATE 'GRANT DELETE ANY TABLE TO ' || p_grantee;
+
+      EXCEPTION
+         WHEN e_no_obj
+         THEN
+            raise_application_error( -20004, 'Some repository objects do not exist.' );
+      END;
+   END grant_trans_cdc_sys_privs;
 
    PROCEDURE build_evolve_app(
       p_schema       VARCHAR2 DEFAULT DEFAULT_REPOSITORY,
@@ -2912,6 +3342,14 @@ IS
          THEN
          NULL;
       END;
+
+      BEGIN
+         EXECUTE IMMEDIATE 'DROP ROLE '||trans_cdc_role;
+      EXCEPTION
+         when e_no_role
+         THEN
+         NULL;
+      END;
       
       -- create _SYS roles
       BEGIN
@@ -2929,11 +3367,21 @@ IS
          THEN
             NULL;
       END;
+
+      BEGIN
+         EXECUTE IMMEDIATE 'CREATE ROLE ' || trans_cdc_role;
+      EXCEPTION
+         WHEN e_role_exists
+         THEN
+            NULL;
+      END;
       
       -- grant full system privileges for Transcend ETL (trans_etl) to the trans_etl role
       grant_trans_etl_sys_privs( p_grantee => trans_etl_role );
       -- grant full system privileges for Transcend Files (trans_files) to the trans_files role
       grant_trans_files_sys_privs( p_grantee => trans_files_role );
+      -- grant full system privileges for Transcend CDC (trans_cdc) to the trans_cdc role
+      grant_trans_cdc_sys_privs( p_grantee => trans_cdc_role );
       
    END build_transcend_app;
 

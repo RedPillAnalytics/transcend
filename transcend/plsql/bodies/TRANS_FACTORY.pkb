@@ -12,47 +12,41 @@ IS
       l_mapping    mapping_conf.mapping_name%TYPE  := LOWER( regexp_replace(p_mapping,'^"|"$',NULL));
       -- need object for the parent type
       o_map        mapping_ot;
+
       -- also need an object for any subtypes
       o_dim        dimension_ot;
       o_ev         evolve_ot                        := evolve_ot( p_module => 'trans_factory.get_mapping_ot' );
    BEGIN
       
-      -- get the mapping type
-      BEGIN
-
-         SELECT mapping_type
-           INTO l_map_type
-           FROM mapping_conf
-          WHERE lower ( mapping_name ) = lower ( l_mapping );
-         
-      EXCEPTION
-         WHEN no_data_found
-         THEN 
-            evolve.raise_err( 'no_mapping');
-      END;
+      -- instantiate the base MAPPING_OT first
+      o_map        := mapping_ot( p_mapping    => lower( p_mapping ));
 
       -- let's register what the mapping_type is
-      evolve.log_variable( 'l_map_type',l_map_type );
+      evolve.log_variable( 'o_map.mapping_type', o_map.mapping_type );
       
       -- simply check the mapping_type attribute to tell us whether this is dimensional or not
-      IF l_map_type = 'dimension'
+      CASE o_map.mapping_type
+      WHEN 'dimension'
       THEN
+
          -- instantiate the subtype
          o_dim    := dimension_ot( p_mapping => l_mapping, p_batch_id => p_batch_id );
+
          -- now polymorph the type
          o_map    := o_dim;
+
          evolve.log_msg( 'TRANS_FACTORY returned a DIMENSION_OT', 5 );
-      ELSE 
-
-         -- instantiate the subtype
-         o_map    := mapping_ot( p_mapping => l_mapping, p_batch_id => p_batch_id );
-
+         
+      WHEN 'table'         
+      THEN
+         
          evolve.log_msg( 'TRANS_FACTOY returned a MAPPING_OT', 5 );
          
-      END IF;
+      END CASE;
 
       -- now simply return the type
       o_ev.clear_app_info;
+
       RETURN o_map;
    EXCEPTION
       WHEN OTHERS
@@ -142,7 +136,74 @@ IS
          o_ev.clear_app_info;
          RAISE;
    END get_file_detail_ot;
+   
+   FUNCTION get_cdc_group_ot
+      (
+        p_group_name      cdc_group.group_name%type
+      )
+      RETURN cdc_group_ot
+   IS
+      -- base object class for inheritance
+      o_group          cdc_group_ot;
+      -- inherited types
+      -- o_ogg         cdc_ogg_group_ot;
+      -- and then the basic Evolve instrumentation object
+      o_ev          evolve_ot := evolve_ot( p_module => 'get_cdc_group_ot' );
+   BEGIN
+      
+      o_group := cdc_group_ot( p_group_name => p_group_name );
 
+      -- now simply return the type
+      o_ev.clear_app_info;
+      RETURN o_group;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         evolve.log_err;
+         o_ev.clear_app_info;
+         RAISE;
+   END get_cdc_group_ot;
+   
+   FUNCTION get_cdc_sub_ot
+      (
+        p_sub_name      cdc_subscription.sub_name%type
+      )
+      RETURN cdc_sub_ot
+   IS
+      -- base object class for inheritance
+      o_cdc          cdc_sub_ot;
+      -- inherited types
+      o_ogg          ogg_sub_ot;
+      -- and then the basic Evolve instrumentation object
+      o_ev          evolve_ot := evolve_ot( p_module => 'get_cdc_sub_ot' );
+   BEGIN
+      
+      o_cdc := cdc_sub_ot( p_sub_name => p_sub_name );
+      
+      CASE o_cdc.source_type
+      -- check to see if this is a special case
+      -- at this point, we only support one special case
+      WHEN 'goldengate'
+      THEN
+         -- instantiate the new GoldenGate object
+         o_ogg := ogg_sub_ot( p_sub_name => p_sub_name );
+         -- polymorph the base class into the GoldenGate class
+         o_cdc := o_ogg;
+         evolve.log_msg( 'CDC_SUB_OT polymorphed to OGG_SUB_OT', 4 );
+      END CASE;
+
+      -- now simply return the type
+      o_ev.clear_app_info;
+      RETURN o_cdc;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         evolve.log_err;
+         o_ev.clear_app_info;
+         RAISE;
+   END get_cdc_sub_ot;
+
+>>>>>>> .merge-right.r2721
 END trans_factory;
 /
 

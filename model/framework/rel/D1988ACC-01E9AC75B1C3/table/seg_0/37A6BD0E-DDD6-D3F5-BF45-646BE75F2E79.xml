@@ -1,0 +1,568 @@
+<?xml version = '1.0' encoding = 'UTF-8'?>
+<Table class="oracle.dbtools.crest.model.design.relational.Table" id="37A6BD0E-DDD6-D3F5-BF45-646BE75F2E79" directorySegmentName="seg_0" name="FILE_CONF">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>TDREP</sourceObjSchema>
+<sourceObjName>FILE_CONF</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<schemaObject>981BC2CF-20FF-BAE7-2EAE-31EEE45FB7B8</schemaObject>
+<pkName>FILE_CONF_PK</pkName>
+<fonts itemClass="oracle.dbtools.crest.model.design.FontObjectWr">
+<FontObject>
+<foType>Title</foType>
+<fontStyle>1</fontStyle>
+<colorRGB>-16776961</colorRGB>
+</FontObject>
+<FontObject>
+<foType>Column</foType>
+<colorRGB>-16777216</colorRGB>
+</FontObject>
+<FontObject>
+<foType>Datatype</foType>
+<colorRGB>-16744448</colorRGB>
+</FontObject>
+<FontObject>
+<foType>PK Element</foType>
+<colorRGB>-16776961</colorRGB>
+</FontObject>
+<FontObject>
+<foType>FK Element</foType>
+<colorRGB>-16777216</colorRGB>
+</FontObject>
+<FontObject>
+<foType>UK Element</foType>
+<colorRGB>-16776961</colorRGB>
+</FontObject>
+<FontObject>
+<foType>Not Null</foType>
+<colorRGB>-65536</colorRGB>
+</FontObject>
+<FontObject>
+<foType>Key</foType>
+<colorRGB>-16777216</colorRGB>
+</FontObject>
+</fonts>
+<columns itemClass="oracle.dbtools.crest.model.design.relational.Column">
+<Column name="FILE_LABEL" id="DB49CED8-9423-65BD-7751-7EB3A4704769">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>FILE_CONF</sourceObjSchema>
+<sourceObjName>FILE_LABEL</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>100 BYTE</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="FILE_GROUP" id="DCFB807B-6947-6060-41F8-2CD5BD39ED34">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>FILE_CONF</sourceObjSchema>
+<sourceObjName>FILE_GROUP</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>64 BYTE</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="LABEL_TYPE" id="78DD1F40-76C3-0DC4-A6AC-7E77A40546F8">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>FILE_CONF</sourceObjSchema>
+<sourceObjName>LABEL_TYPE</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>7 BYTE</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="OBJECT_OWNER" id="89A27DD8-7B1A-9EB4-5D68-9A70C3DFDB01">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>FILE_CONF</sourceObjSchema>
+<sourceObjName>OBJECT_OWNER</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>30 BYTE</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="OBJECT_NAME" id="2FDC8F43-B625-08F8-3A75-E4E2D0721CEA">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>FILE_CONF</sourceObjSchema>
+<sourceObjName>OBJECT_NAME</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>30 BYTE</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="DIRECTORY" id="55FCA651-3F2C-ACDB-8D82-006D72F86B58">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>FILE_CONF</sourceObjSchema>
+<sourceObjName>DIRECTORY</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>30 BYTE</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="FILENAME" id="1C3746B0-DA19-04CD-4654-79C66E7FC9C6">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>FILE_CONF</sourceObjSchema>
+<sourceObjName>FILENAME</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>50 BYTE</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="WORK_DIRECTORY" id="30E2C532-57C9-395D-76FD-A9193E6AE5FD">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>FILE_CONF</sourceObjSchema>
+<sourceObjName>WORK_DIRECTORY</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>30 BYTE</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="MIN_BYTES" id="AEFB856F-92F4-DF01-E3F8-00EAABF0C4F6">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>FILE_CONF</sourceObjSchema>
+<sourceObjName>MIN_BYTES</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT019</logicalDatatype>
+<dataTypeSize>22</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="MAX_BYTES" id="EDF111E0-52C7-B98F-D7DA-70538124B317">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>FILE_CONF</sourceObjSchema>
+<sourceObjName>MAX_BYTES</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT019</logicalDatatype>
+<dataTypeSize>22</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="FILE_DATESTAMP" id="34D81B17-9327-D2AE-0CA9-2B4A4B6CEDB5">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>FILE_CONF</sourceObjSchema>
+<sourceObjName>FILE_DATESTAMP</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>30 BYTE</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="BASEURL" id="26F81B87-C7CC-45C2-9F20-0AF6FADC982D">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>FILE_CONF</sourceObjSchema>
+<sourceObjName>BASEURL</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>500 BYTE</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="PASSPHRASE" id="286E87F9-B506-7D8E-E813-0CB5D85FE608">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>FILE_CONF</sourceObjSchema>
+<sourceObjName>PASSPHRASE</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>100 BYTE</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="SOURCE_DIRECTORY" id="B936E414-A34F-F4AD-DAFC-A2061A8C4C35">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>FILE_CONF</sourceObjSchema>
+<sourceObjName>SOURCE_DIRECTORY</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>50 BYTE</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="SOURCE_REGEXP" id="0610B374-ABFF-37B8-4356-5B4145AA15AD">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>FILE_CONF</sourceObjSchema>
+<sourceObjName>SOURCE_REGEXP</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>100 BYTE</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="MATCH_PARAMETER" id="2587E795-7448-58E8-8CF4-19F77271ACAD">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>FILE_CONF</sourceObjSchema>
+<sourceObjName>MATCH_PARAMETER</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>10 BYTE</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="SOURCE_POLICY" id="9A1E51A8-1C48-9CBA-9B98-CDAC05178D85">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>FILE_CONF</sourceObjSchema>
+<sourceObjName>SOURCE_POLICY</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<constraintName>FILE_CONF_CK1</constraintName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>10 BYTE</dataTypeSize>
+<listOfValues>
+<valueDef value="&apos;all&apos;" description=""/>
+<valueDef value="&apos;fail&apos;" description=""/>
+<valueDef value="&apos;newest&apos;" description=""/>
+<valueDef value="&apos;oldest&apos;" description=""/>
+<valueDef value="NULL" description=""/>
+</listOfValues>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="STORE_ORIGINAL_FILES" id="573007FA-2AC7-CCFF-9C8F-E4F71C095C1E">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>FILE_CONF</sourceObjSchema>
+<sourceObjName>STORE_ORIGINAL_FILES</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<constraintName>FILE_CONF_CK4</constraintName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>3 BYTE</dataTypeSize>
+<listOfValues>
+<valueDef value="&apos;no&apos;" description=""/>
+<valueDef value="&apos;yes&apos;" description=""/>
+</listOfValues>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="COMPRESS_METHOD" id="38999B81-3F1F-DEB4-8370-ABE2E4AFA053">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>FILE_CONF</sourceObjSchema>
+<sourceObjName>COMPRESS_METHOD</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<constraintName>FILE_CONF_CK5</constraintName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>20 BYTE</dataTypeSize>
+<listOfValues>
+<valueDef value="&apos;bzip2_method&apos;" description=""/>
+<valueDef value="&apos;compress_method&apos;" description=""/>
+<valueDef value="&apos;extension_method&apos;" description=""/>
+<valueDef value="&apos;gzip_method&apos;" description=""/>
+<valueDef value="&apos;zip_method&apos;" description=""/>
+</listOfValues>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="ENCRYPT_METHOD" id="CBA7AE6B-71AE-A2E0-A60D-03093272EA2B">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>FILE_CONF</sourceObjSchema>
+<sourceObjName>ENCRYPT_METHOD</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<constraintName>FILE_CONF_CK6</constraintName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>20 BYTE</dataTypeSize>
+<listOfValues>
+<valueDef value="&apos;extension_method&apos;" description=""/>
+<valueDef value="&apos;gpg_method&apos;" description=""/>
+</listOfValues>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="REQUIRED" id="74CB7EE1-59DA-DC41-6A71-181C2379CE29">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>FILE_CONF</sourceObjSchema>
+<sourceObjName>REQUIRED</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>3 BYTE</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="DELETE_SOURCE" id="D61C8D09-D56A-7F8A-AF2B-2E74DE920901">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>FILE_CONF</sourceObjSchema>
+<sourceObjName>DELETE_SOURCE</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>3 BYTE</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="REJECT_LIMIT" id="20092C69-7182-4394-AE59-ADFDAC6D77D0">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>FILE_CONF</sourceObjSchema>
+<sourceObjName>REJECT_LIMIT</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT019</logicalDatatype>
+<dataTypeSize>22</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="DATEFORMAT" id="534A07A6-7BE9-1061-E8DB-056F626B26BF">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>FILE_CONF</sourceObjSchema>
+<sourceObjName>DATEFORMAT</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>30 BYTE</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="TIMESTAMPFORMAT" id="4A099285-C149-E7FB-BAD1-61DE3149D3DB">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>FILE_CONF</sourceObjSchema>
+<sourceObjName>TIMESTAMPFORMAT</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>30 BYTE</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="DELIMITER" id="F8CA7861-9376-C2D1-D5BE-9249C0AD256B">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>FILE_CONF</sourceObjSchema>
+<sourceObjName>DELIMITER</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>3 BYTE</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="QUOTECHAR" id="BC69633E-D5A5-C403-01B5-3B1849668F75">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>FILE_CONF</sourceObjSchema>
+<sourceObjName>QUOTECHAR</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>2 BYTE</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="HEADERS" id="1953E56A-FDAF-F67E-F2E9-C76DB65CB63B">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>FILE_CONF</sourceObjSchema>
+<sourceObjName>HEADERS</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>3 BYTE</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="CREATED_USER" id="FD302424-7D49-3F85-B9FD-79D38B1B5089">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>FILE_CONF</sourceObjSchema>
+<sourceObjName>CREATED_USER</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>30 BYTE</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="CREATED_DT" id="FF65C05F-0E73-1820-98AE-B137F4472310">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>FILE_CONF</sourceObjSchema>
+<sourceObjName>CREATED_DT</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT007</logicalDatatype>
+<dataTypeSize>7</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="MODIFIED_USER" id="480F7E51-6815-5409-E8D7-53990B434015">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>FILE_CONF</sourceObjSchema>
+<sourceObjName>MODIFIED_USER</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>30 BYTE</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="MODIFIED_DT" id="D40BE07D-690A-BF23-52C1-62660CC88BEA">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>FILE_CONF</sourceObjSchema>
+<sourceObjName>MODIFIED_DT</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT007</logicalDatatype>
+<dataTypeSize>7</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="DESCRIPTION" id="E7C283B0-DF39-68AA-3849-B51DCEF01347">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>FILE_CONF</sourceObjSchema>
+<sourceObjName>DESCRIPTION</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>100 BYTE</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+</columns>
+<indexes itemClass="oracle.dbtools.crest.model.design.relational.Index">
+<ind_PK_UK id="5B3A9CB8-B0B6-E31C-9E33-1A404EF01B17" name="FILE_CONF_PK">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>TDREP</sourceObjSchema>
+<sourceObjName>FILE_CONF_PK</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<schemaObject>981BC2CF-20FF-BAE7-2EAE-31EEE45FB7B8</schemaObject>
+<pk>true</pk>
+<indexState>Primary Constraint</indexState>
+<indexColumnUsage>
+<colUsage columnID="DB49CED8-9423-65BD-7751-7EB3A4704769"/>
+</indexColumnUsage>
+</ind_PK_UK>
+</indexes>
+<tableCheckConstraints>
+<tableCheckConstraint class="oracle.dbtools.crest.model.design.constraint.TableLevelConstraint" name="FILE_CONF_CK2" id="B1C0FA50-88A0-18D6-5427-80EC0AF62502" directorySegmentName="seg_0">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>TDREP</sourceObjSchema>
+<sourceObjName>FILE_CONF_CK2</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<rule>label_type = case when source_directory is null or source_regexp is null then &apos;extract&apos; ELSE label_type END </rule>
+</tableCheckConstraint>
+<tableCheckConstraint class="oracle.dbtools.crest.model.design.constraint.TableLevelConstraint" name="FILE_CONF_CK3" id="DCB25C08-CA9E-DDD0-5214-1FD6C398DAD4" directorySegmentName="seg_0">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>TDREP</sourceObjSchema>
+<sourceObjName>FILE_CONF_CK3</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<rule> 0 = CASE WHEN object_owner IS NULL AND object_name IS NOT NULL THEN 1 &lt;br/&gt;		 WHEN object_owner IS NOT NULL AND object_name IS NULL THEN 1 ELSE 0 END </rule>
+</tableCheckConstraint>
+</tableCheckConstraints>
+</Table>

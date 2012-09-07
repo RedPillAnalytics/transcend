@@ -1,0 +1,179 @@
+<?xml version = '1.0' encoding = 'UTF-8'?>
+<Table class="oracle.dbtools.crest.model.design.relational.Table" id="D629D8D6-0A0F-EDB0-FF27-A2E8982F2038" directorySegmentName="seg_0" name="PARAMETER_CONF">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>TDREP</sourceObjSchema>
+<sourceObjName>PARAMETER_CONF</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<schemaObject>981BC2CF-20FF-BAE7-2EAE-31EEE45FB7B8</schemaObject>
+<pkName>PARAMETER_CONF_PK</pkName>
+<fonts itemClass="oracle.dbtools.crest.model.design.FontObjectWr">
+<FontObject>
+<foType>Title</foType>
+<fontStyle>1</fontStyle>
+<colorRGB>-16776961</colorRGB>
+</FontObject>
+<FontObject>
+<foType>Column</foType>
+<colorRGB>-16777216</colorRGB>
+</FontObject>
+<FontObject>
+<foType>Datatype</foType>
+<colorRGB>-16744448</colorRGB>
+</FontObject>
+<FontObject>
+<foType>PK Element</foType>
+<colorRGB>-16776961</colorRGB>
+</FontObject>
+<FontObject>
+<foType>FK Element</foType>
+<colorRGB>-16777216</colorRGB>
+</FontObject>
+<FontObject>
+<foType>UK Element</foType>
+<colorRGB>-16776961</colorRGB>
+</FontObject>
+<FontObject>
+<foType>Not Null</foType>
+<colorRGB>-65536</colorRGB>
+</FontObject>
+<FontObject>
+<foType>Key</foType>
+<colorRGB>-16777216</colorRGB>
+</FontObject>
+</fonts>
+<columns itemClass="oracle.dbtools.crest.model.design.relational.Column">
+<Column name="NAME" id="16339BAD-186E-74D9-203C-D1F2DAEB7577">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>PARAMETER_CONF</sourceObjSchema>
+<sourceObjName>NAME</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>40 BYTE</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="VALUE" id="A3898A01-7AB0-A9F7-6478-52B214E54490">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>PARAMETER_CONF</sourceObjSchema>
+<sourceObjName>VALUE</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<constraintName>PARAMETER_CONF_CK1</constraintName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>40 BYTE</dataTypeSize>
+<checkConstraint>
+<implementationDef dbType="Oracle Database 11g" definition="lower(value) &lt;&gt; &apos;default&apos;"/>
+</checkConstraint>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="MODULE" id="E6461817-DE37-1019-9FB9-DD3FC4B678C2">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>PARAMETER_CONF</sourceObjSchema>
+<sourceObjName>MODULE</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<constraintName>PARAMETER_CONF_CK3</constraintName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>48 BYTE</dataTypeSize>
+<checkConstraint>
+<implementationDef dbType="Oracle Database 11g" definition="module=lower(module)"/>
+</checkConstraint>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="CREATED_USER" id="4129B3DE-B418-6292-4E52-F7012D6F89B0">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>PARAMETER_CONF</sourceObjSchema>
+<sourceObjName>CREATED_USER</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<defaultValue>sys_context(&apos;USERENV&apos;,&apos;SESSION_USER&apos;)</defaultValue>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>30 BYTE</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="CREATED_DT" id="B354222C-7925-4D0F-8ADB-8F1BF71DD285">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>PARAMETER_CONF</sourceObjSchema>
+<sourceObjName>CREATED_DT</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<defaultValue>SYSDATE</defaultValue>
+<use>1</use>
+<logicalDatatype>LOGDT007</logicalDatatype>
+<dataTypeSize>7</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="MODIFIED_USER" id="54316B75-3109-11C4-0681-DF7AF40CC0CF">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>PARAMETER_CONF</sourceObjSchema>
+<sourceObjName>MODIFIED_USER</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>30 BYTE</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="MODIFIED_DT" id="7EEFE1B8-9784-6C26-15A5-42CBDBC1EE84">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>PARAMETER_CONF</sourceObjSchema>
+<sourceObjName>MODIFIED_DT</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT007</logicalDatatype>
+<dataTypeSize>7</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+</columns>
+<indexes itemClass="oracle.dbtools.crest.model.design.relational.Index">
+<ind_PK_UK id="31B329BD-96DD-6EF5-04DA-AE7E7894D895" name="PARAMETER_CONF_PK">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>TDREP</sourceObjSchema>
+<sourceObjName>PARAMETER_CONF_PK</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<schemaObject>981BC2CF-20FF-BAE7-2EAE-31EEE45FB7B8</schemaObject>
+<pk>true</pk>
+<indexState>Primary Constraint</indexState>
+<indexColumnUsage>
+<colUsage columnID="16339BAD-186E-74D9-203C-D1F2DAEB7577"/>
+<colUsage columnID="E6461817-DE37-1019-9FB9-DD3FC4B678C2"/>
+</indexColumnUsage>
+</ind_PK_UK>
+</indexes>
+<tableCheckConstraints>
+<tableCheckConstraint class="oracle.dbtools.crest.model.design.constraint.TableLevelConstraint" name="PARAMETER_CONF_CK2" id="497CBB3B-BC9E-9B65-CCAF-68B750E053E9" directorySegmentName="seg_0">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>TDREP</sourceObjSchema>
+<sourceObjName>PARAMETER_CONF_CK2</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<rule>value=lower(value)</rule>
+</tableCheckConstraint>
+</tableCheckConstraints>
+</Table>

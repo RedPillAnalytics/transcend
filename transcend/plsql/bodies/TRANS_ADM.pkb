@@ -207,9 +207,14 @@ IS
       
       evolve_adm.set_error_conf( p_name => 'no_matching columns', 
                                  p_message => 'No matching columns exist between source and target tables' );
+      
+      evolve_adm.set_error_conf
+      ( p_name         => 'no_cdc_group',
+        p_message      => 'The specified subscription does not exist'
+      );
 
    END set_default_configs;
-
+   
    PROCEDURE create_feed (
       p_file_label         VARCHAR2,
       p_file_group         VARCHAR2,
@@ -240,7 +245,7 @@ IS
       o_feed        feed_ot;
       o_ev          evolve_ot     := evolve_ot (p_module      => 'create_feed');
    BEGIN
-
+      
       BEGIN
          INSERT INTO file_conf
 		( file_label,
@@ -301,7 +306,7 @@ IS
       -- this method contains all the business logic to see if parameters are valid
       o_feed := feed_ot ( p_file_label      => p_file_label );
       o_ev.clear_app_info;
-   END create_feed;
+   END create_feed;   
 
    PROCEDURE modify_feed (
       p_file_label         VARCHAR2,
@@ -1193,8 +1198,7 @@ IS
       
       o_ev.clear_app_info;
 
-   END delete_mapping;   
-
+   END delete_mapping;
 
    PROCEDURE create_dimension (
       p_mapping            VARCHAR2,
@@ -1285,7 +1289,11 @@ IS
                        p_con_concurrency     => p_con_concurrency,
                        p_drop_dep            => 'yes'
                      );
+
       o_dim := trans_factory.get_mapping_ot (p_mapping);
+
+      -- create the staging table
+      o_dim.post_create;
       
       o_ev.clear_app_info;
 
@@ -1432,13 +1440,22 @@ IS
      
      o_dim := trans_factory.get_mapping_ot (p_mapping => nvl( p_mapping, l_mapping ));
 
+     -- do any maintenance
+     -- in this case, it's dropping and recreating the staging table
+      o_dim.post_delete;
+      o_dim.post_create;
+
      o_ev.clear_app_info;
    END modify_dimension;
 
    PROCEDURE delete_dimension ( p_mapping VARCHAR2 )
    IS
+      o_dim        mapping_ot;
       o_ev   evolve_ot := evolve_ot (p_module => 'delete_dimension');
    BEGIN
+      
+      o_dim := trans_factory.get_mapping_ot (p_mapping);
+   
       -- delete the column configuration
       delete_dim_attribs( p_mapping => p_mapping );
 
@@ -1451,8 +1468,12 @@ IS
 	 THEN
 	 evolve.raise_err( 'no_dim' );
       END;
+
       -- now make the call to delete the mapping
       delete_mapping ( p_mapping => p_mapping );
+
+      -- drop the staging table
+      o_dim.post_delete;
       
       o_ev.clear_app_info;
    END delete_dimension;
@@ -1699,7 +1720,7 @@ IS
             VALUES( s.mapping_name, s.column_name, s.column_type );
 
       -- confirm the dimension columns
-      o_dim.confirm_dim_cols;
+      o_dim.post_verify;
             
       o_ev.clear_app_info;
    END create_dim_attribs;
@@ -1736,7 +1757,7 @@ IS
 	 AND lower( column_name ) = lower( p_column );      
       
       -- confirm the dimension columns
-      o_dim.confirm_dim_cols;
+      o_dim.post_verify;
       o_ev.clear_app_info;
    END modify_dim_attrib;
    
@@ -1755,6 +1776,592 @@ IS
       o_ev.clear_app_info;
       
    END delete_dim_attribs;
+   
+   PROCEDURE create_cdc_source
+      (
+        p_source_type        cdc_source.source_type%TYPE,
+        p_service_name       cdc_source.service_name%TYPE,
+        p_hostname           cdc_source.hostname%TYPE,
+        p_port               cdc_source.port%TYPE,
+        p_dblink             cdc_source.dblink_name%TYPE,
+        p_ogg_group_key      cdc_source_external.ogg_group_key%TYPE     DEFAULT NULL,
+        p_ogg_group_name     cdc_source_external.ogg_group_name%TYPE    DEFAULT NULL,
+        p_ogg_check_table    cdc_source_external.ogg_check_table%TYPE   DEFAULT NULL,
+        p_ogg_check_column   cdc_source_external.ogg_check_column%TYPE  DEFAULT NULL
+   )
+   IS
+      e_dup_conf   EXCEPTION;
+      PRAGMA       EXCEPTION_INIT (e_dup_conf, -1);
+      o_ev         evolve_ot     := evolve_ot (p_module      => 'create_cdc_source');
+   BEGIN
+      
+      BEGIN
+
+         INSERT INTO 
+                cdc_source
+		( source_id,
+		  source_type,
+                  service_name,
+                  hostname,
+                  port,
+                  dblink_name
+		)
+	        VALUES 
+                ( 
+                  cdc_source_seq.nextval,
+                  p_source_type,
+                  p_service_name,
+                  p_hostname,
+                  p_port,
+                  p_dblink
+                );
+         
+         INSERT INTO 
+                cdc_source_external
+		( 
+                  source_id,
+                  ogg_group_key,
+                  ogg_group_name,
+                  ogg_check_table,
+                  ogg_check_column
+		)
+	        VALUES 
+                ( 
+                  cdc_group_seq.currval,
+                  p_ogg_group_key,
+                  p_ogg_group_name,
+                  p_ogg_check_table,
+                  p_ogg_check_column
+                );
+
+      EXCEPTION
+         WHEN e_dup_conf
+         THEN
+            evolve.raise_err ('dup_conf');
+      END;
+
+      o_ev.clear_app_info;
+   END create_cdc_source;
+   
+   PROCEDURE modify_cdc_source 
+      (
+        p_source_id          cdc_source.source_id%TYPE,
+        p_source_type        cdc_source.source_type%TYPE                DEFAULT NULL,
+        p_service_name       cdc_source.service_name%TYPE               DEFAULT NULL,
+        p_hostname           cdc_source.hostname%TYPE                   DEFAULT NULL,
+        p_port               cdc_source.port%TYPE                       DEFAULT NULL,
+        p_dblink             cdc_source.dblink_name%TYPE                DEFAULT NULL,
+        p_ogg_group_key      cdc_source_external.ogg_group_key%TYPE     DEFAULT NULL,
+        p_ogg_group_name     cdc_source_external.ogg_group_name%TYPE    DEFAULT NULL,
+        p_ogg_check_table    cdc_source_external.ogg_check_table%TYPE   DEFAULT NULL,
+        p_ogg_check_column   cdc_source_external.ogg_check_column%TYPE  DEFAULT NULL
+      )
+   IS
+      o_ev         evolve_ot     := evolve_ot (p_module      => 'modify_cdc_source');
+   BEGIN
+      
+      -- if the constant null_value is used, then the value should be set to null
+      UPDATE cdc_source
+         SET source_type =
+             lower ( CASE
+                     WHEN p_source_type IS NULL
+                     THEN source_type
+                     ELSE p_source_type
+                     END
+                   ),
+             service_name =
+             lower ( CASE
+                     WHEN p_service_name IS NULL
+                     THEN service_name
+                     ELSE p_service_name
+                     END
+                   ),
+             hostname =
+             lower ( CASE
+                     WHEN p_hostname IS NULL
+                     THEN hostname
+                     ELSE p_hostname
+                     END
+                   ),
+             port =
+             CASE
+             WHEN p_port IS NULL
+             THEN port
+             ELSE p_port
+             END,
+             dblink_name =
+             lower ( CASE
+                     WHEN p_dblink IS NULL
+                     THEN dblink_name
+                     ELSE p_dblink
+                     END
+                   ),
+             modified_user = SYS_CONTEXT ('USERENV', 'SESSION_USER'),
+             modified_dt = SYSDATE
+       WHERE source_id = p_source_id;
+      
+      UPDATE cdc_source_external
+         SET 
+             ogg_group_key =
+             CASE
+             WHEN p_ogg_group_key IS NULL
+             THEN ogg_group_key
+             WHEN p_ogg_group_key = null_value
+             THEN NULL
+             ELSE p_ogg_group_key
+             END,
+
+             ogg_group_name =
+             CASE
+             WHEN p_ogg_group_name IS NULL
+             THEN ogg_group_name
+             WHEN p_ogg_group_name = null_value
+             THEN NULL
+             ELSE p_ogg_group_name
+             END,
+
+             ogg_check_table =
+             CASE
+             WHEN p_ogg_check_table IS NULL
+             THEN ogg_check_table
+             WHEN p_ogg_check_table = null_value
+             THEN NULL
+             ELSE p_ogg_check_table
+             END,
+             
+             ogg_check_column =
+             CASE
+             WHEN p_ogg_check_column IS NULL
+             THEN ogg_check_column
+             WHEN p_ogg_check_column = null_value
+             THEN NULL
+             ELSE p_ogg_check_column
+             END,
+             
+             modified_user = SYS_CONTEXT ('USERENV', 'SESSION_USER'),
+             modified_dt = SYSDATE
+
+       WHERE source_id = p_source_id;
+
+       o_ev.clear_app_info;
+   END modify_cdc_source;
+
+   PROCEDURE delete_cdc_source 
+      (
+        p_source_id          cdc_source.source_id%TYPE
+      )
+   IS
+      o_ev          evolve_ot     := evolve_ot (p_module      => 'delete_cdc_source');
+   BEGIN
+      
+      DELETE FROM cdc_source
+       WHERE source_id = p_source_id;
+
+      o_ev.clear_app_info;
+
+   END delete_cdc_source;
+   
+   PROCEDURE create_cdc_group
+      (
+        p_group_name         cdc_group.group_name%TYPE,
+        p_source_id          cdc_group.source_id%TYPE,
+        p_filter_policy      cdc_group.filter_policy%TYPE,
+        p_foundation         cdc_group.foundation%TYPE,
+        p_subscription       cdc_group.subscription%TYPE               DEFAULT NULL,
+        p_sub_prefix         cdc_group.sub_prefix%TYPE                 DEFAULT NULL
+   )
+   IS
+      e_dup_conf   EXCEPTION;
+      PRAGMA       EXCEPTION_INIT (e_dup_conf, -1);
+      o_ev         evolve_ot     := evolve_ot (p_module      => 'create_cdc_group');
+   BEGIN
+      
+      BEGIN
+
+         INSERT INTO 
+                cdc_group
+		( 
+                  group_id, 
+                  group_name, 
+                  source_id, 
+                  foundation, 
+                  subscription, 
+                  sub_prefix, 
+                  filter_policy
+		)
+	        VALUES 
+                ( 
+                  cdc_group_seq.nextval,
+                  p_group_name, 
+                  p_source_id, 
+                  p_foundation, 
+                  p_subscription, 
+                  p_sub_prefix, 
+                  p_filter_policy
+                );
+
+      EXCEPTION
+         WHEN e_dup_conf
+         THEN
+            evolve.raise_err ('dup_conf');
+      END;
+
+      o_ev.clear_app_info;
+   END create_cdc_group;
+   
+   PROCEDURE modify_cdc_group 
+      (
+        p_group_name         cdc_group.group_name%TYPE,
+        p_source_id          cdc_group.source_id%TYPE                  DEFAULT NULL,
+        p_filter_policy      cdc_group.filter_policy%TYPE              DEFAULT NULL,
+        p_foundation         cdc_group.foundation%TYPE                 DEFAULT NULL,
+        p_subscription       cdc_group.subscription%TYPE               DEFAULT NULL,
+        p_sub_prefix         cdc_group.sub_prefix%TYPE                 DEFAULT NULL
+      )
+   IS
+      o_ev         evolve_ot     := evolve_ot (p_module      => 'modify_cdc_group');
+   BEGIN
+      
+      -- if the constant null_value is used, then the value should be set to null
+      
+      UPDATE cdc_group
+         SET 
+             source_id =
+             CASE
+             WHEN p_source_id IS NULL
+             THEN source_id
+             ELSE p_source_id
+             END,
+             
+             filter_policy =
+             lower( CASE
+                    WHEN p_filter_policy IS NULL
+                    THEN filter_policy
+                    ELSE p_filter_policy
+                    END ),
+             
+             foundation =
+             lower( CASE
+                    WHEN p_foundation IS NULL
+                    THEN foundation
+                    ELSE p_foundation
+                    END ),             
+
+             subscription =
+             lower( CASE
+                    WHEN p_subscription IS NULL
+                    THEN subscription
+                    WHEN p_subscription = null_value
+                    THEN NULL
+                    ELSE p_subscription
+                    END ),
+
+             sub_prefix =
+             lower( CASE
+                    WHEN p_sub_prefix IS NULL
+                    THEN sub_prefix
+                    WHEN p_sub_prefix = null_value
+                    THEN NULL
+                    ELSE p_sub_prefix
+                    END ),
+             
+             modified_user = SYS_CONTEXT ('USERENV', 'SESSION_USER'),
+             modified_dt = SYSDATE
+
+       WHERE lower( group_name ) = lower( p_group_name );
+
+       o_ev.clear_app_info;
+   END modify_cdc_group;
+
+   PROCEDURE delete_cdc_group 
+      (
+        p_group_name    cdc_group.group_name%TYPE
+      )
+   IS
+      o_ev          evolve_ot     := evolve_ot (p_module      => 'delete_cdc_group');
+   BEGIN
+      
+      DELETE cdc_group
+       WHERE lower( group_name ) = lower( p_group_name );
+
+      o_ev.clear_app_info;
+
+   END delete_cdc_group;
+
+   PROCEDURE create_cdc_entity
+      (
+        p_source_owner  cdc_entity.source_owner%TYPE, 
+        p_source_table  cdc_entity.source_table%TYPE, 
+        p_group_id      cdc_entity.group_id%TYPE, 
+        p_natkey_list   cdc_entity.natkey_list%TYPE, 
+        p_table_name    cdc_entity.table_name%TYPE      DEFAULT NULL
+      )
+   IS
+      e_dup_conf   EXCEPTION;
+      PRAGMA       EXCEPTION_INIT (e_dup_conf, -1);
+      o_ev         evolve_ot     := evolve_ot (p_module      => 'create_cdc_entity');
+   BEGIN
+      
+      BEGIN
+
+         INSERT INTO 
+                cdc_entity
+		( 
+                  entity_id, 
+                  source_owner, 
+                  source_table, 
+                  group_id, 
+                  natkey_list, 
+                  table_name
+		)
+	        VALUES 
+                ( 
+                  cdc_entity_seq.nextval, 
+                  p_source_owner,
+                  p_source_table, 
+                  p_group_id, 
+                  p_natkey_list, 
+                  p_table_name
+                );
+
+      EXCEPTION
+         WHEN e_dup_conf
+         THEN
+            evolve.raise_err ('dup_conf');
+      END;
+
+      o_ev.clear_app_info;
+   END create_cdc_entity;
+   
+   PROCEDURE modify_cdc_entity
+      (
+        p_entity_id     cdc_entity.entity_id%TYPE,
+        p_source_owner  cdc_entity.source_owner%TYPE    DEFAULT NULL, 
+        p_source_table  cdc_entity.source_table%TYPE    DEFAULT NULL,
+        p_group_id      cdc_entity.group_id%TYPE        DEFAULT NULL,
+        p_natkey_list   cdc_entity.natkey_list%TYPE     DEFAULT NULL,
+        p_table_name    cdc_entity.table_name%TYPE      DEFAULT NULL
+      )
+   IS
+      o_ev         evolve_ot     := evolve_ot (p_module      => 'modify_cdc_entity');
+   BEGIN
+      
+      -- if the constant null_value is used, then the value should be set to null
+      
+      UPDATE cdc_entity
+         SET 
+             source_owner =
+             lower( CASE
+                    WHEN p_source_owner IS NULL
+                    THEN source_owner
+                    ELSE p_source_owner
+                    END ),
+             
+             source_table =
+             lower( CASE
+                    WHEN p_source_table IS NULL
+                    THEN source_table
+                    ELSE p_source_table
+                    END ),             
+
+             group_id =
+             CASE
+             WHEN p_group_id IS NULL
+             THEN group_id
+             ELSE p_group_id
+             END,
+             
+             natkey_list =
+             lower( CASE
+                    WHEN p_natkey_list IS NULL
+                    THEN natkey_list
+                    ELSE p_natkey_list
+                    END ),
+
+             table_name =
+             lower( CASE
+                    WHEN p_table_name IS NULL
+                    THEN table_name
+                    WHEN p_table_name = null_value
+                    THEN NULL
+                    ELSE p_table_name
+                    END ),
+             
+             modified_user = SYS_CONTEXT ('USERENV', 'SESSION_USER'),
+             modified_dt = SYSDATE
+
+       WHERE entity_id = p_entity_id;
+
+       o_ev.clear_app_info;
+   END modify_cdc_entity;
+
+   PROCEDURE delete_cdc_entity 
+      (
+        p_entity_id     cdc_entity.entity_id%TYPE
+      )
+   IS
+      o_ev          evolve_ot     := evolve_ot (p_module      => 'delete_cdc_entity');
+   BEGIN
+      
+      DELETE cdc_entity
+       WHERE entity_id = p_entity_id;
+
+      o_ev.clear_app_info;
+
+   END delete_cdc_entity;
+
+   PROCEDURE create_cdc_subscription
+      (
+        p_sub_name      cdc_subscription.sub_name%TYPE, 
+        p_group_name    cdc_group.group_name%TYPE
+      )
+   IS
+      e_dup_conf        EXCEPTION;
+      PRAGMA            EXCEPTION_INIT (e_dup_conf, -1);
+      o_group           cdc_group_ot  := cdc_group_ot ( p_group_name => p_group_name );
+      o_ev              evolve_ot     := evolve_ot (p_module => 'create_cdc_subscription');
+   BEGIN
+      
+      BEGIN
+         
+         -- insert the data
+         INSERT INTO 
+                cdc_subscription
+		( 
+                  sub_id, 
+                  sub_name, 
+                  group_id, 
+                  effective_scn, 
+                  expiration_scn
+		)
+	        VALUES 
+                ( 
+                  cdc_subscription_seq.nextval, 
+                  p_sub_name, 
+                  o_group.group_id, 
+                  0, 
+                  o_group.get_source_scn
+                );
+
+      EXCEPTION
+         WHEN e_dup_conf
+         THEN
+            evolve.raise_err ('dup_conf');
+      END;
+
+      o_ev.clear_app_info;
+   END create_cdc_subscription;
+   
+   PROCEDURE modify_cdc_subscription
+      (
+        p_sub_name        cdc_subscription.sub_name%TYPE,
+        p_effect_scn      cdc_subscription.effective_scn%TYPE,
+        p_expire_scn      cdc_subscription.expiration_scn%TYPE
+      )
+   IS
+      o_ev         evolve_ot     := evolve_ot (p_module      => 'modify_cdc_subscription');
+   BEGIN
+      
+      -- if the constant null_value is used, then the value should be set to null
+      
+      UPDATE cdc_subscription
+         SET 
+             effective_scn =
+             CASE
+             WHEN p_effect_scn IS NULL
+             THEN effective_scn
+             ELSE p_effect_scn
+             END,
+             
+             expiration_scn =
+             CASE
+             WHEN p_expire_scn IS NULL
+             THEN expiration_scn
+             ELSE p_expire_scn
+             END,
+             
+             modified_user = SYS_CONTEXT ('USERENV', 'SESSION_USER'),
+             modified_dt = SYSDATE
+
+       WHERE lower( sub_name ) = lower( p_sub_name );
+
+       o_ev.clear_app_info;
+   END modify_cdc_subscription;
+
+   PROCEDURE delete_cdc_subscription 
+      (
+        p_sub_name     cdc_subscription.sub_name%TYPE
+      )
+   IS
+      o_ev          evolve_ot     := evolve_ot (p_module      => 'delete_cdc_subscription');
+   BEGIN
+      
+      DELETE cdc_subscription
+       WHERE lower( sub_name ) = lower( p_sub_name );
+
+      o_ev.clear_app_info;
+
+   END delete_cdc_subscription;
+   
+   PROCEDURE create_cdc_audit_datatype
+      (
+        p_group_name       cdc_group.group_name%TYPE, 
+        p_column_name      cdc_audit_datatype.column_name%TYPE, 
+        p_column_type      cdc_audit_datatype.column_type%TYPE,
+        p_datatype         cdc_audit_datatype.datatype%TYPE
+      )
+   IS
+      e_dup_conf        EXCEPTION;
+      PRAGMA            EXCEPTION_INIT (e_dup_conf, -1);
+      o_group           cdc_group_ot  := cdc_group_ot ( p_group_name => p_group_name );
+      o_ev              evolve_ot     := evolve_ot (p_module => 'create_cdc_audit_datatype');
+   BEGIN
+      
+      BEGIN
+         
+         -- insert the data
+         INSERT INTO 
+                cdc_audit_datatype
+		( 
+                  group_id, 
+                  column_name, 
+                  column_type, 
+                  datatype
+		)
+	        VALUES 
+                ( 
+                  o_group.group_id, 
+                  p_column_name, 
+                  p_column_type, 
+                  p_datatype
+                );
+
+      EXCEPTION
+         WHEN e_dup_conf
+         THEN
+            evolve.raise_err ('dup_conf');
+      END;
+
+      o_ev.clear_app_info;
+   END create_cdc_audit_datatype;   
+
+   PROCEDURE delete_cdc_audit_datatype 
+      (
+        p_column_name     cdc_audit_datatype.column_name%TYPE,
+        p_group_name      cdc_group.group_name%TYPE
+      )
+   IS
+      o_group       cdc_group_ot  := cdc_group_ot ( p_group_name => p_group_name );
+      o_ev          evolve_ot     := evolve_ot (p_module      => 'delete_cdc_audit_datatype');
+   BEGIN
+      
+      DELETE cdc_audit_datatype
+       WHERE lower( column_name ) = lower( p_column_name )
+         AND group_id = o_group.group_id;
+
+      o_ev.clear_app_info;
+
+   END delete_cdc_audit_datatype;
 
    PROCEDURE set_module_conf(
       p_module          VARCHAR2 DEFAULT all_modules,

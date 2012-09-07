@@ -1,0 +1,12 @@
+<?xml version = '1.0' encoding = 'UTF-8'?>
+<FKIndexAssociation class="oracle.dbtools.crest.model.design.relational.FKIndexAssociation" id="6568D112-E4FA-9FC4-0FD5-272B2624CAE1" directorySegmentName="seg_0" name="CDC_SUBSCRIPTION_CDC_GROUP_FK">
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-13 01:14:04 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<containerWithKeyObject>50C360EC-90E7-A656-5AE8-2A585ADE4050</containerWithKeyObject>
+<deleteRule>CASCADE</deleteRule>
+<localFKIndex>8A34D44D-8918-18DE-5BF2-F370EA19C275</localFKIndex>
+<keyObject>B64BFC2C-DC96-420E-704D-E44274F00379</keyObject>
+<mandatory>true</mandatory>
+<transferable>true</transferable>
+</FKIndexAssociation>

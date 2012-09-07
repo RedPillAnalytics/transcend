@@ -1,0 +1,35 @@
+CREATE OR REPLACE TYPE BODY ogg_sub_ot wrapped 
+a000000
+1
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+abcd
+e
+633 327
+q9Sp8CjIstdadxFm3+BKGqRG6owwg43DTCCDfI5Vgp0VIL0JAlCgsKgbbP9sMDKKRy3eMW09
+s1+h9jjWUd4Jqs95xjoGjFVW8/Oax7sAvCJJwFgdGELCogWBo7somtIz3i+U1vvmhfl8FwKO
+ngzRUFl/Vr0X47Am0cPYvvV1UADzl1UbbWVnbVqPQhQZBd1LGGb7Cb1Ang6CjpSLDWnDg3Xe
+F0F/GkZchTdyS1DzOKLx4/FkcKsyo1kkMppAtk/r6OGn45v9L2vvX8GpZA1f4CdQ6hyLsb10
+x+Vln6wDqcO4jR72VIdfk+YuX3z6CtZ291fyJKzDNtE40VJX4dLjRzZyL9xL0VPTU1W1R9e0
+BRCyxNM2bRGdwsXnDMx9fxSIQYuYQbWQAUhL3axdK1QXtwqM9cAgi8oOvMIrphGju+1mbUGO
+SdwX3fFKDkmHzs/75sjbZYXKbWuM+Y6RAArhA7xTWMJUlicsUW/obZZ3vHfU5yRfxoZAkNZ3
+weInd6JuoCFW7C3drOtEVLsNHoagA6SLe4b0Uf9mr/w/Y7GYze6cfzMRTCIpczNLuo0jnYM2
+XKoXNF7C6Mm1IkeeNDsUsZTZL0QQUE5OQmxPDuHHC5q/BcbEmVfEbvq1ToxojU17BYu5LSHh
+56zq5ZAIol5W51BVixkf+JP5DQ0Z5ZGKeCbGKy6qokLl17K22bRfi6/ck7uqJDbqzXEHeSVi
+cGz791bWRqKLD9ab5/4IuBO1Jfq/KfV9fRdGPqLmgL4I0xMIOQYCBd7gsrOxMAtmtuw0EvvM
+8H7e
+
+/
+SHOW errors

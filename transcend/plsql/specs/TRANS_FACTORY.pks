@@ -17,6 +17,18 @@ IS
       p_directory      VARCHAR2 DEFAULT NULL
    )
       RETURN file_detail_ot;
+      
+   FUNCTION get_cdc_group_ot
+      (
+        p_group_name      cdc_group.group_name%type
+      )
+      RETURN cdc_group_ot;
+      
+   FUNCTION get_cdc_sub_ot
+      (
+        p_sub_name      cdc_subscription.sub_name%type
+      )
+      RETURN cdc_sub_ot;
 
 
 END trans_factory;

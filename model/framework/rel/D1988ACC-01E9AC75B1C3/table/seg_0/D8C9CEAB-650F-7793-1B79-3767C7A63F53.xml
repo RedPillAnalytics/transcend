@@ -1,0 +1,212 @@
+<?xml version = '1.0' encoding = 'UTF-8'?>
+<Table class="oracle.dbtools.crest.model.design.relational.Table" id="D8C9CEAB-650F-7793-1B79-3767C7A63F53" directorySegmentName="seg_0" name="FILE_OBJECT_DETAIL">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>TDREP</sourceObjSchema>
+<sourceObjName>FILE_OBJECT_DETAIL</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<schemaObject>981BC2CF-20FF-BAE7-2EAE-31EEE45FB7B8</schemaObject>
+<pkName>FILE_OBJECT_DETAIL_PK</pkName>
+<fonts itemClass="oracle.dbtools.crest.model.design.FontObjectWr">
+<FontObject>
+<foType>Title</foType>
+<fontStyle>1</fontStyle>
+<colorRGB>-16776961</colorRGB>
+</FontObject>
+<FontObject>
+<foType>Column</foType>
+<colorRGB>-16777216</colorRGB>
+</FontObject>
+<FontObject>
+<foType>Datatype</foType>
+<colorRGB>-16744448</colorRGB>
+</FontObject>
+<FontObject>
+<foType>PK Element</foType>
+<colorRGB>-16776961</colorRGB>
+</FontObject>
+<FontObject>
+<foType>FK Element</foType>
+<colorRGB>-16777216</colorRGB>
+</FontObject>
+<FontObject>
+<foType>UK Element</foType>
+<colorRGB>-16776961</colorRGB>
+</FontObject>
+<FontObject>
+<foType>Not Null</foType>
+<colorRGB>-65536</colorRGB>
+</FontObject>
+<FontObject>
+<foType>Key</foType>
+<colorRGB>-16777216</colorRGB>
+</FontObject>
+</fonts>
+<columns itemClass="oracle.dbtools.crest.model.design.relational.Column">
+<Column name="FILE_OBJECT_DETAIL_ID" id="9F66D727-FD87-0A4D-158A-B20529F91865">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>FILE_OBJECT_DETAIL</sourceObjSchema>
+<sourceObjName>FILE_OBJECT_DETAIL_ID</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT019</logicalDatatype>
+<dataTypeSize>22</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="FILE_LABEL" id="24DA43FB-844F-93CD-DAD8-27742260B3D9">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>FILE_OBJECT_DETAIL</sourceObjSchema>
+<sourceObjName>FILE_LABEL</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>30 BYTE</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="FILE_GROUP" id="FED44276-EC6E-59CD-1EED-3CDEBD62ABE7">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>FILE_OBJECT_DETAIL</sourceObjSchema>
+<sourceObjName>FILE_GROUP</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>50 BYTE</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="LABEL_TYPE" id="90423948-76F7-18B2-E10D-D9A6BE654DB3">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>FILE_OBJECT_DETAIL</sourceObjSchema>
+<sourceObjName>LABEL_TYPE</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>7 BYTE</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="OBJECT_OWNER" id="B6195BA4-971F-85CB-0B77-1D061D6A245A">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>FILE_OBJECT_DETAIL</sourceObjSchema>
+<sourceObjName>OBJECT_OWNER</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>30 BYTE</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="OBJECT_NAME" id="38672D3D-95C5-BF9F-FCD0-FCF6197F3A4F">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>FILE_OBJECT_DETAIL</sourceObjSchema>
+<sourceObjName>OBJECT_NAME</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT024</logicalDatatype>
+<dataTypeSize>30 BYTE</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="PROCESSED_TS" id="1A6EB42B-C08D-DC7E-C976-06C1A9C90962">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>FILE_OBJECT_DETAIL</sourceObjSchema>
+<sourceObjName>PROCESSED_TS</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<defaultValue>systimestamp</defaultValue>
+<use>1</use>
+<logicalDatatype>LOGDT015</logicalDatatype>
+<dataTypePrecision>6</dataTypePrecision>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="NUM_ROWS" id="4C7FDD80-F2D8-9B99-AAE5-005907B29A5A">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>FILE_OBJECT_DETAIL</sourceObjSchema>
+<sourceObjName>NUM_ROWS</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT019</logicalDatatype>
+<dataTypeSize>22</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="NUM_LINES" id="157C03D8-702A-A460-E6EA-5B3D192C898A">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>FILE_OBJECT_DETAIL</sourceObjSchema>
+<sourceObjName>NUM_LINES</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT019</logicalDatatype>
+<dataTypeSize>22</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="PERCENT_DIFF" id="5A8AD82E-8270-BD1B-D741-06205CA143D0">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>FILE_OBJECT_DETAIL</sourceObjSchema>
+<sourceObjName>PERCENT_DIFF</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<nullsAllowed>true</nullsAllowed>
+<useDomainConstraints>false</useDomainConstraints>
+<use>1</use>
+<logicalDatatype>LOGDT019</logicalDatatype>
+<dataTypeSize>22</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+<Column name="SESSION_ID" id="78709172-1337-692F-3700-5352D22A9749">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>FILE_OBJECT_DETAIL</sourceObjSchema>
+<sourceObjName>SESSION_ID</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<useDomainConstraints>false</useDomainConstraints>
+<defaultValue>sys_context(&apos;USERENV&apos;,&apos;SESSIONID&apos;)</defaultValue>
+<use>1</use>
+<logicalDatatype>LOGDT019</logicalDatatype>
+<dataTypeSize>22</dataTypeSize>
+<autoIncrementCycle>false</autoIncrementCycle>
+</Column>
+</columns>
+<indexes itemClass="oracle.dbtools.crest.model.design.relational.Index">
+<ind_PK_UK id="22226543-8803-8850-CB87-4676CE1C01E5" name="FILE_OBJECT_DETAIL_PK">
+<sourceConnName>db11g</sourceConnName>
+<sourceObjSchema>TDREP</sourceObjSchema>
+<sourceObjName>FILE_OBJECT_DETAIL_PK</sourceObjName>
+<createdBy>stewart</createdBy>
+<createdTime>2012-08-11 15:47:46 UTC</createdTime>
+<ownerDesignName>framework</ownerDesignName>
+<schemaObject>981BC2CF-20FF-BAE7-2EAE-31EEE45FB7B8</schemaObject>
+<pk>true</pk>
+<indexState>Primary Constraint</indexState>
+<indexColumnUsage>
+<colUsage columnID="9F66D727-FD87-0A4D-158A-B20529F91865"/>
+</indexColumnUsage>
+</ind_PK_UK>
+</indexes>
+</Table>
