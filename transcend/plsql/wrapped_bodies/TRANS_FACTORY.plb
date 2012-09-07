@@ -17,27 +17,6 @@ abcd
 abcd
 abcd
 b
-<<<<<<< .working
-dd6 4f1
-fdrHjDkep5w23VxgZag0a1ab9rgwg+0rLiAFVy/Nk53gL36o/XzAVHCWssKmYvB2ON4JDpF4
-vlbu3/I4yjKsd0Sj3SS8FOkIhKcD3sQ7psZmB25Cz07OBhiRtchEFW7BeEuqg4oi+pjX+HNq
-67Ea2LamUE/glcLoXXRvtIVsJuXxYhQgG2mB71S290zzCMFZ19eht0z6ZVtho//MZ0pEk7Ng
-sj4CJtxNHDfX8nylMdLP6gkAw0mn1y4CJ1Bk+lfV//g3Su08qtHTmBfSbXtGsNN/worT+zS+
-NpeaUXUW9Zk04hrdGPF0SbluA9KaA2oxLClZTwF77eNtUu10ioaun6DFlpxzxYEY2CtoOR5T
-2zIsW3HHRWCUArbQ4c08dUqlz+nz0bVAIfzBOgefliRIHCzEmCibOE/mBz9KbfHwCbHp0+pN
-YBiTHTgd8aaA+qsc0mJ0lKyW75vWjwXVjrSzy7bnE+FeU/X7moCARYAYsYgrow6hdaf7XsO3
-QIWsZFS5C/BKAs5WN8GsiSryjvKmKblrSdUylPdDhA0xkImWGkXhbFhewxO7gYe+tZK06ANn
-l4TttGTC54E/vSnNMwuY+KAQtGP0gM/1/Gny8jZr8RUTJkaPhW1IsJ42jPOjhOkK4ehUS8VX
-ksKHTV54rEujbxT2U1M3sJ+1Ot6xGRUbrKf/j5YPdN7wyOTqQ1LZQjqvh0CtrIoM1KnW/wNx
-MkhNWxC/coIYolqNNafYj3MrHjCLcMlIFrqMk+IjYvyzvFuPjWAdomDETPJExd8pyw75otGH
-iY5sbMcaQFwTCp6L7WOYcIeeiuwerPe+HgIdqtD8fWlwCFWgKkKyaWQqGYrvPAZbdr+mVUEi
-tbN7NCtzXEFjvt8g99lv47472Blg/mQLuaqnspp5u7pCnUKxGU+4Bmv+kngeFTO1w2fuIb1Q
-VIIz7nwRirT3pKLhlkE2RyPvQdueOpQrdrJAvHS2zdm/eRIKSAEjpxzLqEFqNS4AFzwz1e+X
-9WCFf2detwAIpXrKCgQ93gqc+6TUv+Qwp92Crmz2vNOIQJyXFKWGyBmHTtQHMjpt5/X46fSK
-c/mOufkcEfdFbaWqUP4Xzvulb2dQG+vILH8Jt4HquindONNXQ+it3xp2A179uCTjgLJcJJoB
-5eJuSq3qQ58ZdAYynbFVSAVzyRJ+IKFfCZpj+7+AGkI4Rb4f407jaAsQP52Pe6Yk6lJydwA7
-xg4m9MuiJO3RhxAdWREbGg==
-=======
 125e 611
 HOH0xashkcr7iFiLzwjgRczNKTAwg5XqTCCMYI7Ngp3gjjICYpM/TYOcoyZGOFlpfw77Erec
 pK1/UmKt1MDjd1r5CBLB1jqmitfoMdEJ4Mm5QxmCF8tbhXq1IJbbEew5v00i4jNy0lKBaerG
@@ -61,7 +40,6 @@ trPdyUYe2wSdDBbkkk8Kt8sp7cX6H+s/8EupOy91+hDTCJVfE6V4kVHZv+nhUrpmZr4LXt4E
 /HoEbtkSxPVBD7mdbHZAXJdg9Sx1jlL6Tcz4C9w/la8NCzqFeFcDqttqz17NPEM/A+XZ+cG+
 Jr1gyxLYxaMZ4dhchNFKHxPSxczP0Sk9jIQNEhDlSgeqjxIm4l8zpYcz2qs/22qkRXPk/U33
 7GobOyg8+pYP+zzzYmI=
->>>>>>> .merge-right.r2721
 
 /
 SHOW errors

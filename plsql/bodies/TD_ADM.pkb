@@ -2530,7 +2530,6 @@ IS
                   ON DELETE CASCADE 
            }';
          
->>>>>>> .merge-right.r2721
          EXECUTE IMMEDIATE q'{CREATE SEQUENCE cdc_source_seq}';
 
          EXECUTE IMMEDIATE q'{CREATE SEQUENCE cdc_group_seq}';
@@ -2998,7 +2997,6 @@ IS
          THEN
             NULL;
       END;
->>>>>>> .merge-right.r2721
       
       BEGIN
          EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.CDC_SOURCE for ' || p_schema || '.CDC_SOURCE';

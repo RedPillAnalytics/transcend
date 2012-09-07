@@ -203,7 +203,6 @@ IS
          RAISE;
    END get_cdc_sub_ot;
 
->>>>>>> .merge-right.r2721
 END trans_factory;
 /
 
