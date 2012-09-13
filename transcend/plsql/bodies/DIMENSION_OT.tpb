@@ -297,6 +297,61 @@ AS
       o_ev.clear_app_info;
    END confirm_dim_cols;
 
+   MEMBER PROCEDURE create_source_table
+   IS
+      o_ev               evolve_ot      := evolve_ot( p_module => 'dimension_ot.create_source_table' );
+   BEGIN
+
+      -- create the source table
+      -- this table is the entry point to Transcend
+      -- it is the target of any ETL tool mapping or custom mapping
+      o_ev.change_action( 'create source table' );
+
+      -- only try to build the table if it doesn't exist
+      IF NOT td_utils.table_exists( p_owner             => SELF.source_owner,
+                                    p_table             => SELF.source_table )
+      THEN
+
+         td_dbutils.build_table( p_source_owner      => SELF.table_owner,
+                                 p_source_table      => SELF.table_name,
+                                 p_owner             => SELF.source_owner,
+                                 p_table             => SELF.source_table,
+                                 p_partitioning      => 'ignore'
+                               );
+
+      ELSE
+         
+         evolve.log_msg( self.full_source || ' already exists', 3 );
+            
+      END IF;
+      
+      -- drop the additional columns that aren't needed
+      -- these are: surrogate_key, expiration_date and current_ind
+      o_ev.change_action( 'drop columns' );
+      evolve.exec_sql( 'alter table '||self.full_source||' drop column '||self.surrogate_key_col );
+      evolve.exec_sql( 'alter table '||self.full_source||' drop column '||self.expire_dt_col );
+      evolve.exec_sql( 'alter table '||self.full_source||' drop column '||self.current_ind_col );
+
+      -- reset the evolve_object
+      o_ev.clear_app_info;
+   END create_source_table;   
+   
+   MEMBER PROCEDURE drop_source_table
+   IS
+      o_ev               evolve_ot      := evolve_ot( p_module => 'dimension_ot.drop_source_table' );
+   BEGIN
+
+      td_dbutils.drop_table
+      (
+        p_owner             => SELF.source_owner,
+        p_table             => SELF.source_table
+      );
+
+      -- reset the evolve_object
+      o_ev.clear_app_info;
+
+   END drop_source_table;
+
    MEMBER PROCEDURE create_staging_table
    IS
       l_bt_part          VARCHAR2(10);
@@ -957,6 +1012,9 @@ AS
 
       -- create the staging table
       create_staging_table;
+      
+      -- create the source table
+      create_source_table;
 
       o_ev.clear_app_info;
    END post_create;

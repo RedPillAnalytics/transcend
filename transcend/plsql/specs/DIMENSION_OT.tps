@@ -29,8 +29,12 @@ UNDER mapping_ot
                                                    
    MEMBER PROCEDURE confirm_dim_cols,
                                                    
+   MEMBER PROCEDURE create_source_table,
+  
+   MEMBER PROCEDURE drop_source_table,
+
    MEMBER PROCEDURE create_staging_table,
-                                                   
+  
    MEMBER PROCEDURE drop_staging_table,
                                                    
    MEMBER PROCEDURE load_staging,
