@@ -65,7 +65,24 @@ END;
 
 COMMIT;
 
+-- put source data into the PRODUCT_SRC table
+-- this is comparable to running an ETL mapping
+INSERT into td_demo.product_src
+       SELECT prod_id,
+              prod_name,
+              prod_desc,
+              prod_status,
+              prod_eff_from
+         FROM sh.products
+        WHERE ROWNUM < 11;
 
+-- some modifications for SCD activity
+UPDATE td_demo.product_src
+   SET prod_name = 'New '||prod_name;
+
+COMMIT;
+
+-- have a look at the configuration tables
 SELECT *
   FROM column_conf
  WHERE mapping_name = 'map_product_dim';

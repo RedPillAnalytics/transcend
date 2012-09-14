@@ -135,24 +135,6 @@ END;
 /
 
 
--- create a source table to use for dimension loads
--- this table would be the target of the ETL mapping
-
-CREATE TABLE td_demo.product_src
-       AS SELECT prod_id,
-                 prod_name,
-                 prod_desc,
-                 prod_status,
-                 prod_eff_from
-            FROM sh.products
-           WHERE ROWNUM < 11;
-
--- some modifications for SCD activity
-UPDATE td_demo.product_src
-   SET prod_name = 'New '||prod_name;
-
-COMMIT;
-
 -- create a seequence for the surrogate key
 CREATE SEQUENCE td_demo.product_key_seq CACHE 20;
 
