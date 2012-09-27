@@ -351,7 +351,7 @@ AS
       o_ev.clear_app_info;
 
    END drop_source_table;
-
+   
    MEMBER PROCEDURE create_staging_table
    IS
       l_bt_part          VARCHAR2(10);
@@ -421,7 +421,7 @@ AS
       -- reset the evolve_object
       o_ev.clear_app_info;
    END create_staging_table;
-
+   
    MEMBER PROCEDURE drop_staging_table
    IS
       o_ev               evolve_ot      := evolve_ot( p_module => 'dimension_ot.drop_staging_table' );
@@ -437,6 +437,36 @@ AS
       o_ev.clear_app_info;
 
    END drop_staging_table;
+   
+   MEMBER PROCEDURE create_sequence
+   IS
+      o_ev               evolve_ot      := evolve_ot( p_module => 'dimension_ot.create_sequence' );
+   BEGIN
+      
+      -- create the source table
+      -- this table is the entry point to Transcend
+      -- it is the target of any ETL tool mapping or custom mapping
+      o_ev.change_action( 'create source table' );
+
+      -- only try to build the table if it doesn't exist
+      IF NOT td_utils.object_exists( p_owner             => SELF.sequence_owner,
+                                     p_table             => SELF.sequence_name,
+                                     p_object_type       => 'sequence' )
+      THEN
+         
+         evolve.log_msg( self.full_sequence||' does not exist', 4 );
+         
+         EXECUTE IMMEDIATE 'create sequence '||full_sequence||' cache 100';
+
+      ELSE
+         
+         evolve.log_msg( self.full_source || ' already exists', 3 );
+            
+      END IF;
+      
+      -- reset the evolve_object
+      o_ev.clear_app_info;
+   END create_sequence;      
 
    MEMBER PROCEDURE load_staging
    IS

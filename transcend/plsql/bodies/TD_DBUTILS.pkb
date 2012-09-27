@@ -498,10 +498,10 @@ AS
              l_rename_msg,
              l_iot_type
         FROM ( SELECT
-                      -- this regular expression evaluates p_TABLESPACE and modifies the DDL accordingly
+                      -- this regular expression evaluates p_tablespace and modifies the DDL accordingly
                       REGEXP_REPLACE
                           (
-                            -- this regular expression evaluates p_PARTITIONING paramater and removes partitioning information if necessary
+                            -- this regular expression evaluates p_partitioning paramater and removes partitioning information if necessary
                             REGEXP_REPLACE( table_ddl,
                                             CASE 
 
