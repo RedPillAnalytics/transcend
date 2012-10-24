@@ -2,7 +2,6 @@
 CREATE OR REPLACE TYPE cdc_sub_ot 
 FORCE UNDER cdc_group_ot
 (
-  sub_id                 NUMBER,
   sub_name               VARCHAR2(30),
   scn_min                NUMBER,
   scn_max                NUMBER,

@@ -7,9 +7,9 @@ AUTHID CURRENT_USER AS object
   group_id               NUMBER,
   group_name             VARCHAR2(30),
   initial_source_scn     NUMBER,
-  foundation             VARCHAR2(30),
   subscription           VARCHAR2(30),
-  sub_prefix             VARCHAR2(4),
+  interface              VARCHAR2(30),
+  interface_prefix       VARCHAR2(4),
   filter_policy          VARCHAR2(20),
   source_scn             VARCHAR2(30),
   commit_date            VARCHAR2(30),
@@ -114,14 +114,14 @@ AUTHID CURRENT_USER AS object
      p_rowrank          NUMBER    DEFAULT 1
    ),
 
-   MEMBER PROCEDURE build_subscription,
+   MEMBER PROCEDURE build_interface,
 
-   MEMBER PROCEDURE build_foundation
+   MEMBER PROCEDURE build_subscription
    (
      p_scn      NUMBER          DEFAULT NULL
    ),
                                    
-   MEMBER PROCEDURE load_foundation
+   MEMBER PROCEDURE load_subscription
   
 )
 NOT FINAL
