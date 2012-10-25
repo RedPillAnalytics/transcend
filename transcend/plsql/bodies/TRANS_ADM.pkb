@@ -2089,11 +2089,12 @@ IS
 
    PROCEDURE create_cdc_entity
       (
-        p_source_owner  cdc_entity.source_owner%TYPE, 
-        p_source_table  cdc_entity.source_table%TYPE, 
-        p_group_name    cdc_entity.group_name%TYPE, 
-        p_natkey_list   cdc_entity.natkey_list%TYPE, 
-        p_table_name    cdc_entity.table_name%TYPE      DEFAULT NULL
+        p_source_owner          cdc_entity.source_owner%TYPE, 
+        p_source_table          cdc_entity.source_table%TYPE, 
+        p_group_name            cdc_entity.group_name%TYPE, 
+        p_natkey_list           cdc_entity.natkey_list%TYPE, 
+        p_table_name            cdc_entity.table_name%TYPE      DEFAULT NULL,
+        p_interface_type        cdc_entity.interface_type%TYPE  DEFAULT 'view'
       )
    IS
       e_dup_conf   EXCEPTION;
@@ -2110,7 +2111,8 @@ IS
                   source_table, 
                   group_name, 
                   natkey_list, 
-                  table_name
+                  table_name,
+                  interface_type
 		)
 	        VALUES 
                 ( 
@@ -2118,7 +2120,8 @@ IS
                   p_source_table, 
                   p_group_name, 
                   p_natkey_list, 
-                  p_table_name
+                  p_table_name,
+                  p_interface_type
                 );
 
       EXCEPTION
@@ -2132,11 +2135,12 @@ IS
    
    PROCEDURE modify_cdc_entity
       (
-        p_source_owner  cdc_entity.source_owner%TYPE, 
-        p_source_table  cdc_entity.source_table%TYPE,
-        p_group_name    cdc_entity.group_name%TYPE,
-        p_natkey_list   cdc_entity.natkey_list%TYPE     DEFAULT NULL,
-        p_table_name    cdc_entity.table_name%TYPE      DEFAULT NULL
+        p_source_owner          cdc_entity.source_owner%TYPE, 
+        p_source_table          cdc_entity.source_table%TYPE,
+        p_group_name            cdc_entity.group_name%TYPE,
+        p_natkey_list           cdc_entity.natkey_list%TYPE     DEFAULT NULL,
+        p_table_name            cdc_entity.table_name%TYPE      DEFAULT NULL,
+        p_interface_type        cdc_entity.interface_type%TYPE  DEFAULT NULL                         
       )
    IS
       o_ev         evolve_ot     := evolve_ot (p_module      => 'modify_cdc_entity');
@@ -2161,6 +2165,15 @@ IS
                     WHEN p_table_name = null_value
                     THEN NULL
                     ELSE p_table_name
+                    END ),
+
+             interface_type =
+             lower( CASE
+                    WHEN p_interface_type IS NULL
+                    THEN interface_type
+                    WHEN p_interface_type = null_value
+                    THEN NULL
+                    ELSE p_interface_type
                     END ),
              
              modified_user = SYS_CONTEXT ('USERENV', 'SESSION_USER'),

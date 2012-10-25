@@ -323,20 +323,22 @@ IS
       
    PROCEDURE create_cdc_entity
       (
-        p_source_owner  cdc_entity.source_owner%TYPE, 
-        p_source_table  cdc_entity.source_table%TYPE, 
-        p_group_name    cdc_entity.group_name%TYPE, 
-        p_natkey_list   cdc_entity.natkey_list%TYPE, 
-        p_table_name    cdc_entity.table_name%TYPE      DEFAULT NULL
+        p_source_owner          cdc_entity.source_owner%TYPE, 
+        p_source_table          cdc_entity.source_table%TYPE, 
+        p_group_name            cdc_entity.group_name%TYPE, 
+        p_natkey_list           cdc_entity.natkey_list%TYPE, 
+        p_table_name            cdc_entity.table_name%TYPE      DEFAULT NULL,
+        p_interface_type        cdc_entity.interface_type%TYPE  DEFAULT 'view'
       );
       
    PROCEDURE modify_cdc_entity
       (
-        p_source_owner  cdc_entity.source_owner%TYPE, 
-        p_source_table  cdc_entity.source_table%TYPE,
-        p_group_name    cdc_entity.group_name%TYPE,
-        p_natkey_list   cdc_entity.natkey_list%TYPE     DEFAULT NULL,
-        p_table_name    cdc_entity.table_name%TYPE      DEFAULT NULL
+        p_source_owner          cdc_entity.source_owner%TYPE, 
+        p_source_table          cdc_entity.source_table%TYPE,
+        p_group_name            cdc_entity.group_name%TYPE,
+        p_natkey_list           cdc_entity.natkey_list%TYPE     DEFAULT NULL,
+        p_table_name            cdc_entity.table_name%TYPE      DEFAULT NULL,
+        p_interface_type        cdc_entity.interface_type%TYPE  DEFAULT NULL                         
       );
       
    PROCEDURE delete_cdc_entity 
