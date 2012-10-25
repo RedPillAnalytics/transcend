@@ -1,59 +1,38 @@
-DELETE tdrep.cdc_source;
 
-INSERT INTO tdrep.cdc_source
-       ( 
-         source_id,
-         source_type,
-         service_name,
-         hostname,
-         port,
-         dblink_name
-       )
-       VALUES 
-       (
-         1, 
-         'goldengate',
-         'orcl',
-         'localhost',
-         1521,
-         'orcl.loopback'
-       );
+-- start
+EXEC trans_adm.delete_cdc_source('ORCL Source');
 
-INSERT INTO tdrep.cdc_source_external
-       ( 
-         source_id,
-         ogg_group_key,
-         ogg_group_name,
-         ogg_check_table,
-         ogg_check_column
-       )
-       VALUES 
-       (
-         1, 
-         1,
-         'test',
-         'goldengate.oggckpt',
-         'log_cmplt_csn'
-       );
-
+begin
+   trans_adm.create_cdc_source
+   ( p_source_name      => 'ORCL Source',
+     p_source_type      => 'goldengate',
+     p_service_name     => 'orcl',
+     p_hostname         => 'localhost',
+     p_port             => 1521,
+     p_dblink           => 'orcl.loopback',
+     p_ogg_group_key    => 1,
+     p_ogg_group_name   => 'test',
+     p_ogg_check_table  => 'goldengate.oggckpt',
+     p_ogg_check_column => 'log_cmplt_csn'
+   );
+END;
+/
 
 INSERT INTO tdrep.cdc_group
        (
-         group_id,
+         source_name,
          group_name,
-         source_id,
-         foundation,
-         filter_policy,
          subscription,
-         sub_prefix
+         filter_policy,
+         interface,
+         interface_prefix
        )
        VALUES
        (
-         1,
+         'ORCL Source',
          'test',
-         1,
          'stewfnd',
-         'subscription',
+         'interface',
          'stewfnd',
          'c$'
        );
@@ -61,41 +40,36 @@ INSERT INTO tdrep.cdc_group
 
 INSERT INTO tdrep.cdc_entity
        (
-         entity_id,
          source_table,
          source_owner,
-         group_id,
+         group_name,
          natkey_list
        )
        VALUES
        (
-         1,
          'test',
          'stewart',
-         1,
+         'test',
          'test_id'
        );
 
 INSERT INTO tdrep.cdc_subscription
        (
-         sub_id,
          sub_name,
-         group_id,
+         group_name,
          effective_scn,
          expiration_scn
        )
        VALUES
        (
-         1,
          'test1',
-         1,
+         'test',
          0,
          5
        );
 
 INSERT INTO tdrep.cdc_subscription
        (
-         sub_id,
          sub_name,
          group_id,
          effective_scn,
@@ -103,9 +77,8 @@ INSERT INTO tdrep.cdc_subscription
        )
        VALUES
        (
-         2,
          'test2',
-         1,
+         'test',
          0,
          5
        );
@@ -135,14 +108,14 @@ INSERT INTO goldengate.oggckpt
 
 INSERT INTO tdrep.cdc_audit_datatype
        ( 
-         group_id,
+         group_name,
          column_name,
          column_type,
          datatype
        )
        VALUES
        (
-         1,
+         'test',
          'oracle_scn',
          'source_scn',
          'number'
@@ -150,14 +123,14 @@ INSERT INTO tdrep.cdc_audit_datatype
 
 INSERT INTO tdrep.cdc_audit_datatype
        ( 
-         group_id,
+         group_name,
          column_name,
          column_type,
          datatype
        )
        VALUES
        (
-         1,
+         'test',
          'rowsid',
          'row_rank',
          'number'
@@ -165,14 +138,14 @@ INSERT INTO tdrep.cdc_audit_datatype
 
 INSERT INTO tdrep.cdc_audit_datatype
        ( 
-         group_id,
+         group_name,
          column_name,
          column_type,
          datatype
        )
        VALUES
        (
-         1,
+         'test',
          'dml_type',
          'dml_type',
          'varchar2(30)'
@@ -180,14 +153,14 @@ INSERT INTO tdrep.cdc_audit_datatype
 
 INSERT INTO tdrep.cdc_audit_datatype
        ( 
-         group_id,
+         group_name,
          column_name,
          column_type,
          datatype
        )
        VALUES
        (
-         1,
+         'test',
          'commit_date',
          'commit_date',
          'date'
@@ -195,14 +168,14 @@ INSERT INTO tdrep.cdc_audit_datatype
 
 INSERT INTO tdrep.cdc_audit_datatype
        ( 
-         group_id,
+         group_name,
          column_name,
          column_type,
          datatype
        )
        VALUES
        (
-         1,
+         'test',
          'effect_scn',
          'source_minscn',
          'number'
@@ -210,16 +183,15 @@ INSERT INTO tdrep.cdc_audit_datatype
 
 INSERT INTO tdrep.cdc_audit_datatype
        ( 
-         group_id,
+         group_name,
          column_name,
          column_type,
          datatype
        )
        VALUES
        (
-         1,
+         'test',
          'expire_scn',
          'source_maxscn',
          'number'
        );
-
