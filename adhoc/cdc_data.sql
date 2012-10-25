@@ -18,70 +18,47 @@ begin
 END;
 /
 
-INSERT INTO tdrep.cdc_group
-       (
-         source_name,
-         group_name,
-         subscription,
-         filter_policy,
-         interface,
-         interface_prefix
-       )
-       VALUES
-       (
-         'ORCL Source',
-         'test',
-         'stewfnd',
-         'interface',
-         'stewfnd',
-         'c$'
-       );
+begin
+   trans_adm.create_cdc_group
+   ( p_source_name      => 'ORCL Source',
+     p_group_name       => 'test',
+     p_subscription     => 'stewfnd',
+     p_interface        => 'stewfnd',
+     p_filter_policy    => 'interface',
+     p_prefix           => 'c$'
+   );
+END;
+/
 
+begin
+   trans_adm.create_cdc_entity
+   ( p_group_name       => 'test',
+     p_source_owner     => 'stewart',
+     p_source_table     => 'test',
+     p_natkey_list      => 'test_id'
+   );
+END;
+/
 
-INSERT INTO tdrep.cdc_entity
-       (
-         source_table,
-         source_owner,
-         group_name,
-         natkey_list
-       )
-       VALUES
-       (
-         'test',
-         'stewart',
-         'test',
-         'test_id'
-       );
+begin
+   trans_adm.create_cdc_subscription
+   ( p_group_name       => 'test',
+     p_sub_name         => 'test1',
+     p_effective_scn    => 0,
+     p_expiration_scn   => 5
+   );
+END;
+/
 
-INSERT INTO tdrep.cdc_subscription
-       (
-         sub_name,
-         group_name,
-         effective_scn,
-         expiration_scn
-       )
-       VALUES
-       (
-         'test1',
-         'test',
-         0,
-         5
-       );
-
-INSERT INTO tdrep.cdc_subscription
-       (
-         sub_name,
-         group_id,
-         effective_scn,
-         expiration_scn
-       )
-       VALUES
-       (
-         'test2',
-         'test',
-         0,
-         5
-       );
+begin
+   trans_adm.create_cdc_subscription
+   ( p_group_name       => 'test',
+     p_sub_name         => 'test2',
+     p_effective_scn    => 0,
+     p_expiration_scn   => 5
+   );
+END;
+/
 
 DELETE goldengate.oggckpt;
 
