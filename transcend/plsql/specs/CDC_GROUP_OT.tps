@@ -89,8 +89,9 @@ AUTHID CURRENT_USER AS object
 
   MEMBER PROCEDURE build_view
   (
-    p_table   VARCHAR2,
-    p_natkey  VARCHAR2
+    p_table    VARCHAR2,
+    p_natkey   VARCHAR2,
+    p_type     VARCHAR2 DEFAULT 'view'
   ),
                                     
    MEMBER PROCEDURE build_table

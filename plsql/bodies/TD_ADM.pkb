@@ -2443,7 +2443,7 @@ IS
                      group_name VARCHAR2 (30)  NOT NULL , 
                      natkey_list VARCHAR2 (4000)  NOT NULL , 
                      table_name VARCHAR2 (30) ,
-                     interface_type VARCHAR2 (10) CHECK ( column_type IN ('view','mview')), 
+                     interface_type VARCHAR2 (10) CHECK ( interface_type IN ('view','mview')), 
                      created_user VARCHAR2 (30) DEFAULT sys_context('USERENV','SESSION_USER') , 
                      created_dt DATE DEFAULT SYSDATE , 
                      modified_user VARCHAR2 (30) , 
@@ -2534,7 +2534,7 @@ IS
 	 RAISE no_sys_repo_entry;
       END IF;
 
-   EXCEPTION
+  EXCEPTION
       WHEN OTHERS
       THEN
          -- if the default tablespace was changed, then put it back

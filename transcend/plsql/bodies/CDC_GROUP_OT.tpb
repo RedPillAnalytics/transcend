@@ -387,7 +387,8 @@ AS
    MEMBER PROCEDURE build_view
    ( 
      p_table   VARCHAR2,
-     p_natkey  VARCHAR2 
+     p_natkey  VARCHAR2,
+     p_type     VARCHAR2 DEFAULT 'view'
    )
    IS
    
@@ -431,7 +432,9 @@ AS
       evolve.log_variable( 'l_collist', l_collist );
 
       -- get the final select statement
-      l_view_sql  := 'CREATE or REPLACE VIEW '
+      l_view_sql  := 'CREATE or REPLACE '
+                  || CASE lower(p_type) WHEN 'mview' THEN 'MATERIALIZED ' ELSE NULL END 
+                  || 'VIEW '
                   || l_full_view
                   || ' as '
                   || self.get_case_select
@@ -597,7 +600,7 @@ AS
       evolve.log_variable( 'self.filter_policy', self.filter_policy );
       
       FOR c_tables IN ( SELECT nvl( table_name, source_table ) table_name,
-                               natkey_list
+                               natkey_list, interface_type
                           FROM cdc_entity
                          WHERE group_id = self.group_id
                       )
@@ -606,6 +609,7 @@ AS
 
          evolve.log_variable( 'c_tables.table_name', c_tables.table_name );
          evolve.log_variable( 'c_tables.natkey_list', c_tables.natkey_list );
+         evolve.log_variable( 'c_tables.interface_type', c_tables.interface_type );
          
          self.build_view
          (
