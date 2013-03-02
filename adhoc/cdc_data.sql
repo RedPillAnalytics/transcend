@@ -1,62 +1,32 @@
+
 DELETE tdrep.cdc_source;
 
-INSERT INTO tdrep.cdc_source
-       ( 
-         source_id,
-         source_type,
-         service_name,
-         hostname,
-         port,
-         dblink_name
-       )
-       VALUES 
-       (
-         1, 
-         'goldengate',
-         'orcl',
-         'localhost',
-         1521,
-         'orcl.loopback'
-       );
+ALTER SEQUENCE cdc_source_seq nextvalue 1;
 
-INSERT INTO tdrep.cdc_source_external
-       ( 
-         source_id,
-         ogg_group_key,
-         ogg_group_name,
-         ogg_check_table,
-         ogg_check_column
-       )
-       VALUES 
-       (
-         1, 
-         1,
-         'test',
-         'goldengate.oggckpt',
-         'log_cmplt_csn'
-       );
+ALTER SEQUENCE cdc_group_seq nextvalue 1;
 
+ALTER SEQUENCE cdc_subscription_seq nextvalue 1;
 
-INSERT INTO tdrep.cdc_group
-       (
-         group_id,
-         group_name,
-         source_id,
-         foundation,
-         filter_policy,
-         subscription,
-         sub_prefix
-       )
-       VALUES
-       (
-         1,
-         'test',
-         1,
-         'stewfnd',
-         'subscription',
-         'stewfnd',
-         'c$'
-       );
+EXEC trans_adm.create_cdc_source
+     ( p_source_type            => 'goldengate',
+       p_service_name           => 'orcl',
+       p_hostname               => 'localhost',
+       p_port                   => 1521,
+       p_dblink_name            => 'orcl.loopback',
+       p_ogg_group_key          => 1,
+       p_ogg_group_name         => 'test',
+       p_ogg_check_table        => 'goldengate.oggckpt',
+       p_ogg_check_column       => 'log_cmplt_scn'
+     );
+
+EXEC trans_adm.create_cdc_group
+     ( p_group_name             => 'demo',
+       p_source_id              => 1,
+       p_foundation             => 'stewfnd',
+       p_subscription           => 'stewfnd',
+       p_filter_policy          => 'subscription',
+       p_sub_prefix             => 'c$'
+     );
 
 
 INSERT INTO tdrep.cdc_entity
