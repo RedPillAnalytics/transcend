@@ -570,14 +570,6 @@ IS
 
          EXECUTE IMMEDIATE 'GRANT SELECT ON file_object_detail_seq TO ' || p_grantee;
 
-         EXECUTE IMMEDIATE 'GRANT SELECT ON cdc_source_seq TO ' || p_grantee;
-         
-         EXECUTE IMMEDIATE 'GRANT SELECT ON cdc_group_seq TO ' || p_grantee;
-         
-         EXECUTE IMMEDIATE 'GRANT SELECT ON cdc_entity_seq TO ' || p_grantee;
-         
-         EXECUTE IMMEDIATE 'GRANT SELECT ON cdc_subscription_seq TO ' || p_grantee;
-
       EXCEPTION
          WHEN e_no_grantee
          THEN
@@ -2304,7 +2296,7 @@ IS
          q'{
          CREATE TABLE cdc_source 
                 ( 
-                  source_id NUMBER  NOT NULL , 
+                  source_name VARCHAR2 (30)  NOT NULL , 
                   source_type VARCHAR2 (10)  NOT NULL CHECK ( source_type IN ('default', 'flashback', 'goldengate')) , 
                   service_name VARCHAR2 (4000)  NOT NULL , 
                   hostname VARCHAR2 (4000)  NOT NULL , 
@@ -2320,7 +2312,7 @@ IS
          EXECUTE IMMEDIATE 
          q'{
          ALTER TABLE CDC_SOURCE 
-               ADD CONSTRAINT CDC_SOURCE_PK PRIMARY KEY ( SOURCE_ID )
+               ADD CONSTRAINT CDC_SOURCE_PK PRIMARY KEY ( SOURCE_NAME )
            }';
       
          -- CDC_SOURCE_EXTERNAL
@@ -2328,7 +2320,7 @@ IS
          q'{
             CREATE TABLE cdc_source_external 
                    ( 
-                     source_id NUMBER  NOT NULL , 
+                     source_name VARCHAR2 (30)  NOT NULL , 
                      ogg_group_key VARCHAR2 (8) , 
                      ogg_group_name VARCHAR2 (8) , 
                      ogg_check_table VARCHAR2 (61) , 
@@ -2344,7 +2336,7 @@ IS
          EXECUTE IMMEDIATE 
          q'{
          ALTER TABLE CDC_SOURCE_EXTERNAL 
-         ADD CONSTRAINT CDC_SOURCE_EXTERNAL_PK PRIMARY KEY ( SOURCE_ID )
+         ADD CONSTRAINT CDC_SOURCE_EXTERNAL_PK PRIMARY KEY ( SOURCE_NAME )
          }';
 
 
@@ -2353,11 +2345,11 @@ IS
             ALTER TABLE CDC_SOURCE_EXTERNAL 
                   ADD CONSTRAINT cdc_source_external_fk1 FOREIGN KEY 
                   ( 
-                    source_id
+                    source_name
                   ) 
                   REFERENCES cdc_source 
                   ( 
-                    source_id
+                    source_name
                   ) 
                   ON DELETE CASCADE 
          }';
@@ -2367,49 +2359,48 @@ IS
          q'{
             CREATE TABLE CDC_GROUP 
                    ( 
-                     group_id NUMBER  NOT NULL , 
                      group_name VARCHAR2 (30)  NOT NULL , 
-                     source_id NUMBER  NOT NULL , 
-                     foundation VARCHAR2 (30)  NOT NULL , 
-                     subscription VARCHAR2 (30) , 
-                     sub_prefix VARCHAR2 (4) DEFAULT 'C$' , 
-                     filter_policy VARCHAR2 (20)  NOT NULL CHECK ( filter_policy IN ('none', 'subscription')) , 
+                     source_name VARCHAR2 (30)  NOT NULL , 
+                     subscription VARCHAR2 (30)  NOT NULL , 
+                     interface VARCHAR2 (30) , 
+                     interface_prefix VARCHAR2 (4) DEFAULT 'C$' , 
+                     filter_policy VARCHAR2 (20)  NOT NULL CHECK ( filter_policy IN ('interface', 'none')) , 
                      initial_source_scn NUMBER , 
                      created_user VARCHAR2 (30) DEFAULT sys_context('USERENV','SESSION_USER') , 
                      created_dt DATE DEFAULT SYSDATE , 
                      modified_user VARCHAR2 (30) , 
-                     modified_dt DATE
+                     modified_dt DATE 
                     )
           }';
 
          EXECUTE IMMEDIATE 
          q'{
             ALTER TABLE CDC_GROUP 
-            ADD CONSTRAINT CDC_GROUP_PK PRIMARY KEY ( GROUP_ID )           
+            ADD CONSTRAINT CDC_GROUP_PK PRIMARY KEY ( GROUP_NAME )           
          }';
          
          EXECUTE IMMEDIATE 
          q'{
             ALTER TABLE CDC_GROUP 
-            ADD CONSTRAINT CDC_GROUP_UK1 UNIQUE ( GROUP_NAME )
+            ADD CONSTRAINT CDC_GROUP_UK2 UNIQUE ( SUBSCRIPTION )
          }';
 
          EXECUTE IMMEDIATE 
          q'{
             ALTER TABLE CDC_GROUP 
-            ADD CONSTRAINT CDC_GROUP_UK2 UNIQUE ( FOUNDATION )
+            ADD CONSTRAINT CDC_GROUP_UK3 UNIQUE ( INTERFACE )
          }';
-                  
+
          EXECUTE IMMEDIATE 
          q'{
             ALTER TABLE CDC_GROUP
                   ADD CONSTRAINT cdc_sub_conf_fk1 FOREIGN KEY 
                   ( 
-                    source_id
+                    source_name
                   ) 
                   REFERENCES cdc_source 
                   ( 
-                    source_id
+                    source_name
                   ) 
                   ON DELETE CASCADE
          }';
@@ -2419,7 +2410,7 @@ IS
          q'{
             CREATE TABLE CDC_AUDIT_DATATYPE 
                    (
-                     group_id NUMBER  NOT NULL , 
+                     group_name VARCHAR2 (30)  NOT NULL , 
                      column_name VARCHAR2 (50) , 
                      column_type VARCHAR2 (20) CHECK ( column_type IN ('cdc_rank', 'commit_date', 'dml_type', 'entity_rank', 'row_rank', 'source_maxscn', 'source_minscn', 'source_scn')) , 
                      datatype VARCHAR2 (100) , 
@@ -2433,11 +2424,11 @@ IS
             ALTER TABLE cdc_audit_datatype 
                   ADD CONSTRAINT cdc_audit_datatype_fk1 FOREIGN KEY 
                   ( 
-                    group_id
+                    group_name
                   ) 
                   REFERENCES cdc_group 
                   ( 
-                    group_id
+                    group_name
                   ) 
                   ON DELETE CASCADE 
           }';
@@ -2447,12 +2438,12 @@ IS
          q'{
             CREATE TABLE cdc_entity
                    ( 
-                     entity_id NUMBER  NOT NULL , 
                      source_owner VARCHAR2 (30)  NOT NULL , 
                      source_table VARCHAR2 (30)  NOT NULL , 
-                     group_id NUMBER  NOT NULL , 
+                     group_name VARCHAR2 (30)  NOT NULL , 
                      natkey_list VARCHAR2 (4000)  NOT NULL , 
-                     table_name VARCHAR2 (30) , 
+                     table_name VARCHAR2 (30) ,
+                     interface_type VARCHAR2 (10) CHECK ( interface_type IN ('view','mview')), 
                      created_user VARCHAR2 (30) DEFAULT sys_context('USERENV','SESSION_USER') , 
                      created_dt DATE DEFAULT SYSDATE , 
                      modified_user VARCHAR2 (30) , 
@@ -2463,25 +2454,19 @@ IS
          EXECUTE IMMEDIATE 
          q'{
             ALTER TABLE cdc_entity 
-            ADD CONSTRAINT cdc_sub_entity_pk PRIMARY KEY ( entity_id )
+                  ADD CONSTRAINT cdc_sub_entity_pk PRIMARY KEY ( source_owner, source_table, group_name )
          }';
 
-         EXECUTE IMMEDIATE 
-         q'{
-            ALTER TABLE CDC_ENTITY 
-            ADD CONSTRAINT CDC_ENTITY_UK1 UNIQUE ( SOURCE_TABLE , SOURCE_OWNER , GROUP_ID )
-         }';
-         
          EXECUTE IMMEDIATE 
          q'{
             ALTER TABLE CDC_ENTITY
                   ADD CONSTRAINT cdc_entity_fk1 FOREIGN KEY 
                   ( 
-                    group_id
+                    group_name
                   ) 
                   REFERENCES cdc_group 
                   ( 
-                    group_id
+                    group_name
                   ) 
                   ON DELETE CASCADE 
           }';
@@ -2492,9 +2477,9 @@ IS
          q'{
          CREATE TABLE CDC_SUBSCRIPTION 
                 ( 
-                  sub_id NUMBER  NOT NULL , 
                   sub_name VARCHAR2 (30)  NOT NULL , 
-                  group_id NUMBER  NOT NULL , 
+                  sub_type VARCHAR2 (6) CHECK ( sub_type IN ('system', 'user')) , 
+                  group_name VARCHAR2 (30)  NOT NULL , 
                   effective_scn NUMBER , 
                   expiration_scn NUMBER , 
                   created_user VARCHAR2 (30) DEFAULT sys_context('USERENV','SESSION_USER') , 
@@ -2507,13 +2492,7 @@ IS
          EXECUTE IMMEDIATE 
          q'{
             ALTER TABLE CDC_SUBSCRIPTION 
-                  ADD CONSTRAINT cdc_subscription_pk PRIMARY KEY ( sub_id )
-           }';
-
-         EXECUTE IMMEDIATE 
-         q'{
-            ALTER TABLE CDC_SUBSCRIPTION 
-                  ADD CONSTRAINT cdc_subscription_uk1 UNIQUE ( sub_name )
+                  ADD CONSTRAINT cdc_subscription_pk PRIMARY KEY ( sub_name )
            }';
 
          EXECUTE IMMEDIATE 
@@ -2521,24 +2500,15 @@ IS
             ALTER TABLE CDC_SUBSCRIPTION 
                   ADD CONSTRAINT cdc_subscription_cdc_group_fk FOREIGN KEY 
                   ( 
-                    group_id
+                    group_name
                   ) 
                   REFERENCES cdc_group 
                   ( 
-                    group_id
+                    group_name
                   ) 
                   ON DELETE CASCADE 
            }';
-         
-         EXECUTE IMMEDIATE q'{CREATE SEQUENCE cdc_source_seq}';
-
-         EXECUTE IMMEDIATE q'{CREATE SEQUENCE cdc_group_seq}';
-
-         EXECUTE IMMEDIATE q'{CREATE SEQUENCE cdc_entity_seq}';
-
-         EXECUTE IMMEDIATE q'{CREATE SEQUENCE cdc_subscription_seq}';
-         
-         
+                  
          -- grant select privileges to the select role
 	 grant_transcend_rep_privs( p_grantee=> p_schema||'_sel', p_mode => 'select');
 
@@ -2564,7 +2534,7 @@ IS
 	 RAISE no_sys_repo_entry;
       END IF;
 
-   EXCEPTION
+  EXCEPTION
       WHEN OTHERS
       THEN
          -- if the default tablespace was changed, then put it back

@@ -23,11 +23,11 @@ AS
              self.ogg_group_name
         FROM cdc_source
         JOIN cdc_source_external
-             USING (source_id)
+             USING (source_name)
         JOIN cdc_group
-             USING (source_id)
+             USING (source_name)
         JOIN cdc_subscription
-             USING (group_id)
+             USING (group_name)
        WHERE lower( sub_name ) = lower( p_sub_name );
       
       -- return the self reference

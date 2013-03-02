@@ -32,26 +32,24 @@ AS
          
          -- load all attributes relatd to group into the type
          SELECT source_type,
-                group_id,
                 group_name,
-                foundation,
-                nvl(subscription, foundation),
+                subscription,
+                nvl(interface, subscription),
                 filter_policy,
-                sub_prefix,
+                interface_prefix,
                 dblink_name,
                 initial_source_scn
            INTO self.source_type,
-                self.group_id,
                 self.group_name,
-                self.foundation,
                 self.subscription,
+                self.interface,
                 self.filter_policy,
-                self.sub_prefix,
+                self.interface_prefix,
                 self.dblink_name,
                 self.initial_source_scn
            FROM cdc_source
            JOIN cdc_group
-                USING (source_id)
+                USING (source_name)
           WHERE lower( group_name ) = lower( p_group_name );
       EXCEPTION
          WHEN NO_DATA_FOUND
@@ -113,7 +111,7 @@ AS
 
       UPDATE cdc_group
          SET initial_source_scn = p_scn
-       WHERE group_id = self.group_id;      
+       WHERE group_name = self.group_name;      
 
    END register_initial_scn;
    
@@ -254,7 +252,7 @@ AS
    BEGIN
 
       l_sql :=
-                '( SELECT * FROM ( SELECT sub_id, sub_name, '
+                '( SELECT * FROM ( SELECT sub_name, '
              || lower( p_collist )
              || ', effective_scn, expiration_scn, '
              || CASE WHEN p_collapse THEN self.get_cdcrank_clause( p_natkey ) ||', ' ELSE NULL END
@@ -295,7 +293,7 @@ AS
       l_sql :=
                 'SELECT '
              || lower( p_collist )
-             || ', sub_id, sub_name, CASE WHEN '
+             || ', sub_name, CASE WHEN '
              || self.source_scn
              || q'< >= effective_scn THEN 'Y' ELSE 'N' END stage_ind, >'
              || 'CASE WHEN '
@@ -389,7 +387,8 @@ AS
    MEMBER PROCEDURE build_view
    ( 
      p_table   VARCHAR2,
-     p_natkey  VARCHAR2 
+     p_natkey  VARCHAR2,
+     p_type     VARCHAR2 DEFAULT 'view'
    )
    IS
    
@@ -398,12 +397,12 @@ AS
       
       -- table information
       l_table           all_tables.table_name%type       := lower( p_table );
-      l_towner          all_tables.owner%type            := lower( self.foundation );
+      l_towner          all_tables.owner%type            := lower( self.subscription );
       l_full_table      VARCHAR2(61)                     := l_towner || '.' || l_table;
 
       -- view information
-      l_view            all_tables.table_name%type       := lower( self.sub_prefix||p_table );
-      l_vowner          all_tables.owner%type            := lower( self.subscription );
+      l_view            all_tables.table_name%type       := lower( self.interface_prefix||p_table );
+      l_vowner          all_tables.owner%type            := lower( self.interface );
       l_full_view       VARCHAR2(61)                     := l_vowner || '.' || l_view;
    
       -- construct the view SQL
@@ -433,7 +432,9 @@ AS
       evolve.log_variable( 'l_collist', l_collist );
 
       -- get the final select statement
-      l_view_sql  := 'CREATE or REPLACE VIEW '
+      l_view_sql  := 'CREATE or REPLACE '
+                  || CASE lower(p_type) WHEN 'mview' THEN 'MATERIALIZED ' ELSE NULL END 
+                  || 'VIEW '
                   || l_full_view
                   || ' as '
                   || self.get_case_select
@@ -442,7 +443,7 @@ AS
                        p_natkey     => p_natkey, 
                        p_collist    => l_collist,
                        p_collapse   => CASE self.filter_policy 
-                                       WHEN 'subscription' 
+                                       WHEN 'interface' 
                                        THEN TRUE 
                                        ELSE FALSE 
                                        END 
@@ -589,17 +590,17 @@ AS
       o_ev.clear_app_info;
    END add_audit_columns;
    
-   MEMBER PROCEDURE build_subscription
+   MEMBER PROCEDURE build_interface
    IS
       l_rows    BOOLEAN     := FALSE;
       -- evolve object
-      o_ev      evolve_ot   := evolve_ot (p_module => 'cdc_group_ot.build_subscription');
+      o_ev      evolve_ot   := evolve_ot (p_module => 'cdc_group_ot.build_interface');
    BEGIN
 
       evolve.log_variable( 'self.filter_policy', self.filter_policy );
       
       FOR c_tables IN ( SELECT nvl( table_name, source_table ) table_name,
-                               natkey_list
+                               natkey_list, interface_type
                           FROM cdc_entity
                          WHERE group_id = self.group_id
                       )
@@ -608,6 +609,7 @@ AS
 
          evolve.log_variable( 'c_tables.table_name', c_tables.table_name );
          evolve.log_variable( 'c_tables.natkey_list', c_tables.natkey_list );
+         evolve.log_variable( 'c_tables.interface_type', c_tables.interface_type );
          
          self.build_view
          (
@@ -617,9 +619,9 @@ AS
 
       END LOOP;
 
-   END build_subscription;
+   END build_interface;
    
-   MEMBER PROCEDURE build_foundation
+   MEMBER PROCEDURE build_subscription
    (
      p_scn      NUMBER          DEFAULT NULL
    )
@@ -627,22 +629,22 @@ AS
       l_rows    BOOLEAN     := FALSE;
    
       -- evolve object
-      o_ev      evolve_ot   := evolve_ot (p_module => 'cdc_group_ot.build_foundation');
+      o_ev      evolve_ot   := evolve_ot (p_module => 'cdc_group_ot.build_subscription');
    BEGIN
 
       -- register the initial SCN
       self.register_initial_scn( NVL( p_scn, get_source_scn ) );
       
-      -- should not be called if there is not a foundation layer defined
+      -- should not be called if there is not a subscription component defined
 
-      evolve.log_variable( 'self.foundation', self.foundation );
+      evolve.log_variable( 'self.subscription', self.subscription );
       
-      o_ev.change_action( 'check foundation' );
+      o_ev.change_action( 'check subscription' );
 
-      IF self.foundation IS NULL
+      IF self.subscription IS NULL
       THEN
 
-         evolve.raise_err( 'no_foundation_layer' );
+         evolve.raise_err( 'no_subscription_layer' );
 
       END IF;
 
@@ -664,7 +666,7 @@ AS
 
          self.build_table
          (
-           p_owner         => self.foundation,
+           p_owner         => self.subscription,
            p_table         => c_tables.table_name,
            p_source_owner  => c_tables.source_owner,
            p_source_table  => c_tables.source_table,
@@ -674,33 +676,33 @@ AS
 
          self.add_audit_columns
          (
-           p_owner         => self.foundation,
+           p_owner         => self.subscription,
            p_table         => c_tables.table_name,
            p_scn           => self.initial_source_scn
          );
          
       END LOOP;
 
-   END build_foundation;
+   END build_subscription;
 
-   MEMBER PROCEDURE load_foundation
+   MEMBER PROCEDURE load_subscription
    IS
       l_rows    BOOLEAN     := FALSE;
    
       -- evolve object
-      o_ev      evolve_ot   := evolve_ot (p_module => 'cdc_group_ot.load_foundation');
+      o_ev      evolve_ot   := evolve_ot (p_module => 'cdc_group_ot.load_subscription');
    BEGIN
 
-      -- should not be called if there is not a foundation layer defined
+      -- should not be called if there is not a subscription layer defined
 
-      evolve.log_variable( 'self.foundation', self.foundation );
+      evolve.log_variable( 'self.subscription', self.subscription );
       
-      o_ev.change_action( 'check foundation' );
+      o_ev.change_action( 'check subscription' );
 
-      IF self.foundation IS NULL
+      IF self.subscription IS NULL
       THEN
 
-         evolve.raise_err( 'no_foundation_layer' );
+         evolve.raise_err( 'no_subscription_layer' );
 
       END IF;
 
@@ -721,7 +723,7 @@ AS
                   
          td_dbutils.insert_table
          (
-           p_owner         => self.foundation,
+           p_owner         => self.subscription,
            p_table         => c_tables.table_name,
            p_source_owner  => c_tables.source_owner,
            p_source_object => c_tables.source_table,
@@ -733,7 +735,7 @@ AS
          
       END LOOP;
 
-   END load_foundation;
+   END load_subscription;
    
 END;
 /

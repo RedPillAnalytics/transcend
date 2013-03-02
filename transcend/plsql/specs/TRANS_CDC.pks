@@ -2,18 +2,18 @@
 CREATE OR REPLACE PACKAGE trans_cdc AUTHID CURRENT_USER
 IS
 
-   PROCEDURE build_subscription
+   PROCEDURE build_interface
       (
         p_group_name   cdc_group.group_name%type
       );
       
-   PROCEDURE build_foundation
+   PROCEDURE build_subscription
       (
         p_group_name   cdc_group.group_name%type,
         p_scn          NUMBER                      DEFAULT NULL
       );
 
-   PROCEDURE load_foundation
+   PROCEDURE load_subscription
       (
         p_group_name   cdc_group.group_name%type
       );

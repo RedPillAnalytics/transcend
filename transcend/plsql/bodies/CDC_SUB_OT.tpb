@@ -29,17 +29,15 @@ AS
          -- load all the feed attributes
          SELECT group_name,
                 sub_name,
-                sub_id,
                 effective_scn,
                 expiration_scn
            INTO self.group_name,
                 self.sub_name,
-                self.sub_id,
                 self.scn_min,
                 self.scn_max
            FROM cdc_group
            JOIN cdc_subscription
-                USING (group_id)
+                USING (group_name)
           WHERE lower( sub_name ) = lower( p_sub_name );
       EXCEPTION
          WHEN NO_DATA_FOUND
@@ -65,14 +63,14 @@ AS
      o_ev    evolve_ot   := evolve_ot (p_module => 'cdc_group_ot.load_fnd_table');
    BEGIN
 
-      evolve.log_variable( 'self.sub_id', self.sub_id );      
+      evolve.log_variable( 'self.sub_name', self.sub_name );      
 
       l_scn := self.get_source_scn;
       
       SELECT expiration_scn
         INTO l_oldscn
         FROM cdc_subscription
-       WHERE sub_id = self.sub_id;
+       WHERE sub_name = self.sub_name;
       
       IF l_scn > l_oldscn
       THEN
@@ -80,7 +78,7 @@ AS
          UPDATE cdc_subscription
             SET effective_scn = expiration_scn,
                 expiration_scn = l_scn
-          WHERE sub_id = self.sub_id;
+          WHERE sub_name = self.sub_name;
          
       END IF;
          

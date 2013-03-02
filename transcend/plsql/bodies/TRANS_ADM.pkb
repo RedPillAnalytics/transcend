@@ -1779,6 +1779,7 @@ IS
    
    PROCEDURE create_cdc_source
       (
+        p_source_name        cdc_source.source_name%TYPE,
         p_source_type        cdc_source.source_type%TYPE,
         p_service_name       cdc_source.service_name%TYPE,
         p_hostname           cdc_source.hostname%TYPE,
@@ -1799,7 +1800,7 @@ IS
 
          INSERT INTO 
                 cdc_source
-		( source_id,
+		( source_name,
 		  source_type,
                   service_name,
                   hostname,
@@ -1808,7 +1809,7 @@ IS
 		)
 	        VALUES 
                 ( 
-                  cdc_source_seq.nextval,
+                  p_source_name,
                   p_source_type,
                   p_service_name,
                   p_hostname,
@@ -1819,7 +1820,7 @@ IS
          INSERT INTO 
                 cdc_source_external
 		( 
-                  source_id,
+                  source_name,
                   ogg_group_key,
                   ogg_group_name,
                   ogg_check_table,
@@ -1827,7 +1828,7 @@ IS
 		)
 	        VALUES 
                 ( 
-                  cdc_group_seq.currval,
+                  p_source_name,
                   p_ogg_group_key,
                   p_ogg_group_name,
                   p_ogg_check_table,
@@ -1845,7 +1846,7 @@ IS
    
    PROCEDURE modify_cdc_source 
       (
-        p_source_id          cdc_source.source_id%TYPE,
+        p_source_name        cdc_source.source_name%TYPE,
         p_source_type        cdc_source.source_type%TYPE                DEFAULT NULL,
         p_service_name       cdc_source.service_name%TYPE               DEFAULT NULL,
         p_hostname           cdc_source.hostname%TYPE                   DEFAULT NULL,
@@ -1898,7 +1899,7 @@ IS
                    ),
              modified_user = SYS_CONTEXT ('USERENV', 'SESSION_USER'),
              modified_dt = SYSDATE
-       WHERE source_id = p_source_id;
+       WHERE source_name = p_source_name;
       
       UPDATE cdc_source_external
          SET 
@@ -1941,21 +1942,21 @@ IS
              modified_user = SYS_CONTEXT ('USERENV', 'SESSION_USER'),
              modified_dt = SYSDATE
 
-       WHERE source_id = p_source_id;
+       WHERE source_name = p_source_name;
 
        o_ev.clear_app_info;
    END modify_cdc_source;
 
    PROCEDURE delete_cdc_source 
       (
-        p_source_id          cdc_source.source_id%TYPE
+        p_source_name        cdc_source.source_name%TYPE
       )
    IS
       o_ev          evolve_ot     := evolve_ot (p_module      => 'delete_cdc_source');
    BEGIN
       
       DELETE FROM cdc_source
-       WHERE source_id = p_source_id;
+       WHERE source_name = p_source_name;
 
       o_ev.clear_app_info;
 
@@ -1964,11 +1965,11 @@ IS
    PROCEDURE create_cdc_group
       (
         p_group_name         cdc_group.group_name%TYPE,
-        p_source_id          cdc_group.source_id%TYPE,
+        p_source_name        cdc_group.source_name%TYPE,
         p_filter_policy      cdc_group.filter_policy%TYPE,
-        p_foundation         cdc_group.foundation%TYPE,
-        p_subscription       cdc_group.subscription%TYPE               DEFAULT NULL,
-        p_sub_prefix         cdc_group.sub_prefix%TYPE                 DEFAULT NULL
+        p_subscription       cdc_group.subscription%TYPE,
+        p_interface          cdc_group.interface%TYPE                  DEFAULT NULL,
+        p_prefix             cdc_group.interface_prefix%TYPE           DEFAULT NULL
    )
    IS
       e_dup_conf   EXCEPTION;
@@ -1981,22 +1982,20 @@ IS
          INSERT INTO 
                 cdc_group
 		( 
-                  group_id, 
                   group_name, 
-                  source_id, 
-                  foundation, 
+                  source_name, 
                   subscription, 
-                  sub_prefix, 
+                  interface,
+                  interface_prefix, 
                   filter_policy
 		)
 	        VALUES 
                 ( 
-                  cdc_group_seq.nextval,
                   p_group_name, 
-                  p_source_id, 
-                  p_foundation, 
+                  p_source_name, 
                   p_subscription, 
-                  p_sub_prefix, 
+                  p_interface,
+                  p_prefix, 
                   p_filter_policy
                 );
 
@@ -2012,11 +2011,11 @@ IS
    PROCEDURE modify_cdc_group 
       (
         p_group_name         cdc_group.group_name%TYPE,
-        p_source_id          cdc_group.source_id%TYPE                  DEFAULT NULL,
+        p_source_name        cdc_group.source_name%TYPE                DEFAULT NULL,
         p_filter_policy      cdc_group.filter_policy%TYPE              DEFAULT NULL,
-        p_foundation         cdc_group.foundation%TYPE                 DEFAULT NULL,
         p_subscription       cdc_group.subscription%TYPE               DEFAULT NULL,
-        p_sub_prefix         cdc_group.sub_prefix%TYPE                 DEFAULT NULL
+        p_interface          cdc_group.interface%TYPE                  DEFAULT NULL,
+        p_prefix             cdc_group.interface_prefix%TYPE           DEFAULT NULL
       )
    IS
       o_ev         evolve_ot     := evolve_ot (p_module      => 'modify_cdc_group');
@@ -2026,11 +2025,11 @@ IS
       
       UPDATE cdc_group
          SET 
-             source_id =
+             source_name =
              CASE
-             WHEN p_source_id IS NULL
-             THEN source_id
-             ELSE p_source_id
+             WHEN p_source_name IS NULL
+             THEN source_name
+             ELSE p_source_name
              END,
              
              filter_policy =
@@ -2040,29 +2039,29 @@ IS
                     ELSE p_filter_policy
                     END ),
              
-             foundation =
-             lower( CASE
-                    WHEN p_foundation IS NULL
-                    THEN foundation
-                    ELSE p_foundation
-                    END ),             
-
              subscription =
              lower( CASE
                     WHEN p_subscription IS NULL
                     THEN subscription
-                    WHEN p_subscription = null_value
-                    THEN NULL
                     ELSE p_subscription
-                    END ),
+                    END ),             
 
-             sub_prefix =
+             interface =
              lower( CASE
-                    WHEN p_sub_prefix IS NULL
-                    THEN sub_prefix
-                    WHEN p_sub_prefix = null_value
+                    WHEN p_interface IS NULL
+                    THEN interface
+                    WHEN p_interface = null_value
                     THEN NULL
-                    ELSE p_sub_prefix
+                    ELSE p_interface
+                    END ),
+             
+             interface_prefix =
+             lower( CASE
+                    WHEN p_prefix IS NULL
+                    THEN interface_prefix
+                    WHEN p_prefix = null_value
+                    THEN NULL
+                    ELSE p_prefix
                     END ),
              
              modified_user = SYS_CONTEXT ('USERENV', 'SESSION_USER'),
@@ -2090,11 +2089,12 @@ IS
 
    PROCEDURE create_cdc_entity
       (
-        p_source_owner  cdc_entity.source_owner%TYPE, 
-        p_source_table  cdc_entity.source_table%TYPE, 
-        p_group_id      cdc_entity.group_id%TYPE, 
-        p_natkey_list   cdc_entity.natkey_list%TYPE, 
-        p_table_name    cdc_entity.table_name%TYPE      DEFAULT NULL
+        p_source_owner          cdc_entity.source_owner%TYPE, 
+        p_source_table          cdc_entity.source_table%TYPE, 
+        p_group_name            cdc_entity.group_name%TYPE, 
+        p_natkey_list           cdc_entity.natkey_list%TYPE, 
+        p_table_name            cdc_entity.table_name%TYPE      DEFAULT NULL,
+        p_interface_type        cdc_entity.interface_type%TYPE  DEFAULT 'view'
       )
    IS
       e_dup_conf   EXCEPTION;
@@ -2107,21 +2107,21 @@ IS
          INSERT INTO 
                 cdc_entity
 		( 
-                  entity_id, 
                   source_owner, 
                   source_table, 
-                  group_id, 
+                  group_name, 
                   natkey_list, 
-                  table_name
+                  table_name,
+                  interface_type
 		)
 	        VALUES 
                 ( 
-                  cdc_entity_seq.nextval, 
                   p_source_owner,
                   p_source_table, 
-                  p_group_id, 
+                  p_group_name, 
                   p_natkey_list, 
-                  p_table_name
+                  p_table_name,
+                  p_interface_type
                 );
 
       EXCEPTION
@@ -2135,12 +2135,12 @@ IS
    
    PROCEDURE modify_cdc_entity
       (
-        p_entity_id     cdc_entity.entity_id%TYPE,
-        p_source_owner  cdc_entity.source_owner%TYPE    DEFAULT NULL, 
-        p_source_table  cdc_entity.source_table%TYPE    DEFAULT NULL,
-        p_group_id      cdc_entity.group_id%TYPE        DEFAULT NULL,
-        p_natkey_list   cdc_entity.natkey_list%TYPE     DEFAULT NULL,
-        p_table_name    cdc_entity.table_name%TYPE      DEFAULT NULL
+        p_source_owner          cdc_entity.source_owner%TYPE, 
+        p_source_table          cdc_entity.source_table%TYPE,
+        p_group_name            cdc_entity.group_name%TYPE,
+        p_natkey_list           cdc_entity.natkey_list%TYPE     DEFAULT NULL,
+        p_table_name            cdc_entity.table_name%TYPE      DEFAULT NULL,
+        p_interface_type        cdc_entity.interface_type%TYPE  DEFAULT NULL                         
       )
    IS
       o_ev         evolve_ot     := evolve_ot (p_module      => 'modify_cdc_entity');
@@ -2150,26 +2150,6 @@ IS
       
       UPDATE cdc_entity
          SET 
-             source_owner =
-             lower( CASE
-                    WHEN p_source_owner IS NULL
-                    THEN source_owner
-                    ELSE p_source_owner
-                    END ),
-             
-             source_table =
-             lower( CASE
-                    WHEN p_source_table IS NULL
-                    THEN source_table
-                    ELSE p_source_table
-                    END ),             
-
-             group_id =
-             CASE
-             WHEN p_group_id IS NULL
-             THEN group_id
-             ELSE p_group_id
-             END,
              
              natkey_list =
              lower( CASE
@@ -2186,25 +2166,40 @@ IS
                     THEN NULL
                     ELSE p_table_name
                     END ),
+
+             interface_type =
+             lower( CASE
+                    WHEN p_interface_type IS NULL
+                    THEN interface_type
+                    WHEN p_interface_type = null_value
+                    THEN NULL
+                    ELSE p_interface_type
+                    END ),
              
              modified_user = SYS_CONTEXT ('USERENV', 'SESSION_USER'),
              modified_dt = SYSDATE
 
-       WHERE entity_id = p_entity_id;
+       WHERE source_owner = p_source_owner
+         AND source_table = p_source_table
+         AND group_name   = p_group_name;
 
        o_ev.clear_app_info;
    END modify_cdc_entity;
 
    PROCEDURE delete_cdc_entity 
       (
-        p_entity_id     cdc_entity.entity_id%TYPE
+        p_source_owner  cdc_entity.source_owner%TYPE, 
+        p_source_table  cdc_entity.source_table%TYPE,
+        p_group_name    cdc_entity.group_name%TYPE
       )
    IS
       o_ev          evolve_ot     := evolve_ot (p_module      => 'delete_cdc_entity');
    BEGIN
       
       DELETE cdc_entity
-       WHERE entity_id = p_entity_id;
+       WHERE source_owner = p_source_owner
+         AND source_table = p_source_table
+         AND group_name   = p_group_name;
 
       o_ev.clear_app_info;
 
@@ -2228,17 +2223,17 @@ IS
          INSERT INTO 
                 cdc_subscription
 		( 
-                  sub_id, 
-                  sub_name, 
-                  group_id, 
+                  sub_name,
+                  sub_type,
+                  group_name, 
                   effective_scn, 
                   expiration_scn
 		)
 	        VALUES 
                 ( 
-                  cdc_subscription_seq.nextval, 
-                  p_sub_name, 
-                  o_group.group_id, 
+                  p_sub_name,
+                  'user', 
+                  o_group.group_name, 
                   0, 
                   o_group.get_source_scn
                 );
@@ -2323,14 +2318,14 @@ IS
          INSERT INTO 
                 cdc_audit_datatype
 		( 
-                  group_id, 
+                  group_name, 
                   column_name, 
                   column_type, 
                   datatype
 		)
 	        VALUES 
                 ( 
-                  o_group.group_id, 
+                  o_group.group_name, 
                   p_column_name, 
                   p_column_type, 
                   p_datatype
@@ -2357,7 +2352,7 @@ IS
       
       DELETE cdc_audit_datatype
        WHERE lower( column_name ) = lower( p_column_name )
-         AND group_id = o_group.group_id;
+         AND group_name = o_group.group_name;
 
       o_ev.clear_app_info;
 
