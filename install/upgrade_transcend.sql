@@ -3,7 +3,7 @@ SET verify off
 SET serveroutput on size unlimited
 SET timing off
 
-prompt This script is only for upgrading from 2.6.x versions.
+prompt This script is only for upgrading versions 2.6 and beyond.
 PROMPT If you are upgrading from a version prior to 2.6,
 PROMPT then the only current supported upgrade path is a reinstall
 PROMPT using the "install_transcend.sql" script
@@ -36,13 +36,8 @@ BEGIN
 END;
 /
 
--- Work on the repository changes (where applicable)
-
--- set the current schema to the application schema
-BEGIN
-   EXECUTE IMMEDIATE 'ALTER SESSION SET current_schema=&rep_schema';
-END;
-/
+-- Work on the TDSYS schema and application code
+ALTER SESSION SET current_schema=tdsys;
 
 UPDATE applications
    SET version = 3.0
@@ -56,6 +51,24 @@ UPDATE users
    SET version = 3.0
  WHERE repository_name = upper('&rep_schema');
 
+-- system application account changes
+-- recreate the TD_ADM package
+@../plsql/specs/TD_ADM.pks
+@../plsql/wrapped_bodies/TD_ADM.plb
+
+-- make table DDL changes
+-- set the current schema to the repository schema
+ALTER SESSION SET current_schema=&rep_schema;
+
+BEGIN
+   INSERT INTO column_type_list (column_type) VALUES ('audit');
+EXCEPTION
+   WHEN dup_val_on_index
+    THEN NULL;
+END;
+/
+
+-- remove unneeded primary key
 DECLARE
    e_no_pk   EXCEPTION;
    PRAGMA    EXCEPTION_INIT( e_no_pk, -2441 );
@@ -68,35 +81,37 @@ EXCEPTION
 END;
 /
 
-
--- system application account changes
--- recreate the TD_ADM package
--- set the current schema to the system application schema
+-- remove columns from the dimension_conf table
+DECLARE
+   e_no_col  EXCEPTION;
+   PRAGMA    EXCEPTION_INIT( e_no_col, -904 );
 BEGIN
-   EXECUTE IMMEDIATE 'ALTER SESSION SET current_schema=tdsys';
+   EXECUTE IMMEDIATE 'ALTER TABLE dimension_conf DROP COLUMN char_nvl_default';
+   EXECUTE IMMEDIATE 'ALTER TABLE dimension_conf DROP COLUMN date_nvl_default';
+   EXECUTE IMMEDIATE 'ALTER TABLE dimension_conf DROP COLUMN number_nvl_default';
+EXCEPTION
+    WHEN e_no_col 
+    THEN 
+       NULL;
 END;
 /
 
--- recompile the TD_ADM package
-@../plsql/specs/TD_ADM.pks
-@../plsql/wrapped_bodies/TD_ADM.plb
-
+-- add INTERFACE_TYPE to the CDC_ENTITY table
+DECLARE
+   e_dup_col EXCEPTION;
+   PRAGMA    EXCEPTION_INIT( e_dup_col, -1430 );
+BEGIN
+   EXECUTE IMMEDIATE q'|ALTER TABLE cdc_entity ADD interface_type VARCHAR2 (10) CHECK ( interface_type IN ('view','mview'))|';
+EXCEPTION
+    WHEN e_dup_col
+    THEN 
+       NULL;
+END;
+/
 
 -- now, recompile objects for the specific Transcend application
-
--- set the current schema to the application schema
-BEGIN
-   EXECUTE IMMEDIATE 'ALTER SESSION SET current_schema=&app_schema';
-END;
-/
-
-BEGIN
-   INSERT INTO column_type_list (column_type) VALUES ('audit');
-EXCEPTION
-   WHEN dup_val_on_index
-    THEN NULL;
-END;
-/
+-- set the application schema
+ALTER SESSION SET current_schema=&app_schema;
 
 -- evolve specs
 @../evolve/plsql/specs/TD_UTILS.pks
@@ -111,6 +126,7 @@ END;
 @../transcend/plsql/specs/TRANS_ETL.pks
 @../transcend/plsql/specs/TRANS_ADM.pks
 @../transcend/plsql/specs/TD_DBUTILS.pks
+@../transcend/plsql/specs/DIMENSION_OT.tps
 
 -- transcend bodes
 @../transcend/plsql/wrapped_bodies/MAPPING_OT.plb
