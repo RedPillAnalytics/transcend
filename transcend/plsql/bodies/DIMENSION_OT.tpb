@@ -376,7 +376,8 @@ AS
                                  p_source_table      => SELF.table_name,
                                  p_owner             => SELF.staging_owner,
                                  p_table             => SELF.staging_table,
-                                 p_partitioning      => l_bt_part
+                                 p_partitioning      => l_bt_part,
+                                 p_tablespace        => td_dbutils.default_tablespace
                                );
 
       ELSE
