@@ -1,30 +1,6 @@
 SET autotrace off
 SET echo on
 
--- do some resetting
-CONNECT stewart@db11gl/suttree1 AS sysdba
-
-DROP USER td_demo CASCADE;
-
-create user td_demo identified by password
-DEFAULT TABLESPACE users
-QUOTA UNLIMITED ON users
-/
-
-GRANT CONNECT, RESOURCE TO td_demo
-/
-grant select any table to td_demo
-/
-
--- test case is reset
-
-
--- register any executing user with Transcend
-EXEC tdsys.td_adm.register_user('stewart');
-
-
-CONNECT stewart@db11gl/suttree1
-
 -- use Transcend to build the test case to demonstrate low-level calls
 -- build a fact table to use
 
@@ -106,6 +82,8 @@ CREATE TABLE td_demo.product_dim
                  prod_valid
             FROM sh.products;
 
+ALTER TABLE td_demo.product_dim MODIFY prod_name VARCHAR2(60);
+
 -- tweak the data for SCD use
 update td_demo.product_dim
    set prod_eff_to='12/31/9999',
@@ -133,33 +111,3 @@ BEGIN
    );
 END;
 /
-
-
--- create a seequence for the surrogate key
-CREATE SEQUENCE td_demo.product_key_seq CACHE 20;
-
-
--- setup files demo
-
-CREATE OR REPLACE directory td_source AS '/home/oracle/source_files';
-
-CREATE OR REPLACE directory td_files AS '/home/oracle/files';
-
-CONNECT stewart@db11gl/suttree1 AS sysdba
-
-GRANT READ, WRITE ON directory td_source TO stewart;
-
-GRANT READ, WRITE ON directory td_files TO stewart;
-
-
--- register directories with Transcend
--- this is required because Java Stored Procedures are used
--- this handles setting Java permissions on the directory
-
-EXEC tdsys.td_adm.register_directory('td_source','tdrep','stewart');
-
-EXEC tdsys.td_adm.register_directory('td_files','tdrep','stewart');
-
-CONNECT stewart@db11gl/suttree1
-
-PURGE recyclebin;

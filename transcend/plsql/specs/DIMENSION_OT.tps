@@ -34,9 +34,11 @@ UNDER mapping_ot
    MEMBER PROCEDURE drop_source_table,
 
    MEMBER PROCEDURE create_staging_table,
+
+   MEMBER PROCEDURE create_sequence,
   
    MEMBER PROCEDURE drop_staging_table,
-                                                   
+  
    MEMBER PROCEDURE load_staging,
                                                    
    OVERRIDING MEMBER PROCEDURE replace_table,

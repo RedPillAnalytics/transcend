@@ -70,14 +70,6 @@ AS
    
       evolve.log_variable('SELF.named_staging',SELF.named_staging);
 
-      -- check that the sequence exists
-      evolve.log_variable('SELF.sequence_owner',SELF.sequence_owner);
-      evolve.log_variable('SELF.sequence_name',SELF.sequence_name);
-      td_utils.check_object( p_owner            => SELF.sequence_owner,
-                             p_object           => SELF.sequence_name,
-                             p_object_type      => 'sequence'
-                           );
-      
       -- named staging
       -- this means that we are pre-creating a table and registering it with Transcend
       -- we have already created it, and is managed outside the framework
@@ -450,13 +442,13 @@ AS
 
       -- only try to build the table if it doesn't exist
       IF NOT td_utils.object_exists( p_owner             => SELF.sequence_owner,
-                                     p_table             => SELF.sequence_name,
-                                     p_object_type       => 'sequence' )
+                                     p_object            => SELF.sequence_name )
       THEN
          
          evolve.log_msg( self.full_sequence||' does not exist', 4 );
          
          EXECUTE IMMEDIATE 'create sequence '||full_sequence||' cache 100';
+         evolve.log_msg( SELF.full_sequence || ' created' );
 
       ELSE
          
@@ -473,15 +465,9 @@ AS
       e_dup_tab_name     EXCEPTION;
       PRAGMA             EXCEPTION_INIT( e_dup_tab_name, -955 );
       -- default comparision types
-      l_char_nvl         dimension_conf.char_nvl_default%TYPE;
-      l_num_nvl          dimension_conf.number_nvl_default%TYPE;
-      l_date_nvl         dimension_conf.date_nvl_default%TYPE;
       l_stage_key        dimension_conf.stage_key_default%TYPE;
       l_sql              LONG;
       l_audit            LONG;
-      l_scd2_dates       LONG;
-      l_scd2_nums        LONG;
-      l_scd2_chars       LONG;
       l_scd2_list        LONG;
       l_scd1_list        LONG;
       l_scd_list         LONG;
@@ -505,8 +491,8 @@ AS
       
       -- need to get some of the default comparision values
       BEGIN
-         SELECT char_nvl_default, number_nvl_default, date_nvl_default, stage_key_default
-           INTO l_char_nvl, l_num_nvl, l_date_nvl, l_stage_key
+         SELECT stage_key_default
+           INTO l_stage_key
            FROM dimension_conf
           WHERE mapping_name = SELF.mapping_name;
       EXCEPTION
@@ -538,78 +524,28 @@ AS
             -- if there are no audit attributes, that is fine
             NULL;
       END;
-      
 
-      -- get a comma separated list of scd2 columns that are dates
+      -- get a comma separated list of scd2 columns
       -- use the LISTAGG function for this
       BEGIN
          SELECT listagg( cc.column_name,',' )
                 within GROUP (ORDER BY 1)
-           INTO l_scd2_dates
+           INTO l_scd2_list
            FROM column_conf cc 
            JOIN mapping_conf mc
                 USING (mapping_name)
            JOIN all_tab_columns atc
                 ON mc.table_owner = atc.owner AND mc.table_name = atc.table_name AND cc.column_name = atc.column_name
           WHERE mapping_name = SELF.mapping_name
-            AND column_type = 'scd type 2'
-            AND ( data_type = 'DATE'
-                  OR data_type LIKE 'TIMESTAMP%') ;
+            AND column_type = 'scd type 2';
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
             -- if there are no type 2 attributes, that is fine
             NULL;
       END;
-
-      evolve.log_msg( 'The SCD2 date list: ' || l_scd2_dates, 5 );
-
-      -- get a comma separated list of scd2 attributes that are numbers
-      -- use the LISTAGG function for this
-      BEGIN
-         SELECT listagg( cc.column_name,',' )
-                within GROUP (ORDER BY 1)
-           INTO l_scd2_nums
-           FROM column_conf cc 
-           JOIN mapping_conf mc
-                USING ( mapping_name )
-           JOIN all_tab_columns atc
-                ON mc.table_owner = atc.owner AND mc.table_name = atc.table_name AND cc.column_name = atc.column_name
-          WHERE mapping_name = SELF.mapping_name
-            AND column_type = 'scd type 2'
-            AND data_type in ('NUMBER','FLOAT');
-      EXCEPTION
-         WHEN NO_DATA_FOUND
-         THEN
-            -- if there are no type 2 attributes, that is fine
-            NULL;
-      END;
-
-      evolve.log_msg( 'The SCD2 number list: ' || l_scd2_nums, 5 );
-
-      -- get a comma separated list of attributes that are not Date or Number
-      BEGIN
-         SELECT listagg( cc.column_name,',' )
-                within GROUP (ORDER BY 1)
-           INTO l_scd2_chars
-           FROM column_conf cc 
-           JOIN mapping_conf mc
-                USING ( mapping_name )
-           JOIN all_tab_columns atc
-                ON mc.table_owner = atc.owner AND mc.table_name = atc.table_name AND cc.column_name = atc.column_name
-          WHERE mapping_name = SELF.mapping_name
-            AND column_type = 'scd type 2'
-            AND ( data_type NOT IN( 'DATE', 'NUMBER','FLOAT' )
-                  and data_type NOT LIKE 'TIMESTAMP%' );
-
-      EXCEPTION
-         WHEN NO_DATA_FOUND
-         THEN
-            -- if there are no type 2 attributes, that is fine
-            NULL;
-      END;
-
-      evolve.log_msg( 'The SCD2 char list: ' || l_scd2_chars, 5 );
+      
+      evolve.log_variable( 'l_scd2_list', l_scd2_list );
 
       -- get a comma separated list of scd1 columns
       -- use the LISTAGG function for this
@@ -628,20 +564,16 @@ AS
             -- if there are no type 1 attributes, that is fine
             NULL;
       END;
+      
+      evolve.log_variable( 'SELF.scd1_list', SELF.scd1_list );
 
-      evolve.log_msg( 'The SCD1 list: ' || SELF.scd1_list, 5 );
-      -- construct a list of all scd2 attributes
-      -- if any of the variables are null, we may get a ',,' or a ',' at the end or beginning of the list
-      -- use the regexp_replaces to remove that
-      l_scd2_list         := td_core.format_list( l_scd2_dates || ',' || l_scd2_nums || ',' || l_scd2_chars );
-      evolve.log_msg( 'The SCD2 complete list: ' || l_scd2_list, 5 );
       -- construct a list of all scd attributes
       -- this is a combined list of all scd1 and scd2 attributes
       -- if any of the variables are null, we may get a ',,'
       -- use the regexp_replace to remove that
       -- also need a regexp to remove an extra comma at the end or beginning if they appears
       l_scd_list          := td_core.format_list( l_scd2_list || ',' || SELF.scd1_list );
-      evolve.log_msg( 'The SCD complete list: ' || l_scd_list, 5 );
+      evolve.log_variable( 'l_scd_list', l_scd_list );
       
       -- construct the include case statement
       -- this case statement determines which records from the staging table are included as new rows
@@ -666,46 +598,17 @@ AS
          || SELF.effect_dt_col
          || ','
          || SELF.surrogate_key_col
-         || ' desc) then ''N'' '
-         || REGEXP_REPLACE( l_scd2_nums,
+         || ' desc) THEN ''N'' '
+         || REGEXP_REPLACE( l_scd2_list,
                             '(\w+)(,|$)',
-                               'when nvl(\1,'
-                            || l_num_nvl
-                            || ') <> nvl(lag(\1) over (partition by '
+                               'WHEN SYS_OP_MAP_NONNULL(\1) <> SYS_OP_MAP_NONNULL(lag(\1) over (partition by '
                             || SELF.natural_key_list
                             || ' order by '
                             || SELF.effect_dt_col
-                            || '),'
-                            || l_num_nvl
-                            || ') then ''Y'' '
+                            || ')) THEN ''Y'' '
                           )
-         || REGEXP_REPLACE( l_scd2_chars,
-                            '(\w+)(,|$)',
-                               'when nvl(\1,'''
-                            || l_char_nvl
-                            || ''') <> nvl(lag(\1) over (partition by '
-                            || SELF.natural_key_list
-                            || ' order by '
-                            || SELF.effect_dt_col
-                            || '),'''
-                            || l_char_nvl
-                            || ''') then ''Y'' '
-                          )
-         || REGEXP_REPLACE( l_scd2_dates,
-                            '(\w+)(,|$)',
-                            'when nvl(cast(\1 as date),'''
-                            || l_date_nvl
-                            || ''') <> nvl(lag(cast(\1 as date)) over (partition by '
-                            || SELF.natural_key_list
-                            || ' order by '
-                            || SELF.effect_dt_col
-                            || '),'''
-                            || l_date_nvl
-                            || ''') then ''Y'' '
-                          )
-         || ' else ''N'' end include';
-      evolve.log_msg( 'The include CASE: ' || l_include_case, 5 );
-
+         || 'ELSE ''N'' END include';
+      evolve.log_variable( 'l_include_case', l_include_case );
       -- construct the scd1 analytics list
       -- this is a list of all the LAST_VALUE statements needed for the final statement
       l_scd1_analytics    :=
@@ -1052,6 +955,9 @@ AS
 
       -- create the staging table
       create_staging_table;
+
+      -- create the sequence
+      create_sequence;
       
       o_ev.clear_app_info;
    END post_create;

@@ -1223,9 +1223,6 @@ IS
       p_constraint_type    VARCHAR2 DEFAULT NULL,
       p_con_concurrency    VARCHAR2 DEFAULT 'no',
       p_stage_key_def      NUMBER   DEFAULT -.01,
-      p_char_nvl_def       VARCHAR2 DEFAULT '~',
-      p_date_nvl_def       DATE     DEFAULT TO_DATE ('01/01/9999','mm/dd/yyyy'),
-      p_num_nvl_def        NUMBER   DEFAULT -.01,
       p_description        VARCHAR2 DEFAULT NULL
    )
    IS
@@ -1244,10 +1241,7 @@ IS
                   source_table,
                   default_scd_type,
                   direct_load,
-                  stage_key_default, 
-                  char_nvl_default,
-		  date_nvl_default, 
-                  number_nvl_default, 
+                  stage_key_default,
                   description
                 )
                 VALUES ( p_mapping,
@@ -1258,9 +1252,6 @@ IS
                          p_default_scd_type,
                          LOWER (p_direct_load),
                          p_stage_key_def, 
-                         p_char_nvl_def, 
-                         p_date_nvl_def,
-                         p_num_nvl_def, 
                          p_description
                        );
 
@@ -1322,9 +1313,6 @@ IS
       p_constraint_type    VARCHAR2 DEFAULT NULL,
       p_con_concurrency    VARCHAR2 DEFAULT 'no',
       p_stage_key_def      NUMBER   DEFAULT NULL,
-      p_char_nvl_def       VARCHAR2 DEFAULT NULL,
-      p_date_nvl_def       DATE     DEFAULT NULL,
-      p_num_nvl_def        NUMBER   DEFAULT NULL,
       p_description        VARCHAR2 DEFAULT NULL
    )
    IS
@@ -1383,24 +1371,6 @@ IS
                    WHEN p_stage_key_def IS NULL
                       THEN stage_key_default
                    ELSE p_stage_key_def
-                END,
-             char_nvl_default =
-                CASE
-                   WHEN p_char_nvl_def IS NULL
-                      THEN char_nvl_default
-                   ELSE p_char_nvl_def
-                END,
-             date_nvl_default =
-                CASE
-                   WHEN p_date_nvl_def IS NULL
-                      THEN date_nvl_default
-                   ELSE p_date_nvl_def
-                END,
-             number_nvl_default =
-                CASE
-                   WHEN p_num_nvl_def IS NULL
-                      THEN number_nvl_default
-                   ELSE p_num_nvl_def
                 END,
              description =
                 CASE
