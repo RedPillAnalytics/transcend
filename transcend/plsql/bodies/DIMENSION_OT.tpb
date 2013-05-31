@@ -705,7 +705,7 @@ AS
          || ','
          || td_core.format_list( l_audit || ',' || l_scd_list || ',' || effect_dt_col )
          || ','
-         || 'nvl( lead('
+         || 'NVL( lead('
          || SELF.effect_dt_col
          || ') OVER ( partition BY '
          || SELF.natural_key_list

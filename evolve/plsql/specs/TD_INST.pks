@@ -1,5 +1,8 @@
 CREATE OR REPLACE PACKAGE td_inst AUTHID CURRENT_USER
 AS
+
+   current_action CONSTANT VARCHAR2(30) := '#*current_action*#';
+
    PROCEDURE REGISTER;
       
    FUNCTION service_name

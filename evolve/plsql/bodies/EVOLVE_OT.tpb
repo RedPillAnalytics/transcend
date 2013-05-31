@@ -21,7 +21,14 @@ AS
       -- first we need to populate the module attribute, because it helps us determine parameter values
       td_inst.module( LOWER( p_module ));
       -- we also set the action, which may be used one day to fine tune parameters
-      td_inst.action( LOWER( p_action ));
+      CASE
+      WHEN p_action = td_inst.current_action
+      THEN 
+         NULL;
+      ELSE 
+         td_inst.action( LOWER( p_action ));
+      END CASE;
+
       -- read previous app_info settings
       -- populate attributes with new app_info settings
       td_inst.client_info( NVL( p_client_info, td_inst.client_info ));

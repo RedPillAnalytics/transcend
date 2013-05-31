@@ -115,6 +115,7 @@ ALTER SESSION SET current_schema=&app_schema;
 
 -- evolve specs
 @../evolve/plsql/specs/TD_UTILS.pks
+@../evolve/plsql/specs/TD_INST.pks
 @../evolve/plsql/specs/EVOLVE.pks
 
 -- evolve bodies
