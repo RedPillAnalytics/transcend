@@ -1,3 +1,5 @@
+WHENEVER sqlerror exit failure
+
 COL "Execute?" format a10
 -- reset
 
@@ -15,30 +17,11 @@ BEGIN
 END;
 /
 
-
-SELECT * 
-  FROM mapping_conf
- WHERE mapping_name = 'map_sales_fact';
-
-
 -- now have a START_MAPPING call to run before the mapping
 EXEC trans_etl.start_mapping( 'map_sales_fact' );
 
-
--- mapping is now instrumented
--- use DBMS_MONITOR, v$session and v$session_longops
-select SYS_CONTEXT( 'USERENV', 'MODULE' ) module,
-       SYS_CONTEXT( 'USERENV', 'ACTION' ) action
-  from dual;
-
-
 -- now have an END_MAPPING call to run after the mapping
 EXEC trans_etl.end_mapping( 'map_sales_fact' );
-
-
--- logging table for all standard behavior
--- configurable logging levels
-SELECT * FROM log;
 
 
 -- Test index and constraint maintenance
