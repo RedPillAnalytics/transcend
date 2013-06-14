@@ -131,6 +131,7 @@ ALTER SESSION SET current_schema=&app_schema;
 @../transcend/plsql/specs/TRANS_ADM.pks
 @../transcend/plsql/specs/TD_DBUTILS.pks
 @../transcend/plsql/specs/DIMENSION_OT.tps
+@../transcend/plsql/specs/MAPPING_OT.tps
 
 -- transcend bodes
 @../transcend/plsql/wrapped_bodies/MAPPING_OT.plb
