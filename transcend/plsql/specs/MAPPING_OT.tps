@@ -7,7 +7,7 @@ AUTHID CURRENT_USER AS OBJECT
   table_owner               VARCHAR2( 61 ),
   table_name                VARCHAR2( 30 ),
   partition_name            VARCHAR2( 30 ),
-  manage_indexes            VARCHAR2( 7 ),
+  manage_indexes            VARCHAR2( 8 ),
   index_regexp              VARCHAR2( 30 ),
   index_type                VARCHAR2( 30 ),
   partition_type            VARCHAR2( 30 ),
