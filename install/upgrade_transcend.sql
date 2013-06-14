@@ -109,6 +109,9 @@ EXCEPTION
 END;
 /
 
+-- extend the MANAGE_INDEXES column
+ALTER TABLE tdrep.mapping_conf MODIFY manage_indexes varchar2(8);
+
 -- now, recompile objects for the specific Transcend application
 -- set the application schema
 ALTER SESSION SET current_schema=&app_schema;

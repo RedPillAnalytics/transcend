@@ -2143,7 +2143,7 @@ IS
 	   table_owner 		      VARCHAR2(61)      DEFAULT NULL,
 	   table_name 		      VARCHAR2(30)      DEFAULT NULL,
 	   partition_name             VARCHAR2(30)      DEFAULT NULL,
-	   manage_indexes 	      VARCHAR2(7)       DEFAULT 'ignore'        NOT NULL,
+	   manage_indexes 	      VARCHAR2(8)       DEFAULT 'ignore'        NOT NULL,
 	   index_concurrency 	      VARCHAR2(3)       DEFAULT 'no'            NOT NULL,
 	   manage_constraints 	      VARCHAR2(7)       DEFAULT 'ignore'        NOT NULL,
 	   constraint_concurrency     VARCHAR2(3)       DEFAULT 'no'            NOT NULL,
