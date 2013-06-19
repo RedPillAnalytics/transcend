@@ -151,6 +151,14 @@ AS
         p_source_table  VARCHAR2 DEFAULT NULL 
       )
       RETURN VARCHAR2;
-
+      
+   PROCEDURE log_msg
+      ( 
+        p_msg           log_table.action%type,
+        p_level         log_table.logging_level%type DEFAULT 1,
+        p_action        log_table.action%type        DEFAULT NULL,
+        p_module        log_table.module%type        DEFAULT NULL,
+        p_client_info   log_table.client_info%type   DEFAULT NULL
+      );
 END td_utils;
 /
