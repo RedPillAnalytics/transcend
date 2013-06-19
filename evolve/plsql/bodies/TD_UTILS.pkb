@@ -1331,6 +1331,35 @@ AS
       o_ev.clear_app_info;
       RETURN l_cnt;
    END extract_object;
+   
+   PROCEDURE log_msg
+      ( 
+        p_msg           log_table.action%type,
+        p_level         log_table.logging_level%type DEFAULT 1,
+        p_action        log_table.action%type        DEFAULT NULL,
+        p_module        log_table.module%type        DEFAULT NULL,
+        p_client_info   log_table.client_info%type   DEFAULT NULL
+      )
+   AS
+      o_ev            evolve_ot  := evolve_ot( 
+                                               p_module =>      NVL(p_module, td_inst.module),
+                                               p_action =>      NVL(p_action, td_inst.action),
+                                               p_client_info => NVL( p_client_info, td_inst.client_info)
+                                             );
+   BEGIN
+
+      evolve.log_msg( p_msg, p_level );
+
+      o_ev.clear_app_info;
+
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         evolve.log_err;
+         o_ev.clear_app_info;
+         RAISE;
+
+   END log_msg;
 END td_utils;
 /
 

@@ -2832,6 +2832,14 @@ IS
          THEN
             NULL;
       END;
+      
+      BEGIN
+         EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.TD_UTILS for ' || p_schema || '.TD_UTILS';
+      EXCEPTION
+         WHEN e_same_name
+         THEN
+            NULL;
+      END;
 
       BEGIN
          EXECUTE IMMEDIATE 'create or replace synonym ' || p_user || '.EVOLVE for ' || p_schema || '.EVOLVE';
