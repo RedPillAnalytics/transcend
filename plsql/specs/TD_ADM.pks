@@ -6,7 +6,7 @@ IS
    unknown_user         EXCEPTION;
 
    -- package constants
-   product_version      CONSTANT        NUMBER          := 3.3;
+   product_version      CONSTANT        NUMBER          := 3.4;
    transcend_product    CONSTANT        VARCHAR2(9)     := 'transcend';
    evolve_product       CONSTANT        VARCHAR2(9)     := 'evolve';
    evolve_sys_role      CONSTANT        VARCHAR2(30)    := 'EVOLVE';

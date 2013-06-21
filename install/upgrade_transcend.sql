@@ -40,15 +40,15 @@ END;
 ALTER SESSION SET current_schema=tdsys;
 
 UPDATE applications
-   SET version = 3.3
+   SET version = td_adm.product_version
  WHERE application_name = upper('&app_schema');
 
 UPDATE repositories
-   SET version = 3.3
+   SET version = td_adm.product_version
  WHERE repository_name = upper('&rep_schema');
 
 UPDATE users
-   SET version = 3.3
+   SET version = td_adm.product_version
  WHERE repository_name = upper('&rep_schema');
 
 -- system application account changes

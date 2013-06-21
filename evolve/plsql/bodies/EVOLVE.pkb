@@ -157,15 +157,22 @@ AS
 
    -- writes error information to the log_table
    PROCEDURE log_err
+      ( 
+        p_msg   log_table.msg%type              DEFAULT SQLCODE
+      )
    AS
       PRAGMA AUTONOMOUS_TRANSACTION;
       l_whence   VARCHAR2( 1024 );
       l_code     NUMBER               := SQLCODE;
-      l_msg      log_table.msg%TYPE   := SQLERRM;
+      l_msg      log_table.msg%TYPE;
       l_scn      NUMBER               := get_scn;
       e_no_tab   EXCEPTION;
       PRAGMA EXCEPTION_INIT( e_no_tab, -942 );
    BEGIN
+      
+      -- construct the message
+      l_msg    := p_msg || CASE WHEN p_msg IS NOT NULL THEN ': ' ELSE NULL END || SQLERRM;
+      
       -- find out what called me
       l_whence := whence;
 
