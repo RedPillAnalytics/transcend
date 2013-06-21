@@ -2,6 +2,7 @@ SET echo off
 SET verify off
 SET serveroutput on size unlimited
 SET timing off
+SET define '&'
 
 prompt This script is only for upgrading versions 2.6 and beyond.
 PROMPT If you are upgrading from a version prior to 2.6,
@@ -20,7 +21,7 @@ ACCEPT app_schema char default 'TDREP' prompt 'Schema name for the application [
 -- get the schema for the Transcend repository (tables)
 ACCEPT rep_schema char default 'TDREP' prompt 'Schema name for the default repository for this application [tdrep]: '
 
-WHENEVER sqlerror exit sql.sqlcode
+--WHENEVER sqlerror exit sql.sqlcode
 
 VARIABLE b_current_schema char(30)
 -- grab the current schema
@@ -29,27 +30,35 @@ DECLARE
 BEGIN
    
    -- get the current schema
-   SELECT sys_context('USERENV','CURRENT_SCHEMA')
-     INTO :b_current_schema
-     FROM dual;
-
+   :b_current_schema := sys_context('USERENV','CURRENT_SCHEMA');
+--   SELECT sys_context('USERENV','CURRENT_SCHEMA')
+  --   INTO :b_current_schema
+    -- FROM dual;
+   
 END;
 /
 
 -- Work on the TDSYS schema and application code
 ALTER SESSION SET current_schema=tdsys;
 
-UPDATE applications
-   SET version = td_adm.product_version
- WHERE application_name = upper('&app_schema');
 
-UPDATE repositories
-   SET version = td_adm.product_version
- WHERE repository_name = upper('&rep_schema');
+BEGIN
+      
+   UPDATE applications
+      SET version = td_adm.product_version
+    WHERE application_name = upper('&app_schema');
 
-UPDATE users
-   SET version = td_adm.product_version
- WHERE repository_name = upper('&rep_schema');
+   UPDATE repositories
+      SET version = td_adm.product_version
+    WHERE repository_name = upper('&rep_schema');
+
+   UPDATE users
+      SET version = td_adm.product_version
+    WHERE repository_name = upper('&rep_schema');
+
+
+END;
+/
 
 -- system application account changes
 -- recreate the TD_ADM package

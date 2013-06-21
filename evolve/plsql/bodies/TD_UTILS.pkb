@@ -1358,7 +1358,7 @@ AS
 
          evolve.log_msg( p_msg, p_level );
          
-      END;
+      END CASE;
 
       o_ev.clear_app_info;
 
