@@ -427,7 +427,6 @@ AS
 
    -- accepts the P_AUTO flag and determines whether to execute the statement
    -- if the P_AUTO flag of 'yes' is passed, then EXEC_AUTO is called
-   -- if P_BACKGROUND of 'yes' is called, then it is executed through DBMS_SCHEDULER
    FUNCTION exec_sql( p_sql VARCHAR2, p_msg VARCHAR2 DEFAULT NULL, p_auto VARCHAR2 DEFAULT 'no' )
       RETURN NUMBER
    AS
@@ -446,13 +445,18 @@ AS
          THEN
             
             log_msg( 'AUTONOMOUS_TRANSACTION initiated', 5 );
-
             l_results := exec_auto( p_sql => p_sql );
-         ELSE
-            EXECUTE IMMEDIATE p_sql;
-         END IF;
 
-         l_results := SQL%ROWCOUNT;
+         ELSE
+         
+            EXECUTE IMMEDIATE p_sql;         
+            l_results := SQL%ROWCOUNT;
+
+   
+         END IF;
+         
+         evolve.log_variable( 'l_results', l_results);
+
       END IF;
 
       RETURN l_results;
@@ -461,7 +465,6 @@ AS
    -- if I don't care about the number of results (DDL, for instance), just call this procedure
    -- accepts the P_AUTO flag and determines whether to execute the statement autonomously
    -- if the P_AUTO flag of 'yes' is passed, then EXEC_AUTO is called
-   -- if P_BACKGROUND of 'yes' is called, then it is executed through SUBMIT_SQL
    PROCEDURE exec_sql(
       p_sql             VARCHAR2,
       p_msg             VARCHAR2 DEFAULT NULL,
@@ -494,10 +497,11 @@ AS
                l_results := exec_auto( p_sql => p_sql );
 
             ELSE
+
                EXECUTE IMMEDIATE p_sql;
+
          END CASE;
 
-         l_results := SQL%ROWCOUNT;
       END IF;
    END exec_sql;
 
