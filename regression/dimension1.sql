@@ -1,4 +1,4 @@
-WHENEVER sqlerror exit failure
+--WHENEVER sqlerror exit failure
 -- reset
 
 BEGIN
