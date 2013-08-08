@@ -21,7 +21,10 @@ AS
       p_level       NUMBER   DEFAULT 1
    );
 
-   PROCEDURE log_err;
+   PROCEDURE log_err
+      ( 
+        p_msg   log_table.msg%type              DEFAULT SQLCODE
+      );
       
    PROCEDURE log_variable( 
       p_name       VARCHAR2,

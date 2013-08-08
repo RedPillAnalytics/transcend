@@ -1347,8 +1347,18 @@ AS
                                                p_client_info => NVL( p_client_info, td_inst.client_info)
                                              );
    BEGIN
+      
+      CASE
+      WHEN p_level = -1
+      THEN
+      
+         evolve.log_err( p_msg );
+         
+      ELSE 
 
-      evolve.log_msg( p_msg, p_level );
+         evolve.log_msg( p_msg, p_level );
+         
+      END CASE;
 
       o_ev.clear_app_info;
 
