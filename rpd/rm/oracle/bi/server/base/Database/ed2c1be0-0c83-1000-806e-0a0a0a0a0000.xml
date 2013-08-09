@@ -276,6 +276,7 @@
 <Feature name="POPULATE_STATEMENT_INSERT_HINT"/>
 <RefConnectionPools>
 <RefConnectionPool refId="med2c1be0-0c83-1000-806e-0a0a0a0a0000-med2c1be1-0c83-1000-806e-0a0a0a0a0000" connectionPoolRef="/oracle/bi/server/base/ConnectionPool/ed2c1be1-0c83-1000-806e-0a0a0a0a0000.xml#med2c1be1-0c83-1000-806e-0a0a0a0a0000"/>
+<RefConnectionPool refId="med2c1be0-0c83-1000-806e-0a0a0a0a0000-mf12c6e70-0c83-1000-806e-0a0a0a0a0000" connectionPoolRef="/oracle/bi/server/base/ConnectionPool/f12c6e70-0c83-1000-806e-0a0a0a0a0000.xml#mf12c6e70-0c83-1000-806e-0a0a0a0a0000"/>
 </RefConnectionPools>
 <RefDisplayFolders>
 <RefPhysicalDisplayFolder refId="med2c1be0-0c83-1000-806e-0a0a0a0a0000-med52ddc0-0c83-1000-806e-0a0a0a0a0000" physicalDisplayFolderRef="/oracle/bi/server/base/PhysicalDisplayFolder/ed52ddc0-0c83-1000-806e-0a0a0a0a0000.xml#med52ddc0-0c83-1000-806e-0a0a0a0a0000"/>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<PresentationTable mdsid="mf128c539-0c83-1000-806e-0a0a0a0a0000" name="Fact - Query Activity" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.oracle.com/obis/repository" hasDispName="false" hasDispDescription="false" containerRef="/oracle/bi/server/base/PresentationCatalog/f128c538-0c83-1000-806e-0a0a0a0a0000.xml#mf128c538-0c83-1000-806e-0a0a0a0a0000">
+<PresentationColumn mdsid="mf128c51c-0c83-1000-806e-0a0a0a0a0000" name="Cache Inserts" hasDispName="false" hasDispDescription="false" overrideLogicalName="false" logicalColumnRef="/oracle/bi/server/base/LogicalTable/ee1199e0-0c83-1000-806e-0a0a0a0a0000.xml#mee16a2f8-0c83-1000-806e-0a0a0a0a0000">
+</PresentationColumn>
+<PresentationColumn mdsid="mf128c51d-0c83-1000-806e-0a0a0a0a0000" name="DB Queries" hasDispName="false" hasDispDescription="false" overrideLogicalName="false" logicalColumnRef="/oracle/bi/server/base/LogicalTable/ee1199e0-0c83-1000-806e-0a0a0a0a0000.xml#mee16a2f9-0c83-1000-806e-0a0a0a0a0000">
+</PresentationColumn>
+<PresentationColumn mdsid="mf128c51e-0c83-1000-806e-0a0a0a0a0000" name="Cache Hits" hasDispName="false" hasDispDescription="false" overrideLogicalName="false" logicalColumnRef="/oracle/bi/server/base/LogicalTable/ee1199e0-0c83-1000-806e-0a0a0a0a0000.xml#mee16a2fa-0c83-1000-806e-0a0a0a0a0000">
+</PresentationColumn>
+<PresentationColumn mdsid="mf128c51f-0c83-1000-806e-0a0a0a0a0000" name="Row Count" hasDispName="false" hasDispDescription="false" overrideLogicalName="false" logicalColumnRef="/oracle/bi/server/base/LogicalTable/ee1199e0-0c83-1000-806e-0a0a0a0a0000.xml#mee1fa3a1-0c83-1000-806e-0a0a0a0a0000">
+</PresentationColumn>
+<PresentationColumn mdsid="mf128c520-0c83-1000-806e-0a0a0a0a0000" name="Total Time" hasDispName="false" hasDispDescription="false" overrideLogicalName="false" logicalColumnRef="/oracle/bi/server/base/LogicalTable/ee1199e0-0c83-1000-806e-0a0a0a0a0000.xml#mee2066f3-0c83-1000-806e-0a0a0a0a0000">
+</PresentationColumn>
+<PresentationColumn mdsid="mf128c521-0c83-1000-806e-0a0a0a0a0000" name="Compile Time" hasDispName="false" hasDispDescription="false" overrideLogicalName="false" logicalColumnRef="/oracle/bi/server/base/LogicalTable/ee1199e0-0c83-1000-806e-0a0a0a0a0000.xml#mee2214a7-0c83-1000-806e-0a0a0a0a0000">
+</PresentationColumn>
+<PresentationColumn mdsid="mf128c522-0c83-1000-806e-0a0a0a0a0000" name="Cumulative DB Time" hasDispName="false" hasDispDescription="false" overrideLogicalName="false" logicalColumnRef="/oracle/bi/server/base/LogicalTable/ee1199e0-0c83-1000-806e-0a0a0a0a0000.xml#mee2214a8-0c83-1000-806e-0a0a0a0a0000">
+</PresentationColumn>
+<PresentationColumn mdsid="mf128c523-0c83-1000-806e-0a0a0a0a0000" name="Cumulative DB Rows" hasDispName="false" hasDispDescription="false" overrideLogicalName="false" logicalColumnRef="/oracle/bi/server/base/LogicalTable/ee1199e0-0c83-1000-806e-0a0a0a0a0000.xml#mee2214a9-0c83-1000-806e-0a0a0a0a0000">
+</PresentationColumn>
+</PresentationTable>
