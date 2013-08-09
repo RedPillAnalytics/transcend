@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<LogicalTable mdsid="medd0c050-0c83-1000-806e-0a0a0a0a0000" name="Dim - Start Time" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.oracle.com/obis/repository" subjectAreaRef="/oracle/bi/server/base/BusinessModel/ed8d27a0-0c83-1000-806e-0a0a0a0a0000.xml#med8d27a0-0c83-1000-806e-0a0a0a0a0000">
+<LogicalColumn mdsid="medd0c052-0c83-1000-806e-0a0a0a0a0000" name="Start Time" isWriteable="false">
+<AttrDefn mdsid="medd0c062-0c83-1000-806e-0a0a0a0a0000" name="AD_3900:2361376077013">
+<Expr mdsid="m00000001-01f4-0000-dea9-9d3800000000" name="Expr">
+<ExprText><![CDATA["%1"]]></ExprText>
+<ExprTextDesc><![CDATA["OBIEE Repository".""."BI Platform"."S_NQ_ACCT"."START_TS"]]></ExprTextDesc>
+<ObjectRefList>
+<RefObject refId="m00000001-01f4-0000-dea9-9d3800000000-med2c1bfe-0c83-1000-806e-0a0a0a0a0000" objectTypeId="3003" objectRef="/oracle/bi/server/base/PhysicalTable/ed2c1be3-0c83-1000-806e-0a0a0a0a0000.xml#med2c1bfe-0c83-1000-806e-0a0a0a0a0000"/>
+</ObjectRefList>
+</Expr>
+</AttrDefn>
+</LogicalColumn>
+<LogicalColumn mdsid="medd0c053-0c83-1000-806e-0a0a0a0a0000" name="Year" isDerived="true" isWriteable="false">
+<Expr mdsid="m00000002-01f4-0000-5ebc-e4c700000000" name="Expr">
+<ExprText><![CDATA[CAST ( EXTRACT( YEAR  FROM "%1" ) AS VARCHAR ( 4 ))]]></ExprText>
+<ExprTextDesc><![CDATA[CAST ( EXTRACT( YEAR  FROM "RM Framework"."Dim - Start Time"."Start Time" ) AS VARCHAR ( 4 ))]]></ExprTextDesc>
+<ObjectRefList>
+<RefObject refId="m00000002-01f4-0000-5ebc-e4c700000000-medd0c052-0c83-1000-806e-0a0a0a0a0000" objectTypeId="2006" objectRef="/oracle/bi/server/base/LogicalTable/edd0c050-0c83-1000-806e-0a0a0a0a0000.xml#medd0c052-0c83-1000-806e-0a0a0a0a0000"/>
+</ObjectRefList>
+</Expr>
+<AttrDefn mdsid="medd0c063-0c83-1000-806e-0a0a0a0a0000" name="AD_3900:2371376077013">
+<Expr mdsid="m00000003-01f4-0000-0166-b79c00000000" name="Expr">
+<ExprText></ExprText>
+<ExprTextDesc></ExprTextDesc>
+</Expr>
+</AttrDefn>
+</LogicalColumn>
+<LogicalColumn mdsid="medd0c054-0c83-1000-806e-0a0a0a0a0000" name="Year Quarter" isDerived="true" isWriteable="false">
+<Expr mdsid="m00000004-01f4-0000-b502-903900000000" name="Expr">
+<ExprText><![CDATA[CAST ( EXTRACT( YEAR  FROM "%1") AS VARCHAR ( 4 )) || ' Q' ||  CAST ( EXTRACT( QUARTER_OF_YEAR  FROM "%1") AS VARCHAR ( 1 ))]]></ExprText>
+<ExprTextDesc><![CDATA[CAST ( EXTRACT( YEAR  FROM "RM Framework"."Dim - Start Time"."Start Date") AS VARCHAR ( 4 )) || ' Q' ||  CAST ( EXTRACT( QUARTER_OF_YEAR  FROM "RM Framework"."Dim - Start Time"."Start Date") AS VARCHAR ( 1 ))]]></ExprTextDesc>
+<ObjectRefList>
+<RefObject refId="m00000004-01f4-0000-b502-903900000000-medd0c05f-0c83-1000-806e-0a0a0a0a0000" objectTypeId="2006" objectRef="/oracle/bi/server/base/LogicalTable/edd0c050-0c83-1000-806e-0a0a0a0a0000.xml#medd0c05f-0c83-1000-806e-0a0a0a0a0000"/>
+</ObjectRefList>
+</Expr>
+<AttrDefn mdsid="medd0c064-0c83-1000-806e-0a0a0a0a0000" name="AD_3900:2381376077013">
+<Expr mdsid="m00000005-01f4-0000-4903-418700000000" name="Expr">
+<ExprText></ExprText>
+<ExprTextDesc></ExprTextDesc>
+</Expr>
+</AttrDefn>
+</LogicalColumn>
+<LogicalColumn mdsid="medd0c055-0c83-1000-806e-0a0a0a0a0000" name="Year Month" isDerived="true" isWriteable="false">
+<Expr mdsid="m00000006-01f4-0000-c7f5-f20f00000000" name="Expr">
+<ExprText><![CDATA[CAST ( EXTRACT( YEAR  FROM "%1") AS VARCHAR ( 4 )) || ' ' ||  LEFT( MONTHNAME("%1"), 3)]]></ExprText>
+<ExprTextDesc><![CDATA[CAST ( EXTRACT( YEAR  FROM "RM Framework"."Dim - Start Time"."Start Date") AS VARCHAR ( 4 )) || ' ' ||  LEFT( MONTHNAME("RM Framework"."Dim - Start Time"."Start Date"), 3)]]></ExprTextDesc>
+<ObjectRefList>
+<RefObject refId="m00000006-01f4-0000-c7f5-f20f00000000-medd0c05f-0c83-1000-806e-0a0a0a0a0000" objectTypeId="2006" objectRef="/oracle/bi/server/base/LogicalTable/edd0c050-0c83-1000-806e-0a0a0a0a0000.xml#medd0c05f-0c83-1000-806e-0a0a0a0a0000"/>
+</ObjectRefList>
+</Expr>
+<AttrDefn mdsid="medd0c065-0c83-1000-806e-0a0a0a0a0000" name="AD_3900:2391376077013">
+<Expr mdsid="m00000007-01f4-0000-c171-6e0300000000" name="Expr">
+<ExprText></ExprText>
+<ExprTextDesc></ExprTextDesc>
+</Expr>
+</AttrDefn>
+</LogicalColumn>
+<LogicalColumn mdsid="medd0c056-0c83-1000-806e-0a0a0a0a0000" name="Month" isDerived="true" isWriteable="false">
+<Expr mdsid="m00000008-01f4-0000-239a-186400000000" name="Expr">
+<ExprText><![CDATA[MONTHNAME("%1")]]></ExprText>
+<ExprTextDesc><![CDATA[MONTHNAME("RM Framework"."Dim - Start Time"."Start Date")]]></ExprTextDesc>
+<ObjectRefList>
+<RefObject refId="m00000008-01f4-0000-239a-186400000000-medd0c05f-0c83-1000-806e-0a0a0a0a0000" objectTypeId="2006" objectRef="/oracle/bi/server/base/LogicalTable/edd0c050-0c83-1000-806e-0a0a0a0a0000.xml#medd0c05f-0c83-1000-806e-0a0a0a0a0000"/>
+</ObjectRefList>
+</Expr>
+<AttrDefn mdsid="medd0c066-0c83-1000-806e-0a0a0a0a0000" name="AD_3900:2401376077013">
+<Expr mdsid="m00000009-01f4-0000-ccc5-71a700000000" name="Expr">
+<ExprText></ExprText>
+<ExprTextDesc></ExprTextDesc>
+</Expr>
+</AttrDefn>
+</LogicalColumn>
+<LogicalColumn mdsid="medd0c057-0c83-1000-806e-0a0a0a0a0000" name="Month Number" isWriteable="false">
+<AttrDefn mdsid="medd0c067-0c83-1000-806e-0a0a0a0a0000" name="AD_3900:2411376077013">
+<Expr mdsid="m0000000a-01f4-0000-93a9-8bd300000000" name="Expr">
+<ExprText><![CDATA[ EXTRACT( MONTH  FROM "%1")]]></ExprText>
+<ExprTextDesc><![CDATA[ EXTRACT( MONTH  FROM "OBIEE Repository".""."BI Platform"."S_NQ_ACCT"."START_DT")]]></ExprTextDesc>
+<ObjectRefList>
+<RefObject refId="m0000000a-01f4-0000-93a9-8bd300000000-med2c1bfc-0c83-1000-806e-0a0a0a0a0000" objectTypeId="3003" objectRef="/oracle/bi/server/base/PhysicalTable/ed2c1be3-0c83-1000-806e-0a0a0a0a0000.xml#med2c1bfc-0c83-1000-806e-0a0a0a0a0000"/>
+</ObjectRefList>
+</Expr>
+</AttrDefn>
+</LogicalColumn>
+<LogicalColumn mdsid="medd0c058-0c83-1000-806e-0a0a0a0a0000" name="Day Name" isWriteable="false">
+<AttrDefn mdsid="medd0c068-0c83-1000-806e-0a0a0a0a0000" name="AD_3900:2421376077013">
+<Expr mdsid="m0000000b-01f4-0000-c4e0-dc9100000000" name="Expr">
+<ExprText><![CDATA[ DAYNAME("%1")]]></ExprText>
+<ExprTextDesc><![CDATA[ DAYNAME("OBIEE Repository".""."BI Platform"."S_NQ_ACCT"."START_DT")]]></ExprTextDesc>
+<ObjectRefList>
+<RefObject refId="m0000000b-01f4-0000-c4e0-dc9100000000-med2c1bfc-0c83-1000-806e-0a0a0a0a0000" objectTypeId="3003" objectRef="/oracle/bi/server/base/PhysicalTable/ed2c1be3-0c83-1000-806e-0a0a0a0a0000.xml#med2c1bfc-0c83-1000-806e-0a0a0a0a0000"/>
+</ObjectRefList>
+</Expr>
+</AttrDefn>
+</LogicalColumn>
+<LogicalColumn mdsid="medd0c059-0c83-1000-806e-0a0a0a0a0000" name="Week Number" isWriteable="false">
+<AttrDefn mdsid="medd0c069-0c83-1000-806e-0a0a0a0a0000" name="AD_3900:2431376077013">
+<Expr mdsid="m0000000c-01f4-0000-4b06-db7400000000" name="Expr">
+<ExprText><![CDATA[ CAST ( EXTRACT( YEAR  FROM "%1") AS VARCHAR ( 4 )) || ' WEEK ' ||  CAST ( EXTRACT( WEEK_OF_YEAR  FROM "%1") AS VARCHAR ( 2 ))]]></ExprText>
+<ExprTextDesc><![CDATA[ CAST ( EXTRACT( YEAR  FROM "OBIEE Repository".""."BI Platform"."S_NQ_ACCT"."START_DT") AS VARCHAR ( 4 )) || ' WEEK ' ||  CAST ( EXTRACT( WEEK_OF_YEAR  FROM "OBIEE Repository".""."BI Platform"."S_NQ_ACCT"."START_DT") AS VARCHAR ( 2 ))]]></ExprTextDesc>
+<ObjectRefList>
+<RefObject refId="m0000000c-01f4-0000-4b06-db7400000000-med2c1bfc-0c83-1000-806e-0a0a0a0a0000" objectTypeId="3003" objectRef="/oracle/bi/server/base/PhysicalTable/ed2c1be3-0c83-1000-806e-0a0a0a0a0000.xml#med2c1bfc-0c83-1000-806e-0a0a0a0a0000"/>
+</ObjectRefList>
+</Expr>
+</AttrDefn>
+</LogicalColumn>
+<LogicalColumn mdsid="medd0c05a-0c83-1000-806e-0a0a0a0a0000" name="Day Number" isWriteable="false">
+<AttrDefn mdsid="medd0c06a-0c83-1000-806e-0a0a0a0a0000" name="AD_3900:2441376077013">
+<Expr mdsid="m0000000d-01f4-0000-ff07-147200000000" name="Expr">
+<ExprText><![CDATA[ DAYOFWEEK("%1")]]></ExprText>
+<ExprTextDesc><![CDATA[ DAYOFWEEK("OBIEE Repository".""."BI Platform"."S_NQ_ACCT"."START_DT")]]></ExprTextDesc>
+<ObjectRefList>
+<RefObject refId="m0000000d-01f4-0000-ff07-147200000000-med2c1bfc-0c83-1000-806e-0a0a0a0a0000" objectTypeId="3003" objectRef="/oracle/bi/server/base/PhysicalTable/ed2c1be3-0c83-1000-806e-0a0a0a0a0000.xml#med2c1bfc-0c83-1000-806e-0a0a0a0a0000"/>
+</ObjectRefList>
+</Expr>
+</AttrDefn>
+</LogicalColumn>
+<LogicalColumn mdsid="medd0c05b-0c83-1000-806e-0a0a0a0a0000" name="Day in Month" isWriteable="false">
+<AttrDefn mdsid="medd0c06b-0c83-1000-806e-0a0a0a0a0000" name="AD_3900:2451376077013">
+<Expr mdsid="m0000000e-01f4-0000-9046-292400000000" name="Expr">
+<ExprText><![CDATA[ DAYOFMONTH("%1")]]></ExprText>
+<ExprTextDesc><![CDATA[ DAYOFMONTH("OBIEE Repository".""."BI Platform"."S_NQ_ACCT"."START_DT")]]></ExprTextDesc>
+<ObjectRefList>
+<RefObject refId="m0000000e-01f4-0000-9046-292400000000-med2c1bfc-0c83-1000-806e-0a0a0a0a0000" objectTypeId="3003" objectRef="/oracle/bi/server/base/PhysicalTable/ed2c1be3-0c83-1000-806e-0a0a0a0a0000.xml#med2c1bfc-0c83-1000-806e-0a0a0a0a0000"/>
+</ObjectRefList>
+</Expr>
+</AttrDefn>
+</LogicalColumn>
+<LogicalColumn mdsid="medd0c05c-0c83-1000-806e-0a0a0a0a0000" name="Start Hour Min" isWriteable="false">
+<AttrDefn mdsid="medd0c06c-0c83-1000-806e-0a0a0a0a0000" name="AD_3900:2461376077013">
+<Expr mdsid="m0000000f-01f4-0000-a967-804600000000" name="Expr">
+<ExprText><![CDATA["%1"]]></ExprText>
+<ExprTextDesc><![CDATA["OBIEE Repository".""."BI Platform"."S_NQ_ACCT"."START_HOUR_MIN"]]></ExprTextDesc>
+<ObjectRefList>
+<RefObject refId="m0000000f-01f4-0000-a967-804600000000-med2c1bfd-0c83-1000-806e-0a0a0a0a0000" objectTypeId="3003" objectRef="/oracle/bi/server/base/PhysicalTable/ed2c1be3-0c83-1000-806e-0a0a0a0a0000.xml#med2c1bfd-0c83-1000-806e-0a0a0a0a0000"/>
+</ObjectRefList>
+</Expr>
+</AttrDefn>
+</LogicalColumn>
+<LogicalColumn mdsid="medd0c05d-0c83-1000-806e-0a0a0a0a0000" name="End Hour Min" isWriteable="false">
+<AttrDefn mdsid="medd0c06d-0c83-1000-806e-0a0a0a0a0000" name="AD_3900:2471376077013">
+<Expr mdsid="m00000010-01f4-0000-df7b-f25700000000" name="Expr">
+<ExprText><![CDATA["%1"]]></ExprText>
+<ExprTextDesc><![CDATA["OBIEE Repository".""."BI Platform"."S_NQ_ACCT"."END_HOUR_MIN"]]></ExprTextDesc>
+<ObjectRefList>
+<RefObject refId="m00000010-01f4-0000-df7b-f25700000000-med2c1be9-0c83-1000-806e-0a0a0a0a0000" objectTypeId="3003" objectRef="/oracle/bi/server/base/PhysicalTable/ed2c1be3-0c83-1000-806e-0a0a0a0a0000.xml#med2c1be9-0c83-1000-806e-0a0a0a0a0000"/>
+</ObjectRefList>
+</Expr>
+</AttrDefn>
+</LogicalColumn>
+<LogicalColumn mdsid="medd0c05e-0c83-1000-806e-0a0a0a0a0000" name="End Time" isWriteable="false">
+<AttrDefn mdsid="medd0c06e-0c83-1000-806e-0a0a0a0a0000" name="AD_3900:2481376077013">
+<Expr mdsid="m00000011-01f4-0000-57c8-684600000000" name="Expr">
+<ExprText><![CDATA["%1"]]></ExprText>
+<ExprTextDesc><![CDATA["OBIEE Repository".""."BI Platform"."S_NQ_ACCT"."END_TS"]]></ExprTextDesc>
+<ObjectRefList>
+<RefObject refId="m00000011-01f4-0000-57c8-684600000000-med2c1bea-0c83-1000-806e-0a0a0a0a0000" objectTypeId="3003" objectRef="/oracle/bi/server/base/PhysicalTable/ed2c1be3-0c83-1000-806e-0a0a0a0a0000.xml#med2c1bea-0c83-1000-806e-0a0a0a0a0000"/>
+</ObjectRefList>
+</Expr>
+</AttrDefn>
+</LogicalColumn>
+<LogicalColumn mdsid="medd0c05f-0c83-1000-806e-0a0a0a0a0000" name="Start Date" isWriteable="false">
+<AttrDefn mdsid="medd0c06f-0c83-1000-806e-0a0a0a0a0000" name="AD_3900:2491376077013">
+<Expr mdsid="m00000012-01f4-0000-0b41-357200000000" name="Expr">
+<ExprText><![CDATA[ CAST ("%1" AS DATE )]]></ExprText>
+<ExprTextDesc><![CDATA[ CAST ("OBIEE Repository".""."BI Platform"."S_NQ_ACCT"."START_TS" AS DATE )]]></ExprTextDesc>
+<ObjectRefList>
+<RefObject refId="m00000012-01f4-0000-0b41-357200000000-med2c1bfe-0c83-1000-806e-0a0a0a0a0000" objectTypeId="3003" objectRef="/oracle/bi/server/base/PhysicalTable/ed2c1be3-0c83-1000-806e-0a0a0a0a0000.xml#med2c1bfe-0c83-1000-806e-0a0a0a0a0000"/>
+</ObjectRefList>
+</Expr>
+</AttrDefn>
+</LogicalColumn>
+<LogicalColumn mdsid="medd0c060-0c83-1000-806e-0a0a0a0a0000" name="Ran" isWriteable="false">
+<AttrDefn mdsid="medd0c070-0c83-1000-806e-0a0a0a0a0000" name="AD_3900:2501376077013">
+<Expr mdsid="m00000013-01f4-0000-2490-de3f00000000" name="Expr">
+<ExprText><![CDATA[cast(TIMESTAMPDIFF(SQL_TSI_SECOND,  "%1" , CURRENT_TIMESTAMP(1)) as varchar (7))||' seconds ago']]></ExprText>
+<ExprTextDesc><![CDATA[cast(TIMESTAMPDIFF(SQL_TSI_SECOND,  "OBIEE Repository".""."BI Platform"."S_NQ_ACCT"."START_TS" , CURRENT_TIMESTAMP(1)) as varchar (7))||' seconds ago']]></ExprTextDesc>
+<ObjectRefList>
+<RefObject refId="m00000013-01f4-0000-2490-de3f00000000-med2c1bfe-0c83-1000-806e-0a0a0a0a0000" objectTypeId="3003" objectRef="/oracle/bi/server/base/PhysicalTable/ed2c1be3-0c83-1000-806e-0a0a0a0a0000.xml#med2c1bfe-0c83-1000-806e-0a0a0a0a0000"/>
+</ObjectRefList>
+</Expr>
+</AttrDefn>
+</LogicalColumn>
+<LogicalKey mdsid="medd0c061-0c83-1000-806e-0a0a0a0a0000" name="Calendar_Key" isPrimary="true">
+<RefColumns>
+<RefLogicalColumn refId="medd0c061-0c83-1000-806e-0a0a0a0a0000-medd0c052-0c83-1000-806e-0a0a0a0a0000" logicalColumnRef="/oracle/bi/server/base/LogicalTable/edd0c050-0c83-1000-806e-0a0a0a0a0000.xml#medd0c052-0c83-1000-806e-0a0a0a0a0000"/>
+<RefLogicalColumn refId="medd0c061-0c83-1000-806e-0a0a0a0a0000-medd0c05c-0c83-1000-806e-0a0a0a0a0000" logicalColumnRef="/oracle/bi/server/base/LogicalTable/edd0c050-0c83-1000-806e-0a0a0a0a0000.xml#medd0c05c-0c83-1000-806e-0a0a0a0a0000"/>
+</RefColumns>
+</LogicalKey>
+<RefTableSources>
+<RefLogicalTableSource refId="medd0c050-0c83-1000-806e-0a0a0a0a0000-medd0c071-0c83-1000-806e-0a0a0a0a0000" logicalTableSourceRef="/oracle/bi/server/base/LogicalTableSource/edd0c071-0c83-1000-806e-0a0a0a0a0000.xml#medd0c071-0c83-1000-806e-0a0a0a0a0000"/>
+</RefTableSources>
+</LogicalTable>

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<Database mdsid="med2c1be0-0c83-1000-806e-0a0a0a0a0000" name="ORCL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.oracle.com/obis/repository" type="Oracle11g">
+<Database mdsid="med2c1be0-0c83-1000-806e-0a0a0a0a0000" name="OBIEE Repository" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.oracle.com/obis/repository" type="Oracle11g">
 <Feature name="LEFT_OUTER_JOIN_SUPPORTED" value="true"/>
 <Feature name="RIGHT_OUTER_JOIN_SUPPORTED" value="true"/>
 <Feature name="FULL_OUTER_JOIN_SUPPORTED" value="true"/>

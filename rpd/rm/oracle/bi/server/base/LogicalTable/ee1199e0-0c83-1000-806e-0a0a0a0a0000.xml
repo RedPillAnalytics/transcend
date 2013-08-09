@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<LogicalTable mdsid="mee1199e0-0c83-1000-806e-0a0a0a0a0000" name="Fact - Query Activity" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.oracle.com/obis/repository" subjectAreaRef="/oracle/bi/server/base/BusinessModel/ed8d27a0-0c83-1000-806e-0a0a0a0a0000.xml#med8d27a0-0c83-1000-806e-0a0a0a0a0000">
+<LogicalColumn mdsid="mee16a2f8-0c83-1000-806e-0a0a0a0a0000" name="Cache Inserts" isWriteable="false">
+<AttrDefn mdsid="mee16a2fc-0c83-1000-806e-0a0a0a0a0000" name="AD_3900:3181376077471">
+<Expr mdsid="m00000001-01f4-0000-55d3-b2d800000000" name="Expr">
+<ExprText><![CDATA["%1"]]></ExprText>
+<ExprTextDesc><![CDATA["OBIEE Repository".""."BI Platform"."S_NQ_ACCT"."NUM_CACHE_INSERTED"]]></ExprTextDesc>
+<ObjectRefList>
+<RefObject refId="m00000001-01f4-0000-55d3-b2d800000000-med2c1bf0-0c83-1000-806e-0a0a0a0a0000" objectTypeId="3003" objectRef="/oracle/bi/server/base/PhysicalTable/ed2c1be3-0c83-1000-806e-0a0a0a0a0000.xml#med2c1bf0-0c83-1000-806e-0a0a0a0a0000"/>
+</ObjectRefList>
+</Expr>
+</AttrDefn>
+</LogicalColumn>
+<LogicalColumn mdsid="mee16a2f9-0c83-1000-806e-0a0a0a0a0000" name="DB Queries" isWriteable="false">
+<AttrDefn mdsid="mee16a2fd-0c83-1000-806e-0a0a0a0a0000" name="AD_3900:3191376077471">
+<Expr mdsid="m00000002-01f4-0000-2a9d-d3bb00000000" name="Expr">
+<ExprText><![CDATA["%1"]]></ExprText>
+<ExprTextDesc><![CDATA["OBIEE Repository".""."BI Platform"."S_NQ_ACCT"."NUM_DB_QUERY"]]></ExprTextDesc>
+<ObjectRefList>
+<RefObject refId="m00000002-01f4-0000-2a9d-d3bb00000000-med2c1bf1-0c83-1000-806e-0a0a0a0a0000" objectTypeId="3003" objectRef="/oracle/bi/server/base/PhysicalTable/ed2c1be3-0c83-1000-806e-0a0a0a0a0000.xml#med2c1bf1-0c83-1000-806e-0a0a0a0a0000"/>
+</ObjectRefList>
+</Expr>
+</AttrDefn>
+</LogicalColumn>
+<LogicalColumn mdsid="mee16a2fa-0c83-1000-806e-0a0a0a0a0000" name="Cache Hits" isWriteable="false">
+<AttrDefn mdsid="mee16a2fb-0c83-1000-806e-0a0a0a0a0000" name="AD_3900:3171376077471">
+<Expr mdsid="m00000003-01f4-0000-fb3a-d6c000000000" name="Expr">
+<ExprText><![CDATA["%1"]]></ExprText>
+<ExprTextDesc><![CDATA["OBIEE Repository".""."BI Platform"."S_NQ_ACCT"."NUM_CACHE_HITS"]]></ExprTextDesc>
+<ObjectRefList>
+<RefObject refId="m00000003-01f4-0000-fb3a-d6c000000000-med2c1bef-0c83-1000-806e-0a0a0a0a0000" objectTypeId="3003" objectRef="/oracle/bi/server/base/PhysicalTable/ed2c1be3-0c83-1000-806e-0a0a0a0a0000.xml#med2c1bef-0c83-1000-806e-0a0a0a0a0000"/>
+</ObjectRefList>
+</Expr>
+</AttrDefn>
+</LogicalColumn>
+<LogicalColumn mdsid="mee1fa3a1-0c83-1000-806e-0a0a0a0a0000" name="Row Count" isWriteable="false">
+<AttrDefn mdsid="mee1fa3a2-0c83-1000-806e-0a0a0a0a0000" name="AD_3900:3281376077530">
+<Expr mdsid="m00000004-01f4-0000-2343-eaa600000000" name="Expr">
+<ExprText><![CDATA["%1"]]></ExprText>
+<ExprTextDesc><![CDATA["OBIEE Repository".""."BI Platform"."S_NQ_ACCT"."ROW_COUNT"]]></ExprTextDesc>
+<ObjectRefList>
+<RefObject refId="m00000004-01f4-0000-2343-eaa600000000-med2c1bf8-0c83-1000-806e-0a0a0a0a0000" objectTypeId="3003" objectRef="/oracle/bi/server/base/PhysicalTable/ed2c1be3-0c83-1000-806e-0a0a0a0a0000.xml#med2c1bf8-0c83-1000-806e-0a0a0a0a0000"/>
+</ObjectRefList>
+</Expr>
+</AttrDefn>
+</LogicalColumn>
+<LogicalColumn mdsid="mee2066f3-0c83-1000-806e-0a0a0a0a0000" name="Total Time" isWriteable="false">
+<AttrDefn mdsid="mee2066f4-0c83-1000-806e-0a0a0a0a0000" name="AD_3900:3331376077535">
+<Expr mdsid="m00000005-01f4-0000-d038-d77d00000000" name="Expr">
+<ExprText><![CDATA["%1"]]></ExprText>
+<ExprTextDesc><![CDATA["OBIEE Repository".""."BI Platform"."S_NQ_ACCT"."TOTAL_TIME_SEC"]]></ExprTextDesc>
+<ObjectRefList>
+<RefObject refId="m00000005-01f4-0000-d038-d77d00000000-med2c1c01-0c83-1000-806e-0a0a0a0a0000" objectTypeId="3003" objectRef="/oracle/bi/server/base/PhysicalTable/ed2c1be3-0c83-1000-806e-0a0a0a0a0000.xml#med2c1c01-0c83-1000-806e-0a0a0a0a0000"/>
+</ObjectRefList>
+</Expr>
+</AttrDefn>
+</LogicalColumn>
+<LogicalColumn mdsid="mee2214a7-0c83-1000-806e-0a0a0a0a0000" name="Compile Time" isWriteable="false">
+<AttrDefn mdsid="mee2214aa-0c83-1000-806e-0a0a0a0a0000" name="AD_3900:3441376077546">
+<Expr mdsid="m00000006-01f4-0000-4fc1-1ecd00000000" name="Expr">
+<ExprText><![CDATA["%1"]]></ExprText>
+<ExprTextDesc><![CDATA["OBIEE Repository".""."BI Platform"."S_NQ_ACCT"."COMPILE_TIME_SEC"]]></ExprTextDesc>
+<ObjectRefList>
+<RefObject refId="m00000006-01f4-0000-4fc1-1ecd00000000-med2c1be5-0c83-1000-806e-0a0a0a0a0000" objectTypeId="3003" objectRef="/oracle/bi/server/base/PhysicalTable/ed2c1be3-0c83-1000-806e-0a0a0a0a0000.xml#med2c1be5-0c83-1000-806e-0a0a0a0a0000"/>
+</ObjectRefList>
+</Expr>
+</AttrDefn>
+</LogicalColumn>
+<LogicalColumn mdsid="mee2214a8-0c83-1000-806e-0a0a0a0a0000" name="Cumulative DB Time" isWriteable="false">
+<AttrDefn mdsid="mee2214ab-0c83-1000-806e-0a0a0a0a0000" name="AD_3900:3451376077546">
+<Expr mdsid="m00000007-01f4-0000-71c2-80ac00000000" name="Expr">
+<ExprText><![CDATA["%1"]]></ExprText>
+<ExprTextDesc><![CDATA["OBIEE Repository".""."BI Platform"."S_NQ_ACCT"."CUM_DB_TIME_SEC"]]></ExprTextDesc>
+<ObjectRefList>
+<RefObject refId="m00000007-01f4-0000-71c2-80ac00000000-med2c1be6-0c83-1000-806e-0a0a0a0a0000" objectTypeId="3003" objectRef="/oracle/bi/server/base/PhysicalTable/ed2c1be3-0c83-1000-806e-0a0a0a0a0000.xml#med2c1be6-0c83-1000-806e-0a0a0a0a0000"/>
+</ObjectRefList>
+</Expr>
+</AttrDefn>
+</LogicalColumn>
+<LogicalColumn mdsid="mee2214a9-0c83-1000-806e-0a0a0a0a0000" name="Cumulative DB Rows" isWriteable="false">
+<AttrDefn mdsid="mee2214ac-0c83-1000-806e-0a0a0a0a0000" name="AD_3900:3461376077546">
+<Expr mdsid="m00000008-01f4-0000-c936-247700000000" name="Expr">
+<ExprText><![CDATA["%1"]]></ExprText>
+<ExprTextDesc><![CDATA["OBIEE Repository".""."BI Platform"."S_NQ_ACCT"."CUM_NUM_DB_ROW"]]></ExprTextDesc>
+<ObjectRefList>
+<RefObject refId="m00000008-01f4-0000-c936-247700000000-med2c1be7-0c83-1000-806e-0a0a0a0a0000" objectTypeId="3003" objectRef="/oracle/bi/server/base/PhysicalTable/ed2c1be3-0c83-1000-806e-0a0a0a0a0000.xml#med2c1be7-0c83-1000-806e-0a0a0a0a0000"/>
+</ObjectRefList>
+</Expr>
+</AttrDefn>
+</LogicalColumn>
+<RefTableSources>
+<RefLogicalTableSource refId="mee1199e0-0c83-1000-806e-0a0a0a0a0000-mee16a2fe-0c83-1000-806e-0a0a0a0a0000" logicalTableSourceRef="/oracle/bi/server/base/LogicalTableSource/ee16a2fe-0c83-1000-806e-0a0a0a0a0000.xml#mee16a2fe-0c83-1000-806e-0a0a0a0a0000"/>
+</RefTableSources>
+</LogicalTable>
