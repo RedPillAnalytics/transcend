@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<PhysicalDisplayFolder mdsid="med52ddc0-0c83-1000-806e-0a0a0a0a0000" name="Usage Tracking" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.oracle.com/obis/repository" databaseRef="/oracle/bi/server/base/Database/ed2c1be0-0c83-1000-806e-0a0a0a0a0000.xml#med2c1be0-0c83-1000-806e-0a0a0a0a0000">
+<RefTables>
+<RefPhysicalTable refId="med52ddc0-0c83-1000-806e-0a0a0a0a0000-med2c1be3-0c83-1000-806e-0a0a0a0a0000" tableRef="/oracle/bi/server/base/PhysicalTable/ed2c1be3-0c83-1000-806e-0a0a0a0a0000.xml#med2c1be3-0c83-1000-806e-0a0a0a0a0000"/>
+<RefPhysicalTable refId="med52ddc0-0c83-1000-806e-0a0a0a0a0000-med2c1c03-0c83-1000-806e-0a0a0a0a0000" tableRef="/oracle/bi/server/base/PhysicalTable/ed2c1c03-0c83-1000-806e-0a0a0a0a0000.xml#med2c1c03-0c83-1000-806e-0a0a0a0a0000"/>
+</RefTables>
+</PhysicalDisplayFolder>
