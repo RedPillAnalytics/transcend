@@ -18,8 +18,6 @@
 </PresentationColumn>
 <PresentationColumn mdsid="mf128c52c-0c83-1000-806e-0a0a0a0a0000" name="Day in Month" hasDispName="false" hasDispDescription="false" overrideLogicalName="false" logicalColumnRef="/oracle/bi/server/base/LogicalTable/f10a8e90-0c83-1000-806e-0a0a0a0a0000.xml#mf10a8e99-0c83-1000-806e-0a0a0a0a0000">
 </PresentationColumn>
-<PresentationColumn mdsid="mf128c52d-0c83-1000-806e-0a0a0a0a0000" name="Hour Min" hasDispName="false" hasDispDescription="false" overrideLogicalName="false" logicalColumnRef="/oracle/bi/server/base/LogicalTable/f10a8e90-0c83-1000-806e-0a0a0a0a0000.xml#mf10a8e9a-0c83-1000-806e-0a0a0a0a0000">
-</PresentationColumn>
 <PresentationColumn mdsid="mf128c52e-0c83-1000-806e-0a0a0a0a0000" name="Recency (Seconds)" hasDispName="false" hasDispDescription="false" overrideLogicalName="false" logicalColumnRef="/oracle/bi/server/base/LogicalTable/f10a8e90-0c83-1000-806e-0a0a0a0a0000.xml#mf10a8e9b-0c83-1000-806e-0a0a0a0a0000">
 </PresentationColumn>
 <PresentationColumn mdsid="mf128c52f-0c83-1000-806e-0a0a0a0a0000" name="SQL Date" hasDispName="false" hasDispDescription="false" overrideLogicalName="false" logicalColumnRef="/oracle/bi/server/base/LogicalTable/f10a8e90-0c83-1000-806e-0a0a0a0a0000.xml#mf10a8e9c-0c83-1000-806e-0a0a0a0a0000">

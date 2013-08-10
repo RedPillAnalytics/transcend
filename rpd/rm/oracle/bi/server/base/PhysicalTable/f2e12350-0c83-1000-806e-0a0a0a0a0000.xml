@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<PhysicalTable mdsid="mf2e12350-0c83-1000-806e-0a0a0a0a0000" name="S_NQ_EPT" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.oracle.com/obis/repository" type="none" maxConn="0" containerRef="/oracle/bi/server/base/Schema/ed2c1be2-0c83-1000-806e-0a0a0a0a0000.xml#med2c1be2-0c83-1000-806e-0a0a0a0a0000">
+<PhysicalColumn mdsid="mf2e12351-0c83-1000-806e-0a0a0a0a0000" name="CATALOG_NAME" dataType="VARCHAR" precision="120" nullable="true" specialType="none">
+</PhysicalColumn>
+<PhysicalColumn mdsid="mf2e12352-0c83-1000-806e-0a0a0a0a0000" name="DATABASE_NAME" dataType="VARCHAR" precision="120" nullable="true" specialType="none">
+</PhysicalColumn>
+<PhysicalColumn mdsid="mf2e12353-0c83-1000-806e-0a0a0a0a0000" name="OTHER_RESERVED" dataType="VARCHAR" precision="120" nullable="true" specialType="none">
+</PhysicalColumn>
+<PhysicalColumn mdsid="mf2e12354-0c83-1000-806e-0a0a0a0a0000" name="SCHEMA_NAME" dataType="VARCHAR" precision="120" nullable="true" specialType="none">
+</PhysicalColumn>
+<PhysicalColumn mdsid="mf2e12355-0c83-1000-806e-0a0a0a0a0000" name="TABLE_NAME" dataType="VARCHAR" precision="120" specialType="none">
+</PhysicalColumn>
+<PhysicalColumn mdsid="mf2e12356-0c83-1000-806e-0a0a0a0a0000" name="UPDATE_TS" dataType="DATETIME" precision="120" specialType="none">
+</PhysicalColumn>
+<PhysicalColumn mdsid="mf2e12357-0c83-1000-806e-0a0a0a0a0000" name="UPDATE_TYPE" dataType="DOUBLE" precision="10" specialType="none">
+</PhysicalColumn>
+</PhysicalTable>

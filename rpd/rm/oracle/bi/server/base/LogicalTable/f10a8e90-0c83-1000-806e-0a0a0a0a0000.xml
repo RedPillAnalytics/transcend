@@ -135,42 +135,31 @@
 </Expr>
 </AttrDefn>
 </LogicalColumn>
-<LogicalColumn mdsid="mf10a8e9a-0c83-1000-806e-0a0a0a0a0000" name="Hour Min" isWriteable="false">
-<AttrDefn mdsid="mf10a8ea9-0c83-1000-806e-0a0a0a0a0000" name="AD_3900:1951376082425">
-<Expr mdsid="m00000013-01f4-0000-c98f-ff4200000000" name="Expr">
-<ExprText><![CDATA["%1"]]></ExprText>
-<ExprTextDesc><![CDATA["OBIEE Repository".""."BI Platform"."S_NQ_ACCT"."START_HOUR_MIN"]]></ExprTextDesc>
-<ObjectRefList>
-<RefObject refId="m00000013-01f4-0000-c98f-ff4200000000-med2c1bfd-0c83-1000-806e-0a0a0a0a0000" objectTypeId="3003" objectRef="/oracle/bi/server/base/PhysicalTable/ed2c1be3-0c83-1000-806e-0a0a0a0a0000.xml#med2c1bfd-0c83-1000-806e-0a0a0a0a0000"/>
-</ObjectRefList>
-</Expr>
-</AttrDefn>
-</LogicalColumn>
 <LogicalColumn mdsid="mf10a8e9b-0c83-1000-806e-0a0a0a0a0000" name="Recency (Seconds)" isDerived="true" isWriteable="false">
-<Expr mdsid="m00000014-01f4-0000-ba1e-e6a200000000" name="Expr">
+<Expr mdsid="m00000013-01f4-0000-3643-689300000000" name="Expr">
 <ExprText><![CDATA[ CAST ( TIMESTAMPDIFF( SQL_TSI_SECOND , "%1",  CURRENT_TIMESTAMP(1)) AS INTEGER )]]></ExprText>
 <ExprTextDesc><![CDATA[ CAST ( TIMESTAMPDIFF( SQL_TSI_SECOND , "RM Framework"."Dim - End Time"."Timestamp",  CURRENT_TIMESTAMP(1)) AS INTEGER )]]></ExprTextDesc>
 <ObjectRefList>
-<RefObject refId="m00000014-01f4-0000-ba1e-e6a200000000-mf10a8e9d-0c83-1000-806e-0a0a0a0a0000" objectTypeId="2006" objectRef="/oracle/bi/server/base/LogicalTable/f10a8e90-0c83-1000-806e-0a0a0a0a0000.xml#mf10a8e9d-0c83-1000-806e-0a0a0a0a0000"/>
+<RefObject refId="m00000013-01f4-0000-3643-689300000000-mf10a8e9d-0c83-1000-806e-0a0a0a0a0000" objectTypeId="2006" objectRef="/oracle/bi/server/base/LogicalTable/f10a8e90-0c83-1000-806e-0a0a0a0a0000.xml#mf10a8e9d-0c83-1000-806e-0a0a0a0a0000"/>
 </ObjectRefList>
 </Expr>
 <AttrDefn mdsid="mf10a8eaa-0c83-1000-806e-0a0a0a0a0000" name="AD_3900:1961376082425">
-<Expr mdsid="m00000015-01f4-0000-fd5d-7b1300000000" name="Expr">
+<Expr mdsid="m00000014-01f4-0000-5229-66a900000000" name="Expr">
 <ExprText></ExprText>
 <ExprTextDesc></ExprTextDesc>
 </Expr>
 </AttrDefn>
 </LogicalColumn>
 <LogicalColumn mdsid="mf10a8e9c-0c83-1000-806e-0a0a0a0a0000" name="SQL Date" isDerived="true" isWriteable="false">
-<Expr mdsid="m00000016-01f4-0000-3ac6-432700000000" name="Expr">
+<Expr mdsid="m00000015-01f4-0000-dbc8-501a00000000" name="Expr">
 <ExprText><![CDATA[ CAST ("%1" AS DATE )]]></ExprText>
 <ExprTextDesc><![CDATA[ CAST ("RM Framework"."Dim - End Time"."Timestamp" AS DATE )]]></ExprTextDesc>
 <ObjectRefList>
-<RefObject refId="m00000016-01f4-0000-3ac6-432700000000-mf10a8e9d-0c83-1000-806e-0a0a0a0a0000" objectTypeId="2006" objectRef="/oracle/bi/server/base/LogicalTable/f10a8e90-0c83-1000-806e-0a0a0a0a0000.xml#mf10a8e9d-0c83-1000-806e-0a0a0a0a0000"/>
+<RefObject refId="m00000015-01f4-0000-dbc8-501a00000000-mf10a8e9d-0c83-1000-806e-0a0a0a0a0000" objectTypeId="2006" objectRef="/oracle/bi/server/base/LogicalTable/f10a8e90-0c83-1000-806e-0a0a0a0a0000.xml#mf10a8e9d-0c83-1000-806e-0a0a0a0a0000"/>
 </ObjectRefList>
 </Expr>
 <AttrDefn mdsid="mf10a8eab-0c83-1000-806e-0a0a0a0a0000" name="AD_3900:1971376082425">
-<Expr mdsid="m00000017-01f4-0000-3467-5d7300000000" name="Expr">
+<Expr mdsid="m00000016-01f4-0000-56eb-4b1c00000000" name="Expr">
 <ExprText></ExprText>
 <ExprTextDesc></ExprTextDesc>
 </Expr>
@@ -178,11 +167,11 @@
 </LogicalColumn>
 <LogicalColumn mdsid="mf10a8e9d-0c83-1000-806e-0a0a0a0a0000" name="Timestamp" isWriteable="false">
 <AttrDefn mdsid="mf10a8eac-0c83-1000-806e-0a0a0a0a0000" name="AD_3900:1981376082425">
-<Expr mdsid="m00000018-01f4-0000-2fe0-233000000000" name="Expr">
+<Expr mdsid="m00000017-01f4-0000-8c98-bf9600000000" name="Expr">
 <ExprText><![CDATA["%1"]]></ExprText>
-<ExprTextDesc><![CDATA["OBIEE Repository".""."BI Platform"."S_NQ_ACCT"."START_TS"]]></ExprTextDesc>
+<ExprTextDesc><![CDATA["OBIEE Repository".""."DEV_BIPLATFORM"."S_NQ_ACCT"."START_TS"]]></ExprTextDesc>
 <ObjectRefList>
-<RefObject refId="m00000018-01f4-0000-2fe0-233000000000-med2c1bfe-0c83-1000-806e-0a0a0a0a0000" objectTypeId="3003" objectRef="/oracle/bi/server/base/PhysicalTable/ed2c1be3-0c83-1000-806e-0a0a0a0a0000.xml#med2c1bfe-0c83-1000-806e-0a0a0a0a0000"/>
+<RefObject refId="m00000017-01f4-0000-8c98-bf9600000000-med2c1bfe-0c83-1000-806e-0a0a0a0a0000" objectTypeId="3003" objectRef="/oracle/bi/server/base/PhysicalTable/ed2c1be3-0c83-1000-806e-0a0a0a0a0000.xml#med2c1bfe-0c83-1000-806e-0a0a0a0a0000"/>
 </ObjectRefList>
 </Expr>
 </AttrDefn>

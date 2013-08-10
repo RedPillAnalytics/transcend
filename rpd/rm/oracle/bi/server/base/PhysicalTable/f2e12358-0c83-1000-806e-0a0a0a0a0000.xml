@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<PhysicalTable mdsid="mf2e12358-0c83-1000-806e-0a0a0a0a0000" name="S_NQ_ERR_MSG" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.oracle.com/obis/repository" type="none" maxConn="0" containerRef="/oracle/bi/server/base/Schema/ed2c1be2-0c83-1000-806e-0a0a0a0a0000.xml#med2c1be2-0c83-1000-806e-0a0a0a0a0000">
+<PhysicalColumn mdsid="mf2e12359-0c83-1000-806e-0a0a0a0a0000" name="DELETE_FLG" dataType="DOUBLE" precision="10" specialType="none">
+</PhysicalColumn>
+<PhysicalColumn mdsid="mf2e1235a-0c83-1000-806e-0a0a0a0a0000" name="ERROR_MSG_TEXT" dataType="VARCHAR" precision="255" nullable="true" specialType="none">
+</PhysicalColumn>
+<PhysicalColumn mdsid="mf2e1235b-0c83-1000-806e-0a0a0a0a0000" name="INSTANCE_ID" dataType="DOUBLE" precision="20" specialType="none">
+</PhysicalColumn>
+<PhysicalColumn mdsid="mf2e1235c-0c83-1000-806e-0a0a0a0a0000" name="JOB_ID" dataType="DOUBLE" precision="10" specialType="none">
+</PhysicalColumn>
+<PhysicalColumn mdsid="mf2e1235d-0c83-1000-806e-0a0a0a0a0000" name="RELATIVE_ORDER" dataType="DOUBLE" precision="10" specialType="none">
+</PhysicalColumn>
+</PhysicalTable>
