@@ -2,12 +2,12 @@
 <LogicalTable mdsid="mee1199e0-0c83-1000-806e-0a0a0a0a0000" name="Fact - Query Activity" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.oracle.com/obis/repository" subjectAreaRef="/oracle/bi/server/base/BusinessModel/ed8d27a0-0c83-1000-806e-0a0a0a0a0000.xml#med8d27a0-0c83-1000-806e-0a0a0a0a0000">
 <LogicalColumn mdsid="mee16a2f8-0c83-1000-806e-0a0a0a0a0000" name="Cache Inserts" isWriteable="false">
 <MeasureDefn mdsid="mfc3bda31-0c83-1000-8029-0a0a0a0a0000" name="Measure" isCommutative="false">
-<AggrRule mdsid="mfc3bda32-0c83-1000-8029-0a0a0a0a0000" name="AggregationRule" isDefault="true">
-<Expr mdsid="m00000001-01f4-0000-cbfc-7cd500000000" name="Expr">
+<AggrRule mdsid="mfc3bda32-0c83-1000-8029-0a0a0a0a0000" name="AggRule_2050:2571376101207" isDefault="true">
+<Expr mdsid="m00000001-01f4-0000-1bc1-b22900000000" name="Expr">
 <ExprText><![CDATA[ SUM("%1")]]></ExprText>
 <ExprTextDesc><![CDATA[ SUM("RM Framework"."Fact - Query Activity"."Cache Inserts")]]></ExprTextDesc>
 <ObjectRefList>
-<RefObject refId="m00000001-01f4-0000-cbfc-7cd500000000-mee16a2f8-0c83-1000-806e-0a0a0a0a0000" objectTypeId="2006" objectRef="/oracle/bi/server/base/LogicalTable/ee1199e0-0c83-1000-806e-0a0a0a0a0000.xml#mee16a2f8-0c83-1000-806e-0a0a0a0a0000"/>
+<RefObject refId="m00000001-01f4-0000-1bc1-b22900000000-mee16a2f8-0c83-1000-806e-0a0a0a0a0000" objectTypeId="2006" objectRef="/oracle/bi/server/base/LogicalTable/ee1199e0-0c83-1000-806e-0a0a0a0a0000.xml#mee16a2f8-0c83-1000-806e-0a0a0a0a0000"/>
 </ObjectRefList>
 </Expr>
 </AggrRule>
@@ -24,12 +24,12 @@
 </LogicalColumn>
 <LogicalColumn mdsid="mee16a2f9-0c83-1000-806e-0a0a0a0a0000" name="DB Queries" isWriteable="false">
 <MeasureDefn mdsid="mfc3bda33-0c83-1000-8029-0a0a0a0a0000" name="Measure" isCommutative="false">
-<AggrRule mdsid="mfc3bda34-0c83-1000-8029-0a0a0a0a0000" name="AggregationRule" isDefault="true">
-<Expr mdsid="m00000003-01f4-0000-7268-3a9b00000000" name="Expr">
+<AggrRule mdsid="mfc3bda34-0c83-1000-8029-0a0a0a0a0000" name="AggRule_2050:2591376101207" isDefault="true">
+<Expr mdsid="m00000003-01f4-0000-c769-4cff00000000" name="Expr">
 <ExprText><![CDATA[ SUM("%1")]]></ExprText>
 <ExprTextDesc><![CDATA[ SUM("RM Framework"."Fact - Query Activity"."DB Queries")]]></ExprTextDesc>
 <ObjectRefList>
-<RefObject refId="m00000003-01f4-0000-7268-3a9b00000000-mee16a2f9-0c83-1000-806e-0a0a0a0a0000" objectTypeId="2006" objectRef="/oracle/bi/server/base/LogicalTable/ee1199e0-0c83-1000-806e-0a0a0a0a0000.xml#mee16a2f9-0c83-1000-806e-0a0a0a0a0000"/>
+<RefObject refId="m00000003-01f4-0000-c769-4cff00000000-mee16a2f9-0c83-1000-806e-0a0a0a0a0000" objectTypeId="2006" objectRef="/oracle/bi/server/base/LogicalTable/ee1199e0-0c83-1000-806e-0a0a0a0a0000.xml#mee16a2f9-0c83-1000-806e-0a0a0a0a0000"/>
 </ObjectRefList>
 </Expr>
 </AggrRule>
@@ -46,12 +46,12 @@
 </LogicalColumn>
 <LogicalColumn mdsid="mee16a2fa-0c83-1000-806e-0a0a0a0a0000" name="Cache Hits" isWriteable="false">
 <MeasureDefn mdsid="mfc3bda35-0c83-1000-8029-0a0a0a0a0000" name="Measure" isCommutative="false">
-<AggrRule mdsid="mfc3bda36-0c83-1000-8029-0a0a0a0a0000" name="AggregationRule" isDefault="true">
-<Expr mdsid="m00000005-01f4-0000-7816-e14f00000000" name="Expr">
+<AggrRule mdsid="mfc3bda36-0c83-1000-8029-0a0a0a0a0000" name="AggRule_2050:2611376101207" isDefault="true">
+<Expr mdsid="m00000005-01f4-0000-f558-b6a500000000" name="Expr">
 <ExprText><![CDATA[ SUM("%1")]]></ExprText>
 <ExprTextDesc><![CDATA[ SUM("RM Framework"."Fact - Query Activity"."Cache Hits")]]></ExprTextDesc>
 <ObjectRefList>
-<RefObject refId="m00000005-01f4-0000-7816-e14f00000000-mee16a2fa-0c83-1000-806e-0a0a0a0a0000" objectTypeId="2006" objectRef="/oracle/bi/server/base/LogicalTable/ee1199e0-0c83-1000-806e-0a0a0a0a0000.xml#mee16a2fa-0c83-1000-806e-0a0a0a0a0000"/>
+<RefObject refId="m00000005-01f4-0000-f558-b6a500000000-mee16a2fa-0c83-1000-806e-0a0a0a0a0000" objectTypeId="2006" objectRef="/oracle/bi/server/base/LogicalTable/ee1199e0-0c83-1000-806e-0a0a0a0a0000.xml#mee16a2fa-0c83-1000-806e-0a0a0a0a0000"/>
 </ObjectRefList>
 </Expr>
 </AggrRule>
@@ -66,14 +66,14 @@
 </Expr>
 </AttrDefn>
 </LogicalColumn>
-<LogicalColumn mdsid="mee1fa3a1-0c83-1000-806e-0a0a0a0a0000" name="Row Count" isWriteable="false">
+<LogicalColumn mdsid="mee1fa3a1-0c83-1000-806e-0a0a0a0a0000" name="Average Row Count" isWriteable="false">
 <MeasureDefn mdsid="mfc3bda37-0c83-1000-8029-0a0a0a0a0000" name="Measure" isCommutative="false">
-<AggrRule mdsid="mfc3bda38-0c83-1000-8029-0a0a0a0a0000" name="AggregationRule" isDefault="true">
-<Expr mdsid="m00000007-01f4-0000-fe40-546100000000" name="Expr">
-<ExprText><![CDATA[ SUM("%1")]]></ExprText>
-<ExprTextDesc><![CDATA[ SUM("RM Framework"."Fact - Query Activity"."Row Count")]]></ExprTextDesc>
+<AggrRule mdsid="mfd22b7c0-0c83-1000-8029-0a0a0a0a0000" name="AggRule_2050:2731376102724" isDefault="true">
+<Expr mdsid="m00000007-01f4-0000-f05b-489100000000" name="Expr">
+<ExprText><![CDATA[ AVG("%1")]]></ExprText>
+<ExprTextDesc><![CDATA[ AVG("RM Framework"."Fact - Query Activity"."Average Row Count")]]></ExprTextDesc>
 <ObjectRefList>
-<RefObject refId="m00000007-01f4-0000-fe40-546100000000-mee1fa3a1-0c83-1000-806e-0a0a0a0a0000" objectTypeId="2006" objectRef="/oracle/bi/server/base/LogicalTable/ee1199e0-0c83-1000-806e-0a0a0a0a0000.xml#mee1fa3a1-0c83-1000-806e-0a0a0a0a0000"/>
+<RefObject refId="m00000007-01f4-0000-f05b-489100000000-mee1fa3a1-0c83-1000-806e-0a0a0a0a0000" objectTypeId="2006" objectRef="/oracle/bi/server/base/LogicalTable/ee1199e0-0c83-1000-806e-0a0a0a0a0000.xml#mee1fa3a1-0c83-1000-806e-0a0a0a0a0000"/>
 </ObjectRefList>
 </Expr>
 </AggrRule>
@@ -90,12 +90,12 @@
 </LogicalColumn>
 <LogicalColumn mdsid="mee2066f3-0c83-1000-806e-0a0a0a0a0000" name="Total Time" isWriteable="false">
 <MeasureDefn mdsid="mfc3bda39-0c83-1000-8029-0a0a0a0a0000" name="Measure" isCommutative="false">
-<AggrRule mdsid="mfc3bda3a-0c83-1000-8029-0a0a0a0a0000" name="AggregationRule" isDefault="true">
-<Expr mdsid="m00000009-01f4-0000-6bb6-5bbe00000000" name="Expr">
+<AggrRule mdsid="mfc3bda3a-0c83-1000-8029-0a0a0a0a0000" name="AggRule_2050:2651376101207" isDefault="true">
+<Expr mdsid="m00000009-01f4-0000-d42b-457b00000000" name="Expr">
 <ExprText><![CDATA[ SUM("%1")]]></ExprText>
 <ExprTextDesc><![CDATA[ SUM("RM Framework"."Fact - Query Activity"."Total Time")]]></ExprTextDesc>
 <ObjectRefList>
-<RefObject refId="m00000009-01f4-0000-6bb6-5bbe00000000-mee2066f3-0c83-1000-806e-0a0a0a0a0000" objectTypeId="2006" objectRef="/oracle/bi/server/base/LogicalTable/ee1199e0-0c83-1000-806e-0a0a0a0a0000.xml#mee2066f3-0c83-1000-806e-0a0a0a0a0000"/>
+<RefObject refId="m00000009-01f4-0000-d42b-457b00000000-mee2066f3-0c83-1000-806e-0a0a0a0a0000" objectTypeId="2006" objectRef="/oracle/bi/server/base/LogicalTable/ee1199e0-0c83-1000-806e-0a0a0a0a0000.xml#mee2066f3-0c83-1000-806e-0a0a0a0a0000"/>
 </ObjectRefList>
 </Expr>
 </AggrRule>
@@ -112,12 +112,12 @@
 </LogicalColumn>
 <LogicalColumn mdsid="mee2214a7-0c83-1000-806e-0a0a0a0a0000" name="Compile Time" isWriteable="false">
 <MeasureDefn mdsid="mfc3bda3b-0c83-1000-8029-0a0a0a0a0000" name="Measure" isCommutative="false">
-<AggrRule mdsid="mfc3bda3c-0c83-1000-8029-0a0a0a0a0000" name="AggregationRule" isDefault="true">
-<Expr mdsid="m0000000b-01f4-0000-fcd9-d0c800000000" name="Expr">
+<AggrRule mdsid="mfc3bda3c-0c83-1000-8029-0a0a0a0a0000" name="AggRule_2050:2671376101207" isDefault="true">
+<Expr mdsid="m0000000b-01f4-0000-52bc-d51800000000" name="Expr">
 <ExprText><![CDATA[ SUM("%1")]]></ExprText>
 <ExprTextDesc><![CDATA[ SUM("RM Framework"."Fact - Query Activity"."Compile Time")]]></ExprTextDesc>
 <ObjectRefList>
-<RefObject refId="m0000000b-01f4-0000-fcd9-d0c800000000-mee2214a7-0c83-1000-806e-0a0a0a0a0000" objectTypeId="2006" objectRef="/oracle/bi/server/base/LogicalTable/ee1199e0-0c83-1000-806e-0a0a0a0a0000.xml#mee2214a7-0c83-1000-806e-0a0a0a0a0000"/>
+<RefObject refId="m0000000b-01f4-0000-52bc-d51800000000-mee2214a7-0c83-1000-806e-0a0a0a0a0000" objectTypeId="2006" objectRef="/oracle/bi/server/base/LogicalTable/ee1199e0-0c83-1000-806e-0a0a0a0a0000.xml#mee2214a7-0c83-1000-806e-0a0a0a0a0000"/>
 </ObjectRefList>
 </Expr>
 </AggrRule>
@@ -134,12 +134,12 @@
 </LogicalColumn>
 <LogicalColumn mdsid="mee2214a8-0c83-1000-806e-0a0a0a0a0000" name="Cumulative DB Time" isWriteable="false">
 <MeasureDefn mdsid="mfc3bda3d-0c83-1000-8029-0a0a0a0a0000" name="Measure" isCommutative="false">
-<AggrRule mdsid="mfc3bda3e-0c83-1000-8029-0a0a0a0a0000" name="AggregationRule" isDefault="true">
-<Expr mdsid="m0000000d-01f4-0000-4a4c-4ee500000000" name="Expr">
+<AggrRule mdsid="mfc3bda3e-0c83-1000-8029-0a0a0a0a0000" name="AggRule_2050:2691376101207" isDefault="true">
+<Expr mdsid="m0000000d-01f4-0000-0ed4-764800000000" name="Expr">
 <ExprText><![CDATA[ SUM("%1")]]></ExprText>
 <ExprTextDesc><![CDATA[ SUM("RM Framework"."Fact - Query Activity"."Cumulative DB Time")]]></ExprTextDesc>
 <ObjectRefList>
-<RefObject refId="m0000000d-01f4-0000-4a4c-4ee500000000-mee2214a8-0c83-1000-806e-0a0a0a0a0000" objectTypeId="2006" objectRef="/oracle/bi/server/base/LogicalTable/ee1199e0-0c83-1000-806e-0a0a0a0a0000.xml#mee2214a8-0c83-1000-806e-0a0a0a0a0000"/>
+<RefObject refId="m0000000d-01f4-0000-0ed4-764800000000-mee2214a8-0c83-1000-806e-0a0a0a0a0000" objectTypeId="2006" objectRef="/oracle/bi/server/base/LogicalTable/ee1199e0-0c83-1000-806e-0a0a0a0a0000.xml#mee2214a8-0c83-1000-806e-0a0a0a0a0000"/>
 </ObjectRefList>
 </Expr>
 </AggrRule>
@@ -156,12 +156,12 @@
 </LogicalColumn>
 <LogicalColumn mdsid="mee2214a9-0c83-1000-806e-0a0a0a0a0000" name="Cumulative DB Rows" isWriteable="false">
 <MeasureDefn mdsid="mfc3bda3f-0c83-1000-8029-0a0a0a0a0000" name="Measure" isCommutative="false">
-<AggrRule mdsid="mfc3bda40-0c83-1000-8029-0a0a0a0a0000" name="AggregationRule" isDefault="true">
-<Expr mdsid="m0000000f-01f4-0000-30b0-9a9b00000000" name="Expr">
+<AggrRule mdsid="mfc3bda40-0c83-1000-8029-0a0a0a0a0000" name="AggRule_2050:2711376101207" isDefault="true">
+<Expr mdsid="m0000000f-01f4-0000-5ca5-0d8900000000" name="Expr">
 <ExprText><![CDATA[ SUM("%1")]]></ExprText>
 <ExprTextDesc><![CDATA[ SUM("RM Framework"."Fact - Query Activity"."Cumulative DB Rows")]]></ExprTextDesc>
 <ObjectRefList>
-<RefObject refId="m0000000f-01f4-0000-30b0-9a9b00000000-mee2214a9-0c83-1000-806e-0a0a0a0a0000" objectTypeId="2006" objectRef="/oracle/bi/server/base/LogicalTable/ee1199e0-0c83-1000-806e-0a0a0a0a0000.xml#mee2214a9-0c83-1000-806e-0a0a0a0a0000"/>
+<RefObject refId="m0000000f-01f4-0000-5ca5-0d8900000000-mee2214a9-0c83-1000-806e-0a0a0a0a0000" objectTypeId="2006" objectRef="/oracle/bi/server/base/LogicalTable/ee1199e0-0c83-1000-806e-0a0a0a0a0000.xml#mee2214a9-0c83-1000-806e-0a0a0a0a0000"/>
 </ObjectRefList>
 </Expr>
 </AggrRule>
@@ -173,6 +173,25 @@
 <ObjectRefList>
 <RefObject refId="m00000010-01f4-0000-238e-e34d00000000-med2c1be7-0c83-1000-806e-0a0a0a0a0000" objectTypeId="3003" objectRef="/oracle/bi/server/base/PhysicalTable/ed2c1be3-0c83-1000-806e-0a0a0a0a0000.xml#med2c1be7-0c83-1000-806e-0a0a0a0a0000"/>
 </ObjectRefList>
+</Expr>
+</AttrDefn>
+</LogicalColumn>
+<LogicalColumn mdsid="mfd329640-0c83-1000-8029-0a0a0a0a0000" name="Query Count" isWriteable="false">
+<MeasureDefn mdsid="mfd39c230-0c83-1000-8029-0a0a0a0a0000" name="Measure" isCommutative="false">
+<AggrRule mdsid="mfd39c231-0c83-1000-8029-0a0a0a0a0000" name="AggRule_2050:2771376102872" isDefault="true">
+<Expr mdsid="m00000011-01f4-0000-6991-439400000000" name="Expr">
+<ExprText><![CDATA[ SUM("%1")]]></ExprText>
+<ExprTextDesc><![CDATA[ SUM("RM Framework"."Fact - Query Activity"."Query Count")]]></ExprTextDesc>
+<ObjectRefList>
+<RefObject refId="m00000011-01f4-0000-6991-439400000000-mfd329640-0c83-1000-8029-0a0a0a0a0000" objectTypeId="2006" objectRef="/oracle/bi/server/base/LogicalTable/ee1199e0-0c83-1000-806e-0a0a0a0a0000.xml#mfd329640-0c83-1000-8029-0a0a0a0a0000"/>
+</ObjectRefList>
+</Expr>
+</AggrRule>
+</MeasureDefn>
+<AttrDefn mdsid="mfd329641-0c83-1000-8029-0a0a0a0a0000" name="AD_3900:2751376102872">
+<Expr mdsid="m00000012-01f4-0000-9ab7-88c500000000" name="Expr">
+<ExprText><![CDATA[1]]></ExprText>
+<ExprTextDesc><![CDATA[1]]></ExprTextDesc>
 </Expr>
 </AttrDefn>
 </LogicalColumn>

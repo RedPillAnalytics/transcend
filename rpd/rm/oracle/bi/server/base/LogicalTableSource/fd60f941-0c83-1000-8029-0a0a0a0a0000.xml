@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<LogicalTableSource mdsid="mfd60f941-0c83-1000-8029-0a0a0a0a0000" name="S_NQ_DB_ACCT" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.oracle.com/obis/repository" isActive="true" logicalTableRef="/oracle/bi/server/base/LogicalTable/fd4a6400-0c83-1000-8029-0a0a0a0a0000.xml#mfd4a6400-0c83-1000-8029-0a0a0a0a0000">
+<ColumnMapping>
+<LogicalColumnExpr mdsid="m00000001-01f4-0000-3ed1-83ed00000000" name="LogicalColumnExpr">
+<ExprText><![CDATA["%1"]]></ExprText>
+<ExprTextDesc><![CDATA["RM Framework"."Dim - Query"."Query ID"]]></ExprTextDesc>
+<ObjectRefList>
+<RefObject refId="m00000001-01f4-0000-3ed1-83ed00000000-mfd55aea4-0c83-1000-8029-0a0a0a0a0000" objectTypeId="2006" objectRef="/oracle/bi/server/base/LogicalTable/fd4a6400-0c83-1000-8029-0a0a0a0a0000.xml#mfd55aea4-0c83-1000-8029-0a0a0a0a0000"/>
+</ObjectRefList>
+</LogicalColumnExpr>
+<Expr mdsid="m00000002-01f4-0000-7f86-062b00000000" name="Expr">
+<ExprText><![CDATA["%1"]]></ExprText>
+<ExprTextDesc><![CDATA["OBIEE Repository".""."DEV_BIPLATFORM"."S_NQ_DB_ACCT"."LOGICAL_QUERY_ID"]]></ExprTextDesc>
+<ObjectRefList>
+<RefObject refId="m00000002-01f4-0000-7f86-062b00000000-med2c1c08-0c83-1000-806e-0a0a0a0a0000" objectTypeId="3003" objectRef="/oracle/bi/server/base/PhysicalTable/ed2c1c03-0c83-1000-806e-0a0a0a0a0000.xml#med2c1c08-0c83-1000-806e-0a0a0a0a0000"/>
+</ObjectRefList>
+</Expr>
+</ColumnMapping>
+<ColumnMapping>
+<LogicalColumnExpr mdsid="m00000003-01f4-0000-1268-972d00000000" name="LogicalColumnExpr">
+<ExprText><![CDATA["%1"]]></ExprText>
+<ExprTextDesc><![CDATA["RM Framework"."Dim - Query"."Query Text"]]></ExprTextDesc>
+<ObjectRefList>
+<RefObject refId="m00000003-01f4-0000-1268-972d00000000-mfd6e66c2-0c83-1000-8029-0a0a0a0a0000" objectTypeId="2006" objectRef="/oracle/bi/server/base/LogicalTable/fd4a6400-0c83-1000-8029-0a0a0a0a0000.xml#mfd6e66c2-0c83-1000-8029-0a0a0a0a0000"/>
+</ObjectRefList>
+</LogicalColumnExpr>
+<Expr mdsid="m00000004-01f4-0000-6af0-0e5900000000" name="Expr">
+<ExprText><![CDATA["%1"]]></ExprText>
+<ExprTextDesc><![CDATA["OBIEE Repository".""."DEV_BIPLATFORM"."S_NQ_DB_ACCT"."QUERY_TEXT"]]></ExprTextDesc>
+<ObjectRefList>
+<RefObject refId="m00000004-01f4-0000-6af0-0e5900000000-med2c1c0a-0c83-1000-806e-0a0a0a0a0000" objectTypeId="3003" objectRef="/oracle/bi/server/base/PhysicalTable/ed2c1c03-0c83-1000-806e-0a0a0a0a0000.xml#med2c1c0a-0c83-1000-806e-0a0a0a0a0000"/>
+</ObjectRefList>
+</Expr>
+</ColumnMapping>
+<Link startNodeTableRef="/oracle/bi/server/base/PhysicalTable/ed2c1c03-0c83-1000-806e-0a0a0a0a0000.xml#med2c1c03-0c83-1000-806e-0a0a0a0a0000">
+</Link>
+<WhereClause mdsid="m00000005-01f4-0000-b906-44f500000000" name="WhereClause">
+<ExprText></ExprText>
+<ExprTextDesc></ExprTextDesc>
+</WhereClause>
+<GroupBy mdsid="m00000006-01f4-0000-7282-49ae00000000" name="GroupBy">
+<ExprText></ExprText>
+<ExprTextDesc></ExprTextDesc>
+</GroupBy>
+<FragmentContent mdsid="m00000007-01f4-0000-4d46-6dda00000000" name="FragmentContent">
+<ExprText></ExprText>
+<ExprTextDesc></ExprTextDesc>
+</FragmentContent>
+</LogicalTableSource>

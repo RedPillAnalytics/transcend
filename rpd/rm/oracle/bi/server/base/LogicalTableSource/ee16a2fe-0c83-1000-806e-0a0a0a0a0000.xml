@@ -51,7 +51,7 @@
 <ColumnMapping>
 <LogicalColumnExpr mdsid="m00000007-01f4-0000-437c-8c3300000000" name="LogicalColumnExpr">
 <ExprText><![CDATA["%1"]]></ExprText>
-<ExprTextDesc><![CDATA["RM Framework"."Fact - Query Activity"."Row Count"]]></ExprTextDesc>
+<ExprTextDesc><![CDATA["RM Framework"."Fact - Query Activity"."Average Row Count"]]></ExprTextDesc>
 <ObjectRefList>
 <RefObject refId="m00000007-01f4-0000-437c-8c3300000000-mee1fa3a1-0c83-1000-806e-0a0a0a0a0000" objectTypeId="2006" objectRef="/oracle/bi/server/base/LogicalTable/ee1199e0-0c83-1000-806e-0a0a0a0a0000.xml#mee1fa3a1-0c83-1000-806e-0a0a0a0a0000"/>
 </ObjectRefList>
@@ -128,17 +128,30 @@
 </ObjectRefList>
 </Expr>
 </ColumnMapping>
+<ColumnMapping>
+<LogicalColumnExpr mdsid="m00000011-01f4-0000-ed66-f44200000000" name="LogicalColumnExpr">
+<ExprText><![CDATA["%1"]]></ExprText>
+<ExprTextDesc><![CDATA["RM Framework"."Fact - Query Activity"."Query Count"]]></ExprTextDesc>
+<ObjectRefList>
+<RefObject refId="m00000011-01f4-0000-ed66-f44200000000-mfd329640-0c83-1000-8029-0a0a0a0a0000" objectTypeId="2006" objectRef="/oracle/bi/server/base/LogicalTable/ee1199e0-0c83-1000-806e-0a0a0a0a0000.xml#mfd329640-0c83-1000-8029-0a0a0a0a0000"/>
+</ObjectRefList>
+</LogicalColumnExpr>
+<Expr mdsid="m00000012-01f4-0000-a6e9-396900000000" name="Expr">
+<ExprText><![CDATA[1]]></ExprText>
+<ExprTextDesc><![CDATA[1]]></ExprTextDesc>
+</Expr>
+</ColumnMapping>
 <Link startNodeTableRef="/oracle/bi/server/base/PhysicalTable/ed2c1be3-0c83-1000-806e-0a0a0a0a0000.xml#med2c1be3-0c83-1000-806e-0a0a0a0a0000">
 </Link>
-<WhereClause mdsid="m00000011-01f4-0000-4f2f-442b00000000" name="WhereClause">
+<WhereClause mdsid="m00000013-01f4-0000-c1c2-e22600000000" name="WhereClause">
 <ExprText></ExprText>
 <ExprTextDesc></ExprTextDesc>
 </WhereClause>
-<GroupBy mdsid="m00000012-01f4-0000-f81d-bfef00000000" name="GroupBy">
+<GroupBy mdsid="m00000014-01f4-0000-68ce-1ce000000000" name="GroupBy">
 <ExprText></ExprText>
 <ExprTextDesc></ExprTextDesc>
 </GroupBy>
-<FragmentContent mdsid="m00000013-01f4-0000-f2ef-229e00000000" name="FragmentContent">
+<FragmentContent mdsid="m00000015-01f4-0000-2dda-4f2e00000000" name="FragmentContent">
 <ExprText></ExprText>
 <ExprTextDesc></ExprTextDesc>
 </FragmentContent>
