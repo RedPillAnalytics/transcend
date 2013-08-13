@@ -1,1 +1,0 @@
-Metadata Validation didn't find any errors, warnings or best practice violations.
