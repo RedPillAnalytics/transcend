@@ -507,6 +507,8 @@ IS
       EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.EVOLVE_ADM to ' || p_user;
       
       EXECUTE IMMEDIATE 'grant execute on sys.EVOLVE_DEFAULT_CLASS to ' || p_user;
+      
+      EXECUTE IMMEDIATE 'grant inherit privileges on user ' || p_user || ' to '|| p_schema;
 
    EXCEPTION
       WHEN e_no_obj
@@ -590,6 +592,9 @@ IS
       EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.TRANS_FILES to ' || p_user;
 
       EXECUTE IMMEDIATE 'grant execute on '||p_schema||'.TRANS_CDC to ' || p_user;
+      
+      EXECUTE IMMEDIATE 'grant inherit privileges on user ' || p_user || ' to '|| p_schema;
+
    EXCEPTION
       WHEN e_no_obj
       THEN

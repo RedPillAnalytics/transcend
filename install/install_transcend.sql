@@ -27,11 +27,14 @@ VARIABLE b_current_schema char(30)
 -- create the tdsys user if it doesn't already exist
 DECLARE
    l_user           all_users.username%TYPE;
+   l_cuser          all_users.username%TYPE;
 BEGIN
    
    -- get the current schema
-   SELECT sys_context('USERENV','CURRENT_SCHEMA')
-     INTO :b_current_schema
+   SELECT sys_context('USERENV','CURRENT_SCHEMA'),
+          sys_context('USERENV','SESSION_USER')
+     INTO :b_current_schema,
+          l_cuser
      FROM dual;
 
    BEGIN
@@ -48,7 +51,8 @@ BEGIN
       WHEN NO_DATA_FOUND
       THEN
       -- create it
-      EXECUTE IMMEDIATE 'CREATE USER tdsys identified by no2tdsys default tablespace &tablespace quota unlimited on &tablespace';
+         EXECUTE IMMEDIATE 'CREATE USER tdsys identified by no2tdsys default tablespace &tablespace quota unlimited on &tablespace';
+         EXECUTE IMMEDIATE 'grant inherit privileges on user '||l_cuser||' to tdsys';
    END;
 END;
 /
