@@ -263,9 +263,9 @@ END;
 DECLARE
    l_drop BOOLEAN := CASE WHEN REGEXP_LIKE('yes','&drop_repo','i') THEN TRUE ELSE FALSE END;
 BEGIN
-   -- create the Evolve repository
+   -- create the Transcend repository
    tdsys.td_adm.build_repository( p_schema => '&rep_schema', p_product => lower('&product'), p_tablespace => '&tablespace', p_drop => l_drop );
-   -- create the Evolve application
+   -- create the Transcend application
    tdsys.td_adm.build_application( p_schema => '&app_schema', p_product => lower('&product'), p_repository => '&rep_schema' );   
 EXCEPTION
    WHEN tdsys.td_adm.repo_obj_exists
